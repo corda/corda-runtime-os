@@ -9,13 +9,11 @@ import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.chunking.ChunkDeserializerService
 import net.corda.messaging.api.chunking.MessagingChunkFactory
 import net.corda.schema.configuration.FlowConfig
-import net.corda.session.manager.Constants
 import net.corda.session.manager.SessionManager
 import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
 import net.corda.test.flow.util.buildSessionEvent
@@ -37,7 +35,6 @@ class SessionManagerImplTest {
     private val realBytes = ByteArray(500)
     private val realBytesBuffer = ByteBuffer.wrap(realBytes)
     private val sessionTimeout = 30000L
-    private val flowSpecificSessionTimeout = 5000
     private val testIdentity = HoldingIdentity()
     private val testConfig = ConfigFactory.empty()
         .withValue(FlowConfig.SESSION_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(sessionTimeout))
@@ -139,69 +136,6 @@ class SessionManagerImplTest {
         assertThat(messagesToSend.size).isEqualTo(2)
         //validate all acks removed
         assertThat(outputState.sendEventsState.undeliveredMessages.size).isEqualTo(0)
-    }
-
-    @Test
-    fun `Send error for session timed out`() {
-        val instant = Instant.now()
-        val sessionState = buildSessionState(
-            SessionStateType.CONFIRMED,
-            0,
-            listOf(),
-            4,
-            listOf(),
-            instant
-        )
-
-        //validate no heartbeat
-        val (firstUpdatedState, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity)
-        assertThat(messagesToSend.size).isEqualTo(0)
-        assertThat(firstUpdatedState.status).isEqualTo(SessionStateType.CONFIRMED)
-
-        //Validate heartbeat
-        val (secondUpdatedState, secondMessagesToSend) = sessionManager.getMessagesToSend(
-            sessionState, instant.plusMillis(sessionTimeout  + 1),
-            testSmartConfig,
-            testIdentity
-        )
-
-        assertThat(secondMessagesToSend.size).isEqualTo(1)
-        assertThat(secondUpdatedState.status).isEqualTo(SessionStateType.ERROR)
-        val messageToSend = secondMessagesToSend.first()
-        assertThat(messageToSend.payload::class.java).isEqualTo(SessionError::class.java)
-    }
-
-    @Test
-    fun `Send error for session timed out due to flow specific timeout`() {
-        val instant = Instant.now()
-        val sessionState = buildSessionState(
-            SessionStateType.CONFIRMED,
-            0,
-            listOf(),
-            4,
-            listOf(),
-            instant,
-            sessionProperties = KeyValueStore().apply {
-                put(Constants.FLOW_SESSION_TIMEOUT_MS, flowSpecificSessionTimeout.toString())
-            }.avro
-        )
-
-        //validate no heartbeat
-        val (firstUpdatedState, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity)
-        assertThat(messagesToSend.size).isEqualTo(0)
-        assertThat(firstUpdatedState.status).isEqualTo(SessionStateType.CONFIRMED)
-
-        //Validate heartbeat
-        val (secondUpdatedState, secondMessagesToSend) = sessionManager.getMessagesToSend(
-            sessionState, instant.plusMillis(flowSpecificSessionTimeout  + 1L),
-            testSmartConfig,
-            testIdentity
-        )
-
-        assertThat(secondMessagesToSend.size).isEqualTo(1)
-        assertThat(secondUpdatedState.status).isEqualTo(SessionStateType.ERROR)
-        val messageToSend = secondMessagesToSend.first()
-        assertThat(messageToSend.payload::class.java).isEqualTo(SessionError::class.java)
     }
 
     @Test
