@@ -206,7 +206,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                     initializer.initializeSandboxGroupContext(vnc.holdingIdentity, sandboxGroupContext)
 
                 logger.info(
-                    "Created {} sandbox {} for vnode={} name={}",
+                    "Created {} sandboxGroupid={} for vnode={} name={}",
                     vnc.sandboxGroupType, sandboxGroup.id, vnc.holdingIdentity.shortHash, vnc.holdingIdentity.x500Name
                 )
 
@@ -224,9 +224,10 @@ class SandboxGroupContextServiceImpl @Activate constructor(
 
                     // And unload the (OSGi) sandbox group
                     logger.info(
-                        "Unloading bundle for {} sandbox for holding identity={}",
+                        "Unloading bundle for {} sandbox for holding identity={} sandboxGroupid={}",
                         sandboxGroupContext.virtualNodeContext.sandboxGroupType,
-                        sandboxGroupContext.virtualNodeContext.holdingIdentity
+                        sandboxGroupContext.virtualNodeContext.holdingIdentity,
+                        sandboxGroupContext.sandboxGroup.id
                     )
                     sandboxCreationService.unloadSandboxGroup(sandboxGroupContext.sandboxGroup)
                 }

@@ -42,7 +42,7 @@ internal class SandboxGroupContextCacheImpl private constructor(
         }.forEach { listener ->
             try {
                 listener.onEviction(vnc)
-            } catch(e: Exception) {
+            } catch (e: Exception) {
                 logger.warn("Error while evicting sandbox $vnc", e)
             }
         }
@@ -104,8 +104,9 @@ internal class SandboxGroupContextCacheImpl private constructor(
                 }
 
                 logger.info(
-                    "Evicting {} sandbox for {} [{}]",
+                    "Evicting {} sandboxGroupid={} for {} [{}]",
                     key.sandboxGroupType,
+                    context?.sandboxGroup?.id,
                     key.holdingIdentity.x500Name,
                     cause.name
                 )
