@@ -4,6 +4,7 @@ import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.tracing.wrapWithTracingExecutor
 import net.corda.utilities.time.Clock
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -27,12 +28,12 @@ class PerformanceClaimStateStoreImpl(
 
     // We use a limited queue executor to ensure we only ever queue one new request if we are currently processing
     // an existing request.
-    private val executor = ThreadPoolExecutor(
+    private val executor = wrapWithTracingExecutor(ThreadPoolExecutor(
         1, 1,
         0L, TimeUnit.MILLISECONDS,
         LinkedBlockingQueue(1),
         ThreadPoolExecutor.DiscardPolicy()
-    )
+    ))
     private val requestQueue = LinkedBlockingQueue<QueuedRequestItem>()
     private var currentState = createClaimState()
 
