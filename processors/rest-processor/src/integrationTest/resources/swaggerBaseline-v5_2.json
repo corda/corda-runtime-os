@@ -786,7 +786,7 @@
           "required" : false,
           "schema" : {
             "type" : "string",
-            "description" : "Processing status of a flow to filter by.",
+            "description" : "Processing status of a flow to filter by. For example - RUNNING, START_REQUESTED, RETRYING, COMPLETED, FAILED, KILLED",
             "nullable" : true,
             "example" : "string"
           }
