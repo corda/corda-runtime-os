@@ -72,7 +72,7 @@ class SessionEncryptionOpsClientComponentTest {
         }
     }
     private val platformInfoProvider = mock<PlatformInfoProvider>()
-    private val component = SessionEncryptionOpsClientComponent(
+    private val component = SessionEncryptionOpsClientImpl(
         coordinatorFactory,
         publisherFactory,
         configurationReadService,

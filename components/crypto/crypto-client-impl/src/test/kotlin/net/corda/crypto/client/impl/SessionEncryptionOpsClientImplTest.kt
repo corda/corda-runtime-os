@@ -42,7 +42,7 @@ class SessionEncryptionOpsClientImplTest {
     private val messagingConfig = mock<SmartConfig> {
         on { getString(BootConfig.CRYPTO_WORKER_REST_ENDPOINT) } doReturn "localhost:1231"
     }
-    private val client = SessionEncryptionOpsClientImpl(
+    private val client = SessionEncryptionImpl(
         httpRpcClient,
         platformInfoProvider,
         messagingConfig,

@@ -1,101 +1,61 @@
 package net.corda.crypto.client.impl
 
-import net.corda.crypto.core.ApiNames.DECRYPT_PATH
-import net.corda.crypto.core.ApiNames.ENCRYPT_PATH
-import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.CryptoTenants
-import net.corda.data.crypto.wire.ops.encryption.request.DecryptRpcCommand
-import net.corda.data.crypto.wire.ops.encryption.request.EncryptRpcCommand
-import net.corda.data.crypto.wire.ops.encryption.response.CryptoDecryptionResult
-import net.corda.data.crypto.wire.ops.encryption.response.CryptoEncryptionResult
-import net.corda.data.crypto.wire.ops.encryption.response.EncryptionOpsError
-import net.corda.data.crypto.wire.ops.encryption.response.DecryptionOpsResponse
-import net.corda.data.crypto.wire.ops.encryption.response.EncryptionOpsResponse
-import net.corda.libs.configuration.SmartConfig
+import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.client.SessionEncryptionOpsClient
+import net.corda.crypto.component.impl.AbstractConfigurableComponent
+import net.corda.crypto.component.impl.DependenciesTracker
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.platform.PlatformInfoProvider
-import net.corda.messaging.api.publisher.HttpRpcClient
-import net.corda.messaging.api.publisher.send
-import net.corda.schema.configuration.BootConfig.CRYPTO_WORKER_REST_ENDPOINT
-import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.crypto.exceptions.CryptoException
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import java.net.URI
-import java.nio.ByteBuffer
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
 
-@Suppress("ThrowsCount")
-class SessionEncryptionOpsClientImpl(
-    private val sender: HttpRpcClient,
-    platformInfoProvider: PlatformInfoProvider,
-    messagingConfig: SmartConfig,
-) {
-    private companion object {
-        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
+@Component(service = [SessionEncryptionOpsClient::class])
+class SessionEncryptionOpsClientImpl @Activate constructor(
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory,
+    @Reference(service = ConfigurationReadService::class)
+    configurationReadService: ConfigurationReadService,
+    @Reference(service = PlatformInfoProvider::class)
+    val platformInfoProvider: PlatformInfoProvider,
+) : AbstractConfigurableComponent<SessionEncryptionOpsClientImpl.Impl>(
+    coordinatorFactory = coordinatorFactory,
+    myName = LifecycleCoordinatorName.forComponent<SessionEncryptionOpsClient>(),
+    configurationReadService = configurationReadService,
+    upstream = DependenciesTracker.Default(
+        setOf(
+            LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+        ),
+    ),
+    configKeys = setOf(MESSAGING_CONFIG),
+),
+    SessionEncryptionOpsClient {
+    override fun encryptSessionData(plainBytes: ByteArray, alias: String?): ByteArray =
+        impl.ops.encryptSessionData(plainBytes, alias)
 
-    fun encryptSessionData(plainBytes: ByteArray, alias: String?): ByteArray {
-        logger.info(
-            "Sending '{}'(alias={})",
-            EncryptRpcCommand::class.java.simpleName,
-            alias
+    override fun decryptSessionData(cipherBytes: ByteArray, alias: String?): ByteArray =
+        impl.ops.decryptSessionData(cipherBytes, alias)
+
+    override fun createActiveImpl(event: ConfigChangedEvent): Impl =
+        Impl(publisherFactory, platformInfoProvider, event)
+
+    class Impl(
+        publisherFactory: PublisherFactory,
+        platformInfoProvider: PlatformInfoProvider,
+        event: ConfigChangedEvent,
+    ) : AbstractImpl {
+        val ops = SessionEncryptionImpl(
+            publisherFactory.createHttpRpcClient(),
+            platformInfoProvider,
+            event.config.getConfig(MESSAGING_CONFIG),
         )
-        val request = EncryptRpcCommand(
-            CryptoConsts.Categories.ENCRYPTION_SECRET,
-            alias,
-            ByteBuffer.wrap(plainBytes),
-        )
-
-        val response = sender.send<EncryptionOpsResponse>(
-            getRequestUrl(ENCRYPT_PATH), request
-        )?.response ?: throw CordaRuntimeException(
-            "Received empty response for ${request::class.java.name} for tenant '${CryptoTenants.P2P}'."
-        )
-
-        return when (response) {
-            is CryptoEncryptionResult -> response.cipherBytes.array()
-            is EncryptionOpsError -> throw CryptoException(
-                "${response.errorMessage.errorType} - ${response.errorMessage.errorMessage}"
-            )
-            else -> throw CordaRuntimeException(
-                "Unexpected response type ${response::class.java} for ${request::class.java.name}."
-            )
-        }
-    }
-
-    fun decryptSessionData(cipherBytes: ByteArray, alias: String?): ByteArray {
-        logger.info(
-            "Sending '{}'(alias={})",
-            DecryptRpcCommand::class.java.simpleName,
-            alias
-        )
-        val request = DecryptRpcCommand(
-            CryptoConsts.Categories.ENCRYPTION_SECRET,
-            alias,
-            ByteBuffer.wrap(cipherBytes),
-        )
-        val response = sender.send<DecryptionOpsResponse>(
-            getRequestUrl(DECRYPT_PATH), request
-        )?.response ?: throw CordaRuntimeException(
-            "Received empty response for ${request::class.java.name} for tenant '${CryptoTenants.P2P}'."
-        )
-
-        return when (response) {
-            is CryptoDecryptionResult -> response.plainBytes.array()
-            is EncryptionOpsError -> throw CryptoException(
-                "${response.errorMessage.errorType} - ${response.errorMessage.errorMessage}"
-            )
-            else -> throw CordaRuntimeException(
-                "Unexpected response type ${response::class.java} for ${request::class.java.name}."
-            )
-        }
-    }
-
-    private val baseUrl by lazy {
-        val platformVersion = platformInfoProvider.localWorkerSoftwareShortVersion
-        "http://${messagingConfig.getString(CRYPTO_WORKER_REST_ENDPOINT)}/api/${platformVersion}"
-    }
-
-    private fun getRequestUrl(path: String): URI {
-        return URI.create("$baseUrl$path")
+        override val downstream = DependenciesTracker.AlwaysUp()
     }
 }

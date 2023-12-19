@@ -50,7 +50,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.util.UUID
 
-class   CryptoProcessorImplTest {
+class CryptoProcessorImplTest {
 
     companion object {
         // Tempting to use SmartConfig here even from unit tests, but probably better to mock it out
