@@ -8,6 +8,8 @@ import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.utils.KeyValueStore
+import net.corda.session.manager.Constants
 import java.time.Instant
 
 /**
@@ -89,8 +91,9 @@ fun generateErrorSessionStateFromSessionEvent(errorMessage: String, sessionEvent
         .setSendEventsState(SessionProcessState(0, listOf()))
         .setStatus(SessionStateType.ERROR)
         .setHasScheduledCleanup(false)
-        .setSessionProperties(null)
-        .setRequireClose(false)
+        .setSessionProperties(KeyValueStore().apply {
+            put(Constants.FLOW_SESSION_REQUIRE_CLOSE, false.toString())
+        }.avro)
         .build()
 
     val errorEvent = generateErrorEvent(sessionState, sessionEvent, errorMessage, errorType, instant)

@@ -1311,6 +1311,13 @@
                                         "$ref": "#/$defs/basicAuthConfig"
                                     }
                                 ]
+                            },
+                            "p2pLinkManager": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/basicAuthConfig"
+                                    }
+                                ]
                             }
                         },
                         "clientImage": {
@@ -2313,6 +2320,9 @@
                             "$ref": "#/$defs/worker"
                         },
                         {
+                            "required": [
+                                "stateManager"
+                            ],
                             "additionalProperties": false,
                             "properties": {
                                 "image": {},
@@ -2323,7 +2333,10 @@
                                 "logging": {},
                                 "profiling": {},
                                 "resources": {},
-                                "kafka": {}
+                                "kafka": {},
+                                "stateManager": {
+                                    "$ref": "#/$defs/stateManager"
+                                }
                             },
                             "examples": [
                                 {
