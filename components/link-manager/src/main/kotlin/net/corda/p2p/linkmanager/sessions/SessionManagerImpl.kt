@@ -290,8 +290,13 @@ internal class SessionManagerImpl(
         return false
     }
 
-    override fun <T>processOutboundMessages(messages: List<T>, getMessage: (T) -> AuthenticatedMessageAndKey) = messages.map { message ->
-        message to processOutboundMessage(getMessage(message))
+    override fun <T>processOutboundMessages(
+        wrappedMessages: List<T>,
+        getMessage: (T) -> AuthenticatedMessageAndKey
+    ): List<Pair<T, SessionState>> {
+        return wrappedMessages.map { message ->
+            message to processOutboundMessage(getMessage(message))
+        }
     }
 
     private fun processOutboundMessage(message: AuthenticatedMessageAndKey): SessionState {
@@ -357,8 +362,8 @@ internal class SessionManagerImpl(
         }
     }
 
-    override fun <T> processSessionMessages(messages: List<T>, getMessage: (T) -> LinkInMessage): List<Pair<T, LinkOutMessage?>> {
-        return messages.map { message ->
+    override fun <T> processSessionMessages(wrappedMessages: List<T>, getMessage: (T) -> LinkInMessage): List<Pair<T, LinkOutMessage?>> {
+        return wrappedMessages.map { message ->
             message to processSessionMessage(getMessage(message))
         }
     }

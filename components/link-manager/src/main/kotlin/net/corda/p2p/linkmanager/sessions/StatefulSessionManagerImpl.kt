@@ -23,7 +23,7 @@ internal class StatefulSessionManagerImpl(coordinatorFactory: LifecycleCoordinat
     }
 
     override fun <T> processOutboundMessages(
-        messages: List<T>,
+        wrappedMessages: List<T>,
         getMessage: (T) -> AuthenticatedMessageAndKey
     ): List<Pair<T, SessionManager.SessionState>> {
         return emptyList()
@@ -33,7 +33,7 @@ internal class StatefulSessionManagerImpl(coordinatorFactory: LifecycleCoordinat
         return emptyList()
     }
 
-    override fun <T> processSessionMessages(messages: List<T>, getMessage: (T) -> LinkInMessage): List<Pair<T, LinkOutMessage?>> {
+    override fun <T> processSessionMessages(wrappedMessages: List<T>, getMessage: (T) -> LinkInMessage): List<Pair<T, LinkOutMessage?>> {
         return emptyList()
     }
 
