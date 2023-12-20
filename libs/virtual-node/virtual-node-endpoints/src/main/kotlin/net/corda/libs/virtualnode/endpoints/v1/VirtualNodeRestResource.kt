@@ -126,6 +126,32 @@ interface VirtualNodeRestResource : RestResource {
         requestId: String
     ): AsyncOperationStatus
 
+    @HttpGET(
+        path = "db/{dbTypeOrCpiChecksum}",
+        title = "Return creation schema SQL",
+        description = "Returns the SQL needed for intention to create a virtual node or latest uploaded CPI.",
+        responseDescription = "SQL needed to bring schema up to date.",
+        minVersion = RestApiVersion.C5_2
+    )
+    fun getCreateSchemaOrCpiSQL(
+        @RestPathParameter(description = "Virtual node database type or CPI checksum")
+        dbTypeOrCpiChecksum: String,
+    ): ResponseEntity<String>
+
+    @HttpGET(
+        path = "{virtualNodeShortId}/db/{dbType}",
+        title = "Return migration schema SQL",
+        description = "Returns the SQL needed to update the Liquibase schema so that it is up to date.",
+        responseDescription = "SQL needed to bring schema up to date.",
+        minVersion = RestApiVersion.C5_2
+    )
+    fun getUpdateSchemaSQL(
+        @RestPathParameter(description = "Short ID of the virtual node instance")
+        virtualNodeShortId: String,
+        @RestPathParameter(description = "Virtual node database type")
+        dbType: String
+    ): ResponseEntity<String>
+
     /**
      * Asynchronous endpoint to upgrade a virtual node's CPI.
      */

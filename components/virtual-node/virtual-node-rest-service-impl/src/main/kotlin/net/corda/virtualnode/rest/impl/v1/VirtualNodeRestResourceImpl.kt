@@ -367,6 +367,14 @@ internal class VirtualNodeRestResourceImpl(
         }
     }
 
+    override fun getCreateSchemaOrCpiSQL(dbTypeOrCpiChecksum: String): ResponseEntity<String> {
+        TODO("To be implemented in CORE-15805")
+    }
+
+    override fun getUpdateSchemaSQL(virtualNodeShortId: String, dbType: String): ResponseEntity<String> {
+        TODO("To be implemented in CORE-15805")
+    }
+
     private fun sendAsynchronousRequest(
         requestTime: Instant,
         virtualNodeShortId: String,
