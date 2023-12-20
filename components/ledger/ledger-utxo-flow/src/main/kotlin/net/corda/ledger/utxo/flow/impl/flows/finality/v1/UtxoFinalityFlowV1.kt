@@ -164,7 +164,7 @@ class UtxoFinalityFlowV1(
                         dependency.signatures.filter { newTxNotaryKeyIds.contains(it.by) }
                     )
                 }
-            flowMessaging.sendAll(FinalityPayload(filteredTransactionsAndSignatures), sessions.toSet())
+            flowMessaging.sendAll(filteredTransactionsAndSignatures, sessions.toSet())
         }
     }
 

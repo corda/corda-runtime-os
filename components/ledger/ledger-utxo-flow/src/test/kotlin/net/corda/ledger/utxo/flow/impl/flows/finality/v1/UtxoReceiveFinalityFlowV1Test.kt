@@ -147,7 +147,7 @@ class UtxoReceiveFinalityFlowV1Test {
     }
     private val filteredTxAndSig = FilteredTransactionAndSignatures(filteredTransaction, listOf(signatureNotary))
     private val finalityPayload = FinalityPayload(signedTransaction, true)
-    private val finalityPayloadWithFilteredTx = FinalityPayload(listOf(filteredTxAndSig))
+    private val filteredTxPayload = listOf(filteredTxAndSig)
 
     @BeforeEach
     fun beforeEach() {
@@ -559,8 +559,8 @@ class UtxoReceiveFinalityFlowV1Test {
     fun `skip backchain with a backchain not required notary`() {
         whenever(notaryInfo.isBackchainRequired).thenReturn(false)
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1, signature2))
-        whenever(session.receive(FinalityPayload::class.java)).thenReturn(finalityPayload, finalityPayloadWithFilteredTx)
-        whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
+        whenever(session.receive(FinalityPayload::class.java)).thenReturn(finalityPayload)
+        whenever(session.receive(List::class.java)).thenReturn(filteredTxPayload, listOf(signature3))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
 
         callReceiveFinalityFlow()
@@ -593,11 +593,11 @@ class UtxoReceiveFinalityFlowV1Test {
         }
         val filteredTxAndSig = FilteredTransactionAndSignatures(filteredTransaction, listOf(signatureAnotherNotary))
         val finalityPayload = FinalityPayload(signedTransaction, true)
-        val finalityPayloadWithFilteredTx = FinalityPayload(listOf(filteredTxAndSig))
+        val filteredTxPayload = listOf(filteredTxAndSig)
 
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1, signature2))
-        whenever(session.receive(FinalityPayload::class.java)).thenReturn(finalityPayload, finalityPayloadWithFilteredTx)
-        whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
+        whenever(session.receive(FinalityPayload::class.java)).thenReturn(finalityPayload)
+        whenever(session.receive(List::class.java)).thenReturn(filteredTxPayload, listOf(signature3))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
 
         whenever(notaryInfo.isBackchainRequired).thenReturn(false)
@@ -628,8 +628,8 @@ class UtxoReceiveFinalityFlowV1Test {
         whenever(signedTransaction.notaryName).thenReturn(anotherNotaryX500Name)
         whenever(signedTransaction.notaryKey).thenReturn(publicKeyAnotherNotary)
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1, signature2))
-        whenever(session.receive(FinalityPayload::class.java)).thenReturn(finalityPayload, finalityPayloadWithFilteredTx)
-        whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
+        whenever(session.receive(FinalityPayload::class.java)).thenReturn(finalityPayload)
+        whenever(session.receive(List::class.java)).thenReturn(filteredTxPayload, listOf(signature3))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
 
         assertThatThrownBy { callReceiveFinalityFlow() }
@@ -650,7 +650,7 @@ class UtxoReceiveFinalityFlowV1Test {
         }
         val filteredTxAndSig = FilteredTransactionAndSignatures(filteredTransaction, listOf(signatureNotary))
         val finalityPayload = FinalityPayload(signedTransaction, true)
-        val finalityPayloadWithFilteredTx = FinalityPayload(listOf(filteredTxAndSig))
+        val filteredTxPayload = listOf(filteredTxAndSig)
 
         whenever(notaryInfo.publicKey).thenReturn(compositeKeyNotary)
         whenever(notaryInfo.isBackchainRequired).thenReturn(false)
@@ -660,8 +660,8 @@ class UtxoReceiveFinalityFlowV1Test {
         whenever(signedTransaction.notaryKey).thenReturn(compositeKeyNotary)
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1, signature2))
 
-        whenever(session.receive(FinalityPayload::class.java)).thenReturn(finalityPayload, finalityPayloadWithFilteredTx)
-        whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
+        whenever(session.receive(FinalityPayload::class.java)).thenReturn(finalityPayload)
+        whenever(session.receive(List::class.java)).thenReturn(filteredTxPayload, listOf(signature3))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
 
         whenever(
