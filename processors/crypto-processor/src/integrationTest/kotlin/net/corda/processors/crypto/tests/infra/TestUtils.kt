@@ -17,10 +17,14 @@ import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
+import java.net.ServerSocket
 
 const val RESPONSE_TOPIC = "test.response"
 
-private const val MESSAGING_CONFIGURATION_VALUE: String = """
+internal val webServerPort = ServerSocket(0).use {
+    it.localPort
+}
+private val MESSAGING_CONFIGURATION_VALUE: String = """
             componentVersion="5.1"
             maxAllowedMessageSize = 1000000
             subscription {
@@ -36,8 +40,10 @@ private const val MESSAGING_CONFIGURATION_VALUE: String = """
                     close.timeout = 6000
                 }
             }
+            worker {
+                endpoints.crypto = "localhost:$webServerPort"
+            }
       """
-
 private const val BOOT_CONFIGURATION = """
         instanceId=1
         topicPrefix=""

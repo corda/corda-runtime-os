@@ -24,6 +24,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
 import net.corda.schema.configuration.MessagingConfig.Subscription.POLL_TIMEOUT
+import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -61,6 +62,8 @@ class LinkManagerProcessorImpl @Activate constructor(
     private val membershipQueryClient: MembershipQueryClient,
     @Reference(service = GroupParametersReaderService::class)
     private val groupParametersReaderService: GroupParametersReaderService,
+    @Reference(service = AvroSchemaRegistry::class)
+    private val avroSchemaRegistry: AvroSchemaRegistry,
 ) : LinkManagerProcessor {
 
     private companion object {
