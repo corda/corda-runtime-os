@@ -5,7 +5,6 @@ import org.slf4j.Logger
 
 object TraceUtils {
 
-    private val log: Logger by lazy { LoggerFactory.getLogger(this::class.java.enclosingClass) }
     private const val TRACING_HEADER_NAME_TRACING_ID = "X-B3-TraceId"
     private const val TRACING_HEADER_NAME_SPAN_ID = "X-B3-SpanId"
     private const val TRACING_HEADER_NAME_SAMPLED = "X-B3-Sampled"
@@ -27,11 +26,8 @@ object TraceUtils {
         headerName: String,
         headers: MutableList<Pair<String, String>>
     ) {
-        val value = (mapOfHeaders[headerName] as String?)
-        if (value != null) {
+        (mapOfHeaders[headerName] as String?)?.let {value ->
             headers.add(headerName to value)
-        } else {
-            log.warn("Header not found: $headerName")
         }
     }
 }
