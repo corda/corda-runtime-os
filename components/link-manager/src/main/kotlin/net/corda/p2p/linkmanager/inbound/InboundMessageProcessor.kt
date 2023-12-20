@@ -170,7 +170,10 @@ internal class InboundMessageProcessor(
         for ((sessionIdAndMessage, sessionDirection) in sessionDirectionForMessage) {
             when (sessionDirection) {
                 is SessionManager.SessionDirection.Inbound ->
-                    messages.add(TraceableMessage(processInboundDataMessages(sessionIdAndMessage, sessionDirection), sessionIdAndMessage.second.originalRecord))
+                    messages.add(
+                        TraceableMessage(
+                            processInboundDataMessages(sessionIdAndMessage, sessionDirection), sessionIdAndMessage.second.originalRecord)
+                    )
                 is SessionManager.SessionDirection.Outbound -> processOutboundDataMessage(sessionIdAndMessage, sessionDirection)?.let {
                     messages.add(TraceableMessage(listOf(it), sessionIdAndMessage.second.originalRecord))
                 }
