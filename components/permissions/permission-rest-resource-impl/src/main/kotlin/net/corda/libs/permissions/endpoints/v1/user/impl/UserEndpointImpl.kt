@@ -108,12 +108,12 @@ class UserEndpointImpl @Activate constructor(
         return userResponseDto?.convertToEndpointType() ?: throw ResourceNotFoundException("User", loginName)
     }
 
-    override fun changeUserPasswordSelf(loginName: String, password: String): UserResponseType {
+    override fun changeUserPasswordSelf(password: String): UserResponseType {
         val principal = getRestThreadLocalContext()
 
         val userResponseDto = try {
             withPermissionManager(permissionManagementService.permissionManager, logger) {
-                changeUserPasswordSelf(ChangeUserPasswordDto(principal, loginName, password))
+                changeUserPasswordSelf(ChangeUserPasswordDto(principal, principal.lowercase(), password))
             }
         } catch (e: IllegalArgumentException) {
             throw InvalidStateChangeException(e.message ?: "New password must be different from old one.")
@@ -122,12 +122,12 @@ class UserEndpointImpl @Activate constructor(
         return userResponseDto.convertToEndpointType()
     }
 
-    override fun changeOtherUserPassword(loginName: String, password: String): UserResponseType {
+    override fun changeOtherUserPassword(username: String, password: String): UserResponseType {
         val principal = getRestThreadLocalContext()
 
         val userResponseDto = try {
             withPermissionManager(permissionManagementService.permissionManager, logger) {
-                changeUserPasswordOther(ChangeUserPasswordDto(principal, loginName, password))
+                changeUserPasswordOther(ChangeUserPasswordDto(principal, username.lowercase(), password))
             }
         } catch (e: IllegalArgumentException) {
             throw InvalidStateChangeException(e.message ?: "New password must be different from old one.")
