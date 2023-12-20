@@ -1,23 +1,36 @@
 package net.corda.messaging.mediator.factory
 
 import net.corda.messaging.api.mediator.MediatorConsumer
+import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
+import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.config.MediatorConsumerConfig
 import net.corda.messaging.api.mediator.config.MessagingClientConfig
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.mediator.GroupAllocator
+import net.corda.messaging.mediator.MediatorState
+import net.corda.messaging.mediator.StateManagerHelper
+import net.corda.messaging.mediator.processor.ConsumerProcessor
+import net.corda.messaging.mediator.processor.EventProcessor
+import net.corda.messaging.mediator.processor.StatesToPersist
+import net.corda.taskmanager.TaskManager
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Factory for creating various components used by Multi-Source Event Mediator.
  */
-internal class MediatorComponentFactory<K : Any, S : Any, E : Any>(
+class MediatorComponentFactory<K : Any, S : Any, E : Any>(
     private val messageProcessor: StateAndEventProcessor<K, S, E>,
     private val consumerFactories: Collection<MediatorConsumerFactory>,
     private val clientFactories: Collection<MessagingClientFactory>,
     private val messageRouterFactory: MessageRouterFactory,
+    private val groupAllocator: GroupAllocator,
+    private val stateManagerHelper: StateManagerHelper<K, S, E>
 ) {
 
     /**
@@ -76,5 +89,25 @@ internal class MediatorComponentFactory<K : Any, S : Any, E : Any>(
             clientsById[id]
                 ?: throw IllegalStateException("Messaging client with ID \"$id\" not found")
         }
+    }
+
+    fun createConsumerProcessor(
+        eventMediatorConfig: EventMediatorConfig<K, S, E>,
+        taskManager: TaskManager,
+        messageRouter: MessageRouter,
+        mediatorState: MediatorState,
+    ): ConsumerProcessor<K, S, E> {
+        val eventProcessor = EventProcessor(eventMediatorConfig, stateManagerHelper, messageRouter, mediatorState)
+        return ConsumerProcessor(eventMediatorConfig, groupAllocator, taskManager, messageRouter, mediatorState,
+            eventProcessor)
+    }
+
+    fun createMediatorState(): MediatorState {
+        return MediatorState(
+            AtomicBoolean(false),
+            AtomicBoolean(false),
+            ConcurrentHashMap<String, MutableList<MediatorMessage<Any>>>(),
+            StatesToPersist()
+        )
     }
 }
