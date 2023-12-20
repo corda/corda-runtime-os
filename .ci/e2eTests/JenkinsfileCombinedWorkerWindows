@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@nikinagy/CORE-18524-add-sm-to-lm') _
+@Library('corda-shared-build-pipeline-steps@5.2') _
 
 combinedWorkerPipeline(
     agentOs : 'windows'
