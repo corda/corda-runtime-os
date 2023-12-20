@@ -9,7 +9,6 @@ import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.ledger.utxo.flow.impl.PluggableNotaryDetails
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
-import net.corda.ledger.utxo.flow.impl.flows.finality.DependencyPayload
 import net.corda.ledger.utxo.flow.impl.flows.finality.FilteredTransactionAndSignatures
 import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityPayload
 import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowContext
@@ -165,7 +164,7 @@ class UtxoFinalityFlowV1(
                         dependency.signatures.filter { newTxNotaryKeyIds.contains(it.by) }
                     )
                 }
-            flowMessaging.sendAll(DependencyPayload(filteredTransactionsAndSignatures), sessions.toSet())
+            flowMessaging.sendAll(FinalityPayload(filteredTransactionsAndSignatures), sessions.toSet())
         }
     }
 

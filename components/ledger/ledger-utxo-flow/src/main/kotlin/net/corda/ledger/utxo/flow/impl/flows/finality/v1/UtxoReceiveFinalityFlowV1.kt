@@ -7,7 +7,6 @@ import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.utxo.flow.impl.flows.backchain.InvalidBackchainException
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
-import net.corda.ledger.utxo.flow.impl.flows.finality.DependencyPayload
 import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityPayload
 import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowContext
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
@@ -176,7 +175,7 @@ class UtxoReceiveFinalityFlowV1(
         transferAdditionalSignatures: Boolean
     ): InitialTransactionPayload {
         val filteredTransactionsAndSignatures =
-            session.receive(DependencyPayload::class.java).filteredTransactionsAndSignatures
+            session.receive(FinalityPayload::class.java).filteredTransactionsAndSignatures
         val groupParameters = groupParametersLookup.currentGroupParameters
         val notary = requireNotNull(groupParameters.notaries.first { it.name == initialTransaction.notaryName }) {
             "Notary from initial transaction \"${initialTransaction.notaryName}\" cannot be found in group parameter notaries."
