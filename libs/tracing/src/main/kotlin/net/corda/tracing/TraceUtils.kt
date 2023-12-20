@@ -1,8 +1,5 @@
 package net.corda.tracing
 
-import org.slf4j.LoggerFactory
-import org.slf4j.Logger
-
 object TraceUtils {
 
     private const val TRACING_HEADER_NAME_TRACING_ID = "X-B3-TraceId"
