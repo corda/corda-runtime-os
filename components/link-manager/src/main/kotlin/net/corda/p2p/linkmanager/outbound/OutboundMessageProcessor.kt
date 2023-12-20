@@ -294,16 +294,21 @@ internal class OutboundMessageProcessor(
         messagesWithKeys: List<TraceableItem<AuthenticatedMessageAndKey>>,
         isReplay: Boolean = false
     ): List<TraceableItem<List<Record<String, *>>>> {
-        val messagesWithSession = mutableListOf<TraceableItem<ValidateAuthenticatedMessageResult.SessionNeeded>>()
-        val messageWithNoSession = mutableListOf<TraceableItem<List<Record<String, *>>>>()
-        for (message in messagesWithKeys) {
-            when (val result = validateAndCheckIfSessionNeeded(message.item, isReplay)) {
-                is ValidateAuthenticatedMessageResult.SessionNeeded -> {
-                    messagesWithSession += TraceableItem(result, message.originalRecord)
-                }
-                is ValidateAuthenticatedMessageResult.NoSessionNeeded -> {
-                    messageWithNoSession += TraceableItem(result.records, message.originalRecord)
-                }
+        val validatedMessages = messagesWithKeys.map { message ->
+            message to validateAndCheckIfSessionNeeded(message.item, isReplay)
+        }
+        val messagesWithSession = validatedMessages.mapNotNull { (message, result) ->
+            if (result is ValidateAuthenticatedMessageResult.SessionNeeded) {
+                TraceableItem(result, message.originalRecord)
+            } else {
+                null
+            }
+        }
+        val messageWithNoSession = validatedMessages.mapNotNull { (message, result) ->
+            if (result is ValidateAuthenticatedMessageResult.NoSessionNeeded) {
+                TraceableItem(result.records, message.originalRecord)
+            } else {
+                null
             }
         }
         return messageWithNoSession + processRemoteAuthenticatedMessage(messagesWithSession, isReplay)
@@ -444,7 +449,7 @@ internal class OutboundMessageProcessor(
         }
     }
 
-    fun recordsForSessionEstablished(
+    private fun recordsForSessionEstablished(
         state: SessionManager.SessionState.SessionEstablished,
         messageAndKey: AuthenticatedMessageAndKey
     ): List<Record<String, *>> {
