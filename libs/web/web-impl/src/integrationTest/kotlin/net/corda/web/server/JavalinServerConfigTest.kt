@@ -28,7 +28,7 @@ class JavalinServerConfigTest {
         on { createCoordinator(any(), any()) }.doReturn(lifecycleCoordinator)
     }
     private val path = "/aquaman"
-    private val port = 9999
+    private val port = 7004
     private val url = "http://localhost:$port$path"
     private val httpClient: HttpClient = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(30))
@@ -87,8 +87,10 @@ class JavalinServerConfigTest {
 
 //    @Test
 //    fun `start server for prometheus`() {
+//        var counter = AtomicInteger(0);
+//        val files = listOf("scrape1.txt", "scrape2.txt", "scrape3.txt")
 //        val endpoint = Endpoint(HTTPMethod.GET, "/metrics", { context ->
-//            context.result(readMetricsFile())
+//            context.result(readMetricsFile(counter, files))
 //            context.header(Header.CACHE_CONTROL, "no-cache")
 //            context
 //        })
@@ -97,8 +99,9 @@ class JavalinServerConfigTest {
 //        while(true) { }
 //    }
 //
-//    private fun readMetricsFile(): String {
-//        val expectedConfigYamlFile = this::class.java.classLoader.getResource("metrics2.txt")?.toURI()
+//    private fun readMetricsFile(counter: AtomicInteger, files: List<String>): String {
+//        val fileName = files.elementAtOrElse(counter.getAndIncrement()) { "scrape3.txt"}
+//        val expectedConfigYamlFile = this::class.java.classLoader.getResource(fileName)?.toURI()
 //        return Files.readString(expectedConfigYamlFile?.toPath())
 //    }
 }
