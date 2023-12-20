@@ -91,7 +91,7 @@ internal class OutboundMessageProcessor(
             }
         }
 
-        fun recordsForSessionEstablished(
+        internal fun recordsForSessionEstablished(
             session: Session,
             sessionManager: SessionManager,
             serial: Long,

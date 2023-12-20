@@ -3,43 +3,34 @@ package net.corda.p2p.linkmanager.sessions
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.LinkOutMessage
-import net.corda.data.p2p.crypto.InitiatorHandshakeMessage
-import net.corda.data.p2p.crypto.InitiatorHelloMessage
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.SimpleDominoTile
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.virtualnode.HoldingIdentity
 
 internal class StatefulSessionManagerImpl(coordinatorFactory: LifecycleCoordinatorFactory): SessionManager {
-    sealed class StatefulSessionStatus {
-        data class SendSessionNegotiationMessage(val message: OutboundNegotiationMessage): StatefulSessionStatus()
-        object SessionPending: StatefulSessionStatus()
-        data class SessionReady(val session: Session): StatefulSessionStatus()
-    }
-
-    sealed class OutboundNegotiationMessage {
-        data class InitiatorHello(val initiatorHelloMessage: InitiatorHelloMessage): OutboundNegotiationMessage()
-        data class InitiatorHandshake(val initiatorHandshakeMessage: InitiatorHandshakeMessage): OutboundNegotiationMessage()
-    }
-
     override fun <T> processOutboundMessages(
-        wrappedMessages: List<T>,
+        wrappedMessages: Collection<T>,
         getMessage: (T) -> AuthenticatedMessageAndKey
-    ): List<Pair<T, SessionManager.SessionState>> {
+    ): Collection<Pair<T, SessionManager.SessionState>> {
         return emptyList()
     }
 
-    override fun <T> getSessionsById(uuids: List<T>, getSessionId: (T) -> String): List<Pair<T, SessionManager.SessionDirection>> {
-        return emptyList()
+    override fun <T> getSessionsById(
+        uuids: Collection<T>,
+        getSessionId: (T) -> String
+    ): Collection<Pair<T, SessionManager.SessionDirection>> {
+        return emptyList() //To be implemented in CORE-18630 (getting the outbound sessions) + CORE-18631 (getting the inbound sessions).
     }
 
-    override fun <T> processSessionMessages(wrappedMessages: List<T>, getMessage: (T) -> LinkInMessage): List<Pair<T, LinkOutMessage?>> {
+    override fun <T> processSessionMessages(
+        wrappedMessages: Collection<T>,
+        getMessage: (T) -> LinkInMessage
+    ): Collection<Pair<T, LinkOutMessage?>> {
+        /*To be implemented CORE-18631 (process InitiatorHelloMessage, InitiatorHandshakeMessage)
+         * and CORE-18630 (process ResponderHello + process ResponderHandshake)
+         * */
         return emptyList()
-    }
-
-    override fun inboundSessionEstablished(sessionId: String) {
-        //Not needed by the Stateful Session Manager
-        return
     }
 
     override fun messageAcknowledged(sessionId: String) {
@@ -47,12 +38,18 @@ internal class StatefulSessionManagerImpl(coordinatorFactory: LifecycleCoordinat
         return
     }
 
+    override fun inboundSessionEstablished(sessionId: String) {
+        //Not needed by the Stateful Session Manager
+        return
+    }
+
     override fun dataMessageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity) {
-        //No heartbeat manager in the stateful session manager
+        // Not needed by the Stateful Session Manager
         return
     }
 
     override fun dataMessageSent(session: Session) {
+        // Not needed by the Stateful Session Manager
         return
     }
 

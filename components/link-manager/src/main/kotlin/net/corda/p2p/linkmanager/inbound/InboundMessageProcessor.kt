@@ -225,24 +225,20 @@ internal class InboundMessageProcessor(
                         logger.debug { "Processing ack for message ${ack.messageId} from session $sessionIdAndMessage." }
                         sessionManager.messageAcknowledged(sessionIdAndMessage.first)
                         val record = makeMarkerForAckMessage(ack)
-                        traceEventProcessing(sessionIdAndMessage.second.originalRecord, tracingEventName) { listOf(record) }
                         record
                     }
                     is HeartbeatMessageAck -> {
                         logger.debug { "Processing heartbeat ack from session $sessionIdAndMessage." }
                         sessionManager.messageAcknowledged(sessionIdAndMessage.first)
-                        traceEventProcessing(sessionIdAndMessage.second.originalRecord, tracingEventName) { emptyList() }
                         null
                     }
                     else -> {
                         logger.warn("Received an inbound message with unexpected type for SessionId = $sessionIdAndMessage.")
-                        traceEventProcessing(sessionIdAndMessage.second.originalRecord, tracingEventName) { emptyList() }
                         null
                     }
                 }
             }
         } else {
-            traceEventProcessing(sessionIdAndMessage.second.originalRecord, tracingEventName) { emptyList() }
             null
         }
     }
