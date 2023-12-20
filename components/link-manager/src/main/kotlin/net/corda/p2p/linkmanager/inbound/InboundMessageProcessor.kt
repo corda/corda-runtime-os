@@ -40,6 +40,7 @@ import net.corda.tracing.traceEventProcessing
 import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.toCorda
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
@@ -55,7 +56,7 @@ internal class InboundMessageProcessor(
     EventLogProcessor<String, LinkInMessage> {
 
     private companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.name)
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.name)
         const val tracingEventName = "P2P Link Manager Inbound Event"
     }
     /**
