@@ -149,9 +149,11 @@ class UtxoFinalityFlowV1(
                         mutableMapOf()
                     )
 
-                    val newTxNotaryKeyIds = if (newTxNotaryKey is CompositeKey) newTxNotaryKey.leafKeys.toSet()
-                    else setOf(newTxNotaryKey.fullIdHash())
-
+                    val newTxNotaryKeyIds = if (newTxNotaryKey is CompositeKey) {
+                        newTxNotaryKey.leafKeys.toSet()
+                    } else {
+                        setOf(newTxNotaryKey.fullIdHash())
+                    }
 
                     FilteredTransactionAndSignatures(
                         utxoLedgerService.filterSignedTransaction(dependency)
