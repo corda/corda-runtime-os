@@ -1,6 +1,7 @@
 package net.corda.libs.permissions.storage.writer.impl.user
 
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
+import net.corda.data.permissions.management.user.ChangeUserPasswordRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.permissions.common.exception.EntityAlreadyExistsException
@@ -148,6 +149,51 @@ internal class UserWriterImplTest {
         assertNotNull(audit)
         assertEquals(RestPermissionOperation.USER_INSERT, audit.changeType)
         assertEquals(requestUserId, audit.actorUser)
+    }
+
+    @Test
+    fun `changing user password successfully changes password`() {
+        // Arrange
+        val changeUserPasswordRequest = ChangeUserPasswordRequest().apply {
+            requestedBy = "existingUser"
+            hashedNewPassword = "newHashedPassword"
+            saltValue = "newSalt"
+            passwordExpiry = Instant.now()
+        }
+
+        val existingUser = User(
+            id = "userId",
+            fullName = "Existing User",
+            loginName = "existingUser",
+            enabled = true,
+            hashedPassword = "oldHashedPassword",
+            saltValue = "oldSalt",
+            passwordExpiry = Instant.now(),
+            updateTimestamp = Instant.now(),
+            parentGroup = mock<Group>()
+        )
+
+        val typedQueryMock = mock<TypedQuery<User>>()
+        whenever(entityManager.createQuery(any<String>(), eq(User::class.java))).thenReturn(typedQueryMock)
+        whenever(typedQueryMock.setParameter(eq("loginName"), eq("existingUser"))).thenReturn(typedQueryMock)
+        whenever(typedQueryMock.resultList).thenReturn(listOf(existingUser))
+
+        userWriter.changeUserPassword(changeUserPasswordRequest, requestUserId)
+
+        verify(entityManager).merge(existingUser)
+        assertEquals("newHashedPassword", existingUser.hashedPassword)
+        assertEquals("newSalt", existingUser.saltValue)
+
+        val auditCaptor = argumentCaptor<ChangeAudit>()
+        verify(entityManager).persist(auditCaptor.capture())
+
+        val capturedAudit = auditCaptor.firstValue
+        assertNotNull(capturedAudit)
+        assertEquals(RestPermissionOperation.USER_UPDATE, capturedAudit.changeType)
+        assertEquals("Password for user 'existingUser' changed by '$requestUserId'.", capturedAudit.details)
+
+        verify(entityTransaction).begin()
+        verify(entityTransaction).commit()
     }
 
     @Test

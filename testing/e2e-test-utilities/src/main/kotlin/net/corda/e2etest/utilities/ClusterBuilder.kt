@@ -342,6 +342,14 @@ class ClusterBuilder {
         return body.joinToString(prefix = "{", postfix = "}")
     }
 
+    fun changeUserPasswordSelf(password: String) =
+        post("/api/$REST_API_VERSION_PATH/user/selfpassword",
+            """{"password": "$password"}""")
+
+    fun changeUserPasswordOther(username: String, password: String) =
+        post("/api/$REST_API_VERSION_PATH/user/otheruserpassword",
+            """{"username": "$username", "password": "$password"}""")
+
     private fun createPermissionBody(
         permissionString: String,
         permissionType: String,
