@@ -13,7 +13,7 @@ import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_KEY
 import net.corda.messaging.utils.HTTPRetryConfig
 import net.corda.messaging.utils.HTTPRetryExecutor
 import net.corda.metrics.CordaMetrics
-import net.corda.tracing.TraceUtils
+import net.corda.tracing.TraceUtils.extractTracingHeaders
 import net.corda.tracing.traceSend
 import net.corda.utilities.debug
 import net.corda.utilities.trace
@@ -67,11 +67,10 @@ class RPCClient(
     private fun processMessage(message: MediatorMessage<*>): MediatorMessage<*>? {
         // Extract the tracing headers from the mediator message, so they can be
         // copied into the HTTP request and keep the traceability intact
-        val tracingHeaders = TraceUtils.extractHeaders(message.properties)
+        val tracingHeaders = message.extractTracingHeaders()
 
         // Build the HTTP request based on the mediator message and the tracing headers
         val request = buildHttpRequest(message, tracingHeaders)
-
 
         val response = traceHttpSend(tracingHeaders, request.uri()) {
             sendWithRetry(request)
@@ -80,8 +79,8 @@ class RPCClient(
         val deserializedResponse = deserializePayload(response.body())
 
         return deserializedResponse?.let {
-            val headers: MutableMap<String,Any> = mutableMapOf("statusCode" to response.statusCode())
-            tracingHeaders.forEach { (k,v) -> headers[k] = v }
+            val headers: MutableMap<String, Any> = mutableMapOf("statusCode" to response.statusCode())
+            tracingHeaders.forEach { (k, v) -> headers[k] = v }
             MediatorMessage(deserializedResponse, headers)
         }
     }
