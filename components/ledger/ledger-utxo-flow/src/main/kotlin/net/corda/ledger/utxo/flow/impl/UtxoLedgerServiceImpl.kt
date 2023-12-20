@@ -10,8 +10,8 @@ import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.ReceiveAndUpdate
 import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.SendTransactionBuilderDiffFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.ReceiveLedgerTransactionFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.ReceiveTransactionFlow
-import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.SendTransactionFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.SendAsLedgerTransactionFlow
+import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.SendTransactionFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
 import net.corda.ledger.utxo.flow.impl.persistence.VaultNamedParameterizedQueryImpl

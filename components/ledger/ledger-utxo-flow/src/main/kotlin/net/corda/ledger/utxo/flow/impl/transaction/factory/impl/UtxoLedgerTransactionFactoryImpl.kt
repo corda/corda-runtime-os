@@ -25,7 +25,11 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
 
-@Component(service = [UtxoLedgerTransactionFactory::class, UsedByFlow::class], property = [CORDA_SYSTEM_SERVICE], scope = ServiceScope.PROTOTYPE)
+@Component(
+    service = [UtxoLedgerTransactionFactory::class, UsedByFlow::class],
+    property = [CORDA_SYSTEM_SERVICE],
+    scope = ServiceScope.PROTOTYPE
+)
 class UtxoLedgerTransactionFactoryImpl @Activate constructor(
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
