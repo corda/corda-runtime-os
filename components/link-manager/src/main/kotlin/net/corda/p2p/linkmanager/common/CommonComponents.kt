@@ -72,6 +72,8 @@ internal class CommonComponents(
         clock = clock,
     )
 
+    internal val stateManager = stateManager
+
     private val trustStoresPublisher = TrustStoresPublisher(
         subscriptionFactory,
         publisherFactory,

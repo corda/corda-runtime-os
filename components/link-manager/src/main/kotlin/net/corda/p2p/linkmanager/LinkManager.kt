@@ -49,17 +49,9 @@ class LinkManager(
 ) : LifecycleWithDominoTile {
 
     companion object {
-        private lateinit var _stateManager: StateManager
-
-        fun getStateManager() = _stateManager
-
         internal fun generateKey(): String {
             return UUID.randomUUID().toString()
         }
-    }
-
-    init {
-        _stateManager = stateManager
     }
 
     private val commonComponents = CommonComponents(
