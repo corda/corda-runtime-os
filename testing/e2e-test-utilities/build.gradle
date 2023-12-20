@@ -14,7 +14,7 @@ dependencies {
         }
     }
 
-    api "org.eclipse.jetty.websocket:websocket-client:$jettyVersion"
+    api libs.jetty.websocket.client
 
     implementation "net.corda:corda-config-schema:$cordaApiVersion"
 

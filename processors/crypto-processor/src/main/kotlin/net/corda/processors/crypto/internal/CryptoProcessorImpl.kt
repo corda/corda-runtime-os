@@ -22,6 +22,8 @@ import net.corda.crypto.config.impl.RetryingConfig
 import net.corda.crypto.config.impl.SALT
 import net.corda.crypto.config.impl.WRAPPING_KEYS
 import net.corda.crypto.config.impl.retrying
+import net.corda.crypto.core.ApiNames.DECRYPT_PATH
+import net.corda.crypto.core.ApiNames.ENCRYPT_PATH
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.Categories.ENCRYPTION_SECRET
 import net.corda.crypto.core.CryptoService
@@ -37,6 +39,8 @@ import net.corda.crypto.service.impl.bus.CryptoRekeyBusProcessor
 import net.corda.crypto.service.impl.bus.CryptoRewrapBusProcessor
 import net.corda.crypto.service.impl.bus.HSMRegistrationBusProcessor
 import net.corda.crypto.service.impl.rpc.CryptoFlowOpsProcessor
+import net.corda.crypto.service.impl.rpc.SessionDecryptionProcessor
+import net.corda.crypto.service.impl.rpc.SessionEncryptionProcessor
 import net.corda.crypto.softhsm.TenantInfoService
 import net.corda.crypto.softhsm.impl.HSMRepositoryImpl
 import net.corda.crypto.softhsm.impl.ShortHashCacheKey
@@ -141,6 +145,8 @@ class CryptoProcessorImpl @Activate constructor(
         const val HSM_REG_SUBSCRIPTION = "HSM_REG_SUBSCRIPTION"
         const val REWRAP_SUBSCRIPTION = "REWRAP_SUBSCRIPTION"
         const val REKEY_SUBSCRIPTION = "REKEY_SUBSCRIPTION"
+        const val SESSION_ENCRYPTION_SUBSCRIPTION = "SESSION_ENCRYPTION_SUBSCRIPTION"
+        const val SESSION_DECRYPTION_SUBSCRIPTION = "SESSION_DECRYPTION_SUBSCRIPTION"
 
         const val SUBSCRIPTION_NAME = "Crypto"
         const val CRYPTO_PATH = "/crypto"
@@ -370,6 +376,8 @@ class CryptoProcessorImpl @Activate constructor(
             stateManager, cordaAvroSerializationFactory
         )
         createRewrapSubscription(coordinator, messagingConfig)
+        createSessionEncryptionSubscription(coordinator, retryingConfig)
+        createSessionDecryptionSubscription(coordinator, retryingConfig)
     }
 
     private fun createRekeySubscription(
@@ -444,6 +452,38 @@ class CryptoProcessorImpl @Activate constructor(
             subscriptionFactory.createHttpRPCSubscription(
                 rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, CRYPTO_PATH),
                 processor = flowOpsProcessor
+            ).also {
+                it.start()
+            }
+        }
+    }
+
+    private fun createSessionEncryptionSubscription(
+        coordinator: LifecycleCoordinator,
+        retryingConfig: RetryingConfig
+    ) {
+        val subscriptionName = "crypto.session.encryption"
+
+        coordinator.createManagedResource(SESSION_ENCRYPTION_SUBSCRIPTION) {
+            subscriptionFactory.createHttpRPCSubscription(
+                rpcConfig = SyncRPCConfig(subscriptionName, ENCRYPT_PATH),
+                processor = SessionEncryptionProcessor(cryptoService, retryingConfig),
+            ).also {
+                it.start()
+            }
+        }
+    }
+
+    private fun createSessionDecryptionSubscription(
+        coordinator: LifecycleCoordinator,
+        retryingConfig: RetryingConfig
+    ) {
+        val subscriptionName = "crypto.session.decryption"
+
+        coordinator.createManagedResource(SESSION_DECRYPTION_SUBSCRIPTION) {
+            subscriptionFactory.createHttpRPCSubscription(
+                rpcConfig = SyncRPCConfig(subscriptionName, DECRYPT_PATH),
+                processor = SessionDecryptionProcessor(cryptoService, retryingConfig),
             ).also {
                 it.start()
             }
