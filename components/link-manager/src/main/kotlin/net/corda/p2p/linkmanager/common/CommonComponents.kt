@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
@@ -41,6 +42,7 @@ internal class CommonComponents(
     membershipQueryClient: MembershipQueryClient,
     groupParametersReaderService: GroupParametersReaderService,
     clock: Clock,
+    stateManager: StateManager,
 ) : LifecycleWithDominoTile {
     private companion object {
         const val LISTENER_NAME = "link.manager.group.policy.listener"
@@ -69,6 +71,8 @@ internal class CommonComponents(
         linkManagerHostingMap,
         clock = clock,
     )
+
+    internal val stateManager = stateManager
 
     private val trustStoresPublisher = TrustStoresPublisher(
         subscriptionFactory,
@@ -123,7 +127,7 @@ internal class CommonComponents(
             mtlsClientCertificatePublisher.dominoTile.coordinatorName,
         ) + externalDependencies.map {
             it.name
-        },
+        } + stateManager.name,
         managedChildren = listOf(
             linkManagerHostingMap.dominoTile.toNamedLifecycle(),
             messagesPendingSession.dominoTile.toNamedLifecycle(),
