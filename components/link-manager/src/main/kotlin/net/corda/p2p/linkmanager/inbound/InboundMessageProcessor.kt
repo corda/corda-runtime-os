@@ -54,8 +54,8 @@ internal class InboundMessageProcessor(
 ) :
     EventLogProcessor<String, LinkInMessage> {
 
-    private var logger = LoggerFactory.getLogger(this::class.java.name)
     private companion object {
+        val logger = LoggerFactory.getLogger(this::class.java.name)
         const val tracingEventName = "P2P Link Manager Inbound Event"
     }
     /**
@@ -79,12 +79,12 @@ internal class InboundMessageProcessor(
             when (val payload = message.payload) {
                 is AuthenticatedDataMessage -> {
                     dataMessages += payload.header.sessionId to
-                            TraceableMessage(AvroSealedClasses.DataMessage.Authenticated(payload), event)
+                        TraceableMessage(AvroSealedClasses.DataMessage.Authenticated(payload), event)
                 }
 
                 is AuthenticatedEncryptedDataMessage -> {
                     dataMessages += payload.header.sessionId to
-                            TraceableMessage(AvroSealedClasses.DataMessage.AuthenticatedAndEncrypted(payload), event)
+                        TraceableMessage(AvroSealedClasses.DataMessage.AuthenticatedAndEncrypted(payload), event)
                 }
 
                 is ResponderHelloMessage, is ResponderHandshakeMessage, is InitiatorHandshakeMessage, is InitiatorHelloMessage -> {
@@ -110,70 +110,72 @@ internal class InboundMessageProcessor(
                 }
             }
         }
-        return processSessionMessages(sessionMessages) + processDataMessages(dataMessages)
+        val responseRecords = processSessionMessages(sessionMessages) + processDataMessages(dataMessages)
+        responseRecords.forEach {
+            traceEventProcessing(it.originalRecord, tracingEventName) { it.message }
+        }
+
+        return responseRecords.map { it.message }.flatten()
     }
 
-    private fun processSessionMessages(messages: List<TraceableMessage<LinkInMessage>>): List<Record<String, *>> {
+    private fun processSessionMessages(messages: List<TraceableMessage<LinkInMessage>>): List<TraceableMessage<List<Record<String, *>>>> {
         recordInboundSessionMessagesMetric()
-        val responses = sessionManager.processSessionMessages(messages.map { it.message })
-        return responses.withIndex().map { (i, response) ->
+        val responses = sessionManager.processSessionMessages(messages) {message -> message.message}
+        return responses.map { (traceableMessage, response) ->
             if (response != null) {
                 when (val payload = response.payload) {
                     is ResponderHelloMessage -> {
                         val partitionsAssigned = inboundAssignmentListener.getCurrentlyAssignedPartitions()
                         if (partitionsAssigned.isNotEmpty()) {
-                            val records = listOf(
-                                Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response),
-                                Record(
-                                    Schemas.P2P.SESSION_OUT_PARTITIONS,
-                                    payload.header.sessionId,
-                                    SessionPartitions(partitionsAssigned.toList())
-                                )
-                            )
-                            traceEventProcessing(messages[i].originalRecord, tracingEventName) { records }
                             recordOutboundSessionMessagesMetric(response.header.sourceIdentity, response.header.destinationIdentity)
-                            records
+                            TraceableMessage(
+                                listOf(
+                                    Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response),
+                                    Record(
+                                        Schemas.P2P.SESSION_OUT_PARTITIONS,
+                                        payload.header.sessionId,
+                                        SessionPartitions(partitionsAssigned.toList())
+                                    )
+                                ),
+                                traceableMessage.originalRecord
+                            )
                         } else {
                             logger.warn(
                                 "No partitions from topic ${Schemas.P2P.LINK_IN_TOPIC} are currently assigned to " +
                                         "the inbound message processor." +
                                         " Not going to reply to session initiation for session ${payload.header.sessionId}."
                             )
-                            val records = emptyList<Record<String, *>>()
-                            traceEventProcessing(messages[i].originalRecord, "P2P Link Manager Inbound Event") { records }
-                            records
+                            TraceableMessage(emptyList(), traceableMessage.originalRecord)
                         }
                     }
                     else -> {
-                        val records = listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response))
-                        traceEventProcessing(messages[i].originalRecord, tracingEventName) { records }
                         recordOutboundSessionMessagesMetric(response.header.sourceIdentity, response.header.destinationIdentity)
-                        records
+                        TraceableMessage(
+                            listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response)),
+                            traceableMessage.originalRecord
+                        )
                     }
                 }
             } else {
-                val records = emptyList<Record<String, *>>()
-                traceEventProcessing(messages[i].originalRecord, tracingEventName) { records }
-                records
+                TraceableMessage(emptyList(), traceableMessage.originalRecord)
             }
-        }.flatten()
+        }
     }
 
     private fun processDataMessages(
         sessionIdAndMessages: List<Pair<String, TraceableMessage<AvroSealedClasses.DataMessage>>>
-    ): List<Record<*, *>> {
-        val messages = mutableListOf<Record<*, *>>()
-        val sessionDirectionForMessage = sessionManager.getSessionsById(sessionIdAndMessages.map { it.first })
-        for ((i, sessionDirection) in sessionDirectionForMessage.withIndex()) {
+    ): List<TraceableMessage<List<Record<*, *>>>> {
+        val messages = mutableListOf<TraceableMessage<List<Record<*, *>>>>()
+        val sessionDirectionForMessage = sessionManager.getSessionsById(sessionIdAndMessages) { it.first }
+        for ((sessionIdAndMessage, sessionDirection) in sessionDirectionForMessage) {
             when (sessionDirection) {
                 is SessionManager.SessionDirection.Inbound ->
-                    messages.addAll(processInboundDataMessages(sessionIdAndMessages[i], sessionDirection))
-                is SessionManager.SessionDirection.Outbound -> processOutboundDataMessage(sessionIdAndMessages[i], sessionDirection)?.let {
-                    messages.add(it)
+                    messages.add(TraceableMessage(processInboundDataMessages(sessionIdAndMessage, sessionDirection), sessionIdAndMessage.second.originalRecord))
+                is SessionManager.SessionDirection.Outbound -> processOutboundDataMessage(sessionIdAndMessage, sessionDirection)?.let {
+                    messages.add(TraceableMessage(listOf(it), sessionIdAndMessage.second.originalRecord))
                 }
                 is SessionManager.SessionDirection.NoSession -> {
-                    logger.warn(
-                        "Received message with SessionId = $sessionIdAndMessages for which there is no active session." +
+                    logger.warn("Received message with SessionId = ${sessionIdAndMessage.first} for which there is no active session." +
                             " The message was discarded."
                     )
                 }
@@ -197,11 +199,8 @@ internal class InboundMessageProcessor(
                 sessionDirection.session,
                 sessionIdAndMessage.first,
                 sessionIdAndMessage.second.message
-            ).also { records ->
-                traceEventProcessing(sessionIdAndMessage.second.originalRecord, tracingEventName) { records }
-            }
+            )
         } else {
-            traceEventProcessing(sessionIdAndMessage.second.originalRecord, tracingEventName) { emptyList() }
             emptyList()
         }
     }

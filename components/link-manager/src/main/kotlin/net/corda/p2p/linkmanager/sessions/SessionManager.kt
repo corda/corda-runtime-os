@@ -1,7 +1,7 @@
 package net.corda.p2p.linkmanager.sessions
 
-import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.data.p2p.AuthenticatedMessageAndKey
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
@@ -9,9 +9,9 @@ import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.virtualnode.HoldingIdentity
 
 internal interface SessionManager : LifecycleWithDominoTile {
-    fun processOutboundMessages(messages: List<AuthenticatedMessageAndKey>): List<SessionState>
-    fun getSessionsById(uuids: List<String>): List<SessionDirection>
-    fun processSessionMessages(messages: List<LinkInMessage>): List<LinkOutMessage?>
+    fun <T>processOutboundMessages(messages: List<T>, getMessage: (T) -> AuthenticatedMessageAndKey): List<Pair<T, SessionState>>
+    fun <T>getSessionsById(uuids: List<T>, getSessionId: (T) -> String): List<Pair<T, SessionDirection>>
+    fun <T>processSessionMessages(messages: List<T>, getMessage: (T) -> LinkInMessage): List<Pair<T, LinkOutMessage?>>
     fun inboundSessionEstablished(sessionId: String)
     fun messageAcknowledged(sessionId: String)
     fun dataMessageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity)

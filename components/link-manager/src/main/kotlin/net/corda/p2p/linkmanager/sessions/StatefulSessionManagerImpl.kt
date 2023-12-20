@@ -22,17 +22,18 @@ internal class StatefulSessionManagerImpl(coordinatorFactory: LifecycleCoordinat
         data class InitiatorHandshake(val initiatorHandshakeMessage: InitiatorHandshakeMessage): OutboundNegotiationMessage()
     }
 
-    override fun processOutboundMessages(
-        messages: List<AuthenticatedMessageAndKey>
-    ): List<SessionManager.SessionState> {
+    override fun <T> processOutboundMessages(
+        messages: List<T>,
+        getMessage: (T) -> AuthenticatedMessageAndKey
+    ): List<Pair<T, SessionManager.SessionState>> {
         return emptyList()
     }
 
-    override fun getSessionsById(uuids: List<String>): List<SessionManager.SessionDirection> {
+    override fun <T> getSessionsById(uuids: List<T>, getSessionId: (T) -> String): List<Pair<T, SessionManager.SessionDirection>> {
         return emptyList()
     }
 
-    override fun processSessionMessages(messages: List<LinkInMessage>): List<LinkOutMessage?> {
+    override fun <T> processSessionMessages(messages: List<T>, getMessage: (T) -> LinkInMessage): List<Pair<T, LinkOutMessage?>> {
         return emptyList()
     }
 

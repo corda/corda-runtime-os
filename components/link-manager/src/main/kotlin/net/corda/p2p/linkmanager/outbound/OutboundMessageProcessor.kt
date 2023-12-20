@@ -130,22 +130,22 @@ internal class OutboundMessageProcessor(
     /**
      * Class which wraps a message, so we can do event tracing by passing the original event log record to a lower layer.
      */
-    private data class TraceableMessage<T>(
-        val message: T,
+    private data class TraceableItem<T>(
+        val item: T,
         val originalRecord: EventLogRecord<String, AppMessage>?
     )
 
     override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<String, *>> {
-        val authenticatedMessages = mutableListOf<TraceableMessage<AuthenticatedMessageAndKey>>()
-        val unauthenticatedMessages = mutableListOf<TraceableMessage<OutboundUnauthenticatedMessage>>()
+        val authenticatedMessages = mutableListOf<TraceableItem<AuthenticatedMessageAndKey>>()
+        val unauthenticatedMessages = mutableListOf<TraceableItem<OutboundUnauthenticatedMessage>>()
         for (event in events) {
             when (val message = event.value?.message) {
                 is AuthenticatedMessage -> {
-                    authenticatedMessages += TraceableMessage(AuthenticatedMessageAndKey(message, event.key), event)
+                    authenticatedMessages += TraceableItem(AuthenticatedMessageAndKey(message, event.key), event)
                     recordOutboundMessagesMetric(message)
                 }
                 is OutboundUnauthenticatedMessage -> {
-                    unauthenticatedMessages += TraceableMessage(message, event)
+                    unauthenticatedMessages += TraceableItem(message, event)
                     recordOutboundMessagesMetric(message)
                 }
                 null -> {
@@ -157,11 +157,16 @@ internal class OutboundMessageProcessor(
             }
         }
 
-        return unauthenticatedMessages.map { (message, event) ->
-            processUnauthenticatedMessage(message).also { records ->
-                event?.let {event -> traceEventProcessing(event, tracingEventName) { records } }
+        val results = unauthenticatedMessages.map { (message, event) ->
+            TraceableItem(processUnauthenticatedMessage(message), event)
+        } + processAuthenticatedMessages(authenticatedMessages)
+
+        for (result in results) {
+            result.originalRecord?.let { originalRecord ->
+                traceEventProcessing(originalRecord, tracingEventName) { result.item }
             }
-        }.flatten() + processAuthenticatedMessages(authenticatedMessages)
+        }
+        return results.map { it.item }.flatten()
     }
 
     private fun checkSourceAndDestinationValid(
@@ -283,35 +288,30 @@ internal class OutboundMessageProcessor(
     }
 
     fun processReplayedAuthenticatedMessage(messageAndKey: AuthenticatedMessageAndKey): List<Record<String, *>> =
-        processAuthenticatedMessages(listOf(TraceableMessage(messageAndKey, null)), true)
+        processAuthenticatedMessages(listOf(TraceableItem(messageAndKey, null)), true).flatMap { it.item }
 
     private fun processAuthenticatedMessages(
-        messagesWithKeys: List<TraceableMessage<AuthenticatedMessageAndKey>>,
+        messagesWithKeys: List<TraceableItem<AuthenticatedMessageAndKey>>,
         isReplay: Boolean = false
-    ): List<Record<String, *>> {
-        val markerMessagesWithSession = mutableListOf<Record<String, *>>()
-        val messageWithNoSession = mutableListOf<Record<String, *>>()
-        val remoteAuthenticatedMessages = mutableListOf<TraceableMessage<AuthenticatedMessageAndKey>>()
+    ): List<TraceableItem<List<Record<String, *>>>> {
+        val messagesWithSession = mutableListOf<TraceableItem<ValidateAuthenticatedMessageResult.SessionNeeded>>()
+        val messageWithNoSession = mutableListOf<TraceableItem<List<Record<String, *>>>>()
         for (message in messagesWithKeys) {
-            when (val result = validateAndCheckIfSessionNeeded(message, isReplay)) {
+            when (val result = validateAndCheckIfSessionNeeded(message.item, isReplay)) {
                 is ValidateAuthenticatedMessageResult.SessionNeeded -> {
-                    markerMessagesWithSession += result.markerRecords
-                    remoteAuthenticatedMessages += result.messageWithKey
+                    messagesWithSession += TraceableItem(result, message.originalRecord)
                 }
                 is ValidateAuthenticatedMessageResult.NoSessionNeeded -> {
-                    messageWithNoSession += result.records
-                    message.originalRecord?.let { event ->
-                        traceEventProcessing(event, tracingEventName) { result.records }
-                    }
+                    messageWithNoSession += TraceableItem(result.records, message.originalRecord)
                 }
             }
         }
-        return markerMessagesWithSession + messageWithNoSession + processRemoteAuthenticatedMessage(remoteAuthenticatedMessages, isReplay)
+        return messageWithNoSession + processRemoteAuthenticatedMessage(messagesWithSession, isReplay)
     }
 
     private sealed class ValidateAuthenticatedMessageResult {
         data class SessionNeeded(
-            val messageWithKey: TraceableMessage<AuthenticatedMessageAndKey>,
+            val messageWithKey: AuthenticatedMessageAndKey,
             val markerRecords: List<Record<String, *>>
         ): ValidateAuthenticatedMessageResult()
         data class NoSessionNeeded(val records: List<Record<String, *>>): ValidateAuthenticatedMessageResult()
@@ -331,10 +331,9 @@ internal class OutboundMessageProcessor(
      * looped back (if validation succeeded).
      */
     private fun validateAndCheckIfSessionNeeded(
-        traceableMessage: TraceableMessage<AuthenticatedMessageAndKey>,
+        messageAndKey: AuthenticatedMessageAndKey,
         isReplay: Boolean = false
     ): ValidateAuthenticatedMessageResult {
-        val messageAndKey = traceableMessage.message
         logger.trace {
             "Processing outbound ${messageAndKey.message.javaClass} with ID ${messageAndKey.message.header.messageId} " +
                 "to ${messageAndKey.message.header.destination}."
@@ -401,57 +400,48 @@ internal class OutboundMessageProcessor(
             } else {
                 listOf(recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId))
             }
-            return ValidateAuthenticatedMessageResult.SessionNeeded(traceableMessage, markers)
+            return ValidateAuthenticatedMessageResult.SessionNeeded(messageAndKey, markers)
         }
     }
-    private fun processRemoteAuthenticatedMessage(
-        messages: List<TraceableMessage<AuthenticatedMessageAndKey>>,
-        isReplay: Boolean = false
-    ): List<Record<String, *>> {
-        return sessionManager.processOutboundMessages(messages.map { it.message }).withIndex().map { (i, state) ->
-            val (message, originalRecord) = messages[i]
-            when (state) {
-                is SessionManager.SessionState.NewSessionsNeeded -> {
-                    logger.trace { "No existing session with ${message.message.header.destination}. Initiating a new one.." }
-                    if (!isReplay) messagesPendingSession.queueMessage(message, state.sessionCounterparties)
-                    recordsForNewSessions(state).also { records ->
-                        originalRecord?.let { event ->
-                            traceEventProcessing(event, tracingEventName) { records }
-                        }
-                    }
-                }
 
+    private fun processRemoteAuthenticatedMessage(
+        validationResults: List<TraceableItem<ValidateAuthenticatedMessageResult.SessionNeeded>>,
+        isReplay: Boolean = false
+    ): List<TraceableItem<List<Record<String, *>>>> {
+        return sessionManager.processOutboundMessages(validationResults) { validationResult ->
+            validationResult.item.messageWithKey
+        }.map { (message, state) ->
+                when (state) {
+                is SessionManager.SessionState.NewSessionsNeeded -> {
+                    logger.trace {
+                        "No existing session with ${message.item.messageWithKey.message.header.destination}. Initiating a new one.."
+                    }
+                    if (!isReplay) messagesPendingSession.queueMessage(message.item.messageWithKey, state.sessionCounterparties)
+                    TraceableItem(recordsForNewSessions(state) + message.item.markerRecords, message.originalRecord)
+                }
                 is SessionManager.SessionState.SessionEstablished -> {
                     logger.trace {
-                        "Session already established with ${message.message.header.destination}. Using this to send outbound message."
+                        "Session already established with ${message.item.messageWithKey.message.header.destination}. Using this to send" +
+                            " outbound message."
                     }
-                    recordsForSessionEstablished(state, message).also { records ->
-                        originalRecord?.let { event ->
-                            traceEventProcessing(event, tracingEventName) { records }
-                        }
-                    }
+                    TraceableItem(
+                        recordsForSessionEstablished(state, message.item.messageWithKey) + message.item.markerRecords,
+                        message.originalRecord
+                    )
                 }
-
                 is SessionManager.SessionState.SessionAlreadyPending -> {
                     logger.trace {
-                        "Session already pending with ${message.message.header.destination}. Message queued until session is established."
+                        "Session already pending with ${message.item.messageWithKey.message.header.destination}. Message queued until " +
+                            "session is established."
                     }
-                    if (!isReplay) messagesPendingSession.queueMessage(message, state.sessionCounterparties)
-                    emptyList<Record<String, *>>().also { records ->
-                        originalRecord?.let { event ->
-                            traceEventProcessing(event, tracingEventName) { records }
-                        }
-                    }
+                    if (!isReplay) messagesPendingSession.queueMessage(message.item.messageWithKey, state.sessionCounterparties)
+                    TraceableItem(message.item.markerRecords, message.originalRecord)
                 }
                 is SessionManager.SessionState.CannotEstablishSession -> {
-                    emptyList<Record<String, *>>().also { records ->
-                        originalRecord?.let { event ->
-                            traceEventProcessing(event, tracingEventName) { records }
-                        }
-                    }
+                    TraceableItem(message.item.markerRecords, message.originalRecord)
                 }
             }
-        }.flatten()
+        }
     }
 
     fun recordsForSessionEstablished(
