@@ -41,7 +41,6 @@ import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
-import net.corda.v5.ledger.common.transaction.TransactionSignatureVerificationService
 import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -81,7 +80,6 @@ class UtxoReceiveFinalityFlowV1Test {
     private val groupParametersLookup = mock<GroupParametersLookupInternal>()
     private val utxoLedgerGroupParametersPersistenceService = mock<UtxoLedgerGroupParametersPersistenceService>()
     private val transactionVerificationService = mock<UtxoLedgerTransactionVerificationService>()
-    private val transactionSignatureVerificationService = mock<TransactionSignatureVerificationService>()
     private val signedGroupParametersVerifier = mock<SignedGroupParametersVerifier>()
     private val visibilityChecker = mock<VisibilityChecker>()
     private val notarySignatureVerificationService = mock<NotarySignatureVerificationService>()
@@ -696,7 +694,6 @@ class UtxoReceiveFinalityFlowV1Test {
         flow.groupParametersLookup = groupParametersLookup
         flow.utxoLedgerGroupParametersPersistenceService = utxoLedgerGroupParametersPersistenceService
         flow.signedGroupParametersVerifier = signedGroupParametersVerifier
-        flow.transactionSignatureVerificationService = transactionSignatureVerificationService
         flow.notarySignatureVerificationService = notarySignatureVerificationService
         flow.call()
     }

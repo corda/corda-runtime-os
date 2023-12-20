@@ -24,7 +24,6 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.common.NotaryLookup
-import net.corda.v5.ledger.common.transaction.TransactionSignatureVerificationService
 import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -62,9 +61,6 @@ class UtxoReceiveFinalityFlowV1(
 
     @CordaInject
     lateinit var notaryLookup: NotaryLookup
-
-    @CordaInject
-    lateinit var transactionSignatureVerificationService: TransactionSignatureVerificationService
 
     @CordaInject
     lateinit var utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory
