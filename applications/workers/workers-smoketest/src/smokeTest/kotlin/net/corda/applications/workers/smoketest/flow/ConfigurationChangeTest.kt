@@ -26,18 +26,14 @@ import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
-import org.junit.jupiter.api.parallel.Execution
-import org.junit.jupiter.api.parallel.ExecutionMode
+import org.junit.jupiter.api.parallel.Isolated
 import java.time.Duration
 import java.util.UUID
 
 @Suppress("Unused", "FunctionName")
-//The flow tests must go last as one test updates the messaging config which is highly disruptive to subsequent test runs. The real
-// solution to this is a larger effort to have components listen to their messaging pattern lifecycle status and for them to go DOWN when
-// their patterns are DOWN - CORE-8015
 @Order(Int.MAX_VALUE)
 @TestInstance(Lifecycle.PER_CLASS)
-@Execution(ExecutionMode.SAME_THREAD)
+@Isolated("As this test updates the config which affects running cluster")
 class ConfigurationChangeTest : ClusterReadiness by ClusterReadinessChecker() {
 
     companion object {
