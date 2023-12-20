@@ -26,7 +26,6 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKey
-import net.corda.v5.crypto.KeyUtils
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
@@ -139,10 +138,9 @@ class UtxoFinalityFlowV1(
                         "Dependent transaction $transactionId does not exist"
                     }
                     val newTxNotaryKey = initialTransaction.notaryKey
-                    val dependencyNotaryKey = dependency.notaryKey
                     require(initialTransaction.notaryName == dependency.notaryName) {
                         "Notary name of filtered transaction \"${dependency.notaryName}\" doesn't match with " +
-                            "any names of initial transaction \"${initialTransaction.notaryName}\""
+                            "notary service of current transaction \"${initialTransaction.notaryName}\""
                     }
                     notarySignatureVerificationService.verifyNotarySignatures(
                         dependency,
@@ -151,16 +149,9 @@ class UtxoFinalityFlowV1(
                         mutableMapOf()
                     )
 
-                    val newTxNotaryKeyIds = if (newTxNotaryKey is CompositeKey) {
-                        require(KeyUtils.isKeyFulfilledBy(newTxNotaryKey, dependencyNotaryKey)) {
-                            "A composite notary key of new transaction $newTxNotaryKey doesn't contain " +
-                                "a dependency notary key $dependencyNotaryKey"
-                        }
+                    val newTxNotaryKeyIds = if (newTxNotaryKey is CompositeKey) newTxNotaryKey.leafKeys.toSet()
+                    else setOf(newTxNotaryKey.fullIdHash())
 
-                        newTxNotaryKey.leafKeys.toSet()
-                    } else {
-                        setOf(newTxNotaryKey.fullIdHash())
-                    }
 
                     FilteredTransactionAndSignatures(
                         utxoLedgerService.filterSignedTransaction(dependency)
