@@ -15,7 +15,9 @@
 {{- include "corda.worker" ( list $ .Values.workers.p2pGateway "p2pGateway"
     ( dict "httpPort" 8080 "servicesAccessed" ( list "p2pLinkManager" ) )
   ) }}
-{{- include "corda.worker" ( list $ .Values.workers.p2pLinkManager "p2pLinkManager" ) }}
+{{- include "corda.worker" ( list $ .Values.workers.p2pLinkManager "p2pLinkManager"
+    ( dict "stateManagerDbAccess" true )
+) }}
 {{- include "corda.worker" ( list $ .Values.workers.persistence "persistence"
     ( dict "clusterDbAccess" true )
 ) }}

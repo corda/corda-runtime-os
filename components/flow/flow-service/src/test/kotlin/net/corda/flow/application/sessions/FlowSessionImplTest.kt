@@ -29,6 +29,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Duration
 
 class FlowSessionImplTest {
 
@@ -275,7 +276,8 @@ class FlowSessionImplTest {
         serializationService,
         flowContext,
         FlowSessionImpl.Direction.INITIATED_SIDE,
-        true
+        true,
+        Duration.ofMinutes(5)
     )
 
     private fun createInitiatingSession() = FlowSessionImpl(
@@ -285,7 +287,8 @@ class FlowSessionImplTest {
         serializationService,
         flowContext,
         FlowSessionImpl.Direction.INITIATING_SIDE,
-        true
+        true,
+        sessionTimeout = null
     )
 
 }

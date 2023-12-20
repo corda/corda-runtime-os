@@ -389,6 +389,11 @@ object CordaMetrics {
              */
             object SignatureSpecTimer: Metric<Timer>("$PREFIX.signature.spec.time", CordaMetrics::timer)
 
+            /**
+             * The time taken for rewrapping keys in key rotation
+             */
+            object RewrapKeysTimer: Metric<Timer>("$PREFIX.rewrap.time", CordaMetrics::timer)
+
         }
 
         object Membership {
