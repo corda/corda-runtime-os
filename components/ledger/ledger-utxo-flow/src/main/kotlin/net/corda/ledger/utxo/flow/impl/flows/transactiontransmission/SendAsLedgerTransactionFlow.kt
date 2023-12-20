@@ -22,7 +22,9 @@ class SendAsLedgerTransactionFlow(
     private val sessions: List<FlowSession>
 ) : SubFlow<Unit> {
 
-    private companion object { val log = LoggerFactory.getLogger(this::class.java) }
+    private companion object {
+        val log = LoggerFactory.getLogger(this::class.java)
+    }
 
     @CordaInject
     lateinit var flowMessaging: FlowMessaging

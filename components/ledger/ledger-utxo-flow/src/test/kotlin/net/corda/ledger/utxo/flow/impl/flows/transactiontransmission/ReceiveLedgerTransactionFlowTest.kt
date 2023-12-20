@@ -6,14 +6,11 @@ import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
-import net.corda.ledger.utxo.flow.impl.flows.finality.v1.UtxoFinalityFlowV1Test.TestContact
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
-import net.corda.v5.ledger.utxo.TransactionState
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -47,20 +44,11 @@ class ReceiveLedgerTransactionFlowTest {
     private val publicKeyAlice = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x01)) }
     private val publicKeyBob = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x02)) }
 
-    private val stateAndRef = mock<StateAndRef<TestState>>()
-    private val transactionState = mock<TransactionState<TestState>>()
-    private val testState = TestState(listOf(publicKeyAlice))
-
     @BeforeEach
     fun beforeEach() {
         whenever(transaction.id).thenReturn(TX_ID_1)
         whenever(flowEngine.subFlow(any<TransactionBackchainResolutionFlow>())).thenReturn(Unit)
         whenever(utxoLedgerTransactionFactory.create(transaction)).thenReturn(ledgerTransaction)
-
-        // Single output State
-        whenever(stateAndRef.state).thenReturn(transactionState)
-        whenever(transactionState.contractType).thenReturn(TestContact::class.java)
-        whenever(transactionState.contractState).thenReturn(testState)
     }
 
     @Test

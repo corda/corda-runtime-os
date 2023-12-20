@@ -24,7 +24,7 @@ class ReceiveLedgerTransactionFlow(
 ) : SubFlow<UtxoLedgerTransaction> {
 
     private companion object {
-        private val log: Logger = LoggerFactory.getLogger(ReceiveLedgerTransactionFlow::class.java)
+        private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
 
     @CordaInject
