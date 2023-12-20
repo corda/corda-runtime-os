@@ -9,7 +9,10 @@ import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.virtualnode.HoldingIdentity
 
 internal interface SessionManager : LifecycleWithDominoTile {
-    fun <T>processOutboundMessages(wrappedMessages: Collection<T>, getMessage: (T) -> AuthenticatedMessageAndKey): Collection<Pair<T, SessionState>>
+    fun <T>processOutboundMessages(
+        wrappedMessages: Collection<T>,
+        getMessage: (T) -> AuthenticatedMessageAndKey
+    ): Collection<Pair<T, SessionState>>
     fun <T>getSessionsById(uuids: Collection<T>, getSessionId: (T) -> String): Collection<Pair<T, SessionDirection>>
     fun <T>processSessionMessages(wrappedMessages: Collection<T>, getMessage: (T) -> LinkInMessage): Collection<Pair<T, LinkOutMessage?>>
     fun inboundSessionEstablished(sessionId: String)
