@@ -89,7 +89,7 @@ class RPCClient(
     private inline fun<T> traceHttpSend(tracingHeaders: List<Pair<String, String>>, uri: URI, send: ()-> T): T {
         val traceContext = traceSend(tracingHeaders, "http - send - path - ${uri.path}")
 
-        traceContext.traceTag("uri", uri.toString())
+        traceContext.traceTag("path", uri.path.toString())
 
         return traceContext.markInScope().use {
             try {

@@ -28,12 +28,16 @@ class PerformanceClaimStateStoreImpl(
 
     // We use a limited queue executor to ensure we only ever queue one new request if we are currently processing
     // an existing request.
-    private val executor = wrapWithTracingExecutor(ThreadPoolExecutor(
-        1, 1,
-        0L, TimeUnit.MILLISECONDS,
-        LinkedBlockingQueue(1),
-        ThreadPoolExecutor.DiscardPolicy()
-    ))
+    private val executor = wrapWithTracingExecutor(
+        ThreadPoolExecutor(
+            1,
+            1,
+            0L,
+            TimeUnit.MILLISECONDS,
+            LinkedBlockingQueue(1),
+            ThreadPoolExecutor.DiscardPolicy()
+        )
+    )
     private val requestQueue = LinkedBlockingQueue<QueuedRequestItem>()
     private var currentState = createClaimState()
 
