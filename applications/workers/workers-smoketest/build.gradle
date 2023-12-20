@@ -68,6 +68,13 @@ dependencies {
     smokeTestImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     smokeTestImplementation "org.slf4j:slf4j-api:$slf4jVersion"
 
+    smokeTestImplementation ("io.micrometer:micrometer-core:$micrometerVersion") {
+        // we don't need these in classpath, so excluding them to reduce dependencies.
+        exclude group: 'org.hdrhistogram', module: 'HdrHistogram'
+        exclude group: 'org.latencyutils', module: 'LatencyUtils'
+    }
+    smokeTestImplementation "io.micrometer:micrometer-registry-prometheus:$micrometerVersion"
+
     smokeTestImplementation project(':components:flow:flow-rest-resource-service')
     smokeTestImplementation project(':libs:crypto:crypto-core')
     // TODO: this reference is only to get the serialialiser. I don't think this should be in the

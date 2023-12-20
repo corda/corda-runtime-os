@@ -7,6 +7,11 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import io.micrometer.core.instrument.Metrics
+import io.micrometer.core.instrument.Tag
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry
+import io.micrometer.prometheus.PrometheusConfig
+import io.micrometer.prometheus.PrometheusMeterRegistry
 import net.corda.crypto.core.parseSecureHash
 import net.corda.e2etest.utilities.ClusterReadiness
 import net.corda.e2etest.utilities.ClusterReadinessChecker
@@ -24,6 +29,7 @@ import net.corda.e2etest.utilities.registerStaticMember
 import net.corda.e2etest.utilities.startRpcFlow
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
@@ -72,42 +78,81 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
         notaryX500
     )
 
+    private lateinit var registry: CompositeMeterRegistry
+
     @BeforeAll
     fun beforeAll() {
+        registry = Metrics.globalRegistry
+        registry.add(PrometheusMeterRegistry(PrometheusConfig.DEFAULT))
+
         // check cluster is ready
-        assertIsReady(Duration.ofMinutes(1), Duration.ofMillis(100))
+        registry.registries.first().timer("cluster.readiness").recordCallable {
+            assertIsReady(Duration.ofMinutes(1), Duration.ofMillis(100))
+        }
 
-        DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
+        registry.registries.first().timer("cpi.signing.cert.upload").recordCallable {
+            DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
+        }
 
-        conditionallyUploadCordaPackage(
-            cpiName,
-            TEST_CPB_LOCATION,
-            groupId,
-            staticMemberList
-        )
-        conditionallyUploadCordaPackage(
-            notaryCpiName,
-            TEST_NOTARY_CPB_LOCATION,
-            groupId,
-            staticMemberList
-        )
+        registry.registries.first().timer("cpi.upload", listOf(Tag.of("app.name", "test.app"))).recordCallable {
+            conditionallyUploadCordaPackage(
+                cpiName,
+                TEST_CPB_LOCATION,
+                groupId,
+                staticMemberList
+            )
+        }
 
-        val aliceActualHoldingId = getOrCreateVirtualNodeFor(aliceX500, cpiName)
-        val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, cpiName)
-        val charlieActualHoldingId = getOrCreateVirtualNodeFor(charlieX500, cpiName)
-        val notaryActualHoldingId = getOrCreateVirtualNodeFor(notaryX500, notaryCpiName)
+        registry.registries.first().timer("cpi.upload", listOf(Tag.of("app.name", "notary.app"))).recordCallable {
+            conditionallyUploadCordaPackage(
+                notaryCpiName,
+                TEST_NOTARY_CPB_LOCATION,
+                groupId,
+                staticMemberList
+            )
+        }
+        var aliceActualHoldingId: String? = null
+        registry.registries.first().timer("create.virtual.node", listOf(Tag.of("name", "alice"))).recordCallable {
+            aliceActualHoldingId = getOrCreateVirtualNodeFor(aliceX500, cpiName)
+        }
+        var bobActualHoldingId: String? = null
+        registry.registries.first().timer("create.virtual.node", listOf(Tag.of("name", "bob"))).recordCallable {
+            bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, cpiName)
+        }
+        var charlieActualHoldingId: String? = null
+        registry.registries.first().timer("create.virtual.node", listOf(Tag.of("name", "charlie"))).recordCallable {
+            charlieActualHoldingId = getOrCreateVirtualNodeFor(charlieX500, cpiName)
+        }
+        var notaryActualHoldingId: String? = null
+        registry.registries.first().timer("create.virtual.node", listOf(Tag.of("name", "notary"))).recordCallable {
+            notaryActualHoldingId = getOrCreateVirtualNodeFor(notaryX500, notaryCpiName)
+        }
 
         assertThat(aliceActualHoldingId).isEqualTo(aliceHoldingId)
         assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
         assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
         assertThat(notaryActualHoldingId).isEqualTo(notaryHoldingId)
 
-        registerStaticMember(aliceHoldingId)
-        registerStaticMember(bobHoldingId)
-        registerStaticMember(charlieHoldingId)
-        registerStaticMember(notaryHoldingId, NOTARY_SERVICE_X500)
+        registry.registries.first().timer("register.virtual.node", listOf(Tag.of("name", "alice"))).recordCallable {
+            registerStaticMember(aliceHoldingId)
+        }
+        registry.registries.first().timer("register.virtual.node", listOf(Tag.of("name", "bob"))).recordCallable {
+            registerStaticMember(bobHoldingId)
+        }
+        registry.registries.first().timer("register.virtual.node", listOf(Tag.of("name", "charlie"))).recordCallable {
+            registerStaticMember(charlieHoldingId)
+        }
+        registry.registries.first().timer("register.virtual.node", listOf(Tag.of("name", "notary"))).recordCallable {
+            registerStaticMember(notaryHoldingId, NOTARY_SERVICE_X500)
+        }
     }
 
+
+    @AfterAll
+    fun afterAll() {
+        val measurements = (registry.registries.first() as PrometheusMeterRegistry).scrape()
+        println(measurements)
+    }
 
     @Test
     fun `Utxo Ledger - create a transaction containing states and finalize it then evolve it`(testInfo: TestInfo) {
