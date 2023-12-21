@@ -1,7 +1,7 @@
 package net.corda.messaging.mediator
 
+import net.corda.libs.statemanager.api.State
 import net.corda.messaging.api.mediator.MediatorMessage
-import net.corda.messaging.mediator.processor.StatesToPersist
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -18,5 +18,20 @@ data class ConsumerProcessorState (
     fun clear() {
         asynchronousOutputs.clear()
         statesToPersist.clear()
+    }
+}
+
+/**
+ * Track the states to be written back to the state manager
+ */
+data class StatesToPersist(
+    val statesToCreate: ConcurrentHashMap<String, State?> = ConcurrentHashMap<String, State?>(),
+    val statesToUpdate: ConcurrentHashMap<String, State?> = ConcurrentHashMap<String, State?>(),
+    val statesToDelete: ConcurrentHashMap<String, State?> = ConcurrentHashMap<String, State?>(),
+) {
+    fun clear() {
+        statesToCreate.clear()
+        statesToUpdate.clear()
+        statesToDelete.clear()
     }
 }
