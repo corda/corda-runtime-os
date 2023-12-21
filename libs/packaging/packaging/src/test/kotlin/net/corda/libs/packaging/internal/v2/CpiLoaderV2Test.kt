@@ -23,7 +23,7 @@ class CpiLoaderV2Test {
             .signers(ALICE)
             .build()
 
-        val cpi = CpiLoaderV2().loadCpi(inMemoryCpi.toByteArray(), tmp, "in-memory", false)
+        val cpi = CpiLoaderV2().loadCpi(inMemoryCpi.toByteArray(), tmp, "in-memory", false, 50200)
 
         assertAll(
             { assertEquals("testCpiV2.cpi", cpi.metadata.cpiId.name) },
@@ -54,7 +54,17 @@ class CpiLoaderV2Test {
             .build()
 
         assertThrows<PackagingException> {
-            CpiLoaderV2().loadCpi(inMemoryCpi.toByteArray(), tmp, "in-memory", false)
+            CpiLoaderV2().loadCpi(inMemoryCpi.toByteArray(), tmp, "in-memory", false, 50200)
+        }
+    }
+    @Test
+    fun `CPI loading fails with platform version below minimum platform version`() {
+        val inMemoryCpi = TestCpiV2Builder()
+            .signers(ALICE)
+            .build()
+
+        assertThrows<PackagingException> {
+            CpiLoaderV2().loadCpi(inMemoryCpi.toByteArray(), tmp, "in-memory", false, 0)
         }
     }
 }

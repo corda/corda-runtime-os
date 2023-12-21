@@ -4,5 +4,5 @@ import net.corda.libs.packaging.Cpi
 import java.nio.file.Path
 
 interface CpiLoader {
-    fun loadCpi(byteArray: ByteArray, expansionLocation: Path, cpiLocation: String?, verifySignature: Boolean): Cpi
+    fun loadCpi(byteArray: ByteArray, expansionLocation: Path, cpiLocation: String?, verifySignature: Boolean, activeVersion: Int): Cpi
 }

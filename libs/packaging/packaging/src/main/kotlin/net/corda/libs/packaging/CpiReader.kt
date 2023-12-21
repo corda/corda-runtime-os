@@ -26,7 +26,8 @@ object CpiReader {
         inputStream: InputStream,
         expansionLocation: Path,
         cpiLocation: String? = null,
-        verifySignature: Boolean = jarSignatureVerificationEnabledByDefault()
+        verifySignature: Boolean = jarSignatureVerificationEnabledByDefault(),
+        activeVersion: Int
     ): Cpi {
         // Read input stream, so we can process it through different classes that will consume the stream
         val buffer = inputStream.readAllBytes()
@@ -37,7 +38,7 @@ object CpiReader {
 
         // Choose correct implementation to read this version
         return when (val formatVersion = FormatVersionReader.readCpiFormatVersion(manifest)) {
-            version2 -> CpiLoaderV2().loadCpi(buffer, expansionLocation, cpiLocation, verifySignature)
+            version2 -> CpiLoaderV2().loadCpi(buffer, expansionLocation, cpiLocation, verifySignature, activeVersion)
             else -> throw UnknownFormatVersionException("Unknown Corda-CPI-Format - \"$formatVersion\"")
         }
     }
