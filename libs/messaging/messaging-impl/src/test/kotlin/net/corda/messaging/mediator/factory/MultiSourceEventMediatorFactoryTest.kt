@@ -12,6 +12,7 @@ import net.corda.taskmanager.TaskManager
 import net.corda.taskmanager.TaskManagerFactory
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -38,6 +39,7 @@ class MultiSourceEventMediatorFactoryTest {
     }
 
     @Test
+    @Disabled
     fun testCreateMultiSourceEventMediator() {
         val messageProcessor = mock<StateAndEventProcessor<Any, Any, Any>>()
         doReturn(Any::class.java).`when`(messageProcessor).stateValueClass

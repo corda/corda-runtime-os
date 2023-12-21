@@ -13,6 +13,8 @@ import net.corda.messaging.api.mediator.factory.MessagingClientFinder
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.mediator.GroupAllocator
+import net.corda.messaging.mediator.StateManagerHelper
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -49,6 +51,8 @@ class MediatorComponentFactoryTest {
         mock<MessagingClientFactory>(),
     )
     private val messageRouterFactory = mock<MessageRouterFactory>()
+    private val groupAllocator = mock<GroupAllocator>()
+    private val stateManagerHelper = mock<StateManagerHelper<String, String, String>>()
 
     @BeforeEach
     fun beforeEach() {
@@ -73,6 +77,8 @@ class MediatorComponentFactoryTest {
             consumerFactories,
             clientFactories,
             messageRouterFactory,
+            groupAllocator,
+            stateManagerHelper
         )
     }
 
@@ -104,6 +110,8 @@ class MediatorComponentFactoryTest {
             emptyList(),
             clientFactories,
             messageRouterFactory,
+            groupAllocator,
+            stateManagerHelper
         )
 
         assertThrows<IllegalStateException> {
@@ -137,6 +145,8 @@ class MediatorComponentFactoryTest {
             consumerFactories,
             emptyList(),
             messageRouterFactory,
+            groupAllocator,
+            stateManagerHelper
         )
 
         assertThrows<IllegalStateException> {
