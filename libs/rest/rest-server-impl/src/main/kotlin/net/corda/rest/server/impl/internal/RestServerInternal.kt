@@ -72,59 +72,63 @@ internal class RestServerInternal(
 
     private val webSocketRouteAdaptors = LinkedList<AutoCloseable>()
     private val credentialResolver = DefaultCredentialResolver()
-    private val server = Javalin.create {
-        it.jsonMapper(JavalinJackson(serverJacksonObjectMapper))
-        it.registerPlugin(RedirectToLowercasePathPlugin())
-        configureJavalinForTracing(it)
+    
+    private lateinit var server: Javalin
+    private val serverFactory: () -> Javalin = {
+        Javalin.create {
+            it.jsonMapper(JavalinJackson(serverJacksonObjectMapper))
+            it.registerPlugin(RedirectToLowercasePathPlugin())
+            configureJavalinForTracing(it)
 
-        val swaggerUiBundle = getSwaggerUiBundle()
-        // In an OSGi context, webjars cannot be loaded automatically using `JavalinConfig.enableWebJars`.
-        // We instruct loading Swagger UI static files manually instead.
-        // Note: `addStaticFiles` perform a check that resource does exist.
-        // The actual loading of resources though is happening at `start()` time below.
-        if (swaggerUiBundle != null) {
-            val swaggerUiClassloader = swaggerUiBundle.adapt(BundleWiring::class.java).classLoader
-            executeWithThreadContextClassLoader(swaggerUiClassloader) {
-                it.addStaticFiles("/META-INF/resources/", Location.CLASSPATH)
-            }
-        } else {
-            it.enableWebjars()
-        }
-
-        if (log.isDebugEnabled) {
-            it.enableDevLogging()
-        }
-        it.server {
-            configurationsProvider.getSSLKeyStorePath()
-                ?.let { createSecureServer() }
-                ?: INSECURE_SERVER_DEV_MODE_WARNING.let { msg ->
-                    if (configurationsProvider.isDevModeEnabled()) {
-                        log.warn(msg)
-                    } else {
-                        log.error(msg)
-                        throw UnsupportedOperationException(msg)
-                    }
-                    createInsecureServer()
+            val swaggerUiBundle = getSwaggerUiBundle()
+            // In an OSGi context, webjars cannot be loaded automatically using `JavalinConfig.enableWebJars`.
+            // We instruct loading Swagger UI static files manually instead.
+            // Note: `addStaticFiles` perform a check that resource does exist.
+            // The actual loading of resources though is happening at `start()` time below.
+            if (swaggerUiBundle != null) {
+                val swaggerUiClassloader = swaggerUiBundle.adapt(BundleWiring::class.java).classLoader
+                executeWithThreadContextClassLoader(swaggerUiClassloader) {
+                    it.addStaticFiles("/META-INF/resources/", Location.CLASSPATH)
                 }
-        }
-        it.defaultContentType = contentTypeApplicationJson
-        it.enableCorsForAllOrigins()
-    }.apply {
-        addRoutes()
-        addOpenApiRoutes()
-        addWsRoutes()
-        // In order for multipart content to be stored onto disk, we need to override some properties
-        // which are set by default by Javalin such that entire content is read into memory
-        MultipartUtil.preUploadFunction = { req ->
-            req.setAttribute(
-                "org.eclipse.jetty.multipartConfig",
-                MultipartConfigElement(
-                    multiPartDir.toString(),
-                    configurationsProvider.maxContentLength().toLong(),
-                    configurationsProvider.maxContentLength().toLong(),
-                    1024
+            } else {
+                it.enableWebjars()
+            }
+
+            if (log.isDebugEnabled) {
+                it.enableDevLogging()
+            }
+            it.server {
+                configurationsProvider.getSSLKeyStorePath()
+                    ?.let { createSecureServer() }
+                    ?: INSECURE_SERVER_DEV_MODE_WARNING.let { msg ->
+                        if (configurationsProvider.isDevModeEnabled()) {
+                            log.warn(msg)
+                        } else {
+                            log.error(msg)
+                            throw UnsupportedOperationException(msg)
+                        }
+                        createInsecureServer()
+                    }
+            }
+            it.defaultContentType = contentTypeApplicationJson
+            it.enableCorsForAllOrigins()
+        }.apply {
+            addRoutes()
+            addOpenApiRoutes()
+            addWsRoutes()
+            // In order for multipart content to be stored onto disk, we need to override some properties
+            // which are set by default by Javalin such that entire content is read into memory
+            MultipartUtil.preUploadFunction = { req ->
+                req.setAttribute(
+                    "org.eclipse.jetty.multipartConfig",
+                    MultipartConfigElement(
+                        multiPartDir.toString(),
+                        configurationsProvider.maxContentLength().toLong(),
+                        configurationsProvider.maxContentLength().toLong(),
+                        1024
+                    )
                 )
-            )
+            }
         }
     }
 
@@ -271,9 +275,9 @@ internal class RestServerInternal(
     }
 
     fun start() {
-        JavalinStarter.startServer(
+        server = JavalinStarter.startServer(
             "REST API",
-            server,
+            serverFactory,
             configurationsProvider.getHostAndPort().port,
             configurationsProvider.getHostAndPort().host,
             getSwaggerUiBundle()?.let { listOf(it) } ?: emptyList()
