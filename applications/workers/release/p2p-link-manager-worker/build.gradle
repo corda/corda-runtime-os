@@ -6,6 +6,8 @@ plugins {
 
 description 'P2P Link Manager Worker'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:osgi.core'
