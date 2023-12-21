@@ -118,7 +118,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
                 NotarizationResponse(
                     emptyList(),
                     NotaryExceptionGeneral("Error while processing request from client. " +
-                            "Please contact notary operator for further details.")
+                            "Cause: ${e.message}")
                 )
             )
         }
