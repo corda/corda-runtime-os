@@ -13,12 +13,14 @@ import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.state.impl.CheckpointMetadataKeys.STATE_META_SESSION_EXPIRY_KEY
+import net.corda.flow.utils.KeyValueStore
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW
 import net.corda.schema.configuration.FlowConfig.SESSION_FLOW_CLEANUP_TIME
 import net.corda.schema.configuration.FlowConfig.SESSION_TIMEOUT_WINDOW
+import net.corda.session.manager.Constants
 import net.corda.session.manager.SessionManager
 import net.corda.utilities.debug
 import net.corda.v5.base.types.MemberX500Name
@@ -213,9 +215,14 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
 
         return if (lastReceivedMessageTime != null) {
             // Add the metadata key if there are any open sessions.
-            val expiryTime = lastReceivedMessageTime + Duration.ofMillis(
-                context.flowConfig.getLong(SESSION_TIMEOUT_WINDOW)
-            )
+            val defaultTimeout = context.flowConfig.getInt(SESSION_TIMEOUT_WINDOW)
+            val sessionTimeout = checkpoint.sessions.minOf { sessionState ->
+                sessionState.sessionProperties?.let {
+                    val sessionProperties = KeyValueStore(sessionState.sessionProperties)
+                    sessionProperties[Constants.FLOW_SESSION_TIMEOUT_MS]?.toInt()
+                } ?: defaultTimeout
+            }
+            val expiryTime = lastReceivedMessageTime + Duration.ofMillis(sessionTimeout.toLong())
             val newMap = mapOf(STATE_META_SESSION_EXPIRY_KEY to expiryTime.epochSecond)
             context.metadata?.let {
                 Metadata(it + newMap)

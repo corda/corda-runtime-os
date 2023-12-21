@@ -1,5 +1,6 @@
 package net.corda.messaging.emulation.topic.model
 
+import net.corda.lifecycle.Resource
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.emulation.properties.SubscriptionConfiguration
 import net.corda.messaging.emulation.properties.TopicConfiguration
@@ -15,7 +16,7 @@ import kotlin.math.abs
 internal class Topic(
     private val topicName: String,
     private val topicConfiguration: TopicConfiguration,
-) {
+): Resource {
     private val partitions = let {
         (1..topicConfiguration.partitionCount).map {
             Partition(
@@ -105,6 +106,16 @@ internal class Topic(
     fun wakeUpConsumers() {
         consumerGroups.values.forEach {
             it.wakeUp()
+        }
+    }
+
+    override fun close() {
+        consumerGroups.values.forEach {
+            it.close()
+        }
+        consumerGroups.clear()
+        partitions.forEach {
+            it.clear()
         }
     }
 }

@@ -13,6 +13,7 @@ import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.merger.impl.ConfigMergerImpl
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
@@ -44,14 +45,17 @@ import net.corda.testing.p2p.certificates.Certificates
 import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
+import org.junit.jupiter.api.AfterEach
 import java.net.BindException
 import java.net.ServerSocket
 import java.net.URL
 import java.security.KeyStore
 import java.util.UUID
+import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.random.Random.Default.nextInt
 
 internal open class TestBase {
+    private val toClose = ConcurrentLinkedQueue<Resource>()
     private fun readKeyStore(url: URL?, password: String = keystorePass): KeyStoreWithPassword {
         val keyStore = KeyStore.getInstance("JKS").also { keyStore ->
             url!!.openStream().use {
@@ -131,7 +135,7 @@ internal open class TestBase {
     protected val lifecycleCoordinatorFactory =
         LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
 
-    protected inner class ConfigPublisher(private var coordinatorFactory: LifecycleCoordinatorFactory? = null) {
+    protected inner class ConfigPublisher(private var coordinatorFactory: LifecycleCoordinatorFactory? = null): Resource {
         init {
             coordinatorFactory = coordinatorFactory ?: lifecycleCoordinatorFactory
         }
@@ -215,14 +219,31 @@ internal open class TestBase {
                     publisher.publishGatewayConfig(publishConfig)
                 }
         }
+
+        override fun close() {
+            configurationTopicService.close()
+        }
     }
 
     protected fun createConfigurationServiceFor(
         configuration: GatewayConfiguration,
-        coordinatorFactory: LifecycleCoordinatorFactory? = null): ConfigurationReadService {
+        coordinatorFactory: LifecycleCoordinatorFactory? = null) : ConfigurationReadService {
         val publisher = ConfigPublisher(coordinatorFactory)
+        keep(publisher)
         publisher.publishConfig(configuration)
         return publisher.readerService
+    }
+
+    protected fun keep(resource: Resource) {
+        toClose.add(resource)
+    }
+
+    @AfterEach
+    fun cleanUp() {
+        toClose.forEach {
+            it.close()
+        }
+        toClose.clear()
     }
 
     fun Lifecycle.startAndWaitForStarted() {

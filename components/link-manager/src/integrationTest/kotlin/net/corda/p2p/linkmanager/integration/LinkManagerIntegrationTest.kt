@@ -20,6 +20,7 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_REFRESH_THRESHOLD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -35,6 +36,7 @@ import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.integration.stub.CpiInfoReadServiceStub
 import net.corda.p2p.linkmanager.integration.stub.GroupPolicyProviderStub
 import net.corda.p2p.linkmanager.integration.stub.MembershipQueryClientStub
+import net.corda.p2p.linkmanager.integration.stub.StateManagerFactoryStub
 import net.corda.p2p.linkmanager.integration.stub.VirtualNodeInfoReadServiceStub
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
@@ -102,7 +104,6 @@ class LinkManagerIntegrationTest {
 
         @InjectService(timeout = 4000)
         lateinit var  groupParametersReaderService: GroupParametersReaderService
-
     }
 
     private val replayPeriod = 2000
@@ -169,6 +170,12 @@ class LinkManagerIntegrationTest {
         }
         groupPolicyProviderCoordinator.start()
 
+        val stateManagerName = LifecycleCoordinatorName.forComponent<StateManager>()
+        val stateManagerCoordinator = lifecycleCoordinatorFactory.createCoordinator(stateManagerName) { _, coordinator ->
+            coordinator.updateStatus(LifecycleStatus.UP)
+        }
+        stateManagerCoordinator.start()
+
         eventually {
             assertThat(configReadService.isRunning).isTrue
         }
@@ -209,6 +216,7 @@ class LinkManagerIntegrationTest {
             membershipGroupReaderProvider,
             MembershipQueryClientStub(),
             groupParametersReaderService,
+            StateManagerFactoryStub().create(bootstrapConfig),
         )
 
         linkManager.usingLifecycle {
