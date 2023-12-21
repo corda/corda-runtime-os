@@ -27,6 +27,7 @@ import net.corda.data.p2p.crypto.MessageType
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage
 import net.corda.data.p2p.crypto.ResponderHelloMessage
 import net.corda.data.p2p.crypto.internal.InitiatorHandshakeIdentity
+import net.corda.data.p2p.gateway.LinkManagerResponse
 import net.corda.messaging.api.publisher.HttpRpcClient
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpWriter
@@ -619,7 +620,7 @@ class InboundMessageHandlerTest {
         val p2pMessage = unauthenticatedP2PMessage("abc")
         val gatewayMessage = GatewayMessage(msgId, p2pMessage)
         whenever(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
-        whenever(httpRpcClient.send(any(), any(), eq(GatewayResponse::class.java))).doThrow(CordaRuntimeException("Oops"))
+        whenever(httpRpcClient.send(any(), any(), eq(LinkManagerResponse::class.java))).doThrow(CordaRuntimeException("Oops"))
 
         handler.onRequest(
             writer,
@@ -654,11 +655,10 @@ class InboundMessageHandlerTest {
             httpRpcClient.send(
                 any(),
                 eq(LinkInMessage(p2pMessage)),
-                eq(GatewayResponse::class.java),
+                eq(LinkManagerResponse::class.java),
             )
         ).doReturn(
-            GatewayResponse(
-                "idOne",
+            LinkManagerResponse(
                 payload,
             )
         )
@@ -695,11 +695,10 @@ class InboundMessageHandlerTest {
             httpRpcClient.send(
                 any(),
                 eq(LinkInMessage(p2pMessage)),
-                eq(GatewayResponse::class.java),
+                eq(LinkManagerResponse::class.java),
             )
         ).doReturn(
-            GatewayResponse(
-                "idOne",
+            LinkManagerResponse(
                 null,
             )
         )
