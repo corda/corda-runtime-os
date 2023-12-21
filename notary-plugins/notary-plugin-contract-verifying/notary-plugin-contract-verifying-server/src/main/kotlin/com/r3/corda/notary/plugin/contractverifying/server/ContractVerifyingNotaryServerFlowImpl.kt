@@ -81,7 +81,7 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
 
             validateTransactionNotaryAgainstCurrentNotary(initialTransactionDetails)
 
-            verifySignatures(initialTransaction.notaryKey, filteredTransactionsAndSignatures)
+            verifySignatures(initialTransaction.notaryKey, filteredTransactionsAndSignatures, initialTransaction)
 
             verifyTransaction(initialTransaction, filteredTransactionsAndSignatures)
 
@@ -164,8 +164,11 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
     @Suspendable
     fun verifySignatures(
         notaryKey: PublicKey,
-        filteredTransactionsAndSignatures: List<FilteredTransactionAndSignatures>
+        filteredTransactionsAndSignatures: List<FilteredTransactionAndSignatures>,
+        initialTransaction: UtxoSignedTransaction
     ) {
+        initialTransaction.verifySignatorySignatures()
+
         val keyIdToNotaryKeys: MutableMap<String, MutableMap<SecureHash, PublicKey>> = mutableMapOf()
 
         filteredTransactionsAndSignatures.forEach { (filteredTransaction, signatures) ->
@@ -191,6 +194,7 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
         filteredTransactionsAndSignatures: List<FilteredTransactionAndSignatures>
     ) {
         try {
+
             val dependentStateAndRefs = filteredTransactionsAndSignatures.flatMap { (filteredTransaction, _) ->
                 (filteredTransaction.outputStateAndRefs as UtxoFilteredData.Audit<StateAndRef<*>>).values.values
             }.associateBy { it.ref }
