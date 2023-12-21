@@ -41,9 +41,7 @@ class MultiSourceEventMediatorFactoryImpl(
             name = eventMediatorConfig.name, threadName = eventMediatorConfig.threadName, threads = eventMediatorConfig.threads
         )
 
-        return MultiSourceEventMediatorImpl(
-            eventMediatorConfig, taskManager, mediatorComponentFactory, lifecycleCoordinator
-        )
+        return MultiSourceEventMediatorImpl(eventMediatorConfig, taskManager, mediatorComponentFactory, lifecycleCoordinator)
     }
 
     private fun <E : Any, K : Any, S : Any> createMediatorComponentFactory(
