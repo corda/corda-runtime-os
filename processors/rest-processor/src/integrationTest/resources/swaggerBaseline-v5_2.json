@@ -3917,15 +3917,15 @@
         }
       }
     },
-    "/virtualnode/create/db/uniqueness" : {
+    "/virtualnode/create/db/crypto" : {
       "get" : {
         "tags" : [ "Virtual Node API" ],
-        "description" : "This method returns the Uniqueness SQL needed for intention to create a virtual node.",
-        "operationId" : "get_virtualnode_create_db_uniqueness",
+        "description" : "This method returns the Crypto SQL needed for intention to create a virtual node.",
+        "operationId" : "get_virtualnode_create_db_crypto",
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "SQL needed to create the Uniqueness DB",
+            "description" : "SQL needed to create the Crypto DB",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -3945,15 +3945,15 @@
         }
       }
     },
-    "/virtualnode/create/db/vault/crypto" : {
+    "/virtualnode/create/db/uniqueness" : {
       "get" : {
         "tags" : [ "Virtual Node API" ],
-        "description" : "This method returns the Crypto SQL needed for intention to create a virtual node.",
-        "operationId" : "get_virtualnode_create_db_vault_crypto",
+        "description" : "This method returns the Uniqueness SQL needed for intention to create a virtual node.",
+        "operationId" : "get_virtualnode_create_db_uniqueness",
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "SQL needed to create the Crypto DB",
+            "description" : "SQL needed to create the Uniqueness DB",
             "content" : {
               "application/json" : {
                 "schema" : {
