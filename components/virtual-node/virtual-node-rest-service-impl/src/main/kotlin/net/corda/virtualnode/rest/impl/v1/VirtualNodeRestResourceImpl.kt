@@ -367,11 +367,19 @@ internal class VirtualNodeRestResourceImpl(
         }
     }
 
-    override fun getCreateSchemaOrCpiSQL(dbTypeOrCpiChecksum: String): ResponseEntity<String> {
+    override fun getCreateCryptoSchemaSQL(): ResponseEntity<String> {
         TODO("To be implemented in CORE-15805")
     }
 
-    override fun getUpdateSchemaSQL(virtualNodeShortId: String, dbType: String): ResponseEntity<String> {
+    override fun getCreateUniquenessSchemaSQL(): ResponseEntity<String> {
+        TODO("To be implemented in CORE-15805")
+    }
+
+    override fun getCreateVaultSchemaSQL(cpiChecksum: String): ResponseEntity<String> {
+        TODO("To be implemented in CORE-15805")
+    }
+
+    override fun getUpdateSchemaSQL(virtualNodeShortId: String, newCpiChecksum: String): ResponseEntity<String> {
         TODO("To be implemented in CORE-15805")
     }
 
