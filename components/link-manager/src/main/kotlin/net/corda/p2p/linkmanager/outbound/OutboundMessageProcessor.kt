@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory
 import java.time.Instant
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.p2p.crypto.protocol.api.Session
+import net.corda.p2p.linkmanager.TraceableItem
 import net.corda.p2p.linkmanager.metrics.recordOutboundMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
 
@@ -127,17 +128,9 @@ internal class OutboundMessageProcessor(
         return currentTimeInTimeMillis >= ttl
     }
 
-    /**
-     * Class which wraps a message, so we can do event tracing by passing the original event log record to a lower layer.
-     */
-    private data class TraceableItem<T>(
-        val item: T,
-        val originalRecord: EventLogRecord<String, AppMessage>?
-    )
-
     override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<String, *>> {
-        val authenticatedMessages = mutableListOf<TraceableItem<AuthenticatedMessageAndKey>>()
-        val unauthenticatedMessages = mutableListOf<TraceableItem<OutboundUnauthenticatedMessage>>()
+        val authenticatedMessages = mutableListOf<TraceableItem<AuthenticatedMessageAndKey, AppMessage>>()
+        val unauthenticatedMessages = mutableListOf<TraceableItem<OutboundUnauthenticatedMessage, AppMessage>>()
         for (event in events) {
             when (val message = event.value?.message) {
                 is AuthenticatedMessage -> {
@@ -291,9 +284,9 @@ internal class OutboundMessageProcessor(
         processAuthenticatedMessages(listOf(TraceableItem(messageAndKey, null)), true).flatMap { it.item }
 
     private fun processAuthenticatedMessages(
-        messagesWithKeys: List<TraceableItem<AuthenticatedMessageAndKey>>,
+        messagesWithKeys: List<TraceableItem<AuthenticatedMessageAndKey, AppMessage>>,
         isReplay: Boolean = false
-    ): List<TraceableItem<List<Record<String, *>>>> {
+    ): List<TraceableItem<List<Record<String, *>>, AppMessage>> {
         val validatedMessages = messagesWithKeys.map { message ->
             message to validateAndCheckIfSessionNeeded(message.item, isReplay)
         }
@@ -410,9 +403,9 @@ internal class OutboundMessageProcessor(
     }
 
     private fun processRemoteAuthenticatedMessage(
-        validationResults: List<TraceableItem<ValidateAuthenticatedMessageResult.SessionNeeded>>,
+        validationResults: List<TraceableItem<ValidateAuthenticatedMessageResult.SessionNeeded, AppMessage>>,
         isReplay: Boolean = false
-    ): List<TraceableItem<List<Record<String, *>>>> {
+    ): List<TraceableItem<List<Record<String, *>>, AppMessage>> {
         return sessionManager.processOutboundMessages(validationResults) { validationResult ->
             validationResult.item.messageWithKey
         }.map { (message, state) ->
