@@ -40,7 +40,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import net.corda.data.virtualnode.VirtualNodeOperationStatus as AvroVirtualNodeOperationStatus
 
 class VirtualNodeRestResourceImplTest {
@@ -218,12 +218,14 @@ class VirtualNodeRestResourceImplTest {
             mock(),
             cpiInfoReadService,
             virtualNodeStatusCacheService,
+            mock(),
+            mock(),
+            mock(),
             requestFactory,
             UTCClock(),
             virtualNodeValidationService,
             restContextProvider,
             messageConverter,
-            mock()
         )
     }
 

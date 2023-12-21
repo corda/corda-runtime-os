@@ -8,6 +8,9 @@ description "Virtual Node REST Resource Implementation"
 ext.cordaEnableFormatting = true
 
 dependencies {
+
+    implementation project(path: ':components:db:db-connection-manager')
+    implementation project(path: ':libs:db:db-admin-impl')
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
@@ -18,6 +21,7 @@ dependencies {
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service-rest-extensions')
     implementation project(':libs:crypto:crypto-core')
+    implementation project(':libs:db:db-admin')
     implementation project(':libs:external-messaging')
     implementation project(':libs:virtual-node:virtual-node-common')
     implementation project(':libs:virtual-node:virtual-node-endpoints')
@@ -32,6 +36,7 @@ dependencies {
     implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
+    implementation "net.corda:corda-db-schema"
     implementation 'net.corda:corda-membership'
     implementation 'net.corda:corda-topic-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'

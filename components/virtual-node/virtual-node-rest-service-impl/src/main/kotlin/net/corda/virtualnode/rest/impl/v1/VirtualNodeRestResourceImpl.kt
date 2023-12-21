@@ -17,6 +17,11 @@ import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.data.virtualnode.VirtualNodeUpdateDbStatusResponse
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
+import net.corda.data.virtualnode.*
+import net.corda.db.admin.LiquibaseSchemaMigrator
+import net.corda.db.admin.impl.ClassloaderChangeLog
+import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.external.messaging.serialization.ExternalMessagingRouteConfigSerializerImpl
 import net.corda.libs.platform.PlatformInfoProvider
@@ -79,6 +84,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.io.StringWriter
 import java.time.Duration
 import java.time.Instant
 
@@ -91,13 +97,15 @@ internal class VirtualNodeRestResourceImpl(
     private val virtualNodeSenderFactory: VirtualNodeSenderFactory,
     private val cpiInfoReadService: CpiInfoReadService,
     private val virtualNodeStatusCacheService: VirtualNodeStatusCacheService,
+    private val platformInfoProvider: PlatformInfoProvider,
+    private val schemaMigrator: LiquibaseSchemaMigrator,
+    private val dbConnectionManager: DbConnectionManager,
     private val requestFactory: RequestFactory,
     private val clock: Clock,
     private val virtualNodeValidationService: VirtualNodeValidationService,
     private val restContextProvider: RestContextProvider,
     private val messageConverter: MessageConverter,
-    private val platformInfoProvider: PlatformInfoProvider
-) : VirtualNodeRestResource, PluggableRestResource<VirtualNodeRestResource>, Lifecycle {
+    ) : VirtualNodeRestResource, PluggableRestResource<VirtualNodeRestResource>, Lifecycle {
 
     @Suppress("Unused")
     @Activate
@@ -115,7 +123,11 @@ internal class VirtualNodeRestResourceImpl(
         @Reference(service = VirtualNodeStatusCacheService::class)
         virtualNodeStatusCacheService: VirtualNodeStatusCacheService,
         @Reference(service = PlatformInfoProvider::class)
-        platformInfoProvider: PlatformInfoProvider
+        platformInfoProvider: PlatformInfoProvider,
+        @Reference(service = LiquibaseSchemaMigrator::class)
+        schemaMigrator: LiquibaseSchemaMigrator,
+        @Reference(service = DbConnectionManager::class)
+        dbConnectionManager: DbConnectionManager
     ) : this(
         coordinatorFactory,
         configurationReadService,
@@ -123,6 +135,9 @@ internal class VirtualNodeRestResourceImpl(
         virtualNodeSenderFactory,
         cpiInfoReadService,
         virtualNodeStatusCacheService,
+        platformInfoProvider,
+        schemaMigrator,
+        dbConnectionManager,
         RequestFactoryImpl(
             RestContextProviderImpl(),
             UTCClock()
@@ -131,7 +146,6 @@ internal class VirtualNodeRestResourceImpl(
         VirtualNodeValidationServiceImpl(virtualNodeInfoReadService, cpiInfoReadService),
         RestContextProviderImpl(),
         MessageConverterImpl(ExternalMessagingRouteConfigSerializerImpl()),
-        platformInfoProvider
     )
 
     private companion object {
