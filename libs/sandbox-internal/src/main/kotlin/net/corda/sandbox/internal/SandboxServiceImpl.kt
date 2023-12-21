@@ -31,6 +31,7 @@ import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.security.PrivilegedAction
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 import kotlin.streams.asSequence
@@ -50,57 +51,59 @@ internal class SandboxServiceImpl @Activate constructor(
             "The sandbox service cannot run without the Service Component Runtime bundle installed."
         )
 
+    /**
+     * We use concurrent hash maps everywhere (including sets) to allow concurrent access whilst keeping gets lock free
+     */
+
     // Maps each bundle ID to the sandbox that the bundle is part of.
-    private val bundleIdToSandbox = mutableMapOf<Long, Sandbox>()
+    private val bundleIdToSandbox = ConcurrentHashMap<Long, Sandbox>()
 
     // Maps each bundle ID to the sandbox group that the bundle is part of.
-    private val bundleIdToSandboxGroup = mutableMapOf<Long, SandboxGroup>()
+    private val bundleIdToSandboxGroup = ConcurrentHashMap<Long, SandboxGroup>()
 
-    // The public sandboxes that have been created.
-    private val publicSandboxes = mutableSetOf<Sandbox>()
+    // The public sandboxes that have been created. There's no lock for these next two properties as we don't expect them to
+    // change throughout the lifetime, after [createPublicSandbox] is called, but we do want to ensure the latest versions are
+    // always available to all threads to they are backed by a ConcurrentHashMap.
+    private val publicSandboxes = ConcurrentHashMap.newKeySet<Sandbox>()
 
     // The symbolic names of our public "platform" bundles.
-    private val publicSymbolicNames = mutableSetOf<String>()
+    private val publicSymbolicNames = ConcurrentHashMap.newKeySet<String>()
 
     // Bundles that failed to uninstall when a sandbox group was unloaded.
-    private val zombieBundles = mutableSetOf<Bundle>()
+    private val zombieBundles = ConcurrentHashMap.newKeySet<Bundle>()
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 
-    private val lock = ReentrantLock()
+    //private val bundleLock = ReentrantLock()
 
     override fun createPublicSandbox(publicBundles: Iterable<Bundle>, privateBundles: Iterable<Bundle>) {
-        lock.withLock {
-            if (publicSandboxes.isNotEmpty()) {
-                val publicSandbox = publicSandboxes.first()
-                check(
-                    publicBundles.toSet() == publicSandbox.publicBundles
-                        && privateBundles.toSet() == publicSandbox.privateBundles
-                ) {
-                    "Public sandbox was already created with different bundles"
-                }
-                logger.warn("Public sandbox was already created")
+        if (publicSandboxes.isNotEmpty()) {
+            val publicSandbox = publicSandboxes.first()
+            check(
+                publicBundles.toSet() == publicSandbox.publicBundles
+                    && privateBundles.toSet() == publicSandbox.privateBundles
+            ) {
+                "Public sandbox was already created with different bundles"
             }
-            val publicSandbox = SandboxImpl(UUID.randomUUID(), publicBundles.toSet(), privateBundles.toSet())
-            publicSandbox.allBundles.forEach { bundle ->
-                bundleIdToSandbox[bundle.bundleId] = publicSandbox
-            }
-            publicSandbox.publicBundles.forEach { bundle ->
-                publicSymbolicNames.add(bundle.symbolicName)
-            }
-            publicSandboxes.add(publicSandbox)
+            logger.warn("Public sandbox was already created")
         }
+        val publicSandbox = SandboxImpl(UUID.randomUUID(), publicBundles.toSet(), privateBundles.toSet())
+        publicSandbox.allBundles.forEach { bundle ->
+            bundleIdToSandbox[bundle.bundleId] = publicSandbox
+        }
+        publicSandbox.publicBundles.forEach { bundle ->
+            publicSymbolicNames.add(bundle.symbolicName)
+        }
+        publicSandboxes.add(publicSandbox)
     }
 
-    override fun createSandboxGroup(cpks: Iterable<Cpk>, securityDomain: String) = lock.withLock {
+    override fun createSandboxGroup(cpks: Iterable<Cpk>, securityDomain: String) =
         createSandboxes(cpks, securityDomain, startBundles = true)
-    }
 
-    override fun createSandboxGroupWithoutStarting(cpks: Iterable<Cpk>, securityDomain: String) = lock.withLock {
+    override fun createSandboxGroupWithoutStarting(cpks: Iterable<Cpk>, securityDomain: String) =
         createSandboxes(cpks, securityDomain, startBundles = false)
-    }
 
-    override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) = lock.withLock {
+    override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) {
         (sandboxGroup as SandboxGroupInternal).also { sandboxGroupInternal ->
             sandboxGroupInternal.cpkSandboxes.forEach { sandbox ->
                 val unloaded = sandbox.unload()
@@ -120,7 +123,7 @@ internal class SandboxServiceImpl @Activate constructor(
     }
 
     @Suppress("ComplexMethod")
-    override fun hasVisibility(lookingBundle: Bundle, lookedAtBundle: Bundle): Boolean = lock.withLock {
+    override fun hasVisibility(lookingBundle: Bundle, lookedAtBundle: Bundle): Boolean {
         val lookingSandbox = bundleIdToSandbox[lookingBundle.bundleId]
         val lookedAtSandbox = bundleIdToSandbox[lookedAtBundle.bundleId]
 
@@ -141,7 +144,7 @@ internal class SandboxServiceImpl @Activate constructor(
         }
     }
 
-    override fun getCallingSandboxGroup(): SandboxGroup? = lock.withLock {
+    override fun getCallingSandboxGroup(): SandboxGroup? {
         @Suppress("deprecation", "removal")
         return java.security.AccessController.doPrivileged(PrivilegedAction {
             val stackWalkerInstance = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
@@ -159,9 +162,9 @@ internal class SandboxServiceImpl @Activate constructor(
         })
     }
 
-    override fun isSandboxed(bundle: Bundle) = lock.withLock { bundleIdToSandbox[bundle.bundleId] != null }
+    override fun isSandboxed(bundle: Bundle) = bundleIdToSandbox[bundle.bundleId] != null
 
-    override fun areInSameSandbox(bundleOne: Bundle, bundleTwo: Bundle): Boolean = lock.withLock {
+    override fun areInSameSandbox(bundleOne: Bundle, bundleTwo: Bundle): Boolean {
         val sandboxOne = bundleIdToSandbox[bundleOne.bundleId]
         val sandboxTwo = bundleIdToSandbox[bundleTwo.bundleId]
         return sandboxOne != null && sandboxOne === sandboxTwo
@@ -362,13 +365,13 @@ internal class SandboxServiceImpl @Activate constructor(
     }
 }
 
-// "Syntactic sugar" around throwing a SandboxException, just to shut Detekt up.
+// "Syntactic sugar" around throwing a SandboxException
 private inline fun sandboxForbidsThat(condition: Boolean, message: () -> String) {
     if (condition) {
         throw SandboxException(message())
     }
 }
 
-// "Syntactic sugar" around throwing a SandboxException, just to shut Detekt up.
+// "Syntactic sugar" around throwing a SandboxException
 private inline fun sandboxRequiresThat(condition: Boolean, message: () -> String) =
     sandboxForbidsThat(!condition, message)
