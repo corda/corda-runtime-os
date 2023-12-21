@@ -127,7 +127,7 @@ interface VirtualNodeRestResource : RestResource {
     ): AsyncOperationStatus
 
     @HttpGET(
-        path = "create/db/vault/crypto",
+        path = "create/db/crypto",
         title = "Gets Crypto creation schema SQL",
         description = "This method returns the Crypto SQL needed for intention to create a virtual node.",
         responseDescription = "SQL needed to create the Crypto DB",

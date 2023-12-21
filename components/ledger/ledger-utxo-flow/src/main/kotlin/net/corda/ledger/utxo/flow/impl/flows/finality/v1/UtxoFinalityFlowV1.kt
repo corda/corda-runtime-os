@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality.v1
 
 import net.corda.crypto.core.fullId
+import net.corda.crypto.core.fullIdHash
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
@@ -8,6 +9,7 @@ import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.ledger.utxo.flow.impl.PluggableNotaryDetails
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
+import net.corda.ledger.utxo.flow.impl.flows.finality.FilteredTransactionAndSignatures
 import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityPayload
 import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowContext
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
@@ -23,8 +25,12 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.CompositeKey
+import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
+import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
+import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -56,6 +62,15 @@ class UtxoFinalityFlowV1(
 
     @CordaInject
     lateinit var virtualNodeSelectorService: NotaryVirtualNodeSelectorService
+
+    @CordaInject
+    lateinit var notaryLookup: NotaryLookup
+
+    @CordaInject
+    lateinit var utxoLedgerService: UtxoLedgerService
+
+    @CordaInject
+    lateinit var notarySignatureVerificationService: NotarySignatureVerificationService
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
@@ -100,14 +115,56 @@ class UtxoFinalityFlowV1(
     private fun sendTransactionAndBackchainToCounterparties(transferAdditionalSignatures: Boolean) {
         flowMessaging.sendAll(FinalityPayload(initialTransaction, transferAdditionalSignatures), sessions.toSet())
 
-        sessions.forEach {
-            if (initialTransaction.dependencies.isNotEmpty()) {
-                flowEngine.subFlow(TransactionBackchainSenderFlow(initialTransaction.id, it))
-            } else {
-                log.trace {
-                    "Transaction with id ${initialTransaction.id} has no dependencies so backchain resolution will not be performed."
+        val notaryInfo = requireNotNull(notaryLookup.lookup(initialTransaction.notaryName)) {
+            "Notary ${initialTransaction.notaryName} does not exist in the network"
+        }
+        if (notaryInfo.isBackchainRequired) {
+            sessions.forEach {
+                if (initialTransaction.dependencies.isNotEmpty()) {
+                    flowEngine.subFlow(TransactionBackchainSenderFlow(initialTransaction.id, it))
+                } else {
+                    log.trace {
+                        "Transaction with id ${initialTransaction.id} has no dependencies so backchain resolution will not be performed."
+                    }
                 }
             }
+        } else {
+            val filteredTransactionsAndSignatures = initialTransaction
+                .let { it.inputStateRefs + it.referenceStateRefs }
+                .groupBy { stateRef -> stateRef.transactionId }
+                .mapValues { (_, stateRefs) -> stateRefs.map { stateRef -> stateRef.index } }
+                .map { (transactionId, indexes) ->
+                    val dependency = requireNotNull(utxoLedgerService.findSignedTransaction(transactionId)) {
+                        "Dependent transaction $transactionId does not exist"
+                    }
+                    val newTxNotaryKey = initialTransaction.notaryKey
+                    require(initialTransaction.notaryName == dependency.notaryName) {
+                        "Notary name of filtered transaction \"${dependency.notaryName}\" doesn't match with " +
+                            "notary service of current transaction \"${initialTransaction.notaryName}\""
+                    }
+                    notarySignatureVerificationService.verifyNotarySignatures(
+                        dependency,
+                        initialTransaction.notaryKey,
+                        dependency.signatures,
+                        mutableMapOf()
+                    )
+
+                    val newTxNotaryKeyIds = if (newTxNotaryKey is CompositeKey) {
+                        newTxNotaryKey.leafKeys.toSet()
+                    } else {
+                        setOf(newTxNotaryKey.fullIdHash())
+                    }
+
+                    FilteredTransactionAndSignatures(
+                        utxoLedgerService.filterSignedTransaction(dependency)
+                            .withOutputStates(indexes)
+                            .withNotary()
+                            .withTimeWindow()
+                            .build(),
+                        dependency.signatures.filter { newTxNotaryKeyIds.contains(it.by) }
+                    )
+                }
+            flowMessaging.sendAll(filteredTransactionsAndSignatures, sessions.toSet())
         }
     }
 
@@ -297,7 +354,10 @@ class UtxoFinalityFlowV1(
         @Suppress("deprecation", "removal")
         return java.security.AccessController.doPrivileged(
             PrivilegedExceptionAction {
-                pluggableNotaryDetails.flowClass.getConstructor(UtxoSignedTransaction::class.java, MemberX500Name::class.java).newInstance(
+                pluggableNotaryDetails.flowClass.getConstructor(
+                    UtxoSignedTransaction::class.java,
+                    MemberX500Name::class.java
+                ).newInstance(
                     transaction,
                     virtualNodeSelectorService.selectVirtualNode(transaction.notaryName)
                 )

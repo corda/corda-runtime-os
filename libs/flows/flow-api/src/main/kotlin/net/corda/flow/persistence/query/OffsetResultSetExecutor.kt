@@ -23,7 +23,7 @@ fun interface OffsetResultSetExecutor<R> : Serializable {
      * @return A [Results] containing the serialized results, the number of rows the database retrieved from its query.
      */
     @Suspendable
-    fun execute(serializedParameters: Map<String, ByteBuffer>, offset: Int): Results
+    fun execute(serializedParameters: Map<String, ByteBuffer?>, offset: Int): Results
 
     data class Results(val serializedResults: List<ByteBuffer>, val numberOfRowsFromQuery: Int)
 }

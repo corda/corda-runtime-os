@@ -23,12 +23,12 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ServiceScope
+import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Component(
     service = [UtxoLedgerTransactionFactory::class, UsedByFlow::class],
+    scope = PROTOTYPE,
     property = [CORDA_SYSTEM_SERVICE],
-    scope = ServiceScope.PROTOTYPE
 )
 class UtxoLedgerTransactionFactoryImpl @Activate constructor(
     @Reference(service = SerializationService::class)

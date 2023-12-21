@@ -183,7 +183,7 @@ data class UtxoSignedTransactionImpl(
     }
 
     override fun verifyAttachedNotarySignature() {
-        notarySignatureVerificationService.verifyNotarySignatures(wireTransaction, notaryKey, signatures, keyIdToNotaryKeys)
+        notarySignatureVerificationService.verifyNotarySignatures(this, notaryKey, signatures, keyIdToNotaryKeys)
     }
 
     override fun verifyNotarySignature(signature: DigitalSignatureAndMetadata) {
@@ -227,7 +227,6 @@ data class UtxoSignedTransactionImpl(
         return utxoLedgerTransactionFactory.create(wireTransaction)
     }
 
-    @Suspendable
     override fun toLedgerTransaction(
         inputStateAndRefs: List<StateAndRef<*>>,
         referenceStateAndRefs: List<StateAndRef<*>>

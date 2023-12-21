@@ -52,8 +52,7 @@ class UserWriterImpl(
         return entityManagerFactory.transaction { entityManager ->
 
             val validator = EntityValidationUtil(entityManager)
-            val user = validator.validateAndGetUniqueUser(request.requestedBy)
-
+            val user = validator.validateAndGetUniqueUser(request.username)
             user.hashedPassword = request.hashedNewPassword
             user.saltValue = request.saltValue
             user.passwordExpiry = request.passwordExpiry

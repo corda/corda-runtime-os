@@ -135,8 +135,8 @@ class LinkManagerProcessorImpl @Activate constructor(
                 registration = lifecycleCoordinator.followStatusChangesByName(
                     setOf(
                         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                        linkManager.dominoTile.coordinatorName
-                    )
+                        linkManager.dominoTile.coordinatorName,
+                    ),
                 )
 
                 linkManager.start()
@@ -158,7 +158,7 @@ class LinkManagerProcessorImpl @Activate constructor(
             // Specifically, state & event subscriptions have an issue where they are polling with high timeout on events topic,
             // leading to slow syncing upon startup. See: https://r3-cev.atlassian.net/browse/CORE-3163
             POLL_TIMEOUT,
-            ConfigValueFactory.fromAnyRef(100)
+            ConfigValueFactory.fromAnyRef(100),
         )
     }
 }
