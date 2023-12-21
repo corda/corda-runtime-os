@@ -112,4 +112,22 @@ internal class CreateVirtualNodeServiceImpl(
             }
         }
     }
+
+    override fun checkCpiMigrations(
+        cpiMetadata: CpiMetadata,
+        vaultDb: VirtualNodeDb,
+        holdingIdentity: HoldingIdentity
+    ): Boolean {
+        dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction { em ->
+
+            val changelogsPerCpk = cpkDbChangeLogRepository.findByCpiId(em, cpiMetadata.cpiId)
+                .groupBy { it.id.cpkFileChecksum }
+
+            return changelogsPerCpk.all { (_, changeLogs) ->
+                val allChangeLogsForCpk =
+                    VirtualNodeDbChangeLog(changeLogs.map { CpkDbChangeLog(it.id, it.content) })
+                vaultDb.checkCpiMigrationsArePresent(allChangeLogsForCpk)
+            }
+        }
+    }
 }

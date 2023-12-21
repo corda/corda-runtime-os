@@ -13,6 +13,7 @@ import net.corda.virtualnode.write.db.impl.VirtualNodesDbAdmin
 import net.corda.virtualnode.write.db.impl.writer.DbConnection
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbImpl
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -22,6 +23,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.sql.Connection
+import kotlin.test.assertTrue
 
 class VirtualNodeDbImplTest {
 
@@ -166,6 +168,64 @@ class VirtualNodeDbImplTest {
         val target = createVirtualNodeDb(isPlatformManagedDb = true)
         target.runCpiMigrations(dbChange, "tag")
         verify(schemaMigrator).updateDb(sqlConnection, dbChange, tag = "tag")
+    }
+
+    @Test
+    fun `checkCpiMigrationsArePresent - missing migrations detected`() {
+        val dbChange = mock<DbChange>()
+        val sqlConnection = mock<Connection>()
+        val dataSource = mock<CloseableDataSource>().apply {
+            whenever(connection).thenReturn(sqlConnection)
+        }
+
+        whenever(dbConnectionManager.getDataSource(ddlConfig)).thenReturn(dataSource)
+        whenever(schemaMigrator.listUnrunChangeSets(sqlConnection, dbChange)).thenReturn(listOf("Missing Changeset"))
+
+        val target = createVirtualNodeDb(isPlatformManagedDb = false)
+        assertFalse(target.checkCpiMigrationsArePresent(dbChange))
+    }
+
+    @Test
+    fun `checkCpiMigrationsArePresent - no migrations needed`() {
+        val dbChange = mock<DbChange>()
+        val sqlConnection = mock<Connection>()
+        val dataSource = mock<CloseableDataSource>().apply {
+            whenever(connection).thenReturn(sqlConnection)
+        }
+
+        whenever(dbConnectionManager.getDataSource(ddlConfig)).thenReturn(dataSource)
+        whenever(schemaMigrator.listUnrunChangeSets(sqlConnection, dbChange)).thenReturn(emptyList())
+
+        val target = createVirtualNodeDb(isPlatformManagedDb = false)
+        assertTrue(target.checkCpiMigrationsArePresent(dbChange))
+    }
+
+    @Test
+    fun `checkDbMigrationsArePresent - missing migrations detected`() {
+        val sqlConnection = mock<Connection>()
+        val dataSource = mock<CloseableDataSource>().apply {
+            whenever(connection).thenReturn(sqlConnection)
+        }
+
+        whenever(dbConnectionManager.getDataSource(ddlConfig)).thenReturn(dataSource)
+        whenever(schemaMigrator.listUnrunChangeSets(eq(sqlConnection), any())).thenReturn(listOf("Missing Changeset"))
+
+        val target = createVirtualNodeDb(isPlatformManagedDb = false)
+        assertFalse(target.checkDbMigrationsArePresent())
+    }
+
+    @Test
+    fun `checkDbMigrationsArePresent - no migrations needed`() {
+        val sqlConnection = mock<Connection>()
+        val dataSource = mock<CloseableDataSource>().apply {
+            whenever(connection).thenReturn(sqlConnection)
+        }
+
+        whenever(dbConnectionManager.getDataSource(ddlConfig)).thenReturn(dataSource)
+        whenever(schemaMigrator.listUnrunChangeSets(eq(sqlConnection), any())).thenReturn(emptyList())
+
+        val target = createVirtualNodeDb(isPlatformManagedDb = false)
+        assertTrue(target.checkDbMigrationsArePresent())
     }
 
     @Test

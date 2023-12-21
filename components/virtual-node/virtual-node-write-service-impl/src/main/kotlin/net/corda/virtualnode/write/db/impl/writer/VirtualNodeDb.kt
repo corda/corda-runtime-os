@@ -42,4 +42,14 @@ internal interface VirtualNodeDb {
      * @param migrationTagToApply
      */
     fun runCpiMigrations(dbChange: DbChange, migrationTagToApply: String)
+
+    /**
+     * Returns true if all DB migrations have been applied, false otherwise.
+     */
+    fun checkDbMigrationsArePresent(): Boolean
+
+    /**
+     * Returns true if all DB migrations have been applied, false otherwise.
+     */
+    fun checkCpiMigrationsArePresent(dbChange: DbChange): Boolean
 }
