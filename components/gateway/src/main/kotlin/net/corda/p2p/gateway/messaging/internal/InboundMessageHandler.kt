@@ -137,40 +137,6 @@ internal class InboundMessageHandler(
         }
     }
 
-    private fun forwardMessage(
-        httpWriter: HttpWriter,
-        requestSource: SocketAddress,
-        messageId: String,
-        p2pMessage: LinkInMessage,
-    ): HttpResponseStatus {
-        val payload = try {
-            linkManagerClient.send(p2pMessage)
-        } catch (e: Exception) {
-            logger.warn("could not forward message to the link managed.", e)
-            val response = GatewayResponse(
-                messageId,
-                null,
-            )
-            httpWriter.write(
-                INTERNAL_SERVER_ERROR,
-                requestSource,
-                avroSchemaRegistry.serialize(response).array(),
-            )
-            return INTERNAL_SERVER_ERROR
-        }
-        val response = GatewayResponse(
-            messageId,
-            payload?.payload,
-        )
-        httpWriter.write(
-            HttpResponseStatus.OK,
-            requestSource,
-            avroSchemaRegistry.serialize(response).array(),
-        )
-        return HttpResponseStatus.OK
-    }
-
-
     private fun handleRequest(httpWriter: HttpWriter, request: HttpRequest): HttpResponseStatus {
         if (!isRunning) {
             logger.error("Received message from ${request.source}, while handler is stopped. Discarding it and returning error code.")
@@ -216,8 +182,41 @@ internal class InboundMessageHandler(
         }
     }
 
+    private fun forwardMessage(
+        httpWriter: HttpWriter,
+        requestSource: SocketAddress,
+        messageId: String,
+        p2pMessage: LinkInMessage,
+    ): HttpResponseStatus {
+        val payload = try {
+            linkManagerClient.send(p2pMessage)
+        } catch (e: Exception) {
+            logger.warn("could not forward message with ID: $messageId to the link manager.", e)
+            val response = GatewayResponse(
+                messageId,
+                null,
+            )
+            httpWriter.write(
+                INTERNAL_SERVER_ERROR,
+                requestSource,
+                avroSchemaRegistry.serialize(response).array(),
+            )
+            return INTERNAL_SERVER_ERROR
+        }
+        val response = GatewayResponse(
+            messageId,
+            payload?.payload,
+        )
+        httpWriter.write(
+            HttpResponseStatus.OK,
+            requestSource,
+            avroSchemaRegistry.serialize(response).array(),
+        )
+        return HttpResponseStatus.OK
+    }
+
     private fun processSessionMessage(p2pMessage: LinkInMessage): HttpResponseStatus {
-        val sessionId = getSessionId(p2pMessage) ?: return HttpResponseStatus.INTERNAL_SERVER_ERROR
+        val sessionId = getSessionId(p2pMessage) ?: return INTERNAL_SERVER_ERROR
         if (p2pMessage.payload is InitiatorHelloMessage) {
             /* we are using the session identifier as key to ensure replayed initiator hello messages will end up on the same partition, and
              * thus processed by the same link manager instance under normal conditions. */
