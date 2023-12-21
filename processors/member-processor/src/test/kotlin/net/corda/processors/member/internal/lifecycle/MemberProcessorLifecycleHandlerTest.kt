@@ -35,17 +35,16 @@ class MemberProcessorLifecycleHandlerTest {
     @BeforeEach
     fun setUp() {
         memberProcessorLifecycleHandler = MemberProcessorLifecycleHandler(
-            configurationReadService
+            configurationReadService,
         )
     }
 
     @Test
     fun `Processor coordinator status changes based on registration status change event`() {
-
         fun testStatus(status: LifecycleStatus) {
             memberProcessorLifecycleHandler.processEvent(
                 RegistrationStatusChangeEvent(registrationHandle, status),
-                coordinator
+                coordinator,
             )
             verify(coordinator).updateStatus(eq(status), any())
         }

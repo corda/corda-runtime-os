@@ -94,8 +94,8 @@ class GatewayProcessorImpl @Activate constructor(
                 registration = lifecycleCoordinator.followStatusChangesByName(
                     setOf(
                         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                        gateway.dominoTile.coordinatorName
-                    )
+                        gateway.dominoTile.coordinatorName,
+                    ),
                 )
 
                 gateway.start()
