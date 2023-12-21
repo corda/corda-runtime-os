@@ -91,7 +91,7 @@ import javax.persistence.EntityManagerFactory
  */
 
 sealed class QuerySetup {
-    data class NamedQuery(val params: Map<String, String>, val query: String = "Dog.summon") : QuerySetup()
+    data class NamedQuery(val params: Map<String, String?>, val query: String = "Dog.summon") : QuerySetup()
     data class All(val className: String) : QuerySetup()
 }
 
@@ -683,6 +683,49 @@ class PersistenceServiceInternalTests {
         assertThat(r.size).isEqualTo(0)
     }
 
+    @Test
+    fun `find with named query can handle null parameters and returns result`() {
+        persistDogs()
+
+        val resultsWithNull = assertQuery(
+            QuerySetup.NamedQuery(params = mapOf("nullableParam" to null), query = "Dog.nullableParam"),
+            0,
+            100
+        )
+
+        assertThat(resultsWithNull).isNotEmpty
+
+        val resultsWithNotNull = assertQuery(
+            QuerySetup.NamedQuery(params = mapOf("nullableParam" to "something"), query = "Dog.nullableParam"),
+            0,
+            100
+        )
+
+        assertThat(resultsWithNotNull).isEmpty()
+    }
+
+    @Test
+    fun `find with named query can handle nullable parameters with OR condition and returns result`() {
+        persistDogs()
+
+        val resultsWithNull = assertQuery(
+            QuerySetup.NamedQuery(params = mapOf("nullableParam" to null), query = "Dog.nullableParamOrCondition"),
+            0,
+            100
+        )
+
+        assertThat(resultsWithNull).isNotEmpty
+
+        val resultsWithNotNull = assertQuery(
+            QuerySetup.NamedQuery(params = mapOf("nullableParam" to "Butch 1"), query = "Dog.nullableParamOrCondition"),
+            0,
+            100
+        )
+
+        assertThat(resultsWithNotNull).hasSize(1)
+    }
+
+
     private fun createEntitySandbox(dbConnectionManager: DbConnectionManager) =
         EntitySandboxServiceFactory().create(
             virtualNode.sandboxGroupContextComponent,
@@ -740,7 +783,9 @@ class PersistenceServiceInternalTests {
     ): List<*> {
         val rec = when (querySetup) {
             is QuerySetup.NamedQuery -> {
-                val paramsSerialized = querySetup.params.mapValues { v -> sandbox.serialize(v.value) }
+                val paramsSerialized = querySetup.params.mapValues {
+                        (_, param) -> param?.let { sandbox.serialize(it) }
+                }
                 FindWithNamedQuery(querySetup.query, paramsSerialized, offset, limit, null)
             }
             is QuerySetup.All -> {
