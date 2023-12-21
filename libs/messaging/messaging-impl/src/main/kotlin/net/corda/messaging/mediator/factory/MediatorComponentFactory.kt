@@ -90,6 +90,16 @@ class MediatorComponentFactory<K : Any, S : Any, E : Any>(
         }
     }
 
+    /**
+     * Create a processor that will create a consumer and beging processing a topic.
+     * Event processing will be delegated to an [EventProcessor].
+     * [EventProcessor]s will process groups of flows concurrently via the [taskManager].
+     * @param eventMediatorConfig contains details of the mediators config
+     * @param taskManager used to launch concurrent tasks
+     * @param messageRouter Required by messaging clients to route records to the correct destination
+     * @param mediatorState shared state to track the mediators processing status
+     * @return A consumer processor
+     */
     fun createConsumerProcessor(
         eventMediatorConfig: EventMediatorConfig<K, S, E>,
         taskManager: TaskManager,
@@ -102,6 +112,10 @@ class MediatorComponentFactory<K : Any, S : Any, E : Any>(
             eventProcessor)
     }
 
+    /**
+     * Create a state used to track the mediators processing status
+     * @return Mediator state
+     */
     fun createMediatorState(): MediatorState {
         return MediatorState(
             AtomicBoolean(false),
