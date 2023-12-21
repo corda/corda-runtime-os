@@ -79,6 +79,7 @@ class GatewayWorker @Activate constructor(
         shutdownTracing()
     }
 }
+
 /** Additional parameters for the member worker are added here. */
 private class GatewayWorkerParams {
     @CommandLine.Mixin
