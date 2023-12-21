@@ -9,7 +9,6 @@ import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -18,7 +17,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.security.PublicKey
 
 class ReceiveLedgerTransactionFlowTest {
     private companion object {
@@ -40,9 +38,6 @@ class ReceiveLedgerTransactionFlowTest {
 
     private val transaction = mock<WireTransaction>()
     private val ledgerTransaction = mock<UtxoLedgerTransactionInternal>()
-
-    private val publicKeyAlice = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x01)) }
-    private val publicKeyBob = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x02)) }
 
     @BeforeEach
     fun beforeEach() {
@@ -74,17 +69,20 @@ class ReceiveLedgerTransactionFlowTest {
         verify(sessionAlice).send(Payload.Success("Successfully received transaction."))
     }
 
+    @Test
+    fun `receiving transaction with no dependencies shouldn't call backchain resolution flow`() {
+        whenever(sessionAlice.receive(WireTransaction::class.java)).thenReturn(transaction)
+        whenever(ledgerTransaction.inputStateRefs).thenReturn(listOf())
+        whenever(ledgerTransaction.referenceStateRefs).thenReturn(listOf())
+        callReceiveTransactionFlow(sessionAlice)
+
+        verify(sessionAlice).send(Payload.Success("Successfully received transaction."))
+    }
+
     private fun callReceiveTransactionFlow(session: FlowSession) {
         val flow = spy(ReceiveLedgerTransactionFlow(session))
         flow.utxoLedgerTransactionFactory = utxoLedgerTransactionFactory
         flow.flowEngine = flowEngine
         flow.call()
-    }
-
-    class TestState(private val participants: List<PublicKey>) : ContractState {
-
-        override fun getParticipants(): List<PublicKey> {
-            return participants
-        }
     }
 }

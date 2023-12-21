@@ -71,6 +71,7 @@ class SendAsLedgerTransactionFlowTest {
         callSendTransactionFlow(transaction, sessions)
 
         verify(flowEngine).subFlow(TransactionBackchainSenderFlow(TX_ID, sessionAlice))
+        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(TX_ID, sessionBob))
     }
 
     @Test
@@ -88,7 +89,7 @@ class SendAsLedgerTransactionFlowTest {
     }
 
     @Test
-    fun `sending unverified transaction should throw exception`() {
+    fun `exceptions get propagated back from receiver`() {
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
             Payload.Failure<List<DigitalSignatureAndMetadata>>("fail")
         )
