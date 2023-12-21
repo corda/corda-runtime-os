@@ -54,21 +54,21 @@ internal class SandboxServiceImpl @Activate constructor(
      */
 
     // Maps each bundle ID to the sandbox that the bundle is part of.
-    private val bundleIdToSandbox = ConcurrentHashMap<Long, Sandbox>()
+    private val bundleIdToSandbox = mutableMapOf<Long, Sandbox>()
 
     // Maps each bundle ID to the sandbox group that the bundle is part of.
-    private val bundleIdToSandboxGroup = ConcurrentHashMap<Long, SandboxGroup>()
+    private val bundleIdToSandboxGroup = mutableMapOf<Long, SandboxGroup>()
 
     // The public sandboxes that have been created. There's no lock for these next two properties as we don't expect them to
     // change throughout the lifetime, after [createPublicSandbox] is called, but we do want to ensure the latest versions are
     // always available to all threads to they are backed by a ConcurrentHashMap.
-    private val publicSandboxes = ConcurrentHashMap.newKeySet<Sandbox>()
+    private val publicSandboxes = mutableSetOf<Sandbox>()
 
     // The symbolic names of our public "platform" bundles.
-    private val publicSymbolicNames = ConcurrentHashMap.newKeySet<String>()
+    private val publicSymbolicNames = mutableSetOf<String>()
 
     // Bundles that failed to uninstall when a sandbox group was unloaded.
-    private val zombieBundles = ConcurrentHashMap.newKeySet<Bundle>()
+    private val zombieBundles = mutableSetOf<Bundle>()
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 
