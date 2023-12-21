@@ -12,11 +12,7 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.ledger.utxo.StateRef
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.spy
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
+import org.mockito.kotlin.*
 
 class ReceiveLedgerTransactionFlowTest {
     private companion object {
@@ -77,6 +73,7 @@ class ReceiveLedgerTransactionFlowTest {
         callReceiveTransactionFlow(sessionAlice)
 
         verify(sessionAlice).send(Payload.Success("Successfully received transaction."))
+        verify(flowEngine, never()).subFlow(TransactionBackchainResolutionFlow(ledgerTransaction.dependencies, sessionAlice))
     }
 
     private fun callReceiveTransactionFlow(session: FlowSession) {
