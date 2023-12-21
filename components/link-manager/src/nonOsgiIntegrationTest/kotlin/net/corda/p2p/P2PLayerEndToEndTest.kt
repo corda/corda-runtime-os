@@ -777,6 +777,7 @@ class P2PLayerEndToEndTest {
         override fun close() {
             linkManager.close()
             gateway.close()
+            topicService.close()
         }
 
         fun addReadWriter(): Subscription<String, AppMessage> {

@@ -1,12 +1,13 @@
 package net.corda.messaging.emulation.topic.model
 
+import net.corda.lifecycle.Resource
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.emulation.properties.InMemoryConfiguration
 import java.util.concurrent.ConcurrentHashMap
 
 class Topics(
     private val config: InMemoryConfiguration = InMemoryConfiguration()
-) {
+): Resource {
     private val topics: ConcurrentHashMap<String, Topic> = ConcurrentHashMap()
 
     internal fun getWriteLock(records: Collection<Record<*, *>>): PartitionsWriteLock {
@@ -40,5 +41,12 @@ class Topics(
 
     fun getLatestOffsets(topicName: String): Map<Int, Long> {
         return getTopic(topicName).getLatestOffsets()
+    }
+
+    override fun close() {
+        topics.values.forEach {
+            it.close()
+        }
+        topics.clear()
     }
 }

@@ -67,7 +67,8 @@ class MemberWorker @Activate constructor(
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
-            configurationValidatorFactory.createConfigValidator())
+            configurationValidatorFactory.createConfigValidator(),
+        )
 
         processor.start(config)
     }

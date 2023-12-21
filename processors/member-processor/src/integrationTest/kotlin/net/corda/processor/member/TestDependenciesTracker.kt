@@ -20,7 +20,7 @@ class TestDependenciesTracker(
     coordinatorName: LifecycleCoordinatorName,
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val lifecycleRegistry: LifecycleRegistry,
-    private val dependencies: Set<LifecycleCoordinatorName>
+    private val dependencies: Set<LifecycleCoordinatorName>,
 ) : Lifecycle {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -60,7 +60,7 @@ class TestDependenciesTracker(
                 "${it.name.componentName}=${it.status}"
             }
             logger.warn(
-                "LIFECYCLE COMPONENTS STILL DOWN: [${System.lineSeparator()}$downReport${System.lineSeparator()}]"
+                "LIFECYCLE COMPONENTS STILL DOWN: [${System.lineSeparator()}$downReport${System.lineSeparator()}]",
             )
             throw e
         }
@@ -80,7 +80,7 @@ class TestDependenciesTracker(
             }
             is RegistrationStatusChangeEvent -> {
                 coordinator.updateStatus(event.status)
-                if(event.status == LifecycleStatus.UP) {
+                if (event.status == LifecycleStatus.UP) {
                     logger.info("All required dependencies are UP...")
                 } else {
                     logger.info("Some or all required dependencies are DOWN...")

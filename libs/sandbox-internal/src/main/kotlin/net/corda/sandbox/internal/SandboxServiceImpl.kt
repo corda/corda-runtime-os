@@ -1,4 +1,5 @@
 @file:JvmName("SandboxServiceUtils")
+
 package net.corda.sandbox.internal
 
 import net.corda.crypto.core.SecureHashImpl
@@ -30,6 +31,7 @@ import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.security.PrivilegedAction
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.streams.asSequence
 
 
@@ -47,28 +49,34 @@ internal class SandboxServiceImpl @Activate constructor(
             "The sandbox service cannot run without the Service Component Runtime bundle installed."
         )
 
+    /**
+     * We use concurrent hash maps everywhere (including sets) to allow concurrent access whilst keeping gets lock free
+     */
+
     // Maps each bundle ID to the sandbox that the bundle is part of.
-    private val bundleIdToSandbox = mutableMapOf<Long, Sandbox>()
+    private val bundleIdToSandbox = ConcurrentHashMap<Long, Sandbox>()
 
     // Maps each bundle ID to the sandbox group that the bundle is part of.
-    private val bundleIdToSandboxGroup = mutableMapOf<Long, SandboxGroup>()
+    private val bundleIdToSandboxGroup = ConcurrentHashMap<Long, SandboxGroup>()
 
     // The public sandboxes that have been created.
-    private val publicSandboxes = mutableSetOf<Sandbox>()
+    private val publicSandboxes = ConcurrentHashMap.newKeySet<Sandbox>()
 
     // The symbolic names of our public "platform" bundles.
-    private val publicSymbolicNames = mutableSetOf<String>()
+    private val publicSymbolicNames = ConcurrentHashMap.newKeySet<String>()
 
     // Bundles that failed to uninstall when a sandbox group was unloaded.
-    private val zombieBundles = mutableSetOf<Bundle>()
+    private val zombieBundles = ConcurrentHashMap.newKeySet<Bundle>()
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 
     override fun createPublicSandbox(publicBundles: Iterable<Bundle>, privateBundles: Iterable<Bundle>) {
         if (publicSandboxes.isNotEmpty()) {
             val publicSandbox = publicSandboxes.first()
-            check(publicBundles.toSet() == publicSandbox.publicBundles
-                    && privateBundles.toSet() == publicSandbox.privateBundles) {
+            check(
+                publicBundles.toSet() == publicSandbox.publicBundles
+                    && privateBundles.toSet() == publicSandbox.privateBundles
+            ) {
                 "Public sandbox was already created with different bundles"
             }
             logger.warn("Public sandbox was already created")
@@ -208,7 +216,8 @@ internal class SandboxServiceImpl @Activate constructor(
                 sandboxId,
                 cpk.metadata,
                 mainBundle,
-                libraryBundles)
+                libraryBundles
+            )
 
             (libraryBundles + mainBundle).forEach { bundle ->
                 bundleIdToSandbox[bundle.bundleId] = sandbox
@@ -317,7 +326,7 @@ internal class SandboxServiceImpl @Activate constructor(
             if (bundleUtils.allBundles.none { bundle -> bundle.symbolicName == SANDBOX_HOOKS_BUNDLE }) {
                 logger.warn(
                     "The \"$SANDBOX_HOOKS_BUNDLE\" bundle is not installed. This can cause failures when installing " +
-                            "sandbox bundles."
+                        "sandbox bundles."
                 )
             }
             throw SandboxException("Could not install $bundleSource as a bundle in sandbox $sandboxId.", e)
@@ -350,13 +359,13 @@ internal class SandboxServiceImpl @Activate constructor(
     }
 }
 
-// "Syntactic sugar" around throwing a SandboxException, just to shut Detekt up.
+// "Syntactic sugar" around throwing a SandboxException
 private inline fun sandboxForbidsThat(condition: Boolean, message: () -> String) {
     if (condition) {
         throw SandboxException(message())
     }
 }
 
-// "Syntactic sugar" around throwing a SandboxException, just to shut Detekt up.
-private inline fun sandboxRequiresThat(condition: Boolean, message: () -> String)
-    = sandboxForbidsThat(!condition, message)
+// "Syntactic sugar" around throwing a SandboxException
+private inline fun sandboxRequiresThat(condition: Boolean, message: () -> String) =
+    sandboxForbidsThat(!condition, message)

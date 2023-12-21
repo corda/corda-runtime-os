@@ -3917,6 +3917,101 @@
         }
       }
     },
+    "/virtualnode/create/db/crypto" : {
+      "get" : {
+        "tags" : [ "Virtual Node API" ],
+        "description" : "This method returns the Crypto SQL needed for intention to create a virtual node.",
+        "operationId" : "get_virtualnode_create_db_crypto",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "SQL needed to create the Crypto DB",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string",
+                  "nullable" : false,
+                  "example" : "No example available for this type"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/virtualnode/create/db/uniqueness" : {
+      "get" : {
+        "tags" : [ "Virtual Node API" ],
+        "description" : "This method returns the Uniqueness SQL needed for intention to create a virtual node.",
+        "operationId" : "get_virtualnode_create_db_uniqueness",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "SQL needed to create the Uniqueness DB",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string",
+                  "nullable" : false,
+                  "example" : "No example available for this type"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/virtualnode/create/db/vault/{cpichecksum}" : {
+      "get" : {
+        "tags" : [ "Virtual Node API" ],
+        "description" : "This method returns the Vault SQL needed for intention to create a virtual node and latest uploaded CPI.",
+        "operationId" : "get_virtualnode_create_db_vault__cpichecksum_",
+        "parameters" : [ {
+          "name" : "cpichecksum",
+          "in" : "path",
+          "description" : "The file checksum of the CPI",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The file checksum of the CPI",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "SQL needed to create the Vault DB and CPI",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string",
+                  "nullable" : false,
+                  "example" : "No example available for this type"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
     "/virtualnode/getprotocolversion" : {
       "get" : {
         "tags" : [ "Virtual Node API" ],
@@ -4114,6 +4209,56 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/AsyncResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/virtualnode/{virtualnodeshortid}/db/vault/{newcpichecksum}" : {
+      "get" : {
+        "tags" : [ "Virtual Node API" ],
+        "description" : "This method returns the SQL needed to update the virtual node's CPI",
+        "operationId" : "get_virtualnode__virtualnodeshortid__db_vault__newcpichecksum_",
+        "parameters" : [ {
+          "name" : "virtualnodeshortid",
+          "in" : "path",
+          "description" : "Short ID of the virtual node instance",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Short ID of the virtual node instance",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "newcpichecksum",
+          "in" : "path",
+          "description" : "The file checksum of the CPI to be upgraded to",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The file checksum of the CPI to be upgraded to",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "SQL needed to bring schema up to date.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string",
+                  "nullable" : false,
+                  "example" : "No example available for this type"
                 }
               }
             }

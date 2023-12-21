@@ -12,13 +12,13 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 @Component(service = [LocallyHostedIdentitiesService::class])
-internal class TestLocallyHostedIdentitiesServiceImpl  @Activate constructor(
+internal class TestLocallyHostedIdentitiesServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
 ) : LocallyHostedIdentitiesService {
     private val coordinator =
         coordinatorFactory.createCoordinator(
-            LifecycleCoordinatorName.forComponent<LocallyHostedIdentitiesService>()
+            LifecycleCoordinatorName.forComponent<LocallyHostedIdentitiesService>(),
         ) { event, coordinator ->
             if (event is StartEvent) {
                 coordinator.updateStatus(LifecycleStatus.UP)

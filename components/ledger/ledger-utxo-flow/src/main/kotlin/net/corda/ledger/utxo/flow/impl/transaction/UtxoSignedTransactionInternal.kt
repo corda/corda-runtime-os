@@ -46,14 +46,6 @@ interface UtxoSignedTransactionInternal : UtxoSignedTransaction {
     fun getMissingSignatories(): Set<PublicKey>
 
     /**
-     * Verify the signatories' signatures and check if there are any missing one.
-     * It ignores the non-signatory signatures! (including the notary's)
-     *
-     * @throws TransactionSignatureException if any signatures are missing or invalid.
-     */
-    fun verifySignatorySignatures()
-
-    /**
      * Verify if notary has signed the transaction.
      * It checks both the existence and the validity of that signature.
      *
