@@ -6,6 +6,7 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.ShortHash
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
+import net.corda.data.virtualnode.VirtualNodeCreateSchemaRequest
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
@@ -108,7 +109,7 @@ internal class VirtualNodeRestResourceImpl(
     private val virtualNodeValidationService: VirtualNodeValidationService,
     private val restContextProvider: RestContextProvider,
     private val messageConverter: MessageConverter,
-    ) : VirtualNodeRestResource, PluggableRestResource<VirtualNodeRestResource>, Lifecycle {
+) : VirtualNodeRestResource, PluggableRestResource<VirtualNodeRestResource>, Lifecycle {
 
     @Suppress("Unused")
     @Activate
@@ -385,45 +386,48 @@ internal class VirtualNodeRestResourceImpl(
     }
 
     override fun getCreateSchemaOrCpiSQL(dbType: String): ResponseEntity<String> {
-        val request = VirtualNodeSchemaRequest(null, dbType, null)
-
-//        val resourceSubPath = "vnode-${request.dbType}"
-//        val schemaClass = DbSchema::class.java
-//        val fullName = "${schemaClass.packageName}.$resourceSubPath"
-//        val resourcePrefix = fullName.replace('.', '/')
-//        val changeLogFiles = ClassloaderChangeLog.ChangeLogResourceFiles(
-//            fullName,
-//            listOf("$resourcePrefix/db.changelog-master.xml"), //VirtualNodeDbType.VAULT.dbChangeFiles
-//            classLoader = schemaClass.classLoader
-//        )
-//        val changeLog = ClassloaderChangeLog(linkedSetOf(changeLogFiles))
-
-        val cpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository()
-        dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction { em ->
-            if (request.cpiFileChecksum.isNullOrBlank()) {
-                val cpiMetadata = CpiCpkRepositoryFactory().createCpiMetadataRepository().findByFileChecksum(em, request.dbType)
+        val request = VirtualNodeCreateSchemaRequest(dbType)
+        val connection = dbConnectionManager.getClusterDataSource().connection
+        var sql = ""
+        if (dbType == "vault" || dbType == "crypto" || dbType == "uniqueness") {
+            val resourceSubPath = "vnode-${request.dbType}"
+            val schemaClass = DbSchema::class.java
+            val fullName = "${schemaClass.packageName}.$resourceSubPath"
+            val resourcePrefix = fullName.replace('.', '/')
+            val changeLogFiles = ClassloaderChangeLog.ChangeLogResourceFiles(
+                fullName,
+                listOf("$resourcePrefix/db.changelog-master.xml"), // VirtualNodeDbType.VAULT.dbChangeFiles
+                classLoader = schemaClass.classLoader
+            )
+            val changeLog = ClassloaderChangeLog(linkedSetOf(changeLogFiles))
+            StringWriter().use { writer ->
+                schemaMigrator.createUpdateSql(connection, changeLog, writer)
+                sql = writer.toString()
+            }
+        } else {
+            val cpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository()
+            dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction { em ->
+                val cpiMetadata =
+                    CpiCpkRepositoryFactory().createCpiMetadataRepository().findByFileChecksum(em, request.dbType)
                 val changelogsPerCpk = cpkDbChangeLogRepository.findByCpiId(em, cpiMetadata!!.cpiId)
                 val dbChange = VirtualNodeDbChangeLog(changelogsPerCpk)
-                val connection  = dbConnectionManager.getClusterDataSource().connection
-                    StringWriter().use { writer ->
-                        schemaMigrator.createUpdateSql(connection, dbChange, writer)
-                        return ResponseEntity.accepted(writer.toString())
+
+                StringWriter().use { writer ->
+                    schemaMigrator.createUpdateSql(connection, dbChange, writer)
+                    sql = writer.toString()
                 }
             }
         }
-
-        return ResponseEntity.ok("")
+        return ResponseEntity.accepted(sql)
     }
 
     override fun getUpdateSchemaSQL(
         virtualNodeShortId: String,
-        dbType: String,
-        cpiId: String?
+        dbType: String
     ): ResponseEntity<String> {
-
         val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.parse(virtualNodeShortId))
             ?: throw ResourceNotFoundException("Virtual node", virtualNodeShortId)
-        val request = VirtualNodeSchemaRequest(virtualNodeShortId, dbType, cpiId)
+        val request = VirtualNodeSchemaRequest(virtualNodeShortId, dbType)
 
         val resourceSubPath = "vnode-${request.dbType}"
         val schemaClass = DbSchema::class.java
@@ -431,7 +435,8 @@ internal class VirtualNodeRestResourceImpl(
         val resourcePrefix = fullName.replace('.', '/')
         val changeLogFiles = ClassloaderChangeLog.ChangeLogResourceFiles(
             fullName,
-            listOf("$resourcePrefix/db.changelog-master.xml"), //VirtualNodeDbType.VAULT.dbChangeFiles
+            listOf("$resourcePrefix/db.changelog-master.xml"),
+            // VirtualNodeDbType.VAULT.dbChangeFiles
             classLoader = schemaClass.classLoader
         )
         val changeLog = ClassloaderChangeLog(linkedSetOf(changeLogFiles))
