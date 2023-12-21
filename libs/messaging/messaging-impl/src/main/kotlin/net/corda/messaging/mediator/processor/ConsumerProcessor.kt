@@ -9,6 +9,7 @@ import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.config.MediatorConsumerConfig
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.mediator.ConsumerProcessorState
 import net.corda.messaging.mediator.GroupAllocator
 import net.corda.messaging.mediator.MediatorState
 import net.corda.messaging.mediator.metrics.EventMediatorMetrics
@@ -24,12 +25,13 @@ import java.util.concurrent.TimeUnit
  * Class to setup a consumer and begin processing its subscribed topic(s)
  */
 @Suppress("LongParameterList")
-class ConsumerProcessor<K : Any, S : Any, E : Any> (
+class ConsumerProcessor<K : Any, S : Any, E : Any>(
     private val config: EventMediatorConfig<K, S, E>,
     private val groupAllocator: GroupAllocator,
     private val taskManager: TaskManager,
     private val messageRouter: MessageRouter,
     private val mediatorState: MediatorState,
+    private val consumerProcessorState: ConsumerProcessorState,
     private val eventProcessor: EventProcessor<K, S, E>
 ) {
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.name}")
@@ -41,7 +43,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any> (
     private val pollTimeout = Duration.ofMillis(50)
 
     private val stateManager = config.stateManager
-    
+
     fun processTopic(consumerFactory: MediatorConsumerFactory, consumerConfig: MediatorConsumerConfig<K, E>) {
         var attempts = 0
         var consumer: MediatorConsumer<K, E>? = null
@@ -99,21 +101,21 @@ class ConsumerProcessor<K : Any, S : Any, E : Any> (
                 val failedStates = persistStatesAndRetrieveFailures()
                 statesToProcess = failedStates
                 groups = assignNewGroupsForFailedStates(failedStates, polledRecords)
-                sendAsynchronousEvents(mediatorState.asynchronousOutputs.values.flatten())
-                mediatorState.asynchronousOutputs.clear()
+                sendAsynchronousEvents(consumerProcessorState.asynchronousOutputs.values.flatten())
+                consumerProcessorState.asynchronousOutputs.clear()
             }
             metrics.commitTimer.recordCallable {
                 consumer.syncCommitOffsets()
             }
-            mediatorState.clear()
+            consumerProcessorState.clear()
         }
         metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
     }
     
     
     private fun persistStatesAndRetrieveFailures(): Map<String, State> {
-        val asynchronousOutputs = mediatorState.asynchronousOutputs
-        val statesToPersist = mediatorState.statesToPersist
+        val asynchronousOutputs = consumerProcessorState.asynchronousOutputs
+        val statesToPersist = consumerProcessorState.statesToPersist
         val failedToCreateKeys = stateManager.create(statesToPersist.statesToCreate.values.mapNotNull { it })
         val failedToCreate = stateManager.get(failedToCreateKeys)
         val failedToDelete = stateManager.delete(statesToPersist.statesToDelete.values.mapNotNull { it })

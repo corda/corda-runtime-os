@@ -1,7 +1,6 @@
 package net.corda.messaging.mediator.factory
 
 import net.corda.messaging.api.mediator.MediatorConsumer
-import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
@@ -11,14 +10,13 @@ import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.mediator.ConsumerProcessorState
 import net.corda.messaging.mediator.GroupAllocator
 import net.corda.messaging.mediator.MediatorState
 import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.messaging.mediator.processor.ConsumerProcessor
 import net.corda.messaging.mediator.processor.EventProcessor
-import net.corda.messaging.mediator.processor.StatesToPersist
 import net.corda.taskmanager.TaskManager
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -98,17 +96,16 @@ class MediatorComponentFactory<K : Any, S : Any, E : Any>(
         messageRouter: MessageRouter,
         mediatorState: MediatorState,
     ): ConsumerProcessor<K, S, E> {
-        val eventProcessor = EventProcessor(eventMediatorConfig, stateManagerHelper, messageRouter, mediatorState)
-        return ConsumerProcessor(eventMediatorConfig, groupAllocator, taskManager, messageRouter, mediatorState,
+        val consumerProcessorState = ConsumerProcessorState()
+        val eventProcessor = EventProcessor(eventMediatorConfig, stateManagerHelper, messageRouter, consumerProcessorState)
+        return ConsumerProcessor(eventMediatorConfig, groupAllocator, taskManager, messageRouter, mediatorState, consumerProcessorState,
             eventProcessor)
     }
 
     fun createMediatorState(): MediatorState {
         return MediatorState(
             AtomicBoolean(false),
-            AtomicBoolean(false),
-            ConcurrentHashMap<String, MutableList<MediatorMessage<Any>>>(),
-            StatesToPersist()
+            AtomicBoolean(false)
         )
     }
 }

@@ -8,7 +8,7 @@ import net.corda.messaging.api.mediator.RoutingDestination
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.mediator.MediatorState
+import net.corda.messaging.mediator.ConsumerProcessorState
 import net.corda.messaging.mediator.StateManagerHelper
 
 /**
@@ -18,12 +18,12 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     private val config: EventMediatorConfig<K, S, E>,
     private val stateManagerHelper: StateManagerHelper<K, S, E>,
     private val messageRouter: MessageRouter,
-    private val mediatorState: MediatorState
+    private val consumerProcessorState: ConsumerProcessorState
 ) {
     
     fun processEvents(
         group: Map<K, List<Record<K, E>>>,
-        retrievedStates: Map<String, State>,
+        retrievedStates: Map<String, State>
     ) {
         group.map { groupEntry ->
             val groupKey = groupEntry.key.toString()
@@ -61,7 +61,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         output.forEach { message ->
             val destination = messageRouter.getDestination(message)
             if (destination.type == RoutingDestination.Type.ASYNCHRONOUS) {
-                mediatorState.asynchronousOutputs.compute(key) { _, value ->
+                consumerProcessorState.asynchronousOutputs.compute(key) { _, value ->
                     val list = value ?: mutableListOf()
                     list.add(message)
                     list
@@ -95,7 +95,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         processorState: StateAndEventProcessor.State<S>?,
     ) {
         val processed = stateManagerHelper.createOrUpdateState(groupKey, original, processorState)
-        mediatorState.statesToPersist.apply {
+        consumerProcessorState.statesToPersist.apply {
             when {
                 original == null && processed != null -> statesToCreate[groupKey] = processed
                 original != null && processed != null -> statesToUpdate[groupKey] = processed

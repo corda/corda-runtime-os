@@ -1,22 +1,17 @@
 package net.corda.messaging.mediator
 
-import net.corda.messaging.api.mediator.MediatorMessage
-import net.corda.messaging.mediator.processor.StatesToPersist
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
-class MediatorState (
+/**
+ * Class to store shared state tracked by the mediator patterns components
+ * @property stopped When set to true, new records are not processed by the mediator
+ * @property running When set to true, the mediator pattern has been started. When False the mediator pattern is closed or errorred.
+ */
+data class MediatorState (
     private val stopped: AtomicBoolean,
-    val running: AtomicBoolean,
-    val asynchronousOutputs: ConcurrentHashMap<String, MutableList<MediatorMessage<Any>>>,
-    val statesToPersist: StatesToPersist
+    val running: AtomicBoolean
     ) {
     fun stop() = stopped.set(true)
     fun stopped() = stopped.get()
     fun running() = running.get()
-
-    fun clear() {
-        asynchronousOutputs.clear()
-        statesToPersist.clear()
-    }
 }
