@@ -12,7 +12,12 @@ import net.corda.messaging.mediator.ConsumerProcessorState
 import net.corda.messaging.mediator.StateManagerHelper
 
 /**
- * Class to process records received from the consumer
+ * Class to process records received from the consumer.
+ * Passes each record to process along with its state to the [config]s [StateAndEventProcessor].
+ * Synchronous outputs from the processor are sent immediately and the responses are processed as new inputs.
+ * Asynchronous outputs destined for the message bus and states to be saved to the state manager are tracked in the shared
+ * [consumerProcessorState].
+ *
  */
 class EventProcessor<K : Any, S : Any, E : Any>(
     private val config: EventMediatorConfig<K, S, E>,
@@ -20,7 +25,12 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     private val messageRouter: MessageRouter,
     private val consumerProcessorState: ConsumerProcessorState
 ) {
-    
+
+    /**
+     * Process a group of events.
+     * @param group Group of records of various keys
+     * @param retrievedStates states for a group
+     */
     fun processEvents(
         group: Map<K, List<Record<K, E>>>,
         retrievedStates: Map<String, State>
@@ -48,8 +58,8 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     }
 
     /**
-     * Send any synchronous events immediately and feed results back onto the queue, add asynchronous events to the busEvents collection to
-     * be sent later
+     * Send any synchronous events immediately and feed results back onto the queue, add asynchronous events to the [consumerProcessorState]
+     * to be sent later.
      */
     private fun processOutputEvents(
         key: String,
