@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit
 /**
  * Class to setup a consumer and begin processing its subscribed topic(s)
  */
+@Suppress("LongParameterList")
 class ConsumerProcessor<K : Any, S : Any, E : Any> (
     private val config: EventMediatorConfig<K, S, E>,
     private val groupAllocator: GroupAllocator,

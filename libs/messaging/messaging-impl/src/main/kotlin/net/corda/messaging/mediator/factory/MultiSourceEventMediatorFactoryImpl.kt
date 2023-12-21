@@ -25,14 +25,10 @@ class MultiSourceEventMediatorFactoryImpl(
 
     @Activate
     constructor(
-        @Reference(service = CordaAvroSerializationFactory::class)
-        cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-        @Reference(service = LifecycleCoordinatorFactory::class)
-        lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+        @Reference(service = CordaAvroSerializationFactory::class) cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+        @Reference(service = LifecycleCoordinatorFactory::class) lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
     ) : this(
-        cordaAvroSerializationFactory,
-        lifecycleCoordinatorFactory,
-        TaskManagerFactory.INSTANCE
+        cordaAvroSerializationFactory, lifecycleCoordinatorFactory, TaskManagerFactory.INSTANCE
     )
 
     override fun <K : Any, S : Any, E : Any> create(
@@ -42,28 +38,28 @@ class MultiSourceEventMediatorFactoryImpl(
         val mediatorComponentFactory = createMediatorComponentFactory(eventMediatorConfig, stateManagerHelper)
         val lifecycleCoordinator = createLifecycleCoordinator(eventMediatorConfig)
         val taskManager = taskManagerFactory.createThreadPoolTaskManager(
-            name = eventMediatorConfig.name,
-            threadName = eventMediatorConfig.threadName,
-            threads = eventMediatorConfig.threads
+            name = eventMediatorConfig.name, threadName = eventMediatorConfig.threadName, threads = eventMediatorConfig.threads
         )
 
         return MultiSourceEventMediatorImpl(
-            eventMediatorConfig,
-            taskManager,
-            mediatorComponentFactory,
-            lifecycleCoordinator
+            eventMediatorConfig, taskManager, mediatorComponentFactory, lifecycleCoordinator
         )
     }
 
     private fun <E : Any, K : Any, S : Any> createMediatorComponentFactory(
-        eventMediatorConfig: EventMediatorConfig<K, S, E>,
-        stateManagerHelper: StateManagerHelper<K, S, E>
+        eventMediatorConfig: EventMediatorConfig<K, S, E>, stateManagerHelper: StateManagerHelper<K, S, E>
     ) = MediatorComponentFactory(
-        eventMediatorConfig.messageProcessor, eventMediatorConfig.consumerFactories, eventMediatorConfig.clientFactories,
-        eventMediatorConfig.messageRouterFactory, GroupAllocator(), stateManagerHelper
+        eventMediatorConfig.messageProcessor,
+        eventMediatorConfig.consumerFactories,
+        eventMediatorConfig.clientFactories,
+        eventMediatorConfig.messageRouterFactory,
+        GroupAllocator(),
+        stateManagerHelper
     )
 
-    private fun <E : Any, K : Any, S : Any> createLifecycleCoordinator(eventMediatorConfig: EventMediatorConfig<K, S, E>): LifecycleCoordinator {
+    private fun <E : Any, K : Any, S : Any> createLifecycleCoordinator(
+        eventMediatorConfig: EventMediatorConfig<K, S, E>
+    ): LifecycleCoordinator {
         val uniqueId = UUID.randomUUID().toString()
         val lifecycleCoordinatorName = LifecycleCoordinatorName(
             "MultiSourceEventMediator--${eventMediatorConfig.name}", uniqueId
@@ -71,11 +67,12 @@ class MultiSourceEventMediatorFactoryImpl(
         return lifecycleCoordinatorFactory.createCoordinator(lifecycleCoordinatorName) { _, _ -> }
     }
 
-    private fun <E : Any, K : Any, S : Any> createStateManagerHelper(eventMediatorConfig: EventMediatorConfig<K, S, E>): StateManagerHelper<K, S, E> {
+    private fun <E : Any, K : Any, S : Any> createStateManagerHelper(
+        eventMediatorConfig: EventMediatorConfig<K, S, E>
+    ): StateManagerHelper<K, S, E> {
         val stateSerializer = cordaAvroSerializationFactory.createAvroSerializer<S> { }
         val stateDeserializer = cordaAvroSerializationFactory.createAvroDeserializer(
-            {},
-            eventMediatorConfig.messageProcessor.stateValueClass
+            {}, eventMediatorConfig.messageProcessor.stateValueClass
         )
         return StateManagerHelper(
             eventMediatorConfig.stateManager, stateSerializer, stateDeserializer

@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 /**
  * Factory for creating various components used by Multi-Source Event Mediator.
  */
+@Suppress("LongParameterList")
 class MediatorComponentFactory<K : Any, S : Any, E : Any>(
     private val messageProcessor: StateAndEventProcessor<K, S, E>,
     private val consumerFactories: Collection<MediatorConsumerFactory>,
