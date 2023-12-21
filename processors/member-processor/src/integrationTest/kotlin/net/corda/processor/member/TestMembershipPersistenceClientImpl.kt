@@ -142,12 +142,7 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         memberX500Name: MemberX500Name,
         serialNumber: Long?,
         reason: String?,
-    ): MembershipPersistenceOperation<
-        Pair<
-            PersistentMemberInfo,
-            InternalGroupParameters?,
-            >,
-        > = Operation(
+    ): MembershipPersistenceOperation<Pair<PersistentMemberInfo, InternalGroupParameters?>> = Operation(
         MembershipPersistenceResult.Success(PersistentMemberInfo() to null),
     )
 
