@@ -10,7 +10,6 @@ import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
 import org.slf4j.LoggerFactory
 import java.util.concurrent.locks.ReentrantLock
-import java.util.function.Supplier
 import kotlin.concurrent.withLock
 
 object JavalinStarter {
@@ -25,7 +24,7 @@ object JavalinStarter {
     private val serverStartLock = ReentrantLock()
 
     /**
-     * Creates and start the Javalin server and ensuring only one actioned at a time.
+     * Creates and starts the Javalin server and ensuring only one actioned at a time.
      *
      * @param name Name of the server (to be used in logging only)
      * @param javalinFactory to create the Javalin server object
