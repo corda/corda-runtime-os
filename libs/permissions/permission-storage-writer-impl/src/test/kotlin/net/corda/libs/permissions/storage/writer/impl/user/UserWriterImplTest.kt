@@ -152,10 +152,11 @@ internal class UserWriterImplTest {
     }
 
     @Test
-    fun `changing user password successfully changes password`() {
+    fun `changing users own password successfully changes password`() {
         // Arrange
         val changeUserPasswordRequest = ChangeUserPasswordRequest().apply {
             requestedBy = "existingUser"
+            username = "existingUser"
             hashedNewPassword = "newHashedPassword"
             saltValue = "newSalt"
             passwordExpiry = Instant.now()
@@ -175,8 +176,73 @@ internal class UserWriterImplTest {
 
         val typedQueryMock = mock<TypedQuery<User>>()
         whenever(entityManager.createQuery(any<String>(), eq(User::class.java))).thenReturn(typedQueryMock)
-        whenever(typedQueryMock.setParameter(eq("loginName"), eq("existingUser"))).thenReturn(typedQueryMock)
+        whenever(typedQueryMock.setParameter(eq("loginName"), eq(changeUserPasswordRequest.username)))
+            .thenReturn(typedQueryMock)
         whenever(typedQueryMock.resultList).thenReturn(listOf(existingUser))
+
+        userWriter.changeUserPassword(changeUserPasswordRequest, requestUserId)
+
+        verify(entityManager).merge(existingUser)
+        assertEquals("newHashedPassword", existingUser.hashedPassword)
+        assertEquals("newSalt", existingUser.saltValue)
+
+        val auditCaptor = argumentCaptor<ChangeAudit>()
+        verify(entityManager).persist(auditCaptor.capture())
+
+        val capturedAudit = auditCaptor.firstValue
+        assertNotNull(capturedAudit)
+        assertEquals(RestPermissionOperation.USER_UPDATE, capturedAudit.changeType)
+        assertEquals("Password for user 'existingUser' changed by '$requestUserId'.", capturedAudit.details)
+
+        verify(entityTransaction).begin()
+        verify(entityTransaction).commit()
+    }
+
+    @Test
+    fun `changing another users password successfully changes their password, doesn't affect requesting user`() {
+        // Arrange
+        val changeUserPasswordRequest = ChangeUserPasswordRequest().apply {
+            requestedBy = "otherUser"
+            username = "existingUser"
+            hashedNewPassword = "newHashedPassword"
+            saltValue = "newSalt"
+            passwordExpiry = Instant.now()
+        }
+
+        val otherUser = User(
+            id = "userId",
+            fullName = "Other User",
+            loginName = "otherUser",
+            enabled = true,
+            hashedPassword = "otherUserHashedPassword",
+            saltValue = "otherUserSalt",
+            passwordExpiry = Instant.now(),
+            updateTimestamp = Instant.now(),
+            parentGroup = mock<Group>()
+        )
+
+        val existingUser = User(
+            id = "userId",
+            fullName = "Existing User",
+            loginName = "existingUser",
+            enabled = true,
+            hashedPassword = "oldHashedPassword",
+            saltValue = "oldSalt",
+            passwordExpiry = Instant.now(),
+            updateTimestamp = Instant.now(),
+            parentGroup = mock<Group>()
+        )
+
+        val typedQueryMock = mock<TypedQuery<User>>()
+        val typedQueryMockForOtherUser = mock<TypedQuery<User>>()
+        whenever(entityManager.createQuery(any<String>(), eq(User::class.java))).thenReturn(typedQueryMock)
+        whenever(typedQueryMock.setParameter(eq("loginName"), eq(changeUserPasswordRequest.username)))
+            .thenReturn(typedQueryMock)
+        whenever(typedQueryMock.setParameter(eq("loginName"), eq(changeUserPasswordRequest.requestedBy)))
+            .thenReturn(typedQueryMockForOtherUser)
+
+        whenever(typedQueryMock.resultList).thenReturn(listOf(existingUser))
+        whenever(typedQueryMockForOtherUser.resultList).thenReturn(listOf(otherUser))
 
         userWriter.changeUserPassword(changeUserPasswordRequest, requestUserId)
 
