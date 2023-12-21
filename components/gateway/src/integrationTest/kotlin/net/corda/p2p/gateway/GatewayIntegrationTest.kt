@@ -144,7 +144,9 @@ internal class GatewayIntegrationTest : TestBase() {
         )
 
     private inner class Node(private val name: String) {
-        private val topicService = TopicServiceImpl()
+        private val topicService = TopicServiceImpl().also {
+            keep(it)
+        }
         private val rpcTopicService = RPCTopicServiceImpl()
 
         val lifecycleCoordinatorFactory =
@@ -538,6 +540,7 @@ internal class GatewayIntegrationTest : TestBase() {
             val linkInMessageTwo = LinkInMessage(authenticatedP2PMessage("two"))
             val messageTwo = GatewayMessage("two", linkInMessageTwo.payload)
             val configPublisher = ConfigPublisher()
+            keep(configPublisher)
             configPublisher.publishConfig(
                 GatewayConfiguration(
                     listOf(serverConfigurationOne),
@@ -777,6 +780,7 @@ internal class GatewayIntegrationTest : TestBase() {
             val gatewayMessage = GatewayMessage("msg-id", linkInMessage.payload)
 
             val configPublisher = ConfigPublisher()
+            keep(configPublisher)
 
             val messageReceivedLatch = AtomicReference(CountDownLatch(1))
             val listenToOutboundMessages = object : RequestListener {
@@ -1220,6 +1224,7 @@ internal class GatewayIntegrationTest : TestBase() {
         @Timeout(120)
         fun `Gateway can recover from bad configuration`() {
             val configPublisher = ConfigPublisher()
+            keep(configPublisher)
             val host = "www.alice.net"
             Gateway(
                 configPublisher.readerService,
@@ -1362,6 +1367,7 @@ internal class GatewayIntegrationTest : TestBase() {
             val bobAddress = URI.create("https://www.bob.net:${getOpenPort()}")
             val server = Node("server")
             val configPublisher = ConfigPublisher()
+            keep(configPublisher)
             configPublisher.publishConfig(
                 GatewayConfiguration(
                     listOf(
