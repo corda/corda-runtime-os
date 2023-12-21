@@ -13,6 +13,7 @@ import net.corda.data.virtualnode.VirtualNodeOperationStatus
 import net.corda.data.virtualnode.VirtualNodeOperationStatusRequest
 import net.corda.data.virtualnode.VirtualNodeOperationStatusResponse
 import net.corda.data.virtualnode.VirtualNodeOperationalState
+import net.corda.data.virtualnode.VirtualNodeSchemaRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
@@ -96,8 +97,8 @@ internal class VirtualNodeRestResourceImpl(
     private val cpiInfoReadService: CpiInfoReadService,
     private val virtualNodeStatusCacheService: VirtualNodeStatusCacheService,
     private val platformInfoProvider: PlatformInfoProvider,
-    private val schemaMigrator: LiquibaseSchemaMigrator,
     private val dbConnectionManager: DbConnectionManager,
+    private val schemaMigrator: LiquibaseSchemaMigrator,
     private val requestFactory: RequestFactory,
     private val clock: Clock,
     private val virtualNodeValidationService: VirtualNodeValidationService,
@@ -122,10 +123,10 @@ internal class VirtualNodeRestResourceImpl(
         virtualNodeStatusCacheService: VirtualNodeStatusCacheService,
         @Reference(service = PlatformInfoProvider::class)
         platformInfoProvider: PlatformInfoProvider,
+        @Reference(service = DbConnectionManager::class)
+        dbConnectionManager: DbConnectionManager,
         @Reference(service = LiquibaseSchemaMigrator::class)
         schemaMigrator: LiquibaseSchemaMigrator,
-        @Reference(service = DbConnectionManager::class)
-        dbConnectionManager: DbConnectionManager
     ) : this(
         coordinatorFactory,
         configurationReadService,
@@ -134,8 +135,8 @@ internal class VirtualNodeRestResourceImpl(
         cpiInfoReadService,
         virtualNodeStatusCacheService,
         platformInfoProvider,
-        schemaMigrator,
         dbConnectionManager,
+        schemaMigrator,
         RequestFactoryImpl(
             RestContextProviderImpl(),
             UTCClock()
@@ -379,20 +380,38 @@ internal class VirtualNodeRestResourceImpl(
         }
     }
 
-    override fun getCreateCryptoSchemaSQL(): ResponseEntity<String> {
-        TODO("To be implemented in CORE-15805")
-    }
+    override fun getUpdateSchemaSQL(
+        virtualNodeShortId: String?,
+        dbType: String,
+        cpiId: String?
+    ): ResponseEntity<String> {
 
-    override fun getCreateUniquenessSchemaSQL(): ResponseEntity<String> {
-        TODO("To be implemented in CORE-15805")
-    }
+        //virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.parse(virtualNodeShortId))
+            //?: throw ResourceNotFoundException("Virtual node", virtualNodeShortId)
+        val request = VirtualNodeSchemaRequest(virtualNodeShortId, dbType, cpiId)
 
-    override fun getCreateVaultSchemaSQL(cpiChecksum: String): ResponseEntity<String> {
-        TODO("To be implemented in CORE-15805")
-    }
+        val resourceSubPath = "vnode-${request.dbType}"
+        val schemaClass = DbSchema::class.java
+        val fullName = "${schemaClass.packageName}.$resourceSubPath"
+        val resourcePrefix = fullName.replace('.', '/')
+        val changeLogFiles = ClassloaderChangeLog.ChangeLogResourceFiles(
+            fullName,
+            listOf("$resourcePrefix/db.changelog-master.xml"), //VirtualNodeDbType.VAULT.dbChangeFiles
+            classLoader = schemaClass.classLoader
+        )
+        val changeLog = ClassloaderChangeLog(linkedSetOf(changeLogFiles))
 
-    override fun getUpdateSchemaSQL(virtualNodeShortId: String, newCpiChecksum: String): ResponseEntity<String> {
-        TODO("To be implemented in CORE-15805")
+        val em = dbConnectionManager.getClusterDataSource()
+        if(request.cpiFileChecksum.isNullOrBlank()) {
+            em.connection.use {  connection ->
+                StringWriter().use { writer ->
+                    schemaMigrator.createUpdateSql(connection, changeLog, writer)
+                    return ResponseEntity.accepted(writer.toString())
+                }
+            }
+        }
+
+        return ResponseEntity.ok("")
     }
 
     private fun sendAsynchronousRequest(
