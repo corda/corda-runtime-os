@@ -72,7 +72,7 @@ internal class RestServerInternal(
 
     private val webSocketRouteAdaptors = LinkedList<AutoCloseable>()
     private val credentialResolver = DefaultCredentialResolver()
-    
+
     private lateinit var server: Javalin
     private val serverFactory: () -> Javalin = {
         Javalin.create {
