@@ -232,7 +232,10 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 }
                 if (reply != null) {
                     // Convert reply into a record and added to the queue, so it can be processed later on
-                    queue.addLast(Record("", event.key, reply.payload, headers = message.extractTracingHeaders()))
+                    val replyHeaders = reply.properties.filter { (_, v) -> v is String }.map { (k, v) -> k to (v as String) }
+                    @Suppress("UNCHECKED_CAST")
+                    val record = addTraceContextToRecord(Record("", event.key, reply.payload), replyHeaders) as Record<K, E>
+                    queue.addLast(record)
                 }
             }
         }

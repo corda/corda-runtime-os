@@ -6,7 +6,7 @@ import java.util.concurrent.ExecutorService
 
 interface TracingService : AutoCloseable {
 
-    fun addTraceHeaders(headers: List<Pair<String, String>>, tracingHeaders: List<Pair<String, String>> = emptyList()): List<Pair<String, String>>
+    fun addTraceHeaders(headers: List<Pair<String, String>>, tracingHeaders: List<Pair<String, String>>): List<Pair<String, String>>
 
     fun <R> nextSpan(operationName: String, processingBlock: TraceContext.() -> R): R
 

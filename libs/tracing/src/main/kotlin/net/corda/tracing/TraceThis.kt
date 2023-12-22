@@ -51,7 +51,7 @@ fun addTraceContextToRecord(record: Record<*, *>, tracingHeaders: List<Pair<Stri
 }
 
 fun addTraceContextToRecord(record: CordaProducerRecord<*, *>): CordaProducerRecord<out Any, out Any> {
-    return record.copy(headers = TracingState.currentTraceService.addTraceHeaders(record.headers))
+    return record.copy(headers = TracingState.currentTraceService.addTraceHeaders(record.headers, emptyList()))
 }
 
 fun traceSend(
