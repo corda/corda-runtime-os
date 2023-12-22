@@ -34,10 +34,10 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     override fun start() {
         log.debug { "Starting multi-source event mediator with config: $config" }
         lifecycleCoordinator.start()
-        taskManager.executeLongRunningTask(::run)
+        taskManager.executeLongRunningTask(::runMediator)
     }
 
-    private fun run() {
+    internal fun runMediator() {
         mediatorState.running.set(true)
         val clients = mediatorComponentFactory.createClients(::onSerializationError)
         val messageRouter = mediatorComponentFactory.createRouter(clients)
@@ -56,9 +56,6 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         }
 
         clients.forEach { it.close() }
-        if (lifecycleCoordinator.status != LifecycleStatus.ERROR) {
-            lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
-        }
         mediatorState.running.set(false)
     }
 
