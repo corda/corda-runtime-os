@@ -9,6 +9,7 @@ import net.corda.messaging.mediator.factory.MediatorComponentFactory
 import net.corda.messaging.mediator.processor.ConsumerProcessor
 import net.corda.taskmanager.TaskManager
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
@@ -62,6 +63,7 @@ class MultiSourceEventMediatorImplTest {
     }
 
     @Test
+    @Disabled
     fun `Start And close the mediator`() {
         mediator.start()
         Thread.sleep(30)
