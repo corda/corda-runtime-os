@@ -38,13 +38,12 @@ class FlowSessionTimeoutFlow : ClientStartableFlow {
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
 
-    private val bobName = "C=GB, L=London, O=Bob"
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
         log.info("Flow timeout flow is starting... [${flowEngine.flowId}]")
         val input = requestBody.getRequestBodyAs(jsonMarshallingService, FlowTimeoutInput::class.java)
-        val counterparty = MemberX500Name.parse(bobName)
+        val counterparty = MemberX500Name.parse(input.counterparty)
         val findCounterparty = memberLookupService.lookup(counterparty)
             ?: throw IllegalStateException("Failed to lookup the member $counterparty")
 
