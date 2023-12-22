@@ -89,6 +89,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 }
             }
         }
+        consumer?.close()
     }
 
     /**
