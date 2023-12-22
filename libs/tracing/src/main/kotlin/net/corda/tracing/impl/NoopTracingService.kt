@@ -21,7 +21,7 @@ class NoopTracingService : TracingService {
         }
 
         override fun markInScope(): AutoCloseable {
-            return AutoCloseable {  }
+            return AutoCloseable { }
         }
 
         override fun errorAndFinish(e: Exception) {
@@ -58,7 +58,10 @@ class NoopTracingService : TracingService {
         }
     }
 
-    override fun addTraceHeaders(headers: List<Pair<String, String>>, tracingHeaders: List<Pair<String, String>>): List<Pair<String, String>> {
+    override fun addTraceHeaders(
+        headers: List<Pair<String, String>>,
+        tracingHeaders: List<Pair<String, String>>
+    ): List<Pair<String, String>> {
         return headers
     }
 
