@@ -61,17 +61,6 @@ class MultiSourceEventMediatorImplTest {
     fun setup(){
         mediator = MultiSourceEventMediatorImpl(eventMediatorConfig, taskManager, mediatorComponentFactory, lifecycleCoordinator)
     }
-    @Test
-    fun `Start the mediator`() {
-        mediator.start()
-
-        verify(mediatorComponentFactory).createMediatorState()
-        verify(lifecycleCoordinator).start()
-        verify(taskManager, times(3)).executeLongRunningTask<Unit>(any())
-        verify(mediatorComponentFactory).createClients(any())
-        verify(mediatorComponentFactory).createRouter(any())
-        verify(consumerProcessor, times(2)).processTopic(any(), any())
-    }
 
     @Test
     fun `Start And close the mediator`() {
