@@ -14,12 +14,11 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.parallel.Execution
-import org.junit.jupiter.api.parallel.ExecutionMode
+import org.junit.jupiter.api.parallel.Isolated
 import java.time.Duration
 import java.util.UUID
 
-@Execution(ExecutionMode.SAME_THREAD)
+@Isolated("As it onboards MGM")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SingleClusterDynamicNetworkTest : ClusterReadiness by ClusterReadinessChecker() {
     private val testUniqueId = UUID.randomUUID()
