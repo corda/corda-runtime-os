@@ -27,13 +27,13 @@ class DummyUtxoVaultNamedQueryFactory : VaultNamedQueryFactory {
     }
 
     class DummyUtxoVaultNamedQueryFilter : VaultNamedQueryStateAndRefFilter<TestUtxoState> {
-        override fun filter(state: StateAndRef<TestUtxoState>, parameters: MutableMap<String, Any>): Boolean {
+        override fun filter(state: StateAndRef<TestUtxoState>, parameters: MutableMap<String, Any?>): Boolean {
             return true
         }
     }
 
     class DummyUtxoVaultNamedQueryTransformer : VaultNamedQueryStateAndRefTransformer<TestUtxoState, String> {
-        override fun transform(state: StateAndRef<TestUtxoState>, parameters: MutableMap<String, Any>): String {
+        override fun transform(state: StateAndRef<TestUtxoState>, parameters: MutableMap<String, Any?>): String {
             return state.state.contractState.testField
         }
     }

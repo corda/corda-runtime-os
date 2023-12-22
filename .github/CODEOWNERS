@@ -25,8 +25,8 @@ CODEOWNERS         @corda/blt @corda/corda5-team-leads
 /tools/plugins/plugins-rest/                    @corda/rest
 /tools/plugins/virtual-node/                    @corda/rest
 
-# Corda Helm chart for cluster management team
-/charts/corda/                                @corda/cluster-management
+# Helm charts for BLT team
+/charts/                                @corda/blt
 
 # Modules to be audited by the Network team
 /applications/workers/release/p2p-gateway-worker/               @corda/corda-platform-network-team

@@ -126,6 +126,50 @@ interface VirtualNodeRestResource : RestResource {
         requestId: String
     ): AsyncOperationStatus
 
+    @HttpGET(
+        path = "create/db/crypto",
+        title = "Gets Crypto creation schema SQL",
+        description = "This method returns the Crypto SQL needed for intention to create a virtual node.",
+        responseDescription = "SQL needed to create the Crypto DB",
+        minVersion = RestApiVersion.C5_2
+    )
+    fun getCreateCryptoSchemaSQL(): ResponseEntity<String>
+
+    @HttpGET(
+        path = "create/db/uniqueness",
+        title = "Gets Uniqueness creation schema SQL",
+        description = "This method returns the Uniqueness SQL needed for intention to create a virtual node.",
+        responseDescription = "SQL needed to create the Uniqueness DB",
+        minVersion = RestApiVersion.C5_2
+    )
+    fun getCreateUniquenessSchemaSQL(): ResponseEntity<String>
+
+    @HttpGET(
+        path = "create/db/vault/{cpiChecksum}",
+        title = "Gets Vault creation schema SQL",
+        description = "This method returns the Vault SQL needed for intention to create a virtual node and latest uploaded CPI.",
+        responseDescription = "SQL needed to create the Vault DB and CPI",
+        minVersion = RestApiVersion.C5_2
+    )
+    fun getCreateVaultSchemaSQL(
+        @RestPathParameter(description = "The file checksum of the CPI")
+        cpiChecksum: String,
+    ): ResponseEntity<String>
+
+    @HttpGET(
+        path = "{virtualNodeShortId}/db/vault/{newCpiChecksum}",
+        title = "Gets migration schema SQL",
+        description = "This method returns the SQL needed to update the virtual node's CPI",
+        responseDescription = "SQL needed to bring schema up to date.",
+        minVersion = RestApiVersion.C5_2
+    )
+    fun getUpdateSchemaSQL(
+        @RestPathParameter(description = "Short ID of the virtual node instance")
+        virtualNodeShortId: String,
+        @RestPathParameter(description = "The file checksum of the CPI to be upgraded to")
+        newCpiChecksum: String
+    ): ResponseEntity<String>
+
     /**
      * Asynchronous endpoint to upgrade a virtual node's CPI.
      */
