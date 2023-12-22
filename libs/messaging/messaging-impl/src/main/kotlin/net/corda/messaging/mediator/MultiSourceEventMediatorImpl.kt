@@ -37,7 +37,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         taskManager.executeLongRunningTask(::runMediator)
     }
 
-    internal fun runMediator() {
+    private fun runMediator() {
         mediatorState.running.set(true)
         val clients = mediatorComponentFactory.createClients(::onSerializationError)
         val messageRouter = mediatorComponentFactory.createRouter(clients)
