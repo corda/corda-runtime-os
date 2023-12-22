@@ -44,7 +44,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
-import net.corda.data.p2p.crypto.AuthenticatedDataMessage
 import net.corda.data.p2p.markers.LinkManagerSentMarker
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.p2p.linkmanager.TraceableItem
@@ -1093,17 +1092,23 @@ class OutboundMessageProcessorTest {
             }.filter {
                 (it.value as? AppMessageMarker)?.marker is LinkManagerSentMarker
             }
-            softly.assertThat(sentMarkers).hasSize(3)
+            softly.assertThat(sentMarkers.map { it.key }).containsExactlyInAnyOrderElementsOf(messageIds)
 
             val linkOutMessages = records.filter {
                 it.topic == Schemas.P2P.LINK_OUT_TOPIC
             }
             softly.assertThat(linkOutMessages).hasSize(3)
-            linkOutMessages.map {
-                val message = ((it.value as LinkOutMessage).payload as AuthenticatedDataMessage)
-               // softly.assertThat(message.header).isEqualTo()
-                softly.assertThat(message.payload)
-            }
+//            linkOutMessages.map {
+//                val message = it.value as LinkOutMessage
+//                  val payload = message.payload as? AuthenticatedDataMessage
+//                  assertThat(payload?.header).isEqualTo(header)
+//                  assertThat(payload?.authTag?.array()).isEqualTo(byteArrayOf(1, 4))
+//
+//                  assertThat(message.header?.destinationIdentity).isEqualTo(PEER_PARTY.toAvro())
+//                  assertThat(message.header?.sourceIdentity).isEqualTo(OUR_PARTY.toAvro())
+//                assertThat(message.header?.destinationNetworkType).isEqualTo(NetworkType.CORDA_5)
+//                assertThat(message.header?.address).isEqualTo("http://bob.com")
+//            }
 
         }
         verify(messagesPendingSession, never()).queueMessage(any(), any())
