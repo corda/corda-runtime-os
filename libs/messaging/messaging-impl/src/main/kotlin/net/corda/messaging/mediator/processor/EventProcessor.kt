@@ -35,7 +35,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         group: Map<K, List<Record<K, E>>>,
         retrievedStates: Map<String, State>
     ) {
-        group.map { groupEntry ->
+        group.forEach { groupEntry ->
             val groupKey = groupEntry.key.toString()
             val state = retrievedStates.getOrDefault(groupKey, null)
             var processorState = stateManagerHelper.deserializeValue(state)?.let { stateValue ->
