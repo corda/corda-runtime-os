@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Class to construct a message bus consumer and begin processing its subscribed topic(s).
- * ConsumerProcessor will attempt to creat message bus consumers and process records while the mediator is not stopped.
+ * ConsumerProcessor will attempt to create message bus consumers and process records while the mediator is not stopped.
  * If any intermittent failures occur, the message bus consumer will reset to last committed position and retry poll and process loop.
  * If Fatal errors occur they will be throw back to the [MultiSourceEventMediatorImpl]
  * Polled records are divided into groups to process by the [groupAllocator].
