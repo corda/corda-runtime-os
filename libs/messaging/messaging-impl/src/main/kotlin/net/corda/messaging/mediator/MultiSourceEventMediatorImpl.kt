@@ -31,6 +31,25 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         config.messageProcessor.eventValueClass,
         ::onSerializationError
     )
+    private val taskManagerHelper = TaskManagerHelper(
+        taskManager, stateManagerHelper, metrics
+    )
+    private val groupAllocator = GroupAllocator()
+    private val uniqueId = UUID.randomUUID().toString()
+    private val lifecycleCoordinatorName = LifecycleCoordinatorName(
+        "MultiSourceEventMediator--${config.name}", uniqueId
+    )
+    private val lifecycleCoordinator =
+        lifecycleCoordinatorFactory.createCoordinator(lifecycleCoordinatorName) { _, _ -> }
+
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = lifecycleCoordinatorName
+
+    private val stopped = AtomicBoolean(false)
+    private val running = AtomicBoolean(false)
+    // TODO This timeout was set with CORE-17768 (changing configuration value would affect other messaging patterns)
+    //  This should be reverted to use configuration value once event mediator polling is refactored (planned for 5.2)
+    private val pollTimeout = Duration.ofMillis(50)
 
     override fun start() {
         log.debug { "Starting multi-source event mediator with config: $config" }
@@ -239,5 +258,10 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 }
             }
         }
+    }
+
+    private fun<K : Any, E: Any> MediatorMessage<E>.asRecord(key: K): Record<K, E>  {
+        // Convert reply into a record and added to the queue, so it can be processed later on
+        return Record("", key, payload)
     }
 }
