@@ -65,7 +65,7 @@ class MultiSourceEventMediatorImplTest {
     @Test
     fun `Start And close the mediator`() {
         mediator.start()
-        Thread.sleep(10)
+        Thread.sleep(30)
 
         verify(mediatorComponentFactory).createMediatorState()
         verify(lifecycleCoordinator).start()
