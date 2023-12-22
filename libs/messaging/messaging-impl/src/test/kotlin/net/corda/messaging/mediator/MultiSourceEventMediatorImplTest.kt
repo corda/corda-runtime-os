@@ -26,7 +26,6 @@ class MultiSourceEventMediatorImplTest {
     private val messagingClient = mock<MessagingClient>()
     private val consumerProcessor = mock<ConsumerProcessor<Any, Any, Any>>()
     private val mediatorComponentFactory = mock<MediatorComponentFactory<Any, Any, Any>>().apply {
-        whenever(createMediatorState()).thenReturn(mediatorState)
         whenever(createClients(any())).thenReturn(listOf(messagingClient))
         whenever(createRouter(any())).thenReturn(mock())
         whenever(createConsumerProcessor(any(), any(), any(), eq(mediatorState))).thenReturn(consumerProcessor)
@@ -67,7 +66,6 @@ class MultiSourceEventMediatorImplTest {
         mediator.start()
         Thread.sleep(30)
 
-        verify(mediatorComponentFactory).createMediatorState()
         verify(lifecycleCoordinator).start()
         verify(mediatorComponentFactory).createClients(any())
         verify(mediatorComponentFactory).createRouter(any())

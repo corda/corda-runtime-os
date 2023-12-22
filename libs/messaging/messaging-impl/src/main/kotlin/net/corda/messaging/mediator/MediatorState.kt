@@ -9,8 +9,8 @@ import java.util.concurrent.atomic.AtomicBoolean
  * @property running When set to true, the mediator pattern has been started. When False the mediator pattern is closed or errorred.
  */
 data class MediatorState (
-    private val stopped: AtomicBoolean,
-    val running: AtomicBoolean
+    private val stopped: AtomicBoolean = AtomicBoolean(false),
+    val running: AtomicBoolean = AtomicBoolean(false)
     ) {
     fun stop() = stopped.set(true)
     fun stopped() = stopped.get()

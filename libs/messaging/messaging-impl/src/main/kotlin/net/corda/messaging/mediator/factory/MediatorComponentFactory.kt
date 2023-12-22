@@ -17,7 +17,6 @@ import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.messaging.mediator.processor.ConsumerProcessor
 import net.corda.messaging.mediator.processor.EventProcessor
 import net.corda.taskmanager.TaskManager
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Factory for creating various components used by Multi-Source Event Mediator.
@@ -110,16 +109,5 @@ class MediatorComponentFactory<K : Any, S : Any, E : Any>(
         val eventProcessor = EventProcessor(eventMediatorConfig, stateManagerHelper, messageRouter, consumerProcessorState)
         return ConsumerProcessor(eventMediatorConfig, groupAllocator, taskManager, messageRouter, mediatorState, consumerProcessorState,
             eventProcessor)
-    }
-
-    /**
-     * Create a state used to track the mediators processing status
-     * @return Mediator state
-     */
-    fun createMediatorState(): MediatorState {
-        return MediatorState(
-            AtomicBoolean(false),
-            AtomicBoolean(false)
-        )
     }
 }

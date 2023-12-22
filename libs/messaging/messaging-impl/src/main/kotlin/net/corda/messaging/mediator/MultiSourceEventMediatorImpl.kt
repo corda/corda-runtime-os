@@ -24,7 +24,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         get() = lifecycleCoordinator.name
 
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.name}")
-    private val mediatorState = mediatorComponentFactory.createMediatorState()
+    private val mediatorState = MediatorState()
     private val consumerConfig = MediatorConsumerConfig(
         config.messageProcessor.keyClass,
         config.messageProcessor.eventValueClass,
@@ -68,11 +68,10 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         lifecycleCoordinator.close()
     }
 
-    private fun handleTaskException(exception: Throwable): Nothing? {
+    private fun handleTaskException(exception: Throwable): Unit {
         mediatorState.stop()
         lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, "Error: ${exception.message}")
         log.error("${exception.message}. Closing Multi-Source Event Mediator.", exception)
-        return null
     }
 
     private fun onSerializationError(event: ByteArray) {
