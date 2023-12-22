@@ -10,11 +10,11 @@ import java.util.concurrent.ConcurrentHashMap
  * @property running When set to true, the mediator pattern has been started. When False the mediator pattern is closed or errorred.
  * @property asynchronousOutputs The asynchronous outputs associated with a
  */
-data class ConsumerProcessorState (
-    val asynchronousOutputs: ConcurrentHashMap<String, MutableList<MediatorMessage<Any>>> = ConcurrentHashMap<String,
-            MutableList<MediatorMessage<Any>>>(),
+data class ConsumerProcessorState(
+    val asynchronousOutputs: ConcurrentHashMap<String, MutableList<MediatorMessage<Any>>>
+    = ConcurrentHashMap<String, MutableList<MediatorMessage<Any>>>(),
     val statesToPersist: StatesToPersist = StatesToPersist()
-    ) {
+) {
     fun clear() {
         asynchronousOutputs.clear()
         statesToPersist.clear()

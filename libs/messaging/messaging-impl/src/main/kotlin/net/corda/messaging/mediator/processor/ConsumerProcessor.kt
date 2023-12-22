@@ -129,7 +129,6 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             metrics.commitTimer.recordCallable {
                 consumer.syncCommitOffsets()
             }
-            consumerProcessorState.clear()
         }
         metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
     }
