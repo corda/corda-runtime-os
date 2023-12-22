@@ -19,12 +19,22 @@ import java.io.File
 /**
  * Get the default CA for testing. This is written to file so it can be shared across tests.
  */
-fun getCa(): FileSystemCertificatesAuthority = CertificateAuthorityFactory
-    .createFileSystemLocalAuthority(
-        KeysFactoryDefinitions("RSA".toAlgorithm(), 3072, null,),
-        File("build${File.separator}tmp${File.separator}ca")
-    ).also { it.save() }
+fun getCa(): FileSystemCertificatesAuthority = createCa("default")
 
+/**
+ * Create a certificate authority for testing.
+ */
+fun createCa(
+    name: String
+) : FileSystemCertificatesAuthority {
+    val root = File("build${File.separator}tmp${File.separator}ca${File.separator}$name")
+    return CertificateAuthorityFactory.createFileSystemLocalAuthority(
+        KeysFactoryDefinitions("RSA".toAlgorithm(), 3072, null,),
+        root,
+    ).also {
+        it.save()
+    }
+}
 /**
  * Generate a certificate from a CSR as a PEM string.
  * The certificate is also returned as a PEM string.

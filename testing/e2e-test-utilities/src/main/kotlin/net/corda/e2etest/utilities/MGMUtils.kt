@@ -5,7 +5,10 @@ package net.corda.e2etest.utilities
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.e2etest.utilities.ClusterBuilder.Companion.REST_API_VERSION_PATH
+import net.corda.e2etest.utilities.types.DynamicOnboardingGroup
+import net.corda.e2etest.utilities.types.NamedCertificateAuthority
 import net.corda.e2etest.utilities.types.NetworkOnboardingMetadata
+import net.corda.e2etest.utilities.types.importTlsCertificate
 import net.corda.rest.ResponseCode
 import net.corda.utilities.minutes
 import net.corda.utilities.seconds
@@ -17,13 +20,15 @@ import net.corda.rest.annotations.RestApiVersion
 import java.nio.charset.StandardCharsets
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
+import java.util.UUID
 
 /**
  * Calls the necessary endpoints to create a vnode, and onboard the MGM to that vnode.
  */
 fun ClusterInfo.onboardMgm(
-    mgmName: String = "O=Mgm, L=London, C=GB, OU=$testRunUniqueId",
-    groupPolicyConfig: GroupPolicyConfig = GroupPolicyConfig()
+    mgmName: String = "O=Mgm, L=London, C=GB, OU=${UUID.randomUUID()}",
+    groupPolicyConfig: GroupPolicyConfig = GroupPolicyConfig(),
+    ca: NamedCertificateAuthority = NamedCertificateAuthority.default()
 ): NetworkOnboardingMetadata {
     val mgmCpiName = "mgm.cpi"
     conditionallyUploadCpiSigningCertificate()
@@ -38,7 +43,7 @@ fun ClusterInfo.onboardMgm(
     val mgmSessionCertAlias = "$CERT_ALIAS_SESSION-$mgmHoldingId"
     if (groupPolicyConfig.sessionPkiMode == "Standard") {
         val mgmSessionCsr = generateCsr(mgmName, sessionKeyId, mgmHoldingId)
-        mgmSessionCert = getCa().generateCert(mgmSessionCsr)
+        mgmSessionCert = ca.ca.generateCert(mgmSessionCsr)
         val mgmSessionCertFile = File.createTempFile("${this.hashCode()}$CAT_SESSION_INIT", ".pem").also {
             it.deleteOnExit()
             it.writeBytes(mgmSessionCert.toByteArray())
@@ -52,30 +57,39 @@ fun ClusterInfo.onboardMgm(
     )
 
     val registrationContext = createMgmRegistrationContext(
-        getCa().caCertificate.toPem(),
+        ca.ca.caCertificate.toPem(),
         sessionKeyId,
         ecdhKeyId,
         groupPolicyConfig
     )
-
-    if (!keyExists(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS)) {
-        disableCertificateRevocationChecks()
-        val tlsKeyId = createKeyFor(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS, DEFAULT_KEY_SCHEME)
-        val mgmTlsCsr = generateCsr(mgmName, tlsKeyId)
-        val mgmTlsCert = File.createTempFile("${this.hashCode()}$CAT_TLS", ".pem").also {
-            it.deleteOnExit()
-            it.writeBytes(getCa().generateCert(mgmTlsCsr).toByteArray())
-        }
-        importCertificate(mgmTlsCert, CERT_USAGE_P2P, CERT_ALIAS_P2P)
-    }
+    val tlsCertificateAlias = importTlsCertificate(
+        ca,
+        mgmName,
+    )
     val registrationId = register(mgmHoldingId, registrationContext, waitForApproval = true)
     if (mgmSessionCert != null) {
-        configureNetworkParticipant(mgmHoldingId, sessionKeyId, mgmSessionCertAlias)
+        configureNetworkParticipant(mgmHoldingId, sessionKeyId, tlsCertificateAlias, mgmSessionCertAlias)
     } else {
-        configureNetworkParticipant(mgmHoldingId, sessionKeyId)
+        configureNetworkParticipant(mgmHoldingId, sessionKeyId, tlsCertificateAlias)
     }
 
     return NetworkOnboardingMetadata(mgmHoldingId, mgmName, registrationId, registrationContext, this)
+}
+
+fun ClusterInfo.startDynamicGroup(
+    mgmName: String = "O=Mgm, L=London, C=GB, OU=$testRunUniqueId",
+    groupPolicyConfig: GroupPolicyConfig = GroupPolicyConfig()
+): DynamicOnboardingGroup {
+    val ca = NamedCertificateAuthority()
+    val metadata = onboardMgm(
+        mgmName = mgmName,
+        groupPolicyConfig = groupPolicyConfig,
+        ca = ca,
+    )
+    val groupPolicy = exportGroupPolicy(metadata.holdingId)
+    return DynamicOnboardingGroup(
+        metadata, ca, groupPolicy
+    )
 }
 
 /**

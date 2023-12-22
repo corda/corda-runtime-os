@@ -4,10 +4,8 @@ import net.corda.e2etest.utilities.ClusterInfo
 import net.corda.e2etest.utilities.P2PEndpointInfo
 import net.corda.e2etest.utilities.RestEndpointInfo
 import net.corda.e2etest.utilities.SimpleResponse
-import net.corda.e2etest.utilities.exportGroupPolicy
 import net.corda.e2etest.utilities.lookup
-import net.corda.e2etest.utilities.onboardMember
-import net.corda.e2etest.utilities.onboardMgm
+import net.corda.e2etest.utilities.startDynamicGroup
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.test.util.eventually
@@ -230,11 +228,11 @@ class LargeNetworkTest {
             clusters.forEach { cluster ->
                 logDuration("onboarding member $i into ${cluster.id} out of $memberCount") {
                     val memberX500Name = MemberX500Name("Member-$i-${cluster.id}", testName, "London", "GB")
-                    val holdingId = cluster.onboardMember(
-                        null,
-                        testName,
-                        groupPolicy,
-                        memberX500Name.toString(),
+                    val holdingId = dynamicGroup.onboardMember(
+                        clusterInfo = cluster,
+                        cpb = null,
+                        cpiName = testName,
+                        x500Name = memberX500Name.toString()
                     ).holdingId
                     cluster.onboardedMembers.add(
                         OnboardedMember(
@@ -290,11 +288,10 @@ class LargeNetworkTest {
                 MemberX500Name.parse(it)
             }
     }
-    private val groupPolicy by lazy {
+    private val dynamicGroup by lazy {
         println("Onboarding MGM")
-        val mgmInfo = mgmCluster.onboardMgm(mgmName.toString())
-        mgmCluster.exportGroupPolicy(mgmInfo.holdingId).also {
-            assertThat(it).isNotEmpty.isNotBlank
+        mgmCluster.startDynamicGroup(mgmName.toString()).also {
+            assertThat(it.groupPolicy).isNotEmpty.isNotBlank
             println("MGM was onboarded")
         }
     }

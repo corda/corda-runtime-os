@@ -1,7 +1,9 @@
 package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.e2etest.utilities.types.NamedCertificateAuthority
 import net.corda.e2etest.utilities.types.NetworkOnboardingMetadata
+import net.corda.e2etest.utilities.types.importTlsCertificate
 import net.corda.e2etest.utilities.types.jsonToMemberList
 import net.corda.rest.ResponseCode
 import net.corda.rest.annotations.RestApiVersion
@@ -32,7 +34,6 @@ const val CAT_NOTARY = "NOTARY"
 const val TENANT_P2P = "p2p"
 const val CERT_USAGE_P2P = "p2p-tls"
 const val CERT_USAGE_SESSION = "p2p-session"
-const val CERT_ALIAS_P2P = "p2p-tls-cert"
 const val CERT_ALIAS_SESSION = "p2p-session-cert"
 const val DEFAULT_KEY_SCHEME = "CORDA.ECDSA.SECP256R1"
 const val DEFAULT_SIGNATURE_SPEC = "SHA256withECDSA"
@@ -66,6 +67,7 @@ fun ClusterInfo.onboardMember(
     tlsCertificateUploadedCallback: (String) -> Unit = {},
     useSessionCertificate: Boolean = false,
     useLedgerKey: Boolean = true,
+    ca: NamedCertificateAuthority = NamedCertificateAuthority.default(),
 ): NetworkOnboardingMetadata {
     conditionallyUploadCpiSigningCertificate()
     conditionallyUploadCordaPackage(cpiName, cpb, groupPolicy)
@@ -77,7 +79,7 @@ fun ClusterInfo.onboardMember(
     val mgmSessionCertAlias = "$CERT_ALIAS_SESSION-$holdingId"
     if (useSessionCertificate) {
         val memberSessionCsr = generateCsr(x500Name, sessionKeyId, holdingId)
-        memberSessionCert = getCa().generateCert(memberSessionCsr)
+        memberSessionCert = ca.ca.generateCert(memberSessionCsr)
         val mgmSessionCertFile = File.createTempFile("${this.hashCode()}$CAT_SESSION_INIT", ".pem").also {
             it.deleteOnExit()
             it.writeBytes(memberSessionCert.toByteArray())
@@ -92,18 +94,7 @@ fun ClusterInfo.onboardMember(
         null
     }
 
-    if (!keyExists(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS)) {
-        disableCertificateRevocationChecks()
-        val tlsKeyId = createKeyFor(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS, DEFAULT_KEY_SCHEME)
-        val tlsCsr = generateCsr(x500Name, tlsKeyId)
-        val tlsCert = getCa().generateCert(tlsCsr)
-        val tlsCertFile = File.createTempFile("${this.hashCode()}$CAT_TLS", ".pem").also {
-            it.deleteOnExit()
-            it.writeBytes(tlsCert.toByteArray())
-        }
-        importCertificate(tlsCertFile, CERT_USAGE_P2P, CERT_ALIAS_P2P)
-        tlsCertificateUploadedCallback(tlsCert)
-    }
+    val tlsCertificateAlias = importTlsCertificate(ca, x500Name, tlsCertificateUploadedCallback)
 
     val registrationContext = createRegistrationContext(
         sessionKeyId,
@@ -111,9 +102,9 @@ fun ClusterInfo.onboardMember(
     ) + (getAdditionalContext?.let { it(holdingId) } ?: emptyMap())
 
     if (memberSessionCert != null) {
-        configureNetworkParticipant(holdingId, sessionKeyId, mgmSessionCertAlias)
+        configureNetworkParticipant(holdingId, sessionKeyId, tlsCertificateAlias, mgmSessionCertAlias)
     } else {
-        configureNetworkParticipant(holdingId, sessionKeyId)
+        configureNetworkParticipant(holdingId, sessionKeyId, tlsCertificateAlias)
     }
 
     val registrationId = register(holdingId, registrationContext, waitForApproval)
@@ -193,12 +184,13 @@ fun ClusterInfo.onboardNotaryMember(
 fun ClusterInfo.configureNetworkParticipant(
     holdingId: String,
     sessionKeyId: String,
+    tlsCertificateAlias: String,
     sessionCertAlias: String? = null
 ) {
     return cluster {
         assertWithRetryIgnoringExceptions {
             interval(1.seconds)
-            command { configureNetworkParticipant(holdingId, sessionKeyId, sessionCertAlias) }
+            command { configureNetworkParticipant(holdingId, sessionKeyId, tlsCertificateAlias, sessionCertAlias) }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
             failMessage("Failed to configure member '$holdingId' as a network participant")
         }
