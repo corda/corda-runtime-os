@@ -10,10 +10,8 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.tracing.impl.TracingState
-import java.net.http.HttpRequest
 import java.util.ServiceLoader
 import java.util.concurrent.ExecutorService
-import net.corda.tracing.TraceContext as TraceContext
 
 /**
  * Configures the tracing for a given Corda worker.
