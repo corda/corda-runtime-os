@@ -1498,7 +1498,7 @@ class DynamicMemberRegistrationServiceTest {
         }
 
         @Test
-        fun `re-registration with previous that contains the notary key ID won't fail`() {
+        fun `re-registration with previous context that contains the notary key ID won't fail`() {
             val memberContext = argumentCaptor<KeyValuePairList>()
             whenever(keyValuePairListSerializer.serialize(memberContext.capture())).doReturn(MEMBER_CONTEXT_BYTES)
             val notaryKeyConvertedFields = mapOf(
