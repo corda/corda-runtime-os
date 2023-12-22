@@ -10,8 +10,10 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.tracing.impl.TracingState
+import java.net.http.HttpRequest
 import java.util.ServiceLoader
 import java.util.concurrent.ExecutorService
+import net.corda.tracing.TraceContext as TraceContext
 
 /**
  * Configures the tracing for a given Corda worker.
@@ -46,12 +48,12 @@ fun getOrCreateBatchPublishTracing(clientId: String): BatchPublishTracing {
 
 fun addTraceContextToRecords(records: List<Record<*, *>>): List<Record<*, *>> = records.map(::addTraceContextToRecord)
 
-fun addTraceContextToRecord(it: Record<*, *>): Record<out Any, out Any> {
-    return it.copy(headers = TracingState.currentTraceService.addTraceHeaders(it.headers))
+fun addTraceContextToRecord(record: Record<*, *>, tracingHeaders: List<Pair<String, String>> = emptyList()): Record<out Any, out Any> {
+    return record.copy(headers = TracingState.currentTraceService.addTraceHeaders(record.headers, tracingHeaders))
 }
 
-fun addTraceContextToRecord(it: CordaProducerRecord<*, *>): CordaProducerRecord<out Any, out Any> {
-    return it.copy(headers = TracingState.currentTraceService.addTraceHeaders(it.headers))
+fun addTraceContextToRecord(record: CordaProducerRecord<*, *>): CordaProducerRecord<out Any, out Any> {
+    return record.copy(headers = TracingState.currentTraceService.addTraceHeaders(record.headers))
 }
 
 fun traceSend(

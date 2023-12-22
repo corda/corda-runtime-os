@@ -73,7 +73,7 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         processor: SyncRPCProcessor<REQUEST, RESPONSE>,
     ) {
         val server = webServer
-        val operationName = "$name Request"
+        val operationName = "http server - path - $rpcEndpoint - request received - $name"
 
         val webHandler = WebHandler { context ->
             trace(operationName) {

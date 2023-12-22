@@ -141,9 +141,16 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
 
     private val recordTracing: BraveRecordTracing by lazy { BraveRecordTracing(tracing) }
 
-    override fun addTraceHeaders(headers: List<Pair<String, String>>): List<Pair<String, String>> {
+    override fun addTraceHeaders(headers: List<Pair<String, String>>, tracingHeaders: List<Pair<String, String>>): List<Pair<String, String>> {
+        val ctx = if(tracingHeaders.isEmpty()) {
+            tracing.currentTraceContext().get()
+        } else {
+            recordTracing.extractTraceContext(tracingHeaders)?.context()
+        }
+
         val headersWithTracing = headers.toMutableList()
-        recordInjector.inject(tracing.currentTraceContext().get(), headersWithTracing)
+
+        recordInjector.inject(ctx, headersWithTracing)
         return headersWithTracing
     }
 

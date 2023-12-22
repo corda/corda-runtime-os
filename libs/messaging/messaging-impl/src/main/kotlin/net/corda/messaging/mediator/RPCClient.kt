@@ -13,7 +13,6 @@ import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_KEY
 import net.corda.messaging.utils.HTTPRetryConfig
 import net.corda.messaging.utils.HTTPRetryExecutor
 import net.corda.metrics.CordaMetrics
-import net.corda.tracing.TraceUtils.extractTracingHeaders
 import net.corda.tracing.traceSend
 import net.corda.utilities.debug
 import net.corda.utilities.trace
@@ -65,28 +64,31 @@ class RPCClient(
     }
 
     private fun processMessage(message: MediatorMessage<*>): MediatorMessage<*>? {
-        // Extract the tracing headers from the mediator message, so they can be
+        // Extract the headers from the mediator message, so they can be
         // copied into the HTTP request and keep the traceability intact
-        val tracingHeaders = message.extractTracingHeaders()
+        val headers = message.properties.filter { (_, v) -> v is String }.map { (k, v) -> k to (v as String) }
 
         // Build the HTTP request based on the mediator message and the tracing headers
-        val request = buildHttpRequest(message, tracingHeaders)
+        val request = buildHttpRequest(message, headers)
 
-        val response = traceHttpSend(tracingHeaders, request.uri()) {
+        val response = traceHttpSend(headers, request.uri()) {
             sendWithRetry(request)
         }
 
         val deserializedResponse = deserializePayload(response.body())
 
         return deserializedResponse?.let {
-            val headers: MutableMap<String, Any> = mutableMapOf("statusCode" to response.statusCode())
-            tracingHeaders.forEach { (k, v) -> headers[k] = v }
-            MediatorMessage(deserializedResponse, headers)
+            val responseHeaders: MutableMap<String, Any> = mutableMapOf()
+
+            headers.forEach { (k, v) -> responseHeaders[k] = v }
+            responseHeaders["statusCode"] = response.statusCode()
+
+            MediatorMessage(deserializedResponse, responseHeaders)
         }
     }
 
-    private inline fun<T> traceHttpSend(tracingHeaders: List<Pair<String, String>>, uri: URI, send: ()-> T): T {
-        val traceContext = traceSend(tracingHeaders, "http - send - path - ${uri.path}")
+    private inline fun <T> traceHttpSend(tracingHeaders: List<Pair<String, String>>, uri: URI, send: () -> T): T {
+        val traceContext = traceSend(tracingHeaders, "http client - send request - path - ${uri.path}")
 
         traceContext.traceTag("path", uri.path.toString())
 
@@ -138,7 +140,7 @@ class RPCClient(
         return builder.build()
     }
 
-    private fun<T: Any> MediatorMessage<T>.extractCordaRequestKeyHeader(): Pair<String, String>? {
+    private fun <T : Any> MediatorMessage<T>.extractCordaRequestKeyHeader(): Pair<String, String>? {
         val value = getPropertyOrNull(MSG_PROP_KEY)?.let { value ->
             if (value is ByteArray) {
                 platformDigestService.hash(value, DigestAlgorithmName.SHA2_256).toHexString()

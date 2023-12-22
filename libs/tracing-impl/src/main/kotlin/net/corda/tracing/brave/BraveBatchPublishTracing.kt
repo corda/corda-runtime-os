@@ -8,7 +8,7 @@ import net.corda.tracing.BatchPublishTracing
 class BraveBatchPublishTracing(
     private val clientId: String,
     private val tracer: Tracer,
-    private val tracingContextExtractor: TraceContext.Extractor<List<Pair<String, String>>>,
+    private val recordExtractor: TraceContext.Extractor<List<Pair<String, String>>>,
 ) : BatchPublishTracing {
     private val batchSpans = mutableListOf<Span>()
 
@@ -21,7 +21,7 @@ class BraveBatchPublishTracing(
         // We then create a span for each sub batch to ensure we maintain the parent child relationships of the trace as
         // the incoming batch can contain messages with different trace contexts.
         batchSpans.addAll(
-            recordHeaders.map(tracingContextExtractor::extract)
+            recordHeaders.map(recordExtractor::extract)
             .filter { it.context() != null }
             .groupBy { ctx ->
                 ctx.context().traceId()
