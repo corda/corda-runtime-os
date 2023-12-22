@@ -56,7 +56,7 @@ internal class SandboxServiceImpl @Activate constructor(
      * We also employ a lock to ensure writes are done to every map/set group atomically and we don't try to install
      * and uninstall bundles from OSGi concurrently.
      */
-    val bundleLock = ReentrantLock()
+    private val bundleLock = ReentrantLock()
 
     // Maps each bundle ID to the sandbox that the bundle is part of.
     private val bundleIdToSandbox = ConcurrentHashMap<Long, Sandbox>()
