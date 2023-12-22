@@ -60,7 +60,7 @@ class RestServerTest {
                     ),
                     multiPartDir,
                     mock()
-                )
+                ).start()
             },
             SSL_PASSWORD_MISSING
         )
@@ -93,7 +93,7 @@ class RestServerTest {
                     ),
                     multiPartDir,
                     mock()
-                )
+                ).start()
             },
             INSECURE_SERVER_DEV_MODE_WARNING
         )
