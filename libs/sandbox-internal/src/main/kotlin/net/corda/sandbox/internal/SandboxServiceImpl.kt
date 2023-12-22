@@ -54,7 +54,7 @@ internal class SandboxServiceImpl @Activate constructor(
     /**
      * We use concurrent hash maps everywhere (including sets) to allow concurrent access whilst keeping gets lock free.
      * We also employ a lock to ensure writes are done to every map/set group atomically and we don't try to install
-     * and uninstall bundles from OSGi concurretly.
+     * and uninstall bundles from OSGi concurrently.
      */
     val bundleLock = ReentrantLock()
 
