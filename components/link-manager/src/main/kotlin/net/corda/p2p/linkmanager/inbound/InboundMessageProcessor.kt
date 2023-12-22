@@ -170,7 +170,7 @@ internal class InboundMessageProcessor(
         }
     }
 
-    private data class SessionIdAndMessage(
+    internal data class SessionIdAndMessage(
         val sessionId: String,
         val message: TraceableItem<out AvroSealedClasses.DataMessage, LinkInMessage>
     )

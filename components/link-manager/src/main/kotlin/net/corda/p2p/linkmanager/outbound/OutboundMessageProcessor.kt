@@ -307,7 +307,7 @@ internal class OutboundMessageProcessor(
         return messageWithNoSession + processRemoteAuthenticatedMessage(messagesWithSession, isReplay)
     }
 
-    private sealed class ValidateAuthenticatedMessageResult {
+    internal sealed class ValidateAuthenticatedMessageResult {
         data class SessionNeeded(
             val messageWithKey: AuthenticatedMessageAndKey,
             val markerRecords: List<Record<String, *>>
