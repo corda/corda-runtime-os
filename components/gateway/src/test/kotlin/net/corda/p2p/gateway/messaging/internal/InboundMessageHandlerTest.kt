@@ -27,7 +27,7 @@ import net.corda.data.p2p.crypto.MessageType
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage
 import net.corda.data.p2p.crypto.ResponderHelloMessage
 import net.corda.data.p2p.crypto.internal.InitiatorHandshakeIdentity
-import net.corda.data.p2p.gateway.LinkManagerResponse
+import net.corda.data.p2p.linkmanager.LinkManagerResponse
 import net.corda.messaging.api.publisher.HttpRpcClient
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpWriter
