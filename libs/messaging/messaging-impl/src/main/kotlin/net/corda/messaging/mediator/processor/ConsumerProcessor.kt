@@ -103,6 +103,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val messages = consumer.poll(pollTimeout)
         val startTimestamp = System.nanoTime()
         val polledRecords = messages.map { it.toRecord() }
+        consumerProcessorState.clear()
         if (messages.isNotEmpty()) {
             var groups = groupAllocator.allocateGroups(polledRecords, config)
             var statesToProcess = stateManager.get(messages.map { it.key.toString() }.distinct())
