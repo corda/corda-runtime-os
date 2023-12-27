@@ -25,21 +25,29 @@ fun ClusterInfo.importTlsCertificate(
     tlsCertificateUploadedCallback: (String) -> Unit = {},
 ): String {
     val keyAlias = "TLS-${ca.name}"
+    println("QQQ importTlsCertificate for ${this.p2p.uri}...")
+    println("QQQ \t keyAlias: $keyAlias")
     val certificateAlias = "RLS-CERTIFICATE-${ca.name}"
+    println("QQQ \t certificateAlias: $certificateAlias")
     importLocker.withLock {
         if (!keyExists(TENANT_P2P, keyAlias, CAT_TLS)) {
+            println("QQQ \t no such key...")
             disableCertificateRevocationChecks()
             val tlsKeyId = createKeyFor(TENANT_P2P, keyAlias, CAT_TLS, DEFAULT_KEY_SCHEME)
+            println("QQQ \t tlsKeyId: $tlsKeyId...")
             val tlsCsr = generateCsr(x500Name, tlsKeyId)
             val tlsCert = ca.ca.generateCert(tlsCsr)
             val tlsCertFile = File.createTempFile("${this.hashCode()}$CAT_TLS", ".pem").also {
                 it.deleteOnExit()
                 it.writeText(tlsCert)
             }
+            println("QQQ \t importing certificate: $certificateAlias...")
             importCertificate(tlsCertFile, CERT_USAGE_P2P, certificateAlias)
             tlsCertificateUploadedCallback(tlsCert)
+            println("QQQ \t uploaded: $certificateAlias...")
         }
     }
+    println("QQQ \tdone importTlsCertificate for ${this.p2p.uri}, certificateAlias:$certificateAlias...")
     return certificateAlias
 }
 
