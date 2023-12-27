@@ -57,10 +57,17 @@ internal class DynamicKeyStore(
         keyStoreFactory(this, this).createDelegatedKeyStore()
     }
 
+    override fun logger(log: String) {
+        logger.info("QQQ1 $log")
+    }
+
     inner class ClientKeyStore(
         private val certificates: CertificateChain,
         private val tenantId: String,
     ): DelegatedCertificateStore, DelegatedSigner {
+        override fun logger(log: String) {
+            logger.info("QQQ2 $log")
+        }
         val keyStore by lazy {
             keyStoreFactory(this, this).createDelegatedKeyStore()
         }
@@ -71,10 +78,18 @@ internal class DynamicKeyStore(
         }
 
         override fun sign(publicKey: PublicKey, spec: SignatureSpec, data: ByteArray): ByteArray {
+            logger.info("QQQ trying to sign with $publicKey and $tenantId")
+            logger.info("QQQ my expected public key is $expectedPublicKey")
             if(publicKey != expectedPublicKey) {
+                logger.info("QQQ LOOK AT ME!")
                 throw InvalidKeyException("Unknown public key")
             }
-            return cryptoOpsClient.sign(tenantId, publicKey, spec, data).bytes
+            return try {
+                cryptoOpsClient.sign(tenantId, publicKey, spec, data).bytes
+            }catch (e: Exception) {
+                logger.info("QQQ LOOK AT ME 2", e)
+                throw e
+            }
         }
 
         override fun hashCode() = Objects.hash(certificates, tenantId)
@@ -127,6 +142,22 @@ internal class DynamicKeyStore(
         ),
     )
 
+    private fun logMe(name: String, cert: GatewayTlsCertificates?) {
+        logger.info("QQQ Got $name of key (server size)")
+        if (cert == null) {
+            logger.info("QQQ \t removing $name")
+        } else {
+            logger.info("QQQ \t tenant ID is ${cert.tenantId}")
+            logger.info("QQQ \t holding ID is ${cert.holdingIdentity}")
+            cert.tlsCertificates.forEach { pem ->
+                logger.info("QQQ \t certificate is:")
+                pem.lines().forEach { ln ->
+                    logger.info("QQQ \t\t $ln")
+                }
+            }
+        }
+    }
+
     private inner class Processor : CompactedProcessor<String, GatewayTlsCertificates> {
         override val keyClass = String::class.java
         override val valueClass = GatewayTlsCertificates::class.java
@@ -134,6 +165,7 @@ internal class DynamicKeyStore(
         override fun onSnapshot(currentData: Map<String, GatewayTlsCertificates>) {
             aliasToCertificates.putAll(
                 currentData.mapValues { entry ->
+                    logMe(entry.key, entry.value)
                     entry.value.tlsCertificates.map { pemCertificate ->
                         ByteArrayInputStream(pemCertificate.toByteArray()).use {
                             certificateFactory.generateCertificate(it)
@@ -158,6 +190,7 @@ internal class DynamicKeyStore(
             oldValue: GatewayTlsCertificates?,
             currentData: Map<String, GatewayTlsCertificates>,
         ) {
+            logMe(newRecord.key, newRecord.value)
             val chain = newRecord.value
             if (chain == null) {
                 aliasToCertificates.remove(newRecord.key)?.also { certificates ->

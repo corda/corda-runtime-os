@@ -5,4 +5,7 @@ typealias Alias = String
 typealias CertificateChain = Collection<Certificate>
 interface DelegatedCertificateStore {
     val aliasToCertificates: Map<Alias, CertificateChain>
+    fun logger(log: String) {
+
+    }
 }

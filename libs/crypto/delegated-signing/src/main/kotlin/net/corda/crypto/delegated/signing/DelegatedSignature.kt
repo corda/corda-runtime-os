@@ -40,6 +40,7 @@ internal class DelegatedSignature(
             val key = signingKey ?: throw SecurityException(
                 "'engineSign' invoked without a key having been assigned previously via 'engineInitSign'"
             )
+            key.signer.logger("QQQ in engine sign, my public key is ${key.publicKey}")
             key.signer.sign(
                 key.publicKey,
                 spec,

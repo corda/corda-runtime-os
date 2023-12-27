@@ -70,6 +70,13 @@ internal class TrustStoresPublisher(
     )
 
     fun groupAdded(holdingIdentity: HoldingIdentity, groupPolicy: GroupPolicy) {
+        logger.info("QQQ a new group was added: holdingIdentity: $holdingIdentity")
+        groupPolicy.p2pParameters.tlsTrustRoots.forEach {
+            logger.info("QQQ \t certificate:")
+            it.lines().forEach { ln ->
+                logger.info("QQQ \t\t $ln")
+            }
+        }
         toPublish.offer(
             GatewayTruststore(
                 holdingIdentity.toAvro(),

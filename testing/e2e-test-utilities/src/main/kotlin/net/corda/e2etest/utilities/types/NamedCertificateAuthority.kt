@@ -14,7 +14,6 @@ import net.corda.e2etest.utilities.generateCsr
 import net.corda.e2etest.utilities.importCertificate
 import net.corda.e2etest.utilities.keyExists
 import java.io.File
-import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock

@@ -16,23 +16,44 @@ internal class DelegatedKeystore(
 ) : KeyStoreSpi() {
     private fun getCertificates(alias: String): Collection<Certificate>? = certificateStore.aliasToCertificates[alias]
 
-    override fun engineGetKey(alias: String, password: CharArray): Key? =
-        getCertificates(alias)
+    override fun engineGetKey(alias: String, password: CharArray): Key? {
+        certificateStore.logger("QQQ in engineGetKey for $alias")
+        return getCertificates(alias)
             ?.firstOrNull()
             ?.publicKey?.let {
+                certificateStore.logger("QQQ \t got public key: $it")
                 DelegatedPrivateKey(it, signer)
             }
+    }
 
-    override fun engineGetCertificate(alias: String): Certificate? =
-        getCertificates(alias)?.firstOrNull()
 
-    override fun engineGetCertificateChain(alias: String): Array<Certificate>? =
-        getCertificates(alias)?.toTypedArray()
+    override fun engineGetCertificate(alias: String): Certificate? {
+        certificateStore.logger("QQQ in engineGetCertificate for $alias")
+        return getCertificates(alias)?.firstOrNull().also {
+            certificateStore.logger("QQQ \t return $it")
+        }
+    }
+
+
+    override fun engineGetCertificateChain(alias: String): Array<Certificate>? {
+        certificateStore.logger("QQQ in engineGetCertificateChain for $alias")
+        return getCertificates(alias)?.toTypedArray().also {
+            certificateStore.logger("QQQ \t return ${it?.size}")
+        }
+    }
+
 
     override fun engineAliases(): Enumeration<String> =
-        Collections.enumeration(certificateStore.aliasToCertificates.keys)
+        Collections.enumeration(certificateStore.aliasToCertificates.keys).also {
+            certificateStore.logger("QQQ engineAliases returns ${certificateStore.aliasToCertificates.keys}")
+        }
 
-    override fun engineContainsAlias(alias: String): Boolean = certificateStore.aliasToCertificates.containsKey(alias)
+    override fun engineContainsAlias(alias: String): Boolean {
+        certificateStore.logger("QQQ in engineContainsAlias for $alias")
+        return certificateStore.aliasToCertificates.containsKey(alias).also {
+            certificateStore.logger("QQQ \t return $it")
+        }
+    }
 
     override fun engineSize() = certificateStore.aliasToCertificates.size
 
