@@ -20,6 +20,7 @@ import net.corda.p2p.linkmanager.forwarding.gateway.TlsCertificatesPublisher
 import net.corda.p2p.linkmanager.forwarding.gateway.TrustStoresPublisher
 import net.corda.p2p.linkmanager.forwarding.gateway.mtls.ClientCertificatePublisher
 import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
+import net.corda.p2p.linkmanager.sessions.EstablishedSessionRecorder
 import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueuesImpl
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl
@@ -44,7 +45,7 @@ internal class CommonComponents(
     membershipQueryClient: MembershipQueryClient,
     groupParametersReaderService: GroupParametersReaderService,
     clock: Clock,
-    stateManager: StateManager,
+    internal val stateManager: StateManager,
     features: Features = Features(),
 ) : LifecycleWithDominoTile {
     private companion object {
@@ -55,13 +56,17 @@ internal class CommonComponents(
         Schemas.P2P.LINK_IN_TOPIC
     )
 
+    internal val establishedSessionRecorder = EstablishedSessionRecorder(
+        groupPolicyProvider,
+        membershipGroupReaderProvider,
+        clock,
+    )
+
     internal val messagesPendingSession = PendingSessionMessageQueuesImpl(
         publisherFactory,
         lifecycleCoordinatorFactory,
         messagingConfiguration,
-        groupPolicyProvider,
-        membershipGroupReaderProvider,
-        clock
+        establishedSessionRecorder,
     )
 
     internal val sessionManager = if(features.useStatefulSessionManager) {
@@ -83,7 +88,6 @@ internal class CommonComponents(
             clock = clock,
         )
     }
-    internal val stateManager = stateManager
 
     private val trustStoresPublisher = TrustStoresPublisher(
         subscriptionFactory,

@@ -62,59 +62,59 @@ internal class InboundMessageProcessor(
     }
 
     override fun onNext(events: List<EventLogRecord<String, LinkInMessage>>): List<Record<*, *>> {
-        val dataMessages = events.mapNotNull { event ->
-            when (val payload = event.value?.payload) {
+        val dataMessages = mutableListOf<SessionIdAndMessage>()
+        val sessionMessages = mutableListOf<TraceableItem<LinkInMessage, LinkInMessage>>()
+        val recordsForUnauthenticatedMessage = mutableListOf<TraceableItem<List<Record<String, AppMessage>>, LinkInMessage>>()
+
+        events.forEach { event ->
+            val message = event.value
+            when (val payload = message?.payload) {
                 is AuthenticatedDataMessage -> {
                     payload.header.sessionId.let { sessionId ->
-                        SessionIdAndMessage(sessionId,
-                            TraceableItem(AvroSealedClasses.DataMessage.Authenticated(payload), event)
+                        dataMessages.add(
+                            SessionIdAndMessage(sessionId,
+                                TraceableItem(AvroSealedClasses.DataMessage.Authenticated(payload), event)
+                            )
                         )
                     }
                 }
                 is AuthenticatedEncryptedDataMessage -> {
                     payload.header.sessionId.let { sessionId ->
-                        SessionIdAndMessage(sessionId,
-                            TraceableItem(AvroSealedClasses.DataMessage.AuthenticatedAndEncrypted(payload), event)
+                        dataMessages.add(
+                            SessionIdAndMessage(sessionId,
+                                TraceableItem(AvroSealedClasses.DataMessage.AuthenticatedAndEncrypted(payload), event)
+                            )
                         )
                     }
                 }
-                else -> {
-                    null
-                }
-            }
-        }
-        val sessionMessages = events.mapNotNull { event ->
-            event.value?.let { message ->
-                when (event.value?.payload) {
-                    is ResponderHelloMessage, is ResponderHandshakeMessage, is InitiatorHandshakeMessage, is InitiatorHelloMessage -> {
+                is ResponderHelloMessage, is ResponderHandshakeMessage, is InitiatorHandshakeMessage, is InitiatorHelloMessage -> {
+                    sessionMessages.add(
                         TraceableItem(message, event)
-                    }
-                    else -> {
-                        null
-                    }
+                    )
                 }
-            }
-        }
-
-        val recordsForUnauthenticatedMessage = events.mapNotNull { event ->
-            val payload = event.value?.payload
-            if (payload is InboundUnauthenticatedMessage) {
-                logger.debug {
-                    "Processing unauthenticated message ${payload.header.messageId}"
-                }
-                recordInboundMessagesMetric(payload)
-                TraceableItem(
-                    listOf(
-                        Record(
-                            Schemas.P2P.P2P_IN_TOPIC,
-                            LinkManager.generateKey(),
-                            AppMessage(payload)
+                is InboundUnauthenticatedMessage -> {
+                    logger.debug {
+                        "Processing unauthenticated message ${payload.header.messageId}"
+                    }
+                    recordInboundMessagesMetric(payload)
+                    recordsForUnauthenticatedMessage.add(
+                        TraceableItem(
+                            listOf(
+                                Record(
+                                    Schemas.P2P.P2P_IN_TOPIC,
+                                    LinkManager.generateKey(),
+                                    AppMessage(payload),
+                                )
+                            ),
+                            event,
                         )
-                    ),
-                    event
-                )
-            } else {
-                null
+                    )
+
+                }
+                null -> logger.error("Received null message. The message was discarded.")
+                else -> {
+                    logger.error("Received unknown payload type ${payload::class.java.simpleName}. The message was discarded.")
+                }
             }
         }
 

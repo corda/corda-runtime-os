@@ -22,8 +22,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
-import net.corda.p2p.linkmanager.utilities.mockMembersAndGroups
-import net.corda.test.util.time.MockTimeFacilitiesProvider
+import org.mockito.kotlin.verify
 
 class PendingSessionMessageQueuesImplTest {
 
@@ -58,12 +57,12 @@ class PendingSessionMessageQueuesImplTest {
         serial,
         false,
     )
-    private val membersAndGroups = mockMembersAndGroups(
-        carol, david
-    )
+    private val establishedSessionRecorder = mock<EstablishedSessionRecorder>{
+        on { recordsForSessionEstablished(any(), any(), any(), any()) } doReturn listOf(recordForSessionEstablished)
+    }
 
     private val queue = PendingSessionMessageQueuesImpl(
-        mock(), mock(), mock(), membersAndGroups.second, membersAndGroups.first, MockTimeFacilitiesProvider().clock
+        mock(), mock(), mock(), establishedSessionRecorder
     )
 
     @AfterEach
@@ -96,32 +95,32 @@ class PendingSessionMessageQueuesImplTest {
         ).contains(recordForSessionEstablished)
     }
 
-//    @Test
-//    fun `sessionNegotiatedCallback calls recordsForSessionEstablished`() {
-//        val count = 3
-//        val messages = (1..count).map {
-//            val header = AuthenticatedMessageHeader(
-//                sessionCounterparties.counterpartyId.toAvro(),
-//                sessionCounterparties.ourId.toAvro(),
-//                null,
-//                "msg-$it",
-//                "",
-//                "system-1",
-//                MembershipStatusFilter.ACTIVE
-//            )
-//            val data = ByteBuffer.wrap("$it".toByteArray())
-//            AuthenticatedMessageAndKey(AuthenticatedMessage(header, data), "key")
-//        }
-//        messages.onEach {
-//            queue.queueMessage(it, sessionCounterparties)
-//        }
-//
-//        queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties, session)
-//
-//        messages.forEach {
-//            verify().recordsForSessionEstablished(session, it, serial)
-//        }
-//    }
+    @Test
+    fun `sessionNegotiatedCallback calls recordsForSessionEstablished`() {
+        val count = 3
+        val messages = (1..count).map {
+            val header = AuthenticatedMessageHeader(
+                sessionCounterparties.counterpartyId.toAvro(),
+                sessionCounterparties.ourId.toAvro(),
+                null,
+                "msg-$it",
+                "",
+                "system-1",
+                MembershipStatusFilter.ACTIVE
+            )
+            val data = ByteBuffer.wrap("$it".toByteArray())
+            AuthenticatedMessageAndKey(AuthenticatedMessage(header, data), "key")
+        }
+        messages.onEach {
+            queue.queueMessage(it, sessionCounterparties)
+        }
+
+        queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties, session)
+
+        messages.forEach {
+            verify(establishedSessionRecorder).recordsForSessionEstablished(sessionManager, session, serial, it)
+        }
+    }
 
     @Test
     fun `sessionNegotiatedCallback will not publish messages for another counter parties`() {

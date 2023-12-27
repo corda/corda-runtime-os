@@ -125,6 +125,9 @@ class InboundMessageProcessorTest {
         )
 
         assertThat(records).isEmpty()
+        assertThat(loggingInterceptor.errors)
+            .hasSize(2)
+            .contains("Received null message. The message was discarded.")
     }
 
     @Test
@@ -137,6 +140,9 @@ class InboundMessageProcessorTest {
         )
 
         assertThat(records).isEmpty()
+        assertThat(loggingInterceptor.errors)
+            .contains("Received unknown payload type Integer. The message was discarded.")
+            .contains("Received unknown payload type String. The message was discarded.")
     }
 
     @Nested

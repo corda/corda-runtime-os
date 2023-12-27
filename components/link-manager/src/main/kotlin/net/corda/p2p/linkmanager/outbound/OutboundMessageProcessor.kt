@@ -42,10 +42,10 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
-import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.TraceableItem
 import net.corda.p2p.linkmanager.metrics.recordOutboundMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
+import net.corda.p2p.linkmanager.sessions.EstablishedSessionRecorder
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class OutboundMessageProcessor(
@@ -56,8 +56,9 @@ internal class OutboundMessageProcessor(
     private val inboundAssignmentListener: InboundAssignmentListener,
     private val messagesPendingSession: PendingSessionMessageQueues,
     private val clock: Clock,
+    private val establishedSessionRecorder: EstablishedSessionRecorder,
     private val networkMessagingValidator: NetworkMessagingValidator =
-        NetworkMessagingValidator(membershipGroupReaderProvider)
+        NetworkMessagingValidator(membershipGroupReaderProvider),
 ) : EventLogProcessor<String, AppMessage> {
 
     override val keyClass = String::class.java
@@ -91,35 +92,6 @@ internal class OutboundMessageProcessor(
                 }
             }
         }
-
-        internal fun recordsForSessionEstablished(
-            session: Session,
-            sessionManager: SessionManager,
-            serial: Long,
-            groupPolicyProvider: GroupPolicyProvider,
-            membershipGroupReaderProvider: MembershipGroupReaderProvider,
-            clock: Clock,
-            messageAndKey: AuthenticatedMessageAndKey,
-        ): List<Record<String, *>> {
-            return MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(
-                messageAndKey,
-                session,
-                groupPolicyProvider,
-                membershipGroupReaderProvider,
-                serial
-            )?.let { message ->
-                val key = LinkManager.generateKey()
-                val messageRecord = Record(Schemas.P2P.LINK_OUT_TOPIC, key, message)
-                val marker = AppMessageMarker(LinkManagerSentMarker(), clock.instant().toEpochMilli())
-                val markerRecord = Record(Schemas.P2P.P2P_OUT_MARKERS, messageAndKey.message.header.messageId, marker)
-                sessionManager.dataMessageSent(session)
-                listOf(
-                    messageRecord,
-                    markerRecord,
-                )
-            } ?: emptyList()
-        }
-
     }
 
     private fun ttlExpired(ttl: Instant?): Boolean {
@@ -446,14 +418,11 @@ internal class OutboundMessageProcessor(
         state: SessionManager.SessionState.SessionEstablished,
         messageAndKey: AuthenticatedMessageAndKey
     ): List<Record<String, *>> {
-        return recordsForSessionEstablished(
-            state.session,
+        return establishedSessionRecorder.recordsForSessionEstablished(
             sessionManager,
+            state.session,
             state.sessionCounterparties.serial,
-            groupPolicyProvider,
-            membershipGroupReaderProvider,
-            clock,
-            messageAndKey
+            messageAndKey,
         )
     }
 

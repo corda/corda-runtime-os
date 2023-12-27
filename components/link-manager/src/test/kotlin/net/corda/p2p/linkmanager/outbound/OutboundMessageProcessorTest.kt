@@ -44,9 +44,10 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
-import net.corda.data.p2p.markers.LinkManagerSentMarker
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
+import net.corda.messaging.api.records.Record
 import net.corda.p2p.linkmanager.TraceableItem
+import net.corda.p2p.linkmanager.sessions.EstablishedSessionRecorder
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doThrow
 
@@ -79,6 +80,7 @@ class OutboundMessageProcessorTest {
         on { counterpartyId } doReturn remoteIdentity
         on { serial } doReturn serialNumber
     }
+    private val establishedSessionRecorder = mock<EstablishedSessionRecorder>()
 
     private val networkMessagingValidator = mock<NetworkMessagingValidator> {
         on { validateInbound(any(), any()) } doReturn Either.Left(Unit)
@@ -93,6 +95,7 @@ class OutboundMessageProcessorTest {
         assignedListener,
         messagesPendingSession,
         mockTimeFacilitiesProvider.clock,
+        establishedSessionRecorder,
         networkMessagingValidator
     )
 
@@ -600,6 +603,7 @@ class OutboundMessageProcessorTest {
             assignedListener,
             messagesPendingSession,
             mockTimeFacilitiesProvider.clock,
+            establishedSessionRecorder,
             networkMessagingValidator,
         )
 
@@ -644,6 +648,7 @@ class OutboundMessageProcessorTest {
             assignedListener,
             messagesPendingSession,
             mockTimeFacilitiesProvider.clock,
+            establishedSessionRecorder,
             networkMessagingValidator,
         )
 
@@ -1042,7 +1047,7 @@ class OutboundMessageProcessorTest {
     }
 
     @Test
-    fun `onNext produces a LinkManagerProcessedMarker, a LinkManagerSentMarker and a LinkOutMessage per message if SessionEstablished`() {
+    fun `onNext produces a LinkManagerProcessedMarker per message if SessionEstablished`() {
         val state = SessionManager.SessionState.SessionEstablished(authenticatedSession, sessionCounterparties)
         setupSessionManager(state)
         val messageIds = (1..3).map { i ->
@@ -1071,47 +1076,77 @@ class OutboundMessageProcessorTest {
 
         val records = processor.onNext(eventLogRecords)
 
-        assertSoftly { softly ->
-            softly.assertThat(records).hasSize(9)
 
-            val processedMarkers = records.filter {
-                it.topic == Schemas.P2P.P2P_OUT_MARKERS
-            }.filter {
-                (it.value as? AppMessageMarker)?.marker is LinkManagerProcessedMarker
-            }
-            assertThat(processedMarkers).hasSize(3)
-            val markerMessages = processedMarkers.map {
-                val messageAndKey = ((it.value as? AppMessageMarker)?.marker as LinkManagerProcessedMarker).message
-                softly.assertThat(messageAndKey.key).isEqualTo("key")
-                messageAndKey.message
-            }
-            softly.assertThat(markerMessages).containsExactlyInAnyOrderElementsOf(messages)
-
-            val sentMarkers = records.filter {
-                it.topic == Schemas.P2P.P2P_OUT_MARKERS
-            }.filter {
-                (it.value as? AppMessageMarker)?.marker is LinkManagerSentMarker
-            }
-            softly.assertThat(sentMarkers.map { it.key }).containsExactlyInAnyOrderElementsOf(messageIds)
-
-            val linkOutMessages = records.filter {
-                it.topic == Schemas.P2P.LINK_OUT_TOPIC
-            }
-            softly.assertThat(linkOutMessages).hasSize(3)
-//            linkOutMessages.map {
-//                val message = it.value as LinkOutMessage
-//                  val payload = message.payload as? AuthenticatedDataMessage
-//                  assertThat(payload?.header).isEqualTo(header)
-//                  assertThat(payload?.authTag?.array()).isEqualTo(byteArrayOf(1, 4))
-//
-//                  assertThat(message.header?.destinationIdentity).isEqualTo(PEER_PARTY.toAvro())
-//                  assertThat(message.header?.sourceIdentity).isEqualTo(OUR_PARTY.toAvro())
-//                assertThat(message.header?.destinationNetworkType).isEqualTo(NetworkType.CORDA_5)
-//                assertThat(message.header?.address).isEqualTo("http://bob.com")
-//            }
-
+        assertThat(records).hasSize(3).allSatisfy {
+            assertThat(it.topic).isEqualTo(Schemas.P2P.P2P_OUT_MARKERS)
+        }.allSatisfy {
+            val marker = ((it.value as? AppMessageMarker)?.marker) as? LinkManagerProcessedMarker
+            val messageAndKey = marker?.message
+            assertThat(messageAndKey?.key).isEqualTo("key")
+        }.allSatisfy {
+            val marker = ((it.value as? AppMessageMarker)?.marker) as? LinkManagerProcessedMarker
+            val messageAndKey = marker?.message
+            assertThat(messages).contains(messageAndKey?.message)
         }
         verify(messagesPendingSession, never()).queueMessage(any(), any())
+    }
+    @Test
+    fun `onNext returns session recorded messages`() {
+        val state = SessionManager.SessionState.SessionEstablished(authenticatedSession, sessionCounterparties)
+        setupSessionManager(state)
+        val messageIds = (1..3).map { i ->
+            "Id$i"
+        }
+        val messages = messageIds.map { id ->
+            AuthenticatedMessage(
+                AuthenticatedMessageHeader(
+                    remoteIdentity.toAvro(),
+                    myIdentity.toAvro(),
+                    null, id, "trace-id", "system-1", MembershipStatusFilter.ACTIVE
+                ),
+                ByteBuffer.wrap(id.toByteArray())
+            )
+        }
+        messages.forEachIndexed { index, authenticatedMessage ->
+            whenever(
+                establishedSessionRecorder.recordsForSessionEstablished(
+                    sessionManager,
+                    state.session,
+                    state.sessionCounterparties.serial,
+                    AuthenticatedMessageAndKey(
+                        authenticatedMessage,
+                        "key",
+                    )
+                )
+            ).doReturn(
+                listOf(
+                    Record(
+                        "topic",
+                        "key-$index",
+                        index,
+                    ),
+                ),
+            )
+        }
+        val eventLogRecords = messages.map { message ->
+            EventLogRecord(
+                Schemas.P2P.P2P_OUT_TOPIC,
+                "key",
+                AppMessage(
+                    message
+                ),
+                0, 0
+            )
+        }
+
+        val records = processor.onNext(eventLogRecords)
+            .filter {
+                it.topic == "topic"
+            }.map {
+                it.value
+            }.filterIsInstance<Int>()
+
+        assertThat(records).hasSize(3).containsExactly(0, 1, 2)
     }
 
     @Test
