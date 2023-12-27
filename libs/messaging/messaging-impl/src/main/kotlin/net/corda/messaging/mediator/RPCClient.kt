@@ -13,7 +13,9 @@ import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_KEY
 import net.corda.messaging.utils.HTTPRetryConfig
 import net.corda.messaging.utils.HTTPRetryExecutor
 import net.corda.metrics.CordaMetrics
+import net.corda.tracing.addTraceContextToHttpRequest
 import net.corda.tracing.addTraceContextToMediatorMessage
+import net.corda.tracing.addTraceContextToRecord
 import net.corda.tracing.traceSend
 import net.corda.utilities.debug
 import net.corda.utilities.trace
@@ -70,11 +72,10 @@ class RPCClient(
     // The method returns the response
     private fun sendAsHttpRequest(request: MediatorMessage<*>): MediatorMessage<*>? {
 
-        // Convert request into an instance of the HTTPRequest class
-        val httpRequest = request.asHttpRequest()
-
         // Blocking call
-        val httpResponse = traceHttpSend(request.properties, httpRequest.uri()) {
+        val httpResponse = traceHttpSend(request.properties, URI(request.endpoint())) {
+            // Convert request into an instance of the HTTPRequest class
+            val httpRequest = request.asHttpRequest()
             sendWithRetry(httpRequest)
         }
 
@@ -193,12 +194,6 @@ class RPCClient(
         return getProperty<String>(MSG_PROP_ENDPOINT)
     }
 
-    fun <T : Any> MediatorMessage<T>.extractHeaders(): List<Pair<String, String>> {
-        // Extract the headers from the mediator message, so they can be
-        // copied into the HTTP request and keep the traceability intact
-        return properties.filter { (_, v) -> v is String }.map { (k, v) -> k to (v as String) }
-    }
-
     private fun MediatorMessage<*>.asHttpRequest(): HttpRequest {
         // Local auxiliary function that adds headers in a list to the HTTP request
         fun HttpRequest.Builder.headers(headers: List<Pair<String, String>>) {
@@ -227,8 +222,8 @@ class RPCClient(
         // Add corda request key to the HTTP header in the request if the key is present in the message
         extractCordaRequestKeyHeader()?.let { (name, value) -> builder.headers(name, value) }
 
-        // Add any other header to the HTTP request that are deemed relevant
-        builder.headers(extractHeaders())
+        // Once the HTTP request is created, it cannot be changed. So the builder as to be passed instead
+        addTraceContextToHttpRequest(builder)
 
         // Build the request and return
         return builder.build()

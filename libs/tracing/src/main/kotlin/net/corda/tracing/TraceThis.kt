@@ -11,6 +11,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.tracing.impl.TracingState
+import java.net.http.HttpRequest
 import java.util.ServiceLoader
 import java.util.concurrent.ExecutorService
 
@@ -75,8 +76,18 @@ fun addTraceContextToMediatorMessage(
     )
 }
 
+fun addTraceContextToHttpRequest(builder: HttpRequest.Builder) {
+    val traceHeaders = TracingState.currentTraceService.addTraceHeaders(
+        emptyList(), // No need to pass the current headers. They are stored in the builder.
+        emptyList()  // Don't override the current trace context
+    )
+    traceHeaders.forEach { (name, value) ->
+        builder.header(name, value)
+    }
+}
+
 fun traceSend(
-    headers: List<Pair<String,String>>,
+    headers: List<Pair<String, String>>,
     operationName: String
 ): TraceContext {
     return TracingState.currentTraceService.nextSpan(operationName, headers)

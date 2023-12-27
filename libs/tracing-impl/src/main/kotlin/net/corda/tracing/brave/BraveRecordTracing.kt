@@ -17,7 +17,7 @@ class BraveRecordTracing(tracing: Tracing) {
     private val recordExtractor = tracing.propagation().extractor(recordHeaderGetter)
 
     private val messageMediatorHeaderGetter: Propagation.Getter<MutableMap<String, Any>, String> =
-        Propagation.Getter<MutableMap<String, Any>, String> { message, key -> message[key] as String }
+        Propagation.Getter<MutableMap<String, Any>, String> { message, key -> message[key] as String? }
     private val messageMediatorExtractor = tracing.propagation().extractor(messageMediatorHeaderGetter)
 
     fun nextSpan(record: Record<*, *>): Span {
