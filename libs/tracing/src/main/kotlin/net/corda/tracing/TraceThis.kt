@@ -46,11 +46,25 @@ fun getOrCreateBatchPublishTracing(clientId: String): BatchPublishTracing {
     return TracingState.currentTraceService.getOrCreateBatchPublishTracing(clientId)
 }
 
-fun addTraceContextToRecords(records: List<Record<*, *>>): List<Record<*, *>> = records.map(::addTraceContextToRecord)
+fun addTraceContextToRecords(
+    records: List<Record<*, *>>
+):
+        List<Record<*, *>> = records.map(::addTraceContextToRecord)
+
+fun addTraceContextToRecord(
+    record: Record<*, *>
+): Record<out Any, out Any> {
+    return record.copy(
+        headers = TracingState.currentTraceService.addTraceHeaders(
+            record.headers,
+            emptyList()
+        )
+    )
+}
 
 fun addTraceContextToRecord(
     record: Record<*, *>,
-    traceHeadersToOverrideContext: List<Pair<String, String>> = emptyList()
+    traceHeadersToOverrideContext: MutableMap<String, Any> = mutableMapOf()
 ): Record<out Any, out Any> {
     return record.copy(
         headers = TracingState.currentTraceService.addTraceHeaders(
@@ -60,8 +74,11 @@ fun addTraceContextToRecord(
     )
 }
 
-fun addTraceContextToRecord(record: CordaProducerRecord<*, *>): CordaProducerRecord<out Any, out Any> {
-    return record.copy(headers = TracingState.currentTraceService.addTraceHeaders(record.headers, emptyList()))
+fun addTraceContextToRecord(
+    record: CordaProducerRecord<*, *>,
+    traceHeadersToOverrideContext: MutableMap<String, Any> = mutableMapOf()
+): CordaProducerRecord<out Any, out Any> {
+    return record.copy(headers = TracingState.currentTraceService.addTraceHeaders(record.headers, traceHeadersToOverrideContext))
 }
 
 fun addTraceContextToMediatorMessage(

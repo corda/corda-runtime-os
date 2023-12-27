@@ -160,6 +160,18 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
     }
 
     override fun addTraceHeaders(
+        headers: List<Pair<String, String>>,
+        traceHeadersToOverrideContext: MutableMap<String, Any>
+    ): List<Pair<String, String>> {
+        val ctx = getTraceContext(traceHeadersToOverrideContext)
+
+        val headersWithTracing = headers.toMutableList()
+
+        recordInjector.inject(ctx, headersWithTracing)
+        return headersWithTracing
+    }
+
+    override fun addTraceHeaders(
         headers: MutableMap<String, Any>,
         traceHeadersToOverrideContext: MutableMap<String, Any>
     ): MutableMap<String, Any> {
