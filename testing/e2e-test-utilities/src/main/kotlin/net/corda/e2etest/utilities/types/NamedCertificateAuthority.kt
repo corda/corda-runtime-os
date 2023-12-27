@@ -2,7 +2,6 @@ package net.corda.e2etest.utilities.types
 
 import net.corda.crypto.test.certificates.generation.FileSystemCertificatesAuthority
 import net.corda.e2etest.utilities.CAT_TLS
-import net.corda.e2etest.utilities.CERT_ALIAS_P2P
 import net.corda.e2etest.utilities.CERT_USAGE_P2P
 import net.corda.e2etest.utilities.ClusterInfo
 import net.corda.e2etest.utilities.DEFAULT_KEY_SCHEME
