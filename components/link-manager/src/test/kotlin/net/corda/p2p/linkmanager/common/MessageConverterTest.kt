@@ -294,7 +294,7 @@ class MessageConverterTest {
         }
 
         @Test
-        fun `it will create marker topic`() {
+        fun `it will create marker message`() {
             val records = converter.recordsForSessionEstablished(
                 sessionManager,
                 session,
@@ -321,7 +321,7 @@ class MessageConverterTest {
         }
 
         @Test
-        fun `it with unknown member will not create any record`() {
+        fun `when called with unknown member, it will not create any record`() {
             val bob = createTestHoldingIdentity("CN=Bob, O=Corp, L=LDN, C=GB", "group-1")
             val header = AuthenticatedMessageHeader(
                 bob.toAvro(),
@@ -345,7 +345,7 @@ class MessageConverterTest {
         }
 
         @Test
-        fun `it with unknown member will not notify the manager`() {
+        fun `when called with unknown member, it will not notify the manager`() {
             val bob = createTestHoldingIdentity("CN=Bob, O=Corp, L=LDN, C=GB", "group-1")
             val header = AuthenticatedMessageHeader(
                 bob.toAvro(),
