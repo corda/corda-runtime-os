@@ -15,6 +15,7 @@ import net.corda.e2etest.utilities.importCertificate
 import net.corda.e2etest.utilities.keyExists
 import java.io.File
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -43,7 +44,8 @@ fun ClusterInfo.importTlsCertificate(
     return certificateAlias
 }
 
+private val caIndex = AtomicInteger(0)
 data class NamedCertificateAuthority(
-    val name: String = UUID.randomUUID().toString(),
+    val name: String = "ca-${caIndex.incrementAndGet()}",
     val ca: FileSystemCertificatesAuthority = createCa(name),
 )

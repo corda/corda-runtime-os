@@ -17,11 +17,6 @@ import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import java.io.File
 
 /**
- * Get the default CA for testing. This is written to file so it can be shared across tests.
- */
-fun getCa(): FileSystemCertificatesAuthority = createCa("default")
-
-/**
  * Create a certificate authority for testing.
  */
 fun createCa(
