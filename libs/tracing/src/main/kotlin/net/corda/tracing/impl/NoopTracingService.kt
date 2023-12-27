@@ -60,8 +60,9 @@ class NoopTracingService : TracingService {
 
     override fun addTraceHeaders(
         headers: List<Pair<String, String>>,
-        tracingHeaders: List<Pair<String, String>>
+        traceHeadersToOverrideContext: List<Pair<String, String>>
     ): List<Pair<String, String>> {
+        // Do nothing. Return the current headers
         return headers
     }
 

@@ -87,8 +87,8 @@ class RPCClient(
         }
     }
 
-    private inline fun <T> traceHttpSend(tracingHeaders: List<Pair<String, String>>, uri: URI, send: () -> T): T {
-        val traceContext = traceSend(tracingHeaders, "http client - send request - path - ${uri.path}")
+    private inline fun <T> traceHttpSend(traceHeaders: List<Pair<String, String>>, uri: URI, send: () -> T): T {
+        val traceContext = traceSend(traceHeaders, "http client - send request - path - ${uri.path}")
 
         traceContext.traceTag("path", uri.path.toString())
 
