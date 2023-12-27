@@ -6,6 +6,10 @@ import java.util.concurrent.ExecutorService
 
 interface TracingService : AutoCloseable {
 
+    // The method takes the current headers and joins them with the trace headers/
+    // A trace context provides the trace headers. Normally, the activate context is used, but it can be overridden
+    // by setting the parameter `traceHeadersToOverrideContext`.
+    // The method returns a list that contains the current headers plus the trace headers.
     fun addTraceHeaders(headers: List<Pair<String, String>>, traceHeadersToOverrideContext: List<Pair<String, String>>): List<Pair<String, String>>
 
     fun <R> nextSpan(operationName: String, processingBlock: TraceContext.() -> R): R
