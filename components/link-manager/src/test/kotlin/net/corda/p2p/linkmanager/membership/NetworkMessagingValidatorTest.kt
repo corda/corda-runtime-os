@@ -118,15 +118,7 @@ class NetworkMessagingValidatorTest {
 
     @ParameterizedTest
     @MethodSource("allowedMessagingGroups")
-    fun `invokeIfValidInbound performs as expected`(testConfig: TestConfig) {
-        val valid = networkMessagingValidator.isValidInbound(testConfig.sender, testConfig.receiver)
-
-        assertThat(valid).isEqualTo(testConfig.canMessage)
-    }
-
-    @ParameterizedTest
-    @MethodSource("allowedMessagingGroups")
-    fun `invokeIfValidOutbound performs as expected`(testConfig: TestConfig) {
+    fun `isValidInbound performs as expected`(testConfig: TestConfig) {
         val valid = networkMessagingValidator.isValidInbound(testConfig.sender, testConfig.receiver)
 
         assertThat(valid).isEqualTo(testConfig.canMessage)

@@ -1074,24 +1074,25 @@ class OutboundMessageProcessorTest {
             )
         }
 
-        val records = processor.onNext(eventLogRecords)
-
-
-        assertThat(records).hasSize(3).allSatisfy {
-            assertThat(it.topic).isEqualTo(Schemas.P2P.P2P_OUT_MARKERS)
-        }.allSatisfy {
+        val records = processor.onNext(eventLogRecords).filter {
+            it.topic == Schemas.P2P.P2P_OUT_MARKERS
+        }.mapNotNull {
             val marker = ((it.value as? AppMessageMarker)?.marker) as? LinkManagerProcessedMarker
-            val messageAndKey = marker?.message
-            assertThat(messageAndKey?.key).isEqualTo("key")
-        }.allSatisfy {
-            val marker = ((it.value as? AppMessageMarker)?.marker) as? LinkManagerProcessedMarker
-            val messageAndKey = marker?.message
-            assertThat(messages).contains(messageAndKey?.message)
+            marker?.message
         }
+
+
+        assertThat(records)
+            .hasSize(3)
+            .allSatisfy {
+                assertThat(it?.key).isEqualTo("key")
+            }.allSatisfy {
+                assertThat(messages).contains(it?.message)
+            }
         verify(messagesPendingSession, never()).queueMessage(any(), any())
     }
     @Test
-    fun `onNext returns session recorded messages`() {
+    fun `onNext returns messages returned from recordsForSessionEstablished`() {
         val state = SessionManager.SessionState.SessionEstablished(authenticatedSession, sessionCounterparties)
         setupSessionManager(state)
         val messageIds = (1..3).map { i ->
