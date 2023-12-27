@@ -68,7 +68,7 @@ class NoopTracingService : TracingService {
 
     override fun addTraceHeaders(
         headers: MutableMap<String, Any>,
-        traceHeadersToOverrideContext: List<Pair<String, String>>
+        traceHeadersToOverrideContext: MutableMap<String, Any>
     ): MutableMap<String, Any> {
         // Do nothing. Return the current headers
         return headers

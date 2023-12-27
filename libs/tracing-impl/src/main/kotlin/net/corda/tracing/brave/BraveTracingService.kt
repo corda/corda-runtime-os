@@ -161,7 +161,7 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
 
     override fun addTraceHeaders(
         headers: MutableMap<String, Any>,
-        traceHeadersToOverrideContext: List<Pair<String, String>>
+        traceHeadersToOverrideContext: MutableMap<String, Any>
     ): MutableMap<String, Any> {
 
         val ctx = getTraceContext(traceHeadersToOverrideContext)
@@ -171,6 +171,16 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
     }
 
     private fun getTraceContext(traceHeadersToOverrideContext: List<Pair<String, String>>): brave.propagation.TraceContext? {
+        // If the tracing headers are passed in it means that that specified context should be used instead of the current one
+        return if (!traceHeadersToOverrideContext.isEmpty()) {
+            recordTracing.extractTraceContext(traceHeadersToOverrideContext)?.context()
+
+        } else {
+            tracing.currentTraceContext().get()
+        }
+    }
+
+    private fun getTraceContext(traceHeadersToOverrideContext: MutableMap<String, Any>): brave.propagation.TraceContext? {
         // If the tracing headers are passed in it means that that specified context should be used instead of the current one
         return if (!traceHeadersToOverrideContext.isEmpty()) {
             recordTracing.extractTraceContext(traceHeadersToOverrideContext)?.context()

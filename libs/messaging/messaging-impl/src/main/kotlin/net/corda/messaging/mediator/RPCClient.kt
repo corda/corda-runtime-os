@@ -70,20 +70,17 @@ class RPCClient(
     // The method returns the response
     private fun sendAsHttpRequest(request: MediatorMessage<*>): MediatorMessage<*>? {
 
-        // The list of headers should contain the trace headers
-        val headers = request.extractHeaders()
-
         // Convert request into an instance of the HTTPRequest class
         val httpRequest = request.asHttpRequest()
 
         // Blocking call
-        val httpResponse = traceHttpSend(headers, httpRequest.uri()) {
+        val httpResponse = traceHttpSend(request.extractHeaders(), httpRequest.uri()) {
             sendWithRetry(httpRequest)
         }
 
         // Convert the response to an instance of the MediatorMessage class and enrich the instance with a trace context
         return httpResponse.asMediatorMessage()?.let{ response ->
-            addTraceContextToMediatorMessage(response, headers)
+            addTraceContextToMediatorMessage(response, request.properties)
         }
     }
 

@@ -65,7 +65,7 @@ fun addTraceContextToRecord(record: CordaProducerRecord<*, *>): CordaProducerRec
 
 fun addTraceContextToMediatorMessage(
     message: MediatorMessage<*>,
-    traceHeadersToOverrideContext: List<Pair<String, String>> = emptyList()
+    traceHeadersToOverrideContext: MutableMap<String, Any> = mutableMapOf()
 ): MediatorMessage<*> {
     return message.copy(
         properties = TracingState.currentTraceService.addTraceHeaders(
