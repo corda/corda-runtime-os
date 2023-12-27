@@ -29,7 +29,7 @@ class CpiLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
         expansionLocation: Path,
         cpiLocation: String?,
         verifySignature: Boolean,
-        activeVersion: Int
+        activeCordaPlatformVersion: Int
     ): Cpi {
 
         // Calculate file hash
@@ -62,9 +62,9 @@ class CpiLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
 
             cpks.forEach {
                 val minPlatformVersion = it.metadata.cordappManifest.minPlatformVersion
-                if (activeVersion < minPlatformVersion) {
+                if (activeCordaPlatformVersion < minPlatformVersion) {
                     throw PackagingException("Platform version of Corda is lower than minimum platform version of CPK" +
-                            " ${it.metadata.cpkId.name} ($activeVersion < $minPlatformVersion)")
+                            " ${it.metadata.cpkId.name} ($activeCordaPlatformVersion < $minPlatformVersion)")
                 }
             }
 
