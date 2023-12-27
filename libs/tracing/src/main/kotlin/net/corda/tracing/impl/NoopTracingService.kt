@@ -97,6 +97,10 @@ class NoopTracingService : TracingService {
         return NoopTraceContext()
     }
 
+    override fun nextSpan(operationName: String, headers: MutableMap<String, Any>): TraceContext {
+        return NoopTraceContext()
+    }
+
     override fun getOrCreateBatchPublishTracing(clientId: String): BatchPublishTracing {
         return NoopBatchPublishTracing()
     }
