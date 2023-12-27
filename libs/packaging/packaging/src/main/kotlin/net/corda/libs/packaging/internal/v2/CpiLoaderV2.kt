@@ -22,14 +22,13 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.jar.JarInputStream
 
-class CpiLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
+class CpiLoaderV2(private val clock: Clock = UTCClock(), private val activeCordaPlatformVersion: Int = 0) : CpiLoader {
 
     override fun loadCpi(
         byteArray: ByteArray,
         expansionLocation: Path,
         cpiLocation: String?,
         verifySignature: Boolean,
-        activeCordaPlatformVersion: Int
     ): Cpi {
 
         // Calculate file hash

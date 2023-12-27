@@ -11,6 +11,11 @@ import java.util.jar.JarInputStream
 
 object CpiReader {
     private val version2 = CpkFormatVersion(2, 0)
+    private var activeCordaPlatformVersion = 0
+
+    fun setActiveCordaPlatformVersion(value: Int) {
+        activeCordaPlatformVersion = value
+    }
 
     /**
      * Parses a CPI file and stores its information in a [Cpi] instance
@@ -26,8 +31,7 @@ object CpiReader {
         inputStream: InputStream,
         expansionLocation: Path,
         cpiLocation: String? = null,
-        verifySignature: Boolean = jarSignatureVerificationEnabledByDefault(),
-        activeCordaPlatformVersion: Int
+        verifySignature: Boolean = jarSignatureVerificationEnabledByDefault()
     ): Cpi {
         // Read input stream, so we can process it through different classes that will consume the stream
         val buffer = inputStream.readAllBytes()
@@ -38,7 +42,8 @@ object CpiReader {
 
         // Choose correct implementation to read this version
         return when (val formatVersion = FormatVersionReader.readCpiFormatVersion(manifest)) {
-            version2 -> CpiLoaderV2().loadCpi(buffer, expansionLocation, cpiLocation, verifySignature, activeCordaPlatformVersion)
+            version2 -> CpiLoaderV2(activeCordaPlatformVersion = activeCordaPlatformVersion)
+                .loadCpi(buffer, expansionLocation, cpiLocation, verifySignature)
             else -> throw UnknownFormatVersionException("Unknown Corda-CPI-Format - \"$formatVersion\"")
         }
     }
