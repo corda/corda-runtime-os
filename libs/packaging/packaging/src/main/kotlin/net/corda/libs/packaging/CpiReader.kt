@@ -9,13 +9,8 @@ import java.io.InputStream
 import java.nio.file.Path
 import java.util.jar.JarInputStream
 
-object CpiReader {
+class CpiReader(private val activeCordaPlatformVersion: Int) {
     private val version2 = CpkFormatVersion(2, 0)
-    private var activeCordaPlatformVersion = 0
-
-    fun setActiveCordaPlatformVersion(value: Int) {
-        activeCordaPlatformVersion = value
-    }
 
     /**
      * Parses a CPI file and stores its information in a [Cpi] instance
