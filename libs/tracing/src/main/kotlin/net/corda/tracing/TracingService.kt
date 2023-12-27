@@ -30,6 +30,10 @@ interface TracingService : AutoCloseable {
         operationName: String,
         headers: List<Pair<String, String>>): TraceContext
 
+    fun nextSpan(
+        operationName: String,
+        headers:  MutableMap<String, Any>): TraceContext
+
     fun getOrCreateBatchPublishTracing(clientId: String): BatchPublishTracing
 
     fun wrapWithTracingExecutor(executor: ExecutorService): ExecutorService

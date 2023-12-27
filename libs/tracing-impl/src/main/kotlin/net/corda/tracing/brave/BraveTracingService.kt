@@ -224,6 +224,13 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
         return BraveTraceContext(tracer, span)
     }
 
+    override fun nextSpan(
+        operationName: String, headers:  MutableMap<String, Any>
+    ): TraceContext {
+        val span = recordTracing.nextSpan(headers).name(operationName).start()
+        return BraveTraceContext(tracer, span)
+    }
+
     override fun getOrCreateBatchPublishTracing(clientId: String): BatchPublishTracing {
         return currentBatchPublishingTracers.get()
             .getOrPut(clientId) { recordTracing.createBatchPublishTracing(clientId) }

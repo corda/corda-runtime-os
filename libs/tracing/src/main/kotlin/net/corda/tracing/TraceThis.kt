@@ -82,6 +82,13 @@ fun traceSend(
     return TracingState.currentTraceService.nextSpan(operationName, headers)
 }
 
+fun traceSend(
+    headers: MutableMap<String, Any>,
+    operationName: String
+): TraceContext {
+    return TracingState.currentTraceService.nextSpan(operationName, headers)
+}
+
 fun traceEventProcessing(
     event: Record<*, *>,
     operationName: String,

@@ -37,6 +37,15 @@ class BraveRecordTracing(tracing: Tracing) {
         }
     }
 
+    fun nextSpan(headers: MutableMap<String, Any>): Span {
+        val extracted = extractTraceContext(headers)
+        return if (extracted == null) {
+            tracer.nextSpan()
+        } else {
+            tracer.nextSpan(extracted)
+        }
+    }
+
     fun extractTraceContext(headers: List<Pair<String, String>>): TraceContextOrSamplingFlags? {
         return recordExtractor.extract(headers)
     }
