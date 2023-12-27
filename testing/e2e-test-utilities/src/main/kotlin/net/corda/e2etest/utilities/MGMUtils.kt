@@ -26,9 +26,9 @@ import java.util.UUID
  * Calls the necessary endpoints to create a vnode, and onboard the MGM to that vnode.
  */
 fun ClusterInfo.onboardMgm(
+    ca: NamedCertificateAuthority,
     mgmName: String = "O=Mgm, L=London, C=GB, OU=${UUID.randomUUID()}",
     groupPolicyConfig: GroupPolicyConfig = GroupPolicyConfig(),
-    ca: NamedCertificateAuthority = NamedCertificateAuthority.default()
 ): NetworkOnboardingMetadata {
     val mgmCpiName = "mgm.cpi"
     conditionallyUploadCpiSigningCertificate()

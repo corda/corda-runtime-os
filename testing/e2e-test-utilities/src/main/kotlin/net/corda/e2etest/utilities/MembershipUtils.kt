@@ -62,12 +62,12 @@ fun ClusterInfo.onboardMember(
     cpiName: String,
     groupPolicy: String,
     x500Name: String,
+    ca: NamedCertificateAuthority,
     waitForApproval: Boolean = true,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
     tlsCertificateUploadedCallback: (String) -> Unit = {},
     useSessionCertificate: Boolean = false,
     useLedgerKey: Boolean = true,
-    ca: NamedCertificateAuthority = NamedCertificateAuthority.default(),
 ): NetworkOnboardingMetadata {
     conditionallyUploadCpiSigningCertificate()
     conditionallyUploadCordaPackage(cpiName, cpb, groupPolicy)
@@ -144,6 +144,7 @@ fun ClusterInfo.onboardNotaryMember(
     cpiName: String,
     groupPolicy: String,
     x500Name: String,
+    ca: NamedCertificateAuthority,
     wait: Boolean = true,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
     tlsCertificateUploadedCallback: (String) -> Unit = {},
@@ -155,6 +156,7 @@ fun ClusterInfo.onboardNotaryMember(
     cpiName,
     groupPolicy,
     x500Name,
+    ca,
     wait,
     getAdditionalContext = { holdingId ->
         addSoftHsmFor(holdingId, CAT_NOTARY)

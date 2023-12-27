@@ -46,8 +46,4 @@ fun ClusterInfo.importTlsCertificate(
 data class NamedCertificateAuthority(
     val name: String = UUID.randomUUID().toString(),
     val ca: FileSystemCertificatesAuthority = createCa(name),
-) {
-    companion object {
-        fun default(): NamedCertificateAuthority = NamedCertificateAuthority("default")
-    }
-}
+)
