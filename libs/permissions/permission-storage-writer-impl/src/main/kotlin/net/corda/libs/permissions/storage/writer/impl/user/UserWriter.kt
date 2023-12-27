@@ -1,6 +1,7 @@
 package net.corda.libs.permissions.storage.writer.impl.user
 
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
+import net.corda.data.permissions.management.user.ChangeUserPasswordRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.data.permissions.User as AvroUser
@@ -16,6 +17,14 @@ interface UserWriter {
      * @param requestUserId ID of the user who made the request.
      */
     fun createUser(request: CreateUserRequest, requestUserId: String): AvroUser
+
+    /**
+     * Change the password field of a User entity and return its Avro representation.
+     *
+     * @param request ChangeUserPasswordRequest containing the information of the password change request.
+     * @param requestUserId ID of the user who made the request.
+     */
+    fun changeUserPassword(request: ChangeUserPasswordRequest, requestUserId: String): AvroUser
 
     /**
      * Associate a Role to a User and return its Avro representation.

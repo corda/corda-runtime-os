@@ -21,26 +21,25 @@ import net.corda.e2etest.utilities.startRpcFlow
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
-import org.junit.jupiter.api.parallel.Execution
-import org.junit.jupiter.api.parallel.ExecutionMode
+import org.junit.jupiter.api.parallel.Isolated
+import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.UUID
 
 @Suppress("Unused", "FunctionName")
-//The flow tests must go last as one test updates the messaging config which is highly disruptive to subsequent test runs. The real
-// solution to this is a larger effort to have components listen to their messaging pattern lifecycle status and for them to go DOWN when
-// their patterns are DOWN - CORE-8015
 @Order(Int.MAX_VALUE)
 @TestInstance(Lifecycle.PER_CLASS)
-@Execution(ExecutionMode.SAME_THREAD)
+@Isolated("As this test updates the config which affects running cluster")
 class ConfigurationChangeTest : ClusterReadiness by ClusterReadinessChecker() {
 
     companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private val testRunUniqueId = UUID.randomUUID()
         private val groupId = UUID.randomUUID().toString()
         private val applicationCpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
@@ -78,23 +77,29 @@ class ConfigurationChangeTest : ClusterReadiness by ClusterReadinessChecker() {
         registerStaticMember(bobHoldingId)
         registerStaticMember(charlieHoldingId)
     }
-
+    
+    @AfterAll
+    internal fun afterAll() {
+        // check cluster is ready when done with this test
+        assertIsReady(Duration.ofMinutes(1), Duration.ofMillis(100))
+    }
+    
     @Test
     fun `cluster configuration changes are picked up and workers continue to operate normally`() {
         val currentConfigValue = getConfig(MESSAGING_CONFIG).configWithDefaultsNode()[MAX_ALLOWED_MSG_SIZE].asInt()
         val newConfigurationValue = (currentConfigValue * 1.5).toInt()
 
         managedConfig { configManager ->
-            println("Set new config")
+            logger.info("Set new config")
             configManager
                 .load(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue)
                 .apply()
             // Wait for the rpc-worker to reload the configuration and come back up
-            println("Wait for the rpc-worker to reload the configuration and come back up")
+            logger.info("Wait for the rest-worker to reload the configuration and come back up")
             waitForConfigurationChange(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue.toString(), false)
 
             // Execute some flows which require functionality from different workers and make sure they succeed
-            println("Execute some flows which require functionality from different workers and make sure they succeed")
+            logger.info("Execute some flows which require functionality from different workers and make sure they succeed")
             val flowIds = mutableListOf(
                 startRpcFlow(
                     bobHoldingId,
@@ -121,7 +126,7 @@ class ConfigurationChangeTest : ClusterReadiness by ClusterReadinessChecker() {
                 )
             )
 
-            println("Check status of flows")
+            logger.info("Check status of flows")
             flowIds.forEach {
                 val flowResult = awaitRestFlowResult(bobHoldingId, it)
                 assertThat(flowResult.flowError).isNull()
