@@ -23,7 +23,7 @@ class CpiLoaderV2Test {
             .signers(ALICE)
             .build()
 
-        val cpi = CpiLoaderV2(activeCordaPlatformVersion = 50200).loadCpi(inMemoryCpi.toByteArray(), tmp, "in-memory", false)
+        val cpi = CpiLoaderV2().loadCpi(inMemoryCpi.toByteArray(), tmp, "in-memory", false)
 
         assertAll(
             { assertEquals("testCpiV2.cpi", cpi.metadata.cpiId.name) },
@@ -54,7 +54,7 @@ class CpiLoaderV2Test {
             .build()
 
         assertThrows<PackagingException> {
-            CpiLoaderV2(activeCordaPlatformVersion = 50200).loadCpi(inMemoryCpi.toByteArray(), tmp, "in-memory", false)
+            CpiLoaderV2().loadCpi(inMemoryCpi.toByteArray(), tmp, "in-memory", false)
         }
     }
     @Test
