@@ -145,7 +145,7 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
         headers: List<Pair<String, String>>,
         tracingHeaders: List<Pair<String, String>>
     ): List<Pair<String, String>> {
-        // If the tracing headers are passed in it means that that specific context should be used instead of the current one
+        // If the tracing headers are passed in it means that that specified context should be used instead of the current one
         val ctx = if (tracingHeaders.isEmpty()) {
             tracing.currentTraceContext().get()
         } else {
