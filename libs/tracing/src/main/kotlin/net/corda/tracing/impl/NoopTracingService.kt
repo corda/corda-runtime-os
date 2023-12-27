@@ -66,6 +66,14 @@ class NoopTracingService : TracingService {
         return headers
     }
 
+    override fun addTraceHeaders(
+        headers: MutableMap<String, Any>,
+        traceHeadersToOverrideContext: List<Pair<String, String>>
+    ): MutableMap<String, Any> {
+        // Do nothing. Return the current headers
+        return headers
+    }
+
     override fun <R> nextSpan(operationName: String, processingBlock: TraceContext.() -> R): R {
         return processingBlock(NoopTraceContext())
     }

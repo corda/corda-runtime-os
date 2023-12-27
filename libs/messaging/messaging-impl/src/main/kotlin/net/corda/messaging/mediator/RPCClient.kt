@@ -13,6 +13,7 @@ import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_KEY
 import net.corda.messaging.utils.HTTPRetryConfig
 import net.corda.messaging.utils.HTTPRetryExecutor
 import net.corda.metrics.CordaMetrics
+import net.corda.tracing.addTraceContextToMediatorMessage
 import net.corda.tracing.traceSend
 import net.corda.utilities.debug
 import net.corda.utilities.trace
@@ -36,15 +37,7 @@ class RPCClient(
     private val platformDigestService: PlatformDigestService,
     private val onSerializationError: ((ByteArray) -> Unit)?,
     private val httpClient: HttpClient,
-    private val retryConfig: HTTPRetryConfig =
-        HTTPRetryConfig.Builder()
-            .retryOn(
-                IOException::class.java,
-                TimeoutException::class.java,
-                CordaHTTPClientErrorException::class.java,
-                CordaHTTPServerErrorException::class.java
-            )
-            .build()
+    private val retryConfig: HTTPRetryConfig = buildHttpRetryDefaultConfig()
 ) : MessagingClient {
     private val deserializer = cordaAvroSerializerFactory.createAvroDeserializer({}, Any::class.java)
 
@@ -52,38 +45,66 @@ class RPCClient(
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val SUCCESS: String = "SUCCESS"
         private const val FAILED: String = "FAILED"
+        private fun buildHttpRetryDefaultConfig(): HTTPRetryConfig {
+            return HTTPRetryConfig.Builder()
+                .retryOn(
+                    IOException::class.java,
+                    TimeoutException::class.java,
+                    CordaHTTPClientErrorException::class.java,
+                    CordaHTTPServerErrorException::class.java
+                )
+                .build()
+        }
     }
 
     override fun send(message: MediatorMessage<*>): MediatorMessage<*>? {
         return try {
             log.trace { "Received RPC external event send request for endpoint ${message.endpoint()}" }
-            processMessage(message)
+            sendAsHttpRequest(message)
         } catch (e: Exception) {
             handleExceptions(e, message.endpoint())
         }
     }
 
-    private fun processMessage(message: MediatorMessage<*>): MediatorMessage<*>? {
-        // Extract the headers from the mediator message, so they can be
-        // copied into the HTTP request and keep the traceability intact
-        val headers = message.properties.filter { (_, v) -> v is String }.map { (k, v) -> k to (v as String) }
+    // Generates an HTTP request based on the mediator message and sends the request
+    // The method returns the response
+    private fun sendAsHttpRequest(request: MediatorMessage<*>): MediatorMessage<*>? {
 
-        // Build the HTTP request based on the mediator message and the tracing headers
-        val request = buildHttpRequest(message, headers)
+        // The list of headers should contain the trace headers
+        val headers = request.extractHeaders()
 
-        val response = traceHttpSend(headers, request.uri()) {
-            sendWithRetry(request)
+        // Convert request into an instance of the HTTPRequest class
+        val httpRequest = request.asHttpRequest()
+
+        // Blocking call
+        val httpResponse = traceHttpSend(headers, httpRequest.uri()) {
+            sendWithRetry(httpRequest)
         }
 
-        val deserializedResponse = deserializePayload(response.body())
+        // Convert the response to an instance of the MediatorMessage class and enrich the instance with a trace context
+        return httpResponse.asMediatorMessage()?.let{ response ->
+            addTraceContextToMediatorMessage(response, headers)
+        }
+    }
 
-        return deserializedResponse?.let {
-            val responseHeaders: MutableMap<String, Any> = mutableMapOf()
+    private fun sendWithRetry(request: HttpRequest): HttpResponse<ByteArray> {
+        val startTime = System.nanoTime()
+        return try {
+            val response = HTTPRetryExecutor.withConfig(retryConfig) {
+                httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
+            }
+            buildMetricForResponse(startTime, SUCCESS, request, response)
+            response
+        } catch (ex: Exception) {
+            log.debug { "Catching exception in HttpClient sendWithRetry in order to log metrics, $ex" }
+            buildMetricForResponse(startTime, FAILED, request)
+            throw ex
+        }
+    }
 
-            headers.forEach { (k, v) -> responseHeaders[k] = v }
-            responseHeaders["statusCode"] = response.statusCode()
-
-            MediatorMessage(deserializedResponse, responseHeaders)
+    private fun HttpResponse<ByteArray>.asMediatorMessage(): MediatorMessage<*>? {
+        return deserializePayload(body())?.let { deserializedBody ->
+            return MediatorMessage(deserializedBody, mutableMapOf("statusCode" to statusCode()))
         }
     }
 
@@ -115,55 +136,6 @@ class RPCClient(
             log.warn(errorMsg, e)
             onSerializationError?.invoke(errorMsg.toByteArray())
             throw e
-        }
-    }
-
-    private fun buildHttpRequest(message: MediatorMessage<*>, extraHeaders: List<Pair<String, String>>): HttpRequest {
-        // Local auxiliary function that adds headers in a list to the HTTP request
-        fun HttpRequest.Builder.headers(headers: List<Pair<String, String>>) {
-            for ((name, value) in headers) {
-                header(name, value)
-            }
-        }
-
-        val builder = HttpRequest.newBuilder()
-            .uri(URI(message.endpoint()))
-            .POST(HttpRequest.BodyPublishers.ofByteArray(message.payload as ByteArray))
-
-        // Add corda request key to the HTTP header in the request if the key is present in the message
-        message.extractCordaRequestKeyHeader()?.let { (name, value) -> builder.headers(name, value) }
-
-        // Add any other header to the HTTP request that are deemed relevant
-        builder.headers(extraHeaders)
-
-        // Build the request and return
-        return builder.build()
-    }
-
-    private fun <T : Any> MediatorMessage<T>.extractCordaRequestKeyHeader(): Pair<String, String>? {
-        val value = getPropertyOrNull(MSG_PROP_KEY)?.let { value ->
-            if (value is ByteArray) {
-                platformDigestService.hash(value, DigestAlgorithmName.SHA2_256).toHexString()
-            } else {
-                value.toString()
-            }
-        } ?: return null
-
-        return CORDA_REQUEST_KEY_HEADER to value
-    }
-
-    private fun sendWithRetry(request: HttpRequest): HttpResponse<ByteArray> {
-        val startTime = System.nanoTime()
-        return try {
-            val response = HTTPRetryExecutor.withConfig(retryConfig) {
-                httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
-            }
-            buildMetricForResponse(startTime, SUCCESS, request, response)
-            response
-        } catch (ex: Exception) {
-            log.debug { "Catching exception in HttpClient sendWithRetry in order to log metrics, $ex" }
-            buildMetricForResponse(startTime, FAILED, request)
-            throw ex
         }
     }
 
@@ -222,5 +194,46 @@ class RPCClient(
 
     private fun MediatorMessage<*>.endpoint(): String {
         return getProperty<String>(MSG_PROP_ENDPOINT)
+    }
+
+    fun <T : Any> MediatorMessage<T>.extractHeaders(): List<Pair<String, String>> {
+        // Extract the headers from the mediator message, so they can be
+        // copied into the HTTP request and keep the traceability intact
+        return properties.filter { (_, v) -> v is String }.map { (k, v) -> k to (v as String) }
+    }
+
+    private fun MediatorMessage<*>.asHttpRequest(): HttpRequest {
+        // Local auxiliary function that adds headers in a list to the HTTP request
+        fun HttpRequest.Builder.headers(headers: List<Pair<String, String>>) {
+            for ((name, value) in headers) {
+                header(name, value)
+            }
+        }
+
+        // Local auxiliary function
+        fun <T : Any> MediatorMessage<T>.extractCordaRequestKeyHeader(): Pair<String, String>? {
+            val value = getPropertyOrNull(MSG_PROP_KEY)?.let { value ->
+                if (value is ByteArray) {
+                    platformDigestService.hash(value, DigestAlgorithmName.SHA2_256).toHexString()
+                } else {
+                    value.toString()
+                }
+            } ?: return null
+
+            return CORDA_REQUEST_KEY_HEADER to value
+        }
+
+        val builder = HttpRequest.newBuilder()
+            .uri(URI(endpoint()))
+            .POST(HttpRequest.BodyPublishers.ofByteArray(payload as ByteArray))
+
+        // Add corda request key to the HTTP header in the request if the key is present in the message
+        extractCordaRequestKeyHeader()?.let { (name, value) -> builder.headers(name, value) }
+
+        // Add any other header to the HTTP request that are deemed relevant
+        builder.headers(extractHeaders())
+
+        // Build the request and return
+        return builder.build()
     }
 }

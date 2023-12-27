@@ -139,6 +139,12 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
         }
     }
 
+    private val propertiesInjector by lazy {
+        tracing.propagation().injector { param: MutableMap<String, Any>, key: String, value: Any ->
+            param[key] = value
+        }
+    }
+
     private val recordTracing: BraveRecordTracing by lazy { BraveRecordTracing(tracing) }
 
     override fun addTraceHeaders(
@@ -151,6 +157,17 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
 
         recordInjector.inject(ctx, headersWithTracing)
         return headersWithTracing
+    }
+
+    override fun addTraceHeaders(
+        headers: MutableMap<String, Any>,
+        traceHeadersToOverrideContext: List<Pair<String, String>>
+    ): MutableMap<String, Any> {
+
+        val ctx = getTraceContext(traceHeadersToOverrideContext)
+
+        propertiesInjector.inject(ctx, headers)
+        return headers
     }
 
     private fun getTraceContext(traceHeadersToOverrideContext: List<Pair<String, String>>): brave.propagation.TraceContext? {

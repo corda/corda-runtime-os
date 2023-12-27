@@ -15,6 +15,11 @@ interface TracingService : AutoCloseable {
         traceHeadersToOverrideContext: List<Pair<String, String>>
     ): List<Pair<String, String>>
 
+    fun addTraceHeaders(
+        headers: MutableMap<String, Any>,
+        traceHeadersToOverrideContext: List<Pair<String, String>>
+    ): MutableMap<String, Any>
+
     fun <R> nextSpan(operationName: String, processingBlock: TraceContext.() -> R): R
 
     fun <R> nextSpan(operationName: String, record: Record<*, *>, processingBlock: TraceContext.() -> R): R

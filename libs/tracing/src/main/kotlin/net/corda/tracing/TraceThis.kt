@@ -6,6 +6,7 @@ package net.corda.tracing
 import aQute.bnd.annotation.Resolution.OPTIONAL
 import aQute.bnd.annotation.spi.ServiceConsumer
 import net.corda.messagebus.api.producer.CordaProducerRecord
+import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
@@ -60,6 +61,18 @@ fun addTraceContextToRecord(
 
 fun addTraceContextToRecord(record: CordaProducerRecord<*, *>): CordaProducerRecord<out Any, out Any> {
     return record.copy(headers = TracingState.currentTraceService.addTraceHeaders(record.headers, emptyList()))
+}
+
+fun addTraceContextToMediatorMessage(
+    message: MediatorMessage<*>,
+    traceHeadersToOverrideContext: List<Pair<String, String>> = emptyList()
+): MediatorMessage<*> {
+    return message.copy(
+        properties = TracingState.currentTraceService.addTraceHeaders(
+            message.properties,
+            traceHeadersToOverrideContext
+        )
+    )
 }
 
 fun traceSend(
