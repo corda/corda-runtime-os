@@ -40,7 +40,7 @@ internal class OutboundLinkManager(
         commonComponents.inboundAssignmentListener,
         commonComponents.messagesPendingSession,
         clock,
-        commonComponents.establishedSessionRecorder,
+        commonComponents.messageConverter,
     )
     private val deliveryTracker = DeliveryTracker(
         lifecycleCoordinatorFactory,

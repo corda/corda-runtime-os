@@ -45,7 +45,6 @@ import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.p2p.linkmanager.TraceableItem
 import net.corda.p2p.linkmanager.metrics.recordOutboundMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
-import net.corda.p2p.linkmanager.sessions.EstablishedSessionRecorder
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class OutboundMessageProcessor(
@@ -56,7 +55,7 @@ internal class OutboundMessageProcessor(
     private val inboundAssignmentListener: InboundAssignmentListener,
     private val messagesPendingSession: PendingSessionMessageQueues,
     private val clock: Clock,
-    private val establishedSessionRecorder: EstablishedSessionRecorder,
+    private val messageConverter: MessageConverter,
     private val networkMessagingValidator: NetworkMessagingValidator =
         NetworkMessagingValidator(membershipGroupReaderProvider),
 ) : EventLogProcessor<String, AppMessage> {
@@ -418,7 +417,7 @@ internal class OutboundMessageProcessor(
         state: SessionManager.SessionState.SessionEstablished,
         messageAndKey: AuthenticatedMessageAndKey
     ): List<Record<String, *>> {
-        return establishedSessionRecorder.recordsForSessionEstablished(
+        return messageConverter.recordsForSessionEstablished(
             sessionManager,
             state.session,
             state.sessionCounterparties.serial,

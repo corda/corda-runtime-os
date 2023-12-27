@@ -47,7 +47,7 @@ import java.time.Instant
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.linkmanager.TraceableItem
-import net.corda.p2p.linkmanager.sessions.EstablishedSessionRecorder
+import net.corda.p2p.linkmanager.common.MessageConverter
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doThrow
 
@@ -80,7 +80,7 @@ class OutboundMessageProcessorTest {
         on { counterpartyId } doReturn remoteIdentity
         on { serial } doReturn serialNumber
     }
-    private val establishedSessionRecorder = mock<EstablishedSessionRecorder>()
+    private val messageConverter = mock<MessageConverter>()
 
     private val networkMessagingValidator = mock<NetworkMessagingValidator> {
         on { validateInbound(any(), any()) } doReturn Either.Left(Unit)
@@ -95,7 +95,7 @@ class OutboundMessageProcessorTest {
         assignedListener,
         messagesPendingSession,
         mockTimeFacilitiesProvider.clock,
-        establishedSessionRecorder,
+        messageConverter,
         networkMessagingValidator
     )
 
@@ -603,7 +603,7 @@ class OutboundMessageProcessorTest {
             assignedListener,
             messagesPendingSession,
             mockTimeFacilitiesProvider.clock,
-            establishedSessionRecorder,
+            messageConverter,
             networkMessagingValidator,
         )
 
@@ -648,7 +648,7 @@ class OutboundMessageProcessorTest {
             assignedListener,
             messagesPendingSession,
             mockTimeFacilitiesProvider.clock,
-            establishedSessionRecorder,
+            messageConverter,
             networkMessagingValidator,
         )
 
@@ -1110,7 +1110,7 @@ class OutboundMessageProcessorTest {
         }
         messages.forEachIndexed { index, authenticatedMessage ->
             whenever(
-                establishedSessionRecorder.recordsForSessionEstablished(
+                messageConverter.recordsForSessionEstablished(
                     sessionManager,
                     state.session,
                     state.sessionCounterparties.serial,
