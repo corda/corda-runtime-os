@@ -46,8 +46,16 @@ fun getOrCreateBatchPublishTracing(clientId: String): BatchPublishTracing {
 
 fun addTraceContextToRecords(records: List<Record<*, *>>): List<Record<*, *>> = records.map(::addTraceContextToRecord)
 
-fun addTraceContextToRecord(record: Record<*, *>, traceHeadersToOverrideContext: List<Pair<String, String>> = emptyList()): Record<out Any, out Any> {
-    return record.copy(headers = TracingState.currentTraceService.addTraceHeaders(record.headers, traceHeadersToOverrideContext))
+fun addTraceContextToRecord(
+    record: Record<*, *>,
+    traceHeadersToOverrideContext: List<Pair<String, String>> = emptyList()
+): Record<out Any, out Any> {
+    return record.copy(
+        headers = TracingState.currentTraceService.addTraceHeaders(
+            record.headers,
+            traceHeadersToOverrideContext
+        )
+    )
 }
 
 fun addTraceContextToRecord(record: CordaProducerRecord<*, *>): CordaProducerRecord<out Any, out Any> {
