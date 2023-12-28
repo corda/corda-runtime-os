@@ -15,7 +15,6 @@ import net.corda.messaging.utils.HTTPRetryExecutor
 import net.corda.metrics.CordaMetrics
 import net.corda.tracing.addTraceContextToHttpRequest
 import net.corda.tracing.addTraceContextToMediatorMessage
-import net.corda.tracing.addTraceContextToRecord
 import net.corda.tracing.traceSend
 import net.corda.utilities.debug
 import net.corda.utilities.trace
