@@ -184,22 +184,18 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
 
     private fun getTraceContext(traceHeadersToOverrideContext: List<Pair<String, String>>): brave.propagation.TraceContext? {
         // If the tracing headers are passed in it means that that specified context should be used instead of the current one
-        return if (!traceHeadersToOverrideContext.isEmpty()) {
-            recordTracing.extractTraceContext(traceHeadersToOverrideContext)?.context()
-
-        } else {
-            tracing.currentTraceContext().get()
+        if (!traceHeadersToOverrideContext.isEmpty()) {
+            return recordTracing.extract(traceHeadersToOverrideContext)?.context()
         }
+        return tracing.currentTraceContext().get()
     }
 
     private fun getTraceContext(traceHeadersToOverrideContext: MutableMap<String, Any>): brave.propagation.TraceContext? {
         // If the tracing headers are passed in it means that that specified context should be used instead of the current one
-        return if (!traceHeadersToOverrideContext.isEmpty()) {
-            recordTracing.extractTraceContext(traceHeadersToOverrideContext)?.context()
-
-        } else {
-            tracing.currentTraceContext().get()
+        if (!traceHeadersToOverrideContext.isEmpty()) {
+            return recordTracing.extract(traceHeadersToOverrideContext)?.context()
         }
+        return tracing.currentTraceContext().get()
     }
 
     override fun traceBatch(operationName: String): BatchRecordTracer {

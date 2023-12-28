@@ -48,8 +48,7 @@ fun getOrCreateBatchPublishTracing(clientId: String): BatchPublishTracing {
 
 fun addTraceContextToRecords(
     records: List<Record<*, *>>
-):
-        List<Record<*, *>> = records.map(::addTraceContextToRecord)
+): List<Record<*, *>> = records.map(::addTraceContextToRecord)
 
 fun addTraceContextToRecord(
     record: Record<*, *>

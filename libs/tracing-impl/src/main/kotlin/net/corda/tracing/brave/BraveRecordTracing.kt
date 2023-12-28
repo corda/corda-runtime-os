@@ -10,6 +10,13 @@ class BraveRecordTracing(tracing: Tracing) {
     private val tracer = tracing.tracer()
     private val recordExtractor = BraveRecordExtractor(tracing)
 
+    fun extract(headers: List<Pair<String, String>>): TraceContextOrSamplingFlags? {
+        return recordExtractor.extract(headers)
+    }
+    fun extract(headers: MutableMap<String, Any>): TraceContextOrSamplingFlags? {
+        return recordExtractor.extract(headers)
+    }
+
     fun nextSpan(record: Record<*, *>): Span {
         return nextSpan(record.headers)
     }
