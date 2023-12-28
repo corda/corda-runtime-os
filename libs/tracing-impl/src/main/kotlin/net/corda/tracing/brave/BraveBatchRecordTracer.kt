@@ -1,7 +1,6 @@
 package net.corda.tracing.brave
 
 import brave.Span
-import brave.propagation.TraceContext
 import net.corda.messaging.api.records.Record
 import net.corda.tracing.BatchRecordTracer
 
