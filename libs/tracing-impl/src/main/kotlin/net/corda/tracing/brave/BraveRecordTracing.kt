@@ -6,15 +6,22 @@ import brave.propagation.TraceContextOrSamplingFlags
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 
-class BraveRecordTracing(tracing: Tracing) {
+class BraveRecordTracing(val tracing: Tracing) {
     private val tracer = tracing.tracer()
     private val recordExtractor = BraveRecordExtractor(tracing)
 
-    fun extract(headers: List<Pair<String, String>>): TraceContextOrSamplingFlags? {
-        return recordExtractor.extract(headers)
+    fun getTraceContext(headers: List<Pair<String, String>>): brave.propagation.TraceContext {
+        val extracted = recordExtractor.extract(headers)
+        return getTraceContext(extracted)
     }
-    fun extract(headers: MutableMap<String, Any>): TraceContextOrSamplingFlags? {
-        return recordExtractor.extract(headers)
+
+    fun getTraceContext(headers: MutableMap<String, Any>): brave.propagation.TraceContext {
+        val extracted = recordExtractor.extract(headers)
+        return getTraceContext(extracted)
+    }
+
+    private fun getTraceContext(extracted: TraceContextOrSamplingFlags?): brave.propagation.TraceContext {
+        return extracted?.context() ?: tracing.currentTraceContext().get()
     }
 
     fun nextSpan(record: Record<*, *>): Span {
