@@ -18,14 +18,19 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
+import net.corda.schema.configuration.FlowConfig
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
 import net.corda.tracing.TraceContext
 import net.corda.tracing.traceStateAndEventExecution
 import net.corda.utilities.debug
+import net.corda.utilities.retry.Exponential
+import net.corda.utilities.retry.tryWithBackoff
 import net.corda.utilities.trace
 import net.corda.utilities.withMDC
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+
 @Suppress("LongParameterList")
 class FlowEventProcessorImpl(
     private val flowEventPipelineFactory: FlowEventPipelineFactory,
@@ -37,7 +42,7 @@ class FlowEventProcessorImpl(
 ) : StateAndEventProcessor<String, Checkpoint, FlowEvent> {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val keyClass = String::class.java
@@ -110,14 +115,24 @@ class FlowEventProcessorImpl(
         // thread after this period and so this timeout would never be reached and given a chance to return otherwise.
         val flowTimeout = (flowConfig.getLong(PROCESSOR_TIMEOUT) * 0.75).toLong()
         val result = try {
-            pipeline
-                .eventPreProcessing()
-                .virtualNodeFlowOperationalChecks()
-                .executeFlow(flowTimeout)
-                .globalPostProcessing()
-                .context
-        } catch (e: FlowTransientException) {
-            flowEventExceptionProcessor.process(e, pipeline.context)
+            tryWithBackoff(
+                logger = log,
+                maxRetries = flowConfig.getLong(FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS),
+                maxTimeMillis = flowConfig.getLong(FlowConfig.PROCESSING_MAX_RETRY_WINDOW_DURATION),
+                // Exponential backoff -> 500ms, 1s, 2s, 4s, 8s, etc.
+                backoffStrategy = Exponential(base = 2.0, growthFactor = 250L),
+                // Only FlowTransientException will be retried
+                recoverable = { throwable -> throwable is FlowTransientException },
+                // Throw FlowFatalException once retry attempts are exhausted
+                exceptionProvider = { message, throwable -> FlowFatalException(message, throwable) }
+            ) {
+                pipeline
+                    .eventPreProcessing()
+                    .virtualNodeFlowOperationalChecks()
+                    .executeFlow(flowTimeout)
+                    .globalPostProcessing()
+                    .context
+            }
         } catch (e: FlowEventException) {
             flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (e: FlowPlatformException) {
