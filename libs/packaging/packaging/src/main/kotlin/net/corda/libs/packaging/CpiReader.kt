@@ -9,8 +9,9 @@ import java.io.InputStream
 import java.nio.file.Path
 import java.util.jar.JarInputStream
 
-class CpiReader(private val activeCordaPlatformVersion: Int) {
+class CpiReader(activeCordaPlatformVersion: Int) {
     private val version2 = CpkFormatVersion(2, 0)
+    private val cpiLoader = CpiLoaderV2(activeCordaPlatformVersion = activeCordaPlatformVersion)
 
     /**
      * Parses a CPI file and stores its information in a [Cpi] instance
@@ -37,8 +38,7 @@ class CpiReader(private val activeCordaPlatformVersion: Int) {
 
         // Choose correct implementation to read this version
         return when (val formatVersion = FormatVersionReader.readCpiFormatVersion(manifest)) {
-            version2 -> CpiLoaderV2(activeCordaPlatformVersion = activeCordaPlatformVersion)
-                .loadCpi(buffer, expansionLocation, cpiLocation, verifySignature)
+            version2 -> cpiLoader.loadCpi(buffer, expansionLocation, cpiLocation, verifySignature)
             else -> throw UnknownFormatVersionException("Unknown Corda-CPI-Format - \"$formatVersion\"")
         }
     }
