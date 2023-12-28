@@ -222,7 +222,34 @@ internal class DynamicKeyStore(
     }
 
     override fun sign(publicKey: PublicKey, spec: SignatureSpec, data: ByteArray): ByteArray {
+        logger.info("TTT trying to sign with publicKey: $publicKey..")
         val tenantId = publicKeyToTenantId[publicKey] ?: throw InvalidKeyException("Unknown public key")
-        return cryptoOpsClient.sign(tenantId, publicKey, spec, data).bytes
+        logger.info("TTT tenantId is: $tenantId..")
+        return try {
+            cryptoOpsClient.sign(tenantId, publicKey, spec, data).bytes
+        } catch (e: Exception) {
+            logger.info("TTT no, that cant be done", e)
+            logger.info("TTT lets try other tenants...")
+            aliasToCertificates.forEach { alias, certificate ->
+                logger.info("\t TTT For alias: $alias")
+                val qPublicKey = certificate.firstOrNull()?.publicKey
+                if (qPublicKey == null) {
+                    logger.info("\t\t TTT no public key!")
+                } else if (qPublicKey == publicKey) {
+                    logger.info("\t\t TTT just tried that one!")
+                } else {
+                    try {
+                        cryptoOpsClient.sign(tenantId, publicKey, spec, data).bytes
+                        logger.info("\t\t TTT This one would have passed!!! - " +
+                                "it's tenant ID is ${publicKeyToTenantId[qPublicKey]} and not $tenantId")
+                    } catch (e: Exception) {
+                        logger.info("\t\t TTT This one would have failed")
+                    }
+
+                }
+            }
+
+            throw e
+        }
     }
 }
