@@ -2,13 +2,12 @@ package net.corda.tracing.brave
 
 import brave.Span
 import brave.Tracer
-import brave.propagation.TraceContext
 import net.corda.tracing.BatchPublishTracing
 
 class BraveBatchPublishTracing(
     private val clientId: String,
     private val tracer: Tracer,
-    private val recordExtractor: TraceContext.Extractor<List<Pair<String, String>>>,
+    private val recordExtractor: BraveRecordExtractor,
 ) : BatchPublishTracing {
     private val batchSpans = mutableListOf<Span>()
 
