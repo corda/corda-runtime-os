@@ -68,10 +68,10 @@ fun assembleFileFromChunks(
  *
  * @throws ValidationException
  */
-fun FileInfo.validateAndGetCpi(cpiPartsDir: Path, requestId: String, activeCordaPlatformVersion: Int): Cpi {
+fun FileInfo.validateAndGetCpi(cpiPartsDir: Path, requestId: String, cpiReader: CpiReader): Cpi {
     return try {
         Files.newInputStream(path).use {
-            CpiReader(activeCordaPlatformVersion).readCpi(it, cpiPartsDir)
+            cpiReader.readCpi(it, cpiPartsDir)
         }
     } catch (ex: PackagingException) {
         throw ValidationException("Invalid CPI: ${ex.message}", requestId, ex)

@@ -13,6 +13,7 @@ import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.libs.configuration.validation.ExternalChannelsConfigValidator
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.CpiReader
 import net.corda.libs.packaging.PackagingConstants
 import net.corda.libs.packaging.verify.verifyCpi
 import net.corda.libs.platform.PlatformInfoProvider
@@ -41,8 +42,9 @@ class CpiValidatorImpl(
     private val cpiPartsDir: Path,
     certificatesService: CertificatesService,
     private val clock: Clock,
-    private val platformInfoProvider: PlatformInfoProvider
+    platformInfoProvider: PlatformInfoProvider
 ) : CpiValidator {
+    private val cpiReader = CpiReader(platformInfoProvider.activePlatformVersion)
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -64,7 +66,7 @@ class CpiValidatorImpl(
 
         // Read the cpi from a file
         publisher.update(requestId, "Validating CPI")
-        val cpi: Cpi = fileInfo.validateAndGetCpi(cpiPartsDir, requestId, platformInfoProvider.activePlatformVersion)
+        val cpi: Cpi = fileInfo.validateAndGetCpi(cpiPartsDir, requestId, cpiReader)
 
         publisher.update(requestId, "Checking group policy is well formed.")
         try {
