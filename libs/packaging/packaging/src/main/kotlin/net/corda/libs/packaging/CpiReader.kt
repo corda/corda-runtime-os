@@ -11,7 +11,7 @@ import java.util.jar.JarInputStream
 
 class CpiReader(activeCordaPlatformVersion: Int) {
     private val version2 = CpkFormatVersion(2, 0)
-    private val cpiLoader = CpiLoaderV2(activeCordaPlatformVersion = activeCordaPlatformVersion)
+    private val cpiLoader = CpiLoaderV2(activeCordaPlatformVersion)
 
     /**
      * Parses a CPI file and stores its information in a [Cpi] instance

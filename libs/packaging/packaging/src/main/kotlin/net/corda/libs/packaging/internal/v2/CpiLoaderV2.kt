@@ -22,7 +22,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.jar.JarInputStream
 
-class CpiLoaderV2(private val clock: Clock = UTCClock(), private val activeCordaPlatformVersion: Int) : CpiLoader {
+class CpiLoaderV2(private val activeCordaPlatformVersion: Int, private val clock: Clock = UTCClock()) : CpiLoader {
 
     override fun loadCpi(
         byteArray: ByteArray,
