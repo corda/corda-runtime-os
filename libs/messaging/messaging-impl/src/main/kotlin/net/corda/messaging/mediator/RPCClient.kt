@@ -105,6 +105,20 @@ class RPCClient(
         }
     }
 
+    private fun deserializePayload(payload: ByteArray): Any? {
+        return try {
+            when {
+                payload.isEmpty() -> null
+                else -> deserializer.deserialize(payload)
+            }
+        } catch (e: Exception) {
+            val errorMsg = "Failed to deserialize payload of size ${payload.size} bytes due to: ${e.message}"
+            log.warn(errorMsg, e)
+            onSerializationError?.invoke(errorMsg.toByteArray())
+            throw e
+        }
+    }
+
     private inline fun <T> traceHttpSend(traceHeaders: MutableMap<String, Any>, uri: URI, send: () -> T): T {
         val traceContext = traceSend(traceHeaders, "http client - send request - path - ${uri.path}")
 
@@ -119,20 +133,6 @@ class RPCClient(
                 traceContext.errorAndFinish(ex)
                 throw ex
             }
-        }
-    }
-
-    private fun deserializePayload(payload: ByteArray): Any? {
-        return try {
-            when {
-                payload.isEmpty() -> null
-                else -> deserializer.deserialize(payload)
-            }
-        } catch (e: Exception) {
-            val errorMsg = "Failed to deserialize payload of size ${payload.size} bytes due to: ${e.message}"
-            log.warn(errorMsg, e)
-            onSerializationError?.invoke(errorMsg.toByteArray())
-            throw e
         }
     }
 
