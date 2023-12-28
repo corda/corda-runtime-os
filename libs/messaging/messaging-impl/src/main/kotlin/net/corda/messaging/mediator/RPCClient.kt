@@ -38,7 +38,7 @@ class RPCClient(
     private val platformDigestService: PlatformDigestService,
     private val onSerializationError: ((ByteArray) -> Unit)?,
     private val httpClient: HttpClient,
-    private val retryConfig: HTTPRetryConfig = buildHttpRetryDefaultConfig()
+    private val retryConfig: HTTPRetryConfig = getHttpRetryDefaultConfig()
 ) : MessagingClient {
     private val deserializer = cordaAvroSerializerFactory.createAvroDeserializer({}, Any::class.java)
 
@@ -46,7 +46,7 @@ class RPCClient(
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val SUCCESS: String = "SUCCESS"
         private const val FAILED: String = "FAILED"
-        private fun buildHttpRetryDefaultConfig(): HTTPRetryConfig {
+        private fun getHttpRetryDefaultConfig(): HTTPRetryConfig {
             return HTTPRetryConfig.Builder()
                 .retryOn(
                     IOException::class.java,
