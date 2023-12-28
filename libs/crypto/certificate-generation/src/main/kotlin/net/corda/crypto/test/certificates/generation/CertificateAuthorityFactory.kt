@@ -1,5 +1,6 @@
 package net.corda.crypto.test.certificates.generation
 
+import org.bouncycastle.asn1.x500.X500Name
 import java.io.File
 import java.time.Duration
 
@@ -17,8 +18,14 @@ object CertificateAuthorityFactory {
     fun createMemoryAuthority(
         keysFactoryDefinitions: KeysFactoryDefinitions,
         validDuration: Duration = Duration.ofDays(30),
+        issuer: String = "C=UK, CN=r3.com"
     ): CertificateAuthority {
-        return LocalCertificatesAuthority(keysFactoryDefinitions, validDuration, null)
+        return LocalCertificatesAuthority(
+            keysFactoryDefinitions,
+            validDuration,
+            null,
+            issuer = X500Name(issuer)
+        )
     }
 
     /**

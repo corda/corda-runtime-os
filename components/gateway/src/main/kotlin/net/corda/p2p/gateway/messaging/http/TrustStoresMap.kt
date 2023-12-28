@@ -54,10 +54,7 @@ internal class TrustStoresMap(
     )
 
     fun getTrustStore(sourceX500Name: MemberX500Name, destinationGroupId: String) : TrustedCertificates {
-        logger.info("QQQ in getTrustStore($sourceX500Name, $destinationGroupId)")
-        return trustRootsPerHoldingIdentity[TruststoreKey(sourceX500Name, destinationGroupId)].also {
-            logger.info("QQQ \t got back: ${it?.pemCertificates}")
-        }
+        return trustRootsPerHoldingIdentity[TruststoreKey(sourceX500Name, destinationGroupId)]
             ?: throw IllegalArgumentException("Unknown trust store for source X500 name ($sourceX500Name) " +
                     "and group ID ($destinationGroupId)")
     }
@@ -94,21 +91,6 @@ internal class TrustStoresMap(
             ((other is TrustedCertificates) && (other.pemCertificates == pemCertificates))
     }
 
-    private fun logMe(name: String) {
-        logger.info("QQQ QQQQQQQQQQQQQQQQQQQQQQQQ")
-        logger.info("QQQ $name for TrustStoresMap (client side):")
-        trustRootsPerHoldingIdentity.forEach { key, certs ->
-            logger.info("QQQ \t $key")
-            certs.pemCertificates.forEach {
-                logger.info("QQQ \t\t certificate:")
-                it.lines().forEach { ln ->
-                    logger.info("QQQ \t\t\t certificate: $ln")
-                }
-            }
-        }
-        logger.info("QQQ QQQQQQQQQQQQQQQQQQQQQQQQ")
-    }
-
     private inner class Processor : CompactedProcessor<String, GatewayTruststore> {
         override val keyClass = String::class.java
         override val valueClass = GatewayTruststore::class.java
@@ -127,7 +109,6 @@ internal class TrustStoresMap(
             trustRootsPerHoldingIdentity.putAll(newTrustRoots)
             logger.info("Received initial set of trust roots for the following holding x500 names and destination groups: " +
                     "${newTrustRoots.keys}")
-            logMe("onSnapshot")
             ready.complete(Unit)
         }
 
@@ -145,10 +126,8 @@ internal class TrustStoresMap(
                 trustRootsPerHoldingIdentity[truststoreKey] = trustedCertificates
                 logger.info("Trust roots updated for x500 name ${truststoreKey.sourceX500Name} and " +
                         "group ID ${truststoreKey.destinationGroupId}.")
-                logMe("created/added ${newRecord.key}")
             } else {
                 val truststoreKey = entriesPerKey.remove(newRecord.key)
-                logMe("removed ${newRecord.key}")
                 if (truststoreKey != null) {
                     trustRootsPerHoldingIdentity.remove(truststoreKey)
                     logger.info("Trust roots removed for x500 name ${truststoreKey.sourceX500Name} and " +

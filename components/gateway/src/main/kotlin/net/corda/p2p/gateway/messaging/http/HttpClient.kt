@@ -249,7 +249,6 @@ internal class HttpClient(
 
         override fun initChannel(ch: SocketChannel) {
             val pipeline = ch.pipeline()
-            logger.info("QQQ creating client SSL with trust store: ${destinationInfo.trustStore.pemCertificates}")
             pipeline.addLast(
                 "sslHandler",
                 createClientSslHandler(

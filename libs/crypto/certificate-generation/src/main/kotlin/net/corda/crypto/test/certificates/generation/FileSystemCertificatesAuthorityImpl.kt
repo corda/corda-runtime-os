@@ -1,10 +1,12 @@
 package net.corda.crypto.test.certificates.generation
 
 import net.corda.crypto.test.certificates.generation.CertificateAuthority.Companion.PASSWORD
+import org.bouncycastle.asn1.x500.X500Name
 import java.io.File
 import java.security.KeyStore
 import java.security.PrivateKey
 import java.time.Duration
+import java.util.UUID
 
 internal class FileSystemCertificatesAuthorityImpl(
     keysFactoryDefinitions: KeysFactoryDefinitions,
@@ -13,7 +15,11 @@ internal class FileSystemCertificatesAuthorityImpl(
     private val home: File,
     firstSerialNumber: Long,
 ) : LocalCertificatesAuthority(
-    keysFactoryDefinitions, validDuration, defaultPrivateKeyAndCertificate, firstSerialNumber
+    keysFactoryDefinitions,
+    validDuration,
+    defaultPrivateKeyAndCertificate,
+    X500Name("C=UK, CN=r3.com, OU=${UUID.randomUUID()}"),
+    firstSerialNumber,
 ),
     FileSystemCertificatesAuthority {
     companion object {

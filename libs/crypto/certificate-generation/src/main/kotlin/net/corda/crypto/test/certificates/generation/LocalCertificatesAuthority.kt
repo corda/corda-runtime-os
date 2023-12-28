@@ -39,6 +39,7 @@ internal open class LocalCertificatesAuthority(
     private val keysFactoryDefinitions: KeysFactoryDefinitions,
     private val validDuration: Duration,
     private val defaultPrivateKeyAndCertificate: PrivateKeyWithCertificate?,
+    private val issuer: X500Name,
     firstSerialNumber: Long = 1,
 ) : CertificateAuthority {
 
@@ -59,8 +60,6 @@ internal open class LocalCertificatesAuthority(
     private val privateKeyAndCertificate by lazy {
         defaultPrivateKeyAndCertificate ?: generatePrivateKeyAndCertificate()
     }
-
-    private val issuer = X500Name("C=UK, CN=r3.com")
 
     private fun generatePrivateKeyAndCertificate(): PrivateKeyWithCertificate {
         val caKeyPair = generateKeyPair()
