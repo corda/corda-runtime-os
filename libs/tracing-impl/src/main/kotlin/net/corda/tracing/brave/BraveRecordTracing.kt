@@ -4,7 +4,6 @@ import brave.Span
 import brave.Tracing
 import brave.propagation.Propagation
 import brave.propagation.TraceContextOrSamplingFlags
-import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 
