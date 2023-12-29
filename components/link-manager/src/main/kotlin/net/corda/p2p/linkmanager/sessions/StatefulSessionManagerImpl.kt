@@ -16,21 +16,20 @@ internal class StatefulSessionManagerImpl(coordinatorFactory: LifecycleCoordinat
         return emptyList()
     }
 
-    override fun <T> getSessionsById(
-        uuids: Collection<T>,
-        getSessionId: (T) -> String
-    ): Collection<Pair<T, SessionManager.SessionDirection>> {
-        return emptyList() //To be implemented in CORE-18630 (getting the outbound sessions) + CORE-18631 (getting the inbound sessions).
+    override fun getSessionById(
+        uuid: String
+    ): SessionManager.SessionDirection {
+        //To be implemented in CORE-18630 (getting the outbound sessions) + CORE-18631 (getting the inbound sessions).
+        return SessionManager.SessionDirection.NoSession
     }
 
-    override fun <T> processSessionMessages(
-        wrappedMessages: Collection<T>,
-        getMessage: (T) -> LinkInMessage
-    ): Collection<Pair<T, LinkOutMessage?>> {
+    override fun processSessionMessage(
+        message: LinkInMessage
+    ): LinkOutMessage? {
         /*To be implemented CORE-18631 (process InitiatorHelloMessage, InitiatorHandshakeMessage)
          * and CORE-18630 (process ResponderHello + process ResponderHandshake)
          * */
-        return emptyList()
+        return null
     }
 
     override fun messageAcknowledged(sessionId: String) {
