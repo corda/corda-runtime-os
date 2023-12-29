@@ -194,6 +194,7 @@ internal class GatewayIntegrationTest : TestBase() {
         fun publishKeyStoreCertificatesAndKeys(
             keyStoreWithPassword: KeyStoreWithPassword,
             holdingIdentity: HoldingIdentity,
+            key: String? = null,
         ) {
             val tenantId = "tenantId"
             val records = keyStoreWithPassword.keyStore.aliases().toList().flatMap { alias ->
@@ -206,7 +207,7 @@ internal class GatewayIntegrationTest : TestBase() {
                         str.toString()
                     }
                 }
-                val name = PrincipalUtil.getSubjectX509Principal(certificateChain.first() as X509Certificate).name
+                val name = key ?: PrincipalUtil.getSubjectX509Principal(certificateChain.first() as X509Certificate).name
                 val certificateRecord = Record(
                     Schemas.P2P.GATEWAY_TLS_CERTIFICATES,
                     name,
@@ -1525,6 +1526,74 @@ internal class GatewayIntegrationTest : TestBase() {
                 }
             }
         }
+        @Test
+        @Timeout(120)
+        fun `have more than one CA`() {
+            val aliceAddress = URI.create("https://www.alice.net:${getOpenPort()}")
+            val size = 5
+            val holdingIdToCa = (1..size).map {
+                HoldingIdentity("CN=Alice-$it, O=Alice Corp, L=LDN, C=GB", GROUP_ID) to
+                CertificateAuthorityFactory
+                    .createMemoryAuthority(
+                        RSA_TEMPLATE.toFactoryDefinitions(),
+                    )
+            }.toMap()
+            val configPublisher = ConfigPublisher().also {
+                keep(it)
+            }
+            configPublisher.publishConfig(
+                GatewayConfiguration(
+                    listOf(
+                        GatewayServerConfiguration(
+                            aliceAddress.host,
+                            aliceAddress.port,
+                            "/",
+                        )
+                    ),
+                    aliceSslConfig,
+                    MAX_REQUEST_SIZE
+                ),
+            )
+            val server = Node("server")
+            server.publish(
+                Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))
+            )
+
+
+            Gateway(
+                configPublisher.readerService,
+                server.subscriptionFactory,
+                server.publisherFactory,
+                server.lifecycleCoordinatorFactory,
+                server.cryptoOpsClient,
+                avroSchemaRegistry,
+                platformInfoProvider,
+                bootConfig,
+                messagingConfig(),
+            ).usingLifecycle { gateway ->
+                gateway.startAndWaitForStarted()
+
+                // Publish the trust stores and key stores
+                holdingIdToCa.forEach { holdingId, ca ->
+                    val name = holdingId.x500Name
+                    server.publish(
+                        Record(GATEWAY_TLS_TRUSTSTORES, "$name-$GROUP_ID",
+                            ca.toGatewayTrustStore(name)),
+                    )
+                    val keyStore =
+                        ca.generateKeyAndCertificate(aliceAddress.host).toKeyStoreAndPassword()
+                    server.publishKeyStoreCertificatesAndKeys(keyStore, holdingId, name)
+                }
+
+                eventually {
+                    holdingIdToCa.values.forEach { ca ->
+                        testClientWith(aliceAddress, ca.caCertificate.toPem())
+                    }
+                }
+
+            }
+        }
+
     }
 
     @Nested
