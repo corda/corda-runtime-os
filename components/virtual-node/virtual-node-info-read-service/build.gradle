@@ -16,6 +16,7 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
+    implementation "net.corda:corda-db-schema"
     implementation "net.corda:corda-topic-schema"
 
     api project(':libs:lifecycle:lifecycle')
@@ -24,10 +25,16 @@ dependencies {
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:messaging:messaging")
 
+    implementation "com.google.guava:guava:$guavaVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-
+    implementation project(':components:virtual-node:virtual-node-write-service-impl')
+    implementation project(':components:db:db-connection-manager')
+    implementation project(':libs:rest:rest')
+    implementation project(':libs:db:db-admin-impl')
+    implementation project(':libs:db:db-admin')
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:utilities')
+    implementation project(':libs:virtual-node:cpi-datamodel')
     implementation project(":libs:virtual-node:virtual-node-info")
 
     implementation project(":libs:configuration:configuration-core")

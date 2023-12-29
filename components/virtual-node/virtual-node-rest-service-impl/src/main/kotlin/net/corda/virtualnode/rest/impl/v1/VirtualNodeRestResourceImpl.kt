@@ -6,7 +6,6 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.ShortHash
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
-import net.corda.data.virtualnode.VirtualNodeCreateSchemaRequest
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
@@ -14,17 +13,11 @@ import net.corda.data.virtualnode.VirtualNodeOperationStatus
 import net.corda.data.virtualnode.VirtualNodeOperationStatusRequest
 import net.corda.data.virtualnode.VirtualNodeOperationStatusResponse
 import net.corda.data.virtualnode.VirtualNodeOperationalState
-import net.corda.data.virtualnode.VirtualNodeSchemaRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.data.virtualnode.VirtualNodeUpdateDbStatusResponse
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
-import net.corda.db.admin.LiquibaseSchemaMigrator
-import net.corda.db.admin.impl.ClassloaderChangeLog
-import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.helper.getConfig
-import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.libs.external.messaging.serialization.ExternalMessagingRouteConfigSerializerImpl
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.libs.virtualnode.common.constant.VirtualNodeStateTransitions
@@ -50,7 +43,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.orm.utils.transaction
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.asynchronous.v1.AsyncOperationState
 import net.corda.rest.asynchronous.v1.AsyncOperationStatus
@@ -70,6 +62,7 @@ import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.virtualnode.read.SchemaSqlReadService
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rest.extensions.parseOrThrow
 import net.corda.virtualnode.rest.common.VirtualNodeSender
@@ -82,13 +75,11 @@ import net.corda.virtualnode.rest.impl.status.CacheLoadCompleteEvent
 import net.corda.virtualnode.rest.impl.status.VirtualNodeStatusCacheService
 import net.corda.virtualnode.rest.impl.validation.VirtualNodeValidationService
 import net.corda.virtualnode.rest.impl.validation.impl.VirtualNodeValidationServiceImpl
-import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.io.StringWriter
 import java.time.Duration
 import java.time.Instant
 
@@ -102,8 +93,7 @@ internal class VirtualNodeRestResourceImpl(
     private val cpiInfoReadService: CpiInfoReadService,
     private val virtualNodeStatusCacheService: VirtualNodeStatusCacheService,
     private val platformInfoProvider: PlatformInfoProvider,
-    private val dbConnectionManager: DbConnectionManager,
-    private val schemaMigrator: LiquibaseSchemaMigrator,
+    private val schemaSqlReadService: SchemaSqlReadService,
     private val requestFactory: RequestFactory,
     private val clock: Clock,
     private val virtualNodeValidationService: VirtualNodeValidationService,
@@ -111,7 +101,6 @@ internal class VirtualNodeRestResourceImpl(
     private val messageConverter: MessageConverter,
 ) : VirtualNodeRestResource, PluggableRestResource<VirtualNodeRestResource>, Lifecycle {
 
-    @Suppress("Unused")
     @Activate
     constructor(
         @Reference(service = LifecycleCoordinatorFactory::class)
@@ -128,10 +117,8 @@ internal class VirtualNodeRestResourceImpl(
         virtualNodeStatusCacheService: VirtualNodeStatusCacheService,
         @Reference(service = PlatformInfoProvider::class)
         platformInfoProvider: PlatformInfoProvider,
-        @Reference(service = DbConnectionManager::class)
-        dbConnectionManager: DbConnectionManager,
-        @Reference(service = LiquibaseSchemaMigrator::class)
-        schemaMigrator: LiquibaseSchemaMigrator,
+        @Reference(service = SchemaSqlReadService::class)
+        schemaSqlReadService: SchemaSqlReadService
     ) : this(
         coordinatorFactory,
         configurationReadService,
@@ -140,8 +127,7 @@ internal class VirtualNodeRestResourceImpl(
         cpiInfoReadService,
         virtualNodeStatusCacheService,
         platformInfoProvider,
-        dbConnectionManager,
-        schemaMigrator,
+        schemaSqlReadService,
         RequestFactoryImpl(
             RestContextProviderImpl(),
             UTCClock()
@@ -385,67 +371,20 @@ internal class VirtualNodeRestResourceImpl(
         }
     }
 
-    override fun getCreateSchemaOrCpiSQL(dbType: String): ResponseEntity<String> {
-        val request = VirtualNodeCreateSchemaRequest(dbType)
-        val connection = dbConnectionManager.getClusterDataSource().connection
-        var sql = ""
-        if (dbType == "vault" || dbType == "crypto" || dbType == "uniqueness") {
-            val resourceSubPath = "vnode-${request.dbType}"
-            val schemaClass = DbSchema::class.java
-            val fullName = "${schemaClass.packageName}.$resourceSubPath"
-            val resourcePrefix = fullName.replace('.', '/')
-            val changeLogFiles = ClassloaderChangeLog.ChangeLogResourceFiles(
-                fullName,
-                listOf("$resourcePrefix/db.changelog-master.xml"), // VirtualNodeDbType.VAULT.dbChangeFiles
-                classLoader = schemaClass.classLoader
-            )
-            val changeLog = ClassloaderChangeLog(linkedSetOf(changeLogFiles))
-            StringWriter().use { writer ->
-                schemaMigrator.createUpdateSql(connection, changeLog, writer)
-                sql = writer.toString()
-            }
-        } else {
-            val cpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository()
-            dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction { em ->
-                val cpiMetadata =
-                    CpiCpkRepositoryFactory().createCpiMetadataRepository().findByFileChecksum(em, request.dbType)
-                val changelogsPerCpk = cpkDbChangeLogRepository.findByCpiId(em, cpiMetadata!!.cpiId)
-                val dbChange = VirtualNodeDbChangeLog(changelogsPerCpk)
-
-                StringWriter().use { writer ->
-                    schemaMigrator.createUpdateSql(connection, dbChange, writer)
-                    sql = writer.toString()
-                }
-            }
-        }
-        return ResponseEntity.accepted(sql)
+    override fun getCreateCryptoSchemaSQL(): String {
+        return schemaSqlReadService.getSchemaSql("crypto")
     }
 
-    override fun getUpdateSchemaSQL(
-        virtualNodeShortId: String,
-        dbType: String
-    ): ResponseEntity<String> {
-        val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.parse(virtualNodeShortId))
-            ?: throw ResourceNotFoundException("Virtual node", virtualNodeShortId)
-        val request = VirtualNodeSchemaRequest(virtualNodeShortId, dbType)
+    override fun getCreateUniquenessSchemaSQL(): String {
+        return schemaSqlReadService.getSchemaSql("uniqueness")
+    }
 
-        val resourceSubPath = "vnode-${request.dbType}"
-        val schemaClass = DbSchema::class.java
-        val fullName = "${schemaClass.packageName}.$resourceSubPath"
-        val resourcePrefix = fullName.replace('.', '/')
-        val changeLogFiles = ClassloaderChangeLog.ChangeLogResourceFiles(
-            fullName,
-            listOf("$resourcePrefix/db.changelog-master.xml"),
-            // VirtualNodeDbType.VAULT.dbChangeFiles
-            classLoader = schemaClass.classLoader
-        )
-        val changeLog = ClassloaderChangeLog(linkedSetOf(changeLogFiles))
+    override fun getCreateVaultSchemaSQL(cpiChecksum: String): String {
+        return schemaSqlReadService.getSchemaSql("vault", cpiChecksum = cpiChecksum)
+    }
 
-        val dataSource = dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!)
-        val writer = StringWriter()
-        schemaMigrator.createUpdateSql(dataSource.connection, changeLog, writer)
-        val sql = writer.toString()
-        return ResponseEntity.accepted(sql)
+    override fun getUpdateSchemaSQL(virtualNodeShortId: String, newCpiChecksum: String): String {
+        return schemaSqlReadService.getSchemaSql("vault", virtualNodeShortId, newCpiChecksum)
     }
 
     private fun sendAsynchronousRequest(
