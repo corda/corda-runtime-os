@@ -21,6 +21,7 @@ dependencies {
     implementation project(':libs:membership:certificates-common')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(':components:membership:certificates-service')
+    implementation "org.liquibase:liquibase-core:$liquibaseVersion"
 
     testImplementation project(':libs:db:db-admin')
     testImplementation project(':libs:db:db-admin-impl')
