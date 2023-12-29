@@ -15,6 +15,7 @@ description 'Chunk database writer impl'
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly "org.osgi:org.osgi.service.component.annotations"
+    implementation "org.liquibase:liquibase-core:$liquibaseVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'javax.persistence:javax.persistence-api'

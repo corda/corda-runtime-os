@@ -9,6 +9,7 @@ ext.cordaEnableFormatting = true
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
+    implementation "org.liquibase:liquibase-core:$liquibaseVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'javax.persistence:javax.persistence-api'

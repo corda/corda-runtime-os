@@ -6,6 +6,8 @@ plugins {
 description 'Database Message Bus Implementation'
 
 dependencies {
+    implementation "org.liquibase:liquibase-core:$liquibaseVersion"
+
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-avro-schema"

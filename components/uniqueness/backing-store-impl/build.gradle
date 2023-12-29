@@ -38,6 +38,7 @@ kotlin {
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    implementation "org.liquibase:liquibase-core:$liquibaseVersion"
 
     api project(':libs:lifecycle:lifecycle')
     api project(":components:virtual-node:virtual-node-info-read-service")
