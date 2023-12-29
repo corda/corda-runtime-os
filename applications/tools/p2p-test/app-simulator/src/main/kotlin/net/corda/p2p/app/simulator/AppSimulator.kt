@@ -313,7 +313,7 @@ data class DBParams(val username: String, val password: String, val host: String
 }
 
 data class LoadGenerationParams(
-    val peer: HoldingIdentity,
+    val peers: List<HoldingIdentity>,
     val ourIdentity: HoldingIdentity,
     val loadGenerationType: LoadGenerationType,
     val totalNumberOfMessages: Int?,
@@ -331,9 +331,10 @@ data class LoadGenerationParams(
 
     companion object {
         fun read(commonConfig: CommonConfig): LoadGenerationParams {
-            val peerX500Name = getLoadGenStrParameter("peerX500Name", commonConfig.configFromFile, commonConfig.parameters)
-            MemberX500Name.parse(peerX500Name)
             val peerGroupId = getLoadGenStrParameter("peerGroupId", commonConfig.configFromFile, commonConfig.parameters)
+            val peerX500Names = getLoadGenStrParameter("peerX500Names", commonConfig.configFromFile, commonConfig.parameters)
+            val listOfNames = peerX500Names.split(",")
+            val peerHoldingIdentities = listOfNames.map { HoldingIdentity(it, peerGroupId) }
             val ourX500Name = getLoadGenStrParameter("ourX500Name", commonConfig.configFromFile, commonConfig.parameters)
             MemberX500Name.parse(ourX500Name)
             val ourGroupId = getLoadGenStrParameter("ourGroupId", commonConfig.configFromFile, commonConfig.parameters)
@@ -365,7 +366,7 @@ data class LoadGenerationParams(
                 )
             val expireAfterTime = getLoadGenDurationOrNull("expireAfterTime", commonConfig.configFromFile, commonConfig.parameters)
             return LoadGenerationParams(
-                HoldingIdentity(peerX500Name, peerGroupId),
+                peerHoldingIdentities,
                 HoldingIdentity(ourX500Name, ourGroupId),
                 loadGenerationType,
                 totalNumberOfMessages,
