@@ -158,6 +158,7 @@ fun ClusterInfo.onboardNotaryMember(
     x500Name,
     ca,
     wait,
+    useLedgerKey = false,
     getAdditionalContext = { holdingId ->
         addSoftHsmFor(holdingId, CAT_NOTARY)
         val notaryKeyId = createKeyFor(holdingId, "$holdingId$CAT_NOTARY", CAT_NOTARY, DEFAULT_KEY_SCHEME)
@@ -177,7 +178,6 @@ fun ClusterInfo.onboardNotaryMember(
         )
     },
     tlsCertificateUploadedCallback = tlsCertificateUploadedCallback,
-    useLedgerKey = false
 )
 
 /**

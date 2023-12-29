@@ -62,6 +62,7 @@ class DynamicOnboardingGroup(
             cpiName = cpiName,
             x500Name,
             wait,
+            useLedgerKey = false,
             getAdditionalContext = { holdingId ->
                 clusterInfo.addSoftHsmFor(holdingId, CAT_NOTARY)
                 val notaryKeyId =
