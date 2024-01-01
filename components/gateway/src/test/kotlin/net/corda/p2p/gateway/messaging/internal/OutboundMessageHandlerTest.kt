@@ -139,9 +139,13 @@ class OutboundMessageHandlerTest {
     private val commonComponentsDominoTile = mock<ComplexDominoTile> {
         whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
     }
+    private val features = mock<Features> {
+        on { enableP2PGatewayToLinkManagerOverHttp } doReturn false
+    }
     private val commonComponents = mock<CommonComponents> {
         on { dominoTile } doReturn commonComponentsDominoTile
         on { trustStoresMap } doReturn trustStoresMap
+        on { features } doReturn features
     }
     private val publisherFactory = mock<PublisherFactory> {
         on { createPublisher(any(), any()) } doReturn mock()
@@ -157,9 +161,6 @@ class OutboundMessageHandlerTest {
         on { serialize(any<GatewayMessage>()) } doReturn ByteBuffer.wrap(serialisedMessage)
         on { deserialize(any(), eq(GatewayResponse::class.java), anyOrNull()) } doReturn GatewayResponse()
     }
-    private val features = mock<Features> {
-        on { enableP2PGatewayToLinkManagerOverHttp } doReturn false
-    }
 
     private val handler = OutboundMessageHandler(
         lifecycleCoordinatorFactory,
@@ -169,7 +170,6 @@ class OutboundMessageHandlerTest {
         SmartConfigImpl.empty(),
         avroSchemaRegistry,
         commonComponents,
-        features,
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }
 
     @AfterEach

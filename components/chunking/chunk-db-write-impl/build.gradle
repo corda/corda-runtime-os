@@ -33,6 +33,7 @@ dependencies {
     implementation project(':libs:db:db-orm')
     implementation project(':libs:db:db-admin')
     implementation project(':libs:configuration:configuration-validation')
+    implementation project(':libs:platform-info')
 
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:messaging:messaging")

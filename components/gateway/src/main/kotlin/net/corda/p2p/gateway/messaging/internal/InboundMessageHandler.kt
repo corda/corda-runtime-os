@@ -2,6 +2,7 @@ package net.corda.p2p.gateway.messaging.internal
 
 import io.micrometer.core.instrument.Timer
 import io.netty.handler.codec.http.HttpResponseStatus
+import io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.app.InboundUnauthenticatedMessage
@@ -51,7 +52,7 @@ internal class InboundMessageHandler(
     publisherFactory: PublisherFactory,
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
-    commonComponents: CommonComponents,
+    private val commonComponents: CommonComponents,
     private val avroSchemaRegistry: AvroSchemaRegistry,
     platformInfoProvider: PlatformInfoProvider,
     bootConfig: SmartConfig,
@@ -154,26 +155,68 @@ internal class InboundMessageHandler(
 
         logger.debug("Received and processing message {} of type {} from {}",
             gatewayMessage.id, p2pMessage.payload::class.java, request.source)
-        val response = GatewayResponse(
-            gatewayMessage.id,
-            null,
-        )
-        return when (p2pMessage.payload) {
-            is InboundUnauthenticatedMessage -> {
-                p2pInPublisher.publish(listOf(Record(LINK_IN_TOPIC, generateKey(), p2pMessage)))
-                httpWriter.write(HttpResponseStatus.OK, request.source, avroSchemaRegistry.serialize(response).array())
-                HttpResponseStatus.OK
-            }
-            else -> {
-                val statusCode = processSessionMessage(p2pMessage)
-                httpWriter.write(statusCode, request.source, avroSchemaRegistry.serialize(response).array())
-                statusCode
+        return if (commonComponents.features.enableP2PGatewayToLinkManagerOverHttp) {
+            return forwardMessage(
+                httpWriter,
+                request.source,
+                gatewayMessage.id,
+                p2pMessage,
+            )
+        } else {
+            val response = GatewayResponse(
+                gatewayMessage.id,
+                null,
+            )
+            when (p2pMessage.payload) {
+                is InboundUnauthenticatedMessage -> {
+                    p2pInPublisher.publish(listOf(Record(LINK_IN_TOPIC, generateKey(), p2pMessage)))
+                    httpWriter.write(HttpResponseStatus.OK, request.source, avroSchemaRegistry.serialize(response).array())
+                    HttpResponseStatus.OK
+                }
+                else -> {
+                    val statusCode = processSessionMessage(p2pMessage)
+                    httpWriter.write(statusCode, request.source, avroSchemaRegistry.serialize(response).array())
+                    statusCode
+                }
             }
         }
     }
 
+    private fun forwardMessage(
+        httpWriter: HttpWriter,
+        requestSource: SocketAddress,
+        messageId: String,
+        p2pMessage: LinkInMessage,
+    ): HttpResponseStatus {
+        val payload = try {
+            linkManagerClient.send(p2pMessage)
+        } catch (e: Exception) {
+            logger.warn("could not forward message with ID: $messageId to the link manager.", e)
+            val response = GatewayResponse(
+                messageId,
+                null,
+            )
+            httpWriter.write(
+                INTERNAL_SERVER_ERROR,
+                requestSource,
+                avroSchemaRegistry.serialize(response).array(),
+            )
+            return INTERNAL_SERVER_ERROR
+        }
+        val response = GatewayResponse(
+            messageId,
+            payload?.payload,
+        )
+        httpWriter.write(
+            HttpResponseStatus.OK,
+            requestSource,
+            avroSchemaRegistry.serialize(response).array(),
+        )
+        return HttpResponseStatus.OK
+    }
+
     private fun processSessionMessage(p2pMessage: LinkInMessage): HttpResponseStatus {
-        val sessionId = getSessionId(p2pMessage) ?: return HttpResponseStatus.INTERNAL_SERVER_ERROR
+        val sessionId = getSessionId(p2pMessage) ?: return INTERNAL_SERVER_ERROR
         if (p2pMessage.payload is InitiatorHelloMessage) {
             /* we are using the session identifier as key to ensure replayed initiator hello messages will end up on the same partition, and
              * thus processed by the same link manager instance under normal conditions. */

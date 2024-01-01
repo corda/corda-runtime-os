@@ -12,6 +12,8 @@ import net.corda.data.p2p.app.InboundUnauthenticatedMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.crypto.AuthenticatedDataMessage
 import net.corda.data.p2p.crypto.AuthenticatedEncryptedDataMessage
+import net.corda.data.p2p.markers.AppMessageMarker
+import net.corda.data.p2p.markers.LinkManagerSentMarker
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
@@ -35,13 +37,21 @@ import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.nio.ByteBuffer
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
+import net.corda.messaging.api.records.Record
+import net.corda.p2p.linkmanager.LinkManager
+import net.corda.p2p.linkmanager.sessions.SessionManager
+import net.corda.schema.Schemas
+import net.corda.utilities.time.Clock
 
 /**
  * This class contains code which can be used to convert between [LinkOutMessage]/[LinkInMessage] and
  * [FlowMessage] and vice-versa. It is also used to wrap session negotiation messages into [LinkOutMessage].
  */
-class MessageConverter {
-
+internal class MessageConverter(
+    private val groupPolicyProvider: GroupPolicyProvider,
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    private val clock: Clock,
+) {
     companion object {
 
         private val logger = LoggerFactory.getLogger(this::class.java.name)
@@ -295,4 +305,29 @@ class MessageConverter {
             return deserializeHandleAvroErrors(deserialize, message.payload, message.header.sessionId)
         }
     }
+    fun recordsForSessionEstablished(
+        sessionManager: SessionManager,
+        session: Session,
+        serial: Long,
+        messageAndKey: AuthenticatedMessageAndKey,
+    ): List<Record<String, *>> {
+        return linkOutMessageFromAuthenticatedMessageAndKey(
+            messageAndKey,
+            session,
+            groupPolicyProvider,
+            membershipGroupReaderProvider,
+            serial
+        )?.let { message ->
+            val key = LinkManager.generateKey()
+            val messageRecord = Record(Schemas.P2P.LINK_OUT_TOPIC, key, message)
+            val marker = AppMessageMarker(LinkManagerSentMarker(), clock.instant().toEpochMilli())
+            val markerRecord = Record(Schemas.P2P.P2P_OUT_MARKERS, messageAndKey.message.header.messageId, marker)
+            sessionManager.dataMessageSent(session)
+            listOf(
+                messageRecord,
+                markerRecord,
+            )
+        } ?: emptyList()
+    }
+
 }
