@@ -401,8 +401,9 @@ class MerkleTreeTest {
         leafIndicesCombination: List<Int>,
         root: SecureHash,
         treeSize: Int
-    ): MerkleProof {
-        val proof = merkleTree.createAuditProof(leafIndicesCombination)
+    ): MerkleProofImpl {
+        val proofGeneric = merkleTree.createAuditProof(leafIndicesCombination)
+        val proof = proofGeneric as MerkleProofImpl
 
         println("Proof ${proof.toString()}")
         // The original root can be reconstructed from the proof
