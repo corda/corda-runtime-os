@@ -10,7 +10,6 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
-import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -74,11 +73,6 @@ class SchemaSqlReadServiceImpl @Activate constructor(
 
     override val isRunning = true
 
-    private val dependentComponents = DependentComponents.of(
-        ::configurationReadService,
-        ::virtualNodeInfoReadService,
-    )
-
     override fun start() = lifecycleCoordinator.start()
 
     override fun stop() = lifecycleCoordinator.stop()
@@ -139,34 +133,44 @@ class SchemaSqlReadServiceImpl @Activate constructor(
     @Suppress("ThrowsCount")
     private fun putValue(virtualNodeSchema: VirtualNodeSchema) {
         val connection = dbConnectionManager.getClusterDataSource().connection
-        val sql: String = when (virtualNodeSchema.dbType) {
+        val sql = when (virtualNodeSchema.dbType) {
             "crypto", "uniqueness" -> {
                 val changelog = getChangelog(virtualNodeSchema.dbType)
                 buildSqlWithStringWriter(connection, changelog)
             }
+
             "vault" -> (
-                {
-                    if (virtualNodeSchema.virtualNodeShortHash == null && !virtualNodeSchema.cpiChecksum.isNullOrEmpty()) {
-                        val changeLog = getChangelog(virtualNodeSchema.dbType)
-                        val sqlVault = buildSqlWithStringWriter(connection, changeLog)
-                        val cpkChangeLog = getCpkChangelog(virtualNodeSchema.dbType)
-                        val sqlCpk = buildSqlWithStringWriter(connection, cpkChangeLog)
-                        "$sqlVault\n$sqlCpk"
-                    } else if (virtualNodeSchema.virtualNodeShortHash != null && virtualNodeSchema.cpiChecksum != null) {
-                        val virtualNodeInfo = virtualNodeInfoReadService
-                            .getByHoldingIdentityShortHash(
-                                ShortHash.parse(
+                    {
+                        if (virtualNodeSchema.virtualNodeShortHash == null && virtualNodeSchema.cpiChecksum != null) {
+                            val changeLog = getChangelog(virtualNodeSchema.dbType)
+                            val cpkChangeLog = getCpkChangelog(virtualNodeSchema.dbType)
+                            buildSqlWithStringWriter(connection, changeLog) + buildSqlWithStringWriter(
+                                connection,
+                                cpkChangeLog
+                            )
+                        } else if (virtualNodeSchema.virtualNodeShortHash != null && virtualNodeSchema.cpiChecksum != null) {
+                            val virtualNodeInfo = virtualNodeInfoReadService
+                                .getByHoldingIdentityShortHash(
+                                    ShortHash.parse(
+                                        virtualNodeSchema.virtualNodeShortHash
+                                    )
+                                )
+                                ?: throw ResourceNotFoundException(
+                                    "Virtual node",
                                     virtualNodeSchema.virtualNodeShortHash
                                 )
+                            val connectionVNodeVault =
+                                dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).connection
+                            buildSqlWithStringWriter(
+                                connectionVNodeVault,
+                                getCpkChangelog(virtualNodeSchema.cpiChecksum)
                             )
-                            ?: throw ResourceNotFoundException("Virtual node", virtualNodeSchema.virtualNodeShortHash)
-                        val connectionVNodeVault = dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).connection
-                        buildSqlWithStringWriter(connectionVNodeVault, getCpkChangelog(virtualNodeSchema.cpiChecksum))
-                    } else {
-                        throw IllegalArgumentException("Illegal argument combination for virtualNodeSchema")
+                        } else {
+                            throw IllegalArgumentException("Illegal argument combination for virtualNodeSchema")
+                        }
                     }
-                }
-                ).toString()
+                    ).toString()
+
             else -> throw IllegalArgumentException("Cannot use dbType that does not exist")
         }
         schemaSqlMap[virtualNodeSchema] = sql
@@ -179,7 +183,7 @@ class SchemaSqlReadServiceImpl @Activate constructor(
         val resourcePrefix = fullName.replace('.', '/')
         val changeLogFiles = ClassloaderChangeLog.ChangeLogResourceFiles(
             fullName,
-            listOf("$resourcePrefix/db.changelog-master.xml"), // VirtualNodeDbType.VAULT.dbChangeFiles
+            listOf("$resourcePrefix/db.changelog-master.xml"), // VirtualNodeDbType.VAULT.dbChangeFiles,
             classLoader = schemaClass.classLoader
         )
         return ClassloaderChangeLog(linkedSetOf(changeLogFiles))
@@ -194,6 +198,7 @@ class SchemaSqlReadServiceImpl @Activate constructor(
             return VirtualNodeDbChangeLog(changelogsPerCpk)
         }
     }
+
     private fun buildSqlWithStringWriter(
         connection: Connection,
         dbChange: DbChange
@@ -208,11 +213,10 @@ class SchemaSqlReadServiceImpl @Activate constructor(
         when (event) {
             is StartEvent -> {
                 lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
-                dependentComponents.registerAndStartAll(coordinator)
             }
 
             is RegistrationStatusChangeEvent -> {
-                if (event.status == LifecycleStatus.DOWN) {
+                if (event.registration == subReg && event.status == LifecycleStatus.DOWN) {
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                 }
             }
