@@ -175,7 +175,8 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
                 .toMessageProperties()
                 .also { properties ->
                     properties[MSG_PROP_KEY] = key;
-                    if(topic!=null) {
+
+                    if(topic != null && topic!!.isNotEmpty()) {
                         properties[MSG_PROP_TOPIC] = topic!!
                     }
                 },
