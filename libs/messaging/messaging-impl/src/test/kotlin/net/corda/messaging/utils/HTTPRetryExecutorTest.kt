@@ -25,20 +25,20 @@ class HTTPRetryExecutorTest {
     @Test
     fun `successfully returns after first attempt`() {
         val mockResponse: HttpResponse<ByteArray> = mock()
-        whenever(mockResponse.body()).thenReturn("Success".toByteArray())
+        whenever(mockResponse.body()).thenReturn("Success".toByteArray(Charsets.UTF_8))
 
         val result: HttpResponse<ByteArray> = HTTPRetryExecutor.withConfig(retryConfig) {
             mockResponse
         }
 
-        assertEquals("Success", result.body().toString())
+        assertEquals("Success", result.body().toString(Charsets.UTF_8))
     }
 
     @Suppress("TooGenericExceptionThrown")
     @Test
     fun `should retry until successful`() {
         val mockResponse: HttpResponse<ByteArray> = mock()
-        whenever(mockResponse.body()).thenReturn("Success on attempt 3".toByteArray())
+        whenever(mockResponse.body()).thenReturn("Success on attempt 3".toByteArray(Charsets.UTF_8))
 
         var attempt = 0
 
@@ -50,7 +50,7 @@ class HTTPRetryExecutorTest {
             mockResponse
         }
 
-        assertEquals("Success on attempt 3", result.body().toString())
+        assertEquals("Success on attempt 3", result.body().toString(Charsets.UTF_8))
     }
 
     @Suppress("TooGenericExceptionThrown")
@@ -86,7 +86,7 @@ class HTTPRetryExecutorTest {
     @Test
     fun `should retry on client error status code`() {
         val mockResponse: HttpResponse<ByteArray> = mock()
-        whenever(mockResponse.body()).thenReturn("Success on attempt 3".toByteArray())
+        whenever(mockResponse.body()).thenReturn("Success on attempt 3".toByteArray(Charsets.UTF_8))
         val config = HTTPRetryConfig.Builder()
             .times(3)
             .initialDelay(100)
@@ -105,7 +105,7 @@ class HTTPRetryExecutorTest {
             mockResponse
         }
 
-        assertEquals("Success on attempt 3", result.body().toString())
+        assertEquals("Success on attempt 3", result.body().toString(Charsets.UTF_8))
     }
 
     internal class SpecificException(message: String) : Exception(message)
