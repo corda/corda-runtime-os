@@ -23,6 +23,7 @@ import net.corda.messaging.api.constants.WorkerRPCPaths.UNIQUENESS_PATH
 import net.corda.messaging.api.constants.WorkerRPCPaths.VERIFICATION_PATH
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
+import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_TOPIC
 import net.corda.messaging.api.mediator.RoutingDestination.Companion.routeTo
 import net.corda.messaging.api.mediator.RoutingDestination.Type.ASYNCHRONOUS
 import net.corda.messaging.api.mediator.RoutingDestination.Type.SYNCHRONOUS
@@ -147,6 +148,8 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
                     rpcEndpoint(UNIQUENESS_WORKER_REST_ENDPOINT, UNIQUENESS_PATH), SYNCHRONOUS)
                 is FlowEvent -> routeTo(messageBusClient,
                     FLOW_EVENT_TOPIC, ASYNCHRONOUS)
+                is String -> routeTo(messageBusClient,
+                    message.properties[MSG_PROP_TOPIC] as String, ASYNCHRONOUS)
                 else -> {
                     val eventType = event?.let { it::class.java }
                     throw IllegalStateException("No route defined for event type [$eventType]")

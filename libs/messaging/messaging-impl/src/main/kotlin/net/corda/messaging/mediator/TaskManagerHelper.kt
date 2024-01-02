@@ -6,6 +6,7 @@ import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_KEY
+import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_TOPIC
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.metrics.EventMediatorMetrics
@@ -164,13 +165,20 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
             replyMessage!!.payload,
         )
 
+    // This conversion does not preserve all the data contained on the record!
+    // The timestamp is lost
     /**
      * Converts [Record] to [MediatorMessage].
      */
     private fun Record<*, *>.toMessage() =
         MediatorMessage(
             value!!,
-            headers.toMessageProperties().also { it[MSG_PROP_KEY] = key },
+            headers
+                .toMessageProperties()
+                .also {
+                    it[MSG_PROP_KEY] = key;
+                    it[MSG_PROP_TOPIC] = topic?: ""
+                },
         )
 
     private fun List<Pair<String, String>>.toMessageProperties() =
