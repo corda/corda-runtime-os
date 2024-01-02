@@ -367,7 +367,7 @@ class MerkleTreeTest {
                     " $y $caption"
                 }
                 val rootHash = it.calculateRoot(trivialHashDigestProvider).toString()
-                println(renderTree(merkleTree.leaves.size, des, rootHash.substringAfter(":") + " "))
+                println(renderTree(merkleTree.leaves.size, des, mapOf((0 to 0) to rootHash.substringAfter(":") + " ")))
 
                 val hashes = calculateLeveledHashes(it, trivialHashDigestProvider)
 
@@ -585,11 +585,11 @@ fun SecureHash.hex() = bytes.joinToString(separator = "") { "%02x".format(it) }
 fun assertHash(hash: SecureHash, valuePrefix: String): AbstractStringAssert<*> =
     assertThat(hash.hex()).startsWith(valuePrefix)
 
-fun renderTree(treeSize: Int, des: List<String>, rootLabel: String = ""): String {
+fun renderTree(treeSize: Int, des: List<String>, labels: Map<Pair<Int, Int>, String> = emptyMap()): String {
     var values: MutableList<Pair<Int, Int>> = (0 until treeSize).map { it to it }.toMutableList()
-    var levels: MutableList<List<Pair<Int, Int>>> = mutableListOf(values.toList())
+    val levels: MutableList<List<Pair<Int, Int>>> = mutableListOf(values.toList())
     while (values.size > 1) {
-        var newValues: MutableList<Pair<Int, Int>> = mutableListOf()
+        val newValues: MutableList<Pair<Int, Int>> = mutableListOf()
         var index = 0 // index into node hashes, which starts off with an entry per leaf
         while (index < values.size) {
             if (index < values.size - 1) {
@@ -638,11 +638,19 @@ fun renderTree(treeSize: Int, des: List<String>, rootLabel: String = ""): String
         }
     }
 
+    val longestLabels = (0..values.size + 1).map { x ->
+        (0 until treeSize).map { y ->
+            (labels.get(x to y) ?: "").length
+        }.max()
+    }
+
+    println("longest labels ${longestLabels}")
     val lines = (0 until treeSize).map { y ->
-        val line = (0..values.size + 1).map { x -> grid.getOrDefault(x to y, ' ') }
-        val prefix = if (y == 0) rootLabel else " ".repeat(rootLabel.length)
+        val line = (0..values.size + 1).map { x ->
+            "${labels[x to y] ?:(" ".repeat(longestLabels[x]))}${grid.getOrDefault(x to y, ' ')}"
+        }
         val label: String = des.getOrNull(y) ?: ""
-        "$prefix${line.joinToString("")}$label"
+        "${line.joinToString("")}$label"
     }
 
     return lines.joinToString("\n")
@@ -650,7 +658,7 @@ fun renderTree(treeSize: Int, des: List<String>, rootLabel: String = ""): String
 
 fun MerkleTree.render(): String {
     val labels: List<String> = leaves.map { " ${it.map { x -> "%02x".format(x) }.joinToString(separator = ":")}" }
-    return renderTree(leaves.size, labels, root.hex().slice(0..8) + " ")
+    return renderTree(leaves.size, labels, mapOf((0 to 0) to root.hex().slice(0..8) + " "))
 }
 
 /**
