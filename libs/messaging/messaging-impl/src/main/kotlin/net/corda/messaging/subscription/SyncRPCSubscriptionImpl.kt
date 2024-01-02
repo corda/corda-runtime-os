@@ -8,6 +8,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
+import net.corda.metrics.CordaMetrics
 import net.corda.rest.ResponseCode
 import net.corda.tracing.trace
 import net.corda.web.api.Endpoint
@@ -15,6 +16,7 @@ import net.corda.web.api.HTTPMethod
 import net.corda.web.api.WebHandler
 import net.corda.web.api.WebServer
 import org.slf4j.LoggerFactory
+import java.time.Duration
 import java.util.UUID
 
 /**
@@ -77,6 +79,7 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
 
         val webHandler = WebHandler { context ->
             trace(operationName) {
+                val startTime = System.nanoTime()
                 val payload = cordaAvroDeserializer.deserialize(context.bodyAsBytes())
 
                 if (payload == null) {
@@ -94,6 +97,13 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                     log.warn(errorMsg, ex)
                     context.result(errorMsg)
                     context.status(ResponseCode.INTERNAL_SERVER_ERROR)
+
+                    CordaMetrics.Metric.Messaging.HTTPRPCProcessingTime.builder()
+                        .withTag(CordaMetrics.Tag.OperationStatus, "FAILED")
+                        .withTag(CordaMetrics.Tag.HttpRequestUri, rpcEndpoint)
+                        .build()
+                        .record(Duration.ofNanos(System.nanoTime() - startTime))
+
                     return@trace context
                 }
 
@@ -111,6 +121,14 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                         context.status(ResponseCode.INTERNAL_SERVER_ERROR)
                     }
                 }
+                
+                CordaMetrics.Metric.Messaging.HTTPRPCProcessingTime.builder()
+                    .withTag(CordaMetrics.Tag.OperationName, name)
+                    .withTag(CordaMetrics.Tag.HttpRequestUri, rpcEndpoint)
+                    .withTag(CordaMetrics.Tag.OperationStatus, "SUCCESS")
+                    .build()
+                    .record(Duration.ofNanos(System.nanoTime() - startTime))
+
                 context
             }
         }
