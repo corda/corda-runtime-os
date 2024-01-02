@@ -193,7 +193,7 @@ class CryptoRPCSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
         assertThat(response.statusCode()).isEqualTo(404).withFailMessage("status code on response: ${response.statusCode()} url: $url")
     }
 
-    private val testClock = AutoTickTestClock(Instant.MAX, Duration.ofSeconds(1))
+    private val testClock = AutoTickTestClock(Instant.now(), Duration.ofSeconds(1))
 
     /**
      * Generate simple request to lookup for keys by their full key ids.
