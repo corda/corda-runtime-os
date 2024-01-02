@@ -236,4 +236,80 @@ class MerkleTreeImpl(
             outputHashes
         )
     }
+
+    override fun toString(): String {
+        return renderTree(leaves.size, leaves.map { " " + it.joinToString(separator = "") { b -> "%02x".format(b) } })
+    }
+}
+
+
+
+fun renderTree(treeSize: Int, des: List<String>, labels: Map<Pair<Int, Int>, String> = emptyMap()): String {
+    var values: MutableList<Pair<Int, Int>> = (0 until treeSize).map { it to it }.toMutableList()
+    val levels: MutableList<List<Pair<Int, Int>>> = mutableListOf(values.toList())
+    while (values.size > 1) {
+        val newValues: MutableList<Pair<Int, Int>> = mutableListOf()
+        var index = 0 // index into node hashes, which starts off with an entry per leaf
+        while (index < values.size) {
+            if (index < values.size - 1) {
+                // pair the elements
+                newValues += Pair(values[index].first, values[index + 1].second)
+                index += 2
+            } else {
+                // promote the odd man out
+                newValues += values[index]
+                index++
+            }
+        }
+        levels += newValues.toList()
+        check(newValues.size < values.size)
+        values = newValues
+    }
+    val grid: MutableMap<Pair<Int, Int>, Char> = mutableMapOf()
+
+    levels.forEachIndexed { level, ranges ->
+        ranges.forEach { range ->
+            val x = levels.size - level - 1
+            grid.put(x to range.first, '━')
+        }
+    }
+    levels.forEachIndexed { level, ranges ->
+        ranges.forEach { range ->
+            val x = levels.size - level - 1
+            if (range.first != range.second) {
+                val extent = if (level > 0) {
+                    val nextLevel = levels[level - 1]
+                    nextLevel.first { child -> range.second >= child.first && range.second <= child.second }.first
+                } else range.second
+                check(range.first <= extent)
+                if (range.first != extent) {
+                    val curtop = grid.getOrDefault(x to range.first, ' ')
+                    grid[x to range.first] = when (curtop) {
+                        '━' -> '┳'
+                        else -> '┃'
+                    }
+                    for (y in range.first + 1 until extent) {
+                        grid[x to y] = '┃'
+                    }
+                    grid[x to extent] = '┗'
+                }
+            }
+        }
+    }
+
+    val longestLabels = (0..values.size + 1).map { x ->
+        (0 until treeSize).map { y ->
+            (labels.get(x to y) ?: "").length
+        }.max()
+    }
+
+    val lines = (0 until treeSize).map { y ->
+        val line = (0..values.size + 1).map { x ->
+            "${labels[x to y] ?:(" ".repeat(longestLabels[x]))}${grid.getOrDefault(x to y, ' ')}"
+        }
+        val label: String = des.getOrNull(y) ?: ""
+        "${line.joinToString("")}$label"
+    }
+
+    return lines.joinToString("\n")
 }

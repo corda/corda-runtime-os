@@ -303,6 +303,7 @@ class MerkleTreeTest {
         val leaves1 = "abcdef".map { it.toString().toByteArray() }
         val leaves2 = "ghijkl".map { it.toString().toByteArray() }
         val tree1 = MerkleTreeImpl.createMerkleTree(leaves1, defaultHashDigestProvider)
+        println(tree1)
         val tree2 = MerkleTreeImpl.createMerkleTree(leaves2, defaultHashDigestProvider)
         assertNotEquals(tree1.root, tree2.root)
         assertNotEquals(tree1, tree2)
@@ -585,80 +586,6 @@ fun SecureHash.hex() = bytes.joinToString(separator = "") { "%02x".format(it) }
 fun assertHash(hash: SecureHash, valuePrefix: String): AbstractStringAssert<*> =
     assertThat(hash.hex()).startsWith(valuePrefix)
 
-fun renderTree(treeSize: Int, des: List<String>, labels: Map<Pair<Int, Int>, String> = emptyMap()): String {
-    var values: MutableList<Pair<Int, Int>> = (0 until treeSize).map { it to it }.toMutableList()
-    val levels: MutableList<List<Pair<Int, Int>>> = mutableListOf(values.toList())
-    while (values.size > 1) {
-        val newValues: MutableList<Pair<Int, Int>> = mutableListOf()
-        var index = 0 // index into node hashes, which starts off with an entry per leaf
-        while (index < values.size) {
-            if (index < values.size - 1) {
-                // pair the elements
-                newValues += Pair(values[index].first, values[index + 1].second)
-                index += 2
-            } else {
-                // promote the odd man out
-                newValues += values[index]
-                index++
-            }
-        }
-        levels += newValues.toList()
-        check(newValues.size < values.size)
-        values = newValues
-    }
-    val grid: MutableMap<Pair<Int, Int>, Char> = mutableMapOf()
-
-    levels.forEachIndexed { level, ranges ->
-        ranges.forEach { range ->
-            val x = levels.size - level - 1
-            grid.put(x to range.first, '━')
-        }
-    }
-    levels.forEachIndexed { level, ranges ->
-        ranges.forEach { range ->
-            val x = levels.size - level - 1
-            if (range.first != range.second) {
-                val extent = if (level > 0) {
-                    val nextLevel = levels[level - 1]
-                    nextLevel.first { child -> range.second >= child.first && range.second <= child.second }.first
-                } else range.second
-                check(range.first <= extent)
-                if (range.first != extent) {
-                    val curtop = grid.getOrDefault(x to range.first, ' ')
-                    grid[x to range.first] = when (curtop) {
-                        '━' -> '┳'
-                        else -> '┃'
-                    }
-                    for (y in range.first + 1 until extent) {
-                        grid[x to y] = '┃'
-                    }
-                    grid[x to extent] = '┗'
-                }
-            }
-        }
-    }
-
-    val longestLabels = (0..values.size + 1).map { x ->
-        (0 until treeSize).map { y ->
-            (labels.get(x to y) ?: "").length
-        }.max()
-    }
-
-    val lines = (0 until treeSize).map { y ->
-        val line = (0..values.size + 1).map { x ->
-            "${labels[x to y] ?:(" ".repeat(longestLabels[x]))}${grid.getOrDefault(x to y, ' ')}"
-        }
-        val label: String = des.getOrNull(y) ?: ""
-        "${line.joinToString("")}$label"
-    }
-
-    return lines.joinToString("\n")
-}
-
-fun MerkleTree.render(): String {
-    val labels: List<String> = leaves.map { " ${it.map { x -> "%02x".format(x) }.joinToString(separator = ":")}" }
-    return renderTree(leaves.size, labels, mapOf((0 to 0) to root.hex().slice(0..8) + " "))
-}
 
 /**
  * Assert that a merkle tree has exact content.
@@ -667,4 +594,4 @@ fun MerkleTree.render(): String {
  * @param expectedRendered the rendered text form; indentation and extra whitespace before and after is ignored
  */
 fun assertTree(actual: MerkleTree, expectedRendered: String): AbstractStringAssert<*> =
-    assertThat(actual.render()).isEqualTo(expectedRendered.trimIndent())
+    assertThat(actual.toString()).isEqualTo(expectedRendered.trimIndent())
