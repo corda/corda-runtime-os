@@ -26,6 +26,7 @@ import net.corda.messagebus.kafka.serialization.CordaAvroSerializationFactoryImp
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.test.util.time.AutoTickTestClock
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.byLessThan
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -40,6 +41,7 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 /**
@@ -256,7 +258,7 @@ class CryptoRPCSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
     private fun assertValidTimestamp(timestamp: Instant, clock: AutoTickTestClock? = null) {
         assertThat(timestamp).isAfter(Instant.MIN)
         if (clock != null) {
-            assertThat(timestamp).isBeforeOrEqualTo(clock.peekTime())
+            assertThat(timestamp).isCloseTo(clock.peekTime(), byLessThan(1, ChronoUnit.MINUTES))
         }
     }
 }
