@@ -111,25 +111,17 @@ class UtxoFinalityFlowV1(
         log.debug { "Recorded transaction with initial signatures $transactionId" }
     }
 
+    // Send initialTransaction, transferAdditionalSignatures, and filteredTransactionsAndSignatures
+    // to counterparties. filteredTransactionsAndSignatures will be null if the backchain is required since
+    // we don't need to send dependency payload to check.
     @Suspendable
     private fun sendTransactionAndBackchainToCounterparties(transferAdditionalSignatures: Boolean) {
-        flowMessaging.sendAll(FinalityPayload(initialTransaction, transferAdditionalSignatures), sessions.toSet())
-
         val notaryInfo = requireNotNull(notaryLookup.lookup(initialTransaction.notaryName)) {
             "Notary ${initialTransaction.notaryName} does not exist in the network"
         }
-        if (notaryInfo.isBackchainRequired) {
-            sessions.forEach {
-                if (initialTransaction.dependencies.isNotEmpty()) {
-                    flowEngine.subFlow(TransactionBackchainSenderFlow(initialTransaction.id, it))
-                } else {
-                    log.trace {
-                        "Transaction with id ${initialTransaction.id} has no dependencies so backchain resolution will not be performed."
-                    }
-                }
-            }
-        } else {
-            val filteredTransactionsAndSignatures = initialTransaction
+
+        val filteredTransactionsAndSignatures = if (!notaryInfo.isBackchainRequired) {
+            initialTransaction
                 .let { it.inputStateRefs + it.referenceStateRefs }
                 .groupBy { stateRef -> stateRef.transactionId }
                 .mapValues { (_, stateRefs) -> stateRefs.map { stateRef -> stateRef.index } }
@@ -140,7 +132,7 @@ class UtxoFinalityFlowV1(
                     val newTxNotaryKey = initialTransaction.notaryKey
                     require(initialTransaction.notaryName == dependency.notaryName) {
                         "Notary name of filtered transaction \"${dependency.notaryName}\" doesn't match with " +
-                            "notary service of current transaction \"${initialTransaction.notaryName}\""
+                                "notary service of current transaction \"${initialTransaction.notaryName}\""
                     }
                     notarySignatureVerificationService.verifyNotarySignatures(
                         dependency,
@@ -164,7 +156,20 @@ class UtxoFinalityFlowV1(
                         dependency.signatures.filter { newTxNotaryKeyIds.contains(it.by) }
                     )
                 }
-            flowMessaging.sendAll(filteredTransactionsAndSignatures, sessions.toSet())
+        } else null
+
+        flowMessaging.sendAll(FinalityPayload(initialTransaction, transferAdditionalSignatures, filteredTransactionsAndSignatures), sessions.toSet())
+
+        if (notaryInfo.isBackchainRequired) {
+            sessions.forEach {
+                if (initialTransaction.dependencies.isNotEmpty()) {
+                    flowEngine.subFlow(TransactionBackchainSenderFlow(initialTransaction.id, it))
+                } else {
+                    log.trace {
+                        "Transaction with id ${initialTransaction.id} has no dependencies so backchain resolution will not be performed."
+                    }
+                }
+            }
         }
     }
 

@@ -48,6 +48,7 @@ import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TransactionState
+import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.membership.MemberInfo
@@ -88,6 +89,7 @@ class UtxoFinalityFlowV1Test {
     }
 
     private val memberLookup = mock<MemberLookup>()
+    private val utxoLedgerService = mock<UtxoLedgerService>()
     private val transactionSignatureService = mock<TransactionSignatureService>()
     private val persistenceService = mock<UtxoLedgerPersistenceService>()
     private val transactionVerificationService = mock<UtxoLedgerTransactionVerificationService>()
@@ -147,6 +149,8 @@ class UtxoFinalityFlowV1Test {
     private val transactionState = mock<TransactionState<TestState>>()
     private val stateAndRef = mock<StateAndRef<TestState>>()
     private val testState = TestState(listOf(publicKeyAlice1))
+
+//    private dependencyTx =
 
     @BeforeEach
     fun beforeEach() {
@@ -1350,6 +1354,7 @@ class UtxoFinalityFlowV1Test {
         flow.transactionVerificationService = transactionVerificationService
         flow.virtualNodeSelectorService = virtualNodeSelectorService
         flow.visibilityChecker = visibilityChecker
+        flow.utxoLedgerService = utxoLedgerService
         flow.call()
     }
 

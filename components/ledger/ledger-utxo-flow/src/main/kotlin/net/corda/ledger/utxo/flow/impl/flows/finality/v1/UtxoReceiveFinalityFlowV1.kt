@@ -159,7 +159,7 @@ class UtxoReceiveFinalityFlowV1(
             }
             InitialTransactionPayload(initialTransaction, transferAdditionalSignatures, emptyList(), emptyList())
         } else {
-            receiveDependencyPayloadAndVerify(initialTransaction, transferAdditionalSignatures)
+            receiveDependencyPayloadAndVerify(payload.filteredTransactionsAndSignatures!!, initialTransaction, transferAdditionalSignatures)
         }
     }
 
@@ -172,13 +172,10 @@ class UtxoReceiveFinalityFlowV1(
 
     @Suspendable
     private fun receiveDependencyPayloadAndVerify(
+        filteredTransactionsAndSignatures: List<FilteredTransactionAndSignatures>,
         initialTransaction: UtxoSignedTransactionInternal,
         transferAdditionalSignatures: Boolean
     ): InitialTransactionPayload {
-        @Suppress("unchecked_cast")
-        val filteredTransactionsAndSignatures =
-            session.receive(List::class.java) as List<FilteredTransactionAndSignatures>
-
         val groupParameters = groupParametersLookup.currentGroupParameters
         val notary = requireNotNull(groupParameters.notaries.first { it.name == initialTransaction.notaryName }) {
             "Notary from initial transaction \"${initialTransaction.notaryName}\" cannot be found in group parameter notaries."
