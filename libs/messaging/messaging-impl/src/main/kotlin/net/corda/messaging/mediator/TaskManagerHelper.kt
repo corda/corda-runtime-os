@@ -165,8 +165,6 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
             replyMessage!!.payload,
         )
 
-    // This conversion does not preserve all the data contained on the record!
-    // The timestamp is lost
     /**
      * Converts [Record] to [MediatorMessage].
      */
