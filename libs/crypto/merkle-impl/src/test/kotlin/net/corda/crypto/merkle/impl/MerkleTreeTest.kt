@@ -644,7 +644,6 @@ fun renderTree(treeSize: Int, des: List<String>, labels: Map<Pair<Int, Int>, Str
         }.max()
     }
 
-    println("longest labels ${longestLabels}")
     val lines = (0 until treeSize).map { y ->
         val line = (0..values.size + 1).map { x ->
             "${labels[x to y] ?:(" ".repeat(longestLabels[x]))}${grid.getOrDefault(x to y, ' ')}"
