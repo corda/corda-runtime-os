@@ -85,7 +85,8 @@ class ConsumerProcessorTest {
             future.complete(Unit)
             future
         }
-        whenever(messageRouter.getDestination(any())).thenReturn(RoutingDestination(client, "endpoint", RoutingDestination.Type.ASYNCHRONOUS))
+        whenever(messageRouter.getDestination(any())).thenReturn(RoutingDestination(client, "endpoint",
+            RoutingDestination.Type.ASYNCHRONOUS))
         whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(getGroups(2, 4))
 
         consumerProcessor.processTopic(getConsumerFactory(), getConsumerConfig())
