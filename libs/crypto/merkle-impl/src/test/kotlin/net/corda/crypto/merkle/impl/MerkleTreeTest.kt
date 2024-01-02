@@ -45,8 +45,8 @@ class MerkleTreeTest {
             private val ZERO_BYTE = ByteArray(1) { 0 }
             private val ONE_BYTE = ByteArray(1) { 1 }
             private fun hash(b: ByteArray): SecureHash {
-                var acc = 0L
-                for (c in b) acc += c.toLong()
+                var acc = 0
+                for (c in b) acc += c.toInt()
                 return SecureHashImpl("byteadd", acc.toByteArray())
             }
 
@@ -373,20 +373,21 @@ class MerkleTreeTest {
                     val caption = if (y in leafIndicesCombination) "known data" else "gap"
                     " $y $caption"
                 }
-                println(renderTree(merkleTree.leaves.size, des))
+                val rootHash = it.calculateRoot(trivialHashDigestProvider).toString()
+                println(renderTree(merkleTree.leaves.size, des, rootHash.substringAfter(":") + " "))
                 if (i == 1 && treeSize == 1) {
                     assertThat(hashes).hasSize(0)
                 }
                 if (i == 1 && treeSize == 2) {
                     assertThat(hashes).hasSize(1)
-                    assertHash(hashes[0].hash, "0000000000000001")
+                    assertHash(hashes[0].hash, "00000001")
                     assertThat(hashes[0].level).isEqualTo(0)
                 }
 
                 if (i == 42 && treeSize == 6) {
                     assertThat(hashes).hasSize(3)
                     assertThat(hashes.map { it.hash.hex() }).isEqualTo(
-                        arrayListOf("0000000000000000", "0000000000000002", "0000000000000004")
+                        arrayListOf("00000000", "00000002", "00000004")
                     )
                     assertThat(hashes.map { it.level }).isEqualTo(arrayListOf(2, 2, 2))
                 }
@@ -402,6 +403,7 @@ class MerkleTreeTest {
     ): MerkleProof {
         val proof = merkleTree.createAuditProof(leafIndicesCombination)
 
+        println("Proof ${proof.toString()}")
         // The original root can be reconstructed from the proof
         assertEquals(proof.calculateRoot(trivialHashDigestProvider), merkleTree.root)
         assertTrue(proof.verify(root, trivialHashDigestProvider))
