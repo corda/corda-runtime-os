@@ -93,22 +93,22 @@ class HTTPRetryExecutor {
             operationStatus: String,
             response: HttpResponse<ByteArray>?
         ) {
-            CordaMetrics.Metric.Messaging.HTTPRPCResponseTime.builder().apply {
-                withTag(CordaMetrics.Tag.OperationStatus, operationStatus)
-                withTag(CordaMetrics.Tag.HttpResponseCode, response?.statusCode()?.toString() ?: "null")
-                config.additionalMetrics.forEach { (tag, value) -> withTag(tag, value) }
-                build().record(Duration.ofNanos(endTime - startTime))
-            }
+            CordaMetrics.Metric.Messaging.HTTPRPCResponseTime.builder()
+                .withTag(CordaMetrics.Tag.OperationStatus, operationStatus)
+                .withTag(CordaMetrics.Tag.HttpResponseCode, response?.statusCode().toString())
+                .apply { config.additionalMetrics.forEach { (tag, value) -> withTag(tag, value) } }
+                .build()
+                .record(Duration.ofNanos(endTime - startTime))
         }
 
         private fun recordResponseSizeMetric(
             config: HTTPRetryConfig,
             response: HttpResponse<ByteArray>
         ) {
-            CordaMetrics.Metric.Messaging.HTTPRPCResponseSize.builder().apply {
-                config.additionalMetrics.forEach { (tag, value) -> withTag(tag, value) }
-                build().record(response.body().size.toDouble())
-            }
+            CordaMetrics.Metric.Messaging.HTTPRPCResponseSize.builder()
+                .apply { config.additionalMetrics.forEach { (tag, value) -> withTag(tag, value) } }
+                .build()
+                .record(response.body().size.toDouble())
         }
     }
 }
