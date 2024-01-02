@@ -44,7 +44,6 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val cordaAvroSerializer: CordaAvroSerializer<RESPONSE>,
     private val cordaAvroDeserializer: CordaAvroDeserializer<REQUEST>,
 ) : RPCSubscription<REQUEST, RESPONSE> {
-
     private lateinit var endpoint: Endpoint
     override val subscriptionName =
         LifecycleCoordinatorName(
@@ -67,6 +66,8 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        const val SUCCESS: String = "SUCCESS"
+        const val FAILED: String = "FAILED"
     }
 
     private fun registerEndpoint(
@@ -98,11 +99,7 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                     context.result(errorMsg)
                     context.status(ResponseCode.INTERNAL_SERVER_ERROR)
 
-                    CordaMetrics.Metric.Messaging.HTTPRPCProcessingTime.builder()
-                        .withTag(CordaMetrics.Tag.OperationStatus, "FAILED")
-                        .withTag(CordaMetrics.Tag.HttpRequestUri, rpcEndpoint)
-                        .build()
-                        .record(Duration.ofNanos(System.nanoTime() - startTime))
+                    recordMetric(name, rpcEndpoint, FAILED, startTime)
 
                     return@trace context
                 }
@@ -121,14 +118,8 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                         context.status(ResponseCode.INTERNAL_SERVER_ERROR)
                     }
                 }
-                
-                CordaMetrics.Metric.Messaging.HTTPRPCProcessingTime.builder()
-                    .withTag(CordaMetrics.Tag.OperationName, name)
-                    .withTag(CordaMetrics.Tag.HttpRequestUri, rpcEndpoint)
-                    .withTag(CordaMetrics.Tag.OperationStatus, "SUCCESS")
-                    .build()
-                    .record(Duration.ofNanos(System.nanoTime() - startTime))
 
+                recordMetric(name, rpcEndpoint, SUCCESS, startTime)
                 context
             }
         }
@@ -136,5 +127,19 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         val addedEndpoint = Endpoint(HTTPMethod.POST, rpcEndpoint, webHandler, true)
         server.registerEndpoint(addedEndpoint)
         endpoint = addedEndpoint
+    }
+
+    private fun recordMetric(
+        operationName: String,
+        rpcEndpoint: String,
+        status: String,
+        startTime: Long
+    ) {
+        CordaMetrics.Metric.Messaging.HTTPRPCProcessingTime.builder()
+            .withTag(CordaMetrics.Tag.OperationName, operationName)
+            .withTag(CordaMetrics.Tag.HttpRequestUri, rpcEndpoint)
+            .withTag(CordaMetrics.Tag.OperationStatus, status)
+            .build()
+            .record(Duration.ofNanos(System.nanoTime() - startTime))
     }
 }
