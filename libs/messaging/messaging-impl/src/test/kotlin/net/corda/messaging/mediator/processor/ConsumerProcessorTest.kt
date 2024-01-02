@@ -3,6 +3,8 @@ package net.corda.messaging.mediator.processor
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorConsumer
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
@@ -21,15 +23,18 @@ import net.corda.messaging.mediator.MediatorState
 import net.corda.taskmanager.TaskManager
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionException
 
 @Execution(ExecutionMode.SAME_THREAD)
 class ConsumerProcessorTest {
@@ -95,12 +100,52 @@ class ConsumerProcessorTest {
         verify(stateManager, times(1)).create(any())
         verify(stateManager, times(1)).update(any())
         verify(stateManager, times(1)).delete(any())
+        verify(consumer, times(1)).syncCommitOffsets()
 
         verify(messageRouter, times(2)).getDestination(any())
         verify(client, times(2)).send(any())
 
         verify(consumer, times(1)).close()
     }
+
+
+    @Test
+    fun `completion exception with intermittent exception as the cause is treated as intermittent`() {
+        whenever(consumer.subscribe()).doThrow(CompletionException(CordaMessageAPIIntermittentException("exception")))
+        whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(emptyList())
+
+        consumerProcessor.processTopic(getConsumerFactory(), getConsumerConfig())
+
+        verify(consumer, times(1)).poll(any())
+        verify(consumerFactory, times(1)).create<String, String>(any())
+        verify(consumer, times(1)).subscribe()
+        verify(groupAllocator, times(1)).allocateGroups<String, String, String>(any(), any())
+        verify(taskManager, times(0)).executeShortRunningTask<Unit>(any())
+
+        verify(consumer, times(1)).resetEventOffsetPosition()
+        verify(consumer, times(1)).close()
+    }
+
+    @Test
+    fun `Fatal exception closes the consumer and stops processing`() {
+        whenever(consumer.subscribe()).doThrow(CordaMessageAPIFatalException("exception"))
+        whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(emptyList())
+        val consumerFactory = getConsumerFactory()
+        consumer.apply {
+            whenever(poll(any())).thenReturn(listOf(getConsumerRecord()))
+        }
+        assertThrows<CordaMessageAPIFatalException> {  consumerProcessor.processTopic(consumerFactory, getConsumerConfig()) }
+
+        verify(consumer, times(0)).poll(any())
+        verify(consumerFactory, times(1)).create<String, String>(any())
+        verify(consumer, times(1)).subscribe()
+        verify(groupAllocator, times(0)).allocateGroups<String, String, String>(any(), any())
+        verify(taskManager, times(0)).executeShortRunningTask<Unit>(any())
+
+        verify(consumer, times(0)).resetEventOffsetPosition()
+        verify(consumer, times(1)).close()
+    }
+
 
 
     private fun getGroups(groupCount: Int, recordCountPerGroup: Int): List<Map<String, List<Record<String, String>>>> {
