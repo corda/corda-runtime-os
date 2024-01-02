@@ -99,7 +99,7 @@ internal class SandboxServiceImpl @Activate constructor(
     }
 
     override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) = bundleLock.withLock {
-        logger.info("Uninstalling bundles for SandboxGroup $sandboxGroup.id")
+        logger.info("Uninstalling bundles for SandboxGroup ${sandboxGroup.id}")
         (sandboxGroup as SandboxGroupInternal).also { sandboxGroupInternal ->
             sandboxGroupInternal.cpkSandboxes.forEach { sandbox ->
                 val unloaded = sandbox.unload()
@@ -273,7 +273,7 @@ internal class SandboxServiceImpl @Activate constructor(
             bundleIdToSandboxGroup[bundle.bundleId] = sandboxGroup
         }
 
-        logger.info("Installed bundles for SandboxGroup $sandboxGroup.id")
+        logger.info("Installed bundles for SandboxGroup ${sandboxGroup.id}")
 
         return sandboxGroup
     }
