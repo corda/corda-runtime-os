@@ -361,13 +361,6 @@ class MerkleTreeTest {
         for (i in 1 until (1 shl treeSize)) {
             val leafIndicesCombination = (0 until treeSize).filter { (i and (1 shl it)) != 0 }
             testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize).also {
-                val hashes = calculateLeveledHashes(it, trivialHashDigestProvider)
-
-                println(
-                    "Merkle proof for a tree of size $treeSize with ${hashes.size} " +
-                            "hashes supplied in the proof where we know $leafIndicesCombination"
-                )
-
 
                 val des = (0 until merkleTree.leaves.size).map { y ->
                     val caption = if (y in leafIndicesCombination) "known data" else "gap"
@@ -375,6 +368,14 @@ class MerkleTreeTest {
                 }
                 val rootHash = it.calculateRoot(trivialHashDigestProvider).toString()
                 println(renderTree(merkleTree.leaves.size, des, rootHash.substringAfter(":") + " "))
+
+                val hashes = calculateLeveledHashes(it, trivialHashDigestProvider)
+
+                println(
+                    "Merkle proof for a tree of size $treeSize with ${hashes.size} " +
+                            "hashes supplied in the proof where we know $leafIndicesCombination"
+                )
+
                 if (i == 1 && treeSize == 1) {
                     assertThat(hashes).hasSize(0)
                 }
