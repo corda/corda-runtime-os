@@ -23,17 +23,6 @@ interface SandboxCreationService {
     fun createSandboxGroup(cpks: Iterable<Cpk>, securityDomain: String = ""): SandboxGroup
 
     /**
-     * Creates a new [SandboxGroup] in the [securityDomain] containing a sandbox for each of the [cpks].
-     *
-     * Duplicate [cpks] are discarded (i.e. only one sandbox will be created per unique hash).
-     *
-     * The bundles in each sandbox are not started, meaning that their bundle activators are not called.
-     *
-     * A [SandboxException] is thrown if the sandbox creation fails.
-     */
-    fun createSandboxGroupWithoutStarting(cpks: Iterable<Cpk>, securityDomain: String = ""): SandboxGroup
-
-    /**
      * Attempts to uninstall each of the sandbox group's bundles in turn, and removes the sandbox group from the
      * service's cache.
      */
