@@ -180,6 +180,8 @@ class VirtualNodeRestTest {
 
     private fun ClusterBuilder.getCpiChecksum(cpiName: String): String {
         val cpis = assertWithRetryIgnoringExceptions {
+            timeout(retryTimeout)
+            interval(retryInterval)
             command { cpiList() }
             condition { it.code == ResponseCode.OK.statusCode }
         }.body.toJson()["cpis"]
