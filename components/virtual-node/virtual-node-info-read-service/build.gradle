@@ -25,9 +25,8 @@ dependencies {
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:messaging:messaging")
 
-    implementation "com.google.guava:guava:$guavaVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation project(':components:virtual-node:virtual-node-write-service-impl')
+    implementation project(':components:virtual-node:virtual-node-write-service')
     implementation project(':components:db:db-connection-manager')
     implementation project(':libs:rest:rest')
     implementation project(':libs:db:db-admin-impl')
