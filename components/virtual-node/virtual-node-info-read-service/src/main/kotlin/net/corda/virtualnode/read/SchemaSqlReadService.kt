@@ -1,11 +1,11 @@
 package net.corda.virtualnode.read
 
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
-import net.corda.reconciliation.ReconcilerReader
-import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.VirtualNodeInfo
 
-interface SchemaSqlReadService : ReconcilerReader<HoldingIdentity, VirtualNodeInfo>, Lifecycle {
+interface SchemaSqlReadService : Lifecycle {
+
+    fun initialise(config: SmartConfig)
 
     fun getSchemaSql(dbType: String, virtualNodeShortId: String? = null, cpiChecksum: String? = null): String
 }

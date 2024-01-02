@@ -8,24 +8,28 @@ import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.DbSchema
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.processor.CompactedProcessor
+import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.CompactedSubscription
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.utils.transaction
-import net.corda.reconciliation.VersionedRecord
 import net.corda.rest.exception.ResourceNotFoundException
-import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.schema.Schemas
 import net.corda.virtualnode.read.SchemaSqlReadService
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
@@ -37,7 +41,6 @@ import org.slf4j.LoggerFactory
 import java.io.StringWriter
 import java.sql.Connection
 import java.util.concurrent.ConcurrentHashMap
-import java.util.stream.Stream
 
 @Suppress("LongParameterList")
 @Component(service = [SchemaSqlReadService::class])
@@ -46,6 +49,8 @@ class SchemaSqlReadServiceImpl @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory,
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = LiquibaseSchemaMigrator::class)
@@ -59,7 +64,11 @@ class SchemaSqlReadServiceImpl @Activate constructor(
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
+    private var schemaSqlSubscription: CompactedSubscription<VirtualNodeSchema, String>? = null
     private val schemaSqlMap = ConcurrentHashMap<VirtualNodeSchema, String>()
+
+    private var subReg: RegistrationHandle? = null
+    private var publisher: Publisher? = null
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<SchemaSqlReadService>(::eventHandler)
 
@@ -77,16 +86,32 @@ class SchemaSqlReadServiceImpl @Activate constructor(
     override val keyClass: Class<VirtualNodeSchema> get() = VirtualNodeSchema::class.java
     override val valueClass: Class<String> get() = String::class.java
 
+    override fun initialise(config: SmartConfig) {
+        subReg?.close()
+        schemaSqlSubscription?.close()
+        publisher?.close()
+        publisher = publisherFactory.createPublisher(
+            PublisherConfig("SCHEMA_SQL", true),
+            config
+        )
+
+        schemaSqlSubscription = subscriptionFactory.createCompactedSubscription(
+            SubscriptionConfig(
+                "Schema SQL Subscription",
+                Schemas.VirtualNode.VIRTUAL_NODE_ASYNC_REQUEST_TOPIC
+            ),
+            this,
+            config
+        )
+
+        subReg = lifecycleCoordinator.followStatusChangesByName(setOf(schemaSqlSubscription!!.subscriptionName))
+
+        schemaSqlSubscription?.start()
+    }
+
     override fun getSchemaSql(dbType: String, virtualNodeShortId: String?, cpiChecksum: String?): String {
         return schemaSqlMap[VirtualNodeSchema(dbType, virtualNodeShortId, cpiChecksum)].toString()
     }
-
-    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>> {
-        TODO("Not yet implemented")
-    }
-
-    override val lifecycleCoordinatorName: LifecycleCoordinatorName
-        get() = TODO("Not yet implemented")
 
     override fun onSnapshot(currentData: Map<VirtualNodeSchema, String>) {
         schemaSqlMap.clear()

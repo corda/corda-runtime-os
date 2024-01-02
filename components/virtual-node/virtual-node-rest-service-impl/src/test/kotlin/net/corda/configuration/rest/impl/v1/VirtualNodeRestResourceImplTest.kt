@@ -220,7 +220,6 @@ class VirtualNodeRestResourceImplTest {
             virtualNodeStatusCacheService,
             mock(),
             mock(),
-            mock(),
             requestFactory,
             UTCClock(),
             virtualNodeValidationService,

@@ -208,6 +208,7 @@ internal class VirtualNodeRestResourceImpl(
                     }
 
                     virtualNodeStatusCacheService.onConfiguration(messagingConfig)
+                    schemaSqlReadService.initialise(messagingConfig)
                 }
             }
 
