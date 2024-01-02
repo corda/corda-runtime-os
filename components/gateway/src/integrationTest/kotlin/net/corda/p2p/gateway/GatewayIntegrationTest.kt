@@ -1526,6 +1526,7 @@ internal class GatewayIntegrationTest : TestBase() {
                 }
             }
         }
+
         @Test
         @Timeout(120)
         fun `have more than one CA`() {
