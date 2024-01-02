@@ -887,12 +887,6 @@ class InboundMessageProcessorTest {
                 on { header } doReturn commonHeader
             }
             val message = LinkInMessage(hello)
-            val header = LinkOutHeader(myIdentity.toAvro(), remoteIdentity.toAvro(), NetworkType.CORDA_5, "https://example.com")
-            val response = LinkOutMessage(header, hello)
-            val captor = argumentCaptor<List<TraceableItem<LinkInMessage, LinkInMessage>>>()
-            whenever(sessionManager.processSessionMessages(captor.capture(), any())).doAnswer {
-                captor.firstValue.map { it to response }
-            }
             whenever(assignedListener.getCurrentlyAssignedPartitions()).thenReturn(emptySet())
 
             val records = processor.onNext(
@@ -906,8 +900,10 @@ class InboundMessageProcessorTest {
                 .hasSize(1)
                 .contains(
                     "No partitions from topic link.in are currently assigned to the inbound message processor. " +
-                            "Not going to reply to session initiation for session Session."
+                            "Not going to reply to session initiation."
                 )
+            verify(sessionManager, never())
+                .processSessionMessages(any<List<TraceableItem<LinkInMessage, LinkInMessage>>>(), any())
         }
 
         @Test

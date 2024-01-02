@@ -128,33 +128,34 @@ internal class InboundMessageProcessor(
     private fun processSessionMessages(messages: List<TraceableItem<LinkInMessage, LinkInMessage>>):
             List<TraceableItem<List<Record<String, *>>, LinkInMessage>> {
         recordInboundSessionMessagesMetric()
+        val partitionsAssigned = inboundAssignmentListener.getCurrentlyAssignedPartitions()
+        if (partitionsAssigned.isEmpty()) {
+            logger.warn(
+                "No partitions from topic ${Schemas.P2P.LINK_IN_TOPIC} are currently assigned to " +
+                        "the inbound message processor. " +
+                        "Not going to reply to session initiation."
+            )
+            return messages.map { traceableMessage ->
+                TraceableItem(emptyList(), traceableMessage.originalRecord)
+            }
+        }
         val responses = sessionManager.processSessionMessages(messages) {message -> message.item}
         return responses.map { (traceableMessage, response) ->
             if (response != null) {
                 when (val payload = response.payload) {
                     is ResponderHelloMessage -> {
-                        val partitionsAssigned = inboundAssignmentListener.getCurrentlyAssignedPartitions()
-                        if (partitionsAssigned.isNotEmpty()) {
-                            recordOutboundSessionMessagesMetric(response.header.sourceIdentity, response.header.destinationIdentity)
-                            TraceableItem(
-                                listOf(
-                                    Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response),
-                                    Record(
-                                        Schemas.P2P.SESSION_OUT_PARTITIONS,
-                                        payload.header.sessionId,
-                                        SessionPartitions(partitionsAssigned.toList())
-                                    )
-                                ),
-                                traceableMessage.originalRecord
-                            )
-                        } else {
-                            logger.warn(
-                                "No partitions from topic ${Schemas.P2P.LINK_IN_TOPIC} are currently assigned to " +
-                                        "the inbound message processor." +
-                                        " Not going to reply to session initiation for session ${payload.header.sessionId}."
-                            )
-                            TraceableItem(emptyList(), traceableMessage.originalRecord)
-                        }
+                        recordOutboundSessionMessagesMetric(response.header.sourceIdentity, response.header.destinationIdentity)
+                        TraceableItem(
+                            listOf(
+                                Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response),
+                                Record(
+                                    Schemas.P2P.SESSION_OUT_PARTITIONS,
+                                    payload.header.sessionId,
+                                    SessionPartitions(partitionsAssigned.toList())
+                                )
+                            ),
+                            traceableMessage.originalRecord
+                        )
                     }
                     else -> {
                         recordOutboundSessionMessagesMetric(response.header.sourceIdentity, response.header.destinationIdentity)
