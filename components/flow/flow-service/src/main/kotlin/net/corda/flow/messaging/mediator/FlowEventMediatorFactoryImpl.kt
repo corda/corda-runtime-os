@@ -148,7 +148,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
                     rpcEndpoint(UNIQUENESS_WORKER_REST_ENDPOINT, UNIQUENESS_PATH), SYNCHRONOUS)
                 is FlowEvent -> routeTo(messageBusClient,
                     FLOW_EVENT_TOPIC, ASYNCHRONOUS)
-                is String -> routeTo(messageBusClient,
+                is String -> routeTo(messageBusClient, // Handling external messaging
                     message.properties[MSG_PROP_TOPIC] as String, ASYNCHRONOUS)
                 else -> {
                     val eventType = event?.let { it::class.java }
