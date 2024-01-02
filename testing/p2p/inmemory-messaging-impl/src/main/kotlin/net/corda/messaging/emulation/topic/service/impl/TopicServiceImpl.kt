@@ -31,7 +31,16 @@ class TopicServiceImpl(
     }
 
     override fun close() {
-        topics.close()
+        try {
+            topics.close()
+        } catch (e: Exception) {
+            // Try again...
+            try {
+                topics.close()
+            } catch (e: Exception) {
+                // Do nothing.
+            }
+        }
     }
 
     override fun getLatestOffsets(topicName: String): Map<Int, Long> {
