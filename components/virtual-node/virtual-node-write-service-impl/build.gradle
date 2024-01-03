@@ -11,7 +11,6 @@ dependencies {
     api project(':libs:virtual-node:virtual-node-info')
 
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
-    implementation "org.liquibase:liquibase-core:$liquibaseVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 

@@ -7,7 +7,6 @@ description "DB Connection Manager Implemenation"
 
 dependencies {
     compileOnly "org.osgi:org.osgi.service.component.annotations"
-    implementation "org.liquibase:liquibase-core:$liquibaseVersion"
 
     implementation project(":components:db:db-connection-manager")
     implementation project(':libs:db:db-core')
