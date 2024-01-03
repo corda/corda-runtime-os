@@ -155,7 +155,7 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
     }
 
     override fun addTraceHeaders(
-        headers: MutableMap<String, Any>,
+        headers: Map<String, Any>,
         traceHeadersToOverrideContext: Map<String, Any>
     ): Map<String, Any> {
         val ctx = recordTracing.getTraceContext(traceHeadersToOverrideContext)
@@ -197,7 +197,7 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
     }
 
     override fun nextSpan(
-        operationName: String, headers:  MutableMap<String, Any>
+        operationName: String, headers:  Map<String, Any>
     ): TraceContext {
         val span = recordTracing.nextSpan(headers).name(operationName).start()
         return BraveTraceContext(tracer, span)

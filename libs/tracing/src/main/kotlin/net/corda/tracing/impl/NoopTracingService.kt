@@ -75,7 +75,7 @@ class NoopTracingService : TracingService {
     }
 
     override fun addTraceHeaders(
-        headers: MutableMap<String, Any>,
+        headers: Map<String, Any>,
         traceHeadersToOverrideContext: Map<String, Any>
     ): Map<String, Any> {
         // Do nothing. Return the current headers
@@ -105,7 +105,7 @@ class NoopTracingService : TracingService {
         return NoopTraceContext()
     }
 
-    override fun nextSpan(operationName: String, headers: MutableMap<String, Any>): TraceContext {
+    override fun nextSpan(operationName: String, headers: Map<String, Any>): TraceContext {
         return NoopTraceContext()
     }
 
