@@ -74,7 +74,6 @@ import net.corda.virtualnode.rest.impl.status.CacheLoadCompleteEvent
 import net.corda.virtualnode.rest.impl.status.VirtualNodeStatusCacheService
 import net.corda.virtualnode.rest.impl.validation.VirtualNodeValidationService
 import net.corda.virtualnode.rest.impl.validation.impl.VirtualNodeValidationServiceImpl
-import net.corda.virtualnode.write.db.SchemaSqlReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -93,7 +92,6 @@ internal class VirtualNodeRestResourceImpl(
     private val cpiInfoReadService: CpiInfoReadService,
     private val virtualNodeStatusCacheService: VirtualNodeStatusCacheService,
     private val platformInfoProvider: PlatformInfoProvider,
-    private val schemaSqlReadService: SchemaSqlReadService,
     private val requestFactory: RequestFactory,
     private val clock: Clock,
     private val virtualNodeValidationService: VirtualNodeValidationService,
@@ -117,8 +115,6 @@ internal class VirtualNodeRestResourceImpl(
         virtualNodeStatusCacheService: VirtualNodeStatusCacheService,
         @Reference(service = PlatformInfoProvider::class)
         platformInfoProvider: PlatformInfoProvider,
-        @Reference(service = SchemaSqlReadService::class)
-        schemaSqlReadService: SchemaSqlReadService
     ) : this(
         coordinatorFactory,
         configurationReadService,
@@ -127,7 +123,6 @@ internal class VirtualNodeRestResourceImpl(
         cpiInfoReadService,
         virtualNodeStatusCacheService,
         platformInfoProvider,
-        schemaSqlReadService,
         RequestFactoryImpl(
             RestContextProviderImpl(),
             UTCClock()
@@ -157,7 +152,6 @@ internal class VirtualNodeRestResourceImpl(
         ::virtualNodeInfoReadService,
         ::cpiInfoReadService,
         ::virtualNodeStatusCacheService,
-        ::schemaSqlReadService
     )
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator(
@@ -209,7 +203,6 @@ internal class VirtualNodeRestResourceImpl(
                     }
 
                     virtualNodeStatusCacheService.onConfiguration(messagingConfig)
-                    schemaSqlReadService.initialise(messagingConfig)
                 }
             }
 
@@ -374,19 +367,19 @@ internal class VirtualNodeRestResourceImpl(
     }
 
     override fun getCreateCryptoSchemaSQL(): String {
-        return schemaSqlReadService.getSchemaSql("crypto")
+        TODO()
     }
 
     override fun getCreateUniquenessSchemaSQL(): String {
-        return schemaSqlReadService.getSchemaSql("uniqueness")
+        TODO()
     }
 
     override fun getCreateVaultSchemaSQL(cpiChecksum: String): String {
-        return schemaSqlReadService.getSchemaSql("vault", cpiChecksum = cpiChecksum)
+        TODO()
     }
 
     override fun getUpdateSchemaSQL(virtualNodeShortId: String, newCpiChecksum: String): String {
-        return schemaSqlReadService.getSchemaSql("vault", virtualNodeShortId, newCpiChecksum)
+        TODO()
     }
 
     private fun sendAsynchronousRequest(
