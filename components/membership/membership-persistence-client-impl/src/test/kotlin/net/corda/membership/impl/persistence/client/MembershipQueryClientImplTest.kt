@@ -417,7 +417,7 @@ class MembershipQueryClientImplTest {
     }
 
     @Test
-    fun `Response timestamp before request timestamp causes failed response`() {
+    fun `Response timestamp over two minutes before request timestamp causes failed response`() {
         postConfigChangedEvent()
         mockPersistenceResponse(
             MemberInfoQueryResponse(emptyList()),
