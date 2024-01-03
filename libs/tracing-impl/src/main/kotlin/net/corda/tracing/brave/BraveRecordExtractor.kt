@@ -22,7 +22,7 @@ class BraveRecordExtractor(tracing: Tracing) {
     )
 
     // Extracts the trace context based on the headers provided
-    fun extract(headers: List<Pair<String, String>>): TraceContextOrSamplingFlags? {
+    fun extract(headers: List<Pair<String, String>>): TraceContextOrSamplingFlags {
         return recordExtractorListFormat.extract(headers)
     }
 
