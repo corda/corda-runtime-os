@@ -1,18 +1,16 @@
 package net.corda.messaging.subscription
 
-import net.corda.avro.serialization.CordaAvroDeserializer
+import  net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.messaging.api.exception.CordaTransientServerException
 import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
 import net.corda.rest.ResponseCode
 import net.corda.web.api.Endpoint
 import net.corda.web.api.HTTPMethod
-import net.corda.web.api.WebContext
 import net.corda.web.api.WebHandler
 import net.corda.web.api.WebServer
 import org.slf4j.LoggerFactory
@@ -84,11 +82,11 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                 return@WebHandler context
             }
 
-                val response = try {
-                    processor.process(payload)
-                } catch (ex: Exception) {
-                    return@WebHandler handleProcessorException(endpoint, ex, context)
-                }
+            val response = try {
+                processor.process(payload)
+            } catch (ex: Exception) {
+                return@WebHandler handleProcessorException(log, endpoint, ex, context)
+            }
 
             // assume a null response is no response and return a zero length byte array
             if (response == null) {
@@ -110,30 +108,5 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         val addedEndpoint = Endpoint(HTTPMethod.POST, rpcEndpoint, webHandler, true)
         server.registerEndpoint(addedEndpoint)
         endpoint = addedEndpoint
-    }
-
-    private fun handleProcessorException(
-        endpoint: Endpoint,
-        ex: Exception,
-        context: WebContext
-    ): WebContext {
-        when (ex) {
-            is CordaTransientServerException -> {
-                ex.message ?: "Transient error processing request ${ex.requestId}".also { msg ->
-                    log.warn(msg, ex)
-                    context.result(msg)
-                }
-                context.status(ResponseCode.SERVICE_UNAVAILABLE)
-            }
-
-            else -> {
-                "Failed to process RPC request for $endpoint".also { message ->
-                    log.warn(message, ex)
-                    context.result(message)
-                }
-                context.status(ResponseCode.INTERNAL_SERVER_ERROR)
-            }
-        }
-        return context
     }
 }
