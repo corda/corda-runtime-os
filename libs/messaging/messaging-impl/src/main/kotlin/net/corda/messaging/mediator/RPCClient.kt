@@ -74,7 +74,7 @@ class RPCClient(
         val deserializedResponse = deserializePayload(response.body())
 
         // Convert the response to an instance of the MediatorMessage class and enrich the instance with a trace context
-        return deserializedResponse?.let{
+        return deserializedResponse?.let {
             addTraceContextToMediatorMessage(
                 MediatorMessage(deserializedResponse, mutableMapOf("statusCode" to response.statusCode())),
                 message.properties
