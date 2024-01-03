@@ -93,8 +93,8 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                         addTraceContextToRecord(
                             Record(
                                 "",
-                                key,
-                                reply
+                                event.key,
+                                reply.payload
                             ),
                             message.properties
                         ) as Record<K, E>
