@@ -280,6 +280,9 @@ class MerkleTreeImpl(
  */
 fun renderTree(leafLabels: List<String>, nodeLabels: Map<Pair<Int, Int>, String> = emptyMap()): String {
     val treeSize = leafLabels.size
+
+    // loop variable: the leaf range values at the current level, starting at the bottom where each
+    // leaf range will be a single leaf
     var values: MutableList<Pair<Int, Int>> = (0 until treeSize).map { it to it }.toMutableList()
     val levels: MutableList<List<Pair<Int, Int>>> = mutableListOf(values.toList())
     while (values.size > 1) {
@@ -300,19 +303,27 @@ fun renderTree(leafLabels: List<String>, nodeLabels: Map<Pair<Int, Int>, String>
         check(newValues.size < values.size)
         values = newValues
     }
-    val grid: MutableMap<Pair<Int, Int>, Char> = mutableMapOf()
 
+    // work out where the nodes go
+    val nodeYCoordinates = mutableMapOf<Pair<Int, Int>, Int>() // map from (x,y) coordinates where nodes appear to their index at that level
+    for (x in 0 until levels.size) {
+        for (rangeIndex in 0 until levels[x].size) {
+            nodeYCoordinates[levels.size - x - 1 to levels[x][rangeIndex].first] = rangeIndex
+        }
+    }
+    // make a grid of box characters to show the tree structure
+    val grid: MutableMap<Pair<Int, Int>, Char> = mutableMapOf()
+    // first draw the horizontal dash structure
     levels.forEachIndexed { level, ranges ->
         ranges.forEach { range ->
             val x = levels.size - level - 1
             grid.put(x to range.first, '━')
         }
     }
-    val nodeYCoordinates = mutableMapOf<Pair<Int, Int>, Int>() // map from (x,y) coordinates where nodes appear to their index at that level
+    // now draw the vertical lines on to the grid, and make a note of where the nodes go
     levels.forEachIndexed { level, ranges ->
-        ranges.withIndex().forEach { (rangeIndex, range) ->
+        ranges.forEach { range ->
             val x = levels.size - level - 1
-            nodeYCoordinates[x to range.first] = rangeIndex
             if (range.first != range.second) {
                 val extent = if (level > 0) {
                     val nextLevel = levels[level - 1]
@@ -333,12 +344,14 @@ fun renderTree(leafLabels: List<String>, nodeLabels: Map<Pair<Int, Int>, String>
             }
         }
     }
+    // work out how much space to leave for node label columns
     val longestLabels = (0..values.size + 1).map { x ->
         (0 until treeSize).map { y ->
             (nodeLabels.get(x to y) ?: "").length
         }.max()
     }
-    val lines = (0 until treeSize).map { y ->
+    // work out the lines as strings, using the box characters and alavel
+    val lines: List<String> = (0 until treeSize).map { y ->
         val line = (0..values.size + 1).map { x ->
             // x is the level of the tree, so x=0 is the top node
             // work out how many nodes across at the current level of the tree we are at, or -1 if we aren't at a node
@@ -348,6 +361,6 @@ fun renderTree(leafLabels: List<String>, nodeLabels: Map<Pair<Int, Int>, String>
         val label: String = leafLabels.getOrNull(y) ?: ""
         "${line.joinToString("")}$label"
     }
-
+    // return the whole tree as a single string
     return lines.joinToString("\n")
 }
