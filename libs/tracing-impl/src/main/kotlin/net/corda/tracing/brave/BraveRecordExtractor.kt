@@ -16,16 +16,18 @@ class BraveRecordExtractor(tracing: Tracing) {
     )
 
     // Headers can be stored in any format. This instance contains the logic to extract the trace headers from a
-    // mutable map
-    private val recordExtractorMutableMapFormat = tracing.propagation().extractor(
+    // map
+    private val recordExtractorMapFormat = tracing.propagation().extractor(
         Propagation.Getter<Map<String, Any>, String> { headers, key -> headers[key] as String? }
     )
 
+    // Extracts the trace context based on the headers provided
     fun extract(headers: List<Pair<String, String>>): TraceContextOrSamplingFlags? {
         return recordExtractorListFormat.extract(headers)
     }
 
+    // Extracts the trace context based on the headers provided
     fun extract(headers: Map<String, Any>): TraceContextOrSamplingFlags? {
-        return recordExtractorMutableMapFormat.extract(headers)
+        return recordExtractorMapFormat.extract(headers)
     }
 }
