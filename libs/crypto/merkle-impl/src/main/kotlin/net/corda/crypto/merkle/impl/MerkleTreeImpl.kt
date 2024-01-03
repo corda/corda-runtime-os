@@ -247,7 +247,7 @@ class MerkleTreeImpl(
                 hashes[x to y] =  (hash?.toString()?:"").substringAfter(":").take(8).lowercase()
             }
         }
-        return renderTree(leaves.size, leaves.map { " " + it.joinToString(separator = "") { b -> "%02x".format(b) } }, hashes)
+        return renderTree(leaves.size, leaves.map { " " + it.joinToString(separator = ":") { b -> "%02x".format(b) } }, hashes)
     }
 }
 
@@ -282,9 +282,11 @@ fun renderTree(treeSize: Int, des: List<String>, labels: Map<Pair<Int, Int>, Str
             grid.put(x to range.first, '━')
         }
     }
+    val nodeYCoordinates = mutableMapOf<Pair<Int, Int>, Int>() // map from (x,y) coordinates where nodes appear to their index at that level
     levels.forEachIndexed { level, ranges ->
-        ranges.forEach { range ->
+        ranges.withIndex().forEach { (rangeIndex, range) ->
             val x = levels.size - level - 1
+            nodeYCoordinates[x to range.first] = rangeIndex
             if (range.first != range.second) {
                 val extent = if (level > 0) {
                     val nextLevel = levels[level - 1]
@@ -306,6 +308,7 @@ fun renderTree(treeSize: Int, des: List<String>, labels: Map<Pair<Int, Int>, Str
         }
     }
 
+    println("node Y coordinates ${nodeYCoordinates}")
     val longestLabels = (0..values.size + 1).map { x ->
         (0 until treeSize).map { y ->
             (labels.get(x to y) ?: "").length
@@ -314,7 +317,10 @@ fun renderTree(treeSize: Int, des: List<String>, labels: Map<Pair<Int, Int>, Str
     println("longest labels $longestLabels")
     val lines = (0 until treeSize).map { y ->
         val line = (0..values.size + 1).map { x ->
-            "${labels[x to y]?.padEnd(longestLabels[x], ' ')?:(" ".repeat(longestLabels[x]))}${grid.getOrDefault(x to y, ' ')}"
+            // x is the level of the tree, so x=0 is the top node
+            // work out how many nodes across at the current level of the tree we are at, or -1 if we aren't at a node
+            val nodeIndex = nodeYCoordinates.get(x to y)?:-1
+            "${labels[x to nodeIndex]?.padEnd(longestLabels[x], ' ')?:(" ".repeat(longestLabels[x]))}${grid.getOrDefault(x to y, ' ')}"
         }
         val label: String = des.getOrNull(y) ?: ""
         "${line.joinToString("")}$label"
