@@ -362,13 +362,7 @@ class MerkleTreeTest {
         for (i in 1 until (1 shl treeSize)) {
             val leafIndicesCombination = (0 until treeSize).filter { (i and (1 shl it)) != 0 }
             testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize).also {
-
-                val leafLabels = (0 until merkleTree.leaves.size).map { y ->
-                    val caption = if (y in leafIndicesCombination) "known data" else "gap"
-                    " $y $caption"
-                }
-                val rootHash = it.calculateRoot(trivialHashDigestProvider).toString()
-                println(renderTree(leafLabels, mapOf((0 to 0) to rootHash.substringAfter(":") + " ")))
+                println(it.toString())
 
                 val hashes = calculateLeveledHashes(it, trivialHashDigestProvider)
 
@@ -379,11 +373,18 @@ class MerkleTreeTest {
 
                 if (i == 1 && treeSize == 1) {
                     assertThat(hashes).hasSize(0)
+                    assertThat(it.toString()).isEqualToIgnoringWhitespace("""
+                        ━  0 known data
+                    """)
                 }
                 if (i == 1 && treeSize == 2) {
                     assertThat(hashes).hasSize(1)
                     assertHash(hashes[0].hash, "00000001")
                     assertThat(hashes[0].level).isEqualTo(0)
+                    assertThat(it.toString()).isEqualToIgnoringWhitespace("""
+                        ┳━ 0 known data
+                        ┗━ 1 gap
+                    """.trimIndent())
                 }
 
                 if (i == 42 && treeSize == 6) {
@@ -392,6 +393,14 @@ class MerkleTreeTest {
                         arrayListOf("00000000", "00000002", "00000004")
                     )
                     assertThat(hashes.map { it.level }).isEqualTo(arrayListOf(2, 2, 2))
+                    assertThat(it.toString()).isEqualToIgnoringWhitespace("""
+                        ┳┳┳0 gap
+                        ┃┃┗1 known data
+                        ┃┗┳2 gap
+                        ┃ ┗3 known data
+                        ┗━┳4 gap
+                          ┗5 known data
+                    """.trimIndent())
                 }
             }
         }

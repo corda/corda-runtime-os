@@ -231,4 +231,8 @@ class MerkleProofImpl(
     override fun getLeaves() = leaves
 
     override fun getHashes() = hashes
+
+    override fun toString(): String = renderTree( (0 until treeSize).map {
+            "$it "+(if (it in getLeaves().map { l -> l.index }) "known data" else "gap")
+        })
 }
