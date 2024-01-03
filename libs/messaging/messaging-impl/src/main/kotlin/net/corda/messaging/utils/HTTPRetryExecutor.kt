@@ -14,11 +14,11 @@ class HTTPRetryExecutor {
 
         fun <T> withConfig(config: HTTPRetryConfig, block: () -> HttpResponse<T>): HttpResponse<T> {
             var currentDelay = config.initialDelay
-            for (attempt in 0 until config.maxRetries) {
-                val result = tryAttempt(attempt, config, block)
+            for (i in 0 until config.times) {
+                val result = tryAttempt(i, config, block)
                 if (result != null) return result
 
-                log.trace { "Attempt #${attempt + 1} failed. Retrying in $currentDelay ms..." }
+                log.trace { "Attempt #${i + 1} failed. Retrying in $currentDelay ms..." }
                 Thread.sleep(currentDelay)
                 currentDelay = (currentDelay * config.factor).toLong()
             }
@@ -28,26 +28,26 @@ class HTTPRetryExecutor {
             throw CordaRuntimeException(errorMsg)
         }
 
-        private fun <T> tryAttempt(attempt: Int, config: HTTPRetryConfig, block: () -> HttpResponse<T>): HttpResponse<T>? {
+        private fun <T> tryAttempt(i: Int, config: HTTPRetryConfig, block: () -> HttpResponse<T>): HttpResponse<T>? {
             return try {
-                log.trace { "HTTPRetryExecutor making attempt #${attempt + 1}." }
+                log.trace { "HTTPRetryExecutor making attempt #${i + 1}." }
                 val result = block()
                 checkResponseStatus(result.statusCode())
-                log.trace { "Operation successful after #${attempt + 1} attempt/s." }
+                log.trace { "Operation successful after #${i + 1} attempt/s." }
                 result
             } catch (e: Exception) {
-                handleException(attempt, config, e)
+                handleException(i, config, e)
                 null
             }
         }
 
         private fun handleException(attempt: Int, config: HTTPRetryConfig, e: Exception) {
-            val isFinalAttempt = attempt == config.maxRetries - 1
+            val isFinalAttempt = attempt == config.times - 1
             val isRetryable = config.retryOn.any { it.isInstance(e) }
 
             if (!isRetryable || isFinalAttempt) {
                 val errorMsg = when {
-                    isFinalAttempt -> "Operation failed after ${config.maxRetries} attempts."
+                    isFinalAttempt -> "Operation failed after ${config.times} attempts."
                     else -> "HTTPRetryExecutor caught a non-retryable exception: ${e.message}"
                 }
                 log.trace { errorMsg }

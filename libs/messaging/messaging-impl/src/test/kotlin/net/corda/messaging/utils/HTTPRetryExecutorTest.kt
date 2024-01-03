@@ -15,7 +15,7 @@ class HTTPRetryExecutorTest {
     @BeforeEach
     fun setUp() {
         retryConfig = HTTPRetryConfig.Builder()
-            .maxRetries(3)
+            .times(3)
             .initialDelay(100)
             .factor(2.0)
             .retryOn(RuntimeException::class.java)
@@ -70,7 +70,7 @@ class HTTPRetryExecutorTest {
     @Test
     fun `should not retry on non-retryable exception`() {
         val config = HTTPRetryConfig.Builder()
-            .maxRetries(3)
+            .times(3)
             .initialDelay(100)
             .factor(2.0)
             .retryOn(SpecificException::class.java)
@@ -88,7 +88,7 @@ class HTTPRetryExecutorTest {
         val mockResponse: HttpResponse<String> = mock()
         whenever(mockResponse.body()).thenReturn("Success on attempt 3")
         val config = HTTPRetryConfig.Builder()
-            .maxRetries(3)
+            .times(3)
             .initialDelay(100)
             .factor(2.0)
             .retryOn(SpecificException::class.java)
