@@ -40,7 +40,7 @@ class AuthenticationProtocolFailureTest {
         partyAMaxMessageSize,
         partyASessionKey.public,
         groupId,
-        CertificateCheckMode.NoCertificate
+        CertificateCheckMode.NoCertificate,
     )
 
     // party B
@@ -80,16 +80,18 @@ class AuthenticationProtocolFailureTest {
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(
             partyBSessionKey.public,
             null,
-            signingCallbackForA
+            signingCallbackForA,
         )
 
         val modifiedInitiatorHandshakeMessage = InitiatorHandshakeMessage(
             initiatorHandshakeMessage.header,
-            ByteBuffer.wrap(initiatorHandshakeMessage.encryptedData.array() + "0".toByte()), initiatorHandshakeMessage.authTag
+            ByteBuffer.wrap(initiatorHandshakeMessage.encryptedData.array() + "0".toByte()),
+            initiatorHandshakeMessage.authTag,
         )
         assertThatThrownBy {
             authenticationProtocolB.validatePeerHandshakeMessage(
-                modifiedInitiatorHandshakeMessage, listOf(partyASessionKey.public to SignatureSpecs.ECDSA_SHA256)
+                modifiedInitiatorHandshakeMessage,
+                listOf(partyASessionKey.public to SignatureSpecs.ECDSA_SHA256),
             )
         }
             .isInstanceOf(InvalidHandshakeMessageException::class.java)
@@ -118,12 +120,13 @@ class AuthenticationProtocolFailureTest {
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(
             partyBSessionKey.public,
             null,
-            signingCallbackForA
+            signingCallbackForA,
         )
 
         assertThatThrownBy {
             authenticationProtocolB.validatePeerHandshakeMessage(
-                initiatorHandshakeMessage, listOf(partyASessionKey.public to SignatureSpecs.ECDSA_SHA256)
+                initiatorHandshakeMessage,
+                listOf(partyASessionKey.public to SignatureSpecs.ECDSA_SHA256),
             )
         }
             .isInstanceOf(InvalidHandshakeMessageException::class.java)
@@ -154,11 +157,12 @@ class AuthenticationProtocolFailureTest {
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(
             partyBSessionKey.public,
             null,
-            signingCallbackForA
+            signingCallbackForA,
         )
         assertThatThrownBy {
             authenticationProtocolB.validatePeerHandshakeMessage(
-                initiatorHandshakeMessage, listOf(wrongPublicKey to SignatureSpecs.ECDSA_SHA256)
+                initiatorHandshakeMessage,
+                listOf(wrongPublicKey to SignatureSpecs.ECDSA_SHA256),
             )
         }
             .isInstanceOf(WrongPublicKeyHashException::class.java)
@@ -187,7 +191,7 @@ class AuthenticationProtocolFailureTest {
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(
             partyBSessionKey.public,
             null,
-            signingCallbackForA
+            signingCallbackForA,
         )
 
         authenticationProtocolB.validatePeerHandshakeMessage(
@@ -198,7 +202,7 @@ class AuthenticationProtocolFailureTest {
         authenticationProtocolB.validateEncryptedExtensions(
             CertificateCheckMode.NoCertificate,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
-            aliceX500Name
+            aliceX500Name,
         )
 
         // Step 4: responder creating different signature than the one expected.
@@ -210,12 +214,14 @@ class AuthenticationProtocolFailureTest {
         val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(
             partyBSessionKey.public,
             null,
-            signingCallbackForB
+            signingCallbackForB,
         )
 
         assertThatThrownBy {
             authenticationProtocolA.validatePeerHandshakeMessage(
-                responderHandshakeMessage, aliceX500Name, listOf(partyBSessionKey.public to SignatureSpecs.ECDSA_SHA256)
+                responderHandshakeMessage,
+                aliceX500Name,
+                listOf(partyBSessionKey.public to SignatureSpecs.ECDSA_SHA256),
             )
         }
             .isInstanceOf(InvalidHandshakeMessageException::class.java)
@@ -229,7 +235,7 @@ class AuthenticationProtocolFailureTest {
             partyAMaxMessageSize,
             partyASessionKey.public,
             sessionId,
-            CertificateCheckMode.NoCertificate
+            CertificateCheckMode.NoCertificate,
         )
         val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, partyBMaxMessageSize)
 
@@ -254,19 +260,19 @@ class AuthenticationProtocolFailureTest {
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(
             partyBSessionKey.public,
             null,
-            signingCallbackForA
+            signingCallbackForA,
         )
 
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
-            listOf(partyASessionKey.public to SignatureSpecs.ECDSA_SHA256)
+            listOf(partyASessionKey.public to SignatureSpecs.ECDSA_SHA256),
         )
 
         assertThrows<NoCommonModeError> {
             authenticationProtocolB.validateEncryptedExtensions(
                 CertificateCheckMode.NoCertificate,
                 setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
-                aliceX500Name
+                aliceX500Name,
             )
         }
     }
@@ -282,8 +288,8 @@ class AuthenticationProtocolFailureTest {
             partyAMaxMessageSize,
             partyASessionKey.public,
             sessionId,
-            certCheckMode
-        ) { _, _, _, -> certificateValidator }
+            certCheckMode,
+        ) { _, _, _ -> certificateValidator }
         val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, partyBMaxMessageSize)
         whenever(certificateValidator.validate(any(), any(), any()))
             .thenThrow(InvalidPeerCertificate("Invalid peer certificate"))
@@ -309,11 +315,11 @@ class AuthenticationProtocolFailureTest {
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(
             partyBSessionKey.public,
             ourCertificates,
-            signingCallbackForA
+            signingCallbackForA,
         )
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
-            listOf(partyASessionKey.public to SignatureSpecs.ECDSA_SHA256)
+            listOf(partyASessionKey.public to SignatureSpecs.ECDSA_SHA256),
         )
         assertThrows<InvalidPeerCertificate> {
             authenticationProtocolB.validateEncryptedExtensions(certCheckMode, setOf(ProtocolMode.AUTHENTICATION_ONLY), aliceX500Name)
@@ -332,9 +338,9 @@ class AuthenticationProtocolFailureTest {
             partyAMaxMessageSize,
             partyASessionKey.public,
             sessionId,
-            certCheckMode
-        ) { _, _, _, -> certificateValidator }
-        val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, partyBMaxMessageSize) { _, _, _, ->
+            certCheckMode,
+        ) { _, _, _ -> certificateValidator }
+        val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, partyBMaxMessageSize) { _, _, _ ->
             certificateValidatorResponder
         }
         whenever(certificateValidator.validate(any(), any(), any())).thenThrow(InvalidPeerCertificate(""))
@@ -360,7 +366,7 @@ class AuthenticationProtocolFailureTest {
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(
             partyBSessionKey.public,
             ourCertificates,
-            signingCallbackForA
+            signingCallbackForA,
         )
 
         authenticationProtocolB.validatePeerHandshakeMessage(
@@ -378,15 +384,16 @@ class AuthenticationProtocolFailureTest {
         val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(
             partyBSessionKey.public,
             ourCertificates,
-            signingCallbackForB
+            signingCallbackForB,
         )
 
         assertThrows<InvalidPeerCertificate> {
             authenticationProtocolA.validatePeerHandshakeMessage(
-                responderHandshakeMessage, aliceX500Name, listOf(partyBSessionKey.public to SignatureSpecs.ECDSA_SHA256)
+                responderHandshakeMessage,
+                aliceX500Name,
+                listOf(partyBSessionKey.public to SignatureSpecs.ECDSA_SHA256),
             )
         }
-
     }
 
     @Test
@@ -399,9 +406,9 @@ class AuthenticationProtocolFailureTest {
             partyAMaxMessageSize,
             partyASessionKey.public,
             sessionId,
-            CertificateCheckMode.NoCertificate
+            CertificateCheckMode.NoCertificate,
         )
-        val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, partyBMaxMessageSize) { _, _, _, -> certificateValidator }
+        val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, partyBMaxMessageSize) { _, _, _ -> certificateValidator }
 
         // Step 1: initiator sending hello message to responder.
         val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
@@ -424,7 +431,7 @@ class AuthenticationProtocolFailureTest {
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(
             partyBSessionKey.public,
             null,
-            signingCallbackForA
+            signingCallbackForA,
         )
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
@@ -447,8 +454,8 @@ class AuthenticationProtocolFailureTest {
             partyAMaxMessageSize,
             partyASessionKey.public,
             sessionId,
-            certCheckMode
-        ) { _, _, _, -> certificateValidator }
+            certCheckMode,
+        ) { _, _, _ -> certificateValidator }
         val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, partyBMaxMessageSize)
 
         // Step 1: initiator sending hello message to responder.
@@ -472,7 +479,7 @@ class AuthenticationProtocolFailureTest {
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(
             partyBSessionKey.public,
             ourCertificates,
-            signingCallbackForA
+            signingCallbackForA,
         )
 
         authenticationProtocolB.validatePeerHandshakeMessage(
@@ -482,7 +489,7 @@ class AuthenticationProtocolFailureTest {
         authenticationProtocolB.validateEncryptedExtensions(
             CertificateCheckMode.NoCertificate,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
-            aliceX500Name
+            aliceX500Name,
         )
 
         // Step 4: responder sending handshake message and initiator validating it.
@@ -494,14 +501,15 @@ class AuthenticationProtocolFailureTest {
         val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(
             partyBSessionKey.public,
             null,
-            signingCallbackForB
+            signingCallbackForB,
         )
 
         assertThrows<InvalidPeerCertificate> {
             authenticationProtocolA.validatePeerHandshakeMessage(
-                responderHandshakeMessage, aliceX500Name, listOf(partyBSessionKey.public to SignatureSpecs.ECDSA_SHA256)
+                responderHandshakeMessage,
+                aliceX500Name,
+                listOf(partyBSessionKey.public to SignatureSpecs.ECDSA_SHA256),
             )
         }
-
     }
 }
