@@ -10,6 +10,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.ConsumerProcessorState
 import net.corda.messaging.mediator.StateManagerHelper
+import net.corda.tracing.addTraceContextToRecord
 
 /**
  * Class to process records received from the consumer.
@@ -71,28 +72,33 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         output.forEach { message ->
             val destination = messageRouter.getDestination(message)
             if (destination.type == RoutingDestination.Type.ASYNCHRONOUS) {
+                // Kafka - Add the request to the queue, so it can be processed in due course
                 consumerProcessorState.asynchronousOutputs.compute(key) { _, value ->
                     val list = value ?: mutableListOf()
                     list.add(message)
                     list
                 }
             } else {
+                // Http - Send the request immediately. Once the response arrives convert it to a kafka record and
+                // add it to the queue, so it can be processed in due course
                 @Suppress("UNCHECKED_CAST")
-                val reply = with(destination) {
+                val httpResponse = with(destination) {
                     message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
                     client.send(message) as MediatorMessage<E>?
                 }
-                if (reply != null) {
-                    queue.addLast(
-                        Record(
-                            "",
-                            event.key,
-                            reply.payload,
-                        )
-                    )
+                if (httpResponse != null) {
+                    // Convert response and add it to the queue
+                    val httpResponseAsRecord = httpResponse.asRecord(event.key)
+                    @Suppress("UNCHECKED_CAST")
+                    queue.addLast(addTraceContextToRecord(httpResponseAsRecord, message.properties) as Record<K, E>)
                 }
             }
         }
+    }
+
+    private fun <K : Any, E : Any> MediatorMessage<E>.asRecord(key: K): Record<K, E> {
+        // Convert reply into a record and added to the queue, so it can be processed later on
+        return Record("", key, payload)
     }
 
     /**
