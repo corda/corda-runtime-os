@@ -1,6 +1,6 @@
 package net.corda.messaging.utils
 
-import net.corda.messaging.api.exception.CordaTransientServerException
+import net.corda.messaging.api.exception.CordaHTTPServerTransientException
 import net.corda.rest.ResponseCode
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.web.api.Endpoint
@@ -20,7 +20,7 @@ class SyncRPCUtilsKtTest {
 
     @Test
     fun `handleProcessorException handles transient exceptions with service unavailable`() {
-        val e = CordaTransientServerException("req", Exception("inner"))
+        val e = CordaHTTPServerTransientException("req", Exception("inner"))
 
         handleProcessorException(
             log,

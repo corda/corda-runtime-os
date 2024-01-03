@@ -6,7 +6,7 @@ import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
-import net.corda.messaging.api.exception.CordaTransientServerException
+import net.corda.messaging.api.exception.CordaHTTPServerTransientException
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.exceptions.KafkaMessageSizeException
 import net.corda.persistence.common.exceptions.MissingAccountContextPropertyException
@@ -45,7 +45,7 @@ class ResponseFactoryImpl @VisibleForTesting internal constructor(
 
     override fun errorResponse(externalEventContext : ExternalEventContext, exception: Exception) = when (exception) {
         is CpkNotAvailableException, is VirtualNodeException -> {
-            throw CordaTransientServerException(externalEventContext.requestId, exception)
+            throw CordaHTTPServerTransientException(externalEventContext.requestId, exception)
         }
         is NotSerializableException, is NullParameterException -> {
             platformErrorResponse(externalEventContext, exception)
@@ -57,7 +57,7 @@ class ResponseFactoryImpl @VisibleForTesting internal constructor(
             when (persistenceExceptionCategorizer.categorize(exception)) {
                 PersistenceExceptionType.FATAL -> fatalErrorResponse(externalEventContext, exception)
                 PersistenceExceptionType.PLATFORM -> platformErrorResponse(externalEventContext, exception)
-                PersistenceExceptionType.TRANSIENT -> throw CordaTransientServerException(externalEventContext.requestId, exception)
+                PersistenceExceptionType.TRANSIENT -> throw CordaHTTPServerTransientException(externalEventContext.requestId, exception)
             }
         }
         else -> {

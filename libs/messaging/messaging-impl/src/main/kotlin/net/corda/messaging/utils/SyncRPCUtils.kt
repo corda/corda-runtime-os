@@ -1,6 +1,6 @@
 package net.corda.messaging.utils
 
-import net.corda.messaging.api.exception.CordaTransientServerException
+import net.corda.messaging.api.exception.CordaHTTPServerTransientException
 import net.corda.rest.ResponseCode
 import net.corda.web.api.Endpoint
 import net.corda.web.api.WebContext
@@ -13,7 +13,7 @@ fun handleProcessorException(
     context: WebContext
 ): WebContext {
     when (ex) {
-        is CordaTransientServerException -> {
+        is CordaHTTPServerTransientException -> {
             "Transient error processing RPC request for $endpoint: ${ex.message}".also { msg ->
                 log.warn(msg, ex)
                 context.result(msg)

@@ -5,7 +5,7 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
-import net.corda.messaging.api.exception.CordaTransientServerException
+import net.corda.messaging.api.exception.CordaHTTPServerTransientException
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.exceptions.KafkaMessageSizeException
 import net.corda.persistence.common.exceptions.MissingAccountContextPropertyException
@@ -148,7 +148,7 @@ class ResponseFactoryImplTest {
                 Transient server exception while processing request '${FLOW_EXTERNAL_EVENT_CONTEXT.requestId}'. Cause: ${exception.message}
             """.trimIndent()
 
-        val e = assertThrows<CordaTransientServerException> {
+        val e = assertThrows<CordaHTTPServerTransientException> {
             responseFactory.errorResponse(FLOW_EXTERNAL_EVENT_CONTEXT, exception)
         }
 
