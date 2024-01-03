@@ -56,14 +56,14 @@ fun addTraceContextToRecord(
     return record.copy(
         headers = TracingState.currentTraceService.addTraceHeaders(
             record.headers,
-            emptyList()
+            emptyList() // Don't override the current trace context
         )
     )
 }
 
 fun addTraceContextToRecord(
     record: Record<*, *>,
-    traceHeadersToOverrideContext: MutableMap<String, Any> = mutableMapOf()
+    traceHeadersToOverrideContext: Map<String, Any> = emptyMap() // By default, don't override the current trace context
 ): Record<out Any, out Any> {
     return record.copy(
         headers = TracingState.currentTraceService.addTraceHeaders(
@@ -75,7 +75,7 @@ fun addTraceContextToRecord(
 
 fun addTraceContextToRecord(
     record: CordaProducerRecord<*, *>,
-    traceHeadersToOverrideContext: MutableMap<String, Any> = mutableMapOf()
+    traceHeadersToOverrideContext: Map<String, Any> = emptyMap() // By default, don't override the current trace context
 ): CordaProducerRecord<out Any, out Any> {
     return record.copy(headers = TracingState.currentTraceService.addTraceHeaders(record.headers, traceHeadersToOverrideContext))
 }
