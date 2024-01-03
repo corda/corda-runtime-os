@@ -13,6 +13,8 @@ import net.corda.data.virtualnode.VirtualNodeOperationStatus
 import net.corda.data.virtualnode.VirtualNodeOperationStatusRequest
 import net.corda.data.virtualnode.VirtualNodeOperationStatusResponse
 import net.corda.data.virtualnode.VirtualNodeOperationalState
+import net.corda.data.virtualnode.VirtualNodeSchemaRequest
+import net.corda.data.virtualnode.VirtualNodeSchemaResponse
 import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.data.virtualnode.VirtualNodeUpdateDbStatusResponse
@@ -91,14 +93,15 @@ internal class VirtualNodeRestResourceImpl(
     private val virtualNodeSenderFactory: VirtualNodeSenderFactory,
     private val cpiInfoReadService: CpiInfoReadService,
     private val virtualNodeStatusCacheService: VirtualNodeStatusCacheService,
-    private val platformInfoProvider: PlatformInfoProvider,
     private val requestFactory: RequestFactory,
     private val clock: Clock,
     private val virtualNodeValidationService: VirtualNodeValidationService,
     private val restContextProvider: RestContextProvider,
     private val messageConverter: MessageConverter,
+    private val platformInfoProvider: PlatformInfoProvider
 ) : VirtualNodeRestResource, PluggableRestResource<VirtualNodeRestResource>, Lifecycle {
 
+    @Suppress("Unused")
     @Activate
     constructor(
         @Reference(service = LifecycleCoordinatorFactory::class)
@@ -114,7 +117,7 @@ internal class VirtualNodeRestResourceImpl(
         @Reference(service = VirtualNodeStatusCacheService::class)
         virtualNodeStatusCacheService: VirtualNodeStatusCacheService,
         @Reference(service = PlatformInfoProvider::class)
-        platformInfoProvider: PlatformInfoProvider,
+        platformInfoProvider: PlatformInfoProvider
     ) : this(
         coordinatorFactory,
         configurationReadService,
@@ -122,7 +125,6 @@ internal class VirtualNodeRestResourceImpl(
         virtualNodeSenderFactory,
         cpiInfoReadService,
         virtualNodeStatusCacheService,
-        platformInfoProvider,
         RequestFactoryImpl(
             RestContextProviderImpl(),
             UTCClock()
@@ -131,6 +133,7 @@ internal class VirtualNodeRestResourceImpl(
         VirtualNodeValidationServiceImpl(virtualNodeInfoReadService, cpiInfoReadService),
         RestContextProviderImpl(),
         MessageConverterImpl(ExternalMessagingRouteConfigSerializerImpl()),
+        platformInfoProvider
     )
 
     private companion object {
@@ -151,7 +154,7 @@ internal class VirtualNodeRestResourceImpl(
         ::configurationReadService,
         ::virtualNodeInfoReadService,
         ::cpiInfoReadService,
-        ::virtualNodeStatusCacheService,
+        ::virtualNodeStatusCacheService
     )
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator(
@@ -367,7 +370,32 @@ internal class VirtualNodeRestResourceImpl(
     }
 
     override fun getCreateCryptoSchemaSQL(): String {
-        TODO()
+        val instant = clock.instant()
+
+        // Send request for update to kafka, precessed by the db worker in VirtualNodeWriterProcessor
+        val rpcRequest = VirtualNodeManagementRequest(
+            instant,
+            VirtualNodeSchemaRequest(
+                "crypto",
+                null,
+                null
+            )
+        )
+        // Actually send request and await response message on bus
+        val resp = tryWithExceptionHandling(logger, "Update vNode state") {
+            sendAndReceive(rpcRequest)
+        }
+
+        return when (val resolvedResponse = resp.responseType) {
+            is VirtualNodeSchemaResponse -> {
+                resolvedResponse.run {
+                    schemaSql
+                }
+            }
+
+            is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)
+            else -> throw UnknownResponseTypeException(resp.responseType::class.java.name)
+        }
     }
 
     override fun getCreateUniquenessSchemaSQL(): String {

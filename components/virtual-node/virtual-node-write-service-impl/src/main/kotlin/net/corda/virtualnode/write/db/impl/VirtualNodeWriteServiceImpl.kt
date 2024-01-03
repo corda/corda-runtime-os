@@ -15,6 +15,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.JpaEntitiesRegistry
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.write.db.VirtualNodeWriteService
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterFactory
 import org.osgi.service.component.annotations.Activate
@@ -51,6 +52,8 @@ internal class VirtualNodeWriteServiceImpl @Activate constructor(
     val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = JpaEntitiesRegistry::class)
     val jpaEntitiesRegistry: JpaEntitiesRegistry,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    virtualNodeInfoReadService: VirtualNodeInfoReadService,
 ) : VirtualNodeWriteService {
     private val coordinator = let {
         val vNodeWriterFactory = VirtualNodeWriterFactory(
@@ -66,7 +69,8 @@ internal class VirtualNodeWriteServiceImpl @Activate constructor(
             memberInfoFactory,
             CpiCpkRepositoryFactory(),
             cordaAvroSerializationFactory,
-            jpaEntitiesRegistry
+            jpaEntitiesRegistry,
+            virtualNodeInfoReadService
         )
         val eventHandler = VirtualNodeWriteEventHandler(configReadService, vNodeWriterFactory)
         coordinatorFactory.createCoordinator<VirtualNodeWriteService>(eventHandler)

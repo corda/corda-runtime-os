@@ -37,6 +37,7 @@ import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_ASYNC_REQUEST_TOPIC
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
 import net.corda.schema.configuration.VirtualNodeDatasourceConfig
 import net.corda.utilities.time.UTCClock
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.write.db.impl.VirtualNodesDbAdmin
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationProcessor
@@ -44,6 +45,7 @@ import net.corda.virtualnode.write.db.impl.writer.asyncoperation.factories.Recor
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.CreateVirtualNodeOperationHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.UpdateVirtualNodeDbOperationHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeOperationStatusHandler
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeSchemaHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeUpgradeOperationHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.services.CreateVirtualNodeServiceImpl
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.services.UpdateVirtualNodeServiceImpl
@@ -66,6 +68,7 @@ internal class VirtualNodeWriterFactory(
     private val cpiCpkRepositoryFactory: CpiCpkRepositoryFactory,
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val cpkDbChangeLogRepository: CpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository(),
 ) {
 
@@ -228,11 +231,18 @@ internal class VirtualNodeWriterFactory(
         val virtualNodeOperationStatusHandler =
             VirtualNodeOperationStatusHandler(dbConnectionManager, virtualNodeRepository)
 
+        val virtualNodeSchemaHandler = VirtualNodeSchemaHandler(
+            dbConnectionManager,
+            schemaMigrator,
+            virtualNodeInfoReadService
+        )
+
         val processor = VirtualNodeWriterProcessor(
             vNodePublisher,
             dbConnectionManager,
             virtualNodeEntityRepository,
             virtualNodeOperationStatusHandler,
+            virtualNodeSchemaHandler,
             cpkDbChangeLogRepository,
             virtualNodeRepository = virtualNodeRepository,
             migrationUtility = MigrationUtilityImpl(dbConnectionManager, schemaMigrator),
