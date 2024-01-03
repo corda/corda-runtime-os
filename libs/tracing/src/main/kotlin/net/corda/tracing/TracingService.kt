@@ -8,7 +8,7 @@ interface TracingService : AutoCloseable {
 
     /**
      * The method takes the current headers and joins them with the trace headers.
-     * Normally, the active context is used, but it can be overridden
+     * Normally, the active context is used for setting the trace headers, but it can be overridden
      * by setting the parameter `traceHeadersToOverrideContext`.
      *
      * @return a list that contains the current headers plus the trace headers.
@@ -20,7 +20,7 @@ interface TracingService : AutoCloseable {
 
     /**
      * The method takes the current headers and joins them with the trace headers.
-     * Normally, the active context is used, but it can be overridden
+     * Normally, the active context is used for setting the trace headers, but it can be overridden
      * by setting the parameter `traceHeadersToOverrideContext`.
      *
      * @return a list that contains the current headers plus the trace headers.
@@ -32,7 +32,7 @@ interface TracingService : AutoCloseable {
 
     /**
      * The method takes the current headers and joins them with the trace headers.
-     * Normally, the active context is used, but it can be overridden
+     * Normally, the active context is used for setting the trace headers, but it can be overridden
      * by setting the parameter `traceHeadersToOverrideContext`.
      *
      * @return a map that contains the current headers plus the trace headers.
