@@ -169,6 +169,8 @@ class MerkleProofImpl(
                         //   - right being proof of hash at $hashIndex
                         //
                         // Also remember we used hashIndex by bumping the counter
+                        foundHashCallback( item.second, treeDepth+1,newItems.size, null)
+                        foundHashCallback( hashes[hashIndex], treeDepth+1, newItems.size+1, hashIndex)
                         Pair(
                             item.first / 2,
                             digest.nodeHash(treeDepth, item.second, hashes[hashIndex++])
@@ -179,6 +181,8 @@ class MerkleProofImpl(
                         //   - right being current element, index $item.first, hash $item.second
                         //
                         // Also remember we used hashIndex by bumping the counter.
+                        foundHashCallback( hashes[hashIndex], treeDepth+1, newItems.size, hashIndex)
+                        foundHashCallback( item.second, treeDepth+1,newItems.size+1, null)
                         Pair(
                             item.first / 2,
                             digest.nodeHash(treeDepth, hashes[hashIndex++], item.second)
