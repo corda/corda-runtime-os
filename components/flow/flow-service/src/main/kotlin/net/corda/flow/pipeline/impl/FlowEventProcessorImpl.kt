@@ -123,12 +123,14 @@ class FlowEventProcessorImpl(
                 backoffStrategy = Exponential(base = 2.0, growthFactor = 250L),
                 // Only FlowTransientException will be retried
                 shouldRetry = { _, _, throwable -> throwable is FlowTransientException },
-                // Log retry attempts under INFO level
+                // Log retry attempts under INFO level and rollback the checkpoint
                 onRetryAttempt = { attempt, delay, throwable ->
+                    val flowCheckpoint = pipeline.context.checkpoint
                     log.info(
-                        "Flow ${pipeline.context.checkpoint.flowId} encountered a transient error (attempt $attempt) " +
-                            "and will retry after $delay milliseconds: ${throwable.message}"
+                        "Flow ${flowCheckpoint.flowId} encountered a transient error (attempt $attempt) and will retry " +
+                            "after $delay milliseconds: ${throwable.message}"
                     )
+                    flowCheckpoint.rollback()
                 },
                 // Throw FlowFatalException once retry attempts have been exhausted
                 onRetryExhaustion = { retryCount, elapsedTime, throwable ->
