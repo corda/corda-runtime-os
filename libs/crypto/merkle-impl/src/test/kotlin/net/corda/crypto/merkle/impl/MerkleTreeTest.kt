@@ -385,6 +385,11 @@ class MerkleTreeTest {
                         ┳━ 0 known data
                         ┗━ 1 gap
                     """.trimIndent())
+                    assertThat(it.illustrate(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
+                        """
+                            00000630 (calc)┳━ 0 known data
+                                           ┗━ 1 gap"""
+                    )
                 }
 
                 if (i == 42 && treeSize == 6) {

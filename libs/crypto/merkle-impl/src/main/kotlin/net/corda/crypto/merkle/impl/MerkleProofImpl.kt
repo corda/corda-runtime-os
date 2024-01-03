@@ -53,7 +53,10 @@ class MerkleProofImpl(
      * It recreates the routes towards the root element from the items in the leaves to be proven with using
      * the proof hashes when they are needed.
      */
-    override fun calculateRoot(digest: MerkleTreeHashDigest): SecureHash {
+    override fun calculateRoot(digest: MerkleTreeHashDigest): SecureHash = calculateRootInstrumented(digest)
+
+
+    fun calculateRootInstrumented(digest: MerkleTreeHashDigest, foundHashCallback: (hash: SecureHash, level: Int, nodeIndex: Int, consumed: Int?) -> Unit = { _, _, _, _ ->  } ): SecureHash {
         if (digest !is MerkleTreeHashDigestProvider) {
             throw CordaRuntimeException(
                 "An instance of MerkleTreeHashDigestProvider is required when " +
@@ -201,6 +204,7 @@ class MerkleProofImpl(
                 "MerkleProof root hash calculation ended with ${nodeHashes.size} node hashes instead of one."
             )
         }
+        foundHashCallback( nodeHashes.single().second, 0, 0, null)
         return nodeHashes.single().second
     }
 
@@ -235,4 +239,15 @@ class MerkleProofImpl(
     override fun toString(): String = renderTree( (0 until treeSize).map {
             "$it "+(if (it in getLeaves().map { l -> l.index }) "known data" else "gap")
         })
+
+    fun illustrate(digest: MerkleTreeHashDigest): String {
+        val nodeLabels: MutableMap<Pair<Int,Int>, String> = mutableMapOf()
+        calculateRootInstrumented(digest) { hash, level, nodeIndex, consumed ->
+            nodeLabels[level to nodeIndex] = hash.toString().substringAfter(":").take(8) + (if (consumed!=null) " (input $consumed)" else " (calc)")
+        }
+        val leafLabels = (0 until treeSize).map {
+            "$it " + (if (it in getLeaves().map { l -> l.index }) "known data" else "gap")
+        }
+        return renderTree(leafLabels, nodeLabels)
+    }
 }
