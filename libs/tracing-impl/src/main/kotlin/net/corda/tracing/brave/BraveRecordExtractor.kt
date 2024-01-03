@@ -11,7 +11,7 @@ class BraveRecordExtractor(tracing: Tracing) {
     // list
     private val recordExtractorListFormat = tracing.propagation().extractor(
             Propagation.Getter<List<Pair<String, String>>, String> { headers, key ->
-                headers.reversed().firstOrNull { it.first == key }?.second
+                headers.singleOrNull() { it.first == key }?.second
             }
     )
 
