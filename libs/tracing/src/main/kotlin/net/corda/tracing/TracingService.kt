@@ -29,7 +29,7 @@ interface TracingService : AutoCloseable {
     // by setting the parameter `traceHeadersToOverrideContext`.
     // The method returns a map that contains the current headers plus the trace headers.
     fun addTraceHeaders(
-        headers: MutableMap<String, Any>,
+        headers: Map<String, Any>,
         traceHeadersToOverrideContext: Map<String, Any>
     ): Map<String, Any>
 
