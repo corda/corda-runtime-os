@@ -18,7 +18,6 @@ import net.corda.messaging.utils.toRecord
 import net.corda.taskmanager.TaskManager
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
-import java.time.Duration
 import java.util.concurrent.CompletionException
 import java.util.concurrent.TimeUnit
 
@@ -47,7 +46,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
 
     private val metrics = EventMediatorMetrics(config.name)
 
-    private val pollTimeout = Duration.ofMillis(50)
+    private val pollTimeout = config.pollTimeout
 
     private val stateManager = config.stateManager
 
