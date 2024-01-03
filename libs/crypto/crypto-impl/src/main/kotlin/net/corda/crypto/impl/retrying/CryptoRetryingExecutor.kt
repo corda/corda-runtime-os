@@ -3,7 +3,7 @@ package net.corda.crypto.impl.retrying
 import net.corda.crypto.core.CryptoRetryException
 import net.corda.crypto.core.isRecoverable
 import net.corda.utilities.retry.BackoffStrategy
-import net.corda.utilities.retry.PreSet
+import net.corda.utilities.retry.FixedSequence
 import net.corda.utilities.retry.tryWithBackoff
 import org.slf4j.Logger
 
@@ -31,7 +31,7 @@ open class CryptoRetryingExecutor(
                 }
         }
 
-        backoffStrategy = PreSet(delays)
+        backoffStrategy = FixedSequence(delays)
     }
 
     /**
@@ -47,8 +47,14 @@ open class CryptoRetryingExecutor(
             maxRetries = maxAttempts,
             maxTimeMillis = Long.MAX_VALUE,
             backoffStrategy = backoffStrategy,
-            recoverable = { _, _, throwable -> throwable.isRecoverable() },
-            exceptionProvider = { m, t -> CryptoRetryException(m, t) }
+            shouldRetry = { _, _, throwable -> throwable.isRecoverable() },
+            onRetryAttempt = { attempt, delay, _ ->
+                logger.warn("Failed to execute, will retry after $delay milliseconds (attempt=$attempt)")
+            },
+            onRetryExhaustion = { attempt, _, throwable ->
+                logger.warn("Failed to execute (attempt={})", attempt)
+                CryptoRetryException("Failed to execute on attempt=$attempt", throwable)
+            },
         ) {
             block()
         }

@@ -60,7 +60,7 @@ class RetryUtilsTest {
                 maxRetries = maxRetries,
                 maxTimeMillis = Long.MAX_VALUE,
                 backoffStrategy = backoffStrategy,
-                recoverable = { _, _, t -> t is RecoverableException }
+                shouldRetry = { _, _, t -> t is RecoverableException }
             ) {
                 executor.execute("")
             }
@@ -80,7 +80,7 @@ class RetryUtilsTest {
                 maxRetries = Long.MAX_VALUE,
                 maxTimeMillis = maxTimeMillis,
                 backoffStrategy = backoffStrategy,
-                recoverable = { _, _, t -> t is RecoverableException }
+                shouldRetry = { _, _, t -> t is RecoverableException }
             ) {
                 executor.execute("")
             }
@@ -98,7 +98,7 @@ class RetryUtilsTest {
             maxRetries = 10,
             maxTimeMillis = Long.MAX_VALUE,
             backoffStrategy = backoffStrategy,
-            recoverable = { _, _, t -> t is RecoverableException },
+            shouldRetry = { _, _, t -> t is RecoverableException },
         ) {
             executor.execute("dummy")
         }
@@ -122,7 +122,7 @@ class RetryUtilsTest {
                 maxRetries = Long.MAX_VALUE,
                 maxTimeMillis = Long.MAX_VALUE,
                 backoffStrategy = backoffStrategy,
-                recoverable = { _, _, t -> t is RecoverableException },
+                shouldRetry = { _, _, t -> t is RecoverableException },
             ) {
                 executor.execute("")
             }
@@ -145,7 +145,7 @@ class RetryUtilsTest {
                 maxRetries = 3,
                 maxTimeMillis = Long.MAX_VALUE,
                 backoffStrategy = backoffStrategy,
-                recoverable = { _, _, t -> t is RecoverableException },
+                shouldRetry = { _, _, t -> t is RecoverableException },
             ) {
                 executor.execute("")
             }
@@ -170,7 +170,7 @@ class RetryUtilsTest {
                 maxRetries = Long.MAX_VALUE,
                 maxTimeMillis = 2.seconds.inWholeMilliseconds,
                 backoffStrategy = backoffStrategy,
-                recoverable = { _, _, t -> t is RecoverableException },
+                shouldRetry = { _, _, t -> t is RecoverableException },
             ) {
                 executor.execute("")
             }
@@ -193,8 +193,8 @@ class RetryUtilsTest {
                 maxRetries = 1,
                 maxTimeMillis = Long.MAX_VALUE,
                 backoffStrategy = backoffStrategy,
-                recoverable = { _, _, t -> t is RecoverableException },
-                exceptionProvider = { m, t -> CustomException(m, t) }
+                shouldRetry = { _, _, t -> t is RecoverableException },
+                onRetryExhaustion = { _, _, t -> CustomException("", t) }
             ) {
                 executor.execute("")
             }

@@ -122,9 +122,22 @@ class FlowEventProcessorImpl(
                 // Exponential backoff -> 500ms, 1s, 2s, 4s, 8s, etc.
                 backoffStrategy = Exponential(base = 2.0, growthFactor = 250L),
                 // Only FlowTransientException will be retried
-                recoverable = { _, _, throwable -> throwable is FlowTransientException },
-                // Throw FlowFatalException once retry attempts are exhausted
-                exceptionProvider = { message, throwable -> FlowFatalException(message, throwable) }
+                shouldRetry = { _, _, throwable -> throwable is FlowTransientException },
+                // Log retry attempts under INFO level
+                onRetryAttempt = { attempt, delay, throwable ->
+                    log.info(
+                        "Flow ${pipeline.context.checkpoint.flowId} encountered a transient error (attempt $attempt) " +
+                            "and will retry after $delay milliseconds: ${throwable.message}"
+                    )
+                },
+                // Throw FlowFatalException once retry attempts have been exhausted
+                onRetryExhaustion = { retryCount, elapsedTime, throwable ->
+                    FlowFatalException(
+                        "Execution failed with \"${throwable.message}\" after $retryCount retry attempts in a " +
+                            "retry window of $elapsedTime.",
+                        throwable
+                    )
+                },
             ) {
                 pipeline
                     .eventPreProcessing()

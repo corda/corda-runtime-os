@@ -9,7 +9,7 @@ class BackoffStrategyTest {
 
     @Test
     fun preSetBackoffStrategyReturnsPreConfiguredDelayValue() {
-        val backoffStrategy = PreSet(listOf(1, 2, 3, 4, 5, 6, 7))
+        val backoffStrategy = FixedSequence(listOf(1, 2, 3, 4, 5, 6, 7))
         for (i in 1..7) {
             assertThat(backoffStrategy.delay(i)).isEqualTo(i.toLong())
         }
@@ -17,13 +17,13 @@ class BackoffStrategyTest {
 
     @Test
     fun preSetBackoffStrategyReturnsNegativeDelayIfNotEnoughValuesConfigured() {
-        val backoffStrategy = PreSet(emptyList())
+        val backoffStrategy = FixedSequence(emptyList())
         assertThat(backoffStrategy.delay(1)).isNegative()
     }
 
     @Test
     fun constantBackoffStrategyReturnsConstantDelay() {
-        val backoffStrategy = Constant(10)
+        val backoffStrategy = Fixed(10)
 
         repeat(10) {
             assertThat(backoffStrategy.delay(it)).isEqualTo(10)

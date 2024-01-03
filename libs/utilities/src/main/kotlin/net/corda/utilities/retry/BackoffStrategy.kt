@@ -16,11 +16,20 @@ interface BackoffStrategy {
 }
 
 /**
- * Pre-set backoff strategy, delay between retries is fixed and pre-configured for any given attempt number.
+ * Fixed backoff strategy, delay between retries remains constant between attempts.
+ *
+ * @param delay the constant delay, in milliseconds, to be applied on each attempt.
+ */
+class Fixed(private val delay: Long = 1000L) : BackoffStrategy {
+    override fun delay(attempt: Int) = delay
+}
+
+/**
+ * Fixed sequence backoff strategy, delay between retries is fixed and pre-configured for any given attempt number.
  *
  * @param delays the array of delays, in milliseconds, to be returned for each attempt.
  */
-class PreSet(private val delays: List<Long>) : BackoffStrategy {
+class FixedSequence(private val delays: List<Long>) : BackoffStrategy {
     override fun delay(attempt: Int) =
         // Halt the retry process if there are not enough delays configured.
         if (attempt > delays.size) {
@@ -28,15 +37,6 @@ class PreSet(private val delays: List<Long>) : BackoffStrategy {
         } else {
             delays[attempt - 1]
         }
-}
-
-/**
- * Constant backoff strategy, delay between retries remains constant between attempts.
- *
- * @param delay the constant delay, in milliseconds, to be applied on each attempt.
- */
-class Constant(private val delay: Long = 1000L) : BackoffStrategy {
-    override fun delay(attempt: Int) = delay
 }
 
 /**
