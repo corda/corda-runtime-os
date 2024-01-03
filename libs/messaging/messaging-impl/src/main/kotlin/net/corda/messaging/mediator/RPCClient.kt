@@ -131,11 +131,13 @@ class RPCClient(
             builder.header(CORDA_REQUEST_KEY_HEADER, keyValue)
         }
 
-        // Once the HTTP request is created, it cannot be changed. So the builder has to be passed instead
         builder.addTraceContext()
 
         return builder.build()
     }
+
+    private fun HttpRequest.Builder.addTraceContext() =
+        addTraceContextToHttpRequest(this)
 
     private fun sendWithRetry(request: HttpRequest): HttpResponse<ByteArray> {
         val startTime = System.nanoTime()

@@ -92,6 +92,7 @@ fun addTraceContextToMediatorMessage(
     )
 }
 
+// Once the HTTP request is created, it cannot be changed. So the builder has to be passed instead
 fun addTraceContextToHttpRequest(builder: HttpRequest.Builder) {
     val traceHeaders = TracingState.currentTraceService.addTraceHeaders(
         emptyList(), // No need to pass the current headers. They are stored in the builder.
