@@ -26,7 +26,7 @@ import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import java.time.Duration
+import java.util.EnumMap
 import java.util.concurrent.TimeoutException
 
 const val CORDA_REQUEST_KEY_HEADER = "corda-request-key"
@@ -37,23 +37,12 @@ class RPCClient(
     cordaAvroSerializerFactory: CordaAvroSerializationFactory,
     private val platformDigestService: PlatformDigestService,
     private val onSerializationError: ((ByteArray) -> Unit)?,
-    private val httpClient: HttpClient,
-    private val retryConfig: HTTPRetryConfig =
-        HTTPRetryConfig.Builder()
-            .retryOn(
-                IOException::class.java,
-                TimeoutException::class.java,
-                CordaHTTPClientErrorException::class.java,
-                CordaHTTPServerErrorException::class.java
-            )
-            .build()
+    private val httpClient: HttpClient
 ) : MessagingClient {
     private val deserializer = cordaAvroSerializerFactory.createAvroDeserializer({}, Any::class.java)
 
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private const val SUCCESS: String = "SUCCESS"
-        private const val FAILED: String = "FAILED"
     }
 
     override fun send(message: MediatorMessage<*>): MediatorMessage<*>? {
@@ -81,7 +70,6 @@ class RPCClient(
             )
         }
     }
-
 
     private fun deserializePayload(payload: ByteArray): Any? {
         return try {
@@ -140,41 +128,23 @@ class RPCClient(
         addTraceContextToHttpRequest(this)
 
     private fun sendWithRetry(request: HttpRequest): HttpResponse<ByteArray> {
-        val startTime = System.nanoTime()
-        return try {
-            val response = HTTPRetryExecutor.withConfig(retryConfig) {
-                httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
-            }
-            buildMetricForResponse(startTime, SUCCESS, request, response)
-            response
-        } catch (ex: Exception) {
-            log.debug { "Catching exception in HttpClient sendWithRetry in order to log metrics, $ex" }
-            buildMetricForResponse(startTime, FAILED, request)
-            throw ex
+        return HTTPRetryExecutor.withConfig(buildRetryConfig(request)) {
+            httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
         }
     }
 
-    private fun buildMetricForResponse(
-        startTime: Long,
-        operationStatus: String,
-        request: HttpRequest,
-        response: HttpResponse<ByteArray>? = null
-    ) {
-        val endTime = System.nanoTime()
+    private fun buildRetryConfig(request: HttpRequest): HTTPRetryConfig {
         val uri = request.method() + request.uri().toString()
-        CordaMetrics.Metric.Messaging.HTTPRPCResponseTime.builder()
-            .withTag(CordaMetrics.Tag.OperationStatus, operationStatus)
-            .withTag(CordaMetrics.Tag.HttpRequestUri, uri)
-            .withTag(CordaMetrics.Tag.HttpResponseCode, response?.statusCode().toString())
-            .build()
-            .record(Duration.ofNanos(endTime - startTime))
 
-        if (response != null) {
-            CordaMetrics.Metric.Messaging.HTTPRPCResponseSize.builder()
-                .withTag(CordaMetrics.Tag.HttpRequestUri, uri)
-                .build()
-                .record(response.body().size.toDouble())
-        }
+        return HTTPRetryConfig.Builder()
+            .retryOn(
+                IOException::class.java,
+                TimeoutException::class.java,
+                CordaHTTPClientErrorException::class.java,
+                CordaHTTPServerErrorException::class.java
+            )
+            .additionalMetrics(EnumMap(mutableMapOf(CordaMetrics.Tag.HttpRequestUri to uri)))
+            .build()
     }
 
     private fun handleExceptions(e: Exception, endpoint: String): Nothing {
