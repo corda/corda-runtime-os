@@ -6,7 +6,7 @@ import brave.propagation.TraceContextOrSamplingFlags
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 
-class BraveRecordTracing(val tracing: Tracing) {
+class BraveRecordTracing(private val tracing: Tracing) {
     private val tracer = tracing.tracer()
     private val recordExtractor = BraveRecordExtractor(tracing)
 
