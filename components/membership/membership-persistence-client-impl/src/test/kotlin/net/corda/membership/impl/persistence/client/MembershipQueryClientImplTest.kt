@@ -421,7 +421,7 @@ class MembershipQueryClientImplTest {
         postConfigChangedEvent()
         mockPersistenceResponse(
             MemberInfoQueryResponse(emptyList()),
-            rsTimestampOverride = clock.instant().minusSeconds(10)
+            rsTimestampOverride = clock.instant().minusSeconds(180)
         )
         assertThat(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))).isInstanceOf(
             MembershipQueryResult.Failure::class.java

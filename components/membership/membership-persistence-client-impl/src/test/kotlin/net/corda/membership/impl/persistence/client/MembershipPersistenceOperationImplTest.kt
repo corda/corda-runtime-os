@@ -133,7 +133,7 @@ class MembershipPersistenceOperationImplTest {
 
         @Test
         fun `early response timestamp will give error`() {
-            responseContext.responseTimestamp = requestContext.requestTimestamp.minusMillis(1000)
+            responseContext.responseTimestamp = requestContext.requestTimestamp.minusSeconds(180)
 
             val reply = operation.send()
 
