@@ -1,0 +1,32 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'org.jetbrains.kotlin.kapt'
+    id 'application'
+}
+
+description 'Simple web server which loads and serves metrics to be consumed by Prometheus'
+
+group 'net.corda.metrics.reader'
+version "$cordaProductVersion"
+
+
+dependencies {
+    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
+
+    implementation libs.javalin
+    implementation "org.slf4j:slf4j-simple:$slf4jVersion"
+
+    api "info.picocli:picocli:$picocliVersion"
+}
+
+tasks.named('jar', Jar) {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+
+    from (sourceSets.main.output)
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+
+        manifest {
+        attributes["Main-Class"] = "net.corda.metrics.reader.MetricsReaderAppKt"
+        attributes["Multi-Release"] = true
+    }
+}
