@@ -523,6 +523,7 @@ class FlowMapperServiceIntegrationTest {
                 mediator {
                     poolSize = 1
                     minPoolRecordCount = 20
+                    pollTimeout = 50
                 }
                 pollTimeout = 100
             }
