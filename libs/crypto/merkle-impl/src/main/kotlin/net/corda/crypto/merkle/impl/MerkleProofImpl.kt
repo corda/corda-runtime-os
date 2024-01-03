@@ -231,5 +231,4 @@ class MerkleProofImpl(
     override fun getLeaves() = leaves
 
     override fun getHashes() = hashes
-
 }
