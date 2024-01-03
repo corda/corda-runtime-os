@@ -243,15 +243,12 @@ class MerkleTreeImpl(
             (0..depth).forEach { x ->
                 val nodeHashesLevel = nodeHashes.getOrNull(depth-x)?: emptyList()
                 val hash = nodeHashesLevel.getOrNull(y)
-
                 hashes[x to y] =  (hash?.toString()?:"").substringAfter(":").take(8).lowercase()
             }
         }
-        return renderTree(leaves.size, leaves.map { " " + it.joinToString(separator = ":") { b -> "%02x".format(b) } }, hashes)
+        return renderTree(leaves.size, leaves.map { it.joinToString(separator = ":") { b -> "%02x".format(b) } }, hashes)
     }
 }
-
-
 
 fun renderTree(treeSize: Int, des: List<String>, labels: Map<Pair<Int, Int>, String> = emptyMap()): String {
     var values: MutableList<Pair<Int, Int>> = (0 until treeSize).map { it to it }.toMutableList()
@@ -307,14 +304,11 @@ fun renderTree(treeSize: Int, des: List<String>, labels: Map<Pair<Int, Int>, Str
             }
         }
     }
-
-    println("node Y coordinates ${nodeYCoordinates}")
     val longestLabels = (0..values.size + 1).map { x ->
         (0 until treeSize).map { y ->
             (labels.get(x to y) ?: "").length
         }.max()
     }
-    println("longest labels $longestLabels")
     val lines = (0 until treeSize).map { y ->
         val line = (0..values.size + 1).map { x ->
             // x is the level of the tree, so x=0 is the top node

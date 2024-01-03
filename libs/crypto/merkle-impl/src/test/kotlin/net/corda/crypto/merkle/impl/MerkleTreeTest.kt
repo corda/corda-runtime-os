@@ -153,8 +153,8 @@ class MerkleTreeTest {
         assertEquals(manualRoot, root)
         assertTree(
             merkleTree, """
-            bab170b1c ┳━  00:00:00:00
-                      ┗━  00:00:00:01"""
+                bab170b1┳7901af93━ 00:00:00:00
+                        ┗471864d3━ 00:00:00:01"""
         )
 
     }
@@ -173,9 +173,9 @@ class MerkleTreeTest {
         assertEquals(manualRoot, root)
         assertTree(
             merkleTree, """
-                a9d5543c2 ┳┳━ 00:00:00:00
-                          ┃┗━ 00:00:00:01
-                          ┗━━ 00:00:00:02
+                a9d5543c┳bab170b1┳7901af93━00:00:00:00
+                        ┃        ┗471864d3━00:00:00:01
+                        ┗66973b1a━66973b1a━00:00:00:02
             """
         )
     }
@@ -251,13 +251,13 @@ class MerkleTreeTest {
         val manualRoot = merkleTree.digest.nodeHash(0, node4, node5)
         assertTree(
             merkleTree, """
-                  4817d572┳ff3c3992┳bab170b1┳ 00:00:00:00
-                          ┃        ┃        ┗ 00:00:00:01
-                          ┃        ┗517a5de6┳ 00:00:00:02
-                          ┃                 ┗ 00:00:00:03
-                          ┗92e96986┳e0cc7e23┳ 00:00:00:04
-                                   ┃        ┗ 00:00:00:05
-                                   ┗46086473━ 00:00:00:06
+                  4817d572┳ff3c3992┳bab170b1┳00:00:00:00
+                          ┃        ┃        ┗00:00:00:01
+                          ┃        ┗517a5de6┳00:00:00:02
+                          ┃                 ┗00:00:00:03
+                          ┗92e96986┳e0cc7e23┳00:00:00:04
+                                   ┃        ┗00:00:00:05
+                                   ┗46086473━00:00:00:06
                                         """
         )
         assertEquals(manualRoot, root)
@@ -286,14 +286,14 @@ class MerkleTreeTest {
         assertEquals(manualRoot, root)
         assertTree(
             merkleTree, """
-              a868a19c7 ┳┳┳ 00:00:00:00
-                        ┃┃┗ 00:00:00:01
-                        ┃┗┳ 00:00:00:02
-                        ┃ ┗ 00:00:00:03
-                        ┗┳┳ 00:00:00:04
-                         ┃┗ 00:00:00:05
-                         ┗┳ 00:00:00:06
-                          ┗ 00:00:00:07
+              a868a19c┳ff3c3992┳bab170b1┳00:00:00:00
+                      ┃        ┃        ┗00:00:00:01
+                      ┃        ┗517a5de6┳00:00:00:02
+                      ┃                 ┗00:00:00:03
+                      ┗ef03791a┳e0cc7e23┳00:00:00:04
+                               ┃        ┗00:00:00:05
+                               ┗a1a26281┳00:00:00:06
+                                        ┗00:00:00:07
                         """
         )
     }
