@@ -110,7 +110,7 @@ fun traceSend(
 }
 
 fun traceSend(
-    headers: MutableMap<String, Any>,
+    headers: Map<String, Any>,
     operationName: String
 ): TraceContext {
     return TracingState.currentTraceService.nextSpan(operationName, headers)
