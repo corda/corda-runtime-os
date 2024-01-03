@@ -82,13 +82,13 @@ fun addTraceContextToRecord(
 
 fun addTraceContextToMediatorMessage(
     message: MediatorMessage<*>,
-    traceHeadersToOverrideContext: MutableMap<String, Any> = mutableMapOf()
+    traceHeadersToOverrideContext: Map<String, Any> = emptyMap()
 ): MediatorMessage<*> {
     return message.copy(
         properties = TracingState.currentTraceService.addTraceHeaders(
             message.properties,
             traceHeadersToOverrideContext
-        )
+        ).toMutableMap()
     )
 }
 

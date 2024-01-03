@@ -28,8 +28,10 @@ class BraveRecordInjector(tracing: Tracing) {
         return headersWithTracing
     }
 
-    fun inject(context: TraceContext, headers: MutableMap<String, Any>): MutableMap<String, Any> {
-        recordInjectorMutableMapFormat.inject(context, headers)
-        return headers
+    fun inject(context: TraceContext, headers: Map<String, Any>): Map<String, Any> {
+        val headersWithTracing = headers.toMutableMap()
+
+        recordInjectorMutableMapFormat.inject(context, headersWithTracing)
+        return headersWithTracing
     }
 }

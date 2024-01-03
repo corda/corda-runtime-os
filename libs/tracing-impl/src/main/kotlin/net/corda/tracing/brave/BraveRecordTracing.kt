@@ -15,7 +15,7 @@ class BraveRecordTracing(val tracing: Tracing) {
         return getTraceContext(extracted)
     }
 
-    fun getTraceContext(headers: MutableMap<String, Any>): brave.propagation.TraceContext {
+    fun getTraceContext(headers: Map<String, Any>): brave.propagation.TraceContext {
         val extracted = recordExtractor.extract(headers)
         return getTraceContext(extracted)
     }
