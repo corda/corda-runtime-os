@@ -372,7 +372,6 @@ internal class VirtualNodeRestResourceImpl(
     override fun getCreateCryptoSchemaSQL(): String {
         val instant = clock.instant()
 
-        // Send request for update to kafka, precessed by the db worker in VirtualNodeWriterProcessor
         val rpcRequest = VirtualNodeManagementRequest(
             instant,
             VirtualNodeSchemaRequest(
@@ -381,8 +380,9 @@ internal class VirtualNodeRestResourceImpl(
                 null
             )
         )
-        // Actually send request and await response message on bus
-        val resp = tryWithExceptionHandling(logger, "Update vNode state") {
+
+        // Send request and await response message on bus
+        val resp = tryWithExceptionHandling(logger, "Get Schema SQL to create Crypto DB") {
             sendAndReceive(rpcRequest)
         }
 
