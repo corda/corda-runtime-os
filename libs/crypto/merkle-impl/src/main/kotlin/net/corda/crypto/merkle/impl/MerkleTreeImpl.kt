@@ -238,7 +238,16 @@ class MerkleTreeImpl(
     }
 
     override fun toString(): String {
-        return renderTree(leaves.size, leaves.map { " " + it.joinToString(separator = "") { b -> "%02x".format(b) } })
+        val hashes = mutableMapOf<Pair<Int, Int>, String>()
+        (0 until leaves.size).forEach { y ->
+            (0..depth).forEach { x ->
+                val nodeHashesLevel = nodeHashes.getOrNull(depth-x)?: emptyList()
+                val hash = nodeHashesLevel.getOrNull(y)
+
+                hashes[x to y] =  (hash?.toString()?:"").substringAfter(":").take(8).lowercase()
+            }
+        }
+        return renderTree(leaves.size, leaves.map { " " + it.joinToString(separator = "") { b -> "%02x".format(b) } }, hashes)
     }
 }
 
@@ -302,10 +311,10 @@ fun renderTree(treeSize: Int, des: List<String>, labels: Map<Pair<Int, Int>, Str
             (labels.get(x to y) ?: "").length
         }.max()
     }
-
+    println("longest labels $longestLabels")
     val lines = (0 until treeSize).map { y ->
         val line = (0..values.size + 1).map { x ->
-            "${labels[x to y] ?:(" ".repeat(longestLabels[x]))}${grid.getOrDefault(x to y, ' ')}"
+            "${labels[x to y]?.padEnd(longestLabels[x], ' ')?:(" ".repeat(longestLabels[x]))}${grid.getOrDefault(x to y, ' ')}"
         }
         val label: String = des.getOrNull(y) ?: ""
         "${line.joinToString("")}$label"
