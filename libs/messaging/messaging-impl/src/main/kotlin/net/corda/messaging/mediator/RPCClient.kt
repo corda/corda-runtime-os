@@ -132,7 +132,7 @@ class RPCClient(
         }
 
         // Once the HTTP request is created, it cannot be changed. So the builder has to be passed instead
-        addTraceContextToHttpRequest(builder)
+        builder.addTraceContext()
 
         return builder.build()
     }
