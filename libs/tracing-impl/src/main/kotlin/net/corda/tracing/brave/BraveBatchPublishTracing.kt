@@ -21,9 +21,9 @@ class BraveBatchPublishTracing(
         // the incoming batch can contain messages with different trace contexts.
         batchSpans.addAll(
             recordHeaders.map(recordExtractor::extract)
-            .filter { it?.context() != null }
+            .filter { it.context() != null }
             .groupBy { ctx ->
-                ctx!!.context().traceId()
+                ctx.context().traceId()
             }.map { (_, traceContexts) ->
                 tracer.nextSpan(traceContexts.first())
                     .name("Send Batch - $clientId")
