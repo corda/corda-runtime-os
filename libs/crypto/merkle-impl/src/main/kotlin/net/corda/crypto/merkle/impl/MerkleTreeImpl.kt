@@ -281,8 +281,10 @@ class MerkleTreeImpl(
 fun renderTree(leafLabels: List<String>, nodeLabels: Map<Pair<Int, Int>, String> = emptyMap()): String {
     val treeSize = leafLabels.size
 
-    // loop variable: the leaf range values at the current level, starting at the bottom where each
-    // leaf range will be a single leaf
+    // Work out the tree structure, using iteration.
+    // Loop variable is `values`: the leaf range values at the current level, starting at the bottom where each
+    // leaf range will be a single leaf. As we loop around the leafs get rolled up, until we have a single root node
+    // covering all the leaves.
     var values: MutableList<Pair<Int, Int>> = (0 until treeSize).map { it to it }.toMutableList()
     val levels: MutableList<List<Pair<Int, Int>>> = mutableListOf(values.toList())
     while (values.size > 1) {
@@ -304,23 +306,26 @@ fun renderTree(leafLabels: List<String>, nodeLabels: Map<Pair<Int, Int>, String>
         values = newValues
     }
 
-    // work out where the nodes go
-    val nodeYCoordinates = mutableMapOf<Pair<Int, Int>, Int>() // map from (x,y) coordinates where nodes appear to their index at that level
-    for (x in 0 until levels.size) {
-        for (rangeIndex in 0 until levels[x].size) {
-            nodeYCoordinates[levels.size - x - 1 to levels[x][rangeIndex].first] = rangeIndex
-        }
-    }
-    // make a grid of box characters to show the tree structure
+    // We are left with a single root node which covers all the leaves.
+    check(values.size == 1)
+    check(values[0] == 0 to treeSize-1)
+
+    // Make a grid of box characters to show the tree structure.
+    //
+    // Originally I wanted to write this tree rendering as pure code
+    // but that's really fiddly and I think this way is easier to maintain.
     val grid: MutableMap<Pair<Int, Int>, Char> = mutableMapOf()
-    // first draw the horizontal dash structure
+
+    // First draw the horizontal line structure of the tree. These lines will
+    // mostly get overwritten later to add the vertical elements.
     levels.forEachIndexed { level, ranges ->
         ranges.forEach { range ->
             val x = levels.size - level - 1
             grid.put(x to range.first, '━')
         }
     }
-    // now draw the vertical lines on to the grid, and make a note of where the nodes go
+
+    // Now draw the vertical lines on to the grid, and make a note of where the nodes go
     levels.forEachIndexed { level, ranges ->
         ranges.forEach { range ->
             val x = levels.size - level - 1
@@ -329,28 +334,41 @@ fun renderTree(leafLabels: List<String>, nodeLabels: Map<Pair<Int, Int>, String>
                     val nextLevel = levels[level - 1]
                     nextLevel.first { child -> range.second >= child.first && range.second <= child.second }.first
                 } else range.second
+
                 check(range.first <= extent)
                 if (range.first != extent) {
                     val curtop = grid.getOrDefault(x to range.first, ' ')
+                    // Draw the top of the vertical line
                     grid[x to range.first] = when (curtop) {
                         '━' -> '┳'
                         else -> '┃'
                     }
+                    // Draw the middle part of the line, i.e. everything apart from first and last row
                     for (y in range.first + 1 until extent) {
                         grid[x to y] = '┃'
                     }
+                    // Draw the bottom of the vertical line
                     grid[x to extent] = '┗'
                 }
             }
         }
     }
-    // work out how much space to leave for node label columns
+
+    // Work out how much space to leave for node label columns.
     val longestLabels = (0..values.size + 1).map { x ->
         (0 until treeSize).map { y ->
             (nodeLabels.get(x to y) ?: "").length
         }.max()
     }
-    // work out the lines as strings, using the box characters and alavel
+
+    // Work out a map from (x,y) coordinates where nodes appear to their index at that level.
+    val nodeYCoordinates: Map<Pair<Int, Int>, Int> = (0 until levels.size).flatMap { x->
+        (0 until levels[x].size).map { rangeIndex ->
+            (levels.size - x - 1 to levels[x][rangeIndex].first) to rangeIndex
+        }
+    }.toMap()
+
+    // Work out the lines as strings, using the box characters, node and leaf labels.
     val lines: List<String> = (0 until treeSize).map { y ->
         val line = (0..values.size + 1).map { x ->
             // x is the level of the tree, so x=0 is the top node
@@ -361,6 +379,6 @@ fun renderTree(leafLabels: List<String>, nodeLabels: Map<Pair<Int, Int>, String>
         val label: String = leafLabels.getOrNull(y) ?: ""
         "${line.joinToString("")}$label"
     }
-    // return the whole tree as a single string
-    return lines.joinToString("\n")
+
+    return lines.joinToString("\n")     // Return the whole tree as a single string.
 }
