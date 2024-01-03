@@ -363,12 +363,12 @@ class MerkleTreeTest {
             val leafIndicesCombination = (0 until treeSize).filter { (i and (1 shl it)) != 0 }
             testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize).also {
 
-                val des = (0 until merkleTree.leaves.size).map { y ->
+                val leafLabels = (0 until merkleTree.leaves.size).map { y ->
                     val caption = if (y in leafIndicesCombination) "known data" else "gap"
                     " $y $caption"
                 }
                 val rootHash = it.calculateRoot(trivialHashDigestProvider).toString()
-                println(renderTree(merkleTree.leaves.size, des, mapOf((0 to 0) to rootHash.substringAfter(":") + " ")))
+                println(renderTree(leafLabels, mapOf((0 to 0) to rootHash.substringAfter(":") + " ")))
 
                 val hashes = calculateLeveledHashes(it, trivialHashDigestProvider)
 

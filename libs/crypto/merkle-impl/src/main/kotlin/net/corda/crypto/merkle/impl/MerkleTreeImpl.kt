@@ -237,20 +237,49 @@ class MerkleTreeImpl(
         )
     }
 
+    /**
+     *
+     * Produce a textual representation of the Merkle tree, with:
+     *
+     * - Hex dumps of the leafs
+     * - The first 8 hex digits of the hash for each node and leaf
+     * - Unicode box symbols to show the tree structure
+     *
+     * For example, here's a Merkle tree string representation of a tree
+     * with 3 elements.
+     *
+     *   a9d5543c┳bab170b1┳7901af93━00:00:00:00
+     *           ┃        ┗471864d3━00:00:00:01
+     *           ┗66973b1a━66973b1a━00:00:00:02
+     *
+     * In this case a9d5543c is the hash of the root of the tree.
+     *
+     * @return a textual representation of the MerkleTree
+     */
+
     override fun toString(): String {
+        // the hashes we want to show, at their (X,Y) coordinates
         val hashes = mutableMapOf<Pair<Int, Int>, String>()
-        (0 until leaves.size).forEach { y ->
-            (0..depth).forEach { x ->
+        for (y in leaves.indices) {
+            for (x in 0..depth) {
                 val nodeHashesLevel = nodeHashes.getOrNull(depth-x)?: emptyList()
                 val hash = nodeHashesLevel.getOrNull(y)
-                hashes[x to y] =  (hash?.toString()?:"").substringAfter(":").take(8).lowercase()
+                hashes[x to y] = (hash?.toString()?:"").substringAfter(":").take(8).lowercase()
             }
         }
-        return renderTree(leaves.size, leaves.map { it.joinToString(separator = ":") { b -> "%02x".format(b) } }, hashes)
+        return renderTree(leaves.map { it.joinToString(separator = ":") { b -> "%02x".format(b) } }, hashes)
     }
 }
 
-fun renderTree(treeSize: Int, des: List<String>, labels: Map<Pair<Int, Int>, String> = emptyMap()): String {
+/**
+ * Render a left-balanced Merkle tree of a certain size
+ *
+ * @param leafLabels a label for each leaf.
+ * @param nodeLabels optional labels for each node.
+ * @return a string representation of the tree, over multiple lines, with unicode box characters
+ */
+fun renderTree(leafLabels: List<String>, nodeLabels: Map<Pair<Int, Int>, String> = emptyMap()): String {
+    val treeSize = leafLabels.size
     var values: MutableList<Pair<Int, Int>> = (0 until treeSize).map { it to it }.toMutableList()
     val levels: MutableList<List<Pair<Int, Int>>> = mutableListOf(values.toList())
     while (values.size > 1) {
@@ -306,7 +335,7 @@ fun renderTree(treeSize: Int, des: List<String>, labels: Map<Pair<Int, Int>, Str
     }
     val longestLabels = (0..values.size + 1).map { x ->
         (0 until treeSize).map { y ->
-            (labels.get(x to y) ?: "").length
+            (nodeLabels.get(x to y) ?: "").length
         }.max()
     }
     val lines = (0 until treeSize).map { y ->
@@ -314,9 +343,9 @@ fun renderTree(treeSize: Int, des: List<String>, labels: Map<Pair<Int, Int>, Str
             // x is the level of the tree, so x=0 is the top node
             // work out how many nodes across at the current level of the tree we are at, or -1 if we aren't at a node
             val nodeIndex = nodeYCoordinates.get(x to y)?:-1
-            "${labels[x to nodeIndex]?.padEnd(longestLabels[x], ' ')?:(" ".repeat(longestLabels[x]))}${grid.getOrDefault(x to y, ' ')}"
+            "${nodeLabels[x to nodeIndex]?.padEnd(longestLabels[x], ' ')?:(" ".repeat(longestLabels[x]))}${grid.getOrDefault(x to y, ' ')}"
         }
-        val label: String = des.getOrNull(y) ?: ""
+        val label: String = leafLabels.getOrNull(y) ?: ""
         "${line.joinToString("")}$label"
     }
 
