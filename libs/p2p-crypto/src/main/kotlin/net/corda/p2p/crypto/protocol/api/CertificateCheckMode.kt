@@ -8,12 +8,12 @@ import net.corda.data.p2p.crypto.protocol.CheckCertificate as AvroCheckCertifica
  * How should the authentication protocol check the certificates sent as a part of authentication protocol.
  */
 sealed class CertificateCheckMode {
-    abstract fun toAvro() : AvroCheckCertificate?
+    abstract fun toAvro(): AvroCheckCertificate?
 
     companion object {
         fun AvroCheckCertificate?.toCorda(
-            checkRevocation: CheckRevocation
-        ) : CertificateCheckMode {
+            checkRevocation: CheckRevocation,
+        ): CertificateCheckMode {
             return if (this == null) {
                 NoCertificate
             } else {
@@ -25,10 +25,11 @@ sealed class CertificateCheckMode {
             }
         }
     }
+
     /**
      * [NoCertificate]: Assumes no certificate is sent as a part of the authentication protocol.
      */
-    object NoCertificate: CertificateCheckMode() {
+    object NoCertificate : CertificateCheckMode() {
         override fun toAvro() = null
     }
 
@@ -41,7 +42,7 @@ sealed class CertificateCheckMode {
         val truststore: List<PemCertificate>,
         val revocationCheckMode: RevocationCheckMode,
         val revocationChecker: CheckRevocation,
-    ): CertificateCheckMode() {
+    ) : CertificateCheckMode() {
         override fun toAvro(): AvroCheckCertificate {
             return AvroCheckCertificate(
                 truststore,
