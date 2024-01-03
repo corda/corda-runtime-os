@@ -131,7 +131,7 @@ class RPCClient(
             builder.header(CORDA_REQUEST_KEY_HEADER, keyValue)
         }
 
-        // Once the HTTP request is created, it cannot be changed. So the builder as to be passed instead
+        // Once the HTTP request is created, it cannot be changed. So the builder has to be passed instead
         addTraceContextToHttpRequest(builder)
 
         return builder.build()
