@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.time.Duration
 
-class FixedReplayCalculatorTest {
+class ConstantReplayCalculatorTest {
 
     companion object {
         private val CONFIG = ReplayScheduler.ReplaySchedulerConfig.ConstantReplaySchedulerConfig(
