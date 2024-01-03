@@ -82,23 +82,17 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                 // Http - Send the request immediately. Once the response arrives convert it to a kafka record and
                 // add it to the queue, so it can be processed in due course
                 @Suppress("UNCHECKED_CAST")
-                val httpResponse = with(destination) {
+                val reply = with(destination) {
                     message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
                     client.send(message) as MediatorMessage<E>?
                 }
-                if (httpResponse != null) {
-                    // Convert response and add it to the queue
-                    val httpResponseAsRecord = httpResponse.asRecord(event.key)
+                if (reply != null) {
+                    // Convert response to a record and add it to the queue
                     @Suppress("UNCHECKED_CAST")
-                    queue.addLast(addTraceContextToRecord(httpResponseAsRecord, message.properties) as Record<K, E>)
+                    queue.addLast(addTraceContextToRecord(Record("", key, reply), message.properties) as Record<K, E>)
                 }
             }
         }
-    }
-
-    private fun <K : Any, E : Any> MediatorMessage<E>.asRecord(key: K): Record<K, E> {
-        // Convert reply into a record and added to the queue, so it can be processed later on
-        return Record("", key, payload)
     }
 
     /**
