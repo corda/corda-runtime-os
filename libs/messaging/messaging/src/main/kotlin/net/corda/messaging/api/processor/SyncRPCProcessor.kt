@@ -13,6 +13,7 @@ interface SyncRPCProcessor<REQUEST, RESPONSE> {
      * @param request
      *
      * @return the result of the processing of the type RESPONSE
+     * @throws [CordaTransientServerException] if a transient exception occurred that can be retried by the client.
      */
     fun process(request: REQUEST) : RESPONSE?
 
