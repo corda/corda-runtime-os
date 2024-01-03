@@ -62,7 +62,6 @@ import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.virtualnode.read.SchemaSqlReadService
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rest.extensions.parseOrThrow
 import net.corda.virtualnode.rest.common.VirtualNodeSender
@@ -75,6 +74,7 @@ import net.corda.virtualnode.rest.impl.status.CacheLoadCompleteEvent
 import net.corda.virtualnode.rest.impl.status.VirtualNodeStatusCacheService
 import net.corda.virtualnode.rest.impl.validation.VirtualNodeValidationService
 import net.corda.virtualnode.rest.impl.validation.impl.VirtualNodeValidationServiceImpl
+import net.corda.virtualnode.write.db.SchemaSqlReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -156,7 +156,8 @@ internal class VirtualNodeRestResourceImpl(
         ::configurationReadService,
         ::virtualNodeInfoReadService,
         ::cpiInfoReadService,
-        ::virtualNodeStatusCacheService
+        ::virtualNodeStatusCacheService,
+        ::schemaSqlReadService
     )
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator(

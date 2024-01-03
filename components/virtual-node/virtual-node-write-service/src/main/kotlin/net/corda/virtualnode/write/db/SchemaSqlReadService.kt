@@ -1,4 +1,4 @@
-package net.corda.virtualnode.read
+package net.corda.virtualnode.write.db
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle

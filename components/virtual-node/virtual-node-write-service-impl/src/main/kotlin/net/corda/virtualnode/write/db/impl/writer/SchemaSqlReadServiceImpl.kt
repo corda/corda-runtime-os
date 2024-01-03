@@ -1,4 +1,4 @@
-package net.corda.virtualnode.read.impl
+package net.corda.virtualnode.write.db.impl.writer
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.core.ShortHash
@@ -29,9 +29,8 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.utils.transaction
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.schema.Schemas
-import net.corda.virtualnode.read.SchemaSqlReadService
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
+import net.corda.virtualnode.write.db.SchemaSqlReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -140,36 +139,36 @@ class SchemaSqlReadServiceImpl @Activate constructor(
             }
 
             "vault" -> (
-                    {
-                        if (virtualNodeSchema.virtualNodeShortHash == null && virtualNodeSchema.cpiChecksum != null) {
-                            val changeLog = getChangelog(virtualNodeSchema.dbType)
-                            val cpkChangeLog = getCpkChangelog(virtualNodeSchema.dbType)
-                            buildSqlWithStringWriter(connection, changeLog) + buildSqlWithStringWriter(
-                                connection,
-                                cpkChangeLog
-                            )
-                        } else if (virtualNodeSchema.virtualNodeShortHash != null && virtualNodeSchema.cpiChecksum != null) {
-                            val virtualNodeInfo = virtualNodeInfoReadService
-                                .getByHoldingIdentityShortHash(
-                                    ShortHash.parse(
-                                        virtualNodeSchema.virtualNodeShortHash
-                                    )
-                                )
-                                ?: throw ResourceNotFoundException(
-                                    "Virtual node",
+                {
+                    if (virtualNodeSchema.virtualNodeShortHash == null && virtualNodeSchema.cpiChecksum != null) {
+                        val changeLog = getChangelog(virtualNodeSchema.dbType)
+                        val cpkChangeLog = getCpkChangelog(virtualNodeSchema.dbType)
+                        buildSqlWithStringWriter(connection, changeLog) + buildSqlWithStringWriter(
+                            connection,
+                            cpkChangeLog
+                        )
+                    } else if (virtualNodeSchema.virtualNodeShortHash != null && virtualNodeSchema.cpiChecksum != null) {
+                        val virtualNodeInfo = virtualNodeInfoReadService
+                            .getByHoldingIdentityShortHash(
+                                ShortHash.parse(
                                     virtualNodeSchema.virtualNodeShortHash
                                 )
-                            val connectionVNodeVault =
-                                dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).connection
-                            buildSqlWithStringWriter(
-                                connectionVNodeVault,
-                                getCpkChangelog(virtualNodeSchema.cpiChecksum)
                             )
-                        } else {
-                            throw IllegalArgumentException("Illegal argument combination for virtualNodeSchema")
-                        }
+                            ?: throw ResourceNotFoundException(
+                                "Virtual node",
+                                virtualNodeSchema.virtualNodeShortHash
+                            )
+                        val connectionVNodeVault =
+                            dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).connection
+                        buildSqlWithStringWriter(
+                            connectionVNodeVault,
+                            getCpkChangelog(virtualNodeSchema.cpiChecksum)
+                        )
+                    } else {
+                        throw IllegalArgumentException("Illegal argument combination for virtualNodeSchema")
                     }
-                    ).toString()
+                }
+                ).toString()
 
             else -> throw IllegalArgumentException("Cannot use dbType that does not exist")
         }
