@@ -3,13 +3,12 @@ package net.corda.crypto.service.impl.rpc
 import net.corda.crypto.config.impl.RetryingConfig
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.CryptoTenants
-import net.corda.crypto.impl.retrying.CryptoBackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.crypto.wire.ops.encryption.request.DecryptRpcCommand
 import net.corda.data.crypto.wire.ops.encryption.response.CryptoDecryptionResult
-import net.corda.data.crypto.wire.ops.encryption.response.EncryptionOpsError
 import net.corda.data.crypto.wire.ops.encryption.response.DecryptionOpsResponse
+import net.corda.data.crypto.wire.ops.encryption.response.EncryptionOpsError
 import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
@@ -23,13 +22,9 @@ class SessionDecryptionProcessor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val executor = CryptoRetryingExecutor(
-        logger,
-        CryptoBackoffStrategy(config.maxAttempts, config.waitBetweenMills)
-    )
-
     override val requestClass = DecryptRpcCommand::class.java
     override val responseClass = DecryptionOpsResponse::class.java
+    private val executor = CryptoRetryingExecutor(logger, config.maxAttempts.toLong(), config.waitBetweenMills)
 
     override fun process(request: DecryptRpcCommand): DecryptionOpsResponse {
         logger.trace { "Processing request: ${request::class.java.name}" }

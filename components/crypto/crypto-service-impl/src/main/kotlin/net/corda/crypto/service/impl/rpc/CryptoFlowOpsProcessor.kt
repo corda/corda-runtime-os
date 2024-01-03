@@ -6,7 +6,6 @@ import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.impl.retrying.CryptoBackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toSignatureSpec
@@ -51,10 +50,7 @@ class CryptoFlowOpsProcessor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val executor = CryptoRetryingExecutor(
-        logger,
-        CryptoBackoffStrategy(config.maxAttempts, config.waitBetweenMills)
-    )
+    private val executor = CryptoRetryingExecutor(logger, config.maxAttempts.toLong(), config.waitBetweenMills)
 
     override fun process(request: FlowOpsRequest): FlowEvent {
         logger.trace { "Processing request: ${request::class.java.name}" }

@@ -6,6 +6,21 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class BackoffStrategyTest {
+
+    @Test
+    fun preSetBackoffStrategyReturnsPreConfiguredDelayValue() {
+        val backoffStrategy = PreSet(listOf(1, 2, 3, 4, 5, 6, 7))
+        for (i in 1..7) {
+            assertThat(backoffStrategy.delay(i)).isEqualTo(i.toLong())
+        }
+    }
+
+    @Test
+    fun preSetBackoffStrategyReturnsNegativeDelayIfNotEnoughValuesConfigured() {
+        val backoffStrategy = PreSet(emptyList())
+        assertThat(backoffStrategy.delay(1)).isNegative()
+    }
+
     @Test
     fun constantBackoffStrategyReturnsConstantDelay() {
         val backoffStrategy = Constant(10)

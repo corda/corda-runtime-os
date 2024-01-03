@@ -122,7 +122,7 @@ class FlowEventProcessorImpl(
                 // Exponential backoff -> 500ms, 1s, 2s, 4s, 8s, etc.
                 backoffStrategy = Exponential(base = 2.0, growthFactor = 250L),
                 // Only FlowTransientException will be retried
-                recoverable = { throwable -> throwable is FlowTransientException },
+                recoverable = { _, _, throwable -> throwable is FlowTransientException },
                 // Throw FlowFatalException once retry attempts are exhausted
                 exceptionProvider = { message, throwable -> FlowFatalException(message, throwable) }
             ) {

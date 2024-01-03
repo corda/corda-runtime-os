@@ -63,12 +63,16 @@ class CryptoRetryingExecutorsTests {
             PersistenceException("error", PessimisticLockException()),
             PersistenceException("error", java.sql.SQLTransientException()),
             PersistenceException("error", java.sql.SQLTimeoutException()),
-            PersistenceException("error", org.hibernate.exception.LockAcquisitionException(
-                "error", java.sql.SQLException()
-            )),
-            PersistenceException("error", org.hibernate.exception.LockTimeoutException(
-                "error", java.sql.SQLException()
-            ))
+            PersistenceException(
+                "error", org.hibernate.exception.LockAcquisitionException(
+                    "error", java.sql.SQLException()
+                )
+            ),
+            PersistenceException(
+                "error", org.hibernate.exception.LockTimeoutException(
+                    "error", java.sql.SQLException()
+                )
+            )
         )
     }
 
@@ -76,8 +80,7 @@ class CryptoRetryingExecutorsTests {
     fun `Should execute without retrying`() {
         var called = 0
         val result = CryptoRetryingExecutor(
-            logger,
-            CryptoBackoffStrategy(3, listOf(100L))
+            logger, 3, listOf(100L)
         ).executeWithRetry {
             called++
             "Hello World!"
@@ -92,8 +95,7 @@ class CryptoRetryingExecutorsTests {
         var called = 0
         val actual = assertThrows<CryptoRetryException> {
             CryptoRetryingExecutor(
-                logger,
-                CryptoBackoffStrategy(3, listOf(10L))
+                logger, 3, listOf(10L)
             ).executeWithRetry {
                 called++
                 throw TimeoutException()
@@ -108,8 +110,7 @@ class CryptoRetryingExecutorsTests {
     fun `Should eventually succeed after retrying TimeoutException`() {
         var called = 0
         val result = CryptoRetryingExecutor(
-            logger,
-            CryptoBackoffStrategy(3, listOf(10L))
+            logger, 3, listOf(10L)
         ).executeWithRetry {
             called++
             if (called <= 2) {
@@ -129,8 +130,7 @@ class CryptoRetryingExecutorsTests {
     ) {
         var called = 0
         val result = CryptoRetryingExecutor(
-            logger,
-            CryptoBackoffStrategy(3, listOf(10L))
+            logger, 3, listOf(10L)
         ).executeWithRetry {
             called++
             if (called <= 2) {
@@ -148,8 +148,7 @@ class CryptoRetryingExecutorsTests {
     fun `Should retry all recoverable exceptions`(e: Throwable) {
         var called = 0
         val result = CryptoRetryingExecutor(
-            logger,
-            CryptoBackoffStrategy(2, listOf(10L))
+            logger, 2, listOf(10L)
         ).executeWithRetry {
             called++
             if (called < 2) {
