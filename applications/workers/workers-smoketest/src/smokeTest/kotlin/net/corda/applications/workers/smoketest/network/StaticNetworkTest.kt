@@ -15,12 +15,9 @@ import net.corda.e2etest.utilities.registerStaticMember
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.parallel.Execution
-import org.junit.jupiter.api.parallel.ExecutionMode
 import java.time.Duration
 import java.util.*
 
-@Execution(ExecutionMode.SAME_THREAD)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StaticNetworkTest : ClusterReadiness by ClusterReadinessChecker() {
 

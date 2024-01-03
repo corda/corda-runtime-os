@@ -58,7 +58,8 @@ public class FlowSessionImplJavaTest {
             serializationService,
             flowContext,
             FlowSessionImpl.Direction.INITIATED_SIDE,
-            false);
+            false,
+            null);
 
     private static class FakeFiber implements FlowFiber {
         @NotNull

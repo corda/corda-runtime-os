@@ -46,6 +46,9 @@ class GatewayProcessorImpl @Activate constructor(
 ) : GatewayProcessor {
 
     private companion object {
+        init {
+            System.setProperty("jdk.tls.client.enableCAExtension", "true")
+        }
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
@@ -94,8 +97,8 @@ class GatewayProcessorImpl @Activate constructor(
                 registration = lifecycleCoordinator.followStatusChangesByName(
                     setOf(
                         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                        gateway.dominoTile.coordinatorName
-                    )
+                        gateway.dominoTile.coordinatorName,
+                    ),
                 )
 
                 gateway.start()

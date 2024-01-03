@@ -32,7 +32,7 @@ import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_OUT
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.schema.configuration.FlowConfig
+import net.corda.schema.configuration.MessagingConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -51,7 +51,7 @@ class FlowEventMediatorFactoryImplTest {
     private val multiSourceEventMediatorFactory = mock<MultiSourceEventMediatorFactory>()
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory>()
     private val platformInfoProvider = mock<PlatformInfoProvider>()
-    private val flowConfig = mock<SmartConfig>()
+    private val config = mock<SmartConfig>()
 
     val captor = argumentCaptor<EventMediatorConfig<String, Checkpoint, FlowEvent>>()
 
@@ -63,7 +63,7 @@ class FlowEventMediatorFactoryImplTest {
         `when`(multiSourceEventMediatorFactory.create(captor.capture()))
             .thenReturn(mock())
 
-        `when`(flowConfig.getInt(FlowConfig.PROCESSING_THREAD_POOL_SIZE)).thenReturn(10)
+        `when`(config.getInt(MessagingConfig.Subscription.PROCESSING_THREAD_POOL_SIZE)).thenReturn(10)
 
         flowEventMediatorFactory = FlowEventMediatorFactoryImpl(
             flowEventProcessorFactory,
@@ -83,7 +83,7 @@ class FlowEventMediatorFactoryImplTest {
     @Test
     fun `successfully creates event mediator with expected routes`() {
         val mediator = flowEventMediatorFactory.create(
-            mapOf(ConfigKeys.FLOW_CONFIG to flowConfig),
+            mapOf(ConfigKeys.MESSAGING_CONFIG to config),
             mock(),
             mock(),
         )

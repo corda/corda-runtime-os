@@ -86,6 +86,7 @@ dependencies {
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 
     integrationTestImplementation project(":testing:db-message-bus-testkit")
+    integrationTestImplementation project(":libs:web:web")
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(":components:crypto:crypto-client-impl")
     integrationTestRuntimeOnly project(":components:crypto:crypto-client-hsm-impl")

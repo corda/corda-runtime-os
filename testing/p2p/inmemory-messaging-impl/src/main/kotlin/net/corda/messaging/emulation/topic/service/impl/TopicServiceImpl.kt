@@ -30,6 +30,19 @@ class TopicServiceImpl(
         topics.getTopic(consumer.topicName).unAssignPartition(consumer, partitionsIds)
     }
 
+    override fun close() {
+        try {
+            topics.close()
+        } catch (e: Exception) {
+            // Try again...
+            try {
+                topics.close()
+            } catch (e: Exception) {
+                // Do nothing.
+            }
+        }
+    }
+
     override fun getLatestOffsets(topicName: String): Map<Int, Long> {
         return topics.getLatestOffsets(topicName)
     }

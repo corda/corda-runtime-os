@@ -22,7 +22,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.jar.JarInputStream
 
-class CpiLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
+class CpiLoaderV2(private val activeCordaPlatformVersion: Int, private val clock: Clock = UTCClock()) : CpiLoader {
 
     override fun loadCpi(
         byteArray: ByteArray,
@@ -57,6 +57,14 @@ class CpiLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
                 readCpksFromCpb(cpb.bytes.inputStream(), expansionLocation, cpiLocation).toList()
             } else {
                 emptyList()
+            }
+
+            cpks.forEach {
+                val minPlatformVersion = it.metadata.cordappManifest.minPlatformVersion
+                if (activeCordaPlatformVersion < minPlatformVersion) {
+                    throw PackagingException("Platform version of Corda is lower than minimum platform version of CPK" +
+                            " ${it.metadata.cpkId.name} ($activeCordaPlatformVersion < $minPlatformVersion)")
+                }
             }
 
             val mainAttributes = jarInputStream.manifest.mainAttributes

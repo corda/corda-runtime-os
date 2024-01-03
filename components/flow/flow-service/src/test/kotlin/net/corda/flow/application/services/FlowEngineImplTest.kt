@@ -8,7 +8,9 @@ import net.corda.flow.application.services.impl.FlowEngineImpl
 import net.corda.flow.application.versioning.impl.RESET_VERSIONING_MARKER
 import net.corda.flow.application.versioning.impl.VERSIONING_PROPERTY_NAME
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.mutableKeyValuePairList
+import net.corda.session.manager.Constants
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
@@ -39,10 +41,13 @@ class FlowEngineImplTest {
         .build()
     private val subFlow = mock<SubFlow<String>>()
     private val result = "result"
+    private val sessionProperties = KeyValueStore().apply {
+        put(Constants.FLOW_SESSION_REQUIRE_CLOSE, false.toString())
+    }.avro
     private val errorSessionState =
-        SessionState("s", mock(), mock(), null, false, null, null, SessionStateType.ERROR, false, null)
+        SessionState("s", mock(), mock(), null, null, null, SessionStateType.ERROR, false, sessionProperties)
     private val closedSessionState =
-        SessionState("s", mock(), mock(), null, false, null, null, SessionStateType.CLOSED, false, null)
+        SessionState("s", mock(), mock(), null, null, null, SessionStateType.CLOSED, false, sessionProperties)
 
 
     private val flowEngine = FlowEngineImpl(flowFiberService)

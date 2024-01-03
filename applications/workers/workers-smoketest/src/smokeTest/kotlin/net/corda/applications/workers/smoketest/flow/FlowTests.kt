@@ -82,6 +82,7 @@ class FlowTests : ClusterReadiness by ClusterReadinessChecker() {
             "com.r3.corda.testing.testflows.TestFlow",
             "com.r3.corda.testing.testflows.BrokenProtocolFlow",
             "com.r3.corda.testing.testflows.MessagingFlow",
+            "com.r3.corda.testing.testflows.FlowSessionTimeoutFlow",
             "com.r3.corda.testing.testflows.PersistenceFlow",
             "com.r3.corda.testing.testflows.NonValidatingNotaryTestFlow",
             "com.r3.corda.testing.testflows.ledger.TokenSelectionFlow"

@@ -447,6 +447,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 it.key.startsWith(LEDGER_KEYS)
                         || it.key.startsWith(SESSION_KEYS)
                         || it.key.startsWith(SERIAL)
+                        || notaryIdRegex.matches(it.key)
                         || REGISTRATION_CONTEXT_FIELDS.contains(it.key)
             }
             val tlsSubject = getTlsSubject(member)
@@ -473,17 +474,25 @@ class DynamicMemberRegistrationService @Activate constructor(
 
             previousRegistrationContext?.let { previous ->
                 verifyBackchainFlagMovement(previousRegistrationContext, newRegistrationContext)
-                ((newRegistrationContext.entries - previous.entries) + (previous.entries - newRegistrationContext.entries)).filter {
-                    it.key.startsWith(SESSION_KEYS) ||
-                    it.key.startsWith(LEDGER_KEYS) ||
-                    it.key.startsWith(ROLES_PREFIX) ||
-                    (it.key.startsWith("corda.notary") && !it.key.endsWith("service.backchain.required"))
-                }.apply {
-                    require(isEmpty()) {
-                        throw InvalidMembershipRegistrationException(
-                            "Fields ${this.map { it.key }} cannot be added, removed or updated during re-registration."
-                        )
-                    }
+                val newOrChangedKeys = newRegistrationContext.filter {
+                    previous[it.key] != it.value
+                }.keys
+                val removed = previous.keys.filter {
+                    !newRegistrationContext.keys.contains(it)
+                }
+                val changed = (newOrChangedKeys + removed).filter {
+                    it.startsWith(SESSION_KEYS) ||
+                            it.startsWith(LEDGER_KEYS) ||
+                            it.startsWith(ROLES_PREFIX) ||
+                            (it.startsWith("corda.notary") && !it.endsWith("service.backchain.required"))
+                }.filter {
+                    // Just ignore the notary key ID all together. It was part of the context in 5.1 and was removed in 5.2
+                    !notaryIdRegex.matches(it)
+                }
+                require(changed.isEmpty()) {
+                    throw InvalidMembershipRegistrationException(
+                        "Fields $changed cannot be added, removed or updated during re-registration."
+                    )
                 }
             }
 
