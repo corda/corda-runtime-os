@@ -13,6 +13,7 @@ import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
 import net.corda.flow.pipeline.handlers.FlowPostProcessingHandler
+import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.State
@@ -122,24 +123,9 @@ class FlowEventProcessorImpl(
                 // Exponential backoff -> 500ms, 1s, 2s, 4s, 8s, etc.
                 backoffStrategy = Exponential(base = 2.0, growthFactor = 250L),
                 // Only FlowTransientException will be retried
-                shouldRetry = { _, _, throwable -> throwable is FlowTransientException },
-                // Log retry attempts under INFO level and rollback the checkpoint
-                onRetryAttempt = { attempt, delay, throwable ->
-                    val flowCheckpoint = pipeline.context.checkpoint
-                    log.info(
-                        "Flow ${flowCheckpoint.flowId} encountered a transient error (attempt $attempt) and will retry " +
-                            "after $delay milliseconds: ${throwable.message}"
-                    )
-                    flowCheckpoint.rollback()
-                },
-                // Throw FlowFatalException once retry attempts have been exhausted
-                onRetryExhaustion = { retryCount, elapsedTime, throwable ->
-                    FlowFatalException(
-                        "Execution failed with \"${throwable.message}\" after $retryCount retry attempts in a " +
-                            "retry window of $elapsedTime.",
-                        throwable
-                    )
-                },
+                shouldRetry = { _, _, t -> t is FlowTransientException },
+                onRetryAttempt = { n, d, t -> logRetryAndRollbackCheckpoint(pipeline.context.checkpoint, n, d, t) },
+                onRetryExhaustion = { r, e, t -> giveUpAndThrowFlowFatalException(r, e, t) },
             ) {
                 pipeline
                     .eventPreProcessing()
@@ -175,6 +161,43 @@ class FlowEventProcessorImpl(
 
         return flowEventContextConverter.convert(
             result.copy(outputRecords = result.outputRecords + cleanupEvents)
+        )
+    }
+
+    /**
+     * Executed within the [tryWithBackoff] function whenever a retry attempt is about to be made.
+     * We simply log the attempt under INFO level and rollback the checkpoint.
+     *
+     * @param flowCheckpoint current flow checkpoint.
+     * @param retryNumber retry attempt number, starting in 1.
+     * @param delayMillis delay before the next retry attempt is made.
+     * @param throwable original exception thrown while executing retry attempt number [retryNumber].
+     */
+    private fun logRetryAndRollbackCheckpoint(
+        flowCheckpoint: FlowCheckpoint,
+        retryNumber: Int, delayMillis: Long, throwable: Throwable
+    ) {
+        log.info(
+            "Flow ${flowCheckpoint.flowId} encountered a transient error (attempt $retryNumber) and will retry " +
+                "after $delayMillis milliseconds: ${throwable.message}"
+        )
+        flowCheckpoint.rollback()
+    }
+
+    /**
+     * Executed within the [tryWithBackoff] function when all retry attempts has been exhausted.
+     *
+     * @param retryCount total amount of retry attempts.
+     * @param elapsedTime total amount of time spent retrying the transient exception.
+     * @param throwable original exception thrown while executing the last retry attempt.
+     */
+    private fun giveUpAndThrowFlowFatalException(
+        retryCount: Int, elapsedTime: Long, throwable: Throwable
+    ): CordaRuntimeException {
+        return FlowFatalException(
+            "Execution failed with \"${throwable.message}\" after $retryCount retry attempts in a " +
+                "retry window of $elapsedTime.",
+            throwable
         )
     }
 }
