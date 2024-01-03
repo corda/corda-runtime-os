@@ -82,6 +82,7 @@ class RPCClient(
         }
     }
 
+
     private fun deserializePayload(payload: ByteArray): Any? {
         return try {
             when {
