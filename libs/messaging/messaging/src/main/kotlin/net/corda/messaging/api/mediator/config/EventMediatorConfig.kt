@@ -8,6 +8,7 @@ import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.schema.configuration.MessagingConfig
+import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_POLL_TIMEOUT
 import java.time.Duration
 
 /**
@@ -44,7 +45,7 @@ data class EventMediatorConfig<K: Any, S: Any, E: Any>(
      * Timeout for polling consumers.
      */
     val pollTimeout: Duration
-        get() = Duration.ofMillis(messagingConfig.getLong(MessagingConfig.Subscription.POLL_TIMEOUT))
+        get() = Duration.ofMillis(messagingConfig.getLong(MEDIATOR_PROCESSING_POLL_TIMEOUT))
 
     /**
      * Maximal number of event processing retries.
