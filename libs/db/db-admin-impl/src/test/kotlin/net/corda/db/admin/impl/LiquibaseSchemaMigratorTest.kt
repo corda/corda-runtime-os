@@ -76,15 +76,15 @@ class LiquibaseSchemaMigratorTest {
     @Test
     fun `when createUpdateSql create LB object`() {
         migrator.createUpdateSql(connection, dbChange, writer)
-//        verify(lbFactory).invoke(
-//            check {
-//                assertThat(it).startsWith("master-changelog")
-//            },
-//            check {
-//                assertThat(it).isInstanceOf(StreamResourceAccessor::class.java)
-//            },
-//            eq(db)
-//        )
+        verify(lbFactory).invoke(
+            check {
+                assertThat(it).startsWith("master-changelog")
+            },
+            check {
+                assertThat(it).isInstanceOf(StreamResourceAccessor::class.java)
+            },
+            eq(db)
+        )
     }
 
     @Test

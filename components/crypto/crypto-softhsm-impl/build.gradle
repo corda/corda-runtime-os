@@ -9,7 +9,6 @@ dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "org.osgi:org.osgi.service.component.annotations"
     compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
-    implementation "org.liquibase:liquibase-core:$liquibaseVersion"
 
     api libs.caffeine
 

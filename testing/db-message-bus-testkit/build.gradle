@@ -7,7 +7,6 @@ dependencies {
     compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
-    implementation "org.liquibase:liquibase-core:$liquibaseVersion"
 
     implementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
     implementation libs.junit.api
