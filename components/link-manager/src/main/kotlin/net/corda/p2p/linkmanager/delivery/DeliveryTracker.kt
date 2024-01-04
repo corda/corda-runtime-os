@@ -67,6 +67,7 @@ internal class DeliveryTracker(
     private val messageTracker = MessageTracker(replayScheduler)
     private val subscriptionConfig = SubscriptionConfig("message-tracker-group", P2P_OUT_MARKERS)
     private val messageTrackerSubscription = {
+        LoggerFactory.getLogger("QQQ").info("Creating DeliveryTracker subscription...")
         subscriptionFactory.createStateAndEventSubscription(
             subscriptionConfig,
             messageTracker.processor,
@@ -154,6 +155,7 @@ internal class DeliveryTracker(
                 state: State<AuthenticatedMessageDeliveryState>?,
                 event: Record<String, AppMessageMarker>,
             ): Response<AuthenticatedMessageDeliveryState> {
+                logger.info("QQQ MessageTracker got event")
                 val marker = event.value
                 if (marker == null) {
                     logger.error("Received a null event. The state was not updated.")

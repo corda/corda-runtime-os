@@ -36,6 +36,7 @@ internal class InboundAssignmentListener(
 
         if (partitions.isEmpty()) {
             logger.warn("No partitions assigned to $observedTopic.")
+            logger.info("QQQ onPartitionsUnassigned - now I am not ready")
             dominoTile.updateState(LifecycleStatus.DOWN)
         } else {
             callCallbacks()
@@ -54,6 +55,7 @@ internal class InboundAssignmentListener(
             }
         }
         if (partitions.isNotEmpty()) {
+            logger.info("QQQ onPartitionsAssigned - now I am ready - $partitions")
             dominoTile.updateState(LifecycleStatus.UP)
             callCallbacks()
         }

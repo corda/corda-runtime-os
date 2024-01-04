@@ -12,6 +12,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.common.CommonComponents
 import net.corda.schema.Schemas
 import net.corda.utilities.time.Clock
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 internal class InboundLinkManager(
@@ -27,6 +28,7 @@ internal class InboundLinkManager(
         private const val INBOUND_MESSAGE_PROCESSOR_GROUP = "inbound_message_processor_group"
     }
     private val inboundMessageSubscription = {
+        LoggerFactory.getLogger("QQQ").info("QQQ creating InboundLinkManager subscription")
         subscriptionFactory.createEventLogSubscription(
             subscriptionConfig,
             InboundMessageProcessor(

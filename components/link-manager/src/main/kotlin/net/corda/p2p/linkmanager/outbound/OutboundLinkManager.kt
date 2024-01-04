@@ -15,6 +15,7 @@ import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.delivery.DeliveryTracker
 import net.corda.schema.Schemas
 import net.corda.utilities.time.Clock
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 internal class OutboundLinkManager(
@@ -55,6 +56,7 @@ internal class OutboundLinkManager(
     private val subscriptionConfig = SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schemas.P2P.P2P_OUT_TOPIC)
 
     private val outboundMessageSubscription = {
+        LoggerFactory.getLogger("QQQ").info("QQQ OutboundLinkManager creating subscription")
         subscriptionFactory.createEventLogSubscription(
             subscriptionConfig,
             outboundMessageProcessor,

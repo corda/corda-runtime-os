@@ -100,6 +100,10 @@ internal class OutboundMessageProcessor(
     }
 
     override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<String, *>> {
+        logger.info("QQQ OutboundMessageProcessor onNext")
+        if (inboundAssignmentListener.getCurrentlyAssignedPartitions().isEmpty()) {
+            logger.info("QQQ OutboundMessageProcessor onNext I am not ready yet, WTH")
+        }
         val authenticatedMessages = mutableListOf<TraceableItem<AuthenticatedMessageAndKey, AppMessage>>()
         val unauthenticatedMessages = mutableListOf<TraceableItem<OutboundUnauthenticatedMessage, AppMessage>>()
         for (event in events) {
