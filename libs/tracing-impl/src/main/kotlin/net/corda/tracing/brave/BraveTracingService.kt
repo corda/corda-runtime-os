@@ -117,7 +117,7 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
             .serverRequestParser(
                 object : HttpRequestParser.Default() {
                     override fun spanName(req: HttpRequest?, context: brave.propagation.TraceContext?): String? {
-                        return "${req?.method()} - ${req?.path()}"
+                        return "http server - ${req?.method()} - ${req?.path()}"
                     }
                 }
             )
