@@ -3,7 +3,6 @@ package net.corda.crypto.service.impl.rpc
 import net.corda.crypto.config.impl.RetryingConfig
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.CryptoTenants
-import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.crypto.wire.ops.encryption.request.EncryptRpcCommand
@@ -23,13 +22,9 @@ class SessionEncryptionProcessor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val executor = CryptoRetryingExecutor(
-        logger,
-        BackoffStrategy.createBackoff(config.maxAttempts, config.waitBetweenMills)
-    )
-
     override val requestClass = EncryptRpcCommand::class.java
     override val responseClass = EncryptionOpsResponse::class.java
+    private val executor = CryptoRetryingExecutor(logger, config.maxAttempts.toLong(), config.waitBetweenMills)
 
     override fun process(request: EncryptRpcCommand): EncryptionOpsResponse {
         logger.trace { "Processing request: ${request::class.java.name}" }
