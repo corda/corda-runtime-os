@@ -1,5 +1,6 @@
 package net.corda.messaging.mediator.processor
 
+import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
@@ -20,6 +21,7 @@ import net.corda.messaging.getStringRecords
 import net.corda.messaging.mediator.ConsumerProcessorState
 import net.corda.messaging.mediator.GroupAllocator
 import net.corda.messaging.mediator.MediatorState
+import net.corda.schema.configuration.MessagingConfig
 import net.corda.taskmanager.TaskManager
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -85,8 +87,12 @@ class ConsumerProcessorTest {
             future.complete(Unit)
             future
         }
-        whenever(messageRouter.getDestination(any())).thenReturn(RoutingDestination(client, "endpoint",
-            RoutingDestination.Type.ASYNCHRONOUS))
+        whenever(messageRouter.getDestination(any())).thenReturn(
+            RoutingDestination(
+                client, "endpoint",
+                RoutingDestination.Type.ASYNCHRONOUS
+            )
+        )
         whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(getGroups(2, 4))
 
         consumerProcessor.processTopic(getConsumerFactory(), getConsumerConfig())
@@ -135,7 +141,7 @@ class ConsumerProcessorTest {
         consumer.apply {
             whenever(poll(any())).thenReturn(listOf(getConsumerRecord()))
         }
-        assertThrows<CordaMessageAPIFatalException> {  consumerProcessor.processTopic(consumerFactory, getConsumerConfig()) }
+        assertThrows<CordaMessageAPIFatalException> { consumerProcessor.processTopic(consumerFactory, getConsumerConfig()) }
 
         verify(consumer, times(0)).poll(any())
         verify(consumerFactory, times(1)).create<String, String>(any())
@@ -146,7 +152,6 @@ class ConsumerProcessorTest {
         verify(consumer, times(0)).resetEventOffsetPosition()
         verify(consumer, times(1)).close()
     }
-
 
 
     private fun getGroups(groupCount: Int, recordCountPerGroup: Int): List<Map<String, List<Record<String, String>>>> {
@@ -181,7 +186,8 @@ class ConsumerProcessorTest {
 
     private fun buildStringTestConfig() = EventMediatorConfig(
         "",
-        SmartConfigImpl.empty(),
+        SmartConfigImpl.empty()
+            .withValue(MessagingConfig.Subscription.MEDIATOR_PROCESSING_POLL_TIMEOUT, ConfigValueFactory.fromAnyRef(10)),
         emptyList(),
         emptyList(),
         mock<StateAndEventProcessor<String, String, String>>(),
