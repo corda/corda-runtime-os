@@ -62,6 +62,14 @@ internal class InboundMessageProcessor(
     }
 
     override fun onNext(events: List<EventLogRecord<String, LinkInMessage>>): List<Record<*, *>> {
+        val knownPartitions = inboundAssignmentListener.getCurrentlyAssignedPartitions()
+        val messagesPartitions = events.map { it.partition }.toSet()
+        if (knownPartitions != messagesPartitions) {
+            logger.info("QQQ How can that be?! I think I have partitions $knownPartitions," +
+                    " but I got message from partitions $messagesPartitions")
+            inboundAssignmentListener.onPartitionsAssigned(events.map { it.topic to it.partition })
+            logger.info("QQQ All partitions had been assigned, will it help?")
+        }
         val dataMessages = mutableListOf<SessionIdAndMessage>()
         val sessionMessages = mutableListOf<TraceableItem<LinkInMessage, LinkInMessage>>()
         val recordsForUnauthenticatedMessage = mutableListOf<TraceableItem<List<Record<String, AppMessage>>, LinkInMessage>>()
