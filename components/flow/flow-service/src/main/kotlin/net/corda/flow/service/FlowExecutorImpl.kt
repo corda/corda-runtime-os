@@ -1,6 +1,5 @@
 package net.corda.flow.service
 
-import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
@@ -85,12 +84,6 @@ class FlowExecutorImpl constructor(
             )
             stateManager?.start()
             multiSourceEventMediator?.start()
-            coordinator.updateStatus(LifecycleStatus.UP)
-        } catch (configEx: ConfigException) {
-            val reason =
-                "Invalid Config, likely schema mismatch, cannot start flow executor at this time, setting status to DOWN awaiting valid Config"
-            log.info(reason, configEx)
-            coordinator.updateStatus(LifecycleStatus.DOWN, reason)
         } catch (ex: Exception) {
             val reason = "Failed to configure the flow executor using '${config}'"
             log.error(reason, ex)
@@ -116,10 +109,7 @@ class FlowExecutorImpl constructor(
         val flowConfig = initialConfigs.getConfig(FLOW_CONFIG)
         val updatedFlowConfig = flowConfig
             .withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(PROCESSOR_TIMEOUT)))
-            .withValue(
-                MAX_ALLOWED_MSG_SIZE,
-                ConfigValueFactory.fromAnyRef(messagingConfig.getLong(MAX_ALLOWED_MSG_SIZE))
-            )
+            .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(MAX_ALLOWED_MSG_SIZE)))
 
         return initialConfigs.mapValues {
             if (it.key == FLOW_CONFIG) {
@@ -146,7 +136,7 @@ class FlowExecutorImpl constructor(
         }
     }
 
-    private fun SmartConfig.withServiceEndpoints(config: Map<String, SmartConfig>): SmartConfig {
+    private fun SmartConfig.withServiceEndpoints(config: Map<String, SmartConfig>) : SmartConfig {
         val bootConfig = config.getConfig(BOOT_CONFIG)
 
         return listOf(
