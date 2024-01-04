@@ -91,6 +91,8 @@ internal class OutboundMessageProcessor(
                         Record(Schemas.P2P.SESSION_OUT_PARTITIONS, it.first, SessionPartitions(partitions.toList()))
                     )
                 }
+            }.also {
+                LogWithContext.reset()
             }
         }
     }

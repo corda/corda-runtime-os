@@ -9,4 +9,8 @@ object LogWithContext {
     fun set(exception: Exception) {
         mySource.set(exception)
     }
+
+    fun reset() {
+        mySource.set(null)
+    }
 }

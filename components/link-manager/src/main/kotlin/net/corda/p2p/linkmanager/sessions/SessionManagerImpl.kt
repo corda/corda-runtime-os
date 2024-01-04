@@ -779,6 +779,7 @@ internal class SessionManagerImpl(
             {
                 LogWithContext.set(id)
                 refreshSessionAndLog(sessionCounterparties, message.header.sessionId)
+                LogWithContext.reset()
             },
             sessionManagerConfig.sessionRefreshThreshold.toLong(),
             TimeUnit.SECONDS
@@ -1141,6 +1142,7 @@ internal class SessionManagerImpl(
                             {
                                 LogWithContext.set(id)
                                 outboundSessionTimeout(counterparties, sessionId)
+                                LogWithContext.reset()
                             },
                             config.get().sessionTimeout.toMillis(),
                             TimeUnit.MILLISECONDS
@@ -1242,6 +1244,7 @@ internal class SessionManagerImpl(
                     {
                         LogWithContext.set(id)
                         outboundSessionTimeout(counterparties, sessionId)
+                        LogWithContext.reset()
                     },
                     sessionTimeoutMs - timeSinceLastAck,
                     TimeUnit.MILLISECONDS

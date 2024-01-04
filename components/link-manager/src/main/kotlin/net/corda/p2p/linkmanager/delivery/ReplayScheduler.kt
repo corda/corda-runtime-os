@@ -248,6 +248,7 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
             val future = executorService.schedule({
                 LogWithContext.set(id)
                 replay(message, messageId)
+                LogWithContext.reset()
                                                   }, delay, TimeUnit.MILLISECONDS)
             ReplayInfo(firstReplayPeriod, future)
         }
@@ -322,6 +323,7 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
                 executorService.schedule({
                     LogWithContext.set(id)
                     replay(message, messageId)
+                    LogWithContext.reset()
                                          }, delay.toMillis(), TimeUnit.MILLISECONDS)
             )
         }
