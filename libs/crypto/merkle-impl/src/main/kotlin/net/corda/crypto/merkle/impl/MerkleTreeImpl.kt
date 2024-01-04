@@ -257,7 +257,7 @@ class MerkleTreeImpl(
      * @return a textual representation of the MerkleTree
      */
 
-    override fun toString(): String {
+    fun render(): String {
         // the hashes we want to show, at their (X,Y) coordinates
         val hashes = mutableMapOf<Pair<Int, Int>, String>()
         for (y in leaves.indices) {

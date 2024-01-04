@@ -429,9 +429,9 @@ class MerkleTreeTest {
                     assertThat(it.illustrate(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
                         00000612 (calc)┳0000069F (calc)┳00000630 (input 2)┳unknown 0 gap
                                        ┃               ┃                  ┗unknown 1 gap
-                                       ┃               ┗00000638 (calc)   ┳00000002 (calc) 2 known data
+                                       ┃               ┗00000634 (calc)   ┳00000002 (calc) 2 known data
                                        ┃                                  ┗00000003 (input 0) 3 gap
-                                       ┗00000638 (calc)━                  ┳00000004 (calc) 4 known data
+                                       ┗00000638 (calc)━00000638 (calc)   ┳00000004 (calc) 4 known data
                                                                           ┗00000005 (input 1) 5 gap
                     """.trimIndent())
                 }
@@ -635,4 +635,4 @@ fun assertHash(hash: SecureHash, valuePrefix: String): AbstractStringAssert<*> =
  * @param expectedRendered the rendered text form; indentation and extra whitespace before and after is ignored
  */
 fun assertTree(actual: MerkleTree, expectedRendered: String): AbstractStringAssert<*> =
-    assertThat(actual.toString()).isEqualTo(expectedRendered.trimIndent())
+    assertThat((actual as MerkleTreeImpl).render()).isEqualTo(expectedRendered.trimIndent())
