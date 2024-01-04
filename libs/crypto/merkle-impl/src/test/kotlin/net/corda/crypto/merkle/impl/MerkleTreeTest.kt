@@ -324,6 +324,26 @@ class MerkleTreeTest {
         runMerkleProofTest(treeSize)
     }
 
+    @Test
+    fun `merkle proof render`() {
+        val treeSize = 6
+        val i = 42
+        val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
+
+        val leafIndicesCombination = (0 until treeSize).filter { (i and (1 shl it)) != 0 }
+        testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize).also {
+            println(it)
+            assertThat(it.illustrate(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
+                """
+                00000612 (calc)┳0000069F (calc)┳00000630 (calc)┳00000000 (input 0) 0 gap
+                               ┃               ┃               ┗00000001 (calc) 1 known data
+                               ┃               ┗00000634 (calc)┳00000002 (input 1) 2 gap
+                               ┃                               ┗00000003 (calc) 3 known data
+                               ┗00000638 (calc)━00000638 (calc)┳00000004 (input 2) 4 gap
+                                               ┗00000005 (calc) 5 known data"""
+            )
+        }
+    }
     private fun runMerkleProofTest(treeSize: Int) {
         // we don't want to take the time to do an expensive hash so we'll just make a cheap one
         val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
@@ -362,7 +382,6 @@ class MerkleTreeTest {
         for (i in 1 until (1 shl treeSize)) {
             val leafIndicesCombination = (0 until treeSize).filter { (i and (1 shl it)) != 0 }
             testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize).also {
-                println(it.toString())
 
                 val hashes = calculateLeveledHashes(it, trivialHashDigestProvider)
 
@@ -387,8 +406,8 @@ class MerkleTreeTest {
                     """.trimIndent())
                     assertThat(it.illustrate(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
                         """
-                            00000630 (calc)┳00000000 (calc)   ━ 0 known data
-                                           ┗00000001 (input 0)━ 1 gap"""
+                            00000630 (calc)┳00000000 (calc)   ━ 00000000 (calc) 0 known data
+                                           ┗00000001 (input 0)━ 00000001 (input 0) 1 gap"""
                     )
                 }
 
@@ -398,13 +417,13 @@ class MerkleTreeTest {
                         arrayListOf("00000000", "00000002", "00000004")
                     )
                     assertThat(hashes.map { it.level }).isEqualTo(arrayListOf(2, 2, 2))
-                    assertThat(it.toString()).isEqualToIgnoringWhitespace("""
-                        ┳┳┳0 gap
-                        ┃┃┗1 known data
-                        ┃┗┳2 gap
-                        ┃ ┗3 known data
-                        ┗━┳4 gap
-                          ┗5 known data
+                    assertThat(it.illustrate(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
+                        00000612 (calc)┳0000069F (calc)┳00000630 (calc)┳00000000 (input 0) 0 gap
+                                       ┃               ┃               ┗00000001 (calc) 1 known data
+                                       ┃               ┗00000634 (calc)┳00000002 (input 1) 2 gap
+                                       ┃                               ┗00000003 (calc) 3 known data
+                                       ┗00000638 (calc)━00000638 (calc)┳00000004 (input 2) 4 gap
+                                                                       ┗00000005 (calc) 5 known data
                     """.trimIndent())
                 }
             }
