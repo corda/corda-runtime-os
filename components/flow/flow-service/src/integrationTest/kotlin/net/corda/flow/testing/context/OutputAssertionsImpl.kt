@@ -279,30 +279,6 @@ class OutputAssertionsImpl(
         }
     }
 
-    override fun checkpointHasRetry(expectedCount: Int) {
-        asserts.add { testRun ->
-            assertThat(testRun.response?.updatedState?.value?.pipelineState?.retryState).isNotNull
-            val retry = testRun.response!!.updatedState!!.value?.pipelineState!!.retryState
-
-            assertThat(retry.retryCount).isEqualTo(expectedCount)
-
-            /** we can't assert the event the second time around as it's a wakeup event (initially)
-             * so the testRun.event, which records the event we send into the system, will not match
-             * the retry.failedEvent as internally the pipeline switches from the wakeup to the event that needs
-             * to be retried.
-             */
-            if (retry.retryCount == 1) {
-                assertThat(retry.failedEvent).isEqualTo(testRun.event.value)
-            }
-        }
-    }
-
-    override fun checkpointDoesNotHaveRetry() {
-        asserts.add { testRun ->
-            assertThat(testRun.response?.updatedState?.value?.pipelineState?.retryState).isNull()
-        }
-    }
-
     override fun flowStatus(state: FlowStates, result: String?, errorType: String?, errorMessage: String?, flowTerminatedReason: String?) {
         asserts.add { testRun ->
             assertNotNull(testRun.response)

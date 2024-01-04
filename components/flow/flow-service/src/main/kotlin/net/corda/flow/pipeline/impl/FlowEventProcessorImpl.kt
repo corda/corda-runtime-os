@@ -101,10 +101,9 @@ class FlowEventProcessorImpl(
         }
 
         val checkpoint = state?.value
-        val isInRetryState = pipeline.context.checkpoint.inRetryState && checkpoint?.flowState == null
         val flowEventPayload = flowEvent.payload
 
-        if (flowEventPayload is StartFlow && checkpoint != null && !isInRetryState) {
+        if (flowEventPayload is StartFlow && checkpoint != null) {
             log.debug { "Ignoring duplicate '${StartFlow::class.java}'. Checkpoint has already been initialized" }
             return StateAndEventProcessor.Response(
                 state,

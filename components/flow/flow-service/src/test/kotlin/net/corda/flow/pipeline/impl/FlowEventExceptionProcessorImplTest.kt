@@ -16,7 +16,6 @@ import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes
-import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.sessions.FlowSessionManager
@@ -44,7 +43,6 @@ class FlowEventExceptionProcessorImplTest {
     private val flowEventContextConverter = mock<FlowEventContextConverter>()
     private val flowSessionManager = mock<FlowSessionManager>()
     private val flowCheckpoint = mock<FlowCheckpoint>()
-
     private val flowConfig = ConfigFactory.empty()
         .withValue(FlowConfig.PROCESSING_MAX_RETRY_WINDOW_DURATION, ConfigValueFactory.fromAnyRef(1000L))
     private val smartFlowConfig = SmartConfigFactory.createWithoutSecurityServices().create(flowConfig)
@@ -142,17 +140,6 @@ class FlowEventExceptionProcessorImplTest {
 
         verify(result.checkpoint).waitingFor = WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
         verify(result.checkpoint).setPendingPlatformError(FlowProcessingExceptionTypes.PLATFORM_ERROR, error.message)
-    }
-
-    @Test
-    fun `throwable triggered during transient exception processing does not escape the processor`() {
-        val throwable = RuntimeException()
-        whenever(flowCheckpoint.currentRetryCount).thenReturn(1)
-        whenever(flowMessageFactory.createFlowRetryingStatusMessage(flowCheckpoint)).thenThrow(throwable)
-
-        val transientError = FlowTransientException("error")
-        val transientResult = target.process(transientError, context)
-        assertEmptyDLQdResult(transientResult)
     }
 
     @Test

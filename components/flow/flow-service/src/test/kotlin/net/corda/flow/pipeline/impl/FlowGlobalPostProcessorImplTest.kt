@@ -16,7 +16,6 @@ import net.corda.flow.FLOW_ID_1
 import net.corda.flow.REQUEST_ID_1
 import net.corda.flow.external.events.impl.ExternalEventManager
 import net.corda.flow.pipeline.exceptions.FlowFatalException
-import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.impl.CheckpointMetadataKeys.STATE_META_SESSION_EXPIRY_KEY
@@ -103,13 +102,11 @@ class FlowGlobalPostProcessorImplTest {
     private val flowRecordFactory = mock<FlowRecordFactory>()
     private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider>()
     private val membershipGroupReader = mock<MembershipGroupReader>()
-    private val flowMessageFactory = mock<FlowMessageFactory>()
     private val checkpoint = mock<FlowCheckpoint>()
     private val testContext = buildFlowEventContext(checkpoint, Any())
     private val flowGlobalPostProcessor = FlowGlobalPostProcessorImpl(
         externalEventManager,
         sessionManager,
-        flowMessageFactory,
         flowRecordFactory,
         membershipGroupReaderProvider
     )
