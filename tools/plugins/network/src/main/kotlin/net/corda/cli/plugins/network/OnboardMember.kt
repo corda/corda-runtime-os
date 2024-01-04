@@ -28,9 +28,9 @@ import java.io.File
 @Command(
     name = "onboard-member",
     description = [
-        "Onboard a member"
+        "Onboard a member",
     ],
-    mixinStandardHelpOptions = true
+    mixinStandardHelpOptions = true,
 )
 class OnboardMember : Runnable, BaseOnboard() {
     private companion object {
@@ -41,8 +41,8 @@ class OnboardMember : Runnable, BaseOnboard() {
         names = ["--cpb-file", "-b"],
         description = [
             "Location of a CPB file. The plugin will generate a CPI signed with default options when a CPB is " +
-                    "provided. Use either --cpb-file or --cpi-hash.",
-        ]
+                "provided. Use either --cpb-file or --cpi-hash.",
+        ],
     )
     var cpbFile: File? = null
 
@@ -54,8 +54,10 @@ class OnboardMember : Runnable, BaseOnboard() {
 
     @Option(
         names = ["--set", "-s"],
-        description = ["Pass a custom key-value pair to the command to be included in the registration context. " +
-                "Specified as <key>=<value>. Multiple --set arguments may be provided."],
+        description = [
+            "Pass a custom key-value pair to the command to be included in the registration context. " +
+                "Specified as <key>=<value>. Multiple --set arguments may be provided.",
+        ],
     )
     var customProperties: Map<String, String> = emptyMap()
 
@@ -63,27 +65,27 @@ class OnboardMember : Runnable, BaseOnboard() {
         names = ["--group-policy-file", "-gp"],
         description = [
             "Location of a group policy file (default to ~/.corda/gp/groupPolicy.json).",
-            "Relevant only if cpb-file is used"
-        ]
+            "Relevant only if cpb-file is used",
+        ],
     )
     var groupPolicyFile: File =
         File(File(File(File(System.getProperty("user.home")), ".corda"), "gp"), "groupPolicy.json")
 
     @Option(
         names = ["--cpi-hash", "-h"],
-        description = ["The CPI hash of a previously uploaded CPI (use either --cpb-file or --cpi-hash)."]
+        description = ["The CPI hash of a previously uploaded CPI (use either --cpb-file or --cpi-hash)."],
     )
     var cpiHash: String? = null
 
     @Option(
         names = ["--pre-auth-token", "-a"],
-        description = ["Pre-auth token to use for registration."]
+        description = ["Pre-auth token to use for registration."],
     )
     var preAuthToken: String? = null
 
     @Option(
         names = ["--wait", "-w"],
-        description = ["Wait until member gets approved/declined. False, by default."]
+        description = ["Wait until member gets approved/declined. False, by default."],
     )
     var waitForFinalStatus: Boolean = false
 
@@ -103,12 +105,12 @@ class OnboardMember : Runnable, BaseOnboard() {
             File(
                 File(
                     System.getProperty(
-                        "user.home"
-                    )
+                        "user.home",
+                    ),
                 ),
-                ".corda"
+                ".corda",
             ),
-            "cached-cpis"
+            "cached-cpis",
         )
     }
 
@@ -137,7 +139,7 @@ class OnboardMember : Runnable, BaseOnboard() {
     private fun createCpi(cpbFile: File, cpiFile: File): Int {
         println(
             "Using the cpb file is not recommended." +
-                    " It is advised to create CPI using the package create-cpi command."
+                " It is advised to create CPI using the package create-cpi command.",
         )
         cpiFile.parentFile.mkdirs()
         val creator = CreateCpiV2()
@@ -168,9 +170,11 @@ class OnboardMember : Runnable, BaseOnboard() {
         val extProperties = customProperties.filterKeys { it.startsWith("$CUSTOM_KEY_PREFIX.") }
 
         val notaryProperties = if (roles.contains(MemberRole.NOTARY)) {
-            val notaryServiceName = customProperties[NOTARY_SERVICE_NAME] ?:
-                throw IllegalArgumentException("When specifying a NOTARY role, " +
-                        "you also need to specify a custom property for its name under $NOTARY_SERVICE_NAME.")
+            val notaryServiceName = customProperties[NOTARY_SERVICE_NAME]
+                ?: throw IllegalArgumentException(
+                    "When specifying a NOTARY role, " +
+                        "you also need to specify a custom property for its name under $NOTARY_SERVICE_NAME.",
+                )
             val isBackchainRequired = customProperties[NOTARY_SERVICE_BACKCHAIN_REQUIRED] ?: true
             val notaryProtocol = customProperties[NOTARY_SERVICE_PROTOCOL] ?: "com.r3.corda.notary.plugin.nonvalidating"
             mapOf(
@@ -179,7 +183,7 @@ class OnboardMember : Runnable, BaseOnboard() {
                 NOTARY_SERVICE_PROTOCOL to notaryProtocol,
                 NOTARY_SERVICE_PROTOCOL_VERSIONS.format("0") to "1",
                 NOTARY_KEYS_ID.format("0") to notaryKeyId,
-                NOTARY_KEY_SPEC.format("0") to "SHA256withECDSA"
+                NOTARY_KEY_SPEC.format("0") to "SHA256withECDSA",
             )
         } else {
             emptyMap()
@@ -189,21 +193,21 @@ class OnboardMember : Runnable, BaseOnboard() {
             .flatMapIndexed { index, url ->
                 listOf(
                     URL_KEY.format(index) to url,
-                    PROTOCOL_VERSION.format(index) to "1"
+                    PROTOCOL_VERSION.format(index) to "1",
                 )
             }
             .toMap()
 
         val sessionKeys = mapOf(
             PARTY_SESSION_KEYS_ID.format(0) to sessionKeyId,
-            SESSION_KEYS_SIGNATURE_SPEC.format(0) to "SHA256withECDSA"
+            SESSION_KEYS_SIGNATURE_SPEC.format(0) to "SHA256withECDSA",
         )
         val ledgerKeys = if (roles.contains(MemberRole.NOTARY)) {
             emptyMap()
         } else {
             mapOf(
                 LEDGER_KEYS_ID.format(0) to ledgerKeyId,
-                LEDGER_KEY_SIGNATURE_SPEC.format(0) to "SHA256withECDSA"
+                LEDGER_KEY_SIGNATURE_SPEC.format(0) to "SHA256withECDSA",
             )
         }
 
@@ -221,8 +225,8 @@ class OnboardMember : Runnable, BaseOnboard() {
             if (mtls) {
                 println(
                     "Using '$certificateSubject' as client certificate. " +
-                            "Onboarding will fail until the the subject is added to the MGM's allowed list. " +
-                            "See command: 'allowClientCertificate'."
+                        "Onboarding will fail until the the subject is added to the MGM's allowed list. " +
+                        "See command: 'allowClientCertificate'.",
                 )
             }
 
@@ -238,7 +242,7 @@ class OnboardMember : Runnable, BaseOnboard() {
             } else {
                 println(
                     "Registration request has been submitted. Wait for MGM approval for registration to be finalised." +
-                            " MGM may need to approve your request manually."
+                        " MGM may need to approve your request manually.",
                 )
             }
         }
