@@ -366,6 +366,18 @@ class MerkleTreeTest {
             val subsetI = 16;
             val subsetLeafIndicesCombination = (0 until treeSize).filter { (subsetI and (1 shl it)) != 0 }
             assertThat(subsetLeafIndicesCombination).hasSize(1)
+
+            val proof2 = it.subset(subsetLeafIndicesCombination)
+
+            assertThat(proof2.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
+            """
+                    00000612 (calc)┳0000069F (input 0)┳unknown        ┳unknown            filtered
+                                   ┃                  ┃               ┗unknown            filtered
+                                   ┃                  ┗unknown        ┳unknown            filtered
+                                   ┃                                  ┗unknown            filtered
+                                   ┗00000638 (calc)━00000638 (calc)   ┳00000004 (calc)    known leaf
+                                                                      ┗00000005 (input 1) filtered
+                """)
         }
     }
 

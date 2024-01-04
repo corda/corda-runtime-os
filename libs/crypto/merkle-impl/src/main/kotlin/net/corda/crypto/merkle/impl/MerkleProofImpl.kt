@@ -229,6 +229,18 @@ class MerkleProofImpl(
         return nodeHashes.single().second
     }
 
+    /**
+     *
+     * Work out a Merkle proof with fewer leaves.
+     *
+     * NOTE: currently this is not complete
+     *
+     * @param leafIndices indices  of the known leaves to include in the output proof
+     * @return A new Merkle proof
+     */
+    fun subset(leafIndices: List<Int>): MerkleProofImpl =
+        MerkleProofImpl(proofType, treeSize, leaves.filter { it.index in leafIndices}, hashes)
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
