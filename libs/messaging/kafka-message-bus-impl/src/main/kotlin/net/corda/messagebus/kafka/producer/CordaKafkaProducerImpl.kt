@@ -158,7 +158,8 @@ class CordaKafkaProducerImpl(
         partition: Int?,
         callback: CordaProducer.Callback?
     ) {
-        val traceContext = traceSend(record.headers, "kafka - send - clientId: $clientId")
+        val traceContext = traceSend(record.headers, "kafka - send")
+
         traceContext.markInScope().use {
             try {
                 producer.send(
