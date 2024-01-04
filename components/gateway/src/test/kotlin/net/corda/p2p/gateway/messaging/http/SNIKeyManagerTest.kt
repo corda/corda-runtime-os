@@ -57,7 +57,7 @@ class SNIKeyManagerTest {
 
     @Test
     fun `Corda 4 will return corda 4`() {
-        whenever(keyManager.getServerAliases(keyType, arrayOf(issuer))).doReturn(
+        whenever(keyManager.getServerAliases(keyType, null)).doReturn(
             arrayOf(
                 aliasC4,
             )
@@ -81,7 +81,7 @@ class SNIKeyManagerTest {
 
     @Test
     fun `the first passed alias will be returned`() {
-        whenever(keyManager.getServerAliases(keyType, arrayOf(issuer))).doReturn(
+        whenever(keyManager.getServerAliases(keyType, null)).doReturn(
             arrayOf(
                 aliasNop,
                 aliasNop,
@@ -107,7 +107,7 @@ class SNIKeyManagerTest {
             on { issuerX500Principal } doReturn issuer
         }
         whenever(keyManager.getCertificateChain(aliasC5)).doReturn(arrayOf(certificate))
-        whenever(keyManager.getServerAliases(keyType, arrayOf(issuer))).doReturn(arrayOf(aliasC5))
+        whenever(keyManager.getServerAliases(keyType, null)).doReturn(arrayOf(aliasC5))
 
         val alias = manager.chooseEngineServerAlias(keyType, arrayOf(issuer), engine)
 
