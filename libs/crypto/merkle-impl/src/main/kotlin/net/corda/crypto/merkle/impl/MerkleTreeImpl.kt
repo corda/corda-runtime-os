@@ -253,6 +253,10 @@ class MerkleTreeImpl(
      *           ┗66973b1a━66973b1a━00:00:00:02
      *
      * In this case a9d5543c is the hash of the root of the tree.
+     * 
+     * This could potentially be very large, which is why it is not the `toString`, since otherwise
+     * people could easily accidentally produce massive log files.
+     *
      *
      * @return a textual representation of the MerkleTree
      */

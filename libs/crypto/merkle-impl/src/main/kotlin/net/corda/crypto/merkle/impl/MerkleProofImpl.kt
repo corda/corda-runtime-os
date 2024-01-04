@@ -242,18 +242,16 @@ class MerkleProofImpl(
 
     override fun getHashes() = hashes
 
-    override fun toString(): String = renderTree( (0 until treeSize).map {
-            "$it "+(if (it in getLeaves().map { l -> l.index }) "known data" else "gap")
-        })
-
-    fun illustrate(digest: MerkleTreeHashDigest): String {
+    fun render(digest: MerkleTreeHashDigest): String {
         val nodeLabels: MutableMap<Pair<Int,Int>, String> = mutableMapOf()
         calculateRootInstrumented(digest) { hash, level, nodeIndex, consumed ->
             nodeLabels[level to nodeIndex] = hash.toString().substringAfter(":").take(8) + (if (consumed!=null) " (input $consumed)" else " (calc)")
         }
         val treeDepth = MerkleTreeImpl.treeDepth(treeSize)
-        val leafLabels = (0 until treeSize).map {
-            "${nodeLabels[treeDepth to it]?:"unknown"} $it " + (if (it in getLeaves().map { l -> l.index }) "known data" else "gap")
+        val leafHashes = (0 until treeSize).map { "${nodeLabels[treeDepth to it]?:"unknown"}"}
+        val longestLeafHash = leafHashes.map { it.length }.max()
+        val leafLabels =  (0 until treeSize).map {
+            "${leafHashes[it].padEnd(longestLeafHash)} ${if (it in getLeaves().map { l -> l.index }) "known leaf" else "filtered"}"
         }
         return renderTree(leafLabels, nodeLabels)
     }
