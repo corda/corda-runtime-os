@@ -9,7 +9,6 @@ import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
 import net.corda.rest.ResponseCode
-import net.corda.tracing.trace
 import net.corda.web.api.Endpoint
 import net.corda.web.api.HTTPMethod
 import net.corda.web.api.WebHandler
