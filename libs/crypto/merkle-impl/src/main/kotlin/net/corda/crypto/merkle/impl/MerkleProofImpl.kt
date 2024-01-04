@@ -210,7 +210,6 @@ class MerkleProofImpl(
                 "MerkleProof root hash calculation ended with ${nodeHashes.size} node hashes instead of one."
             )
         }
-        //foundHashCallback( nodeHashes.single().second, 0, 0, null)
         return nodeHashes.single().second
     }
 
