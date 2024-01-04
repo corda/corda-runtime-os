@@ -66,7 +66,6 @@ class RPCClient(
     }
 
     private fun processMessage(message: MediatorMessage<*>): MediatorMessage<*>? {
-        log.info("Filipe: properties: ${message.properties}")
         val response = traceHttpSend(message.properties, URI(message.endpoint())) {
             val request = buildHttpRequest(message)
             sendWithRetry(request)
