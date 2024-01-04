@@ -163,6 +163,7 @@ class MerkleProofImpl(
                             "MerkleProof root calculation requires more hashes than the proof has."
                         )
                     }
+                    val newIndex = item.first /2
 
                     // We pair the current element with a hash from the proof
                     newItems += if ((item.first and 1) == 0) {      // Even index means, that the item is on the left
@@ -173,8 +174,8 @@ class MerkleProofImpl(
                         // Also remember we used $hashIndex by bumping the counter
                         foundHashCallback(hashes[hashIndex], treeDepth+1, item.first + 1, hashIndex)
                         val newHash = digest.nodeHash(treeDepth, item.second, hashes[hashIndex++])
-                        foundHashCallback( newHash, treeDepth, newItems.size, null)
-                        Pair(item.first / 2, newHash)
+                        foundHashCallback( newHash, treeDepth, newIndex, null)
+                        Pair(newIndex, newHash)
                     } else {
                         // Make new node with:
                         //   - left being proof of hash at $hashIndex
@@ -183,13 +184,14 @@ class MerkleProofImpl(
                         // Also remember we used hashIndex by bumping the counter.
                         foundHashCallback(hashes[hashIndex], treeDepth+1, item.first-1, hashIndex)
                         val newHash = digest.nodeHash(treeDepth, hashes[hashIndex++], item.second)
-                        foundHashCallback( newHash, treeDepth, newItems.size, null)
-                        Pair(item.first / 2, newHash)
+                        foundHashCallback( newHash, treeDepth, newIndex, null)
+                        Pair(newIndex, newHash)
                     }
                 } else {
-                    foundHashCallback( item.second, treeDepth, newItems.size, null)
+                    val newIndex = (item.first + 1) / 2
+                    foundHashCallback( item.second, treeDepth, newIndex, null)
                     // The last odd element, just gets lifted.
-                    newItems += Pair((item.first + 1) / 2, item.second)
+                    newItems += Pair(newIndex, item.second)
                 }
                 ++index // whatever of the last 3 cases we took, we consumed one element
             }
@@ -251,7 +253,7 @@ class MerkleProofImpl(
         }
         val treeDepth = MerkleTreeImpl.treeDepth(treeSize)
         val leafLabels = (0 until treeSize).map {
-            "${nodeLabels[treeDepth to it]} $it " + (if (it in getLeaves().map { l -> l.index }) "known data" else "gap")
+            "${nodeLabels[treeDepth to it]?:"unknown"} $it " + (if (it in getLeaves().map { l -> l.index }) "known data" else "gap")
         }
         return renderTree(leafLabels, nodeLabels)
     }

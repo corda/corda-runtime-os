@@ -327,7 +327,7 @@ class MerkleTreeTest {
     @Test
     fun `merkle proof render`() {
         val treeSize = 6
-        val i = 42
+        val i = 20
         val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
 
         val leafIndicesCombination = (0 until treeSize).filter { (i and (1 shl it)) != 0 }
@@ -335,13 +335,13 @@ class MerkleTreeTest {
             println(it)
             assertThat(it.illustrate(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
                 """
-                00000612 (calc)┳0000069F (calc)┳00000630 (calc)┳00000000 (input 0) 0 gap
-                               ┃               ┃               ┗00000001 (calc) 1 known data
-                               ┃               ┗00000634 (calc)┳00000002 (input 1) 2 gap
-                               ┃                               ┗00000003 (calc) 3 known data
-                               ┗00000638 (calc)━00000638 (calc)┳00000004 (input 2) 4 gap
-                                               ┗00000005 (calc) 5 known data"""
-            )
+                    00000612 (calc)┳0000069F (calc)┳00000630 (input 2)┳unknown 0 gap
+                                   ┃               ┃                  ┗unknown 1 gap
+                                   ┃               ┗00000634 (calc)   ┳00000002 (calc) 2 known data
+                                   ┃                                  ┗00000003 (input 0) 3 gap
+                                   ┗00000638 (calc)━00000638 (calc)   ┳00000004 (calc) 4 known data
+                                                                      ┗00000005 (input 1) 5 gap
+                """)
         }
     }
     private fun runMerkleProofTest(treeSize: Int) {
@@ -424,6 +424,17 @@ class MerkleTreeTest {
                                        ┃                               ┗00000003 (calc) 3 known data
                                        ┗00000638 (calc)━00000638 (calc)┳00000004 (input 2) 4 gap
                                                                        ┗00000005 (calc) 5 known data
+                    """)
+                }
+
+                if (i == 20 && treeSize == 6) {
+                    assertThat(it.illustrate(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
+                        00000612 (calc)┳0000069F (calc)┳00000630 (input 2)┳unknown 0 gap
+                                       ┃               ┃                  ┗unknown 1 gap
+                                       ┃               ┗00000638 (calc)   ┳00000002 (calc) 2 known data
+                                       ┃                                  ┗00000003 (input 0) 3 gap
+                                       ┗00000638 (calc)━                  ┳00000004 (calc) 4 known data
+                                                                          ┗00000005 (input 1) 5 gap
                     """.trimIndent())
                 }
             }
