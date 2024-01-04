@@ -255,8 +255,8 @@ class MerkleTreeImpl(
      * In this case a9d5543c is the hash of the root of the tree.
      * 
      * This could potentially be very large, which is why it is not the `toString`, since otherwise
-     * people could easily accidentally produce massive log files.
-     *
+     * people could easily accidentally produce massive log files. This also includes the leaf data
+     * of the tree, so the output should be treated as sensitive.
      *
      * @return a textual representation of the MerkleTree
      */
@@ -276,7 +276,11 @@ class MerkleTreeImpl(
 }
 
 /**
- * Render a left-balanced Merkle tree of a certain size
+ * Render a left-balanced Merkle tree of a certain size.
+ *
+ * This is a top level function not a method of `MerkleTreeImpl` since it is a pure function which
+ * intentionally has no association with a specific instance of a `MerkleTreeImpl`. It is used by the
+ * `MerkleTreeImpl.render` method.
  *
  * @param leafLabels a label for each leaf.
  * @param nodeLabels optional labels for each node.
