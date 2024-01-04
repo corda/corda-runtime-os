@@ -405,7 +405,7 @@ subprojects {
     }
 
     tasks.named("detekt").configure {
-        setSource(files("src/main/kotlin", "src/test/kotlin", "src/integrationTest/kotlin", "src/smokeTest/kotlin"))
+        setSource(files("src/main/kotlin", "src/test/kotlin", "src/integrationTest/kotlin", "src/smokeTest/kotlin", "src/stressTest/kotlin"))
         if(file("$projectDir/detekt-baseline.xml").exists()){
             baseline = file("$projectDir/detekt-baseline.xml")
         }
