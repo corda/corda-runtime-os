@@ -303,7 +303,6 @@ class MerkleTreeTest {
         val leaves1 = "abcdef".map { it.toString().toByteArray() }
         val leaves2 = "ghijkl".map { it.toString().toByteArray() }
         val tree1 = MerkleTreeImpl.createMerkleTree(leaves1, defaultHashDigestProvider)
-        println(tree1)
         val tree2 = MerkleTreeImpl.createMerkleTree(leaves2, defaultHashDigestProvider)
         assertNotEquals(tree1.root, tree2.root)
         assertNotEquals(tree1, tree2)
@@ -332,7 +331,6 @@ class MerkleTreeTest {
 
         val leafIndicesCombination = (0 until treeSize).filter { (i and (1 shl it)) != 0 }
         testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize).also {
-            println(it)
             assertThat(it.illustrate(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
                 """
                     00000612 (calc)┳0000069F (calc)┳00000630 (input 2)┳unknown 0 gap
@@ -450,7 +448,6 @@ class MerkleTreeTest {
         val proofGeneric = merkleTree.createAuditProof(leafIndicesCombination)
         val proof = proofGeneric as MerkleProofImpl
 
-        println("Proof ${proof.toString()}")
         // The original root can be reconstructed from the proof
         assertEquals(proof.calculateRoot(trivialHashDigestProvider), merkleTree.root)
         assertTrue(proof.verify(root, trivialHashDigestProvider))
