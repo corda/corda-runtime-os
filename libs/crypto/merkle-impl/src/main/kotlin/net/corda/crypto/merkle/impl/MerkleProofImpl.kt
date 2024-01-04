@@ -52,10 +52,21 @@ class MerkleProofImpl(
      * proof or tree creation. [MerkleTreeImpl.createAuditProof]
      * It recreates the routes towards the root element from the items in the leaves to be proven with using
      * the proof hashes when they are needed.
+     *
+     * @param digest the digest service to use, which must generate hashes compatibile with the [hashes] constructor parameter.
+     * @return the secure hash of the root of the Merkle proof
      */
     override fun calculateRoot(digest: MerkleTreeHashDigest): SecureHash = calculateRootInstrumented(digest)
 
-
+    /**
+     * Walk the Merkle proof, making a callback on each node that is derived along the way, and return
+     * the root hash if the proof is valid.
+     *
+     * @param digest the digest service to use, which must generate hashes compatibile with the [hashes] constructor parameter.
+     * @param foundHashCallback called on each node hash that is calculated during the proof, with the level in the tree,
+     *        the node index at that level, and, if a supplied hash was consumed, the index of that hash.
+     * @return the secure hash of the root of the Merkle proof
+     */
     fun calculateRootInstrumented(digest: MerkleTreeHashDigest, foundHashCallback: (hash: SecureHash, level: Int, nodeIndex: Int, consumed: Int?) -> Unit = { _, _, _, _ ->  } ): SecureHash {
         if (digest !is MerkleTreeHashDigestProvider) {
             throw CordaRuntimeException(
@@ -86,7 +97,6 @@ class MerkleProofImpl(
         if (leaves.map { it.index }.toSet().size != leaves.size) {
             throw MerkleProofRebuildFailureException("MerkleProof leaves cannot have duplications.")
         }
-
         var hashIndex = 0
         val sortedLeaves = leaves.sortedBy { it.index }
         // work out nodeHashes, which is a list of node information for the current level we operate at
