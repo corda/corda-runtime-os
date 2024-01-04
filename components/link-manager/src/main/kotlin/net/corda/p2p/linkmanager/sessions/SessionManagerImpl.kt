@@ -773,8 +773,13 @@ internal class SessionManagerImpl(
                 "(local=${sessionCounterparties.ourId}, remote=${sessionCounterparties.counterpartyId})."
         )
         val sessionManagerConfig = config.get()
+        val id = UUID.randomUUID()
+        logger.info("QQQ in processResponderHandshake going to call refreshSessionAndLog ($id)", Exception("QQQ"))
         executorService.schedule(
-            { refreshSessionAndLog(sessionCounterparties, message.header.sessionId) },
+            {
+                logger.info("QQQ in processResponderHandshake going to call refreshSessionAndLog ($id)")
+                refreshSessionAndLog(sessionCounterparties, message.header.sessionId)
+            },
             sessionManagerConfig.sessionRefreshThreshold.toLong(),
             TimeUnit.SECONDS
         )
@@ -1131,8 +1136,15 @@ internal class SessionManagerImpl(
                         initialTrackedSession.lastSendTimestamp = timeStamp()
                         initialTrackedSession
                     } else {
+                        val id = UUID.randomUUID()
+                        logger.info("QQQ in sessionMessageSent going to call outboundSessionTimeout ($id)", Exception("QQQ"))
                         executorService.schedule(
-                            { outboundSessionTimeout(counterparties, sessionId) },
+                            {
+                                logger.info(
+                                    "QQQ in sessionMessageSent going to call outboundSessionTimeout ($id) ${Thread.currentThread().id}"
+                                )
+                                outboundSessionTimeout(counterparties, sessionId)
+                            },
                             config.get().sessionTimeout.toMillis(),
                             TimeUnit.MILLISECONDS
                         )
@@ -1228,8 +1240,13 @@ internal class SessionManagerImpl(
                 trackedOutboundSessions.remove(sessionId)
                 recordOutboundSessionTimeoutMetric(counterparties.ourId, counterparties.counterpartyId)
             } else {
+                val id = UUID.randomUUID()
+                logger.info("QQQ in outboundSessionTimeout going to call outboundSessionTimeout ($id)", Exception("QQQ"))
                 executorService.schedule(
-                    { outboundSessionTimeout(counterparties, sessionId) },
+                    {
+                        logger.info("QQQ in outboundSessionTimeout going to call outboundSessionTimeout ($id) ${Thread.currentThread().id}")
+                        outboundSessionTimeout(counterparties, sessionId)
+                    },
                     sessionTimeoutMs - timeSinceLastAck,
                     TimeUnit.MILLISECONDS
                 )

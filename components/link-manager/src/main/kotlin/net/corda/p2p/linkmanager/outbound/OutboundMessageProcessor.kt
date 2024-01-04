@@ -78,6 +78,7 @@ internal class OutboundMessageProcessor(
                     "No partitions from topic ${Schemas.P2P.LINK_IN_TOPIC} are currently assigned to the inbound message processor." +
                         " Sessions: $sessionIds will not be initiated."
                 )
+                logger.info("QQQ OOPS recordsForNewSessions too soon Thread ID: ${Thread.currentThread().id}", Exception("QQQ"))
                 emptyList()
             } else {
                 state.messages.forEach {

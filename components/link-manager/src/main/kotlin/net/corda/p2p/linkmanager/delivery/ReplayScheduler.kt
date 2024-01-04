@@ -20,6 +20,7 @@ import net.corda.utilities.VisibleForTesting
 import net.corda.utilities.time.Clock
 import org.slf4j.LoggerFactory
 import java.time.Duration
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
@@ -243,7 +244,12 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
             replayInfo?.future?.cancel(false)
             val firstReplayPeriod = replayCalculator.get().calculateReplayInterval()
             val delay = firstReplayPeriod.toMillis() + originalAttemptTimestamp - clock.instant().toEpochMilli()
-            val future = executorService.schedule({ replay(message, messageId) }, delay, TimeUnit.MILLISECONDS)
+            val id = UUID.randomUUID()
+            logger.info("QQQ in scheduleForReplay ($id) my thread: ${Thread.currentThread().id}", Exception("QQQ"))
+            val future = executorService.schedule({
+                logger.info("QQQ in scheduleForReplay ($id) my thread: ${Thread.currentThread().id}")
+                replay(message, messageId)
+                                                  }, delay, TimeUnit.MILLISECONDS)
             ReplayInfo(firstReplayPeriod, future)
         }
     }
@@ -311,9 +317,14 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
             } else {
                 oldReplayInfo.currentReplayPeriod
             }
+            val id = UUID.randomUUID()
+            logger.info("QQQ in reschedule ($id) ${Thread.currentThread().id}", Exception("QQQ"))
             ReplayInfo(
                 delay,
-                executorService.schedule({ replay(message, messageId) }, delay.toMillis(), TimeUnit.MILLISECONDS)
+                executorService.schedule({
+                    logger.info("QQQ in reschedule ($id) ${Thread.currentThread().id}")
+                    replay(message, messageId)
+                                         }, delay.toMillis(), TimeUnit.MILLISECONDS)
             )
         }
     }
