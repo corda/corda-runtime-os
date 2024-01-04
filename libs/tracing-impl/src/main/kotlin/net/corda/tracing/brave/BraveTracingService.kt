@@ -9,6 +9,7 @@ import brave.context.slf4j.MDCScopeDecorator
 import brave.http.HttpRequest
 import brave.http.HttpRequestMatchers.methodEquals
 import brave.http.HttpRequestMatchers.pathStartsWith
+import brave.http.HttpRequestParser
 import brave.http.HttpRuleSampler
 import brave.http.HttpTracing
 import brave.propagation.B3Propagation
@@ -32,8 +33,7 @@ import zipkin2.reporter.AsyncReporter
 import zipkin2.reporter.Reporter
 import zipkin2.reporter.brave.ZipkinSpanHandler
 import zipkin2.reporter.urlconnection.URLConnectionSender
-import java.util.EnumSet
-import java.util.Stack
+import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -112,7 +112,17 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
         .putRule(and(methodEquals("POST"), pathStartsWith("/api/v1/flow")), sampler(samplesPerSecond))
         .putRule(pathStartsWith("/"), sampler(samplesPerSecond)).build()
 
-    private val httpTracing by lazy { HttpTracing.newBuilder(tracing).serverSampler(serverSampler).build() }
+    private val httpTracing by lazy {
+        HttpTracing.newBuilder(tracing)
+            .serverRequestParser(
+                object : HttpRequestParser.Default() {
+                    override fun spanName(req: HttpRequest?, context: brave.propagation.TraceContext?): String? {
+                        return "${req?.method()} - ${req?.path()}"
+                    }
+                }
+            )
+        .serverSampler(serverSampler).build()
+    }
 
     private class LogReporter : Reporter<Span> {
         private val logger: Logger = Logger.getLogger(LogReporter::class.java.name)
