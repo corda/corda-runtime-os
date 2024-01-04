@@ -1,12 +1,12 @@
 package net.corda.cli.plugins.network.utils
 
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.core.util.DefaultIndenter
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.module.SimpleModule
-import com.fasterxml.jackson.datatype.jsr310.ser.InstantSerializer
 import com.fasterxml.jackson.datatype.jsr310.deser.InstantDeserializer
+import com.fasterxml.jackson.datatype.jsr310.ser.InstantSerializer
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.cli.plugins.network.output.ConsoleOutput
 import net.corda.cli.plugins.network.output.Output
 import java.time.Instant
@@ -30,7 +30,7 @@ object PrintUtils {
         output.generateOutput(
             objectMapper
                 .writer(prettyPrintWriter)
-                .writeValueAsString(result)
+                .writeValueAsString(result),
         )
     }
 
