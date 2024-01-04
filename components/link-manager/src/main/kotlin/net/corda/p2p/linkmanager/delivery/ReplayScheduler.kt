@@ -14,13 +14,13 @@ import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.p2p.linkmanager.common.LogWithContext
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.VisibleForTesting
 import net.corda.utilities.time.Clock
 import org.slf4j.LoggerFactory
 import java.time.Duration
-import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
@@ -244,10 +244,9 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
             replayInfo?.future?.cancel(false)
             val firstReplayPeriod = replayCalculator.get().calculateReplayInterval()
             val delay = firstReplayPeriod.toMillis() + originalAttemptTimestamp - clock.instant().toEpochMilli()
-            val id = UUID.randomUUID()
-            logger.info("QQQ in scheduleForReplay ($id) my thread: ${Thread.currentThread().id}", Exception("QQQ"))
+            val id = LogWithContext.create()
             val future = executorService.schedule({
-                logger.info("QQQ in scheduleForReplay ($id) my thread: ${Thread.currentThread().id}")
+                LogWithContext.set(id)
                 replay(message, messageId)
                                                   }, delay, TimeUnit.MILLISECONDS)
             ReplayInfo(firstReplayPeriod, future)
@@ -317,12 +316,11 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
             } else {
                 oldReplayInfo.currentReplayPeriod
             }
-            val id = UUID.randomUUID()
-            logger.info("QQQ in reschedule ($id) ${Thread.currentThread().id}", Exception("QQQ"))
+            val id = LogWithContext.create()
             ReplayInfo(
                 delay,
                 executorService.schedule({
-                    logger.info("QQQ in reschedule ($id) ${Thread.currentThread().id}")
+                    LogWithContext.set(id)
                     replay(message, messageId)
                                          }, delay.toMillis(), TimeUnit.MILLISECONDS)
             )

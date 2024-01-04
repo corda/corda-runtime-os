@@ -96,6 +96,7 @@ import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.metrics.CordaMetrics.NOT_APPLICABLE_TAG_VALUE
 import net.corda.p2p.crypto.protocol.api.InvalidSelectedModeError
 import net.corda.p2p.crypto.protocol.api.NoCommonModeError
+import net.corda.p2p.linkmanager.common.LogWithContext
 import net.corda.p2p.linkmanager.metrics.recordOutboundHeartbeatMessagesMetric
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.badGroupPolicy
 import kotlin.concurrent.read
@@ -773,11 +774,10 @@ internal class SessionManagerImpl(
                 "(local=${sessionCounterparties.ourId}, remote=${sessionCounterparties.counterpartyId})."
         )
         val sessionManagerConfig = config.get()
-        val id = UUID.randomUUID()
-        logger.info("QQQ in processResponderHandshake going to call refreshSessionAndLog ($id)", Exception("QQQ"))
+        val id = LogWithContext.create()
         executorService.schedule(
             {
-                logger.info("QQQ in processResponderHandshake going to call refreshSessionAndLog ($id)")
+                LogWithContext.set(id)
                 refreshSessionAndLog(sessionCounterparties, message.header.sessionId)
             },
             sessionManagerConfig.sessionRefreshThreshold.toLong(),
@@ -1136,13 +1136,10 @@ internal class SessionManagerImpl(
                         initialTrackedSession.lastSendTimestamp = timeStamp()
                         initialTrackedSession
                     } else {
-                        val id = UUID.randomUUID()
-                        logger.info("QQQ in sessionMessageSent going to call outboundSessionTimeout ($id)", Exception("QQQ"))
+                        val id = LogWithContext.create()
                         executorService.schedule(
                             {
-                                logger.info(
-                                    "QQQ in sessionMessageSent going to call outboundSessionTimeout ($id) ${Thread.currentThread().id}"
-                                )
+                                LogWithContext.set(id)
                                 outboundSessionTimeout(counterparties, sessionId)
                             },
                             config.get().sessionTimeout.toMillis(),
@@ -1240,11 +1237,10 @@ internal class SessionManagerImpl(
                 trackedOutboundSessions.remove(sessionId)
                 recordOutboundSessionTimeoutMetric(counterparties.ourId, counterparties.counterpartyId)
             } else {
-                val id = UUID.randomUUID()
-                logger.info("QQQ in outboundSessionTimeout going to call outboundSessionTimeout ($id)", Exception("QQQ"))
+                val id = LogWithContext.create()
                 executorService.schedule(
                     {
-                        logger.info("QQQ in outboundSessionTimeout going to call outboundSessionTimeout ($id) ${Thread.currentThread().id}")
+                        LogWithContext.set(id)
                         outboundSessionTimeout(counterparties, sessionId)
                     },
                     sessionTimeoutMs - timeSinceLastAck,
