@@ -3,8 +3,8 @@
 cordaPipelineKubernetesAgent(
     dailyBuildCron: 'H H/6 * * *',
     runIntegrationTests: false,
-    createPostgresDb: false,
-    publishOSGiImage: false,
+    createPostgresDb: true,
+    publishOSGiImage: true,
     publishPreTestImage: false,
     publishHelmChart: true,
     e2eTestName: 'corda-runtime-os-e2e-tests',
