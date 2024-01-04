@@ -27,7 +27,7 @@ class SNIKeyManager(
     }
 
     private fun chooseServerAlias(keyType: String?, issuers: Array<out Principal>?, matcher: SNIMatcher?): String? {
-        val aliases = keyManager.getServerAliases(keyType, issuers)
+        val aliases = keyManager.getServerAliases(keyType, null)
         if (aliases.isNullOrEmpty()) {
             logger.debug("Keystore doesn't contain any aliases for key type $keyType and issuers $issuers")
             return null

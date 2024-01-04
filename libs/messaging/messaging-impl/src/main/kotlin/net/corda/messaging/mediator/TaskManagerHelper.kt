@@ -6,6 +6,7 @@ import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_KEY
+import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_TOPIC
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.metrics.EventMediatorMetrics
@@ -170,7 +171,15 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
     private fun Record<*, *>.toMessage() =
         MediatorMessage(
             value!!,
-            headers.toMessageProperties().also { it[MSG_PROP_KEY] = key },
+            headers
+                .toMessageProperties()
+                .also { properties ->
+                    properties[MSG_PROP_KEY] = key;
+
+                    if(topic != null && topic!!.isNotEmpty()) {
+                        properties[MSG_PROP_TOPIC] = topic!!
+                    }
+                },
         )
 
     private fun List<Pair<String, String>>.toMessageProperties() =

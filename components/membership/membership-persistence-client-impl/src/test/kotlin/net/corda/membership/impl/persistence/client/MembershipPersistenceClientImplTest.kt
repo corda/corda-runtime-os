@@ -506,10 +506,10 @@ class MembershipPersistenceClientImplTest {
     }
 
     @Test
-    fun `Response timestamp before request timestamp causes failed response`() {
+    fun `Response timestamp over two minutes before request timestamp causes failed response`() {
         postConfigChangedEvent()
         mockPersistenceResponse(
-            rsTimestampOverride = clock.instant().minusSeconds(10)
+            rsTimestampOverride = clock.instant().minusSeconds(180)
         )
 
         val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourSignedMemberInfo))
