@@ -23,7 +23,7 @@ class MetricsReaderApp : Runnable {
         required = false,
         description = ["Webserver port"]
     )
-    private var port: Int = 3333
+    private var port: Int = 7004
 
     @CommandLine.Option(names = ["-h", "--help", "-help"], usageHelp = true, description = ["Display help and exit."])
     @Suppress("unused")
