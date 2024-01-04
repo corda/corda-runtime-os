@@ -343,6 +343,32 @@ class MerkleTreeTest {
                 """)
         }
     }
+
+    @Test
+    fun `merkle proof subset`() {
+        // a single simple test case which is easier to debug than the parameterised tree tests
+        val treeSize = 6
+        val i = 20
+        val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
+
+        val leafIndicesCombination = (0 until treeSize).filter { (i and (1 shl it)) != 0 }
+        testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize).also {
+            assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
+                """
+                    00000612 (calc)┳0000069F (calc)┳00000630 (input 2)┳unknown            filtered
+                                   ┃               ┃                  ┗unknown            filtered
+                                   ┃               ┗00000634 (calc)   ┳00000002 (calc)    known leaf
+                                   ┃                                  ┗00000003 (input 0) filtered
+                                   ┗00000638 (calc)━00000638 (calc)   ┳00000004 (calc)    known leaf
+                                                                      ┗00000005 (input 1) filtered
+                """)
+
+            val subsetI = 16;
+            val subsetLeafIndicesCombination = (0 until treeSize).filter { (subsetI and (1 shl it)) != 0 }
+            assertThat(subsetLeafIndicesCombination).hasSize(1)
+        }
+    }
+
     private fun runMerkleProofTest(treeSize: Int) {
         // we don't want to take the time to do an expensive hash so we'll just make a cheap one
         val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
