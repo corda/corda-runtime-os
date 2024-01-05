@@ -230,18 +230,24 @@ class MerkleProofImpl(
 
     /**
      *
-     * Work out a Merkle proof with fewer leaves.
+     * Work out a Merkle proof with specified leaves.
      *
-     * NOTE: currently this is not complete
+     * Throws IllegalArgumentException if some requeted leaf indices are not available in the source proof,
+     * or if no leaf indices are requested.
      *
      * @param leafIndices indices  of the known leaves to include in the output proof
-     * @return A new Merkle proof
+     * @return A new Merkle proof covering the specified leaves.
      */
     fun subset(digest: MerkleTreeHashDigest, leafIndices: List<Int>): MerkleProofImpl {
+        val outLeaves = leaves.filter { it.index in leafIndices }
+        require(outLeaves.size == leafIndices.size) { "some leaves are not available in input proof"}
+        require(outLeaves.size != 0) { "output proof must have at least one known leaf"}
+        // We work out the hashes for the new subset proof by considering, for the original proof, each hash that
+        // is calculated when we verify the proof by calculate the root.
         val outHashes: MutableList<SecureHash> = mutableListOf()
         val treeDepth = MerkleTreeImpl.treeDepth(treeSize)
         calculateRootInstrumented(digest) { hash, level, index, _ ->
-            val adjacentIndex = (index xor 1) // the adjacent node for this level
+            val adjacentIndex = index xor 1 // the adjacent node for this level
             val height = treeDepth - level // how many levels above the leaves, 0 for being at the leaf
             // The subset proof will need this hash if and only if the adjacent sub-tree is a known hash.
             // The adjacent sub-tree (be it leaf or node) will be known if and only if there is known data within it.
@@ -253,7 +259,6 @@ class MerkleProofImpl(
             val adjLHS = adjacentIndex shl height
             if (leafIndices.any { it in adjLHS until adjLHS + (1 shl height) }) outHashes.add(hash)
         }
-        val outLeaves = leaves.filter { it.index in leafIndices }
         return MerkleProofImpl(proofType, treeSize, outLeaves, outHashes)
     }
 

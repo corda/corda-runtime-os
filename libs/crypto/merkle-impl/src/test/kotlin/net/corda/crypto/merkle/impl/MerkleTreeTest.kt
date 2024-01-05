@@ -31,6 +31,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.security.SecureRandom
 import kotlin.experimental.xor
+import kotlin.test.assertFailsWith
 
 class MerkleTreeTest {
     companion object {
@@ -395,18 +396,24 @@ class MerkleTreeTest {
                            ┃                  ┗00000001 (calc)━00000001 (calc) known leaf
                            ┗00000002 (input 0)━unknown        ━unknown         filtered
         """.trimIndent())
-        val proof2 = proof.subset(trivialHashDigestProvider, listOf(1))
+        val proof2 = proof.subset(trivialHashDigestProvider, listOf(0))
         assertThat(proof2.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
-                    00000667 (calc)┳00000630 (calc)   ┳00000000 (input 0)━00000000 (input 0) filtered
-                                   ┃                  ┗00000001 (calc)   ━00000001 (calc)    known leaf
-                                   ┗00000002 (input 1)━unknown           ━unknown            filtered
-                """)
-        val proof3 = proof.subset(trivialHashDigestProvider, listOf(0))
-        assertThat(proof3.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
                     00000667 (calc)┳00000630 (calc)   ┳00000000 (calc)   ━00000000 (calc)    known leaf
                                    ┃                  ┗00000001 (input 0)━00000001 (input 0) filtered
                                    ┗00000002 (input 1)━unknown           ━unknown            filtered
                 """)
+        val proof3 = proof.subset(trivialHashDigestProvider, listOf(1))
+        assertThat(proof3.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
+                    00000667 (calc)┳00000630 (calc)   ┳00000000 (input 0)━00000000 (input 0) filtered
+                                   ┃                  ┗00000001 (calc)   ━00000001 (calc)    known leaf
+                                   ┗00000002 (input 1)━unknown           ━unknown            filtered
+                """)
+        assertFailsWith<IllegalArgumentException> {
+            proof.subset(trivialHashDigestProvider, listOf(2))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            proof.subset(trivialHashDigestProvider, emptyList())
+        }
     }
 
     private fun runMerkleProofTest(treeSize: Int) {
