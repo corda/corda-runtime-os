@@ -350,46 +350,63 @@ class MerkleTreeTest {
         val treeSize = 6
         val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
 
-        testLeafCombination(merkleTree, listOf(2,4), merkleTree.root, treeSize).also {
-            assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
-                """
-                    00000612 (calc)┳0000069F (calc)┳00000630 (input 2)┳unknown            filtered
-                                   ┃               ┃                  ┗unknown            filtered
-                                   ┃               ┗00000634 (calc)   ┳00000002 (calc)    known leaf
-                                   ┃                                  ┗00000003 (input 0) filtered
-                                   ┗00000638 (calc)━00000638 (calc)   ┳00000004 (calc)    known leaf
-                                                                      ┗00000005 (input 1) filtered
-                """
-            )
-
-            val proof2 = it.subset(trivialHashDigestProvider, listOf(4))
-
-            assertThat(proof2.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
-                """
-                00000612 (calc)┳0000069F (input 1)┳               ┳unknown            filtered
-                               ┃                  ┃               ┗unknown            filtered
-                               ┃                  ┗               ┳unknown            filtered
-                               ┃                                  ┗unknown            filtered
-                               ┗00000638 (calc)   ━00000638 (calc)┳00000004 (calc)    known leaf
-                                                                  ┗00000005 (input 0) filtered
-                    """
-            )
-        }
-    }
-    @Test
-    fun `merkle proof size 6 subset B`() {
-        val treeSize = 6
-        val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
         val proof = testLeafCombination(merkleTree, listOf(2,4), merkleTree.root, treeSize)
+        assertThat(proof.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
+            """
+                00000612 (calc)┳0000069F (calc)┳00000630 (input 2)┳unknown            filtered
+                               ┃               ┃                  ┗unknown            filtered
+                               ┃               ┗00000634 (calc)   ┳00000002 (calc)    known leaf
+                               ┃                                  ┗00000003 (input 0) filtered
+                               ┗00000638 (calc)━00000638 (calc)   ┳00000004 (calc)    known leaf
+                                                                  ┗00000005 (input 1) filtered
+            """
+        )
+
+        val proof2 = proof.subset(trivialHashDigestProvider, listOf(4))
+        assertThat(proof2.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
+            """
+            00000612 (calc)┳0000069F (input 1)┳               ┳unknown            filtered
+                           ┃                  ┃               ┗unknown            filtered
+                           ┃                  ┗               ┳unknown            filtered
+                           ┃                                  ┗unknown            filtered
+                           ┗00000638 (calc)   ━00000638 (calc)┳00000004 (calc)    known leaf
+                                                              ┗00000005 (input 0) filtered
+                """
+        )
 
         val proof3 = proof.subset(trivialHashDigestProvider, listOf(2))
         assertThat(proof3.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
-                    00000612 (calc)┳0000069F (calc)   ┳00000630 (input 1)┳unknown            filtered
-                                   ┃                  ┃                  ┗unknown            filtered
-                                   ┃                  ┗00000634 (calc)   ┳00000002 (calc)    known leaf
-                                   ┃                                     ┗00000003 (input 0) filtered
-                                   ┗00000638 (input 2)━                  ┳unknown            filtered
-                                                                         ┗unknown            filtered
+                00000612 (calc)┳0000069F (calc)   ┳00000630 (input 1)┳unknown            filtered
+                               ┃                  ┃                  ┗unknown            filtered
+                               ┃                  ┗00000634 (calc)   ┳00000002 (calc)    known leaf
+                               ┃                                     ┗00000003 (input 0) filtered
+                               ┗00000638 (input 2)━                  ┳unknown            filtered
+                                                                     ┗unknown            filtered
+            """)
+    }
+
+    @Test
+    fun `merkle proof size 3 subsets`() {
+        val treeSize = 3
+        val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
+        val proof = testLeafCombination(merkleTree, listOf(0, 1), merkleTree.root, treeSize)
+
+        assertThat(proof.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
+            00000667 (calc)┳00000630 (calc)   ┳00000000 (calc)━00000000 (calc) known leaf
+                           ┃                  ┗00000001 (calc)━00000001 (calc) known leaf
+                           ┗00000002 (input 0)━               ━unknown         filtered
+        """.trimIndent())
+        val proof2 = proof.subset(trivialHashDigestProvider, listOf(1))
+        assertThat(proof2.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
+                    00000667 (calc)┳00000630 (calc)   ┳00000000 (input 0)━00000000 (input 0) filtered
+                                   ┃                  ┗00000001 (calc)   ━00000001 (calc)    known leaf
+                                   ┗00000002 (input 1)━                  ━unknown            filtered
+                """)
+        val proof3 = proof.subset(trivialHashDigestProvider, listOf(0))
+        assertThat(proof3.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
+                    00000667 (calc)┳00000630 (calc)   ┳00000000 (calc)   ━00000000 (calc)    known leaf
+                                   ┃                  ┗00000001 (input 0)━00000001 (input 0) filtered
+                                   ┗00000002 (input 1)━                  ━unknown            filtered
                 """)
     }
 
