@@ -21,6 +21,7 @@ import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.FlowEventPipeline
 import net.corda.flow.pipeline.FlowMDCService
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
@@ -50,7 +51,6 @@ import org.mockito.kotlin.whenever
 import java.time.Instant
 
 class FlowEventProcessorImplTest {
-
     private val payload = ExternalEventResponse()
     private val aliceHoldingIdentity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "1")
     private val bobHoldingIdentity = HoldingIdentity("CN=Bob, O=Alice Corp, L=LDN, C=GB", "1")
@@ -195,15 +195,28 @@ class FlowEventProcessorImplTest {
     }
 
     @Test
-    fun `Flow transient exception is handled`() {
+    fun `flow transient exception is processed as fatal when retry window expired`() {
         val error = FlowTransientException("")
 
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
-        whenever(flowEventExceptionProcessor.process(error, flowEventPipeline.context)).thenReturn(errorContext)
+        whenever(flowEventExceptionProcessor.process(any<FlowFatalException>(), any<FlowEventContext<Any>>()))
+            .thenReturn(errorContext)
 
         val response = processor.onNext(state, getFlowEventRecord(FlowEvent(flowKey, payload)))
 
         assertThat(response).isEqualTo(errorResponse)
+    }
+
+    @Test
+    fun `flow transient exception is retried at source and no extra output records are generated`() {
+        val error = FlowTransientException("")
+
+        whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error).thenReturn(flowEventPipeline)
+        whenever(flowEventExceptionProcessor.process(error, flowEventPipeline.context)).thenReturn(errorContext)
+
+        val response = processor.onNext(state, getFlowEventRecord(FlowEvent(flowKey, payload)))
+
+        assertThat(response).isEqualTo(outputResponse)
     }
 
     @Test

@@ -26,7 +26,7 @@ class MemberLookupTest {
         private const val INSECURE = "--insecure=true"
 
         private val mgm = MemberX500Name.parse(
-            "CN=Alice, OU=R3 Test, O=Mgm, L=London, ST=Tottenham, C=GB"
+            "CN=Alice, OU=R3 Test, O=Mgm, L=London, ST=Tottenham, C=GB",
         )
 
         private lateinit var holdingIdentity: String
@@ -40,12 +40,12 @@ class MemberLookupTest {
                 targetUrl,
                 user,
                 password,
-                INSECURE
+                INSECURE,
             )
             holdingIdentity = HoldingIdentityUtils.getHoldingIdentity(
                 null,
                 onboardMgm.name,
-                null
+                null,
             )
         }
     }
@@ -59,12 +59,12 @@ class MemberLookupTest {
     @Test
     fun `test member lookup command with status filter with ACTIVE`() {
         CommandLine(memberLookup).execute(
-            "--status=${MEMBER_STATUS_ACTIVE}",
+            "--status=$MEMBER_STATUS_ACTIVE",
             "-h=$holdingIdentity",
             targetUrl,
             user,
             password,
-            INSECURE
+            INSECURE,
         )
 
         val mgmContext = outputStub.printedOutput?.get(0)?.get("mgmContext")
@@ -74,12 +74,12 @@ class MemberLookupTest {
     @Test
     fun `test member lookup command with status filter with SUSPENDED`() {
         CommandLine(memberLookup).execute(
-            "--status=${MEMBER_STATUS_SUSPENDED}",
+            "--status=$MEMBER_STATUS_SUSPENDED",
             "-h=$holdingIdentity",
             targetUrl,
             user,
             password,
-            INSECURE
+            INSECURE,
         )
 
         assertEquals(JsonNodeFactory.instance.arrayNode(), outputStub.printedOutput)
@@ -93,7 +93,7 @@ class MemberLookupTest {
             targetUrl,
             user,
             password,
-            INSECURE
+            INSECURE,
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
@@ -107,7 +107,7 @@ class MemberLookupTest {
             targetUrl,
             user,
             password,
-            INSECURE
+            INSECURE,
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
@@ -121,7 +121,7 @@ class MemberLookupTest {
             targetUrl,
             user,
             password,
-            INSECURE
+            INSECURE,
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
@@ -135,7 +135,7 @@ class MemberLookupTest {
             targetUrl,
             user,
             password,
-            INSECURE
+            INSECURE,
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
@@ -149,7 +149,7 @@ class MemberLookupTest {
             targetUrl,
             user,
             password,
-            INSECURE
+            INSECURE,
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
@@ -163,7 +163,7 @@ class MemberLookupTest {
             targetUrl,
             user,
             password,
-            INSECURE
+            INSECURE,
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
@@ -176,7 +176,7 @@ class MemberLookupTest {
             targetUrl,
             user,
             password,
-            INSECURE
+            INSECURE,
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
@@ -186,15 +186,15 @@ class MemberLookupTest {
     fun `test member lookup command with X500 name with a custom groupId`() {
         val group = File(
             File(File(File(System.getProperty("user.home")), ".corda"), "groupId"),
-            "groupId.txt"
+            "groupId.txt",
         ).readText().trim()
         CommandLine(memberLookup).execute(
             "--name=${onboardMgm.name}",
-            "--group=${group}",
+            "--group=$group",
             targetUrl,
             user,
             password,
-            INSECURE
+            INSECURE,
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
@@ -207,7 +207,7 @@ class MemberLookupTest {
             targetUrl,
             user,
             password,
-            INSECURE
+            INSECURE,
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())

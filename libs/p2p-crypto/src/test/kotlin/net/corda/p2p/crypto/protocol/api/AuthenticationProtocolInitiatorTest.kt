@@ -94,7 +94,7 @@ AQIDAQAB
                             ByteBuffer.wrap(byteArrayOf(3)),
                         ),
                         ByteBuffer.wrap(byteArrayOf(3)),
-                    )
+                    ),
                 ),
                 null,
                 null,
@@ -125,6 +125,6 @@ AQIDAQAB
         }
     }
 
-    private fun String.toPublicKey() : PublicKey =
+    private fun String.toPublicKey(): PublicKey =
         publicKeyFactory(this.reader())!!
 }

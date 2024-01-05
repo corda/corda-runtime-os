@@ -50,6 +50,7 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
+import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_POLL_TIMEOUT
 import net.corda.session.mapper.service.FlowMapperService
 import net.corda.session.mapper.service.state.StateMetadataKeys
 import net.corda.test.flow.util.buildSessionEvent
@@ -110,6 +111,7 @@ class FlowMapperServiceIntegrationTest {
         .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
         .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
         .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(100000000))
+        .withValue(MEDIATOR_PROCESSING_POLL_TIMEOUT, ConfigValueFactory.fromAnyRef(50))
 
     private val stateManagerConfig = SmartConfigImpl.empty()
 
@@ -523,6 +525,7 @@ class FlowMapperServiceIntegrationTest {
                 mediator {
                     poolSize = 1
                     minPoolRecordCount = 20
+                    pollTimeout = 50
                 }
                 pollTimeout = 100
             }

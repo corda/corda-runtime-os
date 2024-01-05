@@ -12,6 +12,8 @@ ext {
 
 group 'net.corda.cli.deployment'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     constraints {
         implementation('org.slf4j:slf4j-api') {

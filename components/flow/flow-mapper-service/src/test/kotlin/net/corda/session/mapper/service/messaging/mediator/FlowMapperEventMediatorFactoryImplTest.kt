@@ -30,7 +30,7 @@ class FlowMapperEventMediatorFactoryImplTest {
     fun beforeEach() {
         `when`(multiSourceEventMediatorFactory.create(any<EventMediatorConfig<String, FlowMapperState, FlowMapperEvent>>()))
             .thenReturn(mock())
-        `when`(config.getInt(MessagingConfig.Subscription.PROCESSING_THREAD_POOL_SIZE)).thenReturn(10)
+        `when`(config.getInt(MessagingConfig.Subscription.MEDIATOR_PROCESSING_THREAD_POOL_SIZE)).thenReturn(10)
 
         flowMapperEventMediatorFactory = FlowMapperEventMediatorFactoryImpl(
             flowMapperEventExecutorFactory,
