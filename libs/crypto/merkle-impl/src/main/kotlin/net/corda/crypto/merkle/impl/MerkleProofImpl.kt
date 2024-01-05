@@ -239,12 +239,13 @@ class MerkleProofImpl(
      * @return A new Merkle proof
      */
     fun subset(digest: MerkleTreeHashDigest, leafIndices: List<Int>): MerkleProofImpl {
-        var outputHashes: MutableList<SecureHash> = mutableListOf()
+        var outHashes: MutableList<SecureHash> = mutableListOf()
         val treeDepth = MerkleTreeImpl.treeDepth(treeSize)
         println("working out subset for leaf indices $leafIndices")
         calculateRootInstrumented(digest) { hash, level, index, _ ->
             val adjacentIndex = (index xor 1) // the adjacent node for this level
-            println("found hash $hash at level $level index $index adjacent index $adjacentIndex ")
+            val height = treeDepth - level // how many levels above the leaves, 0 for at the leaf
+            println("found hash $hash at level $level  height $height index $index adjacent index $adjacentIndex ")
             if (treeDepth == level) {
                 if (index in leafIndices) {
                     println("\tshould keep")
@@ -258,7 +259,7 @@ class MerkleProofImpl(
                     val adjacentKnown = adjacentIndex in leafIndices
                     if (adjacentKnown) {
                         println("\ttaking for output hash due to adjacent node")
-                        outputHashes.add(hash)
+                        outHashes.add(hash)
                     }
                 }
             } else {
@@ -275,9 +276,6 @@ class MerkleProofImpl(
 
                 // The adjacent node will be known iff there is known data within it
 
-                val height = treeDepth - level // how many levels above the leaves, 0 for at the leaf
-                //1 << shl (treeDepth - level)
-                println("\theight is $height adjacetIndex $adjacentIndex")
 
                 // e.g. if height=2 and index= 0, adjacentIndex is 1,
                 // this node covers 0,1,2,3 and the adjacentTree 4,5,6,7, so the test is whether any of [4,7] are in leafIndices
@@ -285,14 +283,29 @@ class MerkleProofImpl(
                 if (height == 2 && adjacentIndex == 1) {
                     if (leafIndices.any { it in 4..7 }) {
                         println("\ttaking for output since adjacent node will be known")
-                        outputHashes.add(hash)
+                        outHashes.add(hash)
+                    }
+                }
+
+                if (height == 1 && adjacentIndex == 1) {
+                    if (leafIndices.any { it in 2..3}) {
+                        println("\ttaking for output since adjacent node will be known")
+                        outHashes.add(hash)
+                    }
+                }
+                if (height == 2 && adjacentIndex == 0) {
+                    if (leafIndices.any { it in 0..3}) {
+                        println("\ttaking for output since adjacent node will be known")
+                        outHashes.add(hash)
                     }
                 }
             }
         }
-        println("output hashes $outputHashes")
-        return MerkleProofImpl(proofType, treeSize, leaves.filter { it.index in leafIndices }, outputHashes)
+        val outLeaves = leaves.filter { it.index in leafIndices }
+        println("output hashes $outHashes leaves $outLeaves")
+        return MerkleProofImpl(proofType, treeSize, outLeaves, outHashes)
     }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false

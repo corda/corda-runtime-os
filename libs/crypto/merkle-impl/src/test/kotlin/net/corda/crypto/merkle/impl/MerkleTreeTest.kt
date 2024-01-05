@@ -345,38 +345,52 @@ class MerkleTreeTest {
     }
 
     @Test
-    fun `merkle proof subset`() {
+    fun `merkle proof size 6 subset A`() {
         // a single simple test case which is easier to debug than the parameterised tree tests
         val treeSize = 6
-        val i = 20
         val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
 
-        val leafIndicesCombination = (0 until treeSize).filter { (i and (1 shl it)) != 0 }
-        testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize).also {
-            assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
+        testLeafCombination(merkleTree, listOf(2,4), merkleTree.root, treeSize).also {
+            assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
+                """
                     00000612 (calc)┳0000069F (calc)┳00000630 (input 2)┳unknown            filtered
                                    ┃               ┃                  ┗unknown            filtered
                                    ┃               ┗00000634 (calc)   ┳00000002 (calc)    known leaf
                                    ┃                                  ┗00000003 (input 0) filtered
                                    ┗00000638 (calc)━00000638 (calc)   ┳00000004 (calc)    known leaf
                                                                       ┗00000005 (input 1) filtered
-                """)
+                """
+            )
 
-            val subsetI = 16;
-            val subsetLeafIndicesCombination = (0 until treeSize).filter { (subsetI and (1 shl it)) != 0 }
-            assertThat(subsetLeafIndicesCombination).hasSize(1)
+            val proof2 = it.subset(trivialHashDigestProvider, listOf(4))
 
-            val proof2 = it.subset(trivialHashDigestProvider, subsetLeafIndicesCombination)
-
-            assertThat(proof2.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
+            assertThat(proof2.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
+                """
                 00000612 (calc)┳0000069F (input 1)┳               ┳unknown            filtered
                                ┃                  ┃               ┗unknown            filtered
                                ┃                  ┗               ┳unknown            filtered
                                ┃                                  ┗unknown            filtered
                                ┗00000638 (calc)   ━00000638 (calc)┳00000004 (calc)    known leaf
                                                                   ┗00000005 (input 0) filtered
-                    """)
+                    """
+            )
         }
+    }
+    @Test
+    fun `merkle proof size 6 subset B`() {
+        val treeSize = 6
+        val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
+        val proof = testLeafCombination(merkleTree, listOf(2,4), merkleTree.root, treeSize)
+
+        val proof3 = proof.subset(trivialHashDigestProvider, listOf(2))
+        assertThat(proof3.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
+                    00000612 (calc)┳0000069F (calc)   ┳00000630 (input 1)┳unknown            filtered
+                                   ┃                  ┃                  ┗unknown            filtered
+                                   ┃                  ┗00000634 (calc)   ┳00000002 (calc)    known leaf
+                                   ┃                                     ┗00000003 (input 0) filtered
+                                   ┗00000638 (input 2)━                  ┳unknown            filtered
+                                                                         ┗unknown            filtered
+                """)
     }
 
     private fun runMerkleProofTest(treeSize: Int) {
