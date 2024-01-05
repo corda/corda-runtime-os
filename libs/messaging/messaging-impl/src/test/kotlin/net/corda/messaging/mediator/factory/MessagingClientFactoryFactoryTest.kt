@@ -4,7 +4,7 @@ import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
-import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -32,7 +32,7 @@ class MessagingClientFactoryFactoryTest {
             messageBusConfig,
         )
 
-        Assertions.assertNotNull(messageBusClientFactory)
+        assertNotNull(messageBusClientFactory)
     }
 
     @Test
@@ -41,6 +41,16 @@ class MessagingClientFactoryFactoryTest {
             "rpcClient1"
         )
 
-        Assertions.assertNotNull(rpcClientFactory)
+        assertNotNull(rpcClientFactory)
+    }
+
+    @Test
+    fun testCreateMockRPCClientFactory() {
+        val mockRpcClientFactory = messagingClientFactoryFactory.createMockRPCClientFactory(
+            "mockRpcClient1",
+            100L
+        )
+
+        assertNotNull(mockRpcClientFactory)
     }
 }

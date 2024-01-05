@@ -25,4 +25,15 @@ interface MessagingClientFactoryFactory {
     fun createRPCClientFactory(
         id: String
     ) : MessagingClientFactory
+
+    /**
+     * Creates a mock RPC messaging client factory
+     *
+     * @param id The identifier of this client.
+     * @param delayTime The simulated delay time (in milliseconds) for the clients send() method.
+     */
+    fun createMockRPCClientFactory(
+        id: String,
+        delayTime: Long
+    ) : MessagingClientFactory
 }

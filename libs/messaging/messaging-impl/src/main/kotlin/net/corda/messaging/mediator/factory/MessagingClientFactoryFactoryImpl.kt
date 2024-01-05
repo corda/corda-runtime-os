@@ -5,6 +5,7 @@ import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.mediator.factory.MessagingClientFactoryFactory
+import net.corda.messaging.mediator.mocks.factory.MockRPCClientFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -36,5 +37,13 @@ class MessagingClientFactoryFactoryImpl @Activate constructor(
         id,
         cordaSerializationFactory,
         platformDigestService
+    )
+
+    override fun createMockRPCClientFactory(
+        id: String,
+        delayTime: Long
+    ) = MockRPCClientFactory(
+        id,
+        delayTime
     )
 }
