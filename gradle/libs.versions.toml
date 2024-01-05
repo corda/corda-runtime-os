@@ -50,6 +50,7 @@ jetty-websocket-servlet = { group = "org.eclipse.jetty.websocket", name = "webso
 jetty-websocket-server = { group = "org.eclipse.jetty.websocket", name = "websocket-server", version.ref = "jettyVersion" }
 jetty-websocket-client = { group = "org.eclipse.jetty.websocket", name = "websocket-client", version.ref = "jettyVersion" }
 jetty-http2-server = { group = "org.eclipse.jetty.http2", name = "http2-server", version.ref = "jettyVersion" }
+gradle-enterprise = { group = "com.gradle", name = "gradle-enterprise-gradle-plugin", version.ref = "gradleEnterpriseVersion" }
 
 [bundles]
 bouncycastle = ["bouncycastle-prov", "bouncycastle-pkix"]
