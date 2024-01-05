@@ -21,7 +21,7 @@ import net.corda.messaging.mediator.StateManagerHelper
  */
 class EventProcessor<K : Any, S : Any, E : Any>(
     private val config: EventMediatorConfig<K, S, E>,
-    private val stateManagerHelper: StateManagerHelper<K, S, E>,
+    private val stateManagerHelper: StateManagerHelper<S>,
     private val messageRouter: MessageRouter,
     private val consumerProcessorState: ConsumerProcessorState
 ) {

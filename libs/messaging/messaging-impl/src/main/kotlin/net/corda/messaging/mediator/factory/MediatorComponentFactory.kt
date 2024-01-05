@@ -28,7 +28,7 @@ class MediatorComponentFactory<K : Any, S : Any, E : Any>(
     private val clientFactories: Collection<MessagingClientFactory>,
     private val messageRouterFactory: MessageRouterFactory,
     private val groupAllocator: GroupAllocator,
-    private val stateManagerHelper: StateManagerHelper<K, S, E>
+    private val stateManagerHelper: StateManagerHelper<S>
 ) {
 
     /**
