@@ -12,7 +12,11 @@ data class FinalityPayload @ConstructorForDeserialization constructor(val map: M
         const val TRANSFER_ADDITIONAL_SIGNATURES = "TRANSFER_ADDITIONAL_SIGNATURES"
         const val FILTERED_TRANSACTIONS_AND_SIGNATURES = "FILTERED_TRANSACTIONS_AND_SIGNATURES"
     }
-    constructor(initialTransaction: UtxoSignedTransaction, transferAdditionalSignatures: Boolean, filteredTransactionsAndSignatures: List<FilteredTransactionAndSignatures>? = null) : this(
+    constructor(
+        initialTransaction: UtxoSignedTransaction,
+        transferAdditionalSignatures: Boolean,
+        filteredTransactionsAndSignatures: List<FilteredTransactionAndSignatures>? = null
+    ) : this(
         mapOf(
             INITIAL_TRANSACTION to initialTransaction,
             TRANSFER_ADDITIONAL_SIGNATURES to transferAdditionalSignatures,
@@ -22,6 +26,7 @@ data class FinalityPayload @ConstructorForDeserialization constructor(val map: M
 
     val initialTransaction get() = map[INITIAL_TRANSACTION] as UtxoSignedTransactionInternal
     val transferAdditionalSignatures get() = map[TRANSFER_ADDITIONAL_SIGNATURES] as Boolean
+
     @Suppress("UNCHECKED_CAST")
     val filteredTransactionsAndSignatures get() = map[FILTERED_TRANSACTIONS_AND_SIGNATURES] as List<FilteredTransactionAndSignatures>?
 }

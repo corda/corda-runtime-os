@@ -132,7 +132,7 @@ class UtxoFinalityFlowV1(
                     val newTxNotaryKey = initialTransaction.notaryKey
                     require(initialTransaction.notaryName == dependency.notaryName) {
                         "Notary name of filtered transaction \"${dependency.notaryName}\" doesn't match with " +
-                                "notary service of current transaction \"${initialTransaction.notaryName}\""
+                            "notary service of current transaction \"${initialTransaction.notaryName}\""
                     }
                     notarySignatureVerificationService.verifyNotarySignatures(
                         dependency,
@@ -156,9 +156,14 @@ class UtxoFinalityFlowV1(
                         dependency.signatures.filter { newTxNotaryKeyIds.contains(it.by) }
                     )
                 }
-        } else null
+        } else {
+            null
+        }
 
-        flowMessaging.sendAll(FinalityPayload(initialTransaction, transferAdditionalSignatures, filteredTransactionsAndSignatures), sessions.toSet())
+        flowMessaging.sendAll(
+            FinalityPayload(initialTransaction, transferAdditionalSignatures, filteredTransactionsAndSignatures),
+            sessions.toSet()
+        )
 
         if (notaryInfo.isBackchainRequired) {
             sessions.forEach {

@@ -149,8 +149,6 @@ class UtxoReceiveFinalityFlowV1Test {
     private val finalityPayload = FinalityPayload(signedTransaction, true)
     private val verifyingFinalityPayload = FinalityPayload(signedTransaction, true, filteredTxPayload)
 
-
-
     private val receivedPayloadV2 = FinalityPayload(signedTransaction, true)
     private val receivedPayloadV2ForTwoParties = FinalityPayload(signedTransaction, false)
 
