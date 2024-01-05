@@ -5,7 +5,7 @@ package net.corda.crypto.merkle.impl
  *
  * This is a top level function not a method of `MerkleTreeImpl` since it is a pure function which
  * intentionally has no association with a specific instance of a `MerkleTreeImpl`. It is used by the
- * `MerkleTreeImpl.render` method.
+ * `MerkleTreeImpl.render` and `MerkleProofImpl.render` methods.
  *
  * @param leafLabels a label for each leaf.
  * @param nodeLabels optional labels for each node.
