@@ -241,30 +241,22 @@ class MerkleProofImpl(
     fun subset(digest: MerkleTreeHashDigest, leafIndices: List<Int>): MerkleProofImpl {
         var outHashes: MutableList<SecureHash> = mutableListOf()
         val treeDepth = MerkleTreeImpl.treeDepth(treeSize)
-        println("working out subset for leaf indices $leafIndices")
         calculateRootInstrumented(digest) { hash, level, index, _ ->
             val adjacentIndex = (index xor 1) // the adjacent node for this level
             val height = treeDepth - level // how many levels above the leaves, 0 for at the leaf
-            println("found hash $hash at level $level  height $height index $index adjacent index $adjacentIndex ")
             // The adjacent sub-tree (be it leaf or node) will be known iff there is known data within it
             // There is known data if any member of leafIndices is set within that subtree.
             // Since we are $height levels up from the leaves (perhaps $height is zero), the start and end leaf indices
             // are double for each level of the tree, which we can factor in by bitshifting our indices to the left
             // $height times.
 
-
             // e.g. if height=2 and index= 0, adjacentIndex is 1,
             // this node covers 0,1,2,3 and the adjacentTree 4,5,6,7, so the test is whether any of [4,7] are in leafIndices
-
             val adjLHS = adjacentIndex shl height
 
-            if (leafIndices.any { it in adjLHS until adjLHS + (1 shl height) }) {
-                    println("\ttaking for output since adjacent tree will be known")
-                    outHashes.add(hash)
-            }
+            if (leafIndices.any { it in adjLHS until adjLHS + (1 shl height) }) outHashes.add(hash)
         }
         val outLeaves = leaves.filter { it.index in leafIndices }
-        println("output hashes $outHashes leaves $outLeaves")
         return MerkleProofImpl(proofType, treeSize, outLeaves, outHashes)
     }
 
