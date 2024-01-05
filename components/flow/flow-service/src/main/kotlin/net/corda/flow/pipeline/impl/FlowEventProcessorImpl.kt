@@ -101,10 +101,9 @@ class FlowEventProcessorImpl(
         }
 
         val checkpoint = state?.value
-        val isInRetryState = pipeline.context.checkpoint.inRetryState && checkpoint?.flowState == null
         val flowEventPayload = flowEvent.payload
 
-        if (flowEventPayload is StartFlow && checkpoint != null && !isInRetryState) {
+        if (flowEventPayload is StartFlow && checkpoint != null) {
             log.debug { "Ignoring duplicate '${StartFlow::class.java}'. Checkpoint has already been initialized" }
             return StateAndEventProcessor.Response(
                 state,
@@ -196,7 +195,7 @@ class FlowEventProcessorImpl(
     ): CordaRuntimeException {
         return FlowFatalException(
             "Execution failed with \"${throwable.message}\" after $retryCount retry attempts in a " +
-                "retry window of $elapsedTime.",
+                "retry window of $elapsedTime milliseconds.",
             throwable
         )
     }
