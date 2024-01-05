@@ -274,30 +274,18 @@ class MerkleProofImpl(
                 // So, if we are at a node and have a tree full of unknowns, and the adjacent node
                 // will be calculated in the output proof, then we need to produce an output hash
 
+
                 // The adjacent node will be known iff there is known data within it
 
 
                 // e.g. if height=2 and index= 0, adjacentIndex is 1,
                 // this node covers 0,1,2,3 and the adjacentTree 4,5,6,7, so the test is whether any of [4,7] are in leafIndices
 
-                if (height == 2 && adjacentIndex == 1) {
-                    if (leafIndices.any { it in 4..7 }) {
-                        println("\ttaking for output since adjacent node will be known")
-                        outHashes.add(hash)
-                    }
-                }
+                val adjLHS = adjacentIndex shl height
 
-                if (height == 1 && adjacentIndex == 1) {
-                    if (leafIndices.any { it in 2..3}) {
+                if (leafIndices.any { it in adjLHS until adjLHS + (1 shl height) }) {
                         println("\ttaking for output since adjacent node will be known")
                         outHashes.add(hash)
-                    }
-                }
-                if (height == 2 && adjacentIndex == 0) {
-                    if (leafIndices.any { it in 0..3}) {
-                        println("\ttaking for output since adjacent node will be known")
-                        outHashes.add(hash)
-                    }
                 }
             }
         }
