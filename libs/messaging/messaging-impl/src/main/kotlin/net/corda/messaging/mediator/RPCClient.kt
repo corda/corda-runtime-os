@@ -16,7 +16,6 @@ import net.corda.metrics.CordaMetrics
 import net.corda.tracing.addTraceContextToHttpRequest
 import net.corda.tracing.addTraceContextToMediatorMessage
 import net.corda.tracing.traceSend
-import net.corda.utilities.debug
 import net.corda.utilities.trace
 import net.corda.v5.crypto.DigestAlgorithmName
 import org.slf4j.Logger
