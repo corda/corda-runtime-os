@@ -1,6 +1,7 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers
 
 import net.corda.crypto.core.ShortHash
+import net.corda.data.virtualnode.DbTypes
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeSchemaRequest
 import net.corda.data.virtualnode.VirtualNodeSchemaResponse
@@ -10,19 +11,21 @@ import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.DbSchema
 import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
+import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
+import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
 import net.corda.orm.utils.transaction
-import net.corda.rest.exception.ResourceNotFoundException
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
+import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbException
 import java.io.StringWriter
 import java.sql.Connection
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
+import javax.persistence.EntityManager
 
 internal class VirtualNodeSchemaHandler(
     private val dbConnectionManager: DbConnectionManager,
     private val schemaMigrator: LiquibaseSchemaMigrator,
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
+    private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl(),
 ) {
     @Suppress("ThrowsCount")
     fun handle(
@@ -32,42 +35,41 @@ internal class VirtualNodeSchemaHandler(
     ) {
         val connection = dbConnectionManager.getClusterDataSource().connection
         val sql = when (virtualNodeSchemaRequest.dbType) {
-            "crypto", "uniqueness" -> {
+            DbTypes.CRYPTO, DbTypes.UNIQUENESS -> {
                 val changelog = getChangelog(virtualNodeSchemaRequest.dbType)
                 buildSqlWithStringWriter(connection, changelog)
             }
 
-            "vault" -> (
-                {
-                    if (virtualNodeSchemaRequest.virtualNodeShortHash == null && virtualNodeSchemaRequest.cpiChecksum != null) {
-                        val changeLog = getChangelog(virtualNodeSchemaRequest.dbType)
-                        val cpkChangeLog = getCpkChangelog(virtualNodeSchemaRequest.dbType)
+            DbTypes.VAULT -> {
+                if (virtualNodeSchemaRequest.virtualNodeShortHash == null && virtualNodeSchemaRequest.cpiChecksum != null) {
+                    val changeLog = getChangelog(virtualNodeSchemaRequest.dbType)
+                    dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction { em ->
+                        val cpkChangeLog = getCpkChangelog(em, virtualNodeSchemaRequest.cpiChecksum)
                         buildSqlWithStringWriter(connection, changeLog) + buildSqlWithStringWriter(
                             connection,
                             cpkChangeLog
                         )
-                    } else if (virtualNodeSchemaRequest.virtualNodeShortHash != null && virtualNodeSchemaRequest.cpiChecksum != null) {
-                        val virtualNodeInfo = virtualNodeInfoReadService
-                            .getByHoldingIdentityShortHash(
-                                ShortHash.parse(
-                                    virtualNodeSchemaRequest.virtualNodeShortHash
-                                )
-                            )
-                            ?: throw ResourceNotFoundException(
-                                "Virtual node",
-                                virtualNodeSchemaRequest.virtualNodeShortHash
-                            )
+                    }
+                } else if (virtualNodeSchemaRequest.virtualNodeShortHash != null && virtualNodeSchemaRequest.cpiChecksum != null) {
+                    dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction { em ->
+                        val virtualNodeInfo = virtualNodeRepository.find(
+                            em,
+                            ShortHash.parse(virtualNodeSchemaRequest.virtualNodeShortHash)
+                        )
+                            ?: throw VirtualNodeDbException("Unable to fetch virtual node info")
+
+                        val cpkChangeLog = getCpkChangelog(em, virtualNodeSchemaRequest.cpiChecksum)
                         val connectionVNodeVault =
                             dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).connection
                         buildSqlWithStringWriter(
                             connectionVNodeVault,
-                            getCpkChangelog(virtualNodeSchemaRequest.cpiChecksum)
+                            cpkChangeLog
                         )
-                    } else {
-                        throw IllegalArgumentException("Illegal argument combination for virtualNodeSchema")
                     }
+                } else {
+                    throw IllegalArgumentException("Illegal argument combination for virtualNodeSchema")
                 }
-                ).toString()
+            }
 
             else -> throw IllegalArgumentException("Cannot use dbType that does not exist")
         }
@@ -79,8 +81,17 @@ internal class VirtualNodeSchemaHandler(
         )
     }
 
-    private fun getChangelog(dbType: String): DbChange {
-        val resourceSubPath = "vnode-$dbType"
+    private fun dbTypesToString(dbType: DbTypes): String {
+        return when (dbType) {
+            DbTypes.CRYPTO -> "crypto"
+            DbTypes.UNIQUENESS -> "uniquness"
+            DbTypes.VAULT -> "vault"
+        }
+    }
+
+    private fun getChangelog(dbType: DbTypes): DbChange {
+        val dbTypeAsString = dbTypesToString(dbType)
+        val resourceSubPath = "vnode-$dbTypeAsString"
         val schemaClass = DbSchema::class.java
         val fullName = "${schemaClass.packageName}.$resourceSubPath"
         val resourcePrefix = fullName.replace('.', '/')
@@ -92,14 +103,12 @@ internal class VirtualNodeSchemaHandler(
         return ClassloaderChangeLog(linkedSetOf(changeLogFiles))
     }
 
-    private fun getCpkChangelog(cpiChecksum: String): DbChange {
+    private fun getCpkChangelog(em: EntityManager, cpiChecksum: String): DbChange {
         val cpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository()
-        dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction { em ->
-            val cpiMetadata =
-                CpiCpkRepositoryFactory().createCpiMetadataRepository().findByFileChecksum(em, cpiChecksum)
-            val changelogsPerCpk = cpkDbChangeLogRepository.findByCpiId(em, cpiMetadata!!.cpiId)
-            return VirtualNodeDbChangeLog(changelogsPerCpk)
-        }
+        val cpiMetadata =
+            CpiCpkRepositoryFactory().createCpiMetadataRepository().findByFileChecksum(em, cpiChecksum)
+        val changelogsPerCpk = cpkDbChangeLogRepository.findByCpiId(em, cpiMetadata!!.cpiId)
+        return VirtualNodeDbChangeLog(changelogsPerCpk)
     }
 
     private fun buildSqlWithStringWriter(

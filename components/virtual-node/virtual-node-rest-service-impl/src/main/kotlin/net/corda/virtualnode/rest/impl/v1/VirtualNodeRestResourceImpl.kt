@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.ShortHash
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.virtualnode.DbTypes
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
@@ -370,19 +371,51 @@ internal class VirtualNodeRestResourceImpl(
     }
 
     override fun getCreateCryptoSchemaSQL(): String {
+        return getSchemaSql(DbTypes.CRYPTO, null, null)
+    }
+
+    override fun getCreateUniquenessSchemaSQL(): String {
+        return getSchemaSql(DbTypes.UNIQUENESS, null, null)
+    }
+
+    override fun getCreateVaultSchemaSQL(cpiChecksum: String): String {
+        return getSchemaSql(DbTypes.VAULT, null, cpiChecksum)
+    }
+
+    override fun getUpdateSchemaSQL(virtualNodeShortId: String, newCpiChecksum: String): String {
+        return getSchemaSql(DbTypes.VAULT, virtualNodeShortId, newCpiChecksum)
+    }
+
+    private fun getSchemaSql(
+        dbType: DbTypes,
+        virtualNodeShortId: String?,
+        cpiChecksum: String?
+    ): String {
         val instant = clock.instant()
 
         val rpcRequest = VirtualNodeManagementRequest(
             instant,
             VirtualNodeSchemaRequest(
-                "crypto",
-                null,
-                null
+                dbType,
+                virtualNodeShortId,
+                cpiChecksum
             )
         )
 
+        val operationLog = when (dbType) {
+            DbTypes.CRYPTO -> "get Schema SQL to create Crypto DB"
+            DbTypes.UNIQUENESS -> "get Schema SQL to create Uniqueness DB"
+            DbTypes.VAULT -> {
+                if (virtualNodeShortId.isNullOrBlank()) {
+                    "get Schema SQL to create Vault DB and CPI"
+                } else {
+                    "get Schema SQL to update CPI"
+                }
+            }
+        }
+
         // Send request and await response message on bus
-        val resp = tryWithExceptionHandling(logger, "Get Schema SQL to create Crypto DB") {
+        val resp = tryWithExceptionHandling(logger, operationLog) {
             sendAndReceive(rpcRequest)
         }
 
@@ -396,18 +429,6 @@ internal class VirtualNodeRestResourceImpl(
             is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)
             else -> throw UnknownResponseTypeException(resp.responseType::class.java.name)
         }
-    }
-
-    override fun getCreateUniquenessSchemaSQL(): String {
-        TODO()
-    }
-
-    override fun getCreateVaultSchemaSQL(cpiChecksum: String): String {
-        TODO()
-    }
-
-    override fun getUpdateSchemaSQL(virtualNodeShortId: String, newCpiChecksum: String): String {
-        TODO()
     }
 
     private fun sendAsynchronousRequest(

@@ -37,7 +37,6 @@ import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_ASYNC_REQUEST_TOPIC
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
 import net.corda.schema.configuration.VirtualNodeDatasourceConfig
 import net.corda.utilities.time.UTCClock
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.write.db.impl.VirtualNodesDbAdmin
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationProcessor
@@ -68,7 +67,6 @@ internal class VirtualNodeWriterFactory(
     private val cpiCpkRepositoryFactory: CpiCpkRepositoryFactory,
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val cpkDbChangeLogRepository: CpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository(),
 ) {
 
@@ -234,7 +232,7 @@ internal class VirtualNodeWriterFactory(
         val virtualNodeSchemaHandler = VirtualNodeSchemaHandler(
             dbConnectionManager,
             schemaMigrator,
-            virtualNodeInfoReadService
+            virtualNodeRepository
         )
 
         val processor = VirtualNodeWriterProcessor(
