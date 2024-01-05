@@ -31,6 +31,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.security.SecureRandom
 import kotlin.experimental.xor
+import kotlin.random.Random
 import kotlin.test.assertFailsWith
 
 class MerkleTreeTest {
@@ -450,6 +451,8 @@ class MerkleTreeTest {
             }
         }
 
+        val rng = Random(0)
+
         // Test all the possible combinations of leaves for the proof.
         for (i in 1 until (1 shl treeSize)) {
             val leafIndicesCombination = (0 until treeSize).filter { (i and (1 shl it)) != 0 }
@@ -462,9 +465,11 @@ class MerkleTreeTest {
 
                 if (i == 1 && treeSize == 1) {
                     assertThat(hashes).hasSize(0)
-                    assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
+                    assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
+                        """
                         00000000 (calc)━  00000000 (calc) known leaf
-                    """)
+                    """
+                    )
                 }
                 if (i == 1 && treeSize == 2) {
                     assertThat(hashes).hasSize(1)
@@ -483,7 +488,8 @@ class MerkleTreeTest {
                             00000667 (calc)┳00000630 (calc)   ┳00000000 (calc)   ━00000000 (calc)    known leaf
                                            ┃                  ┗00000001 (input 0)━00000001 (input 0) filtered
                                            ┗00000002 (input 1)━unknown           ━unknown            filtered
-                        """)
+                        """
+                    )
                 }
 
                 if (i == 42 && treeSize == 6) {
@@ -492,36 +498,68 @@ class MerkleTreeTest {
                         arrayListOf("00000000", "00000002", "00000004")
                     )
                     assertThat(hashes.map { it.level }).isEqualTo(arrayListOf(2, 2, 2))
-                    assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
+                    assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
+                        """
                         00000612 (calc)┳0000069F (calc)┳00000630 (calc)┳00000000 (input 0) filtered
                                        ┃               ┃               ┗00000001 (calc)    known leaf
                                        ┃               ┗00000634 (calc)┳00000002 (input 1) filtered
                                        ┃                               ┗00000003 (calc)    known leaf
                                        ┗00000638 (calc)━00000638 (calc)┳00000004 (input 2) filtered
                                                                        ┗00000005 (calc)    known leaf
-                    """)
+                    """
+                    )
                 }
 
                 if (i == 20 && treeSize == 6) {
-                    assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
+                    assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
+                        """
                         00000612 (calc)┳0000069F (calc)┳00000630 (input 2)┳unknown            filtered
                                        ┃               ┃                  ┗unknown            filtered
                                        ┃               ┗00000634 (calc)   ┳00000002 (calc)    known leaf
                                        ┃                                  ┗00000003 (input 0) filtered
                                        ┗00000638 (calc)━00000638 (calc)   ┳00000004 (calc)    known leaf
                                                                           ┗00000005 (input 1) filtered
-                    """.trimIndent())
+                    """.trimIndent()
+                    )
                 }
                 if (i == 16 && treeSize == 6) {
-                    assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
+                    assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
+                        """
                         00000612 (calc)┳0000069F (input 1)┳unknown        ┳unknown            filtered
                                        ┃                  ┃               ┗unknown            filtered
                                        ┃                  ┗unknown        ┳unknown            filtered
                                        ┃                                  ┗unknown            filtered
                                        ┗00000638 (calc)   ━00000638 (calc)┳00000004 (calc)    known leaf
                                                                           ┗00000005 (input 0) filtered
-                    """.trimIndent())
+                    """.trimIndent()
+                    )
                 }
+
+                if (i == 3 && treeSize == 7) {
+                    it.subset(trivialHashDigestProvider, listOf(1,2))
+                }
+
+                for (j in (0 until (1 shl treeSize)).toList().shuffled(rng).take(10)) {
+                    val subLeafIndicesCombination = (0 until treeSize).filter { leaf -> (j and (1 shl leaf)) != 0 }
+                    val missingLeaves = (0 until treeSize).filter { leaf -> j and (1 shl leaf) != 0 &&  (i and (1 shl leaf)) == 0}
+                    val missing = missingLeaves.isNotEmpty()
+                    println("tree size $treeSize source proof $i subset $j missing $missingLeaves ($missing)")
+                    when {
+                        j == 0 ->
+                            // no leaves in output, which is never legal
+                            assertFailsWith<java.lang.IllegalArgumentException> {
+                                it.subset(trivialHashDigestProvider, subLeafIndicesCombination)
+                            }
+                        missing ->
+                            // there are leaves in subset which are not in
+                            assertFailsWith<java.lang.IllegalArgumentException> {
+                                it.subset(trivialHashDigestProvider, subLeafIndicesCombination)
+                            }
+                        else ->
+                            println(it.subset(trivialHashDigestProvider, subLeafIndicesCombination).render(trivialHashDigestProvider))
+                    }
+                }
+
             }
         }
     }
