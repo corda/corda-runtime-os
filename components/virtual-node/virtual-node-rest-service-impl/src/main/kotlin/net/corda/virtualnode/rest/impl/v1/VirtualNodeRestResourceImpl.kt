@@ -393,7 +393,7 @@ internal class VirtualNodeRestResourceImpl(
     ): String {
         val instant = clock.instant()
 
-        val rpcRequest = VirtualNodeManagementRequest(
+        val request = VirtualNodeManagementRequest(
             instant,
             VirtualNodeSchemaRequest(
                 dbType,
@@ -416,14 +416,12 @@ internal class VirtualNodeRestResourceImpl(
 
         // Send request and await response message on bus
         val resp = tryWithExceptionHandling(logger, operationLog) {
-            sendAndReceive(rpcRequest)
+            sendAndReceive(request)
         }
 
         return when (val resolvedResponse = resp.responseType) {
             is VirtualNodeSchemaResponse -> {
-                resolvedResponse.run {
-                    schemaSql
-                }
+                resolvedResponse.schemaSql
             }
 
             is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)
