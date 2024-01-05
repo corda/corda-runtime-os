@@ -235,7 +235,7 @@ class GroupParametersWriterServiceTest {
             verify(coordinator, times(2)).updateStatus(eq(LifecycleStatus.UP), any())
 
             postStopEvent()
-            verify(mockPublisher, times(3)).close()
+            verify(mockPublisher, times(2)).close()
         }
 
         @Test
