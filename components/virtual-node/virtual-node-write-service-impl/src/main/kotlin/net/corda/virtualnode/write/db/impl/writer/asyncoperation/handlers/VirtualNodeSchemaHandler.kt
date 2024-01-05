@@ -59,7 +59,8 @@ internal class VirtualNodeSchemaHandler(
                         val connectionVNodeVault =
                             dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).connection
                         buildSqlWithStringWriter(
-                            connectionVNodeVault, cpkChangeLog
+                            connectionVNodeVault,
+                            cpkChangeLog
                         )
                     }
                 } else {
@@ -71,7 +72,8 @@ internal class VirtualNodeSchemaHandler(
         }
         respFuture.complete(
             VirtualNodeManagementResponse(
-                instant, VirtualNodeSchemaResponse(sql)
+                instant,
+                VirtualNodeSchemaResponse(sql)
             )
         )
     }
@@ -106,7 +108,8 @@ internal class VirtualNodeSchemaHandler(
     }
 
     private fun buildSqlWithStringWriter(
-        connection: Connection, dbChange: DbChange
+        connection: Connection,
+        dbChange: DbChange
     ): String {
         StringWriter().use { writer ->
             schemaMigrator.createUpdateSql(connection, dbChange, writer)
