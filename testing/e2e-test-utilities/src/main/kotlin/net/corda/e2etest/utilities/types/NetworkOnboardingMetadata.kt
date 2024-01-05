@@ -1,6 +1,7 @@
 package net.corda.e2etest.utilities.types
 
 import net.corda.e2etest.utilities.ClusterInfo
+import net.corda.e2etest.utilities.exportGroupPolicy
 
 /**
  * Metadata from the network onboarding process.
@@ -16,5 +17,21 @@ data class NetworkOnboardingMetadata(
     val x500Name: String,
     val registrationId: String,
     val registrationContext: Map<String, String>,
-    val clusterInfo: ClusterInfo
-)
+    val clusterInfo: ClusterInfo,
+) {
+    fun asMgm() =
+        MgmMetadata(
+           holdingId = holdingId,
+            clusterInfo = clusterInfo
+        )
+}
+
+
+class MgmMetadata(
+    val holdingId: String,
+    val clusterInfo: ClusterInfo,
+) {
+    val groupPolicy by lazy {
+        clusterInfo.exportGroupPolicy(holdingId)
+    }
+}

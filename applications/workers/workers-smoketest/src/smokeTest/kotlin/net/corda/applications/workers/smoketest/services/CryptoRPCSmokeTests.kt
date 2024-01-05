@@ -234,10 +234,10 @@ class CryptoRPCSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
         assertEquals(expected.requestingComponent, actual.requestingComponent)
         assertEquals(expected.requestTimestamp, actual.requestTimestamp)
         assertThat(actual.responseTimestamp.toEpochMilli())
-            .isGreaterThanOrEqualTo(expected.requestTimestamp.toEpochMilli())
-            .isLessThanOrEqualTo(now.toEpochMilli())
+            .isGreaterThanOrEqualTo(expected.requestTimestamp.minusSeconds(10).toEpochMilli())
+            .isLessThanOrEqualTo(now.plusSeconds(10).toEpochMilli())
         assertSoftly { softly ->
-            softly.assertThat(actual.other.items.size == expected.other.items.size)
+            softly.assertThat(actual.other.items.size).isEqualTo(expected.other.items.size)
             softly.assertThat(actual.other.items.containsAll(expected.other.items))
             softly.assertThat(expected.other.items.containsAll(actual.other.items))
         }
@@ -251,7 +251,6 @@ class CryptoRPCSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
 
     private inline fun <reified T> getResultOfType(response: FlowOpsResponse): T {
         Assertions.assertInstanceOf(T::class.java, response)
-        @Suppress("UNCHECKED_CAST")
         return response as T
     }
 

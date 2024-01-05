@@ -17,13 +17,12 @@ import java.time.Duration
 /**
  * Runs a function in the scope of a managed configuration which is automatically reverted upon completion.
  */
-fun managedConfig(vararg clusters: ClusterInfo, func: (TestConfigManager) -> Unit) {
-    val clusterDedup = clusters.toSet()
-    if(clusterDedup.size > 1) {
-        MultiClusterTestConfigManager(clusterDedup)
+fun managedConfig(clusters: Collection<ClusterInfo> = emptyList()): TestConfigManager {
+    return if(clusters.size > 1) {
+        MultiClusterTestConfigManager(clusters)
     } else {
-        SingleClusterTestConfigManager(clusters.getOrNull(0) ?: DEFAULT_CLUSTER)
-    }.use(func)
+        SingleClusterTestConfigManager(clusters.firstOrNull() ?: DEFAULT_CLUSTER)
+    }
 }
 
 fun JsonNode.sourceConfigNode(): JsonNode =
@@ -46,14 +45,7 @@ fun ClusterInfo.getConfig(section: String): JsonNode {
     }
 }
 
-/**
- * Update the cluster configuration with the specified [config] for the requested [section].
- * The currently installed schema and configuration versions are automatically obtained from the running system
- * before updating.
- */
-fun updateConfig(config: String, section: String) = DEFAULT_CLUSTER.updateConfig(config, section)
-
-fun ClusterInfo.updateConfig(config: String, section: String) {
+internal fun ClusterInfo.updateConfig(config: String, section: String) {
     return cluster {
         val currentConfig = assertWithRetryIgnoringExceptions {
             command { getConfig(section) }
