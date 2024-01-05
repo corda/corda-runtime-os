@@ -28,7 +28,7 @@ plugins {
     id 'jacoco'
     alias libs.plugins.dependency.check.versions // discover possible dependency version upgrades
     alias libs.plugins.dokka apply false
-    alias libs.plugins.cyclonedx.bom  apply false
+    alias libs.plugins.cyclonedx.bom apply false
 }
 
 tasks.named("wrapper") {
