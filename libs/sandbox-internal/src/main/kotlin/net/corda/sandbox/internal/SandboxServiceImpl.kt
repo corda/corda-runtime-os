@@ -31,9 +31,6 @@ import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.security.PrivilegedAction
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 import kotlin.streams.asSequence
 
 
@@ -56,49 +53,47 @@ internal class SandboxServiceImpl @Activate constructor(
      * We also employ a lock to ensure writes are done to every map/set group atomically and we don't try to install
      * and uninstall bundles from OSGi concurrently.
      */
-    private val bundleLock = ReentrantLock()
+//    private val bundleLock = ReentrantLock()
 
     // Maps each bundle ID to the sandbox that the bundle is part of.
-    private val bundleIdToSandbox = ConcurrentHashMap<Long, Sandbox>()
+    private val bundleIdToSandbox = mutableMapOf<Long, Sandbox>()
 
     // Maps each bundle ID to the sandbox group that the bundle is part of.
-    private val bundleIdToSandboxGroup = ConcurrentHashMap<Long, SandboxGroup>()
+    private val bundleIdToSandboxGroup = mutableMapOf<Long, SandboxGroup>()
 
     // The public sandboxes that have been created.
-    private val publicSandboxes = ConcurrentHashMap.newKeySet<Sandbox>()
+    private val publicSandboxes = mutableSetOf<Sandbox>()
 
     // The symbolic names of our public "platform" bundles.
-    private val publicSymbolicNames = ConcurrentHashMap.newKeySet<String>()
+    private val publicSymbolicNames = mutableSetOf<String>()
 
     // Bundles that failed to uninstall when a sandbox group was unloaded.
-    private val zombieBundles = ConcurrentHashMap.newKeySet<Bundle>()
+    private val zombieBundles = mutableSetOf<Bundle>()
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 
     override fun createPublicSandbox(publicBundles: Iterable<Bundle>, privateBundles: Iterable<Bundle>) {
-        bundleLock.withLock {
-            if (publicSandboxes.isNotEmpty()) {
-                val publicSandbox = publicSandboxes.first()
-                check(
-                    publicBundles.toSet() == publicSandbox.publicBundles
-                        && privateBundles.toSet() == publicSandbox.privateBundles
-                ) {
-                    "Public sandbox was already created with different bundles"
-                }
-                logger.warn("Public sandbox was already created")
+        if (publicSandboxes.isNotEmpty()) {
+            val publicSandbox = publicSandboxes.first()
+            check(
+                publicBundles.toSet() == publicSandbox.publicBundles
+                    && privateBundles.toSet() == publicSandbox.privateBundles
+            ) {
+                "Public sandbox was already created with different bundles"
             }
-            val publicSandbox = SandboxImpl(UUID.randomUUID(), publicBundles.toSet(), privateBundles.toSet())
-            publicSandbox.allBundles.forEach { bundle ->
-                bundleIdToSandbox[bundle.bundleId] = publicSandbox
-            }
-            publicSandbox.publicBundles.forEach { bundle ->
-                publicSymbolicNames.add(bundle.symbolicName)
-            }
-            publicSandboxes.add(publicSandbox)
+            logger.warn("Public sandbox was already created")
         }
+        val publicSandbox = SandboxImpl(UUID.randomUUID(), publicBundles.toSet(), privateBundles.toSet())
+        publicSandbox.allBundles.forEach { bundle ->
+            bundleIdToSandbox[bundle.bundleId] = publicSandbox
+        }
+        publicSandbox.publicBundles.forEach { bundle ->
+            publicSymbolicNames.add(bundle.symbolicName)
+        }
+        publicSandboxes.add(publicSandbox)
     }
 
-    override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) = bundleLock.withLock {
+    override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) {
         logger.info("Uninstalling bundles for SandboxGroup ${sandboxGroup.id}")
         (sandboxGroup as SandboxGroupInternal).also { sandboxGroupInternal ->
             sandboxGroupInternal.cpkSandboxes.forEach { sandbox ->
@@ -183,7 +178,7 @@ internal class SandboxServiceImpl @Activate constructor(
      *
      * Grants each sandbox visibility of the public sandboxes and of the other sandboxes in the group.
      */
-    override fun createSandboxGroup(cpks: Iterable<Cpk>, securityDomain: String): SandboxGroup = bundleLock.withLock {
+    override fun createSandboxGroup(cpks: Iterable<Cpk>, securityDomain: String): SandboxGroup {
         sandboxForbidsThat(securityDomain.contains('/')) {
             "Security domain cannot contain a '/' character."
         }
