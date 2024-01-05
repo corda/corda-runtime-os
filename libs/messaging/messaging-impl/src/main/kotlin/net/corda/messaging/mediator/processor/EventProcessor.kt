@@ -97,7 +97,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                                 reply.payload
                             ),
                             message.properties
-                        ) as Record<K, E>
+                        )
                     )
                 }
             }
