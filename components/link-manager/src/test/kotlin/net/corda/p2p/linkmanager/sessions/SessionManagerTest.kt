@@ -115,11 +115,13 @@ class SessionManagerTest {
         val RANDOM_BYTES = ByteBuffer.wrap("some-random-data".toByteArray())
 
         private val sixDaysInMillis = 6.days.toMillis()
-        private val configWithHeartbeat = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
+        private val configWithHeartbeat = SessionManagerImpl.SessionHealthManager.SessionHealthManagerConfig(
+            true,
             Duration.ofMillis(100),
             Duration.ofMillis(500)
         )
-        private val configNoHeartbeat = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
+        private val configNoHeartbeat = SessionManagerImpl.SessionHealthManager.SessionHealthManagerConfig(
+            true,
             Duration.ofMillis(sixDaysInMillis),
             Duration.ofMillis(sixDaysInMillis)
         )
@@ -173,7 +175,7 @@ class SessionManagerTest {
     }
 
     private lateinit var configHandler: SessionManagerImpl.SessionManagerConfigChangeHandler
-    private lateinit var heartbeatConfigHandler: SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler
+    private lateinit var heartbeatConfigHandler: SessionManagerImpl.SessionHealthManager.SessionHealthManagerConfigChangeHandler
     private val dominoTile = Mockito.mockConstruction(ComplexDominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
@@ -182,8 +184,9 @@ class SessionManagerTest {
         if (context.arguments()[6] is SessionManagerImpl.SessionManagerConfigChangeHandler) {
             configHandler = context.arguments()[6] as SessionManagerImpl.SessionManagerConfigChangeHandler
         }
-        if (context.arguments()[6] is SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler) {
-            heartbeatConfigHandler = context.arguments()[6] as SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler
+        if (context.arguments()[6] is SessionManagerImpl.SessionHealthManager.SessionHealthManagerConfigChangeHandler) {
+            heartbeatConfigHandler = context.arguments()[6]
+                    as SessionManagerImpl.SessionHealthManager.SessionHealthManagerConfigChangeHandler
         }
         whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
     }
@@ -1801,7 +1804,7 @@ class SessionManagerTest {
             heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourcesHolder)
         }
         @Suppress("UNCHECKED_CAST")
-        publisherWithDominoLogicByClientId[SessionManagerImpl.HeartbeatManager.HEARTBEAT_MANAGER_CLIENT_ID]!!.forEach {
+        publisherWithDominoLogicByClientId[SessionManagerImpl.SessionHealthManager.SESSION_HEALTH_MANAGER_CLIENT_ID]!!.forEach {
             whenever(it.publish(any())).doAnswer { invocation ->
                 callback(invocation.arguments.first() as List<Record<*, *>>)
             }
@@ -1871,7 +1874,7 @@ class SessionManagerTest {
             heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
         }
         @Suppress("UNCHECKED_CAST")
-        publisherWithDominoLogicByClientId[SessionManagerImpl.HeartbeatManager.HEARTBEAT_MANAGER_CLIENT_ID]!!.forEach {
+        publisherWithDominoLogicByClientId[SessionManagerImpl.SessionHealthManager.SESSION_HEALTH_MANAGER_CLIENT_ID]!!.forEach {
             whenever(it.publish(any())).doAnswer { invocation ->
                 callback(invocation.arguments.first() as List<Record<*, *>>)
             }
@@ -1934,7 +1937,7 @@ class SessionManagerTest {
             heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourcesHolder)
         }
         @Suppress("UNCHECKED_CAST")
-        publisherWithDominoLogicByClientId[SessionManagerImpl.HeartbeatManager.HEARTBEAT_MANAGER_CLIENT_ID]!!.forEach {
+        publisherWithDominoLogicByClientId[SessionManagerImpl.SessionHealthManager.SESSION_HEALTH_MANAGER_CLIENT_ID]!!.forEach {
             whenever(it.publish(any())).doAnswer { invocation ->
                 callback(invocation.arguments.first() as List<Record<*, *>>)
             }
@@ -2009,7 +2012,7 @@ class SessionManagerTest {
             )
             heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourcesHolder)
         }
-        publisherWithDominoLogicByClientId[SessionManagerImpl.HeartbeatManager.HEARTBEAT_MANAGER_CLIENT_ID]!!.forEach {
+        publisherWithDominoLogicByClientId[SessionManagerImpl.SessionHealthManager.SESSION_HEALTH_MANAGER_CLIENT_ID]!!.forEach {
             whenever(it.publish(any())).doAnswer { invocation ->
                 @Suppress("UNCHECKED_CAST")
                 callback(invocation.arguments.first() as List<Record<*, *>>)
@@ -2080,7 +2083,7 @@ class SessionManagerTest {
             )
             heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourcesHolder)
         }
-        publisherWithDominoLogicByClientId[SessionManagerImpl.HeartbeatManager.HEARTBEAT_MANAGER_CLIENT_ID]!!.forEach {
+        publisherWithDominoLogicByClientId[SessionManagerImpl.SessionHealthManager.SESSION_HEALTH_MANAGER_CLIENT_ID]!!.forEach {
             whenever(it.publish(any())).doAnswer { publish() }
         }
         sessionManager.start()
@@ -2143,7 +2146,8 @@ class SessionManagerTest {
 
     @Test
     fun `sessions that have been refreshed are not tracked by the heartbeat manager`() {
-        val longTimePeriodConfigWithHeartbeat = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
+        val longTimePeriodConfigWithHeartbeat = SessionManagerImpl.SessionHealthManager.SessionHealthManagerConfig(
+            true,
             Duration.ofDays(1),
             Duration.ofDays(10)
         )
@@ -2186,7 +2190,7 @@ class SessionManagerTest {
             heartbeatConfigHandler.applyNewConfiguration(longTimePeriodConfigWithHeartbeat, null, mock())
         }
         @Suppress("UNCHECKED_CAST")
-        publisherWithDominoLogicByClientId[SessionManagerImpl.HeartbeatManager.HEARTBEAT_MANAGER_CLIENT_ID]!!.forEach {
+        publisherWithDominoLogicByClientId[SessionManagerImpl.SessionHealthManager.SESSION_HEALTH_MANAGER_CLIENT_ID]!!.forEach {
             whenever(it.publish(any())).doAnswer { invocation ->
                 callback(invocation.arguments.first() as List<Record<*, *>>)
             }
