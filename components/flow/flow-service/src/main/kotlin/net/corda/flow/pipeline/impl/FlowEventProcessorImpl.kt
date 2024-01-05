@@ -195,7 +195,7 @@ class FlowEventProcessorImpl(
     ): CordaRuntimeException {
         return FlowFatalException(
             "Execution failed with \"${throwable.message}\" after $retryCount retry attempts in a " +
-                "retry window of $elapsedTime.",
+                "retry window of $elapsedTime milliseconds.",
             throwable
         )
     }
