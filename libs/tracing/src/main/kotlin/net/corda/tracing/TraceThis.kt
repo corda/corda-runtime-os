@@ -61,10 +61,10 @@ fun addTraceContextToRecord(
     )
 }
 
-fun addTraceContextToRecord(
-    record: Record<*, *>,
+fun <K : Any, E : Any> addTraceContextToRecord(
+    record: Record<K, E>,
     traceHeadersToOverrideContext: Map<String, Any> = emptyMap() // By default, don't override the current trace context
-): Record<out Any, out Any> {
+): Record<K, E> {
     return record.copy(
         headers = TracingState.currentTraceService.addTraceHeaders(
             record.headers,
