@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory
  * @param proofType
  * @param treeSize - total number of leaves in the Merkle tree
  * @param leaves - list of leaves for which we have data
- * @param hashes - the hashes needed to rebuild the parts of the tree where data is not given
+ * @param hashes - the input hashes needed to rebuild the parts of the tree where data is not given
  *
  * The number of elements in hashes will depend on the tree size and where in the tree the unknown
  * data is. There will need to be at least one, to cover the gap left by missing data. There never
@@ -63,8 +63,13 @@ class MerkleProofImpl(
      * the root hash if the proof is valid.
      *
      * @param digest the digest service to use, which must generate hashes compatible with the [hashes] constructor parameter.
-     * @param foundHashCallback called on each node hash that is calculated during the proof, with the level in the tree,
-     *        the node index at that level, and, if a supplied hash was consumed, the index of that hash.
+     * @param foundHashCallback called on each node that has a node taken from incoming hashes or calculated during the proof.
+     *                          The arguments are the hash of the node, level (with top of the tree at 0),
+     *                          index (position across from the left had side of the tree, starting at 0),
+     *                          plus the index of that hash within the incoming hashes (starting at 0),
+     *                          or null for calculated nodes. This will be called left to right then bottom to top.
+     *                          The order that this is called is left to right then bottom to top, i.e. the same
+     *                          order as input hashes are consumed.
      * @return the secure hash of the root of the Merkle proof
      */
     fun calculateRootInstrumented(digest: MerkleTreeHashDigest, foundHashCallback: (hash: SecureHash, level: Int, nodeIndex: Int, consumed: Int?) -> Unit = { _, _, _, _ ->  } ): SecureHash {
