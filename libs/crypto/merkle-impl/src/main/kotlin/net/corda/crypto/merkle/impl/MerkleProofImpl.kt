@@ -8,7 +8,6 @@ import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleProofRebuildFailureException
 import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.crypto.merkle.MerkleTreeHashDigest
-import org.slf4j.LoggerFactory
 
 /**
  * Represent a merkle proof, which shows that some leaf data is in a Merkle tree.
@@ -29,10 +28,6 @@ class MerkleProofImpl(
     private val leaves: List<IndexedMerkleLeaf>,
     private val hashes: List<SecureHash>
 ) : MerkleProof {
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java)
-    }
 
     // CORE-5111: add serialize/deserialize (and its test)
 
@@ -262,7 +257,7 @@ class MerkleProofImpl(
             nodeLabels[level to nodeIndex] = hash.toString().substringAfter(":").take(8) + (if (consumed!=null) " (input $consumed)" else " (calc)")
         }
         val treeDepth = MerkleTreeImpl.treeDepth(treeSize)
-        val leafHashes = (0 until treeSize).map { "${nodeLabels[treeDepth to it]?:"unknown"}"}
+        val leafHashes = (0 until treeSize).map { nodeLabels[treeDepth to it]?:"unknown" }
         val longestLeafHash = leafHashes.map { it.length }.max()
         val leafLabels =  (0 until treeSize).map {
             "${leafHashes[it].padEnd(longestLeafHash)} ${if (it in getLeaves().map { l -> l.index }) "known leaf" else "filtered"}"
