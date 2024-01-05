@@ -353,8 +353,7 @@ class MerkleTreeTest {
 
         val leafIndicesCombination = (0 until treeSize).filter { (i and (1 shl it)) != 0 }
         testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize).also {
-            assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
-                """
+            assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
                     00000612 (calc)┳0000069F (calc)┳00000630 (input 2)┳unknown            filtered
                                    ┃               ┃                  ┗unknown            filtered
                                    ┃               ┗00000634 (calc)   ┳00000002 (calc)    known leaf
@@ -367,17 +366,16 @@ class MerkleTreeTest {
             val subsetLeafIndicesCombination = (0 until treeSize).filter { (subsetI and (1 shl it)) != 0 }
             assertThat(subsetLeafIndicesCombination).hasSize(1)
 
-            val proof2 = it.subset(subsetLeafIndicesCombination)
+            val proof2 = it.subset(trivialHashDigestProvider, subsetLeafIndicesCombination)
 
-            assertThat(proof2.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
-            """
-                    00000612 (calc)┳0000069F (input 0)┳unknown        ┳unknown            filtered
-                                   ┃                  ┃               ┗unknown            filtered
-                                   ┃                  ┗unknown        ┳unknown            filtered
-                                   ┃                                  ┗unknown            filtered
-                                   ┗00000638 (calc)━00000638 (calc)   ┳00000004 (calc)    known leaf
-                                                                      ┗00000005 (input 1) filtered
-                """)
+            assertThat(proof2.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
+                00000612 (calc)┳0000069F (input 1)┳               ┳unknown            filtered
+                               ┃                  ┃               ┗unknown            filtered
+                               ┃                  ┗               ┳unknown            filtered
+                               ┃                                  ┗unknown            filtered
+                               ┗00000638 (calc)   ━00000638 (calc)┳00000004 (calc)    known leaf
+                                                                  ┗00000005 (input 0) filtered
+                    """)
         }
     }
 

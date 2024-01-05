@@ -238,9 +238,61 @@ class MerkleProofImpl(
      * @param leafIndices indices  of the known leaves to include in the output proof
      * @return A new Merkle proof
      */
-    fun subset(leafIndices: List<Int>): MerkleProofImpl =
-        MerkleProofImpl(proofType, treeSize, leaves.filter { it.index in leafIndices}, hashes)
+    fun subset(digest: MerkleTreeHashDigest, leafIndices: List<Int>): MerkleProofImpl {
+        var outputHashes: MutableList<SecureHash> = mutableListOf()
+        val treeDepth = MerkleTreeImpl.treeDepth(treeSize)
+        println("working out subset for leaf indices $leafIndices")
+        calculateRootInstrumented(digest) { hash, level, index, _ ->
+            val adjacentIndex = (index xor 1) // the adjacent node for this level
+            println("found hash $hash at level $level index $index adjacent index $adjacentIndex ")
+            if (treeDepth == level) {
+                if (index in leafIndices) {
+                    println("\tshould keep")
+                } else {
+                    // we will need this hash in the subset proof when there are known leaves in the same
+                    // part of the tree as us.
 
+
+                    // If we are at the lowest level, this is a leaf, and the question is whether the adjacent leaf
+                    // is known. If it is known, we'll need a proof hash here, then the parent node can be derived.
+                    val adjacentKnown = adjacentIndex in leafIndices
+                    if (adjacentKnown) {
+                        println("\ttaking for output hash due to adjacent node")
+                        outputHashes.add(hash)
+                    }
+                }
+            } else {
+                // We are above the lowest level, this is a node, and the cases are
+
+                // Left unknown in output proof, right unknown in output proof => unknown here, nothing to add
+                // Left known in output proof, right unknown in output proof => need a hash for the right hand
+                //    ... but we should have decided that at the level below and recorded it
+                // (similar for the opposite situation where left unknown right known)
+                // Left known in output proof, right known in output proof => can be derived, nothing to add
+
+                // So, if we are at a node and have a tree full of unknowns, and the adjacent node
+                // will be calculated in the output proof, then we need to produce an output hash
+
+                // The adjacent node will be known iff there is known data within it
+
+                val height = treeDepth - level // how many levels above the leaves, 0 for at the leaf
+                //1 << shl (treeDepth - level)
+                println("\theight is $height adjacetIndex $adjacentIndex")
+
+                // e.g. if height=2 and index= 0, adjacentIndex is 1,
+                // this node covers 0,1,2,3 and the adjacentTree 4,5,6,7, so the test is whether any of [4,7] are in leafIndices
+
+                if (height == 2 && adjacentIndex == 1) {
+                    if (leafIndices.any { it in 4..7 }) {
+                        println("\ttaking for output since adjacent node will be known")
+                        outputHashes.add(hash)
+                    }
+                }
+            }
+        }
+        println("output hashes $outputHashes")
+        return MerkleProofImpl(proofType, treeSize, leaves.filter { it.index in leafIndices }, outputHashes)
+    }
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
