@@ -36,7 +36,7 @@ class AuthenticatedSessionPersistenceTest {
         partyAMaxMessageSize,
         partyASessionKey.public,
         groupId,
-        CertificateCheckMode.NoCertificate
+        CertificateCheckMode.NoCertificate,
     )
     private val authenticationProtocolA: AuthenticationProtocolInitiator
         get() {
@@ -97,18 +97,18 @@ class AuthenticatedSessionPersistenceTest {
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(
             partyBSessionKey.public,
             null,
-            signingCallbackForA
+            signingCallbackForA,
         )
 
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
-            listOf(partyASessionKey.public to SignatureSpecs.ECDSA_SHA256)
+            listOf(partyASessionKey.public to SignatureSpecs.ECDSA_SHA256),
         )
 
         authenticationProtocolB.validateEncryptedExtensions(
             CertificateCheckMode.NoCertificate,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
-            aliceX500Name
+            aliceX500Name,
         )
 
         // Step 4: responder sending handshake message and initiator validating it.
@@ -120,13 +120,13 @@ class AuthenticatedSessionPersistenceTest {
         val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(
             partyBSessionKey.public,
             null,
-            signingCallbackForB
+            signingCallbackForB,
         )
 
         authenticationProtocolA.validatePeerHandshakeMessage(
             responderHandshakeMessage,
             aliceX500Name,
-            listOf(partyBSessionKey.public to SignatureSpecs.ECDSA_SHA256)
+            listOf(partyBSessionKey.public to SignatureSpecs.ECDSA_SHA256),
         )
 
         for (i in 1..3) {
@@ -134,8 +134,9 @@ class AuthenticatedSessionPersistenceTest {
             val payload = "ping $i".toByteArray(Charsets.UTF_8)
             val authenticationResult = authenticatedSessionOnA.createMac(payload)
             val initiatorMsg = AuthenticatedDataMessage(
-                authenticationResult.header, ByteBuffer.wrap(payload),
-                ByteBuffer.wrap(authenticationResult.mac)
+                authenticationResult.header,
+                ByteBuffer.wrap(payload),
+                ByteBuffer.wrap(authenticationResult.mac),
             )
 
             authenticatedSessionOnB.validateMac(initiatorMsg.header, initiatorMsg.payload.array(), initiatorMsg.authTag.array())
@@ -148,7 +149,8 @@ class AuthenticatedSessionPersistenceTest {
             val responderMsg =
                 AuthenticatedDataMessage(
                     authenticationResult.header,
-                    ByteBuffer.wrap(payload), ByteBuffer.wrap(authenticationResult.mac)
+                    ByteBuffer.wrap(payload),
+                    ByteBuffer.wrap(authenticationResult.mac),
                 )
 
             authenticatedSessionOnA.validateMac(responderMsg.header, responderMsg.payload.array(), responderMsg.authTag.array())

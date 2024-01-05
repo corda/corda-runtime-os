@@ -68,4 +68,5 @@ sourceSets {
 tasks.named('integrationTest') {
     final String hostsFilePath = new File(project.sourceSets["integrationTest"].output.resourcesDir.absolutePath, "hosts").absolutePath
     jvmArgs "-Djdk.net.hosts.file=$hostsFilePath"
+    jvmArgs "-Djdk.tls.client.enableCAExtension=true"
 }

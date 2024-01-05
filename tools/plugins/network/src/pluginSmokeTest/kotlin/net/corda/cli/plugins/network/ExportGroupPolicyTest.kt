@@ -23,7 +23,8 @@ class ExportGroupPolicyTest {
 
         private val mgmName = MemberX500Name.parse("O=MGM-${UUID.randomUUID()}, L=London, C=GB").toString()
         private val groupPolicyFile = File(
-            File(File(File(System.getProperty("user.home")), ".corda"), "gp"), "groupPolicy.json"
+            File(File(File(System.getProperty("user.home")), ".corda"), "gp"),
+            "groupPolicy.json",
         )
         private lateinit var holdingIdentity: String
 
@@ -31,10 +32,16 @@ class ExportGroupPolicyTest {
         @JvmStatic
         fun setup() {
             CommandLine(OnboardMgm()).execute(
-                mgmName, targetUrl, user, password, INSECURE
+                mgmName,
+                targetUrl,
+                user,
+                password,
+                INSECURE,
             )
             holdingIdentity = HoldingIdentityUtils.getHoldingIdentity(
-                null, mgmName, null
+                null,
+                mgmName,
+                null,
             )
         }
     }
@@ -47,7 +54,11 @@ class ExportGroupPolicyTest {
     @Test
     fun `exporting group policy correctly saves file to default location`() {
         CommandLine(ExportGroupPolicy()).execute(
-            "-h=$holdingIdentity", targetUrl, user, password, INSECURE
+            "-h=$holdingIdentity",
+            targetUrl,
+            user,
+            password,
+            INSECURE,
         )
 
         assertThat(groupPolicyFile.exists()).isTrue
@@ -58,11 +69,17 @@ class ExportGroupPolicyTest {
     fun `exporting group policy correctly saves file to provided location`() {
         val groupPolicyLocation = "${System.getProperty("user.home")}/.corda/gp/test.json"
         CommandLine(ExportGroupPolicy()).execute(
-            "-h=$holdingIdentity", "--save=$groupPolicyLocation", targetUrl, user, password, INSECURE
+            "-h=$holdingIdentity",
+            "--save=$groupPolicyLocation",
+            targetUrl,
+            user,
+            password,
+            INSECURE,
         )
 
         val groupPolicyFile = File(
-            File(File(File(System.getProperty("user.home")), ".corda"), "gp"), "test.json"
+            File(File(File(System.getProperty("user.home")), ".corda"), "gp"),
+            "test.json",
         )
         assertThat(groupPolicyFile.exists()).isTrue
         assertThat(ObjectMapper().readTree(groupPolicyFile.inputStream()).get("groupId")).isNotNull

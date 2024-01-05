@@ -11,7 +11,6 @@ import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.PLATFORM_ERROR
-import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.sessions.FlowSessionManager
@@ -62,53 +61,6 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             outputRecords = listOf(),
             sendToDlq = true
         )
-    }
-
-    override fun process(
-        exception: FlowTransientException,
-        context: FlowEventContext<*>
-    ): FlowEventContext<*> {
-        return withEscalation(context) {
-            val flowCheckpoint = context.checkpoint
-
-            /** If the retry window has expired then we escalate this to a fatal exception and DLQ the flow */
-            if (retryWindowExpired(flowCheckpoint.firstFailureTimestamp)) {
-                return@withEscalation process(
-                    FlowFatalException(
-                        "Execution failed with \"${exception.message}\" after " +
-                                "${flowCheckpoint.currentRetryCount} retry attempts in a retry window of $maxRetryWindowDuration.",
-                        exception
-                    ), context
-                )
-            }
-
-            log.info("Flow ${context.checkpoint.flowId} encountered a transient problem and is retrying: ${exception.message}")
-
-            val payload = context.inputEventPayload ?: return@withEscalation process(
-                FlowFatalException(
-                    "Could not process a retry as the input event has no payload.",
-                    exception
-                ), context
-            )
-
-            /**
-             * As we're still inside the retry window, republish the record that needs retrying here. If the system is
-             * under load, there may be some delay before it is retried. This is reasonable however, as the system may
-             * need to wait for the underlying transient problem to clear up.
-             */
-            val records = createStatusRecord(context.checkpoint.flowId) {
-                flowMessageFactory.createFlowRetryingStatusMessage(context.checkpoint)
-            } + flowRecordFactory.createFlowEventRecord(context.checkpoint.flowId, payload)
-
-            // Set up records before the rollback, just in case a transient exception happens after a flow is initialised
-            // but before the first checkpoint has been recorded.
-            flowCheckpoint.rollback()
-            flowCheckpoint.markForRetry(context.inputEvent, exception)
-
-            removeCachedFlowFiber(flowCheckpoint)
-
-            context.copy(outputRecords = context.outputRecords + records)
-        }
     }
 
     private fun retryWindowExpired(firstFailureTimestamp: Instant?): Boolean {

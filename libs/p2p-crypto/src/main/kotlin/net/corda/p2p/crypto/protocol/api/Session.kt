@@ -6,13 +6,13 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.nio.ByteBuffer
 import javax.crypto.SecretKey
 import javax.crypto.spec.SecretKeySpec
-import net.corda.data.p2p.crypto.protocol.Session as AvroSession
 import net.corda.data.p2p.crypto.protocol.SecretKeySpec as AvroSecretKeySpec
+import net.corda.data.p2p.crypto.protocol.Session as AvroSession
 
 /**
  * A marker interface supposed to be implemented by the different types of sessions supported by the authentication protocol.
  */
-interface Session: SerialisableSessionData {
+interface Session : SerialisableSessionData {
     val sessionId: String
 
     override fun toAvro(): AvroSession
@@ -30,13 +30,13 @@ interface Session: SerialisableSessionData {
                 ByteBuffer.wrap(this.encoded),
             )
         fun AvroSession.toCorda(): Session {
-            return when(val details = this.details) {
+            return when (val details = this.details) {
                 is AuthenticatedSessionDetails -> {
                     AuthenticatedSession(
                         sessionId = this.sessionId,
                         outboundSecretKey = details.outboundSecretKey.toSecretKey(),
                         inboundSecretKey = details.inboundSecretKey.toSecretKey(),
-                        maxMessageSize = this.maxMessageSize
+                        maxMessageSize = this.maxMessageSize,
                     )
                 }
                 is AuthenticatedEncryptionSessionDetails -> {
@@ -46,7 +46,7 @@ interface Session: SerialisableSessionData {
                         outboundNonce = details.outboundNonce.array(),
                         inboundSecretKey = details.inboundSecretKey.toSecretKey(),
                         inboundNonce = details.inboundNonce.array(),
-                        maxMessageSize = this.maxMessageSize
+                        maxMessageSize = this.maxMessageSize,
                     )
                 }
                 else -> throw CordaRuntimeException("Unexpected  session details: ${details?.javaClass}")
