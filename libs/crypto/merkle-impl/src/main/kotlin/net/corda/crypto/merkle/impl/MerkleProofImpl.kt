@@ -246,47 +246,21 @@ class MerkleProofImpl(
             val adjacentIndex = (index xor 1) // the adjacent node for this level
             val height = treeDepth - level // how many levels above the leaves, 0 for at the leaf
             println("found hash $hash at level $level  height $height index $index adjacent index $adjacentIndex ")
-            if (treeDepth == level) {
-                if (index in leafIndices) {
-                    println("\tshould keep")
-                } else {
-                    // we will need this hash in the subset proof when there are known leaves in the same
-                    // part of the tree as us.
+            // The adjacent sub-tree (be it leaf or node) will be known iff there is known data within it
+            // There is known data if any member of leafIndices is set within that subtree.
+            // Since we are $height levels up from the leaves (perhaps $height is zero), the start and end leaf indices
+            // are double for each level of the tree, which we can factor in by bitshifting our indices to the left
+            // $height times.
 
 
-                    // If we are at the lowest level, this is a leaf, and the question is whether the adjacent leaf
-                    // is known. If it is known, we'll need a proof hash here, then the parent node can be derived.
-                    val adjacentKnown = adjacentIndex in leafIndices
-                    if (adjacentKnown) {
-                        println("\ttaking for output hash due to adjacent node")
-                        outHashes.add(hash)
-                    }
-                }
-            } else {
-                // We are above the lowest level, this is a node, and the cases are
+            // e.g. if height=2 and index= 0, adjacentIndex is 1,
+            // this node covers 0,1,2,3 and the adjacentTree 4,5,6,7, so the test is whether any of [4,7] are in leafIndices
 
-                // Left unknown in output proof, right unknown in output proof => unknown here, nothing to add
-                // Left known in output proof, right unknown in output proof => need a hash for the right hand
-                //    ... but we should have decided that at the level below and recorded it
-                // (similar for the opposite situation where left unknown right known)
-                // Left known in output proof, right known in output proof => can be derived, nothing to add
+            val adjLHS = adjacentIndex shl height
 
-                // So, if we are at a node and have a tree full of unknowns, and the adjacent node
-                // will be calculated in the output proof, then we need to produce an output hash
-
-
-                // The adjacent node will be known iff there is known data within it
-
-
-                // e.g. if height=2 and index= 0, adjacentIndex is 1,
-                // this node covers 0,1,2,3 and the adjacentTree 4,5,6,7, so the test is whether any of [4,7] are in leafIndices
-
-                val adjLHS = adjacentIndex shl height
-
-                if (leafIndices.any { it in adjLHS until adjLHS + (1 shl height) }) {
-                        println("\ttaking for output since adjacent node will be known")
-                        outHashes.add(hash)
-                }
+            if (leafIndices.any { it in adjLHS until adjLHS + (1 shl height) }) {
+                    println("\ttaking for output since adjacent tree will be known")
+                    outHashes.add(hash)
             }
         }
         val outLeaves = leaves.filter { it.index in leafIndices }
