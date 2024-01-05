@@ -222,7 +222,7 @@ class GroupParametersWriterServiceTest {
             verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
 
             with(configCaptor.firstValue) {
-                assertThat(clientId).isEqualTo("group-parameters-writer-service")
+                assertThat(clientId).startsWith("group-parameters-writer-service")
             }
 
             postConfigChangedEvent()

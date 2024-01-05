@@ -29,6 +29,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
 @Component(service = [GroupParametersWriterService::class])
@@ -45,6 +46,7 @@ class GroupParametersWriterServiceImpl @Activate constructor(
     private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val SERVICE = "GroupParametersWriterService"
+        val idIndex = AtomicInteger()
     }
 
     override val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<GroupParametersWriterService>()
@@ -188,7 +190,7 @@ class GroupParametersWriterServiceImpl @Activate constructor(
         logger.info("Handling config changed event.")
 
         val publisher = publisherFactory.createPublisher(
-            PublisherConfig("group-parameters-writer-service"),
+            PublisherConfig("group-parameters-writer-service-${idIndex.incrementAndGet()}"),
             event.config.getConfig(MESSAGING_CONFIG)
         ).also {
             it.start()
