@@ -388,6 +388,22 @@ class ClusterBuilder {
         return "{$bodyStr1$bodyStr2}"
     }
 
+    /** Get schema SQL to create crypto DB */
+    fun createCryptoSchemaSql() =
+        get("/api/$REST_API_VERSION_PATH/virtualnode/create/db/crypto")
+
+    /** Get schema SQL to create uniqueness DB */
+    fun createUniquenessSchemaSql() =
+        get("/api/$REST_API_VERSION_PATH/virtualnode/create/db/uniqueness")
+
+    /** Get schema SQL to create vault and CPI DB */
+    fun createVaultSchemaSql(cpiChecksum: String) =
+        get("/api/$REST_API_VERSION_PATH/virtualnode/create/db/vault/$cpiChecksum")
+
+    /** Get schema SQL to update vault and CPI DB */
+    fun updateSchemaSql(virtualNodeShortHash: String, newCpiChecksum: String) =
+        get("/api/$REST_API_VERSION_PATH/virtualnode/$virtualNodeShortHash/db/vault/$newCpiChecksum")
+
     /** Create a virtual node */
     @Suppress("LongParameterList")
     fun vNodeCreate(

@@ -102,7 +102,7 @@ internal class VirtualNodeWriterProcessor(
                 virtualNodeOperationStatusHandler.handle(request.timestamp, typedRequest, respFuture)
             }
             is VirtualNodeSchemaRequest -> {
-                logger.info("Handling virtual node schema SQL request for ${typedRequest.virtualNodeShortHash}")
+                logger.info("Handling virtual node schema SQL request for ${typedRequest.dbType} DB")
                 virtualNodeSchemaHandler.handle(request.timestamp, typedRequest, respFuture)
             }
             else -> throw VirtualNodeWriteServiceException("Unknown management request of type: ${typedRequest::class.java.name}")

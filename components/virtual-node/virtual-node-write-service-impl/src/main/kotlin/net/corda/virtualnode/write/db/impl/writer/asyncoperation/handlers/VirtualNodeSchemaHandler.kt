@@ -46,24 +46,20 @@ internal class VirtualNodeSchemaHandler(
                     dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction { em ->
                         val cpkChangeLog = getCpkChangelog(em, virtualNodeSchemaRequest.cpiChecksum)
                         buildSqlWithStringWriter(connection, changeLog) + buildSqlWithStringWriter(
-                            connection,
-                            cpkChangeLog
+                            connection, cpkChangeLog
                         )
                     }
                 } else if (virtualNodeSchemaRequest.virtualNodeShortHash != null && virtualNodeSchemaRequest.cpiChecksum != null) {
                     dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction { em ->
                         val virtualNodeInfo = virtualNodeRepository.find(
-                            em,
-                            ShortHash.parse(virtualNodeSchemaRequest.virtualNodeShortHash)
-                        )
-                            ?: throw VirtualNodeDbException("Unable to fetch virtual node info")
+                            em, ShortHash.parse(virtualNodeSchemaRequest.virtualNodeShortHash)
+                        ) ?: throw VirtualNodeDbException("Unable to fetch virtual node info")
 
                         val cpkChangeLog = getCpkChangelog(em, virtualNodeSchemaRequest.cpiChecksum)
                         val connectionVNodeVault =
                             dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).connection
                         buildSqlWithStringWriter(
-                            connectionVNodeVault,
-                            cpkChangeLog
+                            connectionVNodeVault, cpkChangeLog
                         )
                     }
                 } else {
@@ -75,8 +71,7 @@ internal class VirtualNodeSchemaHandler(
         }
         respFuture.complete(
             VirtualNodeManagementResponse(
-                instant,
-                VirtualNodeSchemaResponse(sql)
+                instant, VirtualNodeSchemaResponse(sql)
             )
         )
     }
@@ -84,7 +79,7 @@ internal class VirtualNodeSchemaHandler(
     private fun dbTypesToString(dbType: DbTypes): String {
         return when (dbType) {
             DbTypes.CRYPTO -> "crypto"
-            DbTypes.UNIQUENESS -> "uniquness"
+            DbTypes.UNIQUENESS -> "uniqueness"
             DbTypes.VAULT -> "vault"
         }
     }
@@ -97,7 +92,7 @@ internal class VirtualNodeSchemaHandler(
         val resourcePrefix = fullName.replace('.', '/')
         val changeLogFiles = ClassloaderChangeLog.ChangeLogResourceFiles(
             fullName,
-            listOf("$resourcePrefix/db.changelog-master.xml"), // VirtualNodeDbType.VAULT.dbChangeFiles,
+            listOf("$resourcePrefix/db.changelog-master.xml"),
             classLoader = schemaClass.classLoader
         )
         return ClassloaderChangeLog(linkedSetOf(changeLogFiles))
@@ -105,15 +100,13 @@ internal class VirtualNodeSchemaHandler(
 
     private fun getCpkChangelog(em: EntityManager, cpiChecksum: String): DbChange {
         val cpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository()
-        val cpiMetadata =
-            CpiCpkRepositoryFactory().createCpiMetadataRepository().findByFileChecksum(em, cpiChecksum)
+        val cpiMetadata = CpiCpkRepositoryFactory().createCpiMetadataRepository().findByFileChecksum(em, cpiChecksum)
         val changelogsPerCpk = cpkDbChangeLogRepository.findByCpiId(em, cpiMetadata!!.cpiId)
         return VirtualNodeDbChangeLog(changelogsPerCpk)
     }
 
     private fun buildSqlWithStringWriter(
-        connection: Connection,
-        dbChange: DbChange
+        connection: Connection, dbChange: DbChange
     ): String {
         StringWriter().use { writer ->
             schemaMigrator.createUpdateSql(connection, dbChange, writer)
