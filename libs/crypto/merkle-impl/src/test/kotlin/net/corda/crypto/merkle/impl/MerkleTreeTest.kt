@@ -403,6 +403,15 @@ class MerkleTreeTest {
                                            ┗00000001 (input 0)━ 00000001 (input 0) filtered"""
                     )
                 }
+                if (i == 1 && treeSize == 3) {
+                    assertThat(hashes).hasSize(2)
+                    assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
+                        """
+                            00000667 (calc)┳00000630 (calc)   ┳00000000 (calc)   ━00000000 (calc)    known leaf
+                                           ┃                  ┗00000001 (input 0)━00000001 (input 0) filtered
+                                           ┗00000002 (input 1)━unknown           ━unknown            filtered
+                        """)
+                }
 
                 if (i == 42 && treeSize == 6) {
                     assertThat(hashes).hasSize(3)
