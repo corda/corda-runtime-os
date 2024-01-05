@@ -167,7 +167,7 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
     private fun Record<*, *>.toMessage() =
         MediatorMessage(
             value!!,
-            headers.toMessageProperties().also { it[MSG_PROP_KEY] = key },
+            headers.toMessageProperties().also { it[MSG_PROP_KEY] = key }
         )
 
     private fun List<Pair<String, String>>.toMessageProperties() =
