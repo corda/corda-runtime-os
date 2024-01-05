@@ -62,7 +62,7 @@ class MerkleProofImpl(
      * Walk the Merkle proof, making a callback on each node that is derived along the way, and return
      * the root hash if the proof is valid.
      *
-     * @param digest the digest service to use, which must generate hashes compatibile with the [hashes] constructor parameter.
+     * @param digest the digest service to use, which must generate hashes compatible with the [hashes] constructor parameter.
      * @param foundHashCallback called on each node hash that is calculated during the proof, with the level in the tree,
      *        the node index at that level, and, if a supplied hash was consumed, the index of that hash.
      * @return the secure hash of the root of the Merkle proof
