@@ -379,7 +379,7 @@ class MerkleTreeTest {
                                ┃                  ┃                  ┗unknown            filtered
                                ┃                  ┗00000634 (calc)   ┳00000002 (calc)    known leaf
                                ┃                                     ┗00000003 (input 0) filtered
-                               ┗00000638 (input 2)━                  ┳unknown            filtered
+                               ┗00000638 (input 2)━unknown           ┳unknown            filtered
                                                                      ┗unknown            filtered
             """)
     }
@@ -507,12 +507,12 @@ class MerkleTreeTest {
                 }
                 if (i == 16 && treeSize == 6) {
                     assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
-                         00000612 (calc)┳0000069F (input 1)┳               ┳unknown            filtered
-                                        ┃                  ┃               ┗unknown            filtered
-                                        ┃                  ┗               ┳unknown            filtered
-                                        ┃                                  ┗unknown            filtered
-                                        ┗00000638 (calc)   ━00000638 (calc)┳00000004 (calc)    known leaf
-                                                                           ┗00000005 (input 0) filtered
+                        00000612 (calc)┳0000069F (input 1)┳unknown        ┳unknown            filtered
+                                       ┃                  ┃               ┗unknown            filtered
+                                       ┃                  ┗unknown        ┳unknown            filtered
+                                       ┃                                  ┗unknown            filtered
+                                       ┗00000638 (calc)   ━00000638 (calc)┳00000004 (calc)    known leaf
+                                                                          ┗00000005 (input 0) filtered
                     """.trimIndent())
                 }
             }
