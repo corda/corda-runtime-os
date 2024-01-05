@@ -28,7 +28,6 @@ class MerkleProofImpl(
     private val leaves: List<IndexedMerkleLeaf>,
     private val hashes: List<SecureHash>
 ) : MerkleProof {
-
     // CORE-5111: add serialize/deserialize (and its test)
 
     override fun verify(root: SecureHash, digest: MerkleTreeHashDigest) =
@@ -239,21 +238,19 @@ class MerkleProofImpl(
      * @return A new Merkle proof
      */
     fun subset(digest: MerkleTreeHashDigest, leafIndices: List<Int>): MerkleProofImpl {
-        var outHashes: MutableList<SecureHash> = mutableListOf()
+        val outHashes: MutableList<SecureHash> = mutableListOf()
         val treeDepth = MerkleTreeImpl.treeDepth(treeSize)
         calculateRootInstrumented(digest) { hash, level, index, _ ->
             val adjacentIndex = (index xor 1) // the adjacent node for this level
-            val height = treeDepth - level // how many levels above the leaves, 0 for at the leaf
-            // The adjacent sub-tree (be it leaf or node) will be known iff there is known data within it
+            val height = treeDepth - level // how many levels above the leaves, 0 for being at the leaf
+            // The subset proof will need this hash if and only if the adjacent sub-tree is a known hash.
+            // The adjacent sub-tree (be it leaf or node) will be known if and only if there is known data within it.
             // There is known data if any member of leafIndices is set within that subtree.
             // Since we are $height levels up from the leaves (perhaps $height is zero), the start and end leaf indices
             // are double for each level of the tree, which we can factor in by bitshifting our indices to the left
             // $height times.
 
-            // e.g. if height=2 and index= 0, adjacentIndex is 1,
-            // this node covers 0,1,2,3 and the adjacentTree 4,5,6,7, so the test is whether any of [4,7] are in leafIndices
             val adjLHS = adjacentIndex shl height
-
             if (leafIndices.any { it in adjLHS until adjLHS + (1 shl height) }) outHashes.add(hash)
         }
         val outLeaves = leaves.filter { it.index in leafIndices }
@@ -298,7 +295,7 @@ class MerkleProofImpl(
             nodeLabels[level to nodeIndex] = hash.toString().substringAfter(":")
                 .take(8) + (if (consumed!=null) " (input $consumed)" else " (calc)")
         }
-        val leafHashes = (0 until treeSize).map { nodeLabels[treeDepth to it]?:"unknown" }
+        val leafHashes = (0 until treeSize).map { nodeLabels[treeDepth to it]?:"unknown"}
         val longestLeafHash = leafHashes.map { it.length }.max()
         val leafLabels =  (0 until treeSize).map {
             "${leafHashes[it].padEnd(longestLeafHash)} ${if (it in getLeaves().map { l -> l.index }) "known leaf" else "filtered"}"

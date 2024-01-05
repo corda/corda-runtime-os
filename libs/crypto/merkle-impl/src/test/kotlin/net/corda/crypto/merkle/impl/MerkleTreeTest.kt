@@ -365,14 +365,13 @@ class MerkleTreeTest {
         val proof2 = proof.subset(trivialHashDigestProvider, listOf(4))
         assertThat(proof2.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
             """
-            00000612 (calc)┳0000069F (input 1)┳               ┳unknown            filtered
-                           ┃                  ┃               ┗unknown            filtered
-                           ┃                  ┗               ┳unknown            filtered
-                           ┃                                  ┗unknown            filtered
-                           ┗00000638 (calc)   ━00000638 (calc)┳00000004 (calc)    known leaf
-                                                              ┗00000005 (input 0) filtered
-                """
-        )
+                00000612 (calc)┳0000069F (input 1)┳unknown        ┳unknown            filtered
+                               ┃                  ┃               ┗unknown            filtered
+                               ┃                  ┗unknown        ┳unknown            filtered
+                               ┃                                  ┗unknown            filtered
+                               ┗00000638 (calc)   ━00000638 (calc)┳00000004 (calc)    known leaf
+                                                                  ┗00000005 (input 0) filtered
+                """)
 
         val proof3 = proof.subset(trivialHashDigestProvider, listOf(2))
         assertThat(proof3.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
@@ -394,19 +393,19 @@ class MerkleTreeTest {
         assertThat(proof.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
             00000667 (calc)┳00000630 (calc)   ┳00000000 (calc)━00000000 (calc) known leaf
                            ┃                  ┗00000001 (calc)━00000001 (calc) known leaf
-                           ┗00000002 (input 0)━               ━unknown         filtered
+                           ┗00000002 (input 0)━unknown        ━unknown         filtered
         """.trimIndent())
         val proof2 = proof.subset(trivialHashDigestProvider, listOf(1))
         assertThat(proof2.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
                     00000667 (calc)┳00000630 (calc)   ┳00000000 (input 0)━00000000 (input 0) filtered
                                    ┃                  ┗00000001 (calc)   ━00000001 (calc)    known leaf
-                                   ┗00000002 (input 1)━                  ━unknown            filtered
+                                   ┗00000002 (input 1)━unknown           ━unknown            filtered
                 """)
         val proof3 = proof.subset(trivialHashDigestProvider, listOf(0))
         assertThat(proof3.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
                     00000667 (calc)┳00000630 (calc)   ┳00000000 (calc)   ━00000000 (calc)    known leaf
                                    ┃                  ┗00000001 (input 0)━00000001 (input 0) filtered
-                                   ┗00000002 (input 1)━                  ━unknown            filtered
+                                   ┗00000002 (input 1)━unknown           ━unknown            filtered
                 """)
     }
 
@@ -504,6 +503,16 @@ class MerkleTreeTest {
                                        ┃                                  ┗00000003 (input 0) filtered
                                        ┗00000638 (calc)━00000638 (calc)   ┳00000004 (calc)    known leaf
                                                                           ┗00000005 (input 1) filtered
+                    """.trimIndent())
+                }
+                if (i == 16 && treeSize == 6) {
+                    assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
+                         00000612 (calc)┳0000069F (input 1)┳               ┳unknown            filtered
+                                        ┃                  ┃               ┗unknown            filtered
+                                        ┃                  ┗               ┳unknown            filtered
+                                        ┃                                  ┗unknown            filtered
+                                        ┗00000638 (calc)   ━00000638 (calc)┳00000004 (calc)    known leaf
+                                                                           ┗00000005 (input 0) filtered
                     """.trimIndent())
                 }
             }
