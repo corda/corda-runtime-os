@@ -88,7 +88,6 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                 }
                 if (reply != null) {
                     // Convert response to a record and add it to the queue
-                    @Suppress("UNCHECKED_CAST")
                     queue.addLast(
                         addTraceContextToRecord(
                             Record(
