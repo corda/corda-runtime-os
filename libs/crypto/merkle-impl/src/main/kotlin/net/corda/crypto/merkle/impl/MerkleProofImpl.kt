@@ -53,7 +53,7 @@ class MerkleProofImpl(
      * It recreates the routes towards the root element from the items in the leaves to be proven with using
      * the proof hashes when they are needed.
      *
-     * @param digest the digest service to use, which must generate hashes compatibile with the [hashes] constructor parameter.
+     * @param digest the digest service to use, which must generate hashes compatible with the [hashes] constructor parameter.
      * @return the secure hash of the root of the Merkle proof
      */
     override fun calculateRoot(digest: MerkleTreeHashDigest): SecureHash = calculateRootInstrumented(digest)
