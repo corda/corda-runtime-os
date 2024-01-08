@@ -1021,7 +1021,6 @@ internal class SessionManagerImpl(
         }
 
         private val config = AtomicReference<SessionHealthManagerConfig>()
-
         private val sessionHealthMonitor = AtomicReference<SessionHealthMonitor>()
 
         @VisibleForTesting
@@ -1050,7 +1049,6 @@ internal class SessionManagerImpl(
                         else -> NoHeartbeatSessionHealthMonitor()
                     }
                 )
-                stopTrackingAllSessions()
                 configUpdateResult.complete(Unit)
                 return configUpdateResult
             }
