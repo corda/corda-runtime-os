@@ -78,7 +78,7 @@ class ConsumerProcessorTest {
         var counter = 0
         whenever(taskManager.executeShortRunningTask<Unit>(any())).thenAnswer {
             counter++
-            val output = mapOf("foo-$counter" to EventProcessingOutput(listOf(getAsyncMediatorMessage("payload")), StateUpdate.Noop))
+            val output = mapOf("foo-$counter" to EventProcessingOutput(listOf(getAsyncMediatorMessage("payload")), StateChangeAndOperation.Noop))
             val future = CompletableFuture<Map<String, EventProcessingOutput>>()
             future.complete(output)
             future

@@ -141,11 +141,11 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val statesToUpdate = mutableListOf<State>()
         val statesToDelete = mutableListOf<State>()
         outputs.values.forEach {
-            when (it.stateUpdate) {
-                is StateUpdate.Create -> statesToCreate.add(it.stateUpdate.outputState)
-                is StateUpdate.Update -> statesToUpdate.add(it.stateUpdate.outputState)
-                is StateUpdate.Delete -> statesToDelete.add(it.stateUpdate.outputState)
-                is StateUpdate.Noop -> {} // Do nothing.
+            when (it.stateChangeAndOperation) {
+                is StateChangeAndOperation.Create -> statesToCreate.add(it.stateChangeAndOperation.outputState)
+                is StateChangeAndOperation.Update -> statesToUpdate.add(it.stateChangeAndOperation.outputState)
+                is StateChangeAndOperation.Delete -> statesToDelete.add(it.stateChangeAndOperation.outputState)
+                is StateChangeAndOperation.Noop -> {} // Do nothing.
             }
         }
         val failedToCreateKeys = stateManager.create(statesToCreate)

@@ -56,14 +56,14 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                 queue.addAll(returnedMessages)
             }
             val processed = stateManagerHelper.createOrUpdateState(groupKey, state, processorState)
-            val stateUpdate = when {
-                state == null && processed != null -> StateUpdate.Create(processed)
-                state != null && processed != null -> StateUpdate.Update(processed)
-                state != null && processed == null -> StateUpdate.Delete(state)
-                else -> StateUpdate.Noop
+            val stateChangeAndOperation = when {
+                state == null && processed != null -> StateChangeAndOperation.Create(processed)
+                state != null && processed != null -> StateChangeAndOperation.Update(processed)
+                state != null && processed == null -> StateChangeAndOperation.Delete(state)
+                else -> StateChangeAndOperation.Noop
             }
 
-            EventProcessingOutput(asyncOutputs, stateUpdate)
+            EventProcessingOutput(asyncOutputs, stateChangeAndOperation)
         }
     }
 

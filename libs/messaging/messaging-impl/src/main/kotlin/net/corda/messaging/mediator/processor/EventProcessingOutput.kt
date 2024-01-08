@@ -5,16 +5,19 @@ import net.corda.messaging.api.mediator.MediatorMessage
 
 data class EventProcessingOutput(
     val asyncOutputs: List<MediatorMessage<Any>>,
-    val stateUpdate: StateUpdate
+    val stateChangeAndOperation: StateChangeAndOperation
 )
 
-sealed interface StateUpdate {
+sealed interface StateChangeAndOperation {
     val outputState: State?
 
-    class Create(override val outputState: State) : StateUpdate
-    class Update(override val outputState: State) : StateUpdate
-    class Delete(override val outputState: State) : StateUpdate
-    object Noop : StateUpdate {
+    class Create(override val outputState: State) : StateChangeAndOperation
+    class Update(override val outputState: State) : StateChangeAndOperation
+    class Delete(override val outputState: State) : StateChangeAndOperation
+
+    // This can happen if both input and output are null. There may still be outputs in this case (for example a flow
+    // status change).
+    object Noop : StateChangeAndOperation {
         override val outputState: State? = null
     }
 }
