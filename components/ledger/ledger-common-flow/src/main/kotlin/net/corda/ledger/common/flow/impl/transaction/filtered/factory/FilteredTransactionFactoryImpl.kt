@@ -117,7 +117,6 @@ class FilteredTransactionFactoryImpl @Activate constructor(
                             componentGroupMerkleTreeSizeProofProvider.getSizeProof(merkleTree.leaves)
                         }
                     } else {
-                        // TODO This is where we need to persist somehow?
                         merkleTree.createAuditProof(filteredComponents.map { it.first })
                     }
                 }
