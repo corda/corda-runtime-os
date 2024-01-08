@@ -2,6 +2,8 @@ package net.corda.messaging.mediator.processor
 
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.statemanager.api.State
+import net.corda.messaging.api.constants.FAILED_STATE
+import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
@@ -9,9 +11,11 @@ import net.corda.messaging.api.mediator.RoutingDestination
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.processor.StateAndEventProcessor.Response
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.getStringRecords
 import net.corda.messaging.mediator.StateManagerHelper
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.parallel.Execution
@@ -22,6 +26,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import kotlin.test.assertNotNull
 
 @Execution(ExecutionMode.SAME_THREAD)
 class EventProcessorTest {
@@ -37,33 +42,33 @@ class EventProcessorTest {
     private val syncMessage: String = "SYNC_PAYLOAD"
 
     @BeforeEach
+    @Suppress("unchecked_cast")
     fun setup() {
         client = mock()
         stateAndEventProcessor = mock()
         stateManagerHelper = mock()
         messageRouter = mock()
-        eventMediatorConfig = buildStringTestConfig()
-
-        eventProcessor = EventProcessor(eventMediatorConfig, stateManagerHelper, messageRouter)
-    }
-
-    @Test
-    @Suppress("unchecked_cast")
-    fun `processed record triggers 2 successive synchronous calls which are processed immediately, each input produces 1 async output`() {
         whenever(messageRouter.getDestination(any())).thenAnswer {
             val msg = it.arguments[0] as MediatorMessage<String>
             if (msg.payload == syncMessage) {
                 RoutingDestination(client, "endpoint", RoutingDestination.Type.SYNCHRONOUS)
             } else RoutingDestination(client, "endpoint", RoutingDestination.Type.ASYNCHRONOUS)
         }
+        eventMediatorConfig = buildStringTestConfig()
+
+        eventProcessor = EventProcessor(eventMediatorConfig, stateManagerHelper, messageRouter)
+    }
+
+    @Test
+    fun `processed record triggers 2 successive synchronous calls which are processed immediately, each input produces 1 async output`() {
 
         var counter = 0
         whenever(stateAndEventProcessor.onNext(anyOrNull(), any())).thenAnswer {
             if (counter == 3) {
-                StateAndEventProcessor.Response<String>(null, emptyList())
+                Response<String>(null, emptyList())
             } else {
                 counter++
-                StateAndEventProcessor.Response(null, listOf(
+                Response(null, listOf(
                     Record("", "key", asyncMessage),
                     Record("", "key", syncMessage)
                 ))
@@ -78,6 +83,24 @@ class EventProcessorTest {
         verify(messageRouter, times(9)).getDestination(any())
         verify(client, times(3)).send(any())
         verify(stateManagerHelper, times(1)).createOrUpdateState(any(), anyOrNull(), anyOrNull())
+    }
+
+    @Test
+    fun `when the rpc client fails to send a message, a state is output with the correct metadata key filled in`() {
+        whenever(stateAndEventProcessor.onNext(anyOrNull(), any())).thenAnswer {
+            Response(
+                StateAndEventProcessor.State("bar", null), listOf(
+                Record("", "key", asyncMessage),
+                Record("", "key", syncMessage)
+            ))
+        }
+        whenever(client.send(any())).thenThrow(CordaMessageAPIIntermittentException("baz"))
+
+        val outputMap = eventProcessor.processEvents(mapOf("key" to getStringRecords(1, "key")), mapOf("key" to state))
+
+        val output = outputMap["key"]
+        assertEquals(emptyList<MediatorMessage<Any>>(), output?.asyncOutputs)
+        assertNotNull(output?.stateUpdate?.outputState?.metadata?.get(FAILED_STATE))
     }
 
     private fun buildStringTestConfig() = EventMediatorConfig(
