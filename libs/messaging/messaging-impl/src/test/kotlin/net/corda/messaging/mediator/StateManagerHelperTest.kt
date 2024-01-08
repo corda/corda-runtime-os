@@ -47,7 +47,7 @@ class StateManagerHelperTest {
         val persistedState: State? = null
         val newState = StateAndEventProcessor.State(
             StateType(1),
-            mock<Metadata>(),
+            Metadata(),
         )
         val stateManagerHelper = StateManagerHelper(
             stateManager,
@@ -73,11 +73,11 @@ class StateManagerHelperTest {
             TEST_KEY,
             serialized(TEST_STATE_VALUE),
             stateVersion,
-            mock<Metadata>()
+            Metadata()
         )
         val updatedState = StateAndEventProcessor.State(
             StateType(TEST_STATE_VALUE.id + 1),
-            mock<Metadata>(),
+            Metadata(),
         )
         val stateManagerHelper = StateManagerHelper(
             stateManager,
