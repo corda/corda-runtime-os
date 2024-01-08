@@ -551,6 +551,13 @@ class MerkleTreeTest {
                     subproof.render(trivialHashDigestProvider)
                 }
 
+
+                if (sourceProofLeafSet == 4 && treeSize == 3) {
+                    println(it.render(trivialHashDigestProvider))
+                    val subproof = it.subset(trivialHashDigestProvider, listOf(2))
+                    subproof.render(trivialHashDigestProvider)
+                }
+
                 for (subsetProofLeafSet in (0 until (1 shl treeSize)).toList().shuffled(rng).take(10)) {
                     val subLeafIndicesCombination = (0 until treeSize).filter { leaf -> (subsetProofLeafSet and (1 shl leaf)) != 0 }
                     val missingLeaves = (0 until treeSize).filter { leaf -> subsetProofLeafSet and (1 shl leaf) != 0 &&  (sourceProofLeafSet and (1 shl leaf)) == 0}
