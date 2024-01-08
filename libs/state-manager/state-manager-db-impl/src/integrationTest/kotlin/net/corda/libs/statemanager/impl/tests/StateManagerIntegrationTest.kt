@@ -271,6 +271,40 @@ class StateManagerIntegrationTest {
         )
     }
 
+
+    @ValueSource(ints = [1, 5, 10, 20, 50])
+    @ParameterizedTest(name = "can createOrUpdate existing states (batch size: {0})")
+    fun canCreateOrUpdateExistingStates(stateCount: Int) {
+        persistStateEntities(
+            (1..stateCount),
+            { i, _ -> State.VERSION_INITIAL_VALUE },
+            { i, _ -> "existingState_$i" },
+            { i, _ -> """{"originalK1": "v$i", "originalK2": $i}""" }
+        )
+        val statesToUpdate = mutableSetOf<State>()
+        for (i in 1..stateCount*2) {
+            statesToUpdate.add(
+                State(buildStateKey(i), "state_$i$i".toByteArray(), 1, metadata("createOrupdatedK2" to "createOrupdatedK2"))
+            )
+        }
+
+        val failedUpdates = stateManager.createOrUpdate(statesToUpdate)
+
+        assertThat(failedUpdates).isEmpty()
+        softlyAssertPersistedStateEntities(
+            (1..stateCount),
+            { _, _ -> 2 },
+            { i, _ -> "state_$i$i" },
+            { _, _ -> metadata("createOrupdatedK2" to "createOrupdatedK2") }
+        )
+        softlyAssertPersistedStateEntities(
+            (stateCount+1..stateCount*2),
+            { _, _ -> 1},
+            { i, _ -> "state_$i$i" },
+            { _, _ -> metadata("createOrupdatedK2" to "createOrupdatedK2") }
+        )
+    }
+
     @Test
     fun `optimistic locking prevents sequentially updating states with mismatched versions and does not halt entire batch`() {
         val totalCount = 20
