@@ -46,10 +46,10 @@ class StateManagerImpl(
         return getFailedCreates(states, successfulKeys.toSet())
     }
 
-    override fun createOrUpdate(states: Collection<State>): Map<String, State> {
+    override fun put(states: Collection<State>): Map<String, State> {
         if (states.isEmpty()) return emptyMap()
         return dataSource.connection.transaction { connection ->
-            stateRepository.createOrUpdate(connection, states.map { it.toPersistentEntity() })
+            stateRepository.put(connection, states.map { it.toPersistentEntity() })
         }.map {
             it.fromPersistentEntity()
         }.associateBy {

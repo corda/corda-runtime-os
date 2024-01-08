@@ -181,7 +181,7 @@ class PerformanceClaimStateStoreImplTest {
             }
         }
 
-        override fun createOrUpdate(states: Collection<State>): Set<String> {
+        override fun put(states: Collection<State>): Set<String> {
             states.onEach {
                 store[it.key] = it
             }

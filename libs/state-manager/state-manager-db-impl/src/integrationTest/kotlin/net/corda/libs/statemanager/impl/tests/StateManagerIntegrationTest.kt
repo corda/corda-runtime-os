@@ -287,7 +287,7 @@ class StateManagerIntegrationTest {
             )
         }
 
-        val failedUpdates = stateManager.createOrUpdate(statesToUpdate)
+        val failedUpdates = stateManager.put(statesToUpdate)
 
         assertThat(failedUpdates).isEmpty()
         softlyAssertPersistedStateEntities(
