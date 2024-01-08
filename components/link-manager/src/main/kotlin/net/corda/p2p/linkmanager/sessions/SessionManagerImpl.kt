@@ -1142,11 +1142,7 @@ internal class SessionManagerImpl(
                         initialTrackedSession.lastSendTimestamp = timestamp
                         initialTrackedSession
                     } else {
-                        executorService.schedule(
-                            { outboundSessionTimeout(counterparties, sessionId) },
-                            config.get().sessionTimeout.toMillis(),
-                            TimeUnit.MILLISECONDS
-                        )
+                        scheduleOutboundSessionTimeout(counterparties, sessionId, config.get().sessionTimeout.toMillis())
                         TrackedOutboundSession(counterparties, timestamp, timestamp)
                     }
                 }
@@ -1190,7 +1186,7 @@ internal class SessionManagerImpl(
                 check(isRunning) {
                     "A session message was received before the ${SessionHealthManager::class.java.simpleName} was started."
                 }
-                messageReceived(sessionId, source, destination)
+                sessionHealthMonitor.get().messageReceived(sessionId, source, destination)
             }
         }
 
@@ -1199,16 +1195,8 @@ internal class SessionManagerImpl(
                 check(isRunning) {
                     "A data message was received before the ${SessionHealthManager::class.java.simpleName} was started."
                 }
-                messageReceived(sessionId, source, destination)
+                sessionHealthMonitor.get().messageReceived(sessionId, source, destination)
             }
-        }
-
-        private fun messageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity?) {
-            sessionHealthMonitor.get().messageReceived(sessionId, source, destination)
-        }
-
-        private fun outboundSessionTimeout(counterparties: SessionCounterparties, sessionId: String) {
-            sessionHealthMonitor.get().outboundSessionTimeout(counterparties, sessionId)
         }
 
         private fun tearDownOutboundSession(counterparties: SessionCounterparties, sessionId: String) {
@@ -1219,7 +1207,15 @@ internal class SessionManagerImpl(
 
         private fun scheduleOutboundSessionTimeout(counterparties: SessionCounterparties, sessionId: String, delay: Long) {
             executorService.schedule(
-                { outboundSessionTimeout(counterparties, sessionId) },
+                { sessionHealthMonitor.get().outboundSessionTimeout(counterparties, sessionId) },
+                delay,
+                TimeUnit.MILLISECONDS
+            )
+        }
+
+        private fun scheduleInboundSessionTimeout(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity?, delay: Long) {
+            executorService.schedule(
+                { inboundSessionTimeout(sessionId, source, destination) },
                 delay,
                 TimeUnit.MILLISECONDS
             )
@@ -1238,11 +1234,7 @@ internal class SessionManagerImpl(
                 trackedInboundSessions.remove(sessionId)
                 recordInboundSessionTimeoutMetric(source, destination)
             } else {
-                executorService.schedule(
-                    { inboundSessionTimeout(sessionId, source, destination) },
-                    sessionTimeoutMs - timeSinceLastReceived,
-                    TimeUnit.MILLISECONDS
-                )
+                scheduleInboundSessionTimeout(sessionId, source, destination, sessionTimeoutMs - timeSinceLastReceived)
             }
         }
 
@@ -1355,11 +1347,7 @@ internal class SessionManagerImpl(
                         initialTrackedSession.lastReceivedTimestamp = timeStamp()
                         initialTrackedSession
                     } else {
-                        executorService.schedule(
-                            { inboundSessionTimeout(sessionId, source, destination) },
-                            config.get().sessionTimeout.toMillis(),
-                            TimeUnit.MILLISECONDS
-                        )
+                        scheduleInboundSessionTimeout(sessionId, source, destination, config.get().sessionTimeout.toMillis())
                         TrackedInboundSession(timeStamp())
                     }
                 }
