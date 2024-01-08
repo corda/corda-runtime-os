@@ -11,7 +11,6 @@ import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.getStringRecords
-import net.corda.messaging.mediator.ConsumerProcessorState
 import net.corda.messaging.mediator.StateManagerHelper
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -30,7 +29,6 @@ class EventProcessorTest {
     private lateinit var stateManagerHelper: StateManagerHelper<String>
     private lateinit var client: MessagingClient
     private lateinit var messageRouter: MessageRouter
-    private lateinit var consumerProcessorState: ConsumerProcessorState
     private lateinit var stateAndEventProcessor: StateAndEventProcessor<String, String, String>
     private lateinit var eventProcessor: EventProcessor<String, String, String>
 
@@ -44,7 +42,6 @@ class EventProcessorTest {
         stateAndEventProcessor = mock()
         stateManagerHelper = mock()
         messageRouter = mock()
-        consumerProcessorState = ConsumerProcessorState()
         eventMediatorConfig = buildStringTestConfig()
 
         eventProcessor = EventProcessor(eventMediatorConfig, stateManagerHelper, messageRouter)

@@ -8,7 +8,6 @@ import net.corda.messaging.api.mediator.RoutingDestination
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.mediator.ConsumerProcessorState
 import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.tracing.addTraceContextToRecord
 
@@ -99,7 +98,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         return MediatorMessage(
             record.value!!,
             record.headers.toMessageProperties().also { properties ->
-                properties[MessagingClient.MSG_PROP_KEY] = record.key;
+                properties[MessagingClient.MSG_PROP_KEY] = record.key
                 if (record.topic != null && record.topic!!.isNotEmpty()) {
                     properties[MessagingClient.MSG_PROP_TOPIC] = record.topic!!
                 }

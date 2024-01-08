@@ -10,7 +10,6 @@ import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.messaging.mediator.ConsumerProcessorState
 import net.corda.messaging.mediator.GroupAllocator
 import net.corda.messaging.mediator.MediatorState
 import net.corda.messaging.mediator.StateManagerHelper

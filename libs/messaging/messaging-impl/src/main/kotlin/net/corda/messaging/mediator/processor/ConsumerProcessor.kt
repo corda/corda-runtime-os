@@ -9,7 +9,6 @@ import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.config.MediatorConsumerConfig
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.mediator.ConsumerProcessorState
 import net.corda.messaging.mediator.GroupAllocator
 import net.corda.messaging.mediator.MediatorState
 import net.corda.messaging.mediator.MultiSourceEventMediatorImpl
