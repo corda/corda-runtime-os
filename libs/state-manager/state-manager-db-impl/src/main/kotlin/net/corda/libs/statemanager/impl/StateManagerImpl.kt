@@ -15,6 +15,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
+@Suppress("TooManyFunctions")
 class StateManagerImpl(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val dataSource: CloseableDataSource,
