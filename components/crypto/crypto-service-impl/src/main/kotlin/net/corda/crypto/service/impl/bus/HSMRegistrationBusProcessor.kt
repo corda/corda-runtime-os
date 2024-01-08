@@ -2,7 +2,6 @@ package net.corda.crypto.service.impl.bus
 
 import net.corda.crypto.config.impl.RetryingConfig
 import net.corda.crypto.core.CryptoService
-import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.softhsm.TenantInfoService
 import net.corda.data.crypto.wire.CryptoNoContentValue
@@ -29,10 +28,7 @@ class HSMRegistrationBusProcessor(
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val executor = CryptoRetryingExecutor(
-        logger,
-        BackoffStrategy.createBackoff(config.maxAttempts, config.waitBetweenMills)
-    )
+    private val executor = CryptoRetryingExecutor(logger, config.maxAttempts.toLong(), config.waitBetweenMills)
 
     override fun onNext(request: HSMRegistrationRequest, respFuture: CompletableFuture<HSMRegistrationResponse>) {
         try {

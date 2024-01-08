@@ -32,13 +32,14 @@ import kotlin.concurrent.thread
 import kotlin.concurrent.write
 
 @Suppress("LongParameterList")
-class Sender(private val publisherFactory: PublisherFactory,
-             private val configMerger: ConfigMerger,
-             private val commonConfig: CommonConfig,
-             private val dbParams: DBParams?,
-             private val loadGenParams: LoadGenerationParams,
-             private val clock: Clock
-    ): Closeable {
+class Sender(
+    private val publisherFactory: PublisherFactory,
+    private val configMerger: ConfigMerger,
+    private val commonConfig: CommonConfig,
+    private val dbParams: DBParams?,
+    private val loadGenParams: LoadGenerationParams,
+    private val clock: Clock,
+) : Closeable {
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -49,6 +50,7 @@ class Sender(private val publisherFactory: PublisherFactory,
 
     private val writerThreads = mutableListOf<Thread>()
     private val stopLock = ReentrantReadWriteLock()
+
     @Volatile
     private var stop = false
 
@@ -58,10 +60,12 @@ class Sender(private val publisherFactory: PublisherFactory,
 
         val threads = (1..commonConfig.clients).map { client ->
             thread(isDaemon = true) {
-                val dbConnection = if(dbParams != null) {
-                    DbConnection(dbParams,
+                val dbConnection = if (dbParams != null) {
+                    DbConnection(
+                        dbParams,
                         "INSERT INTO sent_messages (sender_id, message_id) " +
-                                "VALUES (?, ?) on conflict do nothing")
+                            "VALUES (?, ?) on conflict do nothing",
+                    )
                 } else {
                     null
                 }
@@ -86,8 +90,8 @@ class Sender(private val publisherFactory: PublisherFactory,
                             Record(commonConfig.parameters.sendTopic, messageId, message)
                         }
                         stopLock.read {
-                            if(!stop) {
-                                val publishedIds = publisher.publish(records).zip(messageWithIds).filter { (future, messageWithId)->
+                            if (!stop) {
+                                val publishedIds = publisher.publish(records).zip(messageWithIds).filter { (future, messageWithId) ->
                                     try {
                                         future.get()
                                         true
@@ -137,7 +141,7 @@ class Sender(private val publisherFactory: PublisherFactory,
     }
 
     private fun calculateTtl(expireAfterTime: Duration?): Instant? {
-        return if(expireAfterTime == null) {
+        return if (expireAfterTime == null) {
             null
         } else {
             Instant.ofEpochMilli(expireAfterTime.toMillis() + clock.instant().toEpochMilli())
@@ -145,10 +149,10 @@ class Sender(private val publisherFactory: PublisherFactory,
     }
 
     private fun moreMessagesToSend(messagesSent: Int, loadGenerationParams: LoadGenerationParams): Boolean {
-        if(stop) {
+        if (stop) {
             return false
         }
-        return when(loadGenerationParams.loadGenerationType) {
+        return when (loadGenerationParams.loadGenerationType) {
             LoadGenerationType.ONE_OFF -> (messagesSent < loadGenerationParams.totalNumberOfMessages!!)
             LoadGenerationType.CONTINUOUS -> true
         }
@@ -169,7 +173,7 @@ class Sender(private val publisherFactory: PublisherFactory,
             messageId,
             messageId,
             APP_SIMULATOR_SUBSYSTEM,
-            MembershipStatusFilter.ACTIVE
+            MembershipStatusFilter.ACTIVE,
         )
         val randomData = ByteArray(messageSize).apply {
             random.nextBytes(this)
@@ -189,6 +193,4 @@ class Sender(private val publisherFactory: PublisherFactory,
         dbConnection.statement.executeBatch()
         dbConnection.connection.commit()
     }
-
-
 }

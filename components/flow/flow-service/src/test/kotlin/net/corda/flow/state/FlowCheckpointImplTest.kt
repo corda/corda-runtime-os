@@ -2,20 +2,16 @@ package net.corda.flow.state
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import java.nio.ByteBuffer
-import java.time.Instant
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowState
 import net.corda.data.flow.state.checkpoint.PipelineState
-import net.corda.data.flow.state.checkpoint.RetryState
 import net.corda.data.flow.state.external.ExternalEventState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
@@ -37,7 +33,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
-import java.time.temporal.ChronoUnit
+import java.nio.ByteBuffer
 
 @Suppress("LargeClass")
 class FlowCheckpointImplTest {
@@ -45,7 +41,6 @@ class FlowCheckpointImplTest {
         .withValue(FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION, ConfigValueFactory.fromAnyRef(60000L))
         .withValue(FlowConfig.PROCESSING_MAX_RETRY_DELAY, ConfigValueFactory.fromAnyRef(60000L))
     private val smartFlowConfig = SmartConfigFactory.createWithoutSecurityServices().create(flowConfig)
-    private val now = Instant.MIN
 
     private fun getMinimumCheckpoint(): Pair<Checkpoint, FlowCheckpointImpl> {
         val checkpoint = setupAvroCheckpoint()
@@ -83,9 +78,7 @@ class FlowCheckpointImplTest {
         newFiber: ByteBuffer = ByteBuffer.wrap(byteArrayOf()),
         suspendedOn: String = "foo",
         waitingFor: WaitingFor = WaitingFor(Wakeup()),
-        maxFlowSleepDuration: Int = 10000,
         suspendCount: Int = 0,
-        retryState: RetryState? = null,
         externalEventState: ExternalEventState? = null
     ): Checkpoint {
         val startContext = FlowStartContext().apply {
@@ -106,20 +99,16 @@ class FlowCheckpointImplTest {
         } else {
             null
         }
-        val newPipelineState = PipelineState().apply {
-            this.maxFlowSleepDuration = maxFlowSleepDuration
-            this.retryState = retryState
-        }
         return Checkpoint().apply {
             flowId = "F1"
             flowState = newFlowState
-            pipelineState = newPipelineState
+            pipelineState = PipelineState()
             initialPlatformVersion = 13579
         }
     }
 
     private fun createFlowCheckpoint(checkpoint: Checkpoint, config: SmartConfig? = null): FlowCheckpointImpl {
-        return FlowCheckpointImpl(checkpoint, config ?: smartFlowConfig) { now }
+        return FlowCheckpointImpl(checkpoint, config ?: smartFlowConfig)
     }
 
     private fun validateUninitialisedCheckpointThrows(flowCheckpoint: FlowCheckpointImpl) {
@@ -281,7 +270,7 @@ class FlowCheckpointImplTest {
         val flow = NonInitiatingFlowExample()
         val session1 = SessionState().apply { sessionId = "S1" }
         val waitingFor = WaitingFor(Any())
-        val checkpoint = setupAvroCheckpoint(maxFlowSleepDuration = 60000)
+        val checkpoint = setupAvroCheckpoint()
         val flowCheckpoint = createFlowCheckpoint(checkpoint)
 
         flowCheckpoint.suspendedOn = "A"
@@ -297,13 +286,11 @@ class FlowCheckpointImplTest {
         flowCheckpoint.serializedFiber = serializedFiber
 
         val avroCheckpoint = flowCheckpoint.toAvro()!!
-
         assertThat(avroCheckpoint.flowState.suspendedOn).isEqualTo("A")
         assertThat(avroCheckpoint.flowState.waitingFor).isEqualTo(waitingFor)
         assertThat(avroCheckpoint.flowState.flowStackItems.first()).isEqualTo(flowStackItem)
         assertThat(avroCheckpoint.flowState.sessions.first()).isEqualTo(session1)
         assertThat(avroCheckpoint.flowState.fiber).isEqualTo(serializedFiber)
-        assertThat(avroCheckpoint.pipelineState.maxFlowSleepDuration).isEqualTo(60000)
 
         assertThat(avroCheckpoint.flowState.flowStackItems[0].contextUserProperties)
             .isEqualTo(userPropertiesLevel0.avro)
@@ -536,12 +523,9 @@ class FlowCheckpointImplTest {
     }
 
     @Test
-    fun `rollback - original state restored when checkpoint rolled back from init`() {
+    fun `rollback - null avro object when checkpoint rolled back from init`() {
         val flowCheckpoint = createFlowCheckpoint(
-            setupAvroCheckpoint(initialiseFlowState = false,
-                retryState = RetryState().apply {
-                    retryCount = 1
-                })
+            setupAvroCheckpoint(initialiseFlowState = false)
         )
         val context = FlowStartContext().apply {
             statusKey = FlowKey(FLOW_ID_1, BOB_X500_HOLDING_IDENTITY)
@@ -550,148 +534,14 @@ class FlowCheckpointImplTest {
         }
         val cpk = SecureHashImpl("dummyDigestAlgo", byteArrayOf(0x00))
         val cpks = setOf(cpk)
-
         flowCheckpoint.initFlowState(context, cpks)
         flowCheckpoint.putSessionState(SessionState().apply { sessionId = "sid1" })
         flowCheckpoint.suspendedOn = "s2"
-        flowCheckpoint.waitingFor = WaitingFor(Wakeup())
+        assertThat(flowCheckpoint.toAvro()).isNotNull()
 
         flowCheckpoint.rollback()
-
-        val afterRollback = flowCheckpoint.toAvro()
-        assertThat(afterRollback?.flowState?.suspendedOn).isNull()
-        assertThat(afterRollback?.flowState?.waitingFor).isNull()
-        assertThat(afterRollback?.flowState?.sessions).isNull()
-        assertThat(afterRollback?.pipelineState?.cpkFileHashes).isEmpty()
-        assertThat(afterRollback).isNotNull()
+        assertThat(flowCheckpoint.toAvro()).isNull()
         validateUninitialisedCheckpointThrows(flowCheckpoint)
-    }
-
-    @Test
-    fun `retry - mark for retry should create retry state`() {
-        val flowEvent = FlowEvent()
-        val error = Exception()
-        val checkpoint = setupAvroCheckpoint()
-
-        val flowCheckpoint = createFlowCheckpoint(checkpoint)
-
-        flowCheckpoint.markForRetry(flowEvent, error)
-
-        val result = flowCheckpoint.toAvro()!!
-
-        assertThat(result.pipelineState.retryState).isNotNull
-        assertThat(result.pipelineState.retryState.retryCount).isEqualTo(1)
-        assertThat(result.pipelineState.retryState.failedEvent).isSameAs(flowEvent)
-        assertThat(result.pipelineState.retryState.firstFailureTimestamp).isEqualTo(now)
-        assertThat(result.pipelineState.retryState.lastFailureTimestamp).isEqualTo(now)
-    }
-
-    @Test
-    fun `retry - mark for retry should apply doubling retry delay`() {
-        val checkpoint1 = setupAvroCheckpoint()
-
-        val checkpoint2 = setupAvroCheckpoint(retryState = RetryState().apply {
-            retryCount = 1
-        })
-
-        val checkpoint3 = setupAvroCheckpoint(retryState = RetryState().apply {
-            retryCount = 2
-        })
-
-        var flowCheckpoint = createFlowCheckpoint(checkpoint1)
-        flowCheckpoint.markForRetry(FlowEvent(), Exception())
-        var result = flowCheckpoint.toAvro()!!
-        assertThat(result.pipelineState.maxFlowSleepDuration).isEqualTo(1000)
-        assertThat(result.pipelineState.retryState.retryCount).isEqualTo(1)
-
-        flowCheckpoint = createFlowCheckpoint(checkpoint2)
-        flowCheckpoint.markForRetry(FlowEvent(), Exception())
-        result = flowCheckpoint.toAvro()!!
-        assertThat(result.pipelineState.maxFlowSleepDuration).isEqualTo(2000)
-        assertThat(result.pipelineState.retryState.retryCount).isEqualTo(2)
-
-        flowCheckpoint = createFlowCheckpoint(checkpoint3)
-        flowCheckpoint.markForRetry(FlowEvent(), Exception())
-        result = flowCheckpoint.toAvro()!!
-        assertThat(result.pipelineState.maxFlowSleepDuration).isEqualTo(4000)
-        assertThat(result.pipelineState.retryState.retryCount).isEqualTo(3)
-    }
-
-    @Test
-    fun `retry - mark for retry should limit max retry time`() {
-        val flowConfig = ConfigFactory.empty()
-            .withValue(FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION, ConfigValueFactory.fromAnyRef(60000L))
-            .withValue(FlowConfig.PROCESSING_MAX_RETRY_DELAY, ConfigValueFactory.fromAnyRef(3000L))
-        val smartFlowConfig = SmartConfigFactory.createWithoutSecurityServices().create(flowConfig)
-
-        val checkpoint = setupAvroCheckpoint(retryState = RetryState().apply {
-            retryCount = 5
-        })
-
-        val flowCheckpoint = createFlowCheckpoint(checkpoint, smartFlowConfig)
-        flowCheckpoint.markForRetry(FlowEvent(), Exception())
-        val result = flowCheckpoint.toAvro()!!
-        assertThat(result.pipelineState.maxFlowSleepDuration).isEqualTo(3000)
-    }
-
-    @Test
-    fun `retry - creating a checkpoint with a retry state set should allow retry information to be retrieved`() {
-        val firstFailure = Instant.now().truncatedTo(ChronoUnit.MILLIS)
-        val flowEvent = FlowEvent("F1", Wakeup())
-        val checkpoint = setupAvroCheckpoint(retryState = RetryState().apply {
-            retryCount = 1
-            failedEvent = flowEvent
-            firstFailureTimestamp = firstFailure
-        })
-
-        val flowCheckpoint = createFlowCheckpoint(checkpoint)
-        assertThat(flowCheckpoint.inRetryState).isTrue
-        assertThat(flowCheckpoint.retryEvent).isEqualTo(flowEvent)
-        assertThat(flowCheckpoint.firstFailureTimestamp?.truncatedTo(ChronoUnit.MILLIS)).isEqualTo(firstFailure)
-    }
-
-    @Test
-    fun `retry - marking retry as cleared should remove retry state`() {
-        val flowEvent = FlowEvent("F1", Wakeup())
-        val checkpoint = setupAvroCheckpoint(retryState = RetryState().apply {
-            retryCount = 1
-            failedEvent = flowEvent
-        })
-
-        val flowCheckpoint = createFlowCheckpoint(checkpoint)
-        flowCheckpoint.markRetrySuccess()
-        assertThat(flowCheckpoint.inRetryState).isFalse
-        val avroCheckpoint = flowCheckpoint.toAvro()
-        assertThat(avroCheckpoint!!.pipelineState.retryState).isNull()
-    }
-
-    @Test
-    fun `set sleep duration should always keep the min value seen`() {
-        val checkpoint = setupAvroCheckpoint()
-
-        val flowCheckpoint = createFlowCheckpoint(checkpoint, smartFlowConfig)
-
-        // Defaults to configured value
-        assertThat(flowCheckpoint.toAvro()!!.pipelineState.maxFlowSleepDuration).isEqualTo(60000)
-
-        flowCheckpoint.setFlowSleepDuration(500)
-        assertThat(flowCheckpoint.toAvro()!!.pipelineState.maxFlowSleepDuration).isEqualTo(500)
-
-        flowCheckpoint.setFlowSleepDuration(1000)
-        assertThat(flowCheckpoint.toAvro()!!.pipelineState.maxFlowSleepDuration).isEqualTo(500)
-
-        flowCheckpoint.setFlowSleepDuration(200)
-        assertThat(flowCheckpoint.toAvro()!!.pipelineState.maxFlowSleepDuration).isEqualTo(200)
-    }
-
-    @Test
-    fun `set sleep duration should default to configured value for existing checkpoint`() {
-        val checkpoint = setupAvroCheckpoint(maxFlowSleepDuration = 100)
-
-        val flowCheckpoint = createFlowCheckpoint(checkpoint, smartFlowConfig)
-
-        // Defaults to configured value
-        assertThat(flowCheckpoint.toAvro()!!.pipelineState.maxFlowSleepDuration).isEqualTo(60000)
     }
 
     @Test
@@ -757,11 +607,12 @@ class FlowCheckpointImplTest {
         val checkpoint = setupAvroCheckpoint()
         val flowCheckpoint = createFlowCheckpoint(checkpoint)
         flowCheckpoint.markDeleted()
-        flowCheckpoint.markForRetry(FlowEvent(), RuntimeException())
-        assertThat(flowCheckpoint.inRetryState).isTrue
-        flowCheckpoint.markRetrySuccess()
-        assertThat(flowCheckpoint.inRetryState).isFalse
-        flowCheckpoint.setFlowSleepDuration(1)
+
+        val platformError = ExceptionEnvelope("DummyType", "DummyMessage")
+        flowCheckpoint.setPendingPlatformError(platformError.errorType, platformError.errorMessage)
+        assertThat(flowCheckpoint.pendingPlatformError).isNotNull()
+        assertThat(flowCheckpoint.pendingPlatformError!!.errorType).isEqualTo(platformError.errorType)
+        assertThat(flowCheckpoint.pendingPlatformError!!.errorMessage).isEqualTo(platformError.errorMessage)
     }
 
     @Test
@@ -848,7 +699,7 @@ class FlowCheckpointImplTest {
             .setItems(listOf(existingAvroCustomState))
             .build()
 
-        flowCheckpoint.writeCustomState(ExampleCustomState("test2" ))
+        flowCheckpoint.writeCustomState(ExampleCustomState("test2"))
 
         val expectedAvroCustomState = KeyValuePairList.newBuilder()
             .setItems(

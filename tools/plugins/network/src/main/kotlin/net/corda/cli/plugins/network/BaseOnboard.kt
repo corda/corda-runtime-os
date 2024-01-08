@@ -2,57 +2,57 @@
 
 package net.corda.cli.plugins.network
 
-import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.node.ObjectNode
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
-import net.corda.rest.HttpFileUpload
-import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
-import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
-import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
-import net.corda.membership.rest.v1.KeysRestResource
-import net.corda.membership.rest.v1.HsmRestResource
-import net.corda.membership.rest.v1.CertificatesRestResource
-import net.corda.membership.rest.v1.MemberRegistrationRestResource
-import net.corda.membership.rest.v1.NetworkRestResource
-import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
-import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
-import com.fasterxml.jackson.databind.node.ObjectNode
-import net.corda.virtualnode.OperationalStatus
-import org.bouncycastle.openssl.PEMParser
-import org.bouncycastle.pkcs.PKCS10CertificationRequest
-import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
 import net.corda.cli.plugins.packaging.signing.SigningOptions
 import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
+import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
+import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
+import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
+import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
+import net.corda.membership.rest.v1.CertificatesRestResource
+import net.corda.membership.rest.v1.HsmRestResource
+import net.corda.membership.rest.v1.KeysRestResource
+import net.corda.membership.rest.v1.MemberRegistrationRestResource
+import net.corda.membership.rest.v1.NetworkRestResource
 import net.corda.membership.rest.v1.types.request.HostedIdentitySessionKeyAndCertificate
+import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
+import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.rest.v1.types.response.RegistrationStatus
-import com.fasterxml.jackson.databind.JsonNode
+import net.corda.rest.HttpFileUpload
 import net.corda.rest.JsonObject
-import org.bouncycastle.asn1.x500.X500Name
-import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
 import net.corda.rest.client.exceptions.MissingRequestedResourceException
 import net.corda.rest.client.exceptions.RequestErrorException
+import net.corda.virtualnode.OperationalStatus
+import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
 import org.bouncycastle.crypto.util.PrivateKeyFactory
+import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder
 import org.bouncycastle.operator.DefaultSignatureAlgorithmIdentifierFinder
 import org.bouncycastle.operator.bc.BcRSAContentSignerBuilder
-import picocli.CommandLine.Parameters
+import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import picocli.CommandLine.Option
+import picocli.CommandLine.Parameters
 import java.io.File
 import java.io.InputStream
 import java.math.BigInteger
+import java.net.URI
 import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
 import java.util.Date
-import java.net.URI
 
 @Suppress("TooManyFunctions")
 abstract class BaseOnboard : Runnable, RestCommand() {
@@ -66,7 +66,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         fun createKeyStoreFile(keyStoreFile: File) {
             val keyPair = KeyPairGenerator.getInstance("RSA").genKeyPair()
             val sigAlgId = DefaultSignatureAlgorithmIdentifierFinder().find(
-                SignatureSpecs.RSA_SHA256.signatureName
+                SignatureSpecs.RSA_SHA256.signatureName,
             )
             val digAlgId = DefaultDigestAlgorithmIdentifierFinder().find(sigAlgId)
             val parameter = PrivateKeyFactory.createKey(keyPair.private.encoded)
@@ -79,7 +79,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             val certificateBuilder =
                 JcaX509v3CertificateBuilder(dnName, certSerialNumber, startDate, endDate, dnName, keyPair.public)
             val certificate = JcaX509CertificateConverter().getCertificate(
-                certificateBuilder.build(sigGen)
+                certificateBuilder.build(sigGen),
             )
             val keyStore = KeyStore.getInstance("pkcs12")
             keyStore.load(null, SIGNING_KEY_STORE_PASSWORD.toCharArray())
@@ -91,12 +91,12 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             )
             BaseOnboard::class.java
                 .getResourceAsStream(
-                    "/certificates/gradle-plugin-default-key.pem"
+                    "/certificates/gradle-plugin-default-key.pem",
                 ).use { certificateInputStream ->
                     keyStore.setCertificateEntry(
                         GRADLE_PLUGIN_DEFAULT_KEY_ALIAS,
                         CertificateFactory.getInstance("X.509")
-                            .generateCertificate(certificateInputStream)
+                            .generateCertificate(certificateInputStream),
                     )
                 }
             keyStoreFile.outputStream().use {
@@ -108,13 +108,13 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     @Parameters(
         description = ["The X500 name of the virtual node."],
         arity = "1",
-        index = "0"
+        index = "0",
     )
     lateinit var name: String
 
     @Option(
         names = ["--mutual-tls", "-m"],
-        description = ["Enable mutual TLS"]
+        description = ["Enable mutual TLS"],
     )
     var mtls: Boolean = false
 
@@ -122,14 +122,14 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         names = ["--tls-certificate-subject", "-c"],
         description = [
             "The TLS certificate subject. Leave empty to use random certificate subject." +
-                    "Will only be used on the first onboard to the cluster."
-        ]
+                "Will only be used on the first onboard to the cluster.",
+        ],
     )
     var tlsCertificateSubject: String? = null
 
     @Option(
         names = ["--p2p-gateway-url", "-g"],
-        description = ["P2P Gateway URL. Multiple URLs may be provided. Defaults to https://localhost:8080."]
+        description = ["P2P Gateway URL. Multiple URLs may be provided. Defaults to https://localhost:8080."],
     )
     var p2pGatewayUrls: List<String> = listOf("https://localhost:8080")
 
@@ -147,8 +147,8 @@ abstract class BaseOnboard : Runnable, RestCommand() {
                 val uploadId = client.start().proxy.cpi(
                     HttpFileUpload(
                         content = jarInputStream,
-                        fileName = "$name.cpi"
-                    )
+                        fileName = "$name.cpi",
+                    ),
                 ).id
                 checkCpiStatus(uploadId)
             }
@@ -160,7 +160,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             checkInvariant(
                 maxAttempts = MAX_ATTEMPTS,
                 waitInterval = WAIT_INTERVAL,
-                errorMessage = "CPI request $id is not ready yet!"
+                errorMessage = "CPI request $id is not ready yet!",
             ) {
                 try {
                     val status = client.start().proxy.status(id)
@@ -190,13 +190,13 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             cryptoDdlConnection = null,
             cryptoDmlConnection = null,
             uniquenessDdlConnection = null,
-            uniquenessDmlConnection = null
+            uniquenessDmlConnection = null,
         )
         return createRestClient(VirtualNodeRestResource::class).use { client ->
             checkInvariant(
                 maxAttempts = MAX_ATTEMPTS,
                 waitInterval = WAIT_INTERVAL,
-                errorMessage = "Failed to create virtual node after $MAX_ATTEMPTS attempts."
+                errorMessage = "Failed to create virtual node after $MAX_ATTEMPTS attempts.",
             ) {
                 try {
                     client.start().proxy.createVirtualNode(request)
@@ -214,7 +214,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             checkInvariant(
                 maxAttempts = MAX_ATTEMPTS,
                 waitInterval = WAIT_INTERVAL,
-                errorMessage = "Virtual Node $shortHashId is not active yet!"
+                errorMessage = "Virtual Node $shortHashId is not active yet!",
             ) {
                 try {
                     val response = client.start().proxy.getVirtualNode(shortHashId)
@@ -241,12 +241,12 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             checkInvariant(
                 maxAttempts = MAX_ATTEMPTS,
                 waitInterval = WAIT_INTERVAL,
-                errorMessage = "Assign Soft HSM operation for $category: failed after the maximum number of attempts ($MAX_ATTEMPTS)."
+                errorMessage = "Assign Soft HSM operation for $category: failed after the maximum number of attempts ($MAX_ATTEMPTS).",
             ) {
                 try {
                     client.start().proxy.assignSoftHsm(holdingId, category)
                 } catch (e: MissingRequestedResourceException) {
-                    //This exception can be thrown while the assigning Hsm Key is being processed, so we catch it and re-try.
+                    // This exception can be thrown while the assigning Hsm Key is being processed, so we catch it and re-try.
                     null
                 }
             }
@@ -254,7 +254,10 @@ abstract class BaseOnboard : Runnable, RestCommand() {
 
         val response = createRestClient(KeysRestResource::class).use { keyClient ->
             keyClient.start().proxy.generateKeyPair(
-                holdingId, "$holdingId-$category", category, "CORDA.ECDSA.SECP256R1"
+                holdingId,
+                "$holdingId-$category",
+                category,
+                "CORDA.ECDSA.SECP256R1",
             )
         }
         return response.id
@@ -267,7 +270,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         assignSoftHsmAndGenerateKey("PRE_AUTH")
     }
     protected val certificateSubject by lazy {
-        tlsCertificateSubject ?: "O=P2P Certificate, OU=${p2pHosts}, L=London, C=GB"
+        tlsCertificateSubject ?: "O=P2P Certificate, OU=$p2pHosts, L=London, C=GB"
     }
 
     private val p2pHosts = extractHostsFromUrls(p2pGatewayUrls)
@@ -285,7 +288,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         CertificateAuthorityFactory
             .createFileSystemLocalAuthority(
                 RSA_TEMPLATE.toFactoryDefinitions(),
-                caHome
+                caHome,
             ).also { it.save() }
     }
 
@@ -313,7 +316,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
                 tenantId = "p2p",
                 alias = P2P_TLS_KEY_ALIAS,
                 hsmCategory = "TLS",
-                scheme = "CORDA.ECDSA.SECP256R1"
+                scheme = "CORDA.ECDSA.SECP256R1",
             ).id
         }
 
@@ -323,7 +326,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
                 keyId = tlsKeyId,
                 x500Name = certificateSubject,
                 subjectAlternativeNames = p2pHosts,
-                contextMap = null
+                contextMap = null,
             )
         }
 
@@ -342,8 +345,8 @@ abstract class BaseOnboard : Runnable, RestCommand() {
                     HttpFileUpload(
                         certificate,
                         "certificate.pem",
-                    )
-                )
+                    ),
+                ),
             )
         }
     }
@@ -355,9 +358,9 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             sessionKeysAndCertificates = listOf(
                 HostedIdentitySessionKeyAndCertificate(
                     sessionKeyId = sessionKeyId,
-                    preferred = true
-                )
-            )
+                    preferred = true,
+                ),
+            ),
         )
 
         createRestClient(NetworkRestResource::class).use { client ->
@@ -371,7 +374,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         }
 
         val request = MemberRegistrationRequest(
-            context = registrationContext
+            context = registrationContext,
         )
 
         val response = createRestClient(MemberRegistrationRestResource::class).use { client ->
@@ -397,7 +400,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             checkInvariant(
                 maxAttempts = MAX_ATTEMPTS,
                 waitInterval = WAIT_INTERVAL,
-                errorMessage = "Check Registration Progress failed after maximum number of attempts ($MAX_ATTEMPTS)."
+                errorMessage = "Check Registration Progress failed after maximum number of attempts ($MAX_ATTEMPTS).",
             ) {
                 try {
                     val status = client.start().proxy.checkSpecificRegistrationProgress(holdingId, registrationId)
@@ -406,7 +409,8 @@ abstract class BaseOnboard : Runnable, RestCommand() {
                         RegistrationStatus.APPROVED -> true // Return true to indicate the invariant is satisfied
                         RegistrationStatus.DECLINED,
                         RegistrationStatus.INVALID,
-                        RegistrationStatus.FAILED -> throw OnboardException("Status of registration is $registrationStatus.")
+                        RegistrationStatus.FAILED,
+                        -> throw OnboardException("Status of registration is $registrationStatus.")
 
                         else -> {
                             println("Status of registration is $registrationStatus")
@@ -446,8 +450,8 @@ abstract class BaseOnboard : Runnable, RestCommand() {
                         section = "corda.p2p.gateway",
                         version = currentConfig.version,
                         config = ConcreteJsonObject(json.writeValueAsString(newConfig)),
-                        schemaVersion = schemaVersion
-                    )
+                        schemaVersion = schemaVersion,
+                    ),
                 )
             }
         }
@@ -461,8 +465,8 @@ abstract class BaseOnboard : Runnable, RestCommand() {
                 .put("tlsType", tlsType)
                 .set<ObjectNode>(
                     "revocationCheck",
-                    json.createObjectNode().put("mode", "OFF")
-                )
+                    json.createObjectNode().put("mode", "OFF"),
+                ),
         )
         return newConfig
     }
@@ -486,7 +490,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     protected fun uploadSigningCertificates() {
         val keyStore = KeyStore.getInstance(
             keyStoreFile,
-            SIGNING_KEY_STORE_PASSWORD.toCharArray()
+            SIGNING_KEY_STORE_PASSWORD.toCharArray(),
         )
         keyStore.getCertificate(GRADLE_PLUGIN_DEFAULT_KEY_ALIAS)
             ?.toPem()
@@ -499,9 +503,9 @@ abstract class BaseOnboard : Runnable, RestCommand() {
                         certificates = listOf(
                             HttpFileUpload(
                                 certificate,
-                                "certificate.pem"
-                            )
-                        )
+                                "certificate.pem",
+                            ),
+                        ),
                     )
                 }
             }
@@ -516,9 +520,9 @@ abstract class BaseOnboard : Runnable, RestCommand() {
                         certificates = listOf(
                             HttpFileUpload(
                                 certificate,
-                                "certificate.pem"
-                            )
-                        )
+                                "certificate.pem",
+                            ),
+                        ),
                     )
                 }
             }

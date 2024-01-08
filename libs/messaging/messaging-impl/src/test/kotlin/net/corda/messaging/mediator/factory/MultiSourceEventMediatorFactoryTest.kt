@@ -4,6 +4,7 @@ import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
@@ -23,6 +24,7 @@ class MultiSourceEventMediatorFactoryTest {
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory>()
     private val serializer = mock<CordaAvroSerializer<Any>>()
     private val stateDeserializer = mock<CordaAvroDeserializer<Any>>()
+    private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
     private val taskManagerFactory = mock<TaskManagerFactory>()
 
     @BeforeEach
@@ -30,9 +32,10 @@ class MultiSourceEventMediatorFactoryTest {
         doReturn(serializer).`when`(cordaAvroSerializationFactory).createAvroSerializer<Any>(anyOrNull())
         doReturn(stateDeserializer).`when`(cordaAvroSerializationFactory).createAvroDeserializer(any(), any<Class<Any>>())
         doReturn(mock<TaskManager>()).`when`(taskManagerFactory).createThreadPoolTaskManager(any(), any(), any())
+        doReturn(mock<LifecycleCoordinator>()).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
         multiSourceEventMediatorFactory = MultiSourceEventMediatorFactoryImpl(
             cordaAvroSerializationFactory,
-            mock<LifecycleCoordinatorFactory>(),
+            lifecycleCoordinatorFactory,
             taskManagerFactory,
         )
     }
@@ -45,6 +48,9 @@ class MultiSourceEventMediatorFactoryTest {
         val stateManager = mock<StateManager>()
         val config = mock<EventMediatorConfig<Any, Any, Any>>()
         doReturn(messageProcessor).`when`(config).messageProcessor
+        doReturn(String::class.java).`when`(messageProcessor).keyClass
+        doReturn(String::class.java).`when`(messageProcessor).eventValueClass
+        doReturn(String::class.java).`when`(messageProcessor).stateValueClass
         doReturn(messageRouterFactory).`when`(config).messageRouterFactory
         doReturn("name").`when`(config).name
         doReturn(1).`when`(config).threads
