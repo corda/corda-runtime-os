@@ -5,10 +5,11 @@ import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse
 import io.javalin.http.UnauthorizedResponse
 import net.corda.metrics.CordaMetrics
+import net.corda.rest.authorization.AuthorizationProvider
 import net.corda.rest.exception.HttpApiException
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.security.Actor
-import net.corda.rest.security.AuthorizingSubject
+import net.corda.rest.authorization.AuthorizingSubject
 import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.rest.security.InvocationContext
 import net.corda.rest.security.RestAuthContext
@@ -188,10 +189,21 @@ internal object ContextUtils {
         }
     }
 
-    fun authorize(authorizingSubject: AuthorizingSubject, resourceAccessString: String) {
+    fun authorize(authorizingSubject: AuthorizingSubject, resourceAccessString: String, authorizationProvider: AuthorizationProvider? = null) {
         val principal = authorizingSubject.principal
         log.trace { "Authorize \"$principal\" for \"$resourceAccessString\"." }
-        if (!authorizingSubject.isPermitted(resourceAccessString)) {
+
+        if (authorizationProvider != null) {
+            if (!authorizationProvider.isAuthorized(authorizingSubject, resourceAccessString)) {
+                val pathParts = resourceAccessString.split(METHOD_SEPARATOR, limit = 2)
+                withMDC(principal, pathParts.firstOrNull() ?: "no_method", pathParts.lastOrNull() ?: "no_path") {
+                    "User not authorized.".let {
+                        log.info(it)
+                        throw ForbiddenResponse(it)
+                    }
+                }
+            }
+        } else if (!authorizingSubject.isPermitted(resourceAccessString)) {
             val pathParts = resourceAccessString.split(METHOD_SEPARATOR, limit = 2)
             withMDC(principal, pathParts.firstOrNull() ?: "no_method", pathParts.lastOrNull() ?: "no_path") {
                 "User not authorized.".let {

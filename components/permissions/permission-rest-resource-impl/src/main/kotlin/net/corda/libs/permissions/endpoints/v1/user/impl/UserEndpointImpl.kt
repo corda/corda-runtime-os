@@ -24,16 +24,21 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.permissions.management.PermissionManagementService
 import net.corda.rest.PluggableRestResource
+import net.corda.rest.annotations.HttpPOST
+import net.corda.rest.authorization.AuthorizationProvider
 import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.InvalidStateChangeException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.response.ResponseEntity
+import net.corda.rest.authorization.AuthorizingSubject
 import net.corda.rest.security.CURRENT_REST_CONTEXT
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import kotlin.reflect.full.findAnnotation
+import kotlin.reflect.full.memberFunctions
 
 /**
  * A REST resource endpoint for User operations.
@@ -64,6 +69,24 @@ class UserEndpointImpl @Activate constructor(
                     "$DEFAULT_SYSTEM_ADMIN_ROLE cannot be removed from $DEFAULT_ADMIN_FULL_NAME",
                     mapOf("roleId" to roleId, "loginName" to loginName)
                 )
+            }
+        }
+    }
+
+    override fun getAuthorizationProvider(): AuthorizationProvider {
+        return object : AuthorizationProvider {
+            override fun isAuthorized(subject: AuthorizingSubject, action: String): Boolean {
+                val pathParts = action.split(":", limit = 2)
+                val changePasswordMethodPath = this::class.memberFunctions
+                    .firstOrNull { it.name == ::changeUserPasswordSelf.name }
+                    ?.findAnnotation<HttpPOST>()
+                    ?.path
+
+                if (pathParts.firstOrNull() == changePasswordMethodPath) { //TODO: should be able to get annotation here? and use
+                    return true
+                } else {
+                    return AuthorizationProvider.Default.isAuthorized(subject, action)
+                }
             }
         }
     }

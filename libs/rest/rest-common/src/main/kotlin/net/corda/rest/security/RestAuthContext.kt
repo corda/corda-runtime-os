@@ -1,5 +1,6 @@
 package net.corda.rest.security
 
+import net.corda.rest.authorization.AuthorizingSubject
 import org.slf4j.MDC
 
 data class RestAuthContext(

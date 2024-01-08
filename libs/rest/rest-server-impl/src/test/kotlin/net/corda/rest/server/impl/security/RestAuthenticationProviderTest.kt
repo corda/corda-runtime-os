@@ -2,7 +2,7 @@ package net.corda.rest.server.impl.security
 
 import io.javalin.http.ForbiddenResponse
 import net.corda.rest.RestResource
-import net.corda.rest.security.AuthorizingSubject
+import net.corda.rest.authorization.AuthorizingSubject
 import net.corda.rest.server.impl.context.ContextUtils
 import net.corda.rest.server.impl.security.provider.AuthenticationProvider
 import net.corda.rest.server.impl.security.provider.credentials.tokens.BearerTokenAuthenticationCredentials
