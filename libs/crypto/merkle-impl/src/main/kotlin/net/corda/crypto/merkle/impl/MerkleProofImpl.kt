@@ -244,10 +244,10 @@ class MerkleProofImpl(
         require(outLeaves.size == leafIndices.size) { "some leaves are not available in input proof"}
         require(outLeaves.size != 0) { "output proof must have at least one known leaf"}
         // We work out the hashes for the new subset proof by considering, for the original proof, each hash that
-        // is calculated when we verify the proof by calculate the root.
+        // is calculated when we verify the proof by calculating the root.
         val outHashes: MutableList<SecureHash> = mutableListOf()
         val treeDepth = MerkleTreeImpl.treeDepth(treeSize)
-        var knownLeaves = leafIndices.toMutableList()
+        var knownLeaves = leafIndices.toMutableSet()
         calculateRootInstrumented(digest) { hash, level, index, _ ->
             val height = treeDepth - level // how many levels above the leaves, 0 for being at the leaf
             val leftmostLeaf = index shl height
