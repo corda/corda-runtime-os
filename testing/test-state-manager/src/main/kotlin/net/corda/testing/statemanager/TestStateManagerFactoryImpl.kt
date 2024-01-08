@@ -34,12 +34,12 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
                 }.map { it.key }.toSet()
             }
 
-            override fun put(states: Collection<State>): Set<String> {
+            override fun put(states: Collection<State>): Map<String, State> {
                 states.onEach {
                     storage[it.key] = it
                 }
 
-                return emptySet()
+                return emptyMap()
             }
 
             override fun get(keys: Collection<String>): Map<String, State> {

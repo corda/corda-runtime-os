@@ -181,12 +181,12 @@ class PerformanceClaimStateStoreImplTest {
             }
         }
 
-        override fun put(states: Collection<State>): Set<String> {
+        override fun put(states: Collection<State>): Map<String, State> {
             states.onEach {
                 store[it.key] = it
             }
 
-            return emptySet()
+            return emptyMap()
         }
 
         override fun get(keys: Collection<String>): Map<String, State> {
