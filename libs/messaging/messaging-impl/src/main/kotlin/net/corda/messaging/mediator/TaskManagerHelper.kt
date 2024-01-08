@@ -6,7 +6,6 @@ import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_KEY
-import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_TOPIC
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.metrics.EventMediatorMetrics
@@ -133,10 +132,6 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
         }
     }
 
-    fun convertToMessage(record: Record<*, *>): MediatorMessage<Any> {
-        return record.toMessage()
-    }
-
     /**
      * Executes given [ClientTask]s and waits for all to finish.
      *
@@ -171,15 +166,7 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
     private fun Record<*, *>.toMessage() =
         MediatorMessage(
             value!!,
-            headers
-                .toMessageProperties()
-                .also { properties ->
-                    properties[MSG_PROP_KEY] = key;
-
-                    if(topic != null && topic!!.isNotEmpty()) {
-                        properties[MSG_PROP_TOPIC] = topic!!
-                    }
-                },
+            headers.toMessageProperties().also { it[MSG_PROP_KEY] = key }
         )
 
     private fun List<Pair<String, String>>.toMessageProperties() =

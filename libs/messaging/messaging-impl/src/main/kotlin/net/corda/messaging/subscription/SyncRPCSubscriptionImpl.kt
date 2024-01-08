@@ -9,7 +9,6 @@ import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
 import net.corda.rest.ResponseCode
-import net.corda.tracing.trace
 import net.corda.web.api.Endpoint
 import net.corda.web.api.HTTPMethod
 import net.corda.web.api.WebHandler
@@ -52,7 +51,7 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val coordinator = lifecycleCoordinatorFactory.createCoordinator(subscriptionName) { _, _ -> }
 
     override fun start() {
-        registerEndpoint(rpcConfig.name, rpcConfig.endpoint, processor)
+         registerEndpoint(rpcConfig.endpoint, processor)
         coordinator.start()
         coordinator.updateStatus(LifecycleStatus.UP)
     }
@@ -68,51 +67,46 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     }
 
     private fun registerEndpoint(
-        name: String,
         rpcEndpoint: String,
         processor: SyncRPCProcessor<REQUEST, RESPONSE>,
     ) {
         val server = webServer
-        val operationName = "$name Request"
 
         val webHandler = WebHandler { context ->
-            trace(operationName) {
-                val payload = cordaAvroDeserializer.deserialize(context.bodyAsBytes())
+            val payload = cordaAvroDeserializer.deserialize(context.bodyAsBytes())
 
-                if (payload == null) {
-                    log.warn("Request Payload was invalid")
-                    context.result("Request Payload was invalid")
-                    context.status(ResponseCode.BAD_REQUEST)
-                    return@trace context
-                }
+            if (payload == null) {
+                log.warn("Request Payload was invalid")
+                context.result("Request Payload was invalid")
+                context.status(ResponseCode.BAD_REQUEST)
+                return@WebHandler context
+            }
 
+            val response = try {
+                processor.process(payload)
+            } catch (ex: Exception) {
+                val errorMsg = "Failed to process RPC request for $rpcEndpoint"
+                log.warn(errorMsg, ex)
+                context.result(errorMsg)
+                context.status(ResponseCode.INTERNAL_SERVER_ERROR)
+                return@WebHandler context
+            }
 
-                val response = try {
-                    processor.process(payload)
-                } catch (ex: Exception) {
-                    val errorMsg = "Failed to process RPC request for $rpcEndpoint"
-                    log.warn(errorMsg, ex)
+            // assume a null response is no response and return a zero length byte array
+            if (response == null) {
+                context.result(ByteArray(0))
+            } else {
+                val serializedResponse = cordaAvroSerializer.serialize(response)
+                if (serializedResponse != null) {
+                    context.result(serializedResponse)
+                } else {
+                    val errorMsg = "Response Payload cannot be serialised: ${response.javaClass.name}"
+                    log.warn(errorMsg)
                     context.result(errorMsg)
                     context.status(ResponseCode.INTERNAL_SERVER_ERROR)
-                    return@trace context
                 }
-
-                // assume a null response is no response and return a zero length byte array
-                if (response == null) {
-                    context.result(ByteArray(0))
-                } else {
-                    val serializedResponse = cordaAvroSerializer.serialize(response)
-                    if (serializedResponse != null) {
-                        context.result(serializedResponse)
-                    } else {
-                        val errorMsg = "Response Payload cannot be serialised: ${response.javaClass.name}"
-                        log.warn(errorMsg)
-                        context.result(errorMsg)
-                        context.status(ResponseCode.INTERNAL_SERVER_ERROR)
-                    }
-                }
-                context
             }
+            context
         }
 
         val addedEndpoint = Endpoint(HTTPMethod.POST, rpcEndpoint, webHandler, true)
