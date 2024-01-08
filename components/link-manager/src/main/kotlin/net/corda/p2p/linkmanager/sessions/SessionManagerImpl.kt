@@ -786,7 +786,7 @@ internal class SessionManagerImpl(
             "Outbound session $sessionId (local=${sessionCounterparties.ourId}, remote=${sessionCounterparties.counterpartyId}) timed " +
                     "out to refresh ephemeral keys and it will be cleaned up."
         )
-        refreshOutboundSession(sessionCounterparties, sessionId) 
+        refreshOutboundSession(sessionCounterparties, sessionId)
         sessionHealthManager.stopTrackingSpecifiedOutboundSession(sessionId)
     }
 
@@ -1022,6 +1022,8 @@ internal class SessionManagerImpl(
 
         private val config = AtomicReference<SessionHealthManagerConfig>()
 
+        private val sessionHealthMonitor = AtomicReference<SessionHealthMonitor>()
+
         @VisibleForTesting
         internal data class SessionHealthManagerConfig(
             val heartbeatEnabled: Boolean,
@@ -1042,6 +1044,13 @@ internal class SessionManagerImpl(
             ): CompletableFuture<Unit> {
                 val configUpdateResult = CompletableFuture<Unit>()
                 config.set(newConfiguration)
+                sessionHealthMonitor.set(
+                    when {
+                        newConfiguration.heartbeatEnabled -> HeartbeatSessionHealthMonitor()
+                        else -> NoHeartbeatSessionHealthMonitor()
+                    }
+                )
+                stopTrackingAllSessions()
                 configUpdateResult.complete(Unit)
                 return configUpdateResult
             }
@@ -1151,21 +1160,7 @@ internal class SessionManagerImpl(
                 check (isRunning) {
                     "A message was sent before the ${SessionHealthManager::class.java.simpleName} was started."
                 }
-                trackedOutboundSessions.computeIfPresent(session.sessionId) { _, trackedSession ->
-                    if (config.get().heartbeatEnabled && !trackedSession.sendingHeartbeats) {
-                        executorService.schedule(
-                            { sendHeartbeat(trackedSession.identityData, session) },
-                            config.get().heartbeatPeriod.toMillis(),
-                            TimeUnit.MILLISECONDS
-                        )
-                        trackedSession.sendingHeartbeats = true
-                    } else if(!config.get().heartbeatEnabled) {
-                        logger.debug(
-                            "Session heartbeats are disabled. Not starting heartbeats for session ${session.sessionId}."
-                        )
-                    }
-                    trackedSession
-                } ?: throw IllegalStateException("A message was sent on session with Id ${session.sessionId} which is not tracked.")
+                sessionHealthMonitor.get().sessionEstablished(session)
             }
         }
 
@@ -1211,76 +1206,11 @@ internal class SessionManagerImpl(
         }
 
         private fun messageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity?) {
-            if(config.get().heartbeatEnabled) {
-                trackedInboundSessions.compute(sessionId) { _, initialTrackedSession ->
-                    if (initialTrackedSession != null) {
-                        initialTrackedSession.lastReceivedTimestamp = timeStamp()
-                        initialTrackedSession
-                    } else {
-                        executorService.schedule(
-                            { inboundSessionTimeout(sessionId, source, destination) },
-                            config.get().sessionTimeout.toMillis(),
-                            TimeUnit.MILLISECONDS
-                        )
-                        TrackedInboundSession(timeStamp())
-                    }
-                }
-            } else {
-                logger.debug(
-                    "Heartbeats are disabled. " +
-                            "Inbound session timeout not enabled for session with ID $sessionId."
-                )
-            }
+            sessionHealthMonitor.get().messageReceived(sessionId, source, destination)
         }
 
         private fun outboundSessionTimeout(counterparties: SessionCounterparties, sessionId: String) {
-            if(config.get().heartbeatEnabled) {
-                heartbeatOutboundSessionTimeout(counterparties, sessionId)
-            } else {
-                noHeartbeatOutboundSessionTimeout(counterparties, sessionId)
-            }
-        }
-
-        private fun heartbeatOutboundSessionTimeout(counterparties: SessionCounterparties, sessionId: String) {
-            val sessionInfo = trackedOutboundSessions[sessionId] ?: return
-            val timeSinceLastAck = timeStamp() - sessionInfo.lastAckTimestamp
-            val sessionTimeoutMs = config.get().sessionTimeout.toMillis()
-            if (timeSinceLastAck >= sessionTimeoutMs) {
-                logger.info(
-                    "Outbound session $sessionId (local=${counterparties.ourId}, remote=" +
-                            "${counterparties.counterpartyId}) has not received any messages for the configured " +
-                            "timeout threshold ($sessionTimeoutMs ms) so it will be cleaned up."
-                )
-                tearDownOutboundSession(counterparties, sessionId)
-            } else {
-                scheduleOutboundSessionTimeout(counterparties, sessionId, sessionTimeoutMs - timeSinceLastAck)
-            }
-        }
-
-        private fun noHeartbeatOutboundSessionTimeout(counterparties: SessionCounterparties, sessionId: String) {
-            val sessionInfo = trackedOutboundSessions[sessionId] ?: return
-            val timestamp = timeStamp()
-            val timeSinceLastAck = timestamp - sessionInfo.lastAckTimestamp
-            val timeSinceLastSent = timestamp - sessionInfo.lastSendTimestamp
-            val maxWaitForAck = config.get().sessionTimeout.toMillis()
-            val waitingForAck = timeSinceLastAck > timeSinceLastSent
-            if (waitingForAck && timeSinceLastSent >= maxWaitForAck) {
-                logger.info(
-                    "Outbound session $sessionId (local=${counterparties.ourId}, remote=" +
-                    "${counterparties.counterpartyId}) has not received any acknowledgement to the last sent message " +
-                            "within the configured timeout threshold ($maxWaitForAck ms) so it will be cleaned up. " +
-                            "Time since last ack ${timeSinceLastAck}ms. ]" +
-                            "Time since last sent ${timeSinceLastSent}ms."
-                )
-                tearDownOutboundSession(counterparties, sessionId)
-            } else {
-                val delay = if (waitingForAck) {
-                    maxWaitForAck - timeSinceLastSent
-                } else {
-                    maxWaitForAck
-                }
-                scheduleOutboundSessionTimeout(counterparties, sessionId, delay)
-            }
+            sessionHealthMonitor.get().outboundSessionTimeout(counterparties, sessionId)
         }
 
         private fun tearDownOutboundSession(counterparties: SessionCounterparties, sessionId: String) {
@@ -1396,6 +1326,105 @@ internal class SessionManagerImpl(
 
         private fun timeStamp(): Long {
             return clock.instant().toEpochMilli()
+        }
+
+        private interface SessionHealthMonitor {
+            fun sessionEstablished(session: Session)
+
+            fun messageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity?)
+
+            fun outboundSessionTimeout(counterparties: SessionCounterparties, sessionId: String)
+        }
+
+        private inner class HeartbeatSessionHealthMonitor: SessionHealthMonitor {
+            override fun sessionEstablished(session: Session) {
+                trackedOutboundSessions.computeIfPresent(session.sessionId) { _, trackedSession ->
+                    if (!trackedSession.sendingHeartbeats) {
+                        executorService.schedule(
+                            { sendHeartbeat(trackedSession.identityData, session) },
+                            config.get().heartbeatPeriod.toMillis(),
+                            TimeUnit.MILLISECONDS
+                        )
+                        trackedSession.sendingHeartbeats = true
+                    }
+                    trackedSession
+                } ?: throw IllegalStateException("A message was sent on session with Id ${session.sessionId} which is not tracked.")
+            }
+
+            override fun messageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity?) {
+                trackedInboundSessions.compute(sessionId) { _, initialTrackedSession ->
+                    if (initialTrackedSession != null) {
+                        initialTrackedSession.lastReceivedTimestamp = timeStamp()
+                        initialTrackedSession
+                    } else {
+                        executorService.schedule(
+                            { inboundSessionTimeout(sessionId, source, destination) },
+                            config.get().sessionTimeout.toMillis(),
+                            TimeUnit.MILLISECONDS
+                        )
+                        TrackedInboundSession(timeStamp())
+                    }
+                }
+            }
+
+            override fun outboundSessionTimeout(counterparties: SessionCounterparties, sessionId: String) {
+                val sessionInfo = trackedOutboundSessions[sessionId] ?: return
+                val timeSinceLastAck = timeStamp() - sessionInfo.lastAckTimestamp
+                val sessionTimeoutMs = config.get().sessionTimeout.toMillis()
+                if (timeSinceLastAck >= sessionTimeoutMs) {
+                    logger.info(
+                        "Outbound session $sessionId (local=${counterparties.ourId}, remote=" +
+                                "${counterparties.counterpartyId}) has not received any messages for the configured " +
+                                "timeout threshold ($sessionTimeoutMs ms) so it will be cleaned up."
+                    )
+                    tearDownOutboundSession(counterparties, sessionId)
+                } else {
+                    scheduleOutboundSessionTimeout(counterparties, sessionId, sessionTimeoutMs - timeSinceLastAck)
+                }
+            }
+        }
+        private inner class NoHeartbeatSessionHealthMonitor: SessionHealthMonitor {
+            override fun sessionEstablished(session: Session) {
+                check(trackedOutboundSessions.contains(session.sessionId)) {
+                    "A message was sent on session with Id ${session.sessionId} which is not tracked."
+                }
+                logger.debug(
+                    "Session heartbeats are disabled. Not starting heartbeats for session ${session.sessionId}."
+                )
+            }
+
+            override fun messageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity?) {
+                logger.debug(
+                    "Session heartbeats are disabled. " +
+                            "Inbound session timeout not enabled for session with ID $sessionId."
+                )
+            }
+
+            override fun outboundSessionTimeout(counterparties: SessionCounterparties, sessionId: String) {
+                val sessionInfo = trackedOutboundSessions[sessionId] ?: return
+                val now = timeStamp()
+                val timeSinceLastAck = now - sessionInfo.lastAckTimestamp
+                val timeSinceLastSent = now - sessionInfo.lastSendTimestamp
+                val maxWaitForAck = config.get().sessionTimeout.toMillis()
+                val waitingForAck = timeSinceLastAck > timeSinceLastSent
+                if (waitingForAck && timeSinceLastSent >= maxWaitForAck) {
+                    logger.info(
+                        "Outbound session $sessionId (local=${counterparties.ourId}, remote=" +
+                                "${counterparties.counterpartyId}) has not received any acknowledgement to the last sent message " +
+                                "within the configured timeout threshold ($maxWaitForAck ms) so it will be cleaned up. " +
+                                "Time since last ack ${timeSinceLastAck}ms. ]" +
+                                "Time since last sent ${timeSinceLastSent}ms."
+                    )
+                    tearDownOutboundSession(counterparties, sessionId)
+                } else {
+                    val delay = if (waitingForAck) {
+                        maxWaitForAck - timeSinceLastSent
+                    } else {
+                        maxWaitForAck
+                    }
+                    scheduleOutboundSessionTimeout(counterparties, sessionId, delay)
+                }
+            }
         }
     }
 }
