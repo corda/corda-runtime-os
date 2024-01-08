@@ -454,8 +454,8 @@ class MerkleTreeTest {
         val rng = Random(0)
 
         // Test all the possible combinations of leaves for the proof.
-        for (i in 1 until (1 shl treeSize)) {
-            val leafIndicesCombination = (0 until treeSize).filter { (i and (1 shl it)) != 0 }
+        for (sourceProofLeafSet in 1 until (1 shl treeSize)) {
+            val leafIndicesCombination = (0 until treeSize).filter { (sourceProofLeafSet and (1 shl it)) != 0 }
             testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize).also {
 
                 val hashes = calculateLeveledHashes(it, trivialHashDigestProvider)
@@ -463,7 +463,7 @@ class MerkleTreeTest {
                 // `it` is a Merkle proof for a tree of size $treeSize with ${hashes.size}
                 // hashes supplied in the proof where we know $leafIndicesCombination
 
-                if (i == 1 && treeSize == 1) {
+                if (sourceProofLeafSet == 1 && treeSize == 1) {
                     assertThat(hashes).hasSize(0)
                     assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
                         """
@@ -471,7 +471,7 @@ class MerkleTreeTest {
                     """
                     )
                 }
-                if (i == 1 && treeSize == 2) {
+                if (sourceProofLeafSet == 1 && treeSize == 2) {
                     assertThat(hashes).hasSize(1)
                     assertHash(hashes[0].hash, "00000001")
                     assertThat(hashes[0].level).isEqualTo(0)
@@ -481,7 +481,7 @@ class MerkleTreeTest {
                                            ┗00000001 (input 0)━ 00000001 (input 0) filtered"""
                     )
                 }
-                if (i == 1 && treeSize == 3) {
+                if (sourceProofLeafSet == 1 && treeSize == 3) {
                     assertThat(hashes).hasSize(2)
                     assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
                         """
@@ -492,7 +492,7 @@ class MerkleTreeTest {
                     )
                 }
 
-                if (i == 42 && treeSize == 6) {
+                if (sourceProofLeafSet == 42 && treeSize == 6) {
                     assertThat(hashes).hasSize(3)
                     assertThat(hashes.map { it.hash.hex() }).isEqualTo(
                         arrayListOf("00000000", "00000002", "00000004")
@@ -510,7 +510,7 @@ class MerkleTreeTest {
                     )
                 }
 
-                if (i == 20 && treeSize == 6) {
+                if (sourceProofLeafSet == 20 && treeSize == 6) {
                     assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
                         """
                         00000612 (calc)┳0000069F (calc)┳00000630 (input 2)┳unknown            filtered
@@ -522,7 +522,7 @@ class MerkleTreeTest {
                     """.trimIndent()
                     )
                 }
-                if (i == 16 && treeSize == 6) {
+                if (sourceProofLeafSet == 16 && treeSize == 6) {
                     assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
                         """
                         00000612 (calc)┳0000069F (input 1)┳unknown        ┳unknown            filtered
@@ -535,17 +535,29 @@ class MerkleTreeTest {
                     )
                 }
 
-                if (i == 3 && treeSize == 3) {
+                if (sourceProofLeafSet == 3 && treeSize == 3) {
                     it.subset(trivialHashDigestProvider, listOf(1))
                 }
 
-                for (j in (0 until (1 shl treeSize)).toList().shuffled(rng).take(10)) {
-                    val subLeafIndicesCombination = (0 until treeSize).filter { leaf -> (j and (1 shl leaf)) != 0 }
-                    val missingLeaves = (0 until treeSize).filter { leaf -> j and (1 shl leaf) != 0 &&  (i and (1 shl leaf)) == 0}
+                if (sourceProofLeafSet == 3 && treeSize == 2) {
+                    // a case where all the leaves are defined, and we should not include the leaves in the output
+                    val subproof = it.subset(trivialHashDigestProvider, listOf(0,1))
+                    subproof.render(trivialHashDigestProvider)
+                }
+
+                if (sourceProofLeafSet == 5 && treeSize == 3) {
+                    println(it.render(trivialHashDigestProvider))
+                    val subproof = it.subset(trivialHashDigestProvider, listOf(0,2))
+                    subproof.render(trivialHashDigestProvider)
+                }
+
+                for (subsetProofLeafSet in (0 until (1 shl treeSize)).toList().shuffled(rng).take(10)) {
+                    val subLeafIndicesCombination = (0 until treeSize).filter { leaf -> (subsetProofLeafSet and (1 shl leaf)) != 0 }
+                    val missingLeaves = (0 until treeSize).filter { leaf -> subsetProofLeafSet and (1 shl leaf) != 0 &&  (sourceProofLeafSet and (1 shl leaf)) == 0}
                     val missing = missingLeaves.isNotEmpty()
-                    println("tree size $treeSize source proof $i subset $j missing $missingLeaves ($missing)")
+                    println("tree size $treeSize source proof $sourceProofLeafSet subset $subsetProofLeafSet missing $missingLeaves ($missing)")
                     when {
-                        j == 0 ->
+                        subsetProofLeafSet == 0 ->
                             // no leaves in output, which is never legal
                             assertFailsWith<java.lang.IllegalArgumentException> {
                                 it.subset(trivialHashDigestProvider, subLeafIndicesCombination)

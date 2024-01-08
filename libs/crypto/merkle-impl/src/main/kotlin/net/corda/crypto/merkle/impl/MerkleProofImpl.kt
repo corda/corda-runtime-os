@@ -257,7 +257,15 @@ class MerkleProofImpl(
             // $height times.
 
             val adjLHS = adjacentIndex shl height
-            if (leafIndices.any { it in adjLHS until adjLHS + (1 shl height) }) outHashes.add(hash)
+
+            val knownContentInOtherSide = leafIndices.any { it in adjLHS until adjLHS + (1 shl height) }
+
+            // we won't need this hash if it is a known leaf, since the hash can be worked out directly from the leaf
+
+            val lastNode = index shl height == treeSize - 1
+            val isKnownLeaf = (level == treeDepth || lastNode) && (index shl height) in leafIndices
+
+            if (knownContentInOtherSide && !isKnownLeaf) outHashes.add(hash)
         }
         return MerkleProofImpl(proofType, treeSize, outLeaves, outHashes)
     }
