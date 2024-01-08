@@ -67,7 +67,13 @@ class MerkleProofImpl(
      *                          order as input hashes are consumed.
      * @return the secure hash of the root of the Merkle proof
      */
-    fun calculateRootInstrumented(digest: MerkleTreeHashDigest, foundHashCallback: (hash: SecureHash, level: Int, nodeIndex: Int, consumed: Int?) -> Unit = { _, _, _, _ ->  } ): SecureHash {
+    @Suppress("NestedBlockDepth", "ThrowsCount")
+
+    fun calculateRootInstrumented(
+        digest: MerkleTreeHashDigest,
+        foundHashCallback: (hash: SecureHash, level: Int, nodeIndex: Int, consumed: Int?) -> Unit =
+             {_, _, _, _ -> }
+    ): SecureHash {
         if (digest !is MerkleTreeHashDigestProvider) {
             throw CordaRuntimeException(
                 "An instance of MerkleTreeHashDigestProvider is required when " +
@@ -258,7 +264,8 @@ class MerkleProofImpl(
             for (y in 0 until (1 shl x))
                 nodeLabels[x to y] = "unknown"
         calculateRootInstrumented(digest) { hash, level, nodeIndex, consumed ->
-            nodeLabels[level to nodeIndex] = hash.toString().substringAfter(":").take(8) + (if (consumed!=null) " (input $consumed)" else " (calc)")
+            nodeLabels[level to nodeIndex] = hash.toString().substringAfter(":")
+                .take(8) + (if (consumed!=null) " (input $consumed)" else " (calc)")
         }
         val leafHashes = (0 until treeSize).map { nodeLabels[treeDepth to it]?:"unknown" }
         val longestLeafHash = leafHashes.map { it.length }.max()
