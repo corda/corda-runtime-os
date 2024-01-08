@@ -24,7 +24,7 @@ class Sink(
     private val configMerger: ConfigMerger,
     private val commonConfig: CommonConfig,
     private val dbParams: DBParams,
-    ) : Closeable {
+) : Closeable {
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -53,7 +53,7 @@ class Sink(
         resources.forEach { it.close() }
     }
 
-    private inner class DBSinkProcessor: EventLogProcessor<String, String>, AutoCloseable {
+    private inner class DBSinkProcessor : EventLogProcessor<String, String>, AutoCloseable {
 
         override val keyClass: Class<String>
             get() = String::class.java
@@ -63,8 +63,9 @@ class Sink(
         private val dbConnection = DbConnection(
             dbParams,
             "INSERT INTO received_messages " +
-                    "(sender_id, message_id, sent_timestamp, received_timestamp, delivery_latency_ms) " +
-                    "VALUES (?, ?, ?, ?, ?) on conflict do nothing")
+                "(sender_id, message_id, sent_timestamp, received_timestamp, delivery_latency_ms) " +
+                "VALUES (?, ?, ?, ?, ?) on conflict do nothing",
+        )
 
         override fun onNext(events: List<EventLogRecord<String, String>>): List<Record<*, *>> {
             val messageReceivedEvents = events.map {
@@ -92,7 +93,5 @@ class Sink(
         override fun close() {
             dbConnection.close()
         }
-
     }
-
 }

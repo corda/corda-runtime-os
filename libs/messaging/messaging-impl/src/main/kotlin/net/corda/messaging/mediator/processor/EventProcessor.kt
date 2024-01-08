@@ -125,7 +125,12 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     private fun convertToMessage(record: Record<*, *>): MediatorMessage<Any> {
         return MediatorMessage(
             record.value!!,
-            record.headers.toMessageProperties().also { it[MessagingClient.MSG_PROP_KEY] = record.key },
+            record.headers.toMessageProperties().also { properties ->
+                properties[MessagingClient.MSG_PROP_KEY] = record.key;
+                if (record.topic != null && record.topic!!.isNotEmpty()) {
+                    properties[MessagingClient.MSG_PROP_TOPIC] = record.topic!!
+                }
+            },
         )
     }
 
