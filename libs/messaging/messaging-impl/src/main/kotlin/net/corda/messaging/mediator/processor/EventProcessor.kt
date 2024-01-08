@@ -16,15 +16,13 @@ import net.corda.tracing.addTraceContextToRecord
  * Class to process records received from the consumer.
  * Passes each record to process along with its state to the [config]s [StateAndEventProcessor].
  * Synchronous outputs from the processor are sent immediately and the responses are processed as new inputs.
- * Asynchronous outputs destined for the message bus and states to be saved to the state manager are tracked in the shared
- * [consumerProcessorState].
+ * Asynchronous outputs destined for the message bus and states to be saved to the state manager are returned.
  *
  */
 class EventProcessor<K : Any, S : Any, E : Any>(
     private val config: EventMediatorConfig<K, S, E>,
     private val stateManagerHelper: StateManagerHelper<S>,
-    private val messageRouter: MessageRouter,
-    private val consumerProcessorState: ConsumerProcessorState
+    private val messageRouter: MessageRouter
 ) {
 
     /**
@@ -59,20 +57,19 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                 queue.addAll(returnedMessages)
             }
             val processed = stateManagerHelper.createOrUpdateState(groupKey, state, processorState)
-            val stateUpdateKind = when {
-                state == null && processed != null -> StateUpdateKind.CREATE
-                state != null && processed != null -> StateUpdateKind.UPDATE
-                state != null && processed == null -> StateUpdateKind.DELETE
-                else -> StateUpdateKind.NOOP
+            val stateUpdate = when {
+                state == null && processed != null -> StateUpdate.Create(processed)
+                state != null && processed != null -> StateUpdate.Update(processed)
+                state != null && processed == null -> StateUpdate.Delete(state)
+                else -> StateUpdate.Noop
             }
 
-            EventProcessingOutput(asyncOutputs, processed, stateUpdateKind)
+            EventProcessingOutput(asyncOutputs, stateUpdate)
         }
     }
 
     /**
-     * Send any synchronous events immediately and feed results back onto the queue, add asynchronous events to the [consumerProcessorState]
-     * to be sent later.
+     * Send any synchronous events immediately and feed results back onto the queue.
      */
     private fun processSyncEvents(
         key: K,

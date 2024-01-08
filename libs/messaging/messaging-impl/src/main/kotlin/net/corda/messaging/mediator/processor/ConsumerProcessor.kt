@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit
  * If Fatal errors occur they will be throw back to the [MultiSourceEventMediatorImpl]
  * Polled records are divided into groups to process by the [groupAllocator].
  * Each group is processed on a different thread, submitted via the [taskManager].
- * An [eventProcessor] is used to process each group. This will update the [consumerProcessorState] with any outputs
+ * An [eventProcessor] is used to process each group.
  * All asynchronous outputs (states and message bus events) are stored after all groups have been processed.
  * Any flows from groups that fail to save state to the [stateManager] are retried.
  */
@@ -39,7 +39,6 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     private val taskManager: TaskManager,
     private val messageRouter: MessageRouter,
     private val mediatorState: MediatorState,
-    private val consumerProcessorState: ConsumerProcessorState,
     private val eventProcessor: EventProcessor<K, S, E>
 ) {
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.name}")
@@ -100,7 +99,6 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val messages = consumer.poll(pollTimeout)
         val startTimestamp = System.nanoTime()
         val polledRecords = messages.map { it.toRecord() }
-        consumerProcessorState.clear()
         if (messages.isNotEmpty()) {
             var groups = groupAllocator.allocateGroups(polledRecords, config)
             var statesToProcess = stateManager.get(messages.map { it.key.toString() }.distinct())
@@ -117,14 +115,14 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                     it.join()
                 }.fold(mapOf<K, EventProcessingOutput>()) { acc, cur ->
                     acc + cur
+                }.mapKeys {
+                    it.toString()
                 }
 
                 // Persist state changes, send async outputs and setup to reprocess states that fail to persist
-                val failedStates = persistStatesAndRetrieveFailures()
+                val failedStates = processOutputs(outputs)
                 statesToProcess = failedStates
                 groups = assignNewGroupsForFailedStates(failedStates, polledRecords)
-                sendAsynchronousEvents(consumerProcessorState.asynchronousOutputs.values.flatten())
-                consumerProcessorState.asynchronousOutputs.clear()
             }
             metrics.commitTimer.recordCallable {
                 consumer.syncCommitOffsets()
@@ -139,22 +137,30 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      * Will send any asynchronous outputs back to the bus for states which saved successfully.
      * @return a map of all the states that failed to save by their keys.
      */
-    private fun persistStatesAndRetrieveFailures(outputs: Map<K, EventProcessingOutput>): Map<String, State> {
-        val statesToCreate = outputs.values.filter { it.stateUpdateKind == StateUpdateKind.CREATE }.map { it.outputState }
-        val asynchronousOutputs = consumerProcessorState.asynchronousOutputs
-        val statesToPersist = consumerProcessorState.statesToPersist
-        val failedToCreateKeys = stateManager.create(statesToPersist.statesToCreate.values.mapNotNull { it })
+    private fun processOutputs(outputs: Map<String, EventProcessingOutput>): Map<String, State> {
+        val statesToCreate = mutableListOf<State>()
+        val statesToUpdate = mutableListOf<State>()
+        val statesToDelete = mutableListOf<State>()
+        outputs.values.forEach {
+            when (it.stateUpdate) {
+                is StateUpdate.Create -> statesToCreate.add(it.stateUpdate.outputState)
+                is StateUpdate.Update -> statesToUpdate.add(it.stateUpdate.outputState)
+                is StateUpdate.Delete -> statesToDelete.add(it.stateUpdate.outputState)
+                is StateUpdate.Noop -> {} // Do nothing.
+            }
+        }
+        val failedToCreateKeys = stateManager.create(statesToCreate)
         val failedToCreate = stateManager.get(failedToCreateKeys)
-        val failedToDelete = stateManager.delete(statesToPersist.statesToDelete.values.mapNotNull { it })
-        val failedToUpdate = stateManager.update(statesToPersist.statesToUpdate.values.mapNotNull { it })
-        statesToPersist.clear()
-        val failedToUpdateOptimisticLockFailure = failedToUpdate.mapNotNull { (key, value) -> value?.let { key to it } }.toMap()
-        val failedToUpdateStateDoesNotExist = (failedToUpdate - failedToUpdateOptimisticLockFailure).map { it.key }
-        failedToUpdateStateDoesNotExist.forEach { asynchronousOutputs.remove(it) }
+        val failedToDelete = stateManager.delete(statesToDelete)
+        val failedToUpdate = stateManager.update(statesToUpdate)
+        val failedToUpdateOptimisticLockFailure = failedToUpdate.mapNotNull { (key, value) ->
+            value?.let { key to it }
+        }.toMap()
+        val failedKeys = failedToCreate.keys + failedToDelete.keys + failedToUpdate.keys
+        val outputsToSend = (outputs - failedKeys).values.flatMap { it.asyncOutputs }
+        sendAsynchronousEvents(outputsToSend)
 
-        val failedStates = failedToCreate + failedToDelete + failedToUpdateOptimisticLockFailure
-        failedStates.keys.forEach { asynchronousOutputs.remove(it) }
-        return failedStates
+        return failedToCreate + failedToDelete + failedToUpdateOptimisticLockFailure
     }
 
     /**
