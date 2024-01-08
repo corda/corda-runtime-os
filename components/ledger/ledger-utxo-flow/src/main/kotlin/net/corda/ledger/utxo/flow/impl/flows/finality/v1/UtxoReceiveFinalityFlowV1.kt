@@ -159,7 +159,11 @@ class UtxoReceiveFinalityFlowV1(
             }
             InitialTransactionPayload(initialTransaction, transferAdditionalSignatures, emptyList(), emptyList())
         } else {
-            receiveDependencyPayloadAndVerify(payload.filteredTransactionsAndSignatures!!, initialTransaction, transferAdditionalSignatures)
+            val filteredTransactionsAndSignatures = payload.filteredTransactionsAndSignatures
+            requireNotNull(filteredTransactionsAndSignatures) {
+                "filtered transaction and signatures cannot be found."
+            }
+            receiveDependencyPayloadAndVerify(filteredTransactionsAndSignatures, initialTransaction, transferAdditionalSignatures)
         }
     }
 

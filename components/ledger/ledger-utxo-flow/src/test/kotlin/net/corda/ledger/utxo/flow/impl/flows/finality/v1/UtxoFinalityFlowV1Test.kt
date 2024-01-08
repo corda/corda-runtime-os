@@ -150,8 +150,6 @@ class UtxoFinalityFlowV1Test {
     private val stateAndRef = mock<StateAndRef<TestState>>()
     private val testState = TestState(listOf(publicKeyAlice1))
 
-//    private dependencyTx =
-
     @BeforeEach
     fun beforeEach() {
         whenever(sessionAlice.counterparty).thenReturn(ALICE)

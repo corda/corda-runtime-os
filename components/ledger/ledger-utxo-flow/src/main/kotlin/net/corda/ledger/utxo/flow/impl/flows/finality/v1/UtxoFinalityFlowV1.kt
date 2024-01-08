@@ -32,6 +32,7 @@ import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
 import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import net.corda.v5.membership.NotaryInfo
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.security.PrivilegedExceptionAction
@@ -89,7 +90,7 @@ class UtxoFinalityFlowV1(
         // Initial verifications passed, the transaction can be saved in the database.
         persistUnverifiedTransaction()
 
-        sendTransactionAndBackchainToCounterparties(transferAdditionalSignatures)
+        sendTransactionAndDependenciesToCounterparties(transferAdditionalSignatures)
         val (transaction, signaturesReceivedFromSessions) = receiveSignaturesAndAddToTransaction()
         verifyAllReceivedSignatures(transaction, signaturesReceivedFromSessions)
         persistTransactionWithCounterpartySignatures(transaction)
@@ -115,12 +116,34 @@ class UtxoFinalityFlowV1(
     // to counterparties. filteredTransactionsAndSignatures will be null if the backchain is required since
     // we don't need to send dependency payload to check.
     @Suspendable
-    private fun sendTransactionAndBackchainToCounterparties(transferAdditionalSignatures: Boolean) {
+    private fun sendTransactionAndDependenciesToCounterparties(transferAdditionalSignatures: Boolean) {
         val notaryInfo = requireNotNull(notaryLookup.lookup(initialTransaction.notaryName)) {
             "Notary ${initialTransaction.notaryName} does not exist in the network"
         }
 
-        val filteredTransactionsAndSignatures = if (!notaryInfo.isBackchainRequired) {
+        val filteredTransactionsAndSignatures = createFilteredTransactionsAndSignatures(notaryInfo)
+
+        flowMessaging.sendAll(
+            FinalityPayload(initialTransaction, transferAdditionalSignatures, filteredTransactionsAndSignatures),
+            sessions.toSet()
+        )
+
+        if (notaryInfo.isBackchainRequired) {
+            sessions.forEach {
+                if (initialTransaction.dependencies.isNotEmpty()) {
+                    flowEngine.subFlow(TransactionBackchainSenderFlow(initialTransaction.id, it))
+                } else {
+                    log.trace {
+                        "Transaction with id ${initialTransaction.id} has no dependencies so backchain resolution will not be performed."
+                    }
+                }
+            }
+        }
+    }
+
+    @Suspendable
+    private fun createFilteredTransactionsAndSignatures(notaryInfo: NotaryInfo): List<FilteredTransactionAndSignatures>? {
+        return if (!notaryInfo.isBackchainRequired) {
             initialTransaction
                 .let { it.inputStateRefs + it.referenceStateRefs }
                 .groupBy { stateRef -> stateRef.transactionId }
@@ -158,23 +181,6 @@ class UtxoFinalityFlowV1(
                 }
         } else {
             null
-        }
-
-        flowMessaging.sendAll(
-            FinalityPayload(initialTransaction, transferAdditionalSignatures, filteredTransactionsAndSignatures),
-            sessions.toSet()
-        )
-
-        if (notaryInfo.isBackchainRequired) {
-            sessions.forEach {
-                if (initialTransaction.dependencies.isNotEmpty()) {
-                    flowEngine.subFlow(TransactionBackchainSenderFlow(initialTransaction.id, it))
-                } else {
-                    log.trace {
-                        "Transaction with id ${initialTransaction.id} has no dependencies so backchain resolution will not be performed."
-                    }
-                }
-            }
         }
     }
 
