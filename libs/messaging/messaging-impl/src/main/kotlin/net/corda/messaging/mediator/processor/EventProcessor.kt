@@ -35,8 +35,8 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     fun processEvents(
         group: Map<K, List<Record<K, E>>>,
         retrievedStates: Map<String, State>
-    ) {
-        group.forEach { groupEntry ->
+    ) : Map<K, EventProcessingOutput> {
+        return group.mapValues { groupEntry ->
             val groupKey = groupEntry.key.toString()
             val state = retrievedStates.getOrDefault(groupKey, null)
             var processorState = stateManagerHelper.deserializeValue(state)?.let { stateValue ->
@@ -45,16 +45,28 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                     state?.metadata
                 )
             }
+            val asyncOutputs = mutableListOf<MediatorMessage<Any>>()
             val queue = ArrayDeque(groupEntry.value)
             while (queue.isNotEmpty()) {
                 val event = queue.removeFirst()
                 val response = config.messageProcessor.onNext(processorState, event)
                 processorState = response.updatedState
-                processOutputEvents(groupKey, response, queue, event)
+                val (syncEvents, asyncEvents) = response.responseEvents.map { convertToMessage(it) }.partition {
+                    messageRouter.getDestination(it).type == RoutingDestination.Type.SYNCHRONOUS
+                }
+                asyncOutputs.addAll(asyncEvents)
+                val returnedMessages = processSyncEvents(groupEntry.key, syncEvents)
+                queue.addAll(returnedMessages)
+            }
+            val processed = stateManagerHelper.createOrUpdateState(groupKey, state, processorState)
+            val stateUpdateKind = when {
+                state == null && processed != null -> StateUpdateKind.CREATE
+                state != null && processed != null -> StateUpdateKind.UPDATE
+                state != null && processed == null -> StateUpdateKind.DELETE
+                else -> StateUpdateKind.NOOP
             }
 
-            // ---- Manage the state ----
-            qualifyState(groupKey, state, processorState)
+            EventProcessingOutput(asyncOutputs, processed, stateUpdateKind)
         }
     }
 
@@ -62,62 +74,26 @@ class EventProcessor<K : Any, S : Any, E : Any>(
      * Send any synchronous events immediately and feed results back onto the queue, add asynchronous events to the [consumerProcessorState]
      * to be sent later.
      */
-    private fun processOutputEvents(
-        key: String,
-        response: StateAndEventProcessor.Response<S>,
-        queue: ArrayDeque<Record<K, E>>,
-        event: Record<K, E>
-    ) {
-        val output = response.responseEvents.map { convertToMessage(it) }
-        output.forEach { message ->
+    private fun processSyncEvents(
+        key: K,
+        syncEvents: List<MediatorMessage<Any>>
+    ) : List<Record<K, E>> {
+        return syncEvents.mapNotNull { message ->
             val destination = messageRouter.getDestination(message)
-            if (destination.type == RoutingDestination.Type.ASYNCHRONOUS) {
-                // Kafka - Add the request to the queue, so it can be processed in due course
-                consumerProcessorState.asynchronousOutputs.compute(key) { _, value ->
-                    val list = value ?: mutableListOf()
-                    list.add(message)
-                    list
-                }
-            } else {
-                // Http - Send the request immediately. Once the response arrives convert it to a kafka record and
-                // add it to the queue, so it can be processed in due course
-                @Suppress("UNCHECKED_CAST")
-                val reply = with(destination) {
-                    message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
-                    client.send(message) as MediatorMessage<E>?
-                }
-                if (reply != null) {
-                    // Convert response to a record and add it to the queue
-                    queue.addLast(
-                        addTraceContextToRecord(
-                            Record(
-                                "",
-                                event.key,
-                                reply.payload
-                            ),
-                            message.properties
-                        )
-                    )
-                }
+            @Suppress("UNCHECKED_CAST")
+            val reply = with(destination) {
+                message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
+                client.send(message) as MediatorMessage<E>?
             }
-        }
-    }
-
-    /**
-     * Decide, based on the original and processed state values, whether the state must be deleted, updated or
-     * deleted; and add the relevant state value to the specific Map.
-     */
-    private fun qualifyState(
-        groupKey: String,
-        original: State?,
-        processorState: StateAndEventProcessor.State<S>?,
-    ) {
-        val processed = stateManagerHelper.createOrUpdateState(groupKey, original, processorState)
-        consumerProcessorState.statesToPersist.apply {
-            when {
-                original == null && processed != null -> statesToCreate[groupKey] = processed
-                original != null && processed != null -> statesToUpdate[groupKey] = processed
-                original != null && processed == null -> statesToDelete[groupKey] = original
+            reply?.let {
+                addTraceContextToRecord(
+                    Record(
+                        "",
+                        key,
+                        reply.payload
+                    ),
+                    message.properties
+                )
             }
         }
     }

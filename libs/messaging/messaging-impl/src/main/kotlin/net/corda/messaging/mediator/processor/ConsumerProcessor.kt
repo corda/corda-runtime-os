@@ -107,7 +107,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
 
             while (groups.isNotEmpty()) {
                 // Process each group on a thread
-                groups.filter {
+                val outputs = groups.filter {
                     it.isNotEmpty()
                 }.map { group ->
                     taskManager.executeShortRunningTask {
@@ -115,6 +115,8 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                     }
                 }.map {
                     it.join()
+                }.fold(mapOf<K, EventProcessingOutput>()) { acc, cur ->
+                    acc + cur
                 }
 
                 // Persist state changes, send async outputs and setup to reprocess states that fail to persist
@@ -137,7 +139,8 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      * Will send any asynchronous outputs back to the bus for states which saved successfully.
      * @return a map of all the states that failed to save by their keys.
      */
-    private fun persistStatesAndRetrieveFailures(): Map<String, State> {
+    private fun persistStatesAndRetrieveFailures(outputs: Map<K, EventProcessingOutput>): Map<String, State> {
+        val statesToCreate = outputs.values.filter { it.stateUpdateKind == StateUpdateKind.CREATE }.map { it.outputState }
         val asynchronousOutputs = consumerProcessorState.asynchronousOutputs
         val statesToPersist = consumerProcessorState.statesToPersist
         val failedToCreateKeys = stateManager.create(statesToPersist.statesToCreate.values.mapNotNull { it })

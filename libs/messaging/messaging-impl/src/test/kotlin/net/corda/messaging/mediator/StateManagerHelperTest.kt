@@ -26,17 +26,10 @@ class StateManagerHelperTest {
     }
 
     private data class StateType(val id: Int)
-    private class EventType
 
     private val stateManager = mock<StateManager>()
     private val stateSerializer = mock<CordaAvroSerializer<StateType>>()
     private val stateDeserializer = mock<CordaAvroDeserializer<StateType>>()
-
-    @Captor
-    private val newStatesCaptor = argumentCaptor<Collection<State>>()
-
-    @Captor
-    private val updatedStatesCaptor = argumentCaptor<Collection<State>>()
 
     @BeforeEach
     fun setup() {
