@@ -34,14 +34,15 @@ import kotlin.random.Random
 )
 internal class TopicDumper(
     private val subscriptionFactory: SubscriptionFactory,
-    private val configMerger: ConfigMerger
+    private val configMerger: ConfigMerger,
 ) : Runnable, Closeable {
     companion object {
         private val logger = LoggerFactory.getLogger("Console")
     }
+
     @Option(
         names = ["-m", "--messaging-params"],
-        description = ["Messaging parameters for the topic dumper."]
+        description = ["Messaging parameters for the topic dumper."],
     )
     var messagingParams = emptyMap<String, String>()
 
@@ -93,7 +94,7 @@ internal class TopicDumper(
                     "type" to value.javaClass.name,
                     "content" to value.schema.fields.associate { field ->
                         field.name() to toDisplayableMap(value.get(field.pos()))
-                    }
+                    },
 
                 )
             }
@@ -151,13 +152,13 @@ internal class TopicDumper(
             ConfigFactory.parseMap(parsedMessagingParams)
                 .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("KAFKA"))
                 .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
-                .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(Random.nextInt()))
+                .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(Random.nextInt())),
         )
         subscription = subscriptionFactory.createDurableSubscription(
             subscriptionConfig,
             createProcessor(),
             configMerger.getMessagingConfig(kafkaConfig),
-            null
+            null,
         ).also {
             it.start()
         }
