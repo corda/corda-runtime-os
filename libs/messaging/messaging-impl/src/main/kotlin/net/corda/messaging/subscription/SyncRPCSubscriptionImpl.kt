@@ -19,11 +19,10 @@ import org.slf4j.LoggerFactory
 import java.util.*
 
 /**
- * Implementation of a RPCSubscription
+ * HTTP-based implementation of a RPCSubscription that processes requests synchronously.
  *
- * This subscription will register and listen to an endpoint that will be registered to
- * the webserver on subscription start
- *
+ * This subscription will register and listen to an endpoint that will be registered to the webserver on
+ * subscription start.
  *
  * @param REQUEST the request Type to be deserialized
  * @param RESPONSE the response Type to be serialized
@@ -65,7 +64,7 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     }
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private fun registerEndpoint(
