@@ -333,7 +333,7 @@ data class LoadGenerationParams(
         fun read(commonConfig: CommonConfig): LoadGenerationParams {
             val peerGroupId = getLoadGenStrParameter("peerGroupId", commonConfig.configFromFile, commonConfig.parameters)
             val peerX500Names = getLoadGenStrParameter("peerX500Names", commonConfig.configFromFile, commonConfig.parameters)
-            val listOfNames = peerX500Names.split(",")
+            val listOfNames = peerX500Names.split(";")
             val peerHoldingIdentities = listOfNames.map { HoldingIdentity(it, peerGroupId) }
             val ourX500Name = getLoadGenStrParameter("ourX500Name", commonConfig.configFromFile, commonConfig.parameters)
             MemberX500Name.parse(ourX500Name)
