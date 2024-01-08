@@ -249,20 +249,23 @@ class MerkleProofImpl(
         val treeDepth = MerkleTreeImpl.treeDepth(treeSize)
         var knownLeaves = leafIndices.toMutableList()
         calculateRootInstrumented(digest) { hash, level, index, _ ->
-            // we need this hash in the subset proof iff it covers unknown content
             val height = treeDepth - level // how many levels above the leaves, 0 for being at the leaf
-            val scaledIndex = index shl height
-            val endIndex = min(scaledIndex + (1 shl height), treeSize)
-            val unknowns = (scaledIndex until endIndex).any { it !in knownLeaves }
-            val allUnknown = (scaledIndex until endIndex).all { it !in knownLeaves }
-            val other = index xor 1 // the opposing index
-            val otherStart = other shl height
-            val otherEnd = min((other + 1) shl height, treeSize)
-            val needed = (otherStart until otherEnd).any { it in knownLeaves }
-            if (unknowns && (needed || !allUnknown)) {
+            val leftmostLeaf = index shl height
+            val afterLeaf = min(leftmostLeaf + (1 shl height), treeSize)
+            val unknowns = (leftmostLeaf until afterLeaf).any { it !in knownLeaves }
+            val allUnknown = (leftmostLeaf until afterLeaf).all { it !in knownLeaves }
+            val siblingIndex = index xor 1 // work out the sibling node i.e. the node which shares a direct parent node with this one
+            val siblingLeftmostLeaf = siblingIndex shl height
+            val afterSiblingLeaf = min((siblingIndex + 1) shl height, treeSize)
+            val siblingWillBeKnown = (siblingLeftmostLeaf until afterSiblingLeaf).any { it in knownLeaves }
+            // we need this hash in the subset proof iff it covers unknown content ($unknowns is true),
+            // and either there is:
+            // - some known leaves under this node ($allUnknown is false)
+            // - the sibling node has known leaves ($siblingWillBeKnown is true)
+            if (unknowns && (siblingWillBeKnown || !allUnknown)) {
                 outHashes.add(hash)
                 // now we have decided to take $hash all the leaves it covers will be known
-                for (i in scaledIndex until endIndex) knownLeaves.add(i)
+                for (i in leftmostLeaf until afterLeaf) knownLeaves.add(i)
             }
         }
         return MerkleProofImpl(proofType, treeSize, outLeaves, outHashes)

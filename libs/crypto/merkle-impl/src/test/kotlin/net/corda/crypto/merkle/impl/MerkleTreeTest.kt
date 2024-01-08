@@ -558,7 +558,7 @@ class MerkleTreeTest {
                     subproof.render(trivialHashDigestProvider)
                 }
 
-                for (subsetProofLeafSet in (0 until (1 shl treeSize)).toList().shuffled(rng).take(10)) {
+                for (subsetProofLeafSet in (0 until (1 shl treeSize)).toList().shuffled(rng).take(100)) {
                     val subLeafIndicesCombination = (0 until treeSize).filter { leaf -> (subsetProofLeafSet and (1 shl leaf)) != 0 }
                     val missingLeaves = (0 until treeSize).filter { leaf -> subsetProofLeafSet and (1 shl leaf) != 0 &&  (sourceProofLeafSet and (1 shl leaf)) == 0}
                     val missing = missingLeaves.isNotEmpty()
