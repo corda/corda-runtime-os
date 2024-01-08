@@ -1,89 +1,78 @@
 package net.corda.flow.service
 
-import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
+import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.messaging.mediator.FlowEventMediatorFactory
+import net.corda.flow.messaging.mediator.fakes.TestConfig
+import net.corda.flow.messaging.mediator.fakes.TestLoadGenerator
+import net.corda.flow.messaging.mediator.fakes.TestStateManagerFactoryImpl
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.helper.getConfig
-import net.corda.libs.statemanager.api.StateManager
-import net.corda.libs.statemanager.api.StateManagerFactory
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
-import net.corda.schema.configuration.BootConfig.CRYPTO_WORKER_REST_ENDPOINT
-import net.corda.schema.configuration.BootConfig.PERSISTENCE_WORKER_REST_ENDPOINT
-import net.corda.schema.configuration.BootConfig.TOKEN_SELECTION_WORKER_REST_ENDPOINT
-import net.corda.schema.configuration.BootConfig.UNIQUENESS_WORKER_REST_ENDPOINT
-import net.corda.schema.configuration.BootConfig.VERIFICATION_WORKER_REST_ENDPOINT
-import net.corda.schema.configuration.ConfigKeys
-import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
-import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
-import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
-import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
-import net.corda.schema.configuration.StateManagerConfig
 import net.corda.utilities.trace
+import net.corda.v5.base.types.MemberX500Name
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 
-@Suppress("LongParameterList")
 @Component(service = [FlowExecutor::class])
-class FlowExecutorImpl constructor(
-    coordinatorFactory: LifecycleCoordinatorFactory,
+class FlowExecutorImpl @Activate constructor(
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    private val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = FlowEventMediatorFactory::class)
     private val flowEventMediatorFactory: FlowEventMediatorFactory,
-    private val stateManagerFactory: StateManagerFactory,
-    private val toMessagingConfig: (Map<String, SmartConfig>) -> SmartConfig,
 ) : FlowExecutor {
-
-    @Activate
-    constructor(
-        @Reference(service = LifecycleCoordinatorFactory::class)
-        coordinatorFactory: LifecycleCoordinatorFactory,
-        @Reference(service = FlowEventMediatorFactory::class)
-        flowEventMediatorFactory: FlowEventMediatorFactory,
-        @Reference(service = StateManagerFactory::class)
-        stateManagerFactory: StateManagerFactory,
-    ) : this(
-        coordinatorFactory,
-        flowEventMediatorFactory,
-        stateManagerFactory,
-        { cfg -> cfg.getConfig(MESSAGING_CONFIG) }
-    )
 
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<FlowExecutor> { event, _ -> eventHandler(event) }
-    private var stateManager: StateManager? = null
-    private var subscriptionRegistrationHandle: RegistrationHandle? = null
     private var multiSourceEventMediator: MultiSourceEventMediator<String, Checkpoint, FlowEvent>? = null
+
+    private val bobX500 = "CN=Bob-5a90563f-73a0-46ce-a7e4-28354b6c686c, OU=Application, O=R3, L=London, C=GB"
+    private val groupId = "d1f30558-4627-495c-8ea5-2fb4b9273c74"
+
+    private inner class RpcSmokeTestInput {
+        var command: String? = null
+        var data: Map<String, String>? = null
+    }
 
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         try {
-            val messagingConfig = toMessagingConfig(config).withServiceEndpoints(config)
-            val updatedConfigs = updateConfigsWithFlowConfig(config, messagingConfig)
-            val stateManagerConfig = config.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)
-
-            // close the lifecycle registration first to prevent down being signaled
-            subscriptionRegistrationHandle?.close()
             multiSourceEventMediator?.close()
-            stateManager?.stop()
 
-            stateManager = stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.FLOW_CHECKPOINT)
-            multiSourceEventMediator = flowEventMediatorFactory.create(updatedConfigs, messagingConfig, stateManager!!)
-            subscriptionRegistrationHandle = coordinator.followStatusChangesByName(
-                setOf(multiSourceEventMediator!!.subscriptionName, stateManager!!.name)
+            // Wait for our test vNode to become available
+            val vNodeHoldingID = net.corda.virtualnode.HoldingIdentity(MemberX500Name.parse(bobX500), groupId)
+            while (virtualNodeInfoReadService.get(vNodeHoldingID) == null) {
+                Thread.sleep(5000) // Wait 5 seconds and recheck
+            }
+
+            val configs = TestConfig().toSmartConfigs().toMutableMap()
+            configs.forEach { (key, cfg) -> configs[key] = cfg.withFallback(config[key]) }
+
+            val holdingId = HoldingIdentity(bobX500, groupId)
+
+            val loadGenerator = TestLoadGenerator(
+                "test-cordapp",
+                holdingId,
+                "com.r3.corda.testing.smoketests.flow.RpcSmokeTestFlow",
+                "{\"command\":\"crypto_sign_and_verify\",\"data\":{\"memberX500\":\"CN=Bob-5a90563f-73a0-46ce-a7e4-28354b6c686c, OU=Application, O=R3, L=London, C=GB\"}}"
             )
-            stateManager?.start()
+            val stateManager = TestStateManagerFactoryImpl(coordinatorFactory).create(SmartConfigImpl.empty())
+            multiSourceEventMediator = flowEventMediatorFactory.create(configs, loadGenerator, stateManager)
+            stateManager.start()
             multiSourceEventMediator?.start()
         } catch (ex: Exception) {
             val reason = "Failed to configure the flow executor using '${config}'"
@@ -103,24 +92,6 @@ class FlowExecutorImpl constructor(
         coordinator.stop()
     }
 
-    private fun updateConfigsWithFlowConfig(
-        initialConfigs: Map<String, SmartConfig>,
-        messagingConfig: SmartConfig
-    ): Map<String, SmartConfig> {
-        val flowConfig = initialConfigs.getConfig(FLOW_CONFIG)
-        val updatedFlowConfig = flowConfig
-            .withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(PROCESSOR_TIMEOUT)))
-            .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(MAX_ALLOWED_MSG_SIZE)))
-
-        return initialConfigs.mapValues {
-            if (it.key == FLOW_CONFIG) {
-                updatedFlowConfig
-            } else {
-                it.value
-            }
-        }
-    }
-
     private fun eventHandler(event: LifecycleEvent) {
         when (event) {
             is StartEvent -> {
@@ -129,25 +100,9 @@ class FlowExecutorImpl constructor(
 
             is StopEvent -> {
                 log.trace { "Flow executor is stopping..." }
-                subscriptionRegistrationHandle?.close()
                 multiSourceEventMediator?.close()
-                stateManager?.stop()
                 log.trace { "Flow executor stopped" }
             }
-        }
-    }
-
-    private fun SmartConfig.withServiceEndpoints(config: Map<String, SmartConfig>) : SmartConfig {
-        val bootConfig = config.getConfig(BOOT_CONFIG)
-
-        return listOf(
-            CRYPTO_WORKER_REST_ENDPOINT,
-            PERSISTENCE_WORKER_REST_ENDPOINT,
-            UNIQUENESS_WORKER_REST_ENDPOINT,
-            VERIFICATION_WORKER_REST_ENDPOINT,
-            TOKEN_SELECTION_WORKER_REST_ENDPOINT
-        ).fold(this) { msgConfig: SmartConfig, endpoint: String ->
-            msgConfig.withValue(endpoint, ConfigValueFactory.fromAnyRef(bootConfig.getString(endpoint)))
         }
     }
 }

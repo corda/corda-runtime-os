@@ -13,6 +13,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Component(service = [CheckpointInitializer::class])
 class CheckpointInitializerImpl @Activate constructor(
@@ -21,6 +22,11 @@ class CheckpointInitializerImpl @Activate constructor(
     @Reference(service = CpiInfoReadService::class)
     private val cpiInfoReadService: CpiInfoReadService
 ) : CheckpointInitializer {
+
+    private companion object {
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
     override fun initialize(
         checkpoint: FlowCheckpoint,
         waitingFor: WaitingFor,

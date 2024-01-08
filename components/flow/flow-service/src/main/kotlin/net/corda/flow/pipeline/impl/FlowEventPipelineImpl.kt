@@ -68,6 +68,7 @@ internal class FlowEventPipelineImpl(
             log.warn("Could not perform flow operational validation as the checkpoint does not exist.")
             return this
         }
+
         val holdingIdentity = context.checkpoint.holdingIdentity
         val virtualNode = virtualNodeInfoReadService.get(holdingIdentity)
             ?: throw FlowTransientException(

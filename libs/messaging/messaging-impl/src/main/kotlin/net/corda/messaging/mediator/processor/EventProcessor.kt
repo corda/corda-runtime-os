@@ -14,6 +14,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.tracing.addTraceContextToRecord
+import org.slf4j.LoggerFactory
 
 /**
  * Class to process records received from the consumer.
@@ -28,6 +29,9 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     private val messageRouter: MessageRouter,
     private val mediatorInputService: MediatorInputService,
 ) {
+    companion object {
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     /**
      * Process a group of events.
@@ -178,6 +182,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
             @Suppress("UNCHECKED_CAST")
             val reply = with(destination) {
                 message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
+                log.info("Send in EventProcessor invoked with payload: ${message.payload}")
                 client.send(message) as MediatorMessage<E>?
             }
             reply?.let {

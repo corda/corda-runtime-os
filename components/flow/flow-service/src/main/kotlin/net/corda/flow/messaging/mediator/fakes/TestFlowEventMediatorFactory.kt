@@ -1,4 +1,4 @@
-package net.corda.flow.messaging.mediator
+package net.corda.flow.messaging.mediator.fakes
 
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
@@ -10,10 +10,10 @@ import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
+import net.corda.flow.messaging.mediator.FlowEventMediatorFactory
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.constants.WorkerRPCPaths.CRYPTO_PATH
 import net.corda.messaging.api.constants.WorkerRPCPaths.LEDGER_PATH
@@ -23,133 +23,121 @@ import net.corda.messaging.api.constants.WorkerRPCPaths.UNIQUENESS_PATH
 import net.corda.messaging.api.constants.WorkerRPCPaths.VERIFICATION_PATH
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
-import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_TOPIC
 import net.corda.messaging.api.mediator.RoutingDestination.Companion.routeTo
 import net.corda.messaging.api.mediator.RoutingDestination.Type.ASYNCHRONOUS
 import net.corda.messaging.api.mediator.RoutingDestination.Type.SYNCHRONOUS
+import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.config.EventMediatorConfigBuilder
-import net.corda.messaging.api.mediator.factory.MediatorConsumerFactoryFactory
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
-import net.corda.messaging.api.mediator.factory.MessagingClientFactoryFactory
 import net.corda.messaging.api.mediator.factory.MultiSourceEventMediatorFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_OUT
-import net.corda.schema.Schemas.Flow.FLOW_SESSION
 import net.corda.schema.Schemas.Flow.FLOW_START
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
-import net.corda.schema.configuration.BootConfig.CRYPTO_WORKER_REST_ENDPOINT
-import net.corda.schema.configuration.BootConfig.PERSISTENCE_WORKER_REST_ENDPOINT
-import net.corda.schema.configuration.BootConfig.TOKEN_SELECTION_WORKER_REST_ENDPOINT
-import net.corda.schema.configuration.BootConfig.UNIQUENESS_WORKER_REST_ENDPOINT
-import net.corda.schema.configuration.BootConfig.VERIFICATION_WORKER_REST_ENDPOINT
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT
 import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_THREAD_POOL_SIZE
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-@Suppress("LongParameterList")
 @Component(service = [FlowEventMediatorFactory::class])
-class FlowEventMediatorFactoryImpl @Activate constructor(
+class TestFlowEventMediatorFactory @Activate constructor(
     @Reference(service = FlowEventProcessorFactory::class)
     private val flowEventProcessorFactory: FlowEventProcessorFactory,
-    @Reference(service = MediatorConsumerFactoryFactory::class)
-    private val mediatorConsumerFactoryFactory: MediatorConsumerFactoryFactory,
-    @Reference(service = MessagingClientFactoryFactory::class)
-    private val messagingClientFactoryFactory: MessagingClientFactoryFactory,
     @Reference(service = MultiSourceEventMediatorFactory::class)
     private val eventMediatorFactory: MultiSourceEventMediatorFactory,
     @Reference(service = CordaAvroSerializationFactory::class)
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    @Reference(service = PlatformInfoProvider::class)
-    val platformInfoProvider: PlatformInfoProvider,
 ) : FlowEventMediatorFactory {
     companion object {
         private const val CONSUMER_GROUP = "FlowEventConsumer"
         private const val MESSAGE_BUS_CLIENT = "MessageBusClient"
         private const val RPC_CLIENT = "RpcClient"
     }
-
     private val deserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
 
     override fun create(
         configs: Map<String, SmartConfig>,
-        messagingConfig: SmartConfig,
+        messageBus: TestMessageBus,
         stateManager: StateManager,
     ) = eventMediatorFactory.create(
-        createEventMediatorConfig(
-            messagingConfig,
-            flowEventProcessorFactory.create(configs),
-            stateManager,
+            createEventMediatorConfig(
+                configs[ConfigKeys.MESSAGING_CONFIG]!!,
+                messageBus,
+                flowEventProcessorFactory.create(configs),
+                stateManager,
+            )
         )
-    )
 
     private fun createEventMediatorConfig(
         messagingConfig: SmartConfig,
+        messageBus: TestMessageBus,
         messageProcessor: StateAndEventProcessor<String, Checkpoint, FlowEvent>,
         stateManager: StateManager,
-    ) = EventMediatorConfigBuilder<String, Checkpoint, FlowEvent>()
-        .name("FlowEventMediator")
-        .messagingConfig(messagingConfig)
-        .consumerFactories(
-            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_START, CONSUMER_GROUP, messagingConfig
-            ),
-            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_SESSION, CONSUMER_GROUP, messagingConfig
-            ),
-            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_EVENT_TOPIC, CONSUMER_GROUP, messagingConfig
-            ),
-        )
-        .clientFactories(
-            messagingClientFactoryFactory.createMessageBusClientFactory(
-                MESSAGE_BUS_CLIENT, messagingConfig
-            ),
-            messagingClientFactoryFactory.createRPCClientFactory(
-                RPC_CLIENT
+    ): EventMediatorConfig<String, Checkpoint, FlowEvent> {
+        val mediatorConsumerFactoryFactory = TestMediatorConsumerFactoryFactory(messageBus)
+        val messagingClientFactoryFactory = TestMessagingClientFactoryFactory(messageBus)
+        return EventMediatorConfigBuilder<String, Checkpoint, FlowEvent>()
+            .name("TestFlowEventMediator")
+            .messagingConfig(messagingConfig)
+            .consumerFactories(
+                mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
+                    FLOW_START, CONSUMER_GROUP, messagingConfig
+                ),
+//                mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
+//                    FLOW_SESSION, CONSUMER_GROUP, messagingConfig
+//                ),
+//                mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
+//                    FLOW_EVENT_TOPIC, CONSUMER_GROUP, messagingConfig
+//                ),
             )
-        )
-        .messageProcessor(messageProcessor)
-        .messageRouterFactory(createMessageRouterFactory(messagingConfig))
-        .threads(messagingConfig.getInt(MEDIATOR_PROCESSING_THREAD_POOL_SIZE))
-        .threadName("flow-event-mediator")
-        .stateManager(stateManager)
-        .minGroupSize(messagingConfig.getInt(MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT))
-        .build()
+            .clientFactories(
+                messagingClientFactoryFactory.createMessageBusClientFactory(
+                    MESSAGE_BUS_CLIENT, messagingConfig
+                ),
+                messagingClientFactoryFactory.createRPCClientFactory(
+                    RPC_CLIENT, messagingConfig
+                )
+            )
+            .messageProcessor(messageProcessor)
+            .messageRouterFactory(createMessageRouterFactory())
+            .threads(messagingConfig.getInt(MEDIATOR_PROCESSING_THREAD_POOL_SIZE))
+            .threadName("test-flow-event-mediator")
+            .stateManager(stateManager)
+            .minGroupSize(messagingConfig.getInt(MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT))
+            .build()
+    }
 
-    private fun createMessageRouterFactory(messagingConfig: SmartConfig) = MessageRouterFactory { clientFinder ->
+    private fun createMessageRouterFactory() = MessageRouterFactory { clientFinder ->
         val messageBusClient = clientFinder.find(MESSAGE_BUS_CLIENT)
         val rpcClient = clientFinder.find(RPC_CLIENT)
 
-        fun rpcEndpoint(endpoint: String, path: String) : String {
-            val platformVersion = platformInfoProvider.localWorkerSoftwareShortVersion
-            return "http://${messagingConfig.getString(endpoint)}/api/${platformVersion}$path"
+        fun rpcEndpoint(path: String) : String {
+            return "http://localhost/api/$path"
         }
 
         MessageRouter { message ->
             when (val event = message.event()) {
                 is EntityRequest -> routeTo(rpcClient,
-                    rpcEndpoint(PERSISTENCE_WORKER_REST_ENDPOINT, PERSISTENCE_PATH), SYNCHRONOUS)
+                    rpcEndpoint(PERSISTENCE_PATH), SYNCHRONOUS)
                 is FlowMapperEvent -> routeTo(messageBusClient,
                     FLOW_MAPPER_SESSION_OUT, ASYNCHRONOUS)
                 is FlowOpsRequest -> routeTo(rpcClient,
-                    rpcEndpoint(CRYPTO_WORKER_REST_ENDPOINT, CRYPTO_PATH), SYNCHRONOUS)
+                    rpcEndpoint(CRYPTO_PATH), SYNCHRONOUS)
                 is FlowStatus -> routeTo(messageBusClient,
                     FLOW_STATUS_TOPIC, ASYNCHRONOUS)
                 is LedgerPersistenceRequest -> routeTo(rpcClient,
-                    rpcEndpoint(PERSISTENCE_WORKER_REST_ENDPOINT, LEDGER_PATH), SYNCHRONOUS)
+                    rpcEndpoint(LEDGER_PATH), SYNCHRONOUS)
                 is TokenPoolCacheEvent -> routeTo(rpcClient,
-                    rpcEndpoint(TOKEN_SELECTION_WORKER_REST_ENDPOINT, TOKEN_SELECTION_PATH), SYNCHRONOUS)
+                    rpcEndpoint(TOKEN_SELECTION_PATH), SYNCHRONOUS)
                 is TransactionVerificationRequest -> routeTo(rpcClient,
-                    rpcEndpoint(VERIFICATION_WORKER_REST_ENDPOINT, VERIFICATION_PATH), SYNCHRONOUS)
+                    rpcEndpoint(VERIFICATION_PATH), SYNCHRONOUS)
                 is UniquenessCheckRequestAvro -> routeTo(rpcClient,
-                    rpcEndpoint(UNIQUENESS_WORKER_REST_ENDPOINT, UNIQUENESS_PATH), SYNCHRONOUS)
+                    rpcEndpoint(UNIQUENESS_PATH), SYNCHRONOUS)
                 is FlowEvent -> routeTo(messageBusClient,
                     FLOW_EVENT_TOPIC, ASYNCHRONOUS)
-                is String -> routeTo(messageBusClient, // Handling external messaging
-                    message.properties[MSG_PROP_TOPIC] as String, ASYNCHRONOUS)
                 else -> {
                     val eventType = event?.let { it::class.java }
                     throw IllegalStateException("No route defined for event type [$eventType]")

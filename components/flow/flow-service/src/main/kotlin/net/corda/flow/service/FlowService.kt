@@ -97,9 +97,9 @@ class FlowService @Activate constructor(
                  * is configured before we configure the executor to prevent a race between receiving the first
                  * state events and scheduler creating a publisher.
                  */
-                flowMaintenance.onConfigChange(config)
+//                flowMaintenance.onConfigChange(config)
                 flowExecutor.onConfigChange(config)
-                externalMessagingRoutingService.onConfigChange(config)
+//                externalMessagingRoutingService.onConfigChange(config)
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
 

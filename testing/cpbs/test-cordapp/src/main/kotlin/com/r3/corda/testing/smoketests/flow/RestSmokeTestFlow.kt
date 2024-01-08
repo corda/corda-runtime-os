@@ -34,6 +34,7 @@ import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import org.slf4j.LoggerFactory
+import java.security.KeyPairGenerator
 import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
@@ -280,18 +281,52 @@ class RestSmokeTestFlow : ClientStartableFlow {
         return SigningResult(publicKey, bytesToSign, signature, signatureSpec)
     }
 
+    // ---------- INSERTED FOR PERFORMANCE TESTING ----------
+
+    private val mockPublicKey: PublicKey by lazy {
+        generatePublicKey()
+    }
+
+    private val mockSignatureSpec by lazy {
+        MockSignatureSpec()
+    }
+
     @Suspendable
     private fun signAndVerify(input: RestSmokeTestInput): String {
-        val signingResult = input.performSigning()
-        digitalSignatureVerificationService.verify(
-            signingResult.bytesToSign,
-            signingResult.signature.bytes,
-            signingResult.publicKey,
-            signingResult.signatureSpec
-        )
-        log.info("Crypto - Verified ${signingResult.signature} as the signature of ${signingResult.bytesToSign}")
+        val x500Name = input.getValue("memberX500")
+        log.info("Called for $x500Name")
+        val bytesToSign = byteArrayOf(1, 2, 3, 4, 5)
+        val eventIterations = 10
+
+        log.info("Processing $eventIterations signing events.")
+
+        for (i in 1..eventIterations) {
+            signingService.sign(bytesToSign, mockPublicKey, mockSignatureSpec)
+
+//            if (i % 10 == 0) {
+            log.info("Progress: $i out of $eventIterations signing events processed.")
+//            }
+        }
+
+        log.info("All $eventIterations signing events processed successfully.")
+
         return true.toString()
     }
+
+    private fun generatePublicKey(): PublicKey {
+        val keyGen = KeyPairGenerator.getInstance("RSA")
+        keyGen.initialize(2048)
+        val key = keyGen.generateKeyPair().public
+        val serKey = serializationService.serialize(key)
+        return serializationService.deserialize(serKey, PublicKey::class.java)
+    }
+
+    private class MockSignatureSpec : SignatureSpec {
+        override fun getSignatureName(): String =
+            "FlowEnginePerformanceTest-MockSignature"
+    }
+
+    // ------------------------------------------------------
 
     @Suspendable
     private fun verifyInvalidSignature(input: RestSmokeTestInput): String {

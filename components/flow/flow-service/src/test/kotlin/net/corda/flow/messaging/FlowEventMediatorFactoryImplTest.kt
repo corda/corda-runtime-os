@@ -11,7 +11,6 @@ import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.flow.messaging.mediator.FlowEventMediatorFactory
-import net.corda.flow.messaging.mediator.FlowEventMediatorFactoryImpl
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.libs.configuration.SmartConfig
