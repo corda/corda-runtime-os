@@ -92,6 +92,12 @@ interface UtxoQueryProvider {
      */
     val persistSignedGroupParameters: String
 
+    val persistMerkleProof: String
+
+    val findMerkleProofs: String
+
+    val persistFilteredTransaction: String
+
     /**
      * @property findTransactionIdsAndStatuses SQL text for [UtxoRepositoryImpl.findTransactionIdsAndStatuses].
      */

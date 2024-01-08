@@ -2,8 +2,10 @@ package net.corda.ledger.utxo.flow.impl.flows.finality.v1
 
 import net.corda.crypto.core.fullId
 import net.corda.crypto.core.fullIdHash
+import net.corda.crypto.core.parseSecureHash
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
+import net.corda.ledger.common.flow.impl.transaction.filtered.FilteredTransactionImpl
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.ledger.utxo.flow.impl.PluggableNotaryDetails
@@ -129,6 +131,7 @@ class UtxoFinalityFlowV1(
                 }
             }
         } else {
+            log.info("[MerkleProofPoC] NO BACKCHAIN!!!!")
             val filteredTransactionsAndSignatures = initialTransaction
                 .let { it.inputStateRefs + it.referenceStateRefs }
                 .groupBy { stateRef -> stateRef.transactionId }
@@ -154,6 +157,20 @@ class UtxoFinalityFlowV1(
                     } else {
                         setOf(newTxNotaryKey.fullIdHash())
                     }
+
+//                    // FIXME This is very hacky!!!!
+//                    log.info("[MerkleProofPoC] Getting the component groups from ${filteredTransaction.id}")
+//                    val componentGroupMerkleProofs = filteredTransaction.merkleProofs
+//
+//                    log.info("[MerkleProofPoC] Persisting merkle proofs!!!!!")
+//
+//                    componentGroupMerkleProofs.forEach {
+//                        utxoLedgerService.persistMerkleProof(
+//                            filteredTransaction.id,
+//                            it.key,
+//                            it.value
+//                        )
+//                    }
 
                     FilteredTransactionAndSignatures(
                         utxoLedgerService.filterSignedTransaction(dependency)

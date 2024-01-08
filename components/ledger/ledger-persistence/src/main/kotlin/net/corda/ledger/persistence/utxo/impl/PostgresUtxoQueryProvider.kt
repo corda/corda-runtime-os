@@ -20,11 +20,13 @@ class PostgresUtxoQueryProvider @Activate constructor(
 
     override val persistTransaction: String
         get() = """
-            INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash)
-                VALUES (:id, :privacySalt, :accountId, :createdAt, :status, :updatedAt, :metadataHash)
+            INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
+                VALUES (:id, :privacySalt, :accountId, :createdAt, :status, :updatedAt, :metadataHash, false)
             ON CONFLICT(id) DO
-                UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated
-            WHERE utxo_transaction.status in (EXCLUDED.status, '$UNVERIFIED', '$DRAFT')"""
+                UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated, is_filtered = EXCLUDED.is_filtered
+            WHERE utxo_transaction.status in (EXCLUDED.status, '$UNVERIFIED', '$DRAFT')
+            AND utxo_transaction.is_filtered = EXCLUDED.is_filtered 
+            OR utxo_transaction.is_filtered = true""" // TODO is this logic correct? We only want true -> false movement?
             .trimIndent()
 
     override val persistTransactionMetadata: String
@@ -79,5 +81,25 @@ class PostgresUtxoQueryProvider @Activate constructor(
             VALUES (
                 :hash, :parameters, :signature_public_key, :signature_content, :signature_spec, :createdAt)
             ON CONFLICT DO NOTHING"""
+            .trimIndent()
+
+    override val persistMerkleProof: String
+        get() = """
+            INSERT INTO {h-schema}utxo_transaction_merkle_proof(
+                transaction_id, group_idx, tree_size, leaves, hashes)
+            VALUES (
+                :transactionId, :groupId, :treeSize, CAST(:leaves AS INTEGER[]), CAST(:hashes AS TEXT[])
+            )
+            ON CONFLICT DO NOTHING
+        """.trimIndent()
+
+    override val persistFilteredTransaction: String
+        get() = """
+            INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
+                VALUES (:id, :privacySalt, :accountId, :createdAt, :status, :updatedAt, :metadataHash, true)
+            ON CONFLICT(id) DO
+                UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated, is_filtered = EXCLUDED.is_filtered
+            WHERE utxo_transaction.status in (EXCLUDED.status, '$UNVERIFIED', '$DRAFT')
+            AND utxo_transaction.is_filtered = true""" // TODO is this logic correct? We dont want to allow false -> true movement
             .trimIndent()
 }

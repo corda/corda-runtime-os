@@ -23,12 +23,12 @@ class HsqldbUtxoQueryProvider @Activate constructor(
     override val persistTransaction: String
         get() = """
             MERGE INTO {h-schema}utxo_transaction AS ut
-            USING (VALUES :id, CAST(:privacySalt AS VARBINARY(64)), :accountId, CAST(:createdAt AS TIMESTAMP), :status, CAST(:updatedAt AS TIMESTAMP), :metadataHash)
-                AS x(id, privacy_salt, account_id, created, status, updated, metadata_hash)
+            USING (VALUES :id, CAST(:privacySalt AS VARBINARY(64)), :accountId, CAST(:createdAt AS TIMESTAMP), :status, CAST(:updatedAt AS TIMESTAMP), :metadataHash, false)
+                AS x(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
             ON x.id = ut.id
             WHEN NOT MATCHED THEN
-                INSERT (id, privacy_salt, account_id, created, status, updated, metadata_hash)
-                VALUES (x.id, x.privacy_salt, x.account_id, x.created, x.status, x.updated, x.metadata_hash)"""
+                INSERT (id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
+                VALUES (x.id, x.privacy_salt, x.account_id, x.created, x.status, x.updated, x.metadata_hash, x.is_filtered)"""
             .trimIndent()
 
     override val persistTransactionMetadata: String

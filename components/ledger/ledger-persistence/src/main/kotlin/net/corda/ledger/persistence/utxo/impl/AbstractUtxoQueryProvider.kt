@@ -93,6 +93,37 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
             WHERE hash = :hash"""
             .trimIndent()
 
+//    override val findMerkleProofs: String
+//        get() = """
+//            SELECT
+//                transaction_id,
+//                group_idx,
+//                tree_size,
+//                array_to_string(leaves, ',') as leaves_string,
+//                array_to_string(hashes, ',') as hashes_string
+//            FROM {h-schema}utxo_transaction_merkle_proof
+//            WHERE transaction_id = :transactionId
+//            AND group_idx = :groupId"""
+//            .trimIndent()
+
+    override val findMerkleProofs: String
+        get() = """SELECT 
+                utc.transaction_id,
+                utc.group_idx,
+                ump.tree_size,
+                array_to_string(ump.leaves, ',') AS leaves_string,
+                utc.leaf_idx, 
+                array_to_string(ump.hashes, ',') AS hashes_string,
+                utc."data"
+            FROM utxo_transaction_merkle_proof ump 
+            JOIN utxo_transaction_component utc 
+                ON utc.transaction_id = ump.transaction_id 
+                AND utc.group_idx = ump.group_idx 
+                AND utc.leaf_idx = any(ump.leaves)
+                AND ump.group_idx = :groupId
+                AND ump.transaction_id = :transactionId"""
+            .trimIndent()
+
     override val resolveStateRefs: String
         get() = """
             SELECT tc_output.transaction_id, 

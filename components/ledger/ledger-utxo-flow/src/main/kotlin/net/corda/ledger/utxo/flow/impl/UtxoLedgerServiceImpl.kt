@@ -33,6 +33,7 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.utxo.ContractState
@@ -51,6 +52,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import org.slf4j.LoggerFactory
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
 import java.time.Instant
@@ -74,6 +76,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
     private companion object {
         const val FIND_UNCONSUMED_STATES_BY_EXACT_TYPE = "CORDA_FIND_UNCONSUMED_STATES_BY_EXACT_TYPE"
         val clock = UTCClock()
+        val log = LoggerFactory.getLogger(UtxoLedgerServiceImpl::class.java)
     }
 
     @Suspendable
@@ -312,5 +315,19 @@ class UtxoLedgerServiceImpl @Activate constructor(
                 transactionBuilder
             )
         )
+    }
+
+    @Suspendable
+    override fun persistMerkleProof(transactionId: SecureHash, groupId: Int, merkleProof: MerkleProof) {
+        utxoLedgerPersistenceService.persistMerkleProofIfDoesNotExist(transactionId, groupId, merkleProof)
+    }
+
+    @Suspendable
+    override fun findMerkleProofs(transactionId: SecureHash, groupId: Int): List<MerkleProof> {
+        val x = utxoLedgerPersistenceService.findMerkleProofs(transactionId, groupId)
+
+        log.info("Got merkle proofs: $x")
+
+        return x
     }
 }

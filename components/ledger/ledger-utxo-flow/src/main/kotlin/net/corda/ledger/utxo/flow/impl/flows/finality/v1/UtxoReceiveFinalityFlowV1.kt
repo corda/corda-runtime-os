@@ -27,6 +27,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData.Audit
@@ -68,6 +69,9 @@ class UtxoReceiveFinalityFlowV1(
 
     @CordaInject
     lateinit var notarySignatureVerificationService: NotarySignatureVerificationService
+
+    @CordaInject
+    lateinit var utxoLedgerService: UtxoLedgerService
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
@@ -200,6 +204,28 @@ class UtxoReceiveFinalityFlowV1(
                     signatures,
                     mutableMapOf()
                 )
+
+                if (persistenceService.findSignedTransaction(filteredTransaction.id) == null) {
+                    log.info("[MerkleProofPoC] Couldn't find signed TX for ${filteredTransaction.id}, persisting.")
+                    // Only persist if we don't have it as a signed tx yet
+                    // Persist filtered TX in the tx table
+                    persistenceService.persistFilteredTransaction(filteredTransaction)
+
+                    log.info("[MerkleProofPoC] Filtered TX persisted.")
+
+                    // Persist merkle proofs in the merkle proof table
+                    filteredTransaction.merkleProofs.forEach {
+                        // TODO We could do a batch insert in the future
+                        persistenceService.persistMerkleProofIfDoesNotExist(
+                            filteredTransaction.id,
+                            it.key,
+                            it.value
+                        )
+                    }
+
+                    log.info("[MerkleProofPoC] Merkle proofs for ${filteredTransaction.id} persisted, " +
+                            "count: ${filteredTransaction.merkleProofs.size}.")
+                }
 
                 (filteredTransaction.outputStateAndRefs as Audit<StateAndRef<*>>).values.values
             }.associateBy { stateRef -> stateRef.ref }

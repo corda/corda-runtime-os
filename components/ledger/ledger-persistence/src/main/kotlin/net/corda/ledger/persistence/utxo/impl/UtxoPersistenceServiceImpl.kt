@@ -12,6 +12,7 @@ import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
+import net.corda.ledger.utxo.data.transaction.MerkleProofDto
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
@@ -34,6 +35,7 @@ import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
@@ -331,6 +333,55 @@ class UtxoPersistenceServiceImpl(
                     utcClock.instant()
                 )
             }
+        }
+    }
+
+    override fun persistMerkleProof(
+        transactionId: String,
+        groupId: Int,
+        treeSize: Int,
+        leaves: List<Int>,
+        hashes: List<String>
+    ) {
+        entityManagerFactory.transaction { em ->
+            repository.persistMerkleProof(
+                em,
+                transactionId,
+                groupId,
+                treeSize,
+                leaves,
+                hashes
+            )
+        }
+    }
+
+    override fun findMerkleProofs(transactionId: String, groupId: Int): List<MerkleProofDto> {
+        return entityManagerFactory.transaction { em ->
+            repository.findMerkleProofs(
+                em,
+                transactionId,
+                groupId
+            )
+        }
+    }
+
+    override fun persistFilteredTransaction(
+        id: String,
+        privacySalt: ByteArray,
+        account: String,
+        status: TransactionStatus,
+        metadataHash: String
+    ) {
+        return entityManagerFactory.transaction { em ->
+            repository.persistFilteredTransaction(
+                em,
+                id,
+                privacySalt,
+                account,
+                utcClock.instant(),
+                status,
+                metadataHash
+            )
         }
     }
 }

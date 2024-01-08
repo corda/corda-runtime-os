@@ -11,6 +11,8 @@ import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.persistence.common.mapToComponentGroups
 import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoRepository
+import net.corda.ledger.utxo.data.transaction.MerkleProofDto
+import net.corda.ledger.utxo.data.transaction.MerkleProofDtoId
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByPersistence
@@ -19,6 +21,7 @@ import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.ledger.utxo.StateRef
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -30,6 +33,7 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.Query
+import javax.persistence.TemporalType
 import javax.persistence.Tuple
 
 @Suppress("TooManyFunctions")
@@ -60,6 +64,8 @@ class UtxoRepositoryImpl @Activate constructor(
         entityManager: EntityManager,
         id: String
     ): SignedTransactionContainer? {
+        if (isTransactionFiltered(entityManager, id)) return null // TODO cleanup
+
         val (privacySalt, metadataBytes) = findTransactionPrivacySaltAndMetadata(entityManager, id) ?: return null
         val wireTransaction = wireTransactionFactory.create(
             mapOf(0 to listOf(metadataBytes)) + findTransactionComponentLeafs(entityManager, id),
@@ -69,6 +75,19 @@ class UtxoRepositoryImpl @Activate constructor(
             wireTransaction,
             findTransactionSignatures(entityManager, id)
         )
+    }
+
+    // TODO rework probably
+    private fun isTransactionFiltered(
+        entityManager: EntityManager,
+        transactionId: String
+    ): Boolean {
+        return entityManager.createNativeQuery(
+            "SELECT is_filtered FROM {h-schema}utxo_transaction WHERE id=:transactionId",
+            Boolean::class.java
+        ).setParameter("transactionId", transactionId)
+            .resultList
+            .first() as Boolean
     }
 
     override fun findTransactionIdsAndStatuses(
@@ -348,6 +367,86 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("createdAt", timestamp)
             .executeUpdate()
             .logResult("signed group parameters [$hash]")
+    }
+
+    override fun persistMerkleProof(
+        entityManager: EntityManager,
+        transactionId: String,
+        groupId: Int,
+        treeSize: Int,
+        leaves: List<Int>,
+        hashes: List<String>
+    ) {
+        entityManager.createNativeQuery(queryProvider.persistMerkleProof)
+            .setParameter("transactionId", transactionId)
+            .setParameter("groupId", groupId)
+            .setParameter("treeSize", treeSize)
+            .setParameter("leaves", "{${leaves.joinToString(",")}}") // TODO HACK!!
+            .setParameter("hashes", "{${hashes.joinToString(",")}}") // TODO HACK!!
+            .executeUpdate()
+            .logResult("merkle proof [$transactionId]")
+    }
+
+    override fun findMerkleProofs(
+        entityManager: EntityManager,
+        transactionId: String,
+        groupId: Int
+    ): List<MerkleProofDto> {
+        return entityManager.createNativeQuery(queryProvider.findMerkleProofs, Tuple::class.java)
+            .setParameter("transactionId", transactionId)
+            .setParameter("groupId", groupId)
+            .resultListAsTuples()
+            .groupBy { tuple ->
+                MerkleProofDtoId(
+                    transactionId,
+                    groupId,
+                    (tuple.get(3) as String).split(",").filter {// TODO HACK!! Hibernate cannot handle INT[]
+                        // TODO due to the hack we need to filter out if we have an empty string
+                        //  -- probably will never happen, since there will always be leaves
+                        it.isNotBlank()
+                    }.map {
+                        it.toInt()
+                    }
+                )
+            }
+            .map { (id, tuples) ->
+                MerkleProofDto(
+                    id,
+                    // TODO Since all tuples will have the same size it doesn't matter which one we use but probably we should find a nicer way to do it
+                    tuples.first().get(2) as Int,
+
+                    // TODO Since all tuples will have the same hashes it doesn't matter which one we use but probably we should find a nicer way to do it
+                    tuples.associate { (it.get(4) as Int) to (it.get(6) as ByteArray) },
+
+                    // TODO HACK!! Hibernate cannot handle INT[]
+                    (tuples.first().get(5) as String).split(",").filter {
+                        it.isNotBlank() // TODO due to the hack we need to filter out if we have an empty string
+                    }.map {
+                        parseSecureHash(it)
+                    }
+                )
+            }
+    }
+
+    override fun persistFilteredTransaction(
+        entityManager: EntityManager,
+        id: String,
+        privacySalt: ByteArray,
+        account: String,
+        timestamp: Instant,
+        status: TransactionStatus,
+        metadataHash: String
+    ) {
+        entityManager.createNativeQuery(queryProvider.persistFilteredTransaction)
+            .setParameter("id", id)
+            .setParameter("privacySalt", privacySalt)
+            .setParameter("accountId", account)
+            .setParameter("createdAt", timestamp)
+            .setParameter("status", status.value)
+            .setParameter("updatedAt", timestamp)
+            .setParameter("metadataHash", metadataHash)
+            .executeUpdate()
+            .logResult("filtered transaction [$id]")
     }
 
     private fun Int.logResult(entity: String): Int {
