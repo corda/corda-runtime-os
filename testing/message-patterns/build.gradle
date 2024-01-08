@@ -34,6 +34,7 @@ dependencies {
     integrationTestImplementation project(":libs:messaging:topic-admin")
     integrationTestImplementation project(":libs:schema-registry:schema-registry")
     integrationTestImplementation project(":testing:test-utilities")
+    integrationTestImplementation project(":testing:test-state-manager")
 
     integrationTestImplementation platform("net.corda:corda-api:$cordaApiVersion")
     integrationTestImplementation "net.corda:corda-avro-schema"
