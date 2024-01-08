@@ -132,7 +132,7 @@ class StateManagerImpl(
             if (it.isNotEmpty()) {
                 logger.warn(
                     "Optimistic locking check failed while deleting States" +
-                            " ${failedDeletes.joinToString()}"
+                        " ${failedDeletes.joinToString()}"
                 )
             }
         }

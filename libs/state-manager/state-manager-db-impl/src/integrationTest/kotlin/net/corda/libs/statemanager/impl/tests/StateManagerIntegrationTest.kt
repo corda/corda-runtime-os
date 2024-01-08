@@ -271,7 +271,6 @@ class StateManagerIntegrationTest {
         )
     }
 
-
     @ValueSource(ints = [1, 5, 10, 20, 50])
     @ParameterizedTest(name = "can createOrUpdate existing states (batch size: {0})")
     fun canCreateOrUpdateExistingStates(stateCount: Int) {
@@ -282,7 +281,7 @@ class StateManagerIntegrationTest {
             { i, _ -> """{"originalK1": "v$i", "originalK2": $i}""" }
         )
         val statesToUpdate = mutableSetOf<State>()
-        for (i in 1..stateCount*2) {
+        for (i in 1..stateCount * 2) {
             statesToUpdate.add(
                 State(buildStateKey(i), "state_$i$i".toByteArray(), 1, metadata("createOrupdatedK2" to "createOrupdatedK2"))
             )
@@ -298,8 +297,8 @@ class StateManagerIntegrationTest {
             { _, _ -> metadata("createOrupdatedK2" to "createOrupdatedK2") }
         )
         softlyAssertPersistedStateEntities(
-            (stateCount+1..stateCount*2),
-            { _, _ -> 1},
+            (stateCount + 1..stateCount * 2),
+            { _, _ -> 1 },
             { i, _ -> "state_$i$i" },
             { _, _ -> metadata("createOrupdatedK2" to "createOrupdatedK2") }
         )
