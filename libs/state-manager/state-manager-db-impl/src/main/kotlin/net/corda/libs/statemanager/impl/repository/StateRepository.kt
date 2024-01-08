@@ -40,7 +40,7 @@ interface StateRepository {
      * @param states State entity to persist.
      * @return The collection of keys that were successfully created.
      */
-    fun createOrUpdate(connection: Connection, states: Collection<StateEntity>): Collection<String>
+    fun createOrUpdate(connection: Connection, states: Collection<StateEntity>): Collection<StateEntity>
 
     /**
      * Get states with the given keys.

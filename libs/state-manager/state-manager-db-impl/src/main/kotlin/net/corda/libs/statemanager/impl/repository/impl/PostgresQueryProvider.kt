@@ -37,7 +37,7 @@ class PostgresQueryProvider : AbstractQueryProvider() {
              $VERSION_COLUMN = s.$VERSION_COLUMN + 1, 
              $METADATA_COLUMN = CAST(EXCLUDED.metadata as JSONB), 
              $MODIFIED_TIME_COLUMN = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-        RETURNING s.$KEY_COLUMN;
+        RETURNING s.*;
     """.trimIndent()
 
     override fun updateStates(size: Int): String = """

@@ -46,12 +46,15 @@ class StateManagerImpl(
         return getFailedCreates(states, successfulKeys.toSet())
     }
 
-    override fun createOrUpdate(states: Collection<State>): Set<String> {
-        if (states.isEmpty()) return emptySet()
-        val successfulKeys = dataSource.connection.transaction { connection ->
+    override fun createOrUpdate(states: Collection<State>): Map<String, State> {
+        if (states.isEmpty()) return emptyMap()
+        return dataSource.connection.transaction { connection ->
             stateRepository.createOrUpdate(connection, states.map { it.toPersistentEntity() })
+        }.map {
+            it.fromPersistentEntity()
+        }.associateBy {
+            it.key
         }
-        return getFailedCreates(states, successfulKeys.toSet())
     }
 
     private fun getFailedCreates(states: Collection<State>, successfulKeys: Set<String>) =

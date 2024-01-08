@@ -40,9 +40,10 @@ interface StateManager : Lifecycle {
      * persisted and replicas of the underlying persistent storage, if any, are synced.
      *
      * @param states Collection of states to be persisted.
-     * @return Collection of keys for all those states that could not be persisted on the underlying persistent storage.
+     * @return A map of the previous values associated for the keys that performed an update,
+     * or no entries in the map for keys successfully created.
      */
-    fun createOrUpdate(states: Collection<State>): Set<String>
+    fun createOrUpdate(states: Collection<State>): Map<String, State>
 
     /**
      * Get all states referenced by [keys].
