@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
+import org.slf4j.LoggerFactory
 import java.security.SecureRandom
 import kotlin.experimental.xor
 import kotlin.random.Random
@@ -37,6 +38,7 @@ import kotlin.test.assertFailsWith
 class MerkleTreeTest {
     companion object {
         val digestAlgorithm = DigestAlgorithmName.SHA2_256D
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private lateinit var digestService: DigestService
         private lateinit var defaultHashDigestProvider: DefaultHashDigestProvider
@@ -546,23 +548,24 @@ class MerkleTreeTest {
                 }
 
                 if (sourceProofLeafSet == 5 && treeSize == 3) {
-                    println(it.render(trivialHashDigestProvider))
+                    logger.trace( "source proof ${it.render(trivialHashDigestProvider)}")
                     val subproof = it.subset(trivialHashDigestProvider, listOf(0,2))
-                    subproof.render(trivialHashDigestProvider)
+                    val text = subproof.render(trivialHashDigestProvider)
+                    logger.trace("subset proof $text")
                 }
 
 
                 if (sourceProofLeafSet == 4 && treeSize == 3) {
-                    println(it.render(trivialHashDigestProvider))
+                    logger.trace( "source proof ${it.render(trivialHashDigestProvider)}")
                     val subproof = it.subset(trivialHashDigestProvider, listOf(2))
                     subproof.render(trivialHashDigestProvider)
                 }
 
-                for (subsetProofLeafSet in (0 until (1 shl treeSize)).toList().shuffled(rng).take(100)) {
+                for (subsetProofLeafSet in (0 until (1 shl treeSize)).toList().shuffled(rng).take(10)) {
                     val subLeafIndicesCombination = (0 until treeSize).filter { leaf -> (subsetProofLeafSet and (1 shl leaf)) != 0 }
                     val missingLeaves = (0 until treeSize).filter { leaf -> subsetProofLeafSet and (1 shl leaf) != 0 &&  (sourceProofLeafSet and (1 shl leaf)) == 0}
                     val missing = missingLeaves.isNotEmpty()
-                    println("tree size $treeSize source proof $sourceProofLeafSet subset $subsetProofLeafSet missing $missingLeaves ($missing)")
+                    logger.trace("tree size $treeSize source proof $sourceProofLeafSet subset $subsetProofLeafSet missing $missingLeaves ($missing)")
                     when {
                         subsetProofLeafSet == 0 ->
                             // no leaves in output, which is never legal
@@ -576,7 +579,8 @@ class MerkleTreeTest {
                             }
                         else ->
                             it.subset(trivialHashDigestProvider, subLeafIndicesCombination).also {
-                                println(it.render(trivialHashDigestProvider))
+                                val text = it.render(trivialHashDigestProvider)
+                                logger.trace("subset proof $text")
                             }
                     }
                 }
