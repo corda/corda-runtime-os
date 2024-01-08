@@ -45,8 +45,8 @@ class MerkleTreeTest {
             private val ZERO_BYTE = ByteArray(1) { 0 }
             private val ONE_BYTE = ByteArray(1) { 1 }
             private fun hash(b: ByteArray): SecureHash {
-                var acc = 0L
-                for (c in b) acc += c.toLong()
+                var acc = 0
+                for (c in b) acc += c.toInt()
                 return SecureHashImpl("byteadd", acc.toByteArray())
             }
 
@@ -153,8 +153,8 @@ class MerkleTreeTest {
         assertEquals(manualRoot, root)
         assertTree(
             merkleTree, """
-            bab170b1c ┳━  00:00:00:00
-                      ┗━  00:00:00:01"""
+                bab170b1┳7901af93━ 00:00:00:00
+                        ┗471864d3━ 00:00:00:01"""
         )
 
     }
@@ -173,9 +173,9 @@ class MerkleTreeTest {
         assertEquals(manualRoot, root)
         assertTree(
             merkleTree, """
-                a9d5543c2 ┳┳━ 00:00:00:00
-                          ┃┗━ 00:00:00:01
-                          ┗━━ 00:00:00:02
+                a9d5543c┳bab170b1┳7901af93━00:00:00:00
+                        ┃        ┗471864d3━00:00:00:01
+                        ┗66973b1a━66973b1a━00:00:00:02
             """
         )
     }
@@ -251,14 +251,14 @@ class MerkleTreeTest {
         val manualRoot = merkleTree.digest.nodeHash(0, node4, node5)
         assertTree(
             merkleTree, """
-             4817d5722 ┳┳┳ 00:00:00:00
-                       ┃┃┗ 00:00:00:01
-                       ┃┗┳ 00:00:00:02
-                       ┃ ┗ 00:00:00:03
-                       ┗┳┳ 00:00:00:04
-                        ┃┗ 00:00:00:05
-                        ┗━ 00:00:00:06
-                        """
+                  4817d572┳ff3c3992┳bab170b1┳00:00:00:00
+                          ┃        ┃        ┗00:00:00:01
+                          ┃        ┗517a5de6┳00:00:00:02
+                          ┃                 ┗00:00:00:03
+                          ┗92e96986┳e0cc7e23┳00:00:00:04
+                                   ┃        ┗00:00:00:05
+                                   ┗46086473━00:00:00:06
+                                        """
         )
         assertEquals(manualRoot, root)
     }
@@ -286,14 +286,14 @@ class MerkleTreeTest {
         assertEquals(manualRoot, root)
         assertTree(
             merkleTree, """
-              a868a19c7 ┳┳┳ 00:00:00:00
-                        ┃┃┗ 00:00:00:01
-                        ┃┗┳ 00:00:00:02
-                        ┃ ┗ 00:00:00:03
-                        ┗┳┳ 00:00:00:04
-                         ┃┗ 00:00:00:05
-                         ┗┳ 00:00:00:06
-                          ┗ 00:00:00:07
+              a868a19c┳ff3c3992┳bab170b1┳00:00:00:00
+                      ┃        ┃        ┗00:00:00:01
+                      ┃        ┗517a5de6┳00:00:00:02
+                      ┃                 ┗00:00:00:03
+                      ┗ef03791a┳e0cc7e23┳00:00:00:04
+                               ┃        ┗00:00:00:05
+                               ┗a1a26281┳00:00:00:06
+                                        ┗00:00:00:07
                         """
         )
     }
@@ -323,6 +323,26 @@ class MerkleTreeTest {
         runMerkleProofTest(treeSize)
     }
 
+    @Test
+    fun `merkle proof render`() {
+        // a single simple test case which is easier to debug than the parameterised tree tests
+        val treeSize = 6
+        val i = 20
+        val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
+
+        val leafIndicesCombination = (0 until treeSize).filter { (i and (1 shl it)) != 0 }
+        testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize).also {
+            assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
+                """
+                    00000612 (calc)┳0000069F (calc)┳00000630 (input 2)┳unknown            filtered
+                                   ┃               ┃                  ┗unknown            filtered
+                                   ┃               ┗00000634 (calc)   ┳00000002 (calc)    known leaf
+                                   ┃                                  ┗00000003 (input 0) filtered
+                                   ┗00000638 (calc)━00000638 (calc)   ┳00000004 (calc)    known leaf
+                                                                      ┗00000005 (input 1) filtered
+                """)
+        }
+    }
     private fun runMerkleProofTest(treeSize: Int) {
         // we don't want to take the time to do an expensive hash so we'll just make a cheap one
         val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
@@ -361,34 +381,63 @@ class MerkleTreeTest {
         for (i in 1 until (1 shl treeSize)) {
             val leafIndicesCombination = (0 until treeSize).filter { (i and (1 shl it)) != 0 }
             testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize).also {
+
                 val hashes = calculateLeveledHashes(it, trivialHashDigestProvider)
 
-                println(
-                    "Merkle proof for a tree of size $treeSize with ${hashes.size} " +
-                            "hashes supplied in the proof where we know $leafIndicesCombination"
-                )
+                // `it` is a Merkle proof for a tree of size $treeSize with ${hashes.size}
+                // hashes supplied in the proof where we know $leafIndicesCombination
 
-
-                val des = (0 until merkleTree.leaves.size).map { y ->
-                    val caption = if (y in leafIndicesCombination) "known data" else "gap"
-                    " $y $caption"
-                }
-                println(renderTree(merkleTree.leaves.size, des))
                 if (i == 1 && treeSize == 1) {
                     assertThat(hashes).hasSize(0)
+                    assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
+                        00000000 (calc)━  00000000 (calc) known leaf
+                    """)
                 }
                 if (i == 1 && treeSize == 2) {
                     assertThat(hashes).hasSize(1)
-                    assertHash(hashes[0].hash, "0000000000000001")
+                    assertHash(hashes[0].hash, "00000001")
                     assertThat(hashes[0].level).isEqualTo(0)
+                    assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
+                        """
+                            00000630 (calc)┳00000000 (calc)   ━ 00000000 (calc)    known leaf
+                                           ┗00000001 (input 0)━ 00000001 (input 0) filtered"""
+                    )
+                }
+                if (i == 1 && treeSize == 3) {
+                    assertThat(hashes).hasSize(2)
+                    assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
+                        """
+                            00000667 (calc)┳00000630 (calc)   ┳00000000 (calc)   ━00000000 (calc)    known leaf
+                                           ┃                  ┗00000001 (input 0)━00000001 (input 0) filtered
+                                           ┗00000002 (input 1)━unknown           ━unknown            filtered
+                        """)
                 }
 
                 if (i == 42 && treeSize == 6) {
                     assertThat(hashes).hasSize(3)
                     assertThat(hashes.map { it.hash.hex() }).isEqualTo(
-                        arrayListOf("0000000000000000", "0000000000000002", "0000000000000004")
+                        arrayListOf("00000000", "00000002", "00000004")
                     )
                     assertThat(hashes.map { it.level }).isEqualTo(arrayListOf(2, 2, 2))
+                    assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
+                        00000612 (calc)┳0000069F (calc)┳00000630 (calc)┳00000000 (input 0) filtered
+                                       ┃               ┃               ┗00000001 (calc)    known leaf
+                                       ┃               ┗00000634 (calc)┳00000002 (input 1) filtered
+                                       ┃                               ┗00000003 (calc)    known leaf
+                                       ┗00000638 (calc)━00000638 (calc)┳00000004 (input 2) filtered
+                                                                       ┗00000005 (calc)    known leaf
+                    """)
+                }
+
+                if (i == 20 && treeSize == 6) {
+                    assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
+                        00000612 (calc)┳0000069F (calc)┳00000630 (input 2)┳unknown            filtered
+                                       ┃               ┃                  ┗unknown            filtered
+                                       ┃               ┗00000634 (calc)   ┳00000002 (calc)    known leaf
+                                       ┃                                  ┗00000003 (input 0) filtered
+                                       ┗00000638 (calc)━00000638 (calc)   ┳00000004 (calc)    known leaf
+                                                                          ┗00000005 (input 1) filtered
+                    """.trimIndent())
                 }
             }
         }
@@ -399,8 +448,9 @@ class MerkleTreeTest {
         leafIndicesCombination: List<Int>,
         root: SecureHash,
         treeSize: Int
-    ): MerkleProof {
-        val proof = merkleTree.createAuditProof(leafIndicesCombination)
+    ): MerkleProofImpl {
+        val proofGeneric = merkleTree.createAuditProof(leafIndicesCombination)
+        val proof = proofGeneric as MerkleProofImpl
 
         // The original root can be reconstructed from the proof
         assertEquals(proof.calculateRoot(trivialHashDigestProvider), merkleTree.root)
@@ -581,73 +631,6 @@ fun SecureHash.hex() = bytes.joinToString(separator = "") { "%02x".format(it) }
 fun assertHash(hash: SecureHash, valuePrefix: String): AbstractStringAssert<*> =
     assertThat(hash.hex()).startsWith(valuePrefix)
 
-fun renderTree(treeSize: Int, des: List<String>, rootLabel: String = ""): String {
-    var values: MutableList<Pair<Int, Int>> = (0 until treeSize).map { it to it }.toMutableList()
-    var levels: MutableList<List<Pair<Int, Int>>> = mutableListOf(values.toList())
-    while (values.size > 1) {
-        var newValues: MutableList<Pair<Int, Int>> = mutableListOf()
-        var index = 0 // index into node hashes, which starts off with an entry per leaf
-        while (index < values.size) {
-            if (index < values.size - 1) {
-                // pair the elements
-                newValues += Pair(values[index].first, values[index + 1].second)
-                index += 2
-            } else {
-                // promote the odd man out
-                newValues += values[index]
-                index++
-            }
-        }
-        levels += newValues.toList()
-        check(newValues.size < values.size)
-        values = newValues
-    }
-    val grid: MutableMap<Pair<Int, Int>, Char> = mutableMapOf()
-
-    levels.forEachIndexed { level, ranges ->
-        ranges.forEach { range ->
-            val x = levels.size - level - 1
-            grid.put(x to range.first, '━')
-        }
-    }
-    levels.forEachIndexed { level, ranges ->
-        ranges.forEach { range ->
-            val x = levels.size - level - 1
-            if (range.first != range.second) {
-                val extent = if (level > 0) {
-                    val nextLevel = levels[level - 1]
-                    nextLevel.first { child -> range.second >= child.first && range.second <= child.second }.first
-                } else range.second
-                check(range.first <= extent)
-                if (range.first != extent) {
-                    val curtop = grid.getOrDefault(x to range.first, ' ')
-                    grid[x to range.first] = when (curtop) {
-                        '━' -> '┳'
-                        else -> '┃'
-                    }
-                    for (y in range.first + 1 until extent) {
-                        grid[x to y] = '┃'
-                    }
-                    grid[x to extent] = '┗'
-                }
-            }
-        }
-    }
-
-    val lines = (0 until treeSize).map { y ->
-        val line = (0..values.size + 1).map { x -> grid.getOrDefault(x to y, ' ') }
-        val prefix = if (y == 0) rootLabel else " ".repeat(rootLabel.length)
-        val label: String = des.getOrNull(y) ?: ""
-        "$prefix${line.joinToString("")}$label"
-    }
-
-    return lines.joinToString("\n")
-}
-
-fun MerkleTree.render(): String {
-    val labels: List<String> = leaves.map { " ${it.map { x -> "%02x".format(x) }.joinToString(separator = ":")}" }
-    return renderTree(leaves.size, labels, root.hex().slice(0..8) + " ")
-}
 
 /**
  * Assert that a merkle tree has exact content.
@@ -656,4 +639,4 @@ fun MerkleTree.render(): String {
  * @param expectedRendered the rendered text form; indentation and extra whitespace before and after is ignored
  */
 fun assertTree(actual: MerkleTree, expectedRendered: String): AbstractStringAssert<*> =
-    assertThat(actual.render()).isEqualTo(expectedRendered.trimIndent())
+    assertThat((actual as MerkleTreeImpl).render()).isEqualTo(expectedRendered.trimIndent())
