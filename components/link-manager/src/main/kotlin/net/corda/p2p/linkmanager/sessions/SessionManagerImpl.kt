@@ -1046,7 +1046,7 @@ internal class SessionManagerImpl(
                 sessionHealthMonitor.set(
                     when {
                         newConfiguration.heartbeatEnabled -> HeartbeatSessionHealthMonitor()
-                        else -> NoHeartbeatSessionHealthMonitor()
+                        else -> MessageAckSessionHealthMonitor()
                     }
                 )
                 configUpdateResult.complete(Unit)
@@ -1238,86 +1238,14 @@ internal class SessionManagerImpl(
             }
         }
 
-        private fun sendHeartbeat(counterparties: SessionCounterparties, session: Session) {
-            val sessionInfo = trackedOutboundSessions[session.sessionId]
-            if (sessionInfo == null) {
-                logger.info("Stopped sending heartbeats for session (${session.sessionId}), which expired.")
-                return
-            }
-            val config = config.get()
-
-            val timeSinceLastSend = timeStamp() - sessionInfo.lastSendTimestamp
-            if (timeSinceLastSend >= config.heartbeatPeriod.toMillis()) {
-                logger.trace {
-                    "Sending heartbeat message between ${counterparties.ourId} (our Identity) and " +
-                        "${counterparties.counterpartyId}."
-                }
-                sendHeartbeatMessage(
-                    counterparties.ourId,
-                    counterparties.counterpartyId,
-                    session,
-                    counterparties.status,
-                    counterparties.serial
-                )
-                executorService.schedule(
-                    { sendHeartbeat(counterparties, session) },
-                    config.heartbeatPeriod.toMillis(),
-                    TimeUnit.MILLISECONDS
-                )
-            } else {
-                executorService.schedule(
-                    { sendHeartbeat(counterparties, session) },
-                    config.heartbeatPeriod.toMillis() - timeSinceLastSend,
-                    TimeUnit.MILLISECONDS
-                )
-            }
-        }
-
-        private fun sendHeartbeatMessage(
-            source: HoldingIdentity,
-            dest: HoldingIdentity,
-            session: Session,
-            filter: MembershipStatusFilter,
-            serial: Long
-        ) {
-            val heartbeatMessage = HeartbeatMessage()
-            val message = MessageConverter.linkOutMessageFromHeartbeat(
-                source,
-                dest,
-                heartbeatMessage,
-                session,
-                groupPolicyProvider,
-                membershipGroupReaderProvider,
-                filter,
-                serial
-            )
-            if (message == null) {
-                logger.warn("Failed to send a Heartbeat between $source and $dest.")
-                return
-            }
-            val future = publisher.publish(
-                listOf(
-                    Record(
-                        LINK_OUT_TOPIC,
-                        UUID.randomUUID().toString(),
-                        message
-                    )
-                )
-            )
-
-            future.single().whenComplete { _, error ->
-                if (error != null) {
-                    logger.warn("An exception was thrown when sending a heartbeat message.\nException:", error)
-                } else {
-                    recordOutboundHeartbeatMessagesMetric(source, dest)
-                }
-            }
-        }
-
         private fun timeStamp(): Long {
             return clock.instant().toEpochMilli()
         }
 
+        /**
+         * Implementations of [SessionHealthMonitor] provide different methods of determining when a session has become
+         * unhealthy and handling of unhealthy sessions.
+         */
         private interface SessionHealthMonitor {
             fun sessionEstablished(session: Session)
 
@@ -1326,6 +1254,9 @@ internal class SessionManagerImpl(
             fun outboundSessionTimeout(counterparties: SessionCounterparties, sessionId: String)
         }
 
+        /**
+         * Monitors session health based on a heart beating mechanism.
+         */
         private inner class HeartbeatSessionHealthMonitor: SessionHealthMonitor {
             override fun sessionEstablished(session: Session) {
                 trackedOutboundSessions.computeIfPresent(session.sessionId) { _, trackedSession ->
@@ -1368,8 +1299,88 @@ internal class SessionManagerImpl(
                     scheduleOutboundSessionTimeout(counterparties, sessionId, sessionTimeoutMs - timeSinceLastAck)
                 }
             }
+
+            private fun sendHeartbeat(counterparties: SessionCounterparties, session: Session) {
+                val sessionInfo = trackedOutboundSessions[session.sessionId]
+                if (sessionInfo == null) {
+                    logger.info("Stopped sending heartbeats for session (${session.sessionId}), which expired.")
+                    return
+                }
+                val config = config.get()
+
+                val timeSinceLastSend = timeStamp() - sessionInfo.lastSendTimestamp
+                if (timeSinceLastSend >= config.heartbeatPeriod.toMillis()) {
+                    logger.trace {
+                        "Sending heartbeat message between ${counterparties.ourId} (our Identity) and " +
+                                "${counterparties.counterpartyId}."
+                    }
+                    sendHeartbeatMessage(
+                        counterparties.ourId,
+                        counterparties.counterpartyId,
+                        session,
+                        counterparties.status,
+                        counterparties.serial
+                    )
+                    executorService.schedule(
+                        { sendHeartbeat(counterparties, session) },
+                        config.heartbeatPeriod.toMillis(),
+                        TimeUnit.MILLISECONDS
+                    )
+                } else {
+                    executorService.schedule(
+                        { sendHeartbeat(counterparties, session) },
+                        config.heartbeatPeriod.toMillis() - timeSinceLastSend,
+                        TimeUnit.MILLISECONDS
+                    )
+                }
+            }
+
+            private fun sendHeartbeatMessage(
+                source: HoldingIdentity,
+                dest: HoldingIdentity,
+                session: Session,
+                filter: MembershipStatusFilter,
+                serial: Long
+            ) {
+                val heartbeatMessage = HeartbeatMessage()
+                val message = MessageConverter.linkOutMessageFromHeartbeat(
+                    source,
+                    dest,
+                    heartbeatMessage,
+                    session,
+                    groupPolicyProvider,
+                    membershipGroupReaderProvider,
+                    filter,
+                    serial
+                )
+                if (message == null) {
+                    logger.warn("Failed to send a Heartbeat between $source and $dest.")
+                    return
+                }
+                val future = publisher.publish(
+                    listOf(
+                        Record(
+                            LINK_OUT_TOPIC,
+                            UUID.randomUUID().toString(),
+                            message
+                        )
+                    )
+                )
+
+                future.single().whenComplete { _, error ->
+                    if (error != null) {
+                        logger.warn("An exception was thrown when sending a heartbeat message.\nException:", error)
+                    } else {
+                        recordOutboundHeartbeatMessagesMetric(source, dest)
+                    }
+                }
+            }
         }
-        private inner class NoHeartbeatSessionHealthMonitor: SessionHealthMonitor {
+
+        /**
+         * Monitors session health based on whether sent messages have been acknowledged in a timely manner or not.
+         */
+        private inner class MessageAckSessionHealthMonitor: SessionHealthMonitor {
             override fun sessionEstablished(session: Session) {
                 check(trackedOutboundSessions.contains(session.sessionId)) {
                     "A message was sent on session with Id ${session.sessionId} which is not tracked."

@@ -175,7 +175,7 @@ class SessionManagerTest {
     }
 
     private lateinit var configHandler: SessionManagerImpl.SessionManagerConfigChangeHandler
-    private lateinit var heartbeatConfigHandler: SessionManagerImpl.SessionHealthManager.SessionHealthManagerConfigChangeHandler
+    private lateinit var sessionHealthManagerConfigHandler: SessionManagerImpl.SessionHealthManager.SessionHealthManagerConfigChangeHandler
     private val dominoTile = Mockito.mockConstruction(ComplexDominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
@@ -185,7 +185,7 @@ class SessionManagerTest {
             configHandler = context.arguments()[6] as SessionManagerImpl.SessionManagerConfigChangeHandler
         }
         if (context.arguments()[6] is SessionManagerImpl.SessionHealthManager.SessionHealthManagerConfigChangeHandler) {
-            heartbeatConfigHandler = context.arguments()[6]
+            sessionHealthManagerConfigHandler = context.arguments()[6]
                     as SessionManagerImpl.SessionHealthManager.SessionHealthManagerConfigChangeHandler
         }
         whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
@@ -335,7 +335,7 @@ class SessionManagerTest {
             null,
             mock(),
         )
-        heartbeatConfigHandler.applyNewConfiguration(configNoHeartbeat, null, mock())
+        sessionHealthManagerConfigHandler.applyNewConfiguration(configNoHeartbeat, null, mock())
     }
 
     private fun MessageDigest.hash(data: ByteArray): ByteArray {
@@ -1665,7 +1665,7 @@ class SessionManagerTest {
                 null,
                 mock(),
             )
-            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourceHolder)
+            sessionHealthManagerConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourceHolder)
         }
         sessionManager.start()
 
@@ -1720,7 +1720,7 @@ class SessionManagerTest {
                 null,
                 mock(),
             )
-            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourceHolder)
+            sessionHealthManagerConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourceHolder)
         }
         sessionManager.start()
 
@@ -1801,7 +1801,7 @@ class SessionManagerTest {
                 null,
                 mock(),
             )
-            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourcesHolder)
+            sessionHealthManagerConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourcesHolder)
         }
         @Suppress("UNCHECKED_CAST")
         publisherWithDominoLogicByClientId[SessionManagerImpl.SessionHealthManager.SESSION_HEALTH_MANAGER_CLIENT_ID]!!.forEach {
@@ -1871,7 +1871,7 @@ class SessionManagerTest {
                 null,
                 mock(),
             )
-            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
+            sessionHealthManagerConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
         }
         @Suppress("UNCHECKED_CAST")
         publisherWithDominoLogicByClientId[SessionManagerImpl.SessionHealthManager.SESSION_HEALTH_MANAGER_CLIENT_ID]!!.forEach {
@@ -1886,7 +1886,7 @@ class SessionManagerTest {
         mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
         assertThat(messages.size).isEqualTo(2)
 
-        heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
+        sessionHealthManagerConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
 
         mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
         mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
@@ -1934,7 +1934,7 @@ class SessionManagerTest {
                 null,
                 mock(),
             )
-            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourcesHolder)
+            sessionHealthManagerConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourcesHolder)
         }
         @Suppress("UNCHECKED_CAST")
         publisherWithDominoLogicByClientId[SessionManagerImpl.SessionHealthManager.SESSION_HEALTH_MANAGER_CLIENT_ID]!!.forEach {
@@ -2010,7 +2010,7 @@ class SessionManagerTest {
                 null,
                 mock(),
             )
-            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourcesHolder)
+            sessionHealthManagerConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourcesHolder)
         }
         publisherWithDominoLogicByClientId[SessionManagerImpl.SessionHealthManager.SESSION_HEALTH_MANAGER_CLIENT_ID]!!.forEach {
             whenever(it.publish(any())).doAnswer { invocation ->
@@ -2081,7 +2081,7 @@ class SessionManagerTest {
                 null,
                 mock(),
             )
-            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourcesHolder)
+            sessionHealthManagerConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourcesHolder)
         }
         publisherWithDominoLogicByClientId[SessionManagerImpl.SessionHealthManager.SESSION_HEALTH_MANAGER_CLIENT_ID]!!.forEach {
             whenever(it.publish(any())).doAnswer { publish() }
@@ -2187,7 +2187,7 @@ class SessionManagerTest {
                 null,
                 mock(),
             )
-            heartbeatConfigHandler.applyNewConfiguration(longTimePeriodConfigWithHeartbeat, null, mock())
+            sessionHealthManagerConfigHandler.applyNewConfiguration(longTimePeriodConfigWithHeartbeat, null, mock())
         }
         @Suppress("UNCHECKED_CAST")
         publisherWithDominoLogicByClientId[SessionManagerImpl.SessionHealthManager.SESSION_HEALTH_MANAGER_CLIENT_ID]!!.forEach {
