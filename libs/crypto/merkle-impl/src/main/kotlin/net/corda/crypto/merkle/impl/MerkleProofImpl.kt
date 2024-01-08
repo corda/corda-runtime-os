@@ -243,29 +243,31 @@ class MerkleProofImpl(
         val outLeaves = leaves.filter { it.index in leafIndices }
         require(outLeaves.size == leafIndices.size) { "some leaves are not available in input proof"}
         require(outLeaves.size != 0) { "output proof must have at least one known leaf"}
+        // we will build up a set of avaialble leaves as we track. This will start out with the known leaves
+        // in the output subset proof, and will be augmented as we decide to add output hashes to the proof
+        val availableLeaves = leafIndices.toMutableSet()
         // We work out the hashes for the new subset proof by considering, for the original proof, each hash that
         // is calculated when we verify the proof by calculating the root.
         val outHashes: MutableList<SecureHash> = mutableListOf()
         val treeDepth = MerkleTreeImpl.treeDepth(treeSize)
-        var knownLeaves = leafIndices.toMutableSet()
         calculateRootInstrumented(digest) { hash, level, index, _ ->
             val height = treeDepth - level // how many levels above the leaves, 0 for being at the leaf
             val leftmostLeaf = index shl height
             val afterLeaf = min(leftmostLeaf + (1 shl height), treeSize)
-            val unknowns = (leftmostLeaf until afterLeaf).any { it !in knownLeaves }
-            val allUnknown = (leftmostLeaf until afterLeaf).all { it !in knownLeaves }
+            val unknowns = (leftmostLeaf until afterLeaf).any { it !in availableLeaves }
+            val allUnknown = (leftmostLeaf until afterLeaf).all { it !in availableLeaves }
             val siblingIndex = index xor 1 // work out the sibling node i.e. the node which shares a direct parent node with this one
             val siblingLeftmostLeaf = siblingIndex shl height
             val afterSiblingLeaf = min((siblingIndex + 1) shl height, treeSize)
-            val siblingWillBeKnown = (siblingLeftmostLeaf until afterSiblingLeaf).any { it in knownLeaves }
+            val siblingWillBeKnown = (siblingLeftmostLeaf until afterSiblingLeaf).any { it in availableLeaves }
             // we need this hash in the subset proof iff it covers unknown content ($unknowns is true),
             // and either there is:
             // - some known leaves under this node ($allUnknown is false)
             // - the sibling node has known leaves ($siblingWillBeKnown is true)
             if (unknowns && (siblingWillBeKnown || !allUnknown)) {
                 outHashes.add(hash)
-                // now we have decided to take $hash all the leaves it covers will be known
-                for (i in leftmostLeaf until afterLeaf) knownLeaves.add(i)
+                // now we have decided to take $hash so all the leaves it covers will be known
+                for (i in leftmostLeaf until afterLeaf) availableLeaves.add(i)
             }
         }
         return MerkleProofImpl(proofType, treeSize, outLeaves, outHashes)
