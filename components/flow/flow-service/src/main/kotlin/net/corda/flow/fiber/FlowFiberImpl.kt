@@ -153,7 +153,10 @@ class FlowFiberImpl(
      */
     private fun bindToSandbox(flowFiberExecutionContext: FlowFiberExecutionContext) {
         if (this.boundSandboxUUID != null && boundSandboxUUID != flowFiberExecutionContext.sandboxGroupContext.sandboxGroup.id) {
-            log.warn("Attempting to execute a flow created against one sandbox inside a different one")
+            log.warn(
+                "Attempting to execute a flow created against one sandbox inside a different one for holding id " +
+                    "${flowFiberExecutionContext.holdingIdentity.shortHash}"
+            )
         }
         boundSandboxUUID = flowFiberExecutionContext.sandboxGroupContext.sandboxGroup.id
     }
