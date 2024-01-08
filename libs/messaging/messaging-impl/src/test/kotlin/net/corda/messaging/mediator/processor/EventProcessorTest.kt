@@ -27,7 +27,7 @@ import org.mockito.kotlin.whenever
 @Execution(ExecutionMode.SAME_THREAD)
 class EventProcessorTest {
     private lateinit var eventMediatorConfig: EventMediatorConfig<String, String, String>
-    private lateinit var stateManagerHelper: StateManagerHelper<String, String, String>
+    private lateinit var stateManagerHelper: StateManagerHelper<String>
     private lateinit var client: MessagingClient
     private lateinit var messageRouter: MessageRouter
     private lateinit var consumerProcessorState: ConsumerProcessorState
@@ -47,7 +47,7 @@ class EventProcessorTest {
         consumerProcessorState = ConsumerProcessorState()
         eventMediatorConfig = buildStringTestConfig()
 
-        eventProcessor = EventProcessor(eventMediatorConfig, stateManagerHelper, messageRouter, consumerProcessorState)
+        eventProcessor = EventProcessor(eventMediatorConfig, stateManagerHelper, messageRouter)
     }
 
     @Test
