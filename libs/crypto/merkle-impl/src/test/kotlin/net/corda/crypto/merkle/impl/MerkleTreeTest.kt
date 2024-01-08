@@ -535,8 +535,8 @@ class MerkleTreeTest {
                     )
                 }
 
-                if (i == 3 && treeSize == 7) {
-                    it.subset(trivialHashDigestProvider, listOf(1,2))
+                if (i == 3 && treeSize == 3) {
+                    it.subset(trivialHashDigestProvider, listOf(1))
                 }
 
                 for (j in (0 until (1 shl treeSize)).toList().shuffled(rng).take(10)) {
@@ -551,12 +551,14 @@ class MerkleTreeTest {
                                 it.subset(trivialHashDigestProvider, subLeafIndicesCombination)
                             }
                         missing ->
-                            // there are leaves in subset which are not in
+                            // there are leaves in subset which are not in the source proof, which should fail
                             assertFailsWith<java.lang.IllegalArgumentException> {
                                 it.subset(trivialHashDigestProvider, subLeafIndicesCombination)
                             }
                         else ->
-                            println(it.subset(trivialHashDigestProvider, subLeafIndicesCombination).render(trivialHashDigestProvider))
+                            it.subset(trivialHashDigestProvider, subLeafIndicesCombination).also {
+                                println(it.render(trivialHashDigestProvider))
+                            }
                     }
                 }
 
