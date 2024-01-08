@@ -5,7 +5,6 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.PersistFilteredTransaction
 import net.corda.data.persistence.EntityResponse
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
-import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.messaging.api.records.Record
@@ -30,7 +29,7 @@ constructor(
             request.transactionId,
             request.privacySalt.array(),
             request.account,
-            TransactionStatus.valueOf(request.transactionStatus),
+            request.transactionStatus,
             request.metadataHash
         )
 

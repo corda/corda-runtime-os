@@ -17,7 +17,7 @@ class PersistFilteredTransactionExternalEventFactory : AbstractUtxoLedgerExterna
     override fun createRequest(parameters: PersistFilteredTransactionParameters): Any {
         return PersistFilteredTransaction(
             parameters.transactionId,
-            parameters.transactionStatus.value,
+            parameters.transactionStatus,
             parameters.privacySalt,
             parameters.account,
             parameters.metadataHash
@@ -28,7 +28,7 @@ class PersistFilteredTransactionExternalEventFactory : AbstractUtxoLedgerExterna
 // TODO Temporary, need cleanup
 data class PersistFilteredTransactionParameters(
     val transactionId: String,
-    val transactionStatus: TransactionStatus,
+    val transactionStatus: String,
     val privacySalt: ByteBuffer,
     val account: String,
     val metadataHash: String

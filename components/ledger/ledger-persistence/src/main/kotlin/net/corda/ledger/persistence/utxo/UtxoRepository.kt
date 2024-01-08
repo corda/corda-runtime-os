@@ -185,7 +185,7 @@ interface UtxoRepository {
         privacySalt: ByteArray,
         account: String,
         timestamp: Instant,
-        status: TransactionStatus,
+        status: String,
         metadataHash: String
     )
 }

@@ -78,7 +78,7 @@ interface UtxoPersistenceService {
         id: String,
         privacySalt: ByteArray,
         account: String,
-        status: TransactionStatus,
+        status: String,
         metadataHash: String
     )
 }

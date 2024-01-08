@@ -264,7 +264,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                     PersistFilteredTransactionExternalEventFactory::class.java,
                     PersistFilteredTransactionParameters(
                         filteredTransaction.id.toString(),
-                        TransactionStatus.UNVERIFIED,
+                        TransactionStatus.UNVERIFIED.value,
                         ByteBuffer.wrap(ByteArray(0)), // TODO how to extract?
                         "whatever", // TODO how?
                         filteredTransaction.metadata.toString() // TODO need to hash the bytes somehow

@@ -84,10 +84,9 @@ class UtxoRepositoryImpl @Activate constructor(
     ): Boolean {
         return entityManager.createNativeQuery(
             "SELECT is_filtered FROM {h-schema}utxo_transaction WHERE id=:transactionId",
-            Boolean::class.java
+            Tuple::class.java
         ).setParameter("transactionId", transactionId)
-            .resultList
-            .first() as Boolean
+            .resultListAsTuples().first().get(0) as Boolean
     }
 
     override fun findTransactionIdsAndStatuses(
@@ -434,7 +433,7 @@ class UtxoRepositoryImpl @Activate constructor(
         privacySalt: ByteArray,
         account: String,
         timestamp: Instant,
-        status: TransactionStatus,
+        status: String,
         metadataHash: String
     ) {
         entityManager.createNativeQuery(queryProvider.persistFilteredTransaction)
@@ -442,7 +441,7 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("privacySalt", privacySalt)
             .setParameter("accountId", account)
             .setParameter("createdAt", timestamp)
-            .setParameter("status", status.value)
+            .setParameter("status", status)
             .setParameter("updatedAt", timestamp)
             .setParameter("metadataHash", metadataHash)
             .executeUpdate()
