@@ -13,6 +13,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.config.ResolvedPublisherConfig
 import net.corda.messaging.utils.toCordaProducerRecord
 import net.corda.messaging.utils.toCordaProducerRecords
+import net.corda.tracing.wrapWithTracingExecutor
 import net.corda.utilities.debug
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -56,7 +57,7 @@ internal class CordaPublisherImpl(
     // We use a limited queue executor to ensure we only ever queue one new request if we are currently processing
     // an existing request. It is OK to discard the second request trying to join the queue, as processing of every request
     // will involve queue draining anyway.
-    private val executor = ThreadPoolExecutor(
+    private val executor = wrapWithTracingExecutor(ThreadPoolExecutor(
         1, 1,
         0L, TimeUnit.MILLISECONDS,
         LinkedBlockingQueue(1),
@@ -66,8 +67,8 @@ internal class CordaPublisherImpl(
             .setDaemon(true)
             .build(),
         ThreadPoolExecutor.DiscardPolicy()
-    )
-    
+    ))
+
     /**
      * Publish a record.
      * Records are published via transactions if an [ResolvedPublisherConfig.transactional] is set.

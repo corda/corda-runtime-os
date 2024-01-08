@@ -128,29 +128,20 @@ class ConfigPublishServiceImpl @Activate constructor(
                 )
             }
 
-        val kafkaConfigValue =
-            smartConfigFactory.create(ConfigFactory.parseString(kafkaRecordValue.value)).run {
-                validator.validate(
-                    recordKey,
-                    Version(schemaMajorVersion, schemaMinorVersion),
-                    this,
-                    applyDefaults = false,
-                )
-            }
-
+        val kafkaConfigValue = smartConfigFactory.create(ConfigFactory.parseString(kafkaRecordValue.value))
 
         val configsAreNotEqual = dbConfigValueWithDefaults != kafkaConfigValue
         if (configsAreNotEqual) {
             logger.info(
                 "Configuration for key $recordKey is misaligned on Kafka after applying defaults (Kafka will be updated).\n" +
-                        "DB config value: ${
-                            dbConfigValueWithDefaults.toSafeConfig().root()
-                                .render(ConfigRenderOptions.concise().setFormatted(true))
-                        }\n" +
-                        "Kafka config value: ${
-                            kafkaConfigValue.toSafeConfig().root()
-                                .render(ConfigRenderOptions.concise().setFormatted(true))
-                        }"
+                    "DB config value: ${
+                        dbConfigValueWithDefaults.toSafeConfig().root()
+                            .render(ConfigRenderOptions.concise().setFormatted(true))
+                    }\n" +
+                    "Kafka config value: ${
+                        kafkaConfigValue.toSafeConfig().root()
+                            .render(ConfigRenderOptions.concise().setFormatted(true))
+                    }"
             )
         }
 

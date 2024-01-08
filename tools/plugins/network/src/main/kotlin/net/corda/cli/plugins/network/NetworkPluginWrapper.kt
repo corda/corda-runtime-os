@@ -32,12 +32,12 @@ class NetworkPluginWrapper : Plugin() {
             Dynamic::class,
             GetRegistrations::class,
             Lookup::class,
-            Operate:: class
+            Operate::class,
         ],
         hidden = true,
         mixinStandardHelpOptions = true,
         description = ["Plugin for interacting with a network."],
-        versionProvider = VersionProvider::class
+        versionProvider = VersionProvider::class,
     )
     class NetworkPlugin : CordaCliPlugin
 
@@ -49,7 +49,7 @@ class NetworkPluginWrapper : Plugin() {
         ],
         mixinStandardHelpOptions = true,
         description = ["Plugin for membership operations."],
-        versionProvider = VersionProvider::class
+        versionProvider = VersionProvider::class,
     )
     class MgmPlugin : CordaCliPlugin
 }

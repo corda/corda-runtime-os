@@ -10,6 +10,9 @@ interface MessagingClient : AutoCloseable {
 
         /** Name of the property for specifying the message key */
         const val MSG_PROP_KEY = "key"
+
+        /** Name of the property for specifying the kafka topic name */
+        const val MSG_PROP_TOPIC = "topic"
     }
 
     /**

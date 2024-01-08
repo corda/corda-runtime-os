@@ -179,10 +179,8 @@ internal class ConsumerGroup(
 
     override fun close() {
         lock.write {
-            val activeConsumers = consumers.values.toList()
-            consumers.clear()
-            activeConsumers.forEach {
-                it.close()
+            while (consumers.isNotEmpty()) {
+                consumers.values.firstOrNull()?.close()
             }
             commitments.clear()
         }

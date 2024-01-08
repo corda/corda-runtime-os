@@ -28,13 +28,13 @@ class CreateCertificate : Runnable {
 
     @Option(
         names = ["-n", "--name"],
-        description = ["The filename of the certificate (defaults to the first host name)."]
+        description = ["The filename of the certificate (defaults to the first host name)."],
     )
     private var name: String? = null
 
     @Option(
         names = ["-p", "--public-key"],
-        description = ["The filename of the public key (in PEM format). If not specified, a new key pair is generated."]
+        description = ["The filename of the public key (in PEM format). If not specified, a new key pair is generated."],
     )
     private var publicKeyFile: File? = null
 

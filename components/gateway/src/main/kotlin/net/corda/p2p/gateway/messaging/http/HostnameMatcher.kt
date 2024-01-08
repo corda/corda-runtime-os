@@ -13,6 +13,7 @@ import org.bouncycastle.asn1.x500.AttributeTypeAndValue
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x500.style.BCStyle
 import org.bouncycastle.asn1.x509.GeneralName
+import java.util.concurrent.ConcurrentHashMap
 
 class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
 
@@ -22,8 +23,20 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
         private const val ALTNAME_IP = GeneralName.iPAddress
     }
 
-    var matchedAlias: String? = null
-        private set
+    internal enum class MatchType {
+        NONE,
+        C5,
+        C4,
+    }
+    private val matchedAliasIsC5 = ConcurrentHashMap<String, Boolean>()
+
+    internal fun aliasMatch(alias: String) : MatchType {
+        return when (matchedAliasIsC5[alias]) {
+            null -> MatchType.NONE
+            true -> MatchType.C5
+            false -> MatchType.C4
+        }
+    }
 
     /**
      * Verifies the keystore entries against the provided *serverName*. The method will verify C4 and C5 SNI values.
@@ -35,29 +48,35 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
         if (serverName.type != StandardConstants.SNI_HOST_NAME) {
             logger.warn("Invalid server name type: ${serverName.type}. Supported types: SNIHostName(0)")
         }
-
+        matchedAliasIsC5.clear()
         keyStore.aliases().toList().forEach { alias ->
             val certificate = keyStore.getCertificate(alias).x509()
             if (isC4SNI(serverNameString)) {
                 val x500Name = X500Name.getInstance(certificate.subjectX500Principal.encoded)
                 val c4SniValue = SniCalculator.calculateCorda4Sni(x500Name.toString())
                 if (serverNameString == c4SniValue) {
-                    return matched(alias)
+                    matchedAliasIsC5[alias] = false
                 }
             } else if (isIpSni(serverNameString)) {
                 val ipAddress = serverNameString.removeSuffix(SniCalculator.IP_SNI_SUFFIX)
                 val valid = InetAddressValidator.getInstance().isValid(ipAddress)
-                if (valid && matchIp(ipAddress, certificate)) {
-                    return matched(alias)
+                if(valid && matchIp(ipAddress, certificate)) {
+                    matchedAliasIsC5[alias] = true
                 }
-            } else if (matchDNS(serverNameString, certificate)){
-                return matched(alias)
+            } else  {
+                if (matchDNS(serverNameString, certificate)) {
+                    matchedAliasIsC5[alias] = true
+                }
             }
         }
 
-        val requestedSNIValue = "hostname = $serverNameString"
-        logger.warn("Could not find a certificate matching the requested SNI value [$requestedSNIValue]")
-        return false
+        return if (matchedAliasIsC5.isEmpty()) {
+            val requestedSNIValue = "hostname = $serverNameString"
+            logger.warn("Could not find a certificate matching the requested SNI value [$requestedSNIValue]")
+            false
+        } else {
+            true
+        }
     }
 
     private fun isC4SNI(serverName: String): Boolean {
@@ -73,11 +92,6 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
 
     private fun isIpSni(serverName: String): Boolean {
         return serverName.endsWith(SniCalculator.IP_SNI_SUFFIX)
-    }
-
-    private fun matched(alias: String): Boolean {
-        matchedAlias = alias
-        return true
     }
 
     private fun matchIp(ip: String, certificate: X509Certificate): Boolean {

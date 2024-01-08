@@ -3,7 +3,6 @@ package net.corda.flow.testing.tests
 import net.corda.data.flow.output.FlowStates
 import net.corda.flow.testing.context.ALICE_FLOW_KEY_MAPPER
 import net.corda.flow.testing.context.BOB_FLOW_KEY_MAPPER
-import net.corda.flow.testing.context.CHARLIE_FLOW_KEY_MAPPER
 import net.corda.flow.testing.context.FlowServiceTestBase
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -49,39 +48,6 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
                 nullStateRecord()
                 flowStatus(FlowStates.COMPLETED, result = DONE)
                 scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY_MAPPER)
-            }
-        }
-    }
-
-    @Test
-    fun `A flow finishing when previously in a retry state publishes a completed flow status and schedules flow cleanup`() {
-        // Trigger a retry state
-        `when` {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, CHARLIE_HOLDING_IDENTITY, CPI1, "flow start data")
-        }
-
-        then {
-            expectOutputForFlow(FLOW_ID1) {
-                checkpointHasRetry(1)
-            }
-        }
-
-        // Now add the missing vnode and trigger a flow completion
-        given {
-            virtualNode(CPI1, CHARLIE_HOLDING_IDENTITY)
-            membershipGroupFor(CHARLIE_HOLDING_IDENTITY)
-        }
-
-        `when` {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, CHARLIE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .completedSuccessfullyWith(DONE)
-        }
-
-        then {
-            expectOutputForFlow(FLOW_ID1) {
-                nullStateRecord()
-                flowStatus(FlowStates.COMPLETED, result = DONE)
-                scheduleFlowMapperCleanupEvents(CHARLIE_FLOW_KEY_MAPPER)
             }
         }
     }

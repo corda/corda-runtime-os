@@ -86,7 +86,12 @@ class SandboxServiceImplTests {
             val mainBundlePath = contents.cpk.metadata.mainBundle
             val libPath = contents.cpk.metadata.libraries.single()
 
-            whenever(bundleContext.installBundle(argThat { endsWith(mainBundlePath) || endsWith(libPath) }, any())).then { answer ->
+            whenever(
+                bundleContext.installBundle(
+                    argThat { endsWith(mainBundlePath) || endsWith(libPath) },
+                    any()
+                )
+            ).then { answer ->
                 val bundleLocation = answer.arguments.first() as String
                 val (bundleName, bundleClass) = if (bundleLocation.endsWith(mainBundlePath)) {
                     contents.mainBundleName to contents.mainBundleClass
@@ -122,9 +127,11 @@ class SandboxServiceImplTests {
         assertEquals(2, sandboxes.size)
 
         val sandboxesRetrievedFromSandboxGroup =
-            cpks.map { cpk -> sandboxGroup.cpkSandboxes.find { sandbox ->
-                sandbox.cpkMetadata.fileChecksum == cpk.metadata.fileChecksum
-            } }
+            cpks.map { cpk ->
+                sandboxGroup.cpkSandboxes.find { sandbox ->
+                    sandbox.cpkMetadata.fileChecksum == cpk.metadata.fileChecksum
+                }
+            }
         assertEquals(sandboxes.toSet(), sandboxesRetrievedFromSandboxGroup.toSet())
     }
 
@@ -132,12 +139,6 @@ class SandboxServiceImplTests {
     fun `creating a sandbox installs and starts its bundles`() {
         sandboxService.createSandboxGroup(setOf(cpkOne))
         assertEquals(2, startedBundles.size)
-    }
-
-    @Test
-    fun `can create a sandbox without starting its bundles`() {
-        sandboxService.createSandboxGroupWithoutStarting(setOf(cpkOne))
-        assertEquals(0, startedBundles.size)
     }
 
     @Test
@@ -299,7 +300,8 @@ class SandboxServiceImplTests {
 
         val sandboxOneBundles = startedBundles.filter(sandboxOne::containsBundle)
         val sandboxTwoBundles = startedBundles.filter(sandboxTwo::containsBundle)
-        val sandboxTwoPublicBundles = sandboxTwoBundles.filterTo(HashSet()) { bundle -> bundle in sandboxTwo.publicBundles }
+        val sandboxTwoPublicBundles =
+            sandboxTwoBundles.filterTo(HashSet()) { bundle -> bundle in sandboxTwo.publicBundles }
         val sandboxTwoPrivateBundles = sandboxTwoBundles - sandboxTwoPublicBundles
 
         sandboxOneBundles.forEach { sandboxOneBundle ->
@@ -574,12 +576,15 @@ private data class CpkAndContents(
                 whenever(bundleVersion).thenAnswer { "${random.nextInt()}" }
             },
             type = CpkType.UNKNOWN,
-            fileChecksum = cpkChecksum ?:
-                SecureHashImpl(HASH_ALGORITHM, MessageDigest.getInstance(HASH_ALGORITHM).digest(cpkBytes.toByteArray())),
+            fileChecksum = cpkChecksum ?: SecureHashImpl(
+                HASH_ALGORITHM,
+                MessageDigest.getInstance(HASH_ALGORITHM).digest(cpkBytes.toByteArray())
+            ),
             cordappCertificates = emptySet(),
             timestamp = Instant.now(),
             null
         )
+
         override fun getInputStream() = ByteArrayInputStream(cpkBytes.toByteArray())
         override fun getResourceAsStream(resourceName: String) = ByteArrayInputStream(ByteArray(0))
         override fun getMainBundle(): InputStream = ByteArrayInputStream(ByteArray(0))

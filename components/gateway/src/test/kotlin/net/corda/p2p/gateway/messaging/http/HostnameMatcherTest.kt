@@ -3,10 +3,15 @@ package net.corda.p2p.gateway.messaging.http
 import net.corda.testing.p2p.certificates.Certificates
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
+import org.bouncycastle.asn1.x509.GeneralName
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import java.security.KeyStore
+import java.security.cert.X509Certificate
+import java.util.Collections
 import javax.net.ssl.SNIHostName
 import javax.security.auth.x500.X500Principal
 
@@ -72,5 +77,58 @@ class HostnameMatcherTest {
 
         assertFalse(matcher.illegalWildcard("*.r3.com"))
         assertFalse(matcher.illegalWildcard("*.corda.r3.com"))
+    }
+
+    @Test
+    fun `aliasMatch returns none when nothing had matched`() {
+        val keyStore = mock<KeyStore>()
+        val matcher = HostnameMatcher(keyStore)
+
+        assertThat(matcher.aliasMatch("alias")).isEqualTo(HostnameMatcher.MatchType.NONE)
+    }
+
+    @Test
+    fun `aliasMatch returns C5 when Corda 5 matched`() {
+        val hostName = "alice.net"
+        val alias = "alias"
+        val certificate = mock<X509Certificate> {
+            on { subjectAlternativeNames } doReturn listOf(
+                listOf(GeneralName.dNSName, hostName)
+            )
+        }
+        val keyStore = mock<KeyStore> {
+            on { aliases() } doReturn Collections.enumeration(listOf(alias))
+            on { getCertificate("alias") } doReturn certificate
+        }
+        val matcher = HostnameMatcher(keyStore)
+
+        matcher.matches(
+            SNIHostName("alice.net")
+        )
+
+        assertThat(matcher.aliasMatch(alias)).isEqualTo(HostnameMatcher.MatchType.C5)
+    }
+
+    @Test
+    fun `aliasMatch returns C4 when Corda 4 matched`() {
+        val principal = X500Principal("O=PartyA,L=London,C=GB")
+        val x500Name = X500Name.getInstance(principal.encoded)
+        val calculatedSNI = SniCalculator.calculateCorda4Sni(x500Name.toString())
+
+        val alias = "alias"
+        val certificate = mock<X509Certificate> {
+            on { subjectX500Principal } doReturn principal
+        }
+        val keyStore = mock<KeyStore> {
+            on { aliases() } doReturn Collections.enumeration(listOf(alias))
+            on { getCertificate("alias") } doReturn certificate
+        }
+        val matcher = HostnameMatcher(keyStore)
+
+        matcher.matches(
+            SNIHostName(calculatedSNI)
+        )
+
+        assertThat(matcher.aliasMatch(alias)).isEqualTo(HostnameMatcher.MatchType.C4)
     }
 }
