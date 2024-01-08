@@ -276,7 +276,7 @@ class StateManagerIntegrationTest {
     fun canCreateOrUpdateExistingStates(stateCount: Int) {
         persistStateEntities(
             (1..stateCount),
-            { i, _ -> State.VERSION_INITIAL_VALUE },
+            { _, _ -> State.VERSION_INITIAL_VALUE },
             { i, _ -> "existingState_$i" },
             { i, _ -> """{"originalK1": "v$i", "originalK2": $i}""" }
         )
