@@ -176,6 +176,7 @@ class Sender(private val publisherFactory: PublisherFactory,
         }
         val payload = MessagePayload(senderId, randomData, Instant.now())
         val message = AuthenticatedMessage(messageHeader, ByteBuffer.wrap(objectMapper.writeValueAsBytes(payload)))
+        logger.info("Created message from ${srcIdentity.x500Name} to ${destinationIdentity.x500Name}")
         return messageId to AppMessage(message)
     }
 
