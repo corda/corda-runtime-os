@@ -236,4 +236,42 @@ class MerkleTreeImpl(
             outputHashes
         )
     }
+
+    /**
+     *
+     * Produce a textual representation of the Merkle tree, with:
+     *
+     * - Hex dumps of the leafs
+     * - The first 8 hex digits of the hash for each node and leaf
+     * - Unicode box symbols to show the tree structure
+     *
+     * For example, here's a Merkle tree string representation of a tree
+     * with 3 elements.
+     *
+     *   a9d5543c┳bab170b1┳7901af93━00:00:00:00
+     *           ┃        ┗471864d3━00:00:00:01
+     *           ┗66973b1a━66973b1a━00:00:00:02
+     *
+     * In this case a9d5543c is the hash of the root of the tree.
+     * 
+     * This could potentially be very large, which is why it is not the `toString`, since otherwise
+     * people could easily accidentally produce massive log files. This also includes the leaf data
+     * of the tree, so the output should be treated as sensitive.
+     *
+     * @return a textual representation of the MerkleTree
+     */
+
+    fun render(): String {
+        // the hashes we want to show, at their (X,Y) coordinates
+        val hashes = mutableMapOf<Pair<Int, Int>, String>()
+        for (y in leaves.indices) {
+            for (x in 0..depth) {
+                val nodeHashesLevel = nodeHashes.getOrNull(depth-x)?: emptyList()
+                val hash = nodeHashesLevel.getOrNull(y)
+                hashes[x to y] = (hash?.toString()?:"").substringAfter(":").take(8).lowercase()
+            }
+        }
+        return renderTree(leaves.map { it.joinToString(separator = ":") { b -> "%02x".format(b) } }, hashes)
+    }
 }
+
