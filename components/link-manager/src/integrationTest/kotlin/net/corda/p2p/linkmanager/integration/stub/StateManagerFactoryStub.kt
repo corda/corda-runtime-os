@@ -6,6 +6,7 @@ import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
+import net.corda.libs.statemanager.api.TransactionResult
 import net.corda.lifecycle.LifecycleCoordinatorName
 
 class StateManagerFactoryStub : StateManagerFactory {
@@ -13,11 +14,21 @@ class StateManagerFactoryStub : StateManagerFactory {
         return object : StateManager {
             override val name = LifecycleCoordinatorName.forComponent<StateManager>()
             override fun create(states: Collection<State>): Set<String> = throw UnsupportedOperationException()
-            override fun put(states: Collection<State>) = throw UnsupportedOperationException()
+            override fun createOrUpdate(states: Collection<State>): Map<String, State> {
+                throw UnsupportedOperationException()
+            }
 
             override fun get(keys: Collection<String>): Map<String, State> = throw UnsupportedOperationException()
 
             override fun update(states: Collection<State>): Map<String, State?> = throw UnsupportedOperationException()
+            override fun commit(
+                statesToCreate: Collection<State>,
+                statesToCreateOrUpdate: Collection<State>,
+                statesToUpdate: Collection<State>,
+                statesToDelete: Collection<State>
+            ): TransactionResult {
+                throw UnsupportedOperationException()
+            }
 
             override fun delete(states: Collection<State>): Map<String, State> = throw UnsupportedOperationException()
 

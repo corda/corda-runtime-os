@@ -10,6 +10,7 @@ import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.libs.statemanager.api.TransactionResult
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messagebus.kafka.serialization.CordaAvroSerializationFactoryImpl
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
@@ -181,12 +182,10 @@ class PerformanceClaimStateStoreImplTest {
             }
         }
 
-        override fun put(states: Collection<State>): Map<String, State> {
-            states.onEach {
-                store[it.key] = it
-            }
-
-            return emptyMap()
+        override fun createOrUpdate(states: Collection<State>): Map<String, State> {
+            return states.mapNotNull {
+                store.put(it.key, it)
+            }.associateBy { it.key }
         }
 
         override fun get(keys: Collection<String>): Map<String, State> {
@@ -214,6 +213,15 @@ class PerformanceClaimStateStoreImplTest {
                 Thread.sleep(updateSleepTime)
                 invalidStates
             }
+        }
+
+        override fun commit(
+            statesToCreate: Collection<State>,
+            statesToCreateOrUpdate: Collection<State>,
+            statesToUpdate: Collection<State>,
+            statesToDelete: Collection<State>
+        ): TransactionResult {
+            TODO("Not yet implemented")
         }
 
         override fun delete(states: Collection<State>): Map<String, State> {

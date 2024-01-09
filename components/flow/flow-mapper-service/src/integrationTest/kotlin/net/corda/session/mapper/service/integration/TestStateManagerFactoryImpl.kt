@@ -7,6 +7,7 @@ import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
+import net.corda.libs.statemanager.api.TransactionResult
 import net.corda.lifecycle.LifecycleCoordinatorName
 import org.osgi.service.component.annotations.Component
 import java.util.UUID
@@ -37,12 +38,10 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
                 }.map { it.key }.toSet()
             }
 
-            override fun put(states: Collection<State>): Map<String, State> {
-                states.onEach {
-                    storage[it.key] = it
-                }
-
-                return emptyMap()
+            override fun createOrUpdate(states: Collection<State>): Map<String, State> {
+                return states.mapNotNull {
+                    storage.put(it.key, it)
+                }.associateBy { it.key }
             }
 
             override fun get(keys: Collection<String>): Map<String, State> {
@@ -62,6 +61,15 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
                     }
                     output
                 }.associateBy { it.key }
+            }
+
+            override fun commit(
+                statesToCreate: Collection<State>,
+                statesToCreateOrUpdate: Collection<State>,
+                statesToUpdate: Collection<State>,
+                statesToDelete: Collection<State>
+            ): TransactionResult {
+                TODO("Not yet implemented")
             }
 
             override fun delete(states: Collection<State>): Map<String, State> {
