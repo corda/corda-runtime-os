@@ -45,7 +45,7 @@ class MultiSourceEventMediatorFactoryImpl(
     }
 
     private fun <E : Any, K : Any, S : Any> createMediatorComponentFactory(
-        eventMediatorConfig: EventMediatorConfig<K, S, E>, stateManagerHelper: StateManagerHelper<K, S, E>
+        eventMediatorConfig: EventMediatorConfig<K, S, E>, stateManagerHelper: StateManagerHelper<S>
     ) = MediatorComponentFactory(
         eventMediatorConfig.messageProcessor,
         eventMediatorConfig.consumerFactories,
@@ -67,7 +67,7 @@ class MultiSourceEventMediatorFactoryImpl(
 
     private fun <E : Any, K : Any, S : Any> createStateManagerHelper(
         eventMediatorConfig: EventMediatorConfig<K, S, E>
-    ): StateManagerHelper<K, S, E> {
+    ): StateManagerHelper<S> {
         val stateSerializer = cordaAvroSerializationFactory.createAvroSerializer<S> { }
         val stateDeserializer = cordaAvroSerializationFactory.createAvroDeserializer(
             {}, eventMediatorConfig.messageProcessor.stateValueClass

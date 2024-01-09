@@ -11,7 +11,6 @@ import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.getStringRecords
-import net.corda.messaging.mediator.ConsumerProcessorState
 import net.corda.messaging.mediator.StateManagerHelper
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -27,10 +26,9 @@ import org.mockito.kotlin.whenever
 @Execution(ExecutionMode.SAME_THREAD)
 class EventProcessorTest {
     private lateinit var eventMediatorConfig: EventMediatorConfig<String, String, String>
-    private lateinit var stateManagerHelper: StateManagerHelper<String, String, String>
+    private lateinit var stateManagerHelper: StateManagerHelper<String>
     private lateinit var client: MessagingClient
     private lateinit var messageRouter: MessageRouter
-    private lateinit var consumerProcessorState: ConsumerProcessorState
     private lateinit var stateAndEventProcessor: StateAndEventProcessor<String, String, String>
     private lateinit var eventProcessor: EventProcessor<String, String, String>
 
@@ -44,10 +42,9 @@ class EventProcessorTest {
         stateAndEventProcessor = mock()
         stateManagerHelper = mock()
         messageRouter = mock()
-        consumerProcessorState = ConsumerProcessorState()
         eventMediatorConfig = buildStringTestConfig()
 
-        eventProcessor = EventProcessor(eventMediatorConfig, stateManagerHelper, messageRouter, consumerProcessorState)
+        eventProcessor = EventProcessor(eventMediatorConfig, stateManagerHelper, messageRouter)
     }
 
     @Test
@@ -78,7 +75,7 @@ class EventProcessorTest {
 
         verify(stateManagerHelper, times(1)).deserializeValue(any())
         verify(stateAndEventProcessor, times(4)).onNext(anyOrNull(), any())
-        verify(messageRouter, times(6)).getDestination(any())
+        verify(messageRouter, times(9)).getDestination(any())
         verify(client, times(3)).send(any())
         verify(stateManagerHelper, times(1)).createOrUpdateState(any(), anyOrNull(), anyOrNull())
     }

@@ -18,7 +18,6 @@ import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.getStringRecords
-import net.corda.messaging.mediator.ConsumerProcessorState
 import net.corda.messaging.mediator.GroupAllocator
 import net.corda.messaging.mediator.MediatorState
 import net.corda.schema.configuration.MessagingConfig
@@ -53,7 +52,6 @@ class ConsumerProcessorTest {
     private lateinit var taskManager: TaskManager
     private lateinit var messageRouter: MessageRouter
     private lateinit var mediatorState: MediatorState
-    private lateinit var consumerProcessorState: ConsumerProcessorState
     private lateinit var eventProcessor: EventProcessor<String, String, String>
 
 
@@ -67,24 +65,27 @@ class ConsumerProcessorTest {
         groupAllocator = mock()
         messageRouter = mock()
         mediatorState = MediatorState()
-        consumerProcessorState = ConsumerProcessorState()
         eventProcessor = mock()
         eventMediatorConfig = buildStringTestConfig()
         consumerProcessor = ConsumerProcessor(
-            eventMediatorConfig, groupAllocator, taskManager, messageRouter, mediatorState,
-            consumerProcessorState, eventProcessor
+            eventMediatorConfig, groupAllocator, taskManager, messageRouter, mediatorState, eventProcessor
         )
     }
 
 
     @Test
     fun `poll returns messages divided into 2 groups, both groups are processed, each group produces 1 async output which is sent`() {
+        var counter = 0
         whenever(taskManager.executeShortRunningTask<Unit>(any())).thenAnswer {
-            consumerProcessorState.asynchronousOutputs.compute("key") { _, value ->
-                value?.plus(getAsyncMediatorMessage("payload"))?.toMutableList() ?: mutableListOf(getAsyncMediatorMessage("payload"))
-            }
-            val future = CompletableFuture<Unit>()
-            future.complete(Unit)
+            counter++
+            val output = mapOf(
+                "foo-$counter" to EventProcessingOutput(
+                    listOf(getAsyncMediatorMessage("payload")),
+                    StateChangeAndOperation.Noop
+                )
+            )
+            val future = CompletableFuture<Map<String, EventProcessingOutput>>()
+            future.complete(output)
             future
         }
         whenever(messageRouter.getDestination(any())).thenReturn(
