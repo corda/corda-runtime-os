@@ -1064,7 +1064,7 @@ internal class SessionManagerImpl(
 
         private fun fromConfig(config: Config): SessionHealthManagerConfig {
             return SessionHealthManagerConfig(
-                config.getBoolean(LinkManagerConfiguration.HEARTBEAT_ENABLED_KEY),
+                false,//config.getBoolean(LinkManagerConfiguration.HEARTBEAT_ENABLED_KEY),
                 Duration.ofMillis(config.getLong(LinkManagerConfiguration.HEARTBEAT_MESSAGE_PERIOD_KEY)),
                 Duration.ofMillis(config.getLong(LinkManagerConfiguration.SESSION_TIMEOUT_KEY))
             )
@@ -1265,7 +1265,6 @@ internal class SessionManagerImpl(
          */
         private inner class HeartbeatSessionHealthMonitor: SessionHealthMonitor {
             override fun sessionEstablished(session: Session) {
-                logger.info("${HeartbeatSessionHealthMonitor::class.java.simpleName} session established.")
                 trackedOutboundSessions.computeIfPresent(session.sessionId) { _, trackedSession ->
                     if (!trackedSession.sendingHeartbeats) {
                         executorService.schedule(
@@ -1280,7 +1279,6 @@ internal class SessionManagerImpl(
             }
 
             override fun messageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity?) {
-                logger.info("${HeartbeatSessionHealthMonitor::class.java.simpleName} message received.")
                 trackedInboundSessions.compute(sessionId) { _, initialTrackedSession ->
                     if (initialTrackedSession != null) {
                         initialTrackedSession.lastReceivedTimestamp = timeStamp()
@@ -1293,7 +1291,6 @@ internal class SessionManagerImpl(
             }
 
             override fun outboundSessionTimeout(counterparties: SessionCounterparties, sessionId: String) {
-                logger.info("${HeartbeatSessionHealthMonitor::class.java.simpleName} outbound session timeout.")
                 val sessionInfo = trackedOutboundSessions[sessionId] ?: return
                 val timeSinceLastAck = timeStamp() - sessionInfo.lastAckTimestamp
                 val sessionTimeoutMs = config.get().sessionTimeout.toMillis()
@@ -1391,7 +1388,6 @@ internal class SessionManagerImpl(
          */
         private inner class MessageAckSessionHealthMonitor: SessionHealthMonitor {
             override fun sessionEstablished(session: Session) {
-                logger.info("${MessageAckSessionHealthMonitor::class.java.simpleName} session established.")
                 check(trackedOutboundSessions.contains(session.sessionId)) {
                     "A message was sent on session with Id ${session.sessionId} which is not tracked."
                 }
@@ -1401,7 +1397,6 @@ internal class SessionManagerImpl(
             }
 
             override fun messageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity?) {
-                logger.info("${MessageAckSessionHealthMonitor::class.java.simpleName} message received.")
                 logger.debug(
                     "Session heartbeats are disabled. " +
                             "Inbound session timeout not enabled for session with ID $sessionId."
@@ -1409,8 +1404,7 @@ internal class SessionManagerImpl(
             }
 
             override fun outboundSessionTimeout(counterparties: SessionCounterparties, sessionId: String) {
-                logger.info("${MessageAckSessionHealthMonitor::class.java.simpleName} outbound session timeout.")
-                val sessionInfo = trackedOutboundSessions[sessionId] ?: return
+c                val sessionInfo = trackedOutboundSessions[sessionId] ?: return
                 val now = timeStamp()
                 val timeSinceLastAck = now - sessionInfo.lastAckTimestamp
                 val timeSinceLastSent = now - sessionInfo.lastSendTimestamp
