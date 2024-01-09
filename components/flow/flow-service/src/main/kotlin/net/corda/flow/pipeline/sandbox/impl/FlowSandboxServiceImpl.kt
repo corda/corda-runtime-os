@@ -1,8 +1,10 @@
 package net.corda.flow.pipeline.sandbox.impl
 
+import net.corda.flow.fiber.cache.impl.FlowFiberCacheImpl
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl.Companion.DEPENDENCY_INJECTOR
+import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl.Companion.FLOW_FIBER_CACHE
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl.Companion.FLOW_PROTOCOL_STORE
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl.Companion.NON_INJECTABLE_SINGLETONS
 import net.corda.flow.pipeline.sessions.FlowProtocolStoreFactory
@@ -31,7 +33,7 @@ import org.osgi.service.component.annotations.Reference
 @Suppress("LongParameterList")
 @RequireSandboxAMQP
 @RequireSandboxJSON
-@Component(service = [ FlowSandboxService::class ])
+@Component(service = [FlowSandboxService::class])
 class FlowSandboxServiceImpl @Activate constructor(
     @Reference(service = SandboxGroupContextComponent::class)
     private val sandboxGroupContextComponent: SandboxGroupContextComponent,
@@ -89,6 +91,11 @@ class FlowSandboxServiceImpl @Activate constructor(
         sandboxGroupContext.putObjectByKey(
             FLOW_PROTOCOL_STORE,
             flowProtocolStoreFactory.create(sandboxGroup)
+        )
+
+        sandboxGroupContext.putObjectByKey(
+            FLOW_FIBER_CACHE,
+            FlowFiberCacheImpl()
         )
 
         // User custom serialization support, no exceptions thrown so user code doesn't kill the flow service

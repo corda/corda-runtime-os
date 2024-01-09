@@ -35,8 +35,6 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
     private val flowRecordFactory: FlowRecordFactory,
     @Reference(service = FlowSessionManager::class)
     private val flowSessionManager: FlowSessionManager,
-    @Reference(service = FlowFiberCache::class)
-    private val flowFiberCache: FlowFiberCache,
     @Reference(service = CheckpointCleanupHandler::class)
     private val checkpointCleanupHandler: CheckpointCleanupHandler
 ) : FlowEventExceptionProcessor {
@@ -65,7 +63,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
     private fun retryWindowExpired(firstFailureTimestamp: Instant?): Boolean {
         return firstFailureTimestamp != null &&
-                Duration.between(firstFailureTimestamp, Instant.now()) >= maxRetryWindowDuration
+            Duration.between(firstFailureTimestamp, Instant.now()) >= maxRetryWindowDuration
     }
 
     override fun process(
@@ -76,10 +74,10 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
         val msg = if (!checkpoint.doesExist) {
             "Flow processing for flow ID ${checkpoint.flowId} has failed due to a fatal exception. " +
-                    "Checkpoint/Flow start context doesn't exist"
+                "Checkpoint/Flow start context doesn't exist"
         } else {
             "Flow processing for flow ID ${checkpoint.flowId} has failed due to a fatal exception. " +
-                    "Flow start context: ${checkpoint.flowStartContext}"
+                "Flow start context: ${checkpoint.flowStartContext}"
         }
         log.warn(msg, exception)
 
@@ -147,7 +145,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             val cleanupRecords = checkpointCleanupHandler.cleanupCheckpoint(checkpoint, context.flowConfig, exception)
 
             context.copy(
-                outputRecords =  cleanupRecords,
+                outputRecords = cleanupRecords,
                 sendToDlq = false // killed flows do not go to DLQ
             )
         }

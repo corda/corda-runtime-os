@@ -3,7 +3,6 @@ package net.corda.flow.pipeline.factory.impl
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.metrics.FlowIORequestTypeConverter
 import net.corda.flow.metrics.FlowMetricsFactory
 import net.corda.flow.pipeline.FlowEventPipeline
@@ -36,7 +35,6 @@ class FlowEventPipelineFactoryImpl(
     private val flowGlobalPostProcessor: FlowGlobalPostProcessor,
     private val flowCheckpointFactory: FlowCheckpointFactory,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
-    private val flowFiberCache: FlowFiberCache,
     private val flowMetricsFactory: FlowMetricsFactory,
     private val flowIORequestTypeConverter: FlowIORequestTypeConverter,
     flowEventHandlers: List<FlowEventHandler<out Any>>,
@@ -78,8 +76,6 @@ class FlowEventPipelineFactoryImpl(
         flowCheckpointFactory: FlowCheckpointFactory,
         @Reference(service = VirtualNodeInfoReadService::class)
         virtualNodeInfoReadService: VirtualNodeInfoReadService,
-        @Reference(service = FlowFiberCache::class)
-        flowFiberCache: FlowFiberCache,
         @Reference(service = FlowMetricsFactory::class)
         flowMetricsFactory: FlowMetricsFactory,
         @Reference(service = FlowIORequestTypeConverter::class)
@@ -89,7 +85,6 @@ class FlowEventPipelineFactoryImpl(
         flowGlobalPostProcessor,
         flowCheckpointFactory,
         virtualNodeInfoReadService,
-        flowFiberCache,
         flowMetricsFactory,
         flowIORequestTypeConverter,
         mutableListOf(),
@@ -102,7 +97,7 @@ class FlowEventPipelineFactoryImpl(
         event: FlowEvent,
         configs: Map<String, SmartConfig>,
         mdcProperties: Map<String, String>,
-        traceContext:TraceContext,
+        traceContext: TraceContext,
         eventRecordTimestamp: Long
     ): FlowEventPipeline {
         val flowCheckpoint = flowCheckpointFactory.create(
@@ -130,7 +125,6 @@ class FlowEventPipelineFactoryImpl(
             flowWaitingForHandlerMap,
             flowRequestHandlerMap,
             flowRunner,
-            flowFiberCache,
             flowIORequestTypeConverter
         )
 

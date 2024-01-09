@@ -27,7 +27,6 @@ internal class FlowExecutionPipelineStage(
     private val flowWaitingForHandlers: Map<Class<*>, FlowWaitingForHandler<out Any>>,
     private val flowRequestHandlers: Map<Class<out FlowIORequest<*>>, FlowRequestHandler<out FlowIORequest<*>>>,
     private val flowRunner: FlowRunner,
-    private val fiberCache: FlowFiberCache,
     private val flowIORequestTypeConverter: FlowIORequestTypeConverter
 ) {
 
@@ -51,7 +50,7 @@ internal class FlowExecutionPipelineStage(
         context: FlowEventContext<Any>,
         timeout: Long,
         notifyContextUpdate: (FlowEventContext<Any>) -> Unit
-    ) : FlowEventContext<Any> {
+    ): FlowEventContext<Any> {
         var currentContext = context
         var continuation = flowReady(currentContext)
         while (continuation != FlowContinuation.Continue) {
@@ -71,18 +70,23 @@ internal class FlowExecutionPipelineStage(
         return currentContext
     }
 
-    private fun flowReady(context: FlowEventContext<Any>) : FlowContinuation {
+    private fun flowReady(context: FlowEventContext<Any>): FlowContinuation {
         // If the waiting for value is null, that indicates that the previous run of the fiber resulted in the flow
         // terminating.
         val waitingFor = context.checkpoint.waitingFor?.value
             ?: return FlowContinuation.Continue
+
         @Suppress("unchecked_cast")
         val handler = flowWaitingForHandlers[waitingFor::class.java] as? FlowWaitingForHandler<Any>
             ?: throw FlowFatalException("${waitingFor::class.qualifiedName} does not have an associated flow status handler")
         return handler.runOrContinue(context, waitingFor)
     }
 
-    private fun executeFlow(context: FlowEventContext<Any>, continuation: FlowContinuation, timeout: Long) : FlowIORequest<*> {
+    private fun executeFlow(
+        context: FlowEventContext<Any>,
+        continuation: FlowContinuation,
+        timeout: Long
+    ): FlowIORequest<*> {
         context.flowMetrics.flowFiberEntered()
         val future = flowRunner.runFlow(context, continuation)
 
@@ -104,7 +108,7 @@ internal class FlowExecutionPipelineStage(
 
         return when (fiberResult) {
             is FlowIORequest.FlowFinished -> {
-                fiberCache.remove(context.checkpoint.flowKey)
+// @@@                fiberCache.remove(context.checkpoint.flowKey)
                 context.checkpoint.serializedFiber = ByteBuffer.wrap(byteArrayOf())
                 context.flowMetrics.flowFiberExited()
                 fiberResult
@@ -113,7 +117,7 @@ internal class FlowExecutionPipelineStage(
             is FlowIORequest.FlowSuspended<*> -> {
                 context.checkpoint.serializedFiber = fiberResult.fiber
                 fiberResult.cacheableFiber?.let {
-                    fiberCache.put(context.checkpoint.flowKey, context.checkpoint.suspendCount, it)
+// @@@                    fiberCache.put(context.checkpoint.flowKey, context.checkpoint.suspendCount, it)
                 }
                 context.flowMetrics.flowFiberExitedWithSuspension(
                     flowIORequestTypeConverter.convertToActionName(fiberResult.output)
@@ -122,7 +126,7 @@ internal class FlowExecutionPipelineStage(
             }
 
             is FlowIORequest.FlowFailed -> {
-                fiberCache.remove(context.checkpoint.flowKey)
+// @@@                fiberCache.remove(context.checkpoint.flowKey)
                 context.flowMetrics.flowFiberExited()
                 fiberResult
             }
@@ -131,7 +135,7 @@ internal class FlowExecutionPipelineStage(
         }
     }
 
-    private fun updateContext(output: FlowIORequest<*>, context: FlowEventContext<Any>) : FlowEventContext<Any> {
+    private fun updateContext(output: FlowIORequest<*>, context: FlowEventContext<Any>): FlowEventContext<Any> {
         // This [uncheckedCast] is required to remove the [out] from the [FlowRequestHandler] that is extracted from the map.
         // The [out] cannot be kept as it leaks onto the [FlowRequestHandler] interface eventually leading to code that cannot compile.
         @Suppress("unchecked_cast")

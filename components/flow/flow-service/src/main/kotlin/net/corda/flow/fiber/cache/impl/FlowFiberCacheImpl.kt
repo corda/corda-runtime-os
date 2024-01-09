@@ -7,25 +7,13 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.cache.FlowFiberCache
-import net.corda.sandboxgroupcontext.SandboxGroupType
-import net.corda.sandboxgroupcontext.SandboxedCache
 import net.corda.sandboxgroupcontext.VirtualNodeContext
-import net.corda.sandboxgroupcontext.service.CacheEviction
 import net.corda.utilities.debug
 import net.corda.virtualnode.toAvro
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Deactivate
-import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Duration
 
-@Suppress("unused")
-@Component(service = [FlowFiberCache::class])
-class FlowFiberCacheImpl @Activate constructor(
-    @Reference(service = CacheEviction::class)
-    private val cacheEviction: CacheEviction
-) : FlowFiberCache, SandboxedCache {
+class FlowFiberCacheImpl : FlowFiberCache {
 
     private companion object {
         private val logger = LoggerFactory.getLogger(FlowFiberCacheImpl::class.java)
@@ -46,28 +34,6 @@ class FlowFiberCacheImpl @Activate constructor(
             .maximumSize(maximumSize)
             .expireAfterWrite(Duration.ofSeconds(expireAfterWriteSeconds))
     )
-
-    init {
-        if (!cacheEviction.addEvictionListener(SandboxGroupType.FLOW, ::onEviction)) {
-            logger.error("FAILED TO ADD EVICTION LISTENER")
-        }
-    }
-
-    @Suppress("unused")
-    @Deactivate
-    fun shutdown() {
-        if (!cacheEviction.removeEvictionListener(SandboxGroupType.FLOW, ::onEviction)) {
-            logger.error("FAILED TO REMOVE EVICTION LISTENER")
-        }
-    }
-
-    private fun onEviction(vnc: VirtualNodeContext) {
-        logger.debug {
-            "Evicting cached items from ${cache::class.java} with holding identity: ${vnc.holdingIdentity}, " +
-                "cpkFileChecksums: ${vnc.cpkFileChecksums} and sandbox type: ${SandboxGroupType.FLOW}"
-        }
-        remove(vnc)
-    }
 
     override fun put(key: FlowKey, suspendCount: Int, fiber: FlowFiber) {
         cache.put(key, FiberCacheValue(fiber, suspendCount))

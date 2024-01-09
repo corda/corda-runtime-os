@@ -20,21 +20,19 @@ import java.util.UUID
 
 @Component
 @Suppress("Unused")
-class FlowFiberFactoryImpl @Activate constructor(
-    @Reference(service = FlowFiberCache::class)
-    private val flowFiberCache: FlowFiberCache
-) : FlowFiberFactory {
+class FlowFiberFactoryImpl @Activate constructor() : FlowFiberFactory {
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val currentThreadFiberExecutor = object : FiberExecutorScheduler("Flow Fiber scheduler", SameThreadExecutor.getExecutor()) {
+    private val currentThreadFiberExecutor =
+        object : FiberExecutorScheduler("Flow Fiber scheduler", SameThreadExecutor.getExecutor()) {
 
-        override fun isCurrentThreadInScheduler(): Boolean {
-            return true
+            override fun isCurrentThreadInScheduler(): Boolean {
+                return true
+            }
         }
-    }
 
     override fun createAndStartFlowFiber(
         flowFiberExecutionContext: FlowFiberExecutionContext,
@@ -50,7 +48,11 @@ class FlowFiberFactoryImpl @Activate constructor(
             val flowFiber = FlowFiberImpl(id, logic, currentThreadFiberExecutor)
             return FiberFuture(flowFiber, flowFiber.startFlow(flowFiberExecutionContext))
         } catch (e: Throwable) {
-            throw FlowFatalException(FiberExceptionConstants.UNABLE_TO_EXECUTE.format(e.message ?: "No exception message provided."), e)
+            throw FlowFatalException(
+                FiberExceptionConstants.UNABLE_TO_EXECUTE.format(
+                    e.message ?: "No exception message provided."
+                ), e
+            )
         }
     }
 
@@ -60,20 +62,27 @@ class FlowFiberFactoryImpl @Activate constructor(
     ): FiberFuture {
         val fiber = CordaMetrics.Metric.FlowFiberDeserializationTime.builder()
             .forVirtualNode(flowFiberExecutionContext.flowCheckpoint.holdingIdentity.shortHash.toString())
-            .withTag(CordaMetrics.Tag.FlowClass, flowFiberExecutionContext.flowCheckpoint.flowStartContext.flowClassName)
+            .withTag(
+                CordaMetrics.Tag.FlowClass,
+                flowFiberExecutionContext.flowCheckpoint.flowStartContext.flowClassName
+            )
             .build()
             .recordCallable {
                 getFromCacheOrDeserialize(flowFiberExecutionContext)
             }!!
 
-        return FiberFuture(fiber, fiber.resume(flowFiberExecutionContext, suspensionOutcome, currentThreadFiberExecutor))
+        return FiberFuture(
+            fiber,
+            fiber.resume(flowFiberExecutionContext, suspensionOutcome, currentThreadFiberExecutor)
+        )
     }
 
     private fun getFromCacheOrDeserialize(flowFiberExecutionContext: FlowFiberExecutionContext): FlowFiber {
         val cachedFiber: FlowFiber? = try {
-            flowFiberCache.get(
+            flowFiberExecutionContext.sandboxGroupContext.fiberCache.get(
                 flowFiberExecutionContext.flowCheckpoint.flowKey,
-                flowFiberExecutionContext.flowCheckpoint.suspendCount)
+                flowFiberExecutionContext.flowCheckpoint.suspendCount
+            )
         } catch (e: Exception) {
             logger.warn("Exception when getting from flow fiber cache.", e)
             null
