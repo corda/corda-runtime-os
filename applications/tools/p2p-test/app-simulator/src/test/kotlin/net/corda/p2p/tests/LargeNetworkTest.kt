@@ -235,7 +235,7 @@ class LargeNetworkTest {
                     val holdingId = cluster.onboardMember(
                         null,
                         testName,
-                        mgmInfo,
+                        groupPolicyFactory,
                         memberX500Name.toString(),
                     ).holdingId
                     cluster.onboardedMembers.add(
@@ -292,8 +292,8 @@ class LargeNetworkTest {
                 MemberX500Name.parse(it)
             }
     }
-    private val mgmInfo by lazy {
-        mgmCluster.onboardMgm(mgmName.toString()).asMgm()
+    private val groupPolicyFactory by lazy {
+        mgmCluster.onboardMgm(mgmName.toString()).getGroupPolicyFactory()
     }
 
     private fun deployClusters() {

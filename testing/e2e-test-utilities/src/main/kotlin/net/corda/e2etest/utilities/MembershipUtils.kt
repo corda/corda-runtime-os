@@ -1,7 +1,7 @@
 package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import net.corda.e2etest.utilities.types.MgmMetadata
+import net.corda.e2etest.utilities.types.GroupPolicyFactory
 import net.corda.e2etest.utilities.types.NetworkOnboardingMetadata
 import net.corda.e2etest.utilities.types.jsonToMemberList
 import net.corda.rest.ResponseCode
@@ -60,7 +60,7 @@ const val DEFAULT_NOTARY_SERVICE = "O=NotaryService, L=London, C=GB"
 fun ClusterInfo.onboardMember(
     cpb: String?,
     cpiName: String,
-    mgm: MgmMetadata,
+    groupPolicyFactory: GroupPolicyFactory,
     x500Name: String,
     waitForApproval: Boolean = true,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
@@ -68,7 +68,7 @@ fun ClusterInfo.onboardMember(
     useLedgerKey: Boolean = true,
 ): NetworkOnboardingMetadata {
     conditionallyUploadCpiSigningCertificate()
-    conditionallyUploadCordaPackage(cpiName, cpb, mgm.groupPolicy)
+    conditionallyUploadCordaPackage(cpiName, cpb, groupPolicyFactory.groupPolicy)
     val holdingId = getOrCreateVirtualNodeFor(x500Name, cpiName)
 
     addSoftHsmFor(holdingId, CAT_SESSION_INIT)
@@ -103,7 +103,7 @@ fun ClusterInfo.onboardMember(
         }
         importCertificate(tlsCertFile, CERT_USAGE_P2P, CERT_ALIAS_P2P)
         if (TlsType.type == TlsType.MUTUAL) {
-            mgm.clusterInfo.allowClientCertificates(tlsCert, mgm.holdingId)
+            groupPolicyFactory.clusterInfo.allowClientCertificates(tlsCert, groupPolicyFactory.holdingId)
         }
     }
 
@@ -153,7 +153,7 @@ fun NetworkOnboardingMetadata.reregisterMember(
 fun ClusterInfo.onboardNotaryMember(
     resourceName: String,
     cpiName: String,
-    mgm: MgmMetadata,
+    groupPolicyFactory: GroupPolicyFactory,
     x500Name: String,
     wait: Boolean = true,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
@@ -163,7 +163,7 @@ fun ClusterInfo.onboardNotaryMember(
 ) = onboardMember(
     resourceName,
     cpiName,
-    mgm,
+    groupPolicyFactory,
     x500Name,
     wait,
     getAdditionalContext = { holdingId ->

@@ -35,14 +35,14 @@ class SingleClusterDynamicNetworkTest : ClusterReadiness by ClusterReadinessChec
     @Test
     fun `Create mgm and allow members to join the group`() {
         val mgmInfo = DEFAULT_CLUSTER.onboardMgm(mgmX500)
-        val mgm = mgmInfo.asMgm()
+        val groupPolicy = mgmInfo.getGroupPolicyFactory()
 
-        val aliceInfo = DEFAULT_CLUSTER.onboardMember(TEST_CPB_LOCATION, testUniqueId.toString(), mgm, aliceX500)
-        val bobInfo = DEFAULT_CLUSTER.onboardMember(TEST_CPB_LOCATION, testUniqueId.toString(), mgm, bobX500)
+        val aliceInfo = DEFAULT_CLUSTER.onboardMember(TEST_CPB_LOCATION, testUniqueId.toString(), groupPolicy, aliceX500)
+        val bobInfo = DEFAULT_CLUSTER.onboardMember(TEST_CPB_LOCATION, testUniqueId.toString(), groupPolicy, bobX500)
         val notaryInfo = DEFAULT_CLUSTER.onboardNotaryMember(
             TEST_CPB_LOCATION,
             testUniqueId.toString(),
-            mgm,
+            groupPolicy,
             notaryX500,
         )
 

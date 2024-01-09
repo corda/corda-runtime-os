@@ -19,18 +19,27 @@ data class NetworkOnboardingMetadata(
     val registrationContext: Map<String, String>,
     val clusterInfo: ClusterInfo,
 ) {
-    fun asMgm() =
-        MgmMetadata(
-           holdingId = holdingId,
-            clusterInfo = clusterInfo
+    fun getGroupPolicyFactory() =
+        GroupPolicyFactory(
+            holdingId = holdingId,
+            clusterInfo = clusterInfo,
         )
 }
 
-
-class MgmMetadata(
+/**
+ * A group policy factory.
+ *
+ * @param holdingId The MGM member holding identity.
+ * @param clusterInfo The MGM cluster.
+ */
+class GroupPolicyFactory(
     val holdingId: String,
     val clusterInfo: ClusterInfo,
 ) {
+
+    /**
+     * The group policy.
+     */
     val groupPolicy by lazy {
         clusterInfo.exportGroupPolicy(holdingId)
     }

@@ -11,6 +11,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentSkipListMap
 import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
 
@@ -30,7 +31,7 @@ class SingleClusterTestConfigManager(
     }
 
     private val originalConfigs: MutableMap<String, Config> = ConcurrentHashMap()
-    private val overrides: MutableMap<String, Config> = ConcurrentHashMap()
+    private val overrides: MutableMap<String, Config> = ConcurrentSkipListMap()
 
     override fun load(section: String, props: Map<String, Any?>): TestConfigManager {
         overrides.compute(section) { _, v ->

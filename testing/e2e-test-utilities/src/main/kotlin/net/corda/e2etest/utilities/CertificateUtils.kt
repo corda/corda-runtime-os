@@ -21,8 +21,8 @@ import kotlin.concurrent.withLock
 /**
  * Get the default CA for testing. This is written to file so it can be shared across tests.
  */
-private val caLocker = ReentrantLock()
-fun getCa(): FileSystemCertificatesAuthority = caLocker.withLock {
+private val caLock = ReentrantLock()
+fun getCa(): FileSystemCertificatesAuthority = caLock.withLock {
     CertificateAuthorityFactory
         .createFileSystemLocalAuthority(
             KeysFactoryDefinitions("RSA".toAlgorithm(), 3072, null,),
@@ -42,7 +42,7 @@ fun FileSystemCertificatesAuthority.generateCert(csrPem: String): String {
     }?.also {
         assertThat(it).isInstanceOf(PKCS10CertificationRequest::class.java)
     }
-    return caLocker.withLock {
+    return caLock.withLock {
         signCsr(request as PKCS10CertificationRequest).also { save() }.toPem()
     }
 }

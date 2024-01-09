@@ -15,7 +15,7 @@ import java.io.IOException
 import java.time.Duration
 
 /**
- * Runs a function in the scope of a managed configuration which is automatically reverted upon completion.
+ * Return a config manager for a collection of clusters.
  */
 fun managedConfig(clusters: Collection<ClusterInfo> = emptyList()): TestConfigManager {
     return if(clusters.size > 1) {

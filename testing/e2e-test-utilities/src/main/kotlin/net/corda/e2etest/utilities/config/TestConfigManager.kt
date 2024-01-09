@@ -31,7 +31,7 @@ interface TestConfigManager {
 
     /**
      * Using the cluster REST API, push all currently loaded configurations and wait for the new config to become
-     * visible. Then run the block and return the block returned value
+     * visible. Then run block, revert the configuration change and return the result of block.
      */
     fun <T> apply(block: () -> T): T
 

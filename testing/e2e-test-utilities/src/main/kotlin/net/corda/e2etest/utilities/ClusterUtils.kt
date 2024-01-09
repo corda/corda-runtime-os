@@ -71,29 +71,26 @@ fun ClusterInfo.conditionallyUploadCordaPackage(
     cpiUpload(cpbResourceName, groupId, staticMemberNames, cpiName, customGroupParameters = customGroupParameters)
 }
 
-private val packageUploadSemaphore = Semaphore(2)
 private val uploading = ConcurrentHashMap<Pair<String, String>, Unit?>()
 fun ClusterInfo.conditionallyUploadCordaPackage(
     name: String,
     cpiUpload: ClusterBuilder.() -> SimpleResponse
-) = packageUploadSemaphore.runWith {
-    uploading.compute(Pair(this.id, name)) {_, _ ->
-        cluster {
-            if (getExistingCpi(name) == null) {
-                val responseStatusId = cpiUpload().run {
-                    assertThat(code).isEqualTo(ResponseCode.OK.statusCode)
-                    assertThat(toJson()["id"].textValue()).isNotEmpty
-                    toJson()["id"].textValue()
-                }
+) = uploading.compute(Pair(this.id, name)) {_, _ ->
+    cluster {
+        if (getExistingCpi(name) == null) {
+            val responseStatusId = cpiUpload().run {
+                assertThat(code).isEqualTo(ResponseCode.OK.statusCode)
+                assertThat(toJson()["id"].textValue()).isNotEmpty
+                toJson()["id"].textValue()
+            }
 
-                assertWithRetryIgnoringExceptions {
-                    timeout(Duration.ofSeconds(100))
-                    interval(Duration.ofSeconds(2))
-                    command { cpiStatus(responseStatusId) }
-                    condition {
-                        it.code == ResponseCode.OK.statusCode
-                                && it.toJson()["status"].textValue() == ResponseCode.OK.toString()
-                    }
+            assertWithRetryIgnoringExceptions {
+                timeout(Duration.ofSeconds(100))
+                interval(Duration.ofSeconds(2))
+                command { cpiStatus(responseStatusId) }
+                condition {
+                    it.code == ResponseCode.OK.statusCode
+                            && it.toJson()["status"].textValue() == ResponseCode.OK.toString()
                 }
             }
         }
