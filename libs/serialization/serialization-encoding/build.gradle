@@ -30,7 +30,7 @@ def jar = tasks.named('jar', Jar) {
     bundle {
         bnd """\
 Bundle-Name: Corda serialization encoding library
-Bundle-SymbolicName: \${project.group}.serialization.encoding
+Bundle-SymbolicName: \${project.group}.serialization-encoding
 Import-Package:\
     !org.apache.hadoop.io.compress,\
     sun.misc;resolution:=optional,\

@@ -6,4 +6,5 @@ package net.corda.internal.serialization.encoding
 enum class EncoderType {
     DEFLATE,
     SNAPPY,
+    NOOP
 }

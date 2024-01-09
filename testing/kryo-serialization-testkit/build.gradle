@@ -13,6 +13,7 @@ dependencies {
 
     implementation project(":libs:serialization:serialization-kryo")
     implementation project(":libs:serialization:serialization-checkpoint-api")
+    implementation project(":libs:serialization:serialization-encoding")
     implementation project(":libs:sandbox")
     implementation project(":libs:crypto:cipher-suite-impl")
 }

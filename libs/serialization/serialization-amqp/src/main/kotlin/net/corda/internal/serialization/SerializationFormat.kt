@@ -1,17 +1,16 @@
 package net.corda.internal.serialization
 
-import aQute.bnd.annotation.spi.ServiceConsumer
 import net.corda.base.internal.ByteSequence
 import net.corda.base.internal.OpaqueBytes
 import net.corda.internal.serialization.OrdinalBits.OrdinalWriter
 import net.corda.internal.serialization.encoding.Encoder
 import net.corda.internal.serialization.encoding.EncoderService
+import net.corda.internal.serialization.encoding.EncoderServiceFactory
 import net.corda.internal.serialization.encoding.EncoderType
 import net.corda.serialization.SerializationEncoding
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.ByteBuffer
-import java.util.ServiceLoader
 
 class CordaSerializationMagic(bytes: ByteArray) : OpaqueBytes(bytes) {
     private val bufferView = slice()
@@ -41,18 +40,13 @@ enum class CordaSerializationEncoding(private val encoderType: EncoderType) : Se
     DEFLATE(EncoderType.DEFLATE),
     SNAPPY(EncoderType.SNAPPY);
 
-    @ServiceConsumer(EncoderService::class)
     companion object {
         val reader = OrdinalReader(values())
 
         /**
-         * Gets the [EncoderService] via jvm [ServiceLoader]
+         * Create singleton instance of [EncoderService].  Thread safe and stateless.
          */
-        private val encoderService: EncoderService by lazy(LazyThreadSafetyMode.PUBLICATION) {
-            // This has to be lazy initialized or a function rather than a value due to initialization order.
-            ServiceLoader.load(EncoderService::class.java, this::class.java.classLoader).toList().firstOrNull()
-                    ?: throw NullPointerException("Could not get serialization encoder service")
-        }
+        private val encoderService: EncoderService = EncoderServiceFactory()
 
         /**
          * Get an [Encoder] of the specified type

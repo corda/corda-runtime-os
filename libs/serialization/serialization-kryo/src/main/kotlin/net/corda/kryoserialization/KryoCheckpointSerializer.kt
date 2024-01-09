@@ -2,8 +2,9 @@ package net.corda.kryoserialization
 
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.util.Pool
-import net.corda.impl.serialization.encoding.EncoderServiceFactory
 import net.corda.internal.serialization.encoding.Encoder
+import net.corda.internal.serialization.encoding.EncoderService
+import net.corda.internal.serialization.encoding.EncoderServiceFactory
 import net.corda.internal.serialization.encoding.EncoderType
 import net.corda.serialization.checkpoint.CheckpointSerializer
 import org.slf4j.LoggerFactory
@@ -11,7 +12,7 @@ import java.io.ByteArrayInputStream
 
 class KryoCheckpointSerializer(
     private val kryoPool: Pool<Kryo>,
-    streamEncoderServiceFactory: EncoderServiceFactory
+    streamEncoderServiceFactory: EncoderService = EncoderServiceFactory()
 ) : CheckpointSerializer {
 
     private companion object {

@@ -2,8 +2,7 @@
 
 package net.corda.internal.serialization.amqp.helper
 
-import java.util.UUID
-import java.util.function.Supplier
+import net.corda.internal.serialization.CordaSerializationEncoding
 import net.corda.internal.serialization.SerializationContextImpl
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.amqpMagic
@@ -14,6 +13,8 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.serialization.SerializationContext
 import org.osgi.framework.Bundle
+import java.util.UUID
+import java.util.function.Supplier
 
 private class MockSandboxGroup(
     override val id: UUID,
@@ -39,7 +40,7 @@ val testSerializationContext = SerializationContextImpl(
     properties = mutableMapOf(),
     objectReferencesEnabled = false,
     useCase = SerializationContext.UseCase.Testing,
-    encoding = null,
+    encoding = CordaSerializationEncoding.SNAPPY,
     sandboxGroup = MockSandboxGroup(UUID.randomUUID())
 )
 

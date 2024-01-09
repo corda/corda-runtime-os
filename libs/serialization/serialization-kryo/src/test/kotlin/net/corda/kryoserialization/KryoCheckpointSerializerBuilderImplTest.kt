@@ -30,7 +30,7 @@ class KryoCheckpointSerializerBuilderImplTest {
     @Test
     fun `builder builds a serializer correctly`() {
         val sandboxGroup: SandboxGroup = mockSandboxGroup(setOf(TestClass::class.java))
-        val builder: CheckpointSerializerBuilder = KryoCheckpointSerializerBuilderImpl(mock(), sandboxGroup)
+        val builder: CheckpointSerializerBuilder = KryoCheckpointSerializerBuilderImpl(mock(), mock(), sandboxGroup)
 
         val serializer = builder
             .addSerializer(TestClass::class.java, TestClass.Serializer())
@@ -48,6 +48,7 @@ class KryoCheckpointSerializerBuilderImplTest {
         class Tester(val someInt: Int) : SingletonSerializeAsToken
         val instance = Tester(1)
         val builder: CheckpointSerializerBuilder = KryoCheckpointSerializerBuilderImpl(
+            mock(),
             mock(),
             mockSandboxGroup(setOf(Tester::class.java))
         )
@@ -70,7 +71,7 @@ class KryoCheckpointSerializerBuilderImplTest {
     ])
     fun `serializers of public keys cannot be added`(type: Class<*>) {
         val builder: CheckpointSerializerBuilder = KryoCheckpointSerializerBuilderImpl(
-            mock(), mockSandboxGroup(emptySet())
+            mock(), mock(), mockSandboxGroup(emptySet())
         )
 
         assertThatExceptionOfType(CordaKryoException::class.java).isThrownBy {
@@ -85,7 +86,7 @@ class KryoCheckpointSerializerBuilderImplTest {
     ])
     fun `serializers of private keys cannot be added`(type: Class<*>) {
         val builder: CheckpointSerializerBuilder = KryoCheckpointSerializerBuilderImpl(
-            mock(), mockSandboxGroup(emptySet())
+            mock(), mock(), mockSandboxGroup(emptySet())
         )
 
         assertThatExceptionOfType(CordaKryoException::class.java).isThrownBy {

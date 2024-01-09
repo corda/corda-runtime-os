@@ -11,7 +11,7 @@ val AMQP_P2P_CONTEXT = SerializationContextImpl(
     properties = emptyMap(),
     objectReferencesEnabled = true,
     useCase = SerializationContext.UseCase.P2P,
-    encoding = null
+    encoding = CordaSerializationEncoding.SNAPPY
 )
 
 object AlwaysAcceptEncodingAllowList : EncodingAllowList {

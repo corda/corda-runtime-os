@@ -7,7 +7,7 @@ import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.util.Pool
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.impl.serialization.encoding.EncoderServiceFactory
+import net.corda.internal.serialization.encoding.EncoderService
 import net.corda.kryoserialization.CordaKryoException
 import net.corda.kryoserialization.DefaultKryoCustomizer
 import net.corda.kryoserialization.KryoCheckpointSerializer
@@ -33,7 +33,7 @@ import javax.security.auth.x500.X500Principal
 
 class KryoCheckpointSerializerBuilderImpl(
     private val keyEncodingService: KeyEncodingService,
-    private val streamEncoderServiceFactory: EncoderServiceFactory,
+    private val streamEncoderService: EncoderService,
     private val sandboxGroup: SandboxGroup,
     private val kryoFactory: Function<ClassResolver, Kryo> = Function { classResolver ->
         (Fiber.getFiberSerializer(classResolver, false) as KryoSerializer).kryo
@@ -96,6 +96,6 @@ class KryoCheckpointSerializerBuilderImpl(
             }
         }
 
-        return KryoCheckpointSerializer(pool, streamEncoderServiceFactory)
+        return KryoCheckpointSerializer(pool, streamEncoderService)
     }
 }

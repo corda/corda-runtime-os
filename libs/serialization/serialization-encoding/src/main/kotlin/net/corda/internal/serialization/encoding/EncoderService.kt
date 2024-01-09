@@ -1,11 +1,7 @@
 package net.corda.internal.serialization.encoding
 
 /**
- * Get an encoder using [java.util.ServiceLoader]
- *
- * Usage:
- *
- *    ServiceLoader<EncoderService> loader = ServiceLoader.load(EncoderService.class);
+ * Interface for Encoder service providers
  */
 interface EncoderService {
     fun get(encoderType: EncoderType) : Encoder

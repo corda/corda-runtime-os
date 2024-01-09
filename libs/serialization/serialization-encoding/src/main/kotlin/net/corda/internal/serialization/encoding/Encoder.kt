@@ -4,8 +4,7 @@ import java.io.InputStream
 import java.io.OutputStream
 
 /**
- * [EncoderService] which returns a given [EncoderType] can be provided via the OSGi service registry
- * or java.util.ServiceLoader (see [EncoderService] )
+ * Interface for Encoder implementations of compress/decompress
  */
 interface Encoder {
     fun compress(output: OutputStream): OutputStream
