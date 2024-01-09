@@ -21,10 +21,11 @@ import net.corda.ledger.utxo.token.cache.services.ClaimStateStoreCache
 import net.corda.ledger.utxo.token.cache.services.TokenPoolCacheManager
 import net.corda.ledger.utxo.token.cache.services.TokenSelectionMetricsImpl
 import net.corda.ledger.utxo.token.cache.services.TokenSelectionSyncRPCProcessor
+import net.corda.messaging.api.exception.CordaHTTPServerTransientException
 import net.corda.messaging.api.records.Record
-import net.corda.utilities.time.UTCClock
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -65,7 +66,7 @@ class TokenSelectionSyncRPCProcessorTest {
             tokenPoolCacheManager,
             claimStateStoreCache,
             externalEventResponseFactory,
-            TokenSelectionMetricsImpl(UTCClock())
+            TokenSelectionMetricsImpl()
         )
 
     @Test
@@ -107,20 +108,13 @@ class TokenSelectionSyncRPCProcessorTest {
         whenever(externalEventResponseFactory.transientError(any(), any<Throwable>())).thenReturn(responseRecord)
         whenever(tokenPoolCacheManager.processEvent(any(), any(), any())).thenReturn(processorResponse)
 
-        val result = tokenSelectionSyncRPCProcessor.process(tokenPoolCacheEvent)
+        val e = assertThrows<CordaHTTPServerTransientException> {
+            tokenSelectionSyncRPCProcessor.process(tokenPoolCacheEvent)
+        }
 
-        assertThat(result).isEqualTo(returnedEvent)
-
-        val expectedExternalEventContext = ExternalEventContext(
-            testExternalEventRequestId,
-            testFlowId,
-            KeyValuePairList(listOf())
-        )
-
-        verify(externalEventResponseFactory).transientError(
-            eq(expectedExternalEventContext),
-            any<IllegalStateException>()
-        )
+        assertThat(e.requestId).isEqualTo(testExternalEventRequestId)
+        assertThat(e.cause!!.javaClass).isEqualTo(IllegalStateException::class.java)
+        assertThat(e.cause!!.message).isEqualTo("Failed to save state, version out of sync, please retry.")
     }
 
     @Test

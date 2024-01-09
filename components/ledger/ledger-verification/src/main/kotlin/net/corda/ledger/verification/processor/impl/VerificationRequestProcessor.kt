@@ -3,12 +3,14 @@ package net.corda.ledger.verification.processor.impl
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
+import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.NotAllowedCpkException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.flow.utils.toMap
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.verification.processor.VerificationRequestHandler
 import net.corda.ledger.verification.sandbox.VerificationSandboxService
+import net.corda.messaging.api.exception.CordaHTTPServerTransientException
 import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.metrics.CordaMetrics
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -39,6 +41,10 @@ class VerificationRequestProcessor(
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
+    private val transientExceptions = setOf(
+        CpkNotAvailableException::class.java
+    )
+
     override fun process(request: TransactionVerificationRequest): FlowEvent {
         val startTime = System.nanoTime()
         val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
@@ -55,6 +61,9 @@ class VerificationRequestProcessor(
                     currentSandboxGroupContext.set(sandbox)
                     requestHandler.handleRequest(sandbox, request)
                 } catch (e: Exception) {
+                    if (transientExceptions.contains(e::class.java)) {
+                        throw CordaHTTPServerTransientException(request.flowExternalEventContext.requestId, e)
+                    }
                     errorResponse(request.flowExternalEventContext, e)
                 } finally {
                     currentSandboxGroupContext.remove()

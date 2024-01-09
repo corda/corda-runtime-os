@@ -3,10 +3,13 @@ package net.corda.ledger.persistence.processor
 import net.corda.crypto.core.parseSecureHash
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
+import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
+import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.flow.utils.toMap
 import net.corda.ledger.persistence.common.InconsistentLedgerStateException
 import net.corda.ledger.persistence.common.UnsupportedLedgerTypeException
 import net.corda.ledger.persistence.common.UnsupportedRequestTypeException
+import net.corda.messaging.api.exception.CordaHTTPServerTransientException
 import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.metrics.CordaMetrics
 import net.corda.persistence.common.EntitySandboxService
@@ -18,8 +21,6 @@ import net.corda.utilities.translateFlowContextToMDC
 import net.corda.utilities.withMDC
 import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
 import net.corda.virtualnode.toCorda
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.time.Duration
 
 /**
@@ -36,21 +37,23 @@ class LedgerPersistenceRequestProcessor(
     override val requestClass = LedgerPersistenceRequest::class.java
     override val responseClass = FlowEvent::class.java
 
-    private companion object {
-        val log: Logger = LoggerFactory.getLogger(LedgerPersistenceRequestProcessor::class.java)
-    }
+    private val transientExceptions = setOf(
+        CpkNotAvailableException::class.java,
+        VirtualNodeException::class.java
+    )
 
     override fun process(request: LedgerPersistenceRequest): FlowEvent {
         val startTime = System.nanoTime()
         val clientRequestId =
             request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
         val holdingIdentity = request.holdingIdentity.toCorda()
+        val requestId = request.flowExternalEventContext.requestId
 
         val result =
             withMDC(
                 mapOf(
                     MDC_CLIENT_ID to clientRequestId,
-                    MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
+                    MDC_EXTERNAL_EVENT_ID to requestId
                 ) + translateFlowContextToMDC(request.flowExternalEventContext.contextProperties.toMap())
             ) {
                 try {
@@ -65,6 +68,9 @@ class LedgerPersistenceRequestProcessor(
 
                     delegatedRequestHandlerSelector.selectHandler(sandbox, request).execute()
                 } catch (e: Exception) {
+                    if (transientExceptions.contains(e::class.java)) {
+                        throw CordaHTTPServerTransientException(requestId, e)
+                    }
                     listOf(
                         when (e) {
                             is UnsupportedLedgerTypeException,

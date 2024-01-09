@@ -7,10 +7,13 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.FindTransaction
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
+import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
+import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.ledger.persistence.ALICE_X500_HOLDING_ID
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.processor.LedgerPersistenceRequestProcessor
+import net.corda.messaging.api.exception.CordaHTTPServerTransientException
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.ResponseFactory
@@ -22,7 +25,11 @@ import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 
@@ -92,5 +99,37 @@ class LedgerPersistenceRequestProcessorTest {
         val results = target.process(request)
 
         assertThat(results).isEqualTo(failureResponseRecord.value)
+    }
+
+    @Test
+    fun `virtual node not available transient error throws transient exception`() {
+        val request = createRequest("r2")
+        val response = VirtualNodeException("vnode not there")
+        whenever(entitySandboxService.get(any(), any())).thenThrow(response)
+
+        val e = assertThrows<CordaHTTPServerTransientException> {
+            target.process(request)
+        }
+
+        assertThat(e.cause!!.javaClass).isEqualTo(VirtualNodeException::class.java)
+        assertThat(e.cause!!.message).isEqualTo("vnode not there")
+
+        verify(currentSandboxGroupContext, times(1)).remove()
+    }
+
+    @Test
+    fun `CPK not available transient error throws transient exception`() {
+        val request = createRequest("r2")
+        val response = CpkNotAvailableException("cpk not there")
+        whenever(entitySandboxService.get(any(), any())).thenThrow(response)
+
+        val e = assertThrows<CordaHTTPServerTransientException> {
+            target.process(request)
+        }
+
+        assertThat(e.cause!!.javaClass).isEqualTo(CpkNotAvailableException::class.java)
+        assertThat(e.cause!!.message).isEqualTo("cpk not there")
+
+        verify(currentSandboxGroupContext, times(1)).remove()
     }
 }

@@ -9,7 +9,6 @@ import net.corda.ledger.utxo.token.cache.services.TokenSelectionMetricsImpl
 import net.corda.ledger.utxo.token.cache.services.internal.AvailableTokenServiceImpl
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
-import net.corda.utilities.time.UTCClock
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -53,7 +52,7 @@ class AvailableTokenServiceImplTest {
         whenever(get(any())).thenReturn(JpaEntitiesSet.create("empty", emptySet()))
     }
 
-    private val tokenSelectionMetrics = TokenSelectionMetricsImpl(UTCClock())
+    private val tokenSelectionMetrics = TokenSelectionMetricsImpl()
     private val availableTokenService = AvailableTokenServiceImpl(
         virtualNodeInfoService,
         dbConnectionManager,
