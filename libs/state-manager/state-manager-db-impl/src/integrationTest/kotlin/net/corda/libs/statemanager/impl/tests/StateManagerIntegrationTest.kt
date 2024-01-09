@@ -361,7 +361,6 @@ class StateManagerIntegrationTest {
         }
 
         val result = stateManager.commit(statesToCreate, statesToCreateOrUpdate.toSet(), statesToUpdate, statesToDelete)
-
         assertThat(result).isNotNull
         assertThat(result.failedToCreate).isEmpty()
         assertThat(result.failedToDelete).isEmpty()
