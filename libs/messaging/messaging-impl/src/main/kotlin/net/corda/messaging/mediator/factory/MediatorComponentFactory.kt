@@ -1,5 +1,6 @@
 package net.corda.messaging.mediator.factory
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.messaging.api.mediator.MediatorConsumer
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
@@ -28,7 +29,8 @@ class MediatorComponentFactory<K : Any, S : Any, E : Any>(
     private val clientFactories: Collection<MessagingClientFactory>,
     private val messageRouterFactory: MessageRouterFactory,
     private val groupAllocator: GroupAllocator,
-    private val stateManagerHelper: StateManagerHelper<K, S, E>
+    private val stateManagerHelper: StateManagerHelper<K, S, E>,
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory
 ) {
 
     /**
@@ -108,6 +110,6 @@ class MediatorComponentFactory<K : Any, S : Any, E : Any>(
         val consumerProcessorState = ConsumerProcessorState()
         val eventProcessor = EventProcessor(eventMediatorConfig, stateManagerHelper, messageRouter, consumerProcessorState)
         return ConsumerProcessor(eventMediatorConfig, groupAllocator, taskManager, messageRouter, mediatorState, consumerProcessorState,
-            eventProcessor)
+            eventProcessor, cordaAvroSerializationFactory.createAvroSerializer {})
     }
 }

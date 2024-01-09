@@ -1,5 +1,6 @@
 package net.corda.messaging.mediator.processor
 
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.libs.statemanager.api.State
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorConsumer
@@ -40,7 +41,8 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     private val messageRouter: MessageRouter,
     private val mediatorState: MediatorState,
     private val consumerProcessorState: ConsumerProcessorState,
-    private val eventProcessor: EventProcessor<K, S, E>
+    private val eventProcessor: EventProcessor<K, S, E>,
+    private val serializer: CordaAvroSerializer<Any>,
 ) {
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.name}")
 

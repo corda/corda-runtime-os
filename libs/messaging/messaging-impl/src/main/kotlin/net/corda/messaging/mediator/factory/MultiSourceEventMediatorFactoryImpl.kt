@@ -52,7 +52,8 @@ class MultiSourceEventMediatorFactoryImpl(
         eventMediatorConfig.clientFactories,
         eventMediatorConfig.messageRouterFactory,
         GroupAllocator(),
-        stateManagerHelper
+        stateManagerHelper,
+        cordaAvroSerializationFactory
     )
 
     private fun <E : Any, K : Any, S : Any> createLifecycleCoordinator(
