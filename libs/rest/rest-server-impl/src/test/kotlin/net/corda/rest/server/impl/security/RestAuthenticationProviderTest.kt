@@ -2,8 +2,8 @@ package net.corda.rest.server.impl.security
 
 import io.javalin.http.ForbiddenResponse
 import net.corda.rest.RestResource
+import net.corda.rest.authorization.AuthorizationUtils
 import net.corda.rest.authorization.AuthorizingSubject
-import net.corda.rest.server.impl.context.ContextUtils
 import net.corda.rest.server.impl.security.provider.AuthenticationProvider
 import net.corda.rest.server.impl.security.provider.credentials.tokens.BearerTokenAuthenticationCredentials
 import net.corda.rest.server.impl.security.provider.credentials.tokens.UsernamePasswordAuthenticationCredentials
@@ -33,7 +33,7 @@ class RestAuthenticationProviderTest {
     private companion object {
 
         private fun authorize(authenticatedUser: AuthorizingSubject, method: Method) {
-            return ContextUtils.authorize(authenticatedUser, methodFullName(method))
+            return AuthorizationUtils.authorize(authenticatedUser, methodFullName(method))
         }
 
         private fun methodFullName(method: Method): String = methodFullName(method.declaringClass, method.name)

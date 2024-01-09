@@ -12,9 +12,9 @@ interface AuthorizationProvider {
     companion object Default : AuthorizationProvider {
         override fun isAuthorized(subject: AuthorizingSubject, action: String): Boolean {
             return try {
-                ContextUtils.authorize(subject, action)
+                AuthorizationUtils.authorize(subject, action)
                 true
-            } catch (e: ForbiddenResponse) {
+            } catch (e: IllegalStateException) {
                 false
             }
         }

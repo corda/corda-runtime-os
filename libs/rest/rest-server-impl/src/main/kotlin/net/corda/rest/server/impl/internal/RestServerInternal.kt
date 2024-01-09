@@ -11,14 +11,13 @@ import io.javalin.http.util.JsonEscapeUtil
 import io.javalin.http.util.MultipartUtil
 import io.javalin.http.util.RedirectToLowercasePathPlugin
 import io.javalin.plugin.json.JavalinJackson
-import net.corda.rest.authorization.AuthorizationProvider
+import net.corda.rest.authorization.AuthorizationUtils.authorize
 import net.corda.rest.server.config.RestServerSettingsProvider
 import net.corda.rest.server.impl.apigen.processing.RouteInfo
 import net.corda.rest.server.impl.apigen.processing.RouteProvider
 import net.corda.rest.server.impl.apigen.processing.openapi.OpenApiInfoProvider
 import net.corda.rest.server.impl.context.ClientHttpRequestContext
 import net.corda.rest.server.impl.context.ContextUtils.authenticate
-import net.corda.rest.server.impl.context.ContextUtils.authorize
 import net.corda.rest.server.impl.context.ContextUtils.contentTypeApplicationJson
 import net.corda.rest.server.impl.context.ContextUtils.invokeHttpMethod
 import net.corda.rest.server.impl.security.RestAuthenticationProvider
