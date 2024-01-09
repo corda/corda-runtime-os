@@ -15,8 +15,10 @@ import net.corda.messaging.mediator.MultiSourceEventMediatorImpl
 import net.corda.messaging.mediator.metrics.EventMediatorMetrics
 import net.corda.messaging.utils.toRecord
 import net.corda.taskmanager.TaskManager
+import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.time.Duration
 import java.util.concurrent.CompletionException
 import java.util.concurrent.TimeUnit
 
@@ -40,6 +42,10 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     private val mediatorState: MediatorState,
     private val eventProcessor: EventProcessor<K, S, E>
 ) {
+    private companion object {
+        private const val EVENT_PROCESSING_TIMEOUT_MILLIS = 30000L // 30 seconds
+    }
+
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.name}")
 
     private val metrics = EventMediatorMetrics(config.name)
@@ -111,7 +117,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                         eventProcessor.processEvents(group, statesToProcess)
                     }
                 }.map {
-                    it.join()
+                    it.getOrThrow(Duration.ofMillis(EVENT_PROCESSING_TIMEOUT_MILLIS))
                 }.fold(mapOf<K, EventProcessingOutput>()) { acc, cur ->
                     acc + cur
                 }.mapKeys {
