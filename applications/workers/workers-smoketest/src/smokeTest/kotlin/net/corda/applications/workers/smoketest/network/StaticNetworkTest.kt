@@ -12,13 +12,11 @@ import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
 import net.corda.e2etest.utilities.containsExactlyInAnyOrderActiveMembers
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.registerStaticMember
-import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import java.time.Duration
-import java.util.*
+import java.util.UUID
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StaticNetworkTest : ClusterReadiness by ClusterReadinessChecker() {
 
     private val testRunUniqueId = UUID.randomUUID()
@@ -37,7 +35,7 @@ class StaticNetworkTest : ClusterReadiness by ClusterReadinessChecker() {
         notaryX500
     )
 
-    @BeforeAll
+    @BeforeEach
     fun setup() {
         // check cluster is ready
         assertIsReady(Duration.ofMinutes(1), Duration.ofMillis(100))
