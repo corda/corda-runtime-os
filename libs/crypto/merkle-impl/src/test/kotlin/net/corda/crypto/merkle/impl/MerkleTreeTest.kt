@@ -349,6 +349,13 @@ class MerkleTreeTest {
                                                                   ┗00000005 (input 1) filtered
                 """)
         }
+
+        val proofMerged = proof2.merge(proof3)
+        assertThat(proofMerged.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
+            00000667 (calc)┳00000630 (calc)   ┳00000000 (calc)━00000000 (calc) known leaf
+                           ┃                  ┗00000001 (calc)━00000001 (calc) known leaf
+                           ┗00000002 (input 0)━unknown        ━unknown         filtered
+        """.trimIndent())
     }
 
     @Test
