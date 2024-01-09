@@ -106,6 +106,8 @@ class LedgerPersistenceRequestProcessorTest {
         val response = VirtualNodeException("vnode not there")
 
         whenever(entitySandboxService.get(cordaHoldingIdentity, cpkHashes)).thenThrow(response)
+        whenever(responseFactory.errorResponse(request.flowExternalEventContext, response))
+            .thenThrow(CordaHTTPServerTransientException(request.flowExternalEventContext.requestId, response))
 
         val e = assertThrows<CordaHTTPServerTransientException> {
             target.process(request)
@@ -123,6 +125,8 @@ class LedgerPersistenceRequestProcessorTest {
         val response = CpkNotAvailableException("cpk not there")
 
         whenever(entitySandboxService.get(cordaHoldingIdentity, cpkHashes)).thenThrow(response)
+        whenever(responseFactory.errorResponse(request.flowExternalEventContext, response))
+            .thenThrow(CordaHTTPServerTransientException(request.flowExternalEventContext.requestId, response))
 
         val e = assertThrows<CordaHTTPServerTransientException> {
             target.process(request)
