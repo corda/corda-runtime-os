@@ -142,7 +142,7 @@ class LiquibaseSchemaMigratorImpl(
                     Scope.Attr.resourceAccessor.name to lb.resourceAccessor
                 )
                 Scope.child(scopeObjects) {
-                    val command = CommandScope(*UpdateCommandStep.COMMAND_NAME)
+                    val command = CommandScope(UpdateCommandStep.COMMAND_NAME[0])
                         .addArgumentValue(DbUrlConnectionCommandStep.DATABASE_ARG, lb.database)
                         .addArgumentValue(UpdateCommandStep.CHANGELOG_FILE_ARG, lb.changeLogFile)
                         .addArgumentValue(UpdateCommandStep.CONTEXTS_ARG, Contexts().toString())
