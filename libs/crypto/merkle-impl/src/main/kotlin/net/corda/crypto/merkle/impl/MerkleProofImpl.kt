@@ -69,7 +69,7 @@ class MerkleProofImpl(
      */
     @Suppress("NestedBlockDepth", "ThrowsCount")
 
-    fun calculateRootInstrumented(
+    private fun calculateRootInstrumented(
         digest: MerkleTreeHashDigest,
         onNewHash: (hash: SecureHash, level: Int, nodeIndex: Int, consumed: Int?) -> Unit =
              {_, _, _, _ -> }
@@ -84,13 +84,13 @@ class MerkleProofImpl(
         // We do support and test with leaves.size == treeSize, which may not
         // be very useful but needed not be a special case.
         if (leaves.size > treeSize) {
-            throw MerkleProofRebuildFailureException("MerkleProof has too many specified keys ${leaves.size} tree size ${treeSize}")
+            throw MerkleProofRebuildFailureException("MerkleProof has too many specified keys ${leaves.size} tree size $treeSize")
         }
         if (leaves.size < treeSize && hashes.isEmpty()) {
             throw MerkleProofRebuildFailureException("No fill-in hashes specified to MerkleProof")
         }
         if (hashes.size > treeSize + leaves.size) {
-            throw MerkleProofRebuildFailureException("More MerkleProof non-data hashes given than is possibily necessary")
+            throw MerkleProofRebuildFailureException("More MerkleProof non-data hashes given than is possibly necessary")
         }
         if (leaves.isEmpty()) {
             throw MerkleProofRebuildFailureException("MerkleProof should have at least one leaf.")
@@ -119,7 +119,7 @@ class MerkleProofImpl(
             // Process a level of the tree which means generating the hashes for the level above (i.e. closer
             // to the root).
 
-            // There'd be nothing to do if the tree size $currentSize is 1, hence the loop condition
+            // There is nothing to do if the tree size $currentSize is 1, hence the loop condition
             if (nodeHashes.isEmpty()) {
                 throw MerkleProofRebuildFailureException(
                     "MerkleProof does not have enough nodeHashes to calculate root hash."
@@ -154,7 +154,7 @@ class MerkleProofImpl(
                         // Decide if we can consume the next two elements since they are adjacent in the Merkle tree
                         if (item.first xor next.first == 1) {       // ... and they are a pair with the current
                             // We now know that the indices ${item.first} and ${next.first} only differ on the bottom bit,
-                            // i.e. they are adjacent. Therefore we can combine them.
+                            // i.e. they are adjacent. Therefore, we can combine them.
 
                             val newHash = digest.nodeHash(treeDepth, item.second, next.second)
                             onNewHash( newHash, treeDepth, newItems.size, null)
@@ -233,7 +233,7 @@ class MerkleProofImpl(
      *
      * Work out a Merkle proof with specified leaves.
      *
-     * Throws IllegalArgumentException if some requeted leaf indices are not available in the source proof,
+     * Throws IllegalArgumentException if some requested leaf indices are not available in the source proof,
      * or if no leaf indices are requested.
      *
      * @param leafIndices indices  of the known leaves to include in the output proof
@@ -242,8 +242,8 @@ class MerkleProofImpl(
     fun subset(digest: MerkleTreeHashDigest, leafIndices: List<Int>): MerkleProofImpl {
         val outLeaves = leaves.filter { it.index in leafIndices }
         require(outLeaves.size == leafIndices.size) { "some leaves are not available in input proof"}
-        require(outLeaves.size != 0) { "output proof must have at least one known leaf"}
-        // we will build up a set of avaialble leaves as we track. This will start out with the known leaves
+        require(outLeaves.isNotEmpty()) { "output proof must have at least one known leaf"}
+        // we will build up a set of available leaves as we track. This will start out with the known leaves
         // in the output subset proof, and will be augmented as we decide to add output hashes to the proof
         val availableLeaves = leafIndices.toMutableSet()
         // We work out the hashes for the new subset proof by considering, for the original proof, each hash that
@@ -312,7 +312,7 @@ class MerkleProofImpl(
                 .take(8) + (if (consumed!=null) " (input $consumed)" else " (calc)")
         }
         val leafHashes = (0 until treeSize).map { nodeLabels[treeDepth to it]?:"unknown"}
-        val longestLeafHash = leafHashes.map { it.length }.max()
+        val longestLeafHash = leafHashes.maxOfOrNull { it.length } ?: 0
         val leafLabels =  (0 until treeSize).map {
             "${leafHashes[it].padEnd(longestLeafHash)} ${if (it in getLeaves().map { l -> l.index }) "known leaf" else "filtered"}"
         }
