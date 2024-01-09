@@ -10,6 +10,8 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.io.ByteArrayOutputStream
+import java.io.ObjectOutputStream
 import java.util.UUID
 
 @Component(service = [ExternalEventExecutor::class, SingletonSerializeAsToken::class])
@@ -23,10 +25,11 @@ class ExternalEventExecutorImpl @Activate constructor(
         factoryClass: Class<out ExternalEventFactory<PARAMETERS, RESPONSE, RESUME>>,
         parameters: PARAMETERS
     ): RESUME {
-        // `requestId` is a unique id per event. It is used to achieve idempotency by de-duplicating events processing,
-        // on Kafka consumers side. Consuming duplicate events can happen from retrying an event from Kafka which however
-        // did some persistent work previously but did not fully succeed (Kafka was not notified), therefore we retry/ reprocess it.
-        val requestId = UUID.randomUUID().toString()
+        // `requestId` is a deterministic ID per event which allows us to achieve idempotency by de-duplicating events processing;
+        //  A deterministic ID is required so that events replayed from the flow engine won't be reprocessed on the consumer-side.
+        val uuid = deterministicUUID(parameters)
+        val requestId = generateRequestId(uuid)
+
         @Suppress("unchecked_cast")
         return with(flowFiberService.getExecutingFiber()) {
             suspend(
@@ -47,4 +50,26 @@ class ExternalEventExecutorImpl @Activate constructor(
                 platformContextProperties = this.flattenPlatformProperties()
             )
         }
+
+    private fun <PARAMETERS : Any> deterministicUUID(parameters: PARAMETERS): UUID {
+        val byteArrayOutputStream = ByteArrayOutputStream().use { bos ->
+            ObjectOutputStream(bos).use { oos ->
+                oos.writeObject(parameters)
+                oos.flush()
+                bos.toByteArray()
+            }
+        }
+
+        return UUID.nameUUIDFromBytes(byteArrayOutputStream)
+    }
+
+    private fun generateRequestId(uuid: UUID): String {
+        val executionContext = flowFiberService.getExecutingFiber().getExecutionContext()
+        val flowCheckpoint = executionContext.flowCheckpoint
+        val flowId = flowCheckpoint.flowId
+        val suspendCount = flowCheckpoint.suspendCount
+
+        return listOf(flowId, uuid, suspendCount)
+            .joinToString(separator = "-")
+    }
 }
