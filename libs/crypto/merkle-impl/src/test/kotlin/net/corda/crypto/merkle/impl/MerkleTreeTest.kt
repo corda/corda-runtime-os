@@ -565,7 +565,14 @@ class MerkleTreeTest {
                     val subLeafIndicesCombination = (0 until treeSize).filter { leaf -> (subsetProofLeafSet and (1 shl leaf)) != 0 }
                     val missingLeaves = (0 until treeSize).filter { leaf -> subsetProofLeafSet and (1 shl leaf) != 0 &&  (sourceProofLeafSet and (1 shl leaf)) == 0}
                     val missing = missingLeaves.isNotEmpty()
-                    logger.trace("tree size $treeSize source proof $sourceProofLeafSet subset $subsetProofLeafSet missing $missingLeaves ($missing)")
+                    logger.trace(
+                        "tree size {} source proof {} subset {} missing {} ({})",
+                        treeSize,
+                        sourceProofLeafSet,
+                        subsetProofLeafSet,
+                        missingLeaves,
+                        missing
+                    )
                     when {
                         subsetProofLeafSet == 0 ->
                             // no leaves in output, which is never legal
