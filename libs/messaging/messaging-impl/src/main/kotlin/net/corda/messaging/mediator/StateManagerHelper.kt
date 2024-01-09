@@ -6,7 +6,6 @@ import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.metadata
-import net.corda.messaging.api.constants.MessagingMetadataKeys
 import net.corda.messaging.api.constants.MessagingMetadataKeys.FAILED_STATE
 import net.corda.messaging.api.processor.StateAndEventProcessor
 

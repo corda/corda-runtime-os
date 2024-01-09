@@ -1,9 +1,6 @@
 package net.corda.messaging.mediator.processor
 
-import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
-import net.corda.libs.statemanager.api.State.Companion.VERSION_INITIAL_VALUE
-import net.corda.messaging.api.constants.MessagingMetadataKeys.FAILED_STATE
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
