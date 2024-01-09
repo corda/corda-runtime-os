@@ -1,6 +1,7 @@
 @file:JvmName("ByteBufferStreams")
 package net.corda.kryoserialization
 
+import net.corda.internal.serialization.encoding.Encoder
 import net.corda.utilities.LazyPool
 import java.io.ByteArrayOutputStream
 import java.io.OutputStream
@@ -12,9 +13,9 @@ internal val serializeOutputStreamPool = LazyPool(
         shouldReturnToPool = { it.size() < 256 * 1024 }, // Discard if it grew too large
         newInstance = { ByteBufferOutputStream(64 * 1024) })
 
-fun <T> byteArrayOutput(task: (ByteBufferOutputStream) -> T): ByteArray {
+fun <T> byteArrayOutput(encoder: Encoder, task: (OutputStream) -> T): ByteArray {
     return serializeOutputStreamPool.run { underlying ->
-        task(underlying)
+        task(encoder.compress(underlying))
         underlying.toByteArray() // Must happen after close, to allow ZIP footer to be written for example.
     }
 }
