@@ -64,8 +64,11 @@ class ExternalEventExecutorImpl @Activate constructor(
     }
 
     private fun generateRequestId(uuid: UUID): String {
-        val executionContext = flowFiberService.getExecutingFiber().getExecutionContext()
-        val flowCheckpoint = executionContext.flowCheckpoint
+        val flowCheckpoint = flowFiberService
+            .getExecutingFiber()
+            .getExecutionContext()
+            .flowCheckpoint
+
         val flowId = flowCheckpoint.flowId
         val suspendCount = flowCheckpoint.suspendCount
 
