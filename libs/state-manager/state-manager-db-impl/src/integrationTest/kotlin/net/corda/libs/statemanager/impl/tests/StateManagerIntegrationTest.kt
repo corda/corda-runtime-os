@@ -304,12 +304,10 @@ class StateManagerIntegrationTest {
         )
     }
 
-
     @ValueSource(ints = [1, 5, 10, 20, 50])
     @ParameterizedTest(name = "can createOrUpdate existing states (batch size: {0})")
     fun commitTransaction(stateCount: Int) {
-
-        //states to delete
+        // states to delete
         persistStateEntities(
             (1..stateCount),
             { _, _ -> State.VERSION_INITIAL_VALUE },
@@ -317,49 +315,52 @@ class StateManagerIntegrationTest {
             { i, _ -> """{"originalK1": "v$i", "originalK2": $i}""" }
         )
 
-        //states to create or update
+        // states to create or update
         persistStateEntities(
-            (stateCount+1..stateCount*2),
+            (stateCount + 1..stateCount * 2),
             { _, _ -> State.VERSION_INITIAL_VALUE },
             { i, _ -> "existingState_$i" },
             { i, _ -> """{"originalK1": "v$i", "originalK2": $i}""" }
         )
 
-
-        //states to update
+        // states to update
         persistStateEntities(
-            ((stateCount*2)+1..stateCount*3),
+            ((stateCount * 2) + 1..stateCount * 3),
             { _, _ -> State.VERSION_INITIAL_VALUE },
             { i, _ -> "existingState_$i" },
             { i, _ -> """{"originalK1": "v$i", "originalK2": $i}""" }
         )
 
         val statesToDelete = mutableSetOf<State>()
-        for (i in 1 .. stateCount) {
+        for (i in 1..stateCount) {
             statesToDelete.add(State(buildStateKey(i), "simpleState_$i".toByteArray()))
         }
 
         val statesToCreate = mutableSetOf<State>()
-        for (i in (stateCount*3)+1..stateCount*4) {
+        for (i in (stateCount * 3) + 1..stateCount * 4) {
             statesToCreate.add(State(buildStateKey(i), "simpleState_$i".toByteArray()))
         }
 
         val statesToCreateOrUpdate = mutableSetOf<State>()
-        for (i in (stateCount+1..stateCount*2) ) {
+        for (i in (stateCount + 1..stateCount * 2)) {
             statesToCreateOrUpdate.add(
-                State(buildStateKey(i), "state_$i$i".toByteArray(), State.VERSION_INITIAL_VALUE, metadata("createOrupdatedK2" to "createOrupdatedK2"))
+                State(
+                    buildStateKey(i),
+                    "state_$i$i".toByteArray(),
+                    State.VERSION_INITIAL_VALUE,
+                    metadata("createOrupdatedK2" to "createOrupdatedK2")
+                )
             )
         }
 
         val statesToUpdate = mutableSetOf<State>()
-        for (i in (stateCount*2)+1..stateCount*3) {
+        for (i in (stateCount * 2) + 1..stateCount * 3) {
             statesToUpdate.add(
                 State(buildStateKey(i), "state_$i$i".toByteArray(), State.VERSION_INITIAL_VALUE, metadata("updatedK2" to "updatedV2"))
             )
         }
 
-        val result = stateManager.commit(statesToCreate, statesToCreateOrUpdate.toSet(), statesToUpdate, statesToDelete )
-
+        val result = stateManager.commit(statesToCreate, statesToCreateOrUpdate.toSet(), statesToUpdate, statesToDelete)
 
         assertThat(result).isNotNull
         assertThat(result.failedToCreate).isEmpty()

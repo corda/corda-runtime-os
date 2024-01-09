@@ -75,7 +75,6 @@ interface StateManager : Lifecycle {
      */
     fun update(states: Collection<State>): Map<String, State?>
 
-
     /**
      * Commit a transactions that creates, createOrUpdates, updates and deletes collections of states.
      *
