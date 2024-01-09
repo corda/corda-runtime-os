@@ -4,7 +4,6 @@ import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
-import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -25,7 +24,6 @@ class StateManagerHelperTest {
 
     private data class StateType(val id: Int)
 
-    private val stateManager = mock<StateManager>()
     private val stateSerializer = mock<CordaAvroSerializer<StateType>>()
     private val stateDeserializer = mock<CordaAvroDeserializer<StateType>>()
 
@@ -48,7 +46,6 @@ class StateManagerHelperTest {
             Metadata(),
         )
         val stateManagerHelper = StateManagerHelper(
-            stateManager,
             stateSerializer,
             stateDeserializer,
         )
@@ -78,7 +75,6 @@ class StateManagerHelperTest {
             Metadata(),
         )
         val stateManagerHelper = StateManagerHelper(
-            stateManager,
             stateSerializer,
             stateDeserializer,
         )
@@ -97,7 +93,6 @@ class StateManagerHelperTest {
     @Test
     fun `successfully deserializes state`() {
         val stateManagerHelper = StateManagerHelper(
-            stateManager,
             stateSerializer,
             stateDeserializer,
         )
