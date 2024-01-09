@@ -33,7 +33,7 @@ class ExternalEventExecutorImpl @Activate constructor(
         return with(flowFiberService.getExecutingFiber()) {
             suspend(
                 FlowIORequest.ExternalEvent(
-                    requestId.toString(),
+                    requestId,
                     factoryClass,
                     parameters,
                     externalContext(this)
@@ -58,7 +58,7 @@ class ExternalEventExecutorImpl @Activate constructor(
         return UUID.nameUUIDFromBytes(byteBuffer.array())
     }
 
-    private fun generateRequestId(uuid: UUID): UUID {
+    private fun generateRequestId(uuid: UUID): String {
         val flowCheckpoint = flowFiberService
             .getExecutingFiber()
             .getExecutionContext()
@@ -67,6 +67,8 @@ class ExternalEventExecutorImpl @Activate constructor(
         val flowId = flowCheckpoint.flowId
         val suspendCount = flowCheckpoint.suspendCount
 
-        return UUID.nameUUIDFromBytes("$flowId-$uuid-$suspendCount".toByteArray())
+        return UUID
+            .nameUUIDFromBytes("$flowId-$uuid-$suspendCount".toByteArray())
+            .toString()
     }
 }
