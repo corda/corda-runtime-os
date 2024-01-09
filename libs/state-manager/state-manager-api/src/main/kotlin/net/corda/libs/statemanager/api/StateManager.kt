@@ -75,6 +75,22 @@ interface StateManager : Lifecycle {
      */
     fun update(states: Collection<State>): Map<String, State?>
 
+
+    /**
+     * Commit a transactions that creates, createOrUpdates, updates and deletes collections of states.
+     *
+     * For commits of [statesToUpdate] and [statesToDelete], optimistic locking is used to verify whether the persistent state has been
+     * already modified/deleted by another thread or process, in which case the state will be considered not
+     * and the most recent version of it will be returned to the calling API.
+     * It's the responsibility of calling API to decide whether the operation should be retried.
+     */
+    fun commit(
+        statesToCreate: Collection<State>,
+        statesToCreateOrUpdate: Collection<State>,
+        statesToUpdate: Collection<State>,
+        statesToDelete: Collection<State>
+    ): TransactionResult
+
     /**
      * Delete existing [states].
      *

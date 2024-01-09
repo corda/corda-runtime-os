@@ -7,6 +7,7 @@ import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.libs.statemanager.api.TransactionResult
 import net.corda.libs.statemanager.impl.lifecycle.CheckConnectionEventHandler
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.repository.StateRepository
@@ -49,14 +50,12 @@ class StateManagerImpl(
 
     override fun createOrUpdate(states: Collection<State>): Map<String, State> {
         if (states.isEmpty()) return emptyMap()
-        return dataSource.connection.transaction { connection ->
+        val results =  dataSource.connection.transaction { connection ->
             stateRepository.createOrUpdate(connection, states.map { it.toPersistentEntity() })
-        }.map {
-            it.fromPersistentEntity()
-        }.associateBy {
-            it.key
         }
-    }
+
+        return getStatesByKey(results.toSet())
+   }
 
     private fun getFailedCreates(states: Collection<State>, successfulKeys: Set<String>) =
         states.map { it.key }.toSet() - successfulKeys
@@ -65,13 +64,11 @@ class StateManagerImpl(
         return if (keys.isEmpty()) {
             emptyMap()
         } else {
-            dataSource.connection.transaction { connection ->
+            val results = dataSource.connection.transaction { connection ->
                 stateRepository.get(connection, keys)
-            }.map {
-                it.fromPersistentEntity()
-            }.associateBy {
-                it.key
             }
+
+            return getStatesByKey(results.toSet())
         }
     }
 
@@ -90,6 +87,58 @@ class StateManagerImpl(
         }
     }
 
+    /**
+     * Contains details of the transaction summary.
+     * @property successfulCreate Keys of states which were successfully created
+     * @property stateUpdateSummary Details of the records that were updated
+     * @property failedToDelete Keys of records that failed to delete
+     */
+    private data class TransactionSummary(
+        val successfulCreate: Set<String>,
+        val updatedNotCreated: Set<StateEntity>,
+        val stateUpdateSummary: StateRepository.StateUpdateSummary,
+        val failedToDelete: Set<String>,
+    )
+
+    override fun commit(
+        statesToCreate: Collection<State>,
+        statesToCreateOrUpdate: Collection<State>,
+        statesToUpdate: Collection<State>,
+        statesToDelete: Collection<State>
+    ): TransactionResult {
+        if (statesToCreate.plus(statesToUpdate).plus(statesToDelete).isEmpty()) {
+            return TransactionResult(emptySet(), emptyMap(), emptyMap(),  emptyMap())
+        }
+
+        try {
+            val transactionSummary = dataSource.connection.transaction { conn ->
+                val creates = stateRepository.create(conn, statesToCreate.map { it.toPersistentEntity() })
+                val updatedRecordsPreviousValue = stateRepository.createOrUpdate(conn, statesToCreateOrUpdate.map { it.toPersistentEntity() })
+                val updates = stateRepository.update(conn, statesToUpdate.map { it.toPersistentEntity() })
+                val deletes = stateRepository.delete(conn, statesToDelete.map { it.toPersistentEntity() })
+                TransactionSummary(creates.toSet(), updatedRecordsPreviousValue.toSet(), updates, deletes.toSet())
+            }
+
+            val failedCreates = getFailedCreates(statesToCreate, transactionSummary.successfulCreate)
+            val updatedRecordsNotCreated = getStatesByKey(transactionSummary.updatedNotCreated)
+            val failedUpdates = getFailedUpdates(transactionSummary.stateUpdateSummary.failedKeys)
+            val failedDeletes = getFailedDeletes(transactionSummary.failedToDelete)
+            return TransactionResult(failedCreates, updatedRecordsNotCreated, failedUpdates, failedDeletes)
+        } catch (e: Exception) {
+            val keys = (statesToCreate + statesToUpdate + statesToDelete).map { it.key }
+            logger.warn("Failed to commit transaction for batch of states - $keys", e)
+            throw e
+        }
+    }
+
+    private fun getStatesByKey(states: Set<StateEntity>): Map<String, State> {
+        return states.map {
+            it.fromPersistentEntity()
+        }.associateBy {
+            it.key
+        }
+    }
+
     private fun getFailedUpdates(failedUpdates: List<String>): Map<String, State?> {
         if (failedUpdates.isEmpty()) {
             return emptyMap()
@@ -101,12 +150,12 @@ class StateManagerImpl(
         var warning = ""
         if (failedByOptimisticLocking.isNotEmpty()) {
             warning += "Optimistic locking prevented updates to the following States: " +
-                failedByOptimisticLocking.keys.joinToString(postfix = ". ")
+                    failedByOptimisticLocking.keys.joinToString(postfix = ". ")
         }
 
         if (failedByNotExisting.isNotEmpty()) {
             warning += "Failed to update the following States because they did not exist or were already deleted: " +
-                failedByNotExisting.joinToString(postfix = ".")
+                    failedByNotExisting.joinToString(postfix = ".")
         }
 
         logger.warn(warning)
