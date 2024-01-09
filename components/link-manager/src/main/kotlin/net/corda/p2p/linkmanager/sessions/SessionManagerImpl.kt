@@ -1404,7 +1404,7 @@ internal class SessionManagerImpl(
             }
 
             override fun outboundSessionTimeout(counterparties: SessionCounterparties, sessionId: String) {
-c                val sessionInfo = trackedOutboundSessions[sessionId] ?: return
+                val sessionInfo = trackedOutboundSessions[sessionId] ?: return
                 val now = timeStamp()
                 val timeSinceLastAck = now - sessionInfo.lastAckTimestamp
                 val timeSinceLastSent = now - sessionInfo.lastSendTimestamp
