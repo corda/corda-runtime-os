@@ -3,7 +3,7 @@ package net.corda.messaging.mediator.processor
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.State.Companion.VERSION_INITIAL_VALUE
-import net.corda.messaging.api.constants.MessagingMetadataKeys.FAILED_STATE
+import net.corda.messaging.api.constants.MessagingMetadataKeys.PROCESSING_FAILURE
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
@@ -66,7 +66,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                 // of the system despite the retry loop implemented there. This should trigger individual processing to
                 // fail.
                 val newMetadata = (state?.metadata?.toMutableMap() ?: mutableMapOf()).also {
-                    it[FAILED_STATE] = true
+                    it[PROCESSING_FAILURE] = true
                 }
                 asyncOutputs.clear()
                 State(
