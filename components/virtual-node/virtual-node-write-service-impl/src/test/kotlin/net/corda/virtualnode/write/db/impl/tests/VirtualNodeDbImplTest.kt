@@ -31,6 +31,7 @@ class VirtualNodeDbImplTest {
     private val ddlUuser = "ddluser"
     private val dmlUuser = "dmluser"
     private val ddlConfig = mock<SmartConfig>()
+    private val dmlConfig = mock<SmartConfig>()
     private val holdingIdShortHash = ShortHash.of("AAAAAAAAAAAA")
     private val dbType = VirtualNodeDbType.VAULT
     private val schema = dbType.getSchemaName(holdingIdShortHash)
@@ -49,6 +50,7 @@ class VirtualNodeDbImplTest {
         whenever(privilege).thenReturn(DbPrivilege.DML)
         whenever(getUser()).thenReturn(dmlUuser)
         whenever(getPassword()).thenReturn(password)
+        whenever(config).thenReturn(dmlConfig)
     }
 
     @Test
@@ -178,7 +180,7 @@ class VirtualNodeDbImplTest {
             whenever(connection).thenReturn(sqlConnection)
         }
 
-        whenever(dbConnectionManager.getDataSource(ddlConfig)).thenReturn(dataSource)
+        whenever(dbConnectionManager.getDataSource(dmlConfig)).thenReturn(dataSource)
         whenever(schemaMigrator.listUnrunChangeSets(sqlConnection, dbChange)).thenReturn(listOf("Missing Changeset"))
 
         val target = createVirtualNodeDb(isPlatformManagedDb = false)
@@ -193,7 +195,7 @@ class VirtualNodeDbImplTest {
             whenever(connection).thenReturn(sqlConnection)
         }
 
-        whenever(dbConnectionManager.getDataSource(ddlConfig)).thenReturn(dataSource)
+        whenever(dbConnectionManager.getDataSource(dmlConfig)).thenReturn(dataSource)
         whenever(schemaMigrator.listUnrunChangeSets(sqlConnection, dbChange)).thenReturn(emptyList())
 
         val target = createVirtualNodeDb(isPlatformManagedDb = false)
@@ -207,7 +209,7 @@ class VirtualNodeDbImplTest {
             whenever(connection).thenReturn(sqlConnection)
         }
 
-        whenever(dbConnectionManager.getDataSource(ddlConfig)).thenReturn(dataSource)
+        whenever(dbConnectionManager.getDataSource(dmlConfig)).thenReturn(dataSource)
         whenever(schemaMigrator.listUnrunChangeSets(eq(sqlConnection), any())).thenReturn(listOf("Missing Changeset"))
 
         val target = createVirtualNodeDb(isPlatformManagedDb = false)
@@ -221,7 +223,7 @@ class VirtualNodeDbImplTest {
             whenever(connection).thenReturn(sqlConnection)
         }
 
-        whenever(dbConnectionManager.getDataSource(ddlConfig)).thenReturn(dataSource)
+        whenever(dbConnectionManager.getDataSource(dmlConfig)).thenReturn(dataSource)
         whenever(schemaMigrator.listUnrunChangeSets(eq(sqlConnection), any())).thenReturn(emptyList())
 
         val target = createVirtualNodeDb(isPlatformManagedDb = false)
