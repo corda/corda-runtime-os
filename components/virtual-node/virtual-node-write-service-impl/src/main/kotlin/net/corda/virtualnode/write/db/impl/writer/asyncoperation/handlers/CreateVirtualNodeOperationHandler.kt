@@ -2,6 +2,7 @@ package net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers
 
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.db.connection.manager.VirtualNodeDbType
+import net.corda.db.core.DbPrivilege.DML
 import net.corda.libs.external.messaging.ExternalMessagingRouteConfigGenerator
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
@@ -159,7 +160,7 @@ internal class CreateVirtualNodeOperationHandler(
     ) {
         // Select externally managed VNode DBs
         val dbaManagedDbs = vNodeDbs.filterNot {
-            it.isPlatformManagedDb || it.ddlConnectionProvided
+            it.isPlatformManagedDb || it.ddlConnectionProvided || it.dbConnections[DML] == null
         }
 
         // Are any platform schemas missing?
