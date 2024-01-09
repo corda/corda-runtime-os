@@ -43,7 +43,7 @@ interface StateManager : Lifecycle {
      * @return A map of the previous values associated for the keys that performed an update,
      * or no entries in the map for keys successfully created.
      */
-    fun put(states: Collection<State>): Map<String, State>
+    fun createOrUpdate(states: Collection<State>): Map<String, State>
 
     /**
      * Get all states referenced by [keys].
