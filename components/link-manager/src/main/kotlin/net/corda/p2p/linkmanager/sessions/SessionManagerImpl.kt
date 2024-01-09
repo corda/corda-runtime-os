@@ -790,7 +790,8 @@ internal class SessionManagerImpl(
         heartbeatManager.stopTrackingSpecifiedOutboundSession(sessionId)
     }
 
-    private fun processInitiatorHello(message: InitiatorHelloMessage): LinkOutMessage? {
+    //Only use by Stateful Session Manager
+    fun processInitiatorHello(message: InitiatorHelloMessage): Pair<LinkOutMessage, AuthenticationProtocolResponder>? {
         logger.info("Processing ${message::class.java.simpleName} for session ${message.header.sessionId}.")
         //This will be adjusted so that we use the group policy coming from the CPI with the latest version deployed locally (CORE-5323).
         val hostedIdentitiesInSameGroup = linkManagerHostingMap.allLocallyHostedIdentities()
@@ -844,7 +845,7 @@ internal class SessionManagerImpl(
         val responderHello = session.generateResponderHello()
 
         logger.info("Remote identity ${peerMemberInfo.holdingIdentity} initiated new session ${message.header.sessionId}.")
-        return createLinkOutMessage(responderHello, hostedIdentityInSameGroup, peerMemberInfo, p2pParams.networkType)
+        return createLinkOutMessage(responderHello, hostedIdentityInSameGroup, peerMemberInfo, p2pParams.networkType) to session
     }
 
     private fun processInitiatorHandshake(message: InitiatorHandshakeMessage): LinkOutMessage? {

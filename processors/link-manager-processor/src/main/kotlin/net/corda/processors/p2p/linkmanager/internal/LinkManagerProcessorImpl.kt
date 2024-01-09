@@ -37,6 +37,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.security.Security
+import net.corda.crypto.client.SessionEncryptionOpsClient
 
 @Suppress("LongParameterList", "Unused")
 @Component(service = [LinkManagerProcessor::class])
@@ -69,6 +70,8 @@ class LinkManagerProcessorImpl @Activate constructor(
     private val avroSchemaRegistry: AvroSchemaRegistry,
     @Reference(service = StateManagerFactory::class)
     private val stateManagerFactory: StateManagerFactory,
+    @Reference(service = SessionEncryptionOpsClient::class)
+    private val sessionEncryptionOpsClient: SessionEncryptionOpsClient,
 ) : LinkManagerProcessor {
 
     private companion object {
@@ -126,6 +129,8 @@ class LinkManagerProcessorImpl @Activate constructor(
                     membershipQueryClient,
                     groupParametersReaderService,
                     localStateManager,
+                    sessionEncryptionOpsClient,
+                    avroSchemaRegistry
                 )
 
                 stateManager = localStateManager
