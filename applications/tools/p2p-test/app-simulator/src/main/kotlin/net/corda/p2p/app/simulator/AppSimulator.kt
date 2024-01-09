@@ -14,6 +14,7 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.p2p.app.simulator.AppSimulator.Companion.DEFAULT_NUMBER_OF_PARTITIONS
 import net.corda.p2p.app.simulator.AppSimulator.Companion.DEFAULT_REPLICATION_FACTOR
+import net.corda.p2p.app.simulator.AppSimulator.Companion.logger
 import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getDbParameter
 import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getEnumOrNull
 import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getIntOrNull
@@ -57,7 +58,7 @@ class AppSimulator @Activate constructor(
 ) : Application {
 
     companion object {
-        private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private val clock: Clock = UTCClock()
         const val DB_PARAMS_PREFIX = "dbParams"
         const val TOPIC_CREATION_PREFIX = "topicCreationParams"
@@ -339,6 +340,7 @@ data class LoadGenerationParams(
         fun read(commonConfig: CommonConfig): LoadGenerationParams {
             val peerGroupId = getLoadGenStrParameter("peerGroupId", commonConfig.configFromFile, commonConfig.parameters)
             val peerX500Names = getLoadGenStrParameter("peerX500Names", commonConfig.configFromFile, commonConfig.parameters)
+            logger.info("Perr names are $peerX500Names")
             val listOfNames = peerX500Names.split(";")
             val peerHoldingIdentities = listOfNames.map { HoldingIdentity(it, peerGroupId) }
             val ourX500Name = getLoadGenStrParameter("ourX500Name", commonConfig.configFromFile, commonConfig.parameters)
