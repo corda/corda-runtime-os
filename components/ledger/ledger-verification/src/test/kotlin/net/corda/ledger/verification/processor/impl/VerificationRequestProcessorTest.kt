@@ -5,6 +5,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
+import net.corda.flow.external.events.responses.exceptions.NotAllowedCpkException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.utxo.verification.CordaPackageSummary
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
@@ -20,10 +21,12 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.io.NotSerializableException
 import java.time.Instant
 
 class VerificationRequestProcessorTest {
@@ -85,14 +88,46 @@ class VerificationRequestProcessorTest {
     }
 
     @Test
-    fun `failed request returns failure response back to the flow`() {
+    fun `failed request returns transient failure response back to the flow`() {
         defaultSetup()
         val request = createRequest("r2")
-        val failureResponseRecord = Record("", "3", FlowEvent())
         val response = IllegalStateException()
 
         whenever(verificationRequestHandler.handleRequest(sandbox, request)).thenThrow(response)
-        whenever(responseFactory.transientError(request.flowExternalEventContext, response))
+
+        val e = assertThrows<CordaHTTPServerTransientException> {
+            verificationRequestProcessor.process(request)
+        }
+
+        assertThat(e.cause!!.javaClass).isEqualTo(IllegalStateException::class.java)
+    }
+
+    @Test
+    fun `not allowed cpk exception results in platform exception`() {
+        defaultSetup()
+        val request = createRequest("r2")
+        val failureResponseRecord = Record("", "3", FlowEvent())
+        val response = NotAllowedCpkException("not allowed cpk")
+
+        whenever(verificationRequestHandler.handleRequest(sandbox, request)).thenThrow(response)
+        whenever(responseFactory.platformError(request.flowExternalEventContext, response))
+            .thenReturn(failureResponseRecord)
+
+        val results = verificationRequestProcessor.process(request)
+
+        assertThat(results).isNotNull
+        assertThat(results).isEqualTo(failureResponseRecord.value)
+    }
+
+    @Test
+    fun `not serializable exception results in platform exception`() {
+        defaultSetup()
+        val request = createRequest("r2")
+        val failureResponseRecord = Record("", "3", FlowEvent())
+        val response = NotSerializableException("not serializable")
+
+        whenever(verificationRequestHandler.handleRequest(sandbox, request)).doAnswer { throw response }
+        whenever(responseFactory.platformError(request.flowExternalEventContext, response))
             .thenReturn(failureResponseRecord)
 
         val results = verificationRequestProcessor.process(request)
