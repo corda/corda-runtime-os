@@ -96,7 +96,6 @@ class TokenSelectionSyncRPCProcessorTest {
     @Test
     fun `process failure (concurrency check) returns transient exception`() {
         val returnedEvent = FlowEvent(testFlowId, WakeUpWithException())
-        val responseRecord = Record("", "", returnedEvent)
         val processorResponse = TokenPoolCacheManager.ResponseAndState(
             returnedEvent,
             POOL_CACHE_STATE
@@ -105,7 +104,6 @@ class TokenSelectionSyncRPCProcessorTest {
 
         claimStateStore.inputPoolState = TOKEN_POOL_CACHE_STATE
         claimStateStore.completionType = false
-        whenever(externalEventResponseFactory.transientError(any(), any<Throwable>())).thenReturn(responseRecord)
         whenever(tokenPoolCacheManager.processEvent(any(), any(), any())).thenReturn(processorResponse)
 
         val e = assertThrows<CordaHTTPServerTransientException> {
