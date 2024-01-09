@@ -3,7 +3,6 @@ package net.corda.db.admin.impl
 import liquibase.Liquibase
 import liquibase.command.CommandArgumentDefinition
 import liquibase.command.CommandScope
-import liquibase.command.core.UpdateCommandStep
 import liquibase.database.Database
 import liquibase.database.DatabaseConnection
 import liquibase.resource.ResourceAccessor
@@ -45,13 +44,10 @@ class LiquibaseSchemaMigratorTest {
         on { addArgumentValue(any<CommandArgumentDefinition<Any>>(), anyOrNull()) } doReturn cs
         on { execute() } doReturn mock()
     }
-    private val commandScopeFactory = mock<(commandNames: Array<String>) -> CommandScope> {
-        on { invoke(any()) } doReturn (commandScope)
-    }
     private val writer = mock<Writer>()
 
     private val migrator: LiquibaseSchemaMigrator =
-        LiquibaseSchemaMigratorImpl(lbFactory, dbFactory, commandScopeFactory)
+        LiquibaseSchemaMigratorImpl(lbFactory, dbFactory, runChanges = false)
 
     @Test
     fun `when updateDb create LB object`() {
@@ -68,12 +64,6 @@ class LiquibaseSchemaMigratorTest {
     }
 
     @Test
-    fun `when updateDb call Liquibase API`() {
-        migrator.updateDb(connection, dbChange)
-        verify(commandScopeFactory).invoke(UpdateCommandStep.COMMAND_NAME)
-    }
-
-    @Test
     fun `when createUpdateSql create LB object`() {
         migrator.createUpdateSql(connection, dbChange, writer)
         verify(lbFactory).invoke(
@@ -85,12 +75,6 @@ class LiquibaseSchemaMigratorTest {
             },
             eq(db)
         )
-    }
-
-    @Test
-    fun `when createUpdateSql call Liquibase API`() {
-        migrator.createUpdateSql(connection, dbChange, writer)
-        verify(commandScope).execute()
     }
 
     @Test

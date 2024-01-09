@@ -50,11 +50,7 @@ class LiquibaseSchemaMigratorImpl(
                 .getInstance()
                 .findCorrectDatabaseImplementation(OfflineConnection(url, resourceAccessor))
         },
-    private val commandScopeFactory: (commandNames: Array<String>) -> CommandScope = { commandNames ->
-        @Suppress("SpreadOperator")
-        CommandScope(*commandNames)
-    },
-    private val statusCommandStep: StatusCommandStep = StatusCommandStep()
+    private val runChanges: Boolean = true
 ) : LiquibaseSchemaMigrator {
     companion object {
         // default schema
@@ -106,7 +102,7 @@ class LiquibaseSchemaMigratorImpl(
 
             val masterChangeLogFileName = "master-changelog-${UUID.randomUUID()}.xml"
 
-            return statusCommandStep.listUnrunChangeSets(Contexts(), LabelExpression(),
+            return StatusCommandStep().listUnrunChangeSets(Contexts(), LabelExpression(),
                 DatabaseChangeLog(masterChangeLogFileName), database).map { it.filePath }
         }
     }
@@ -146,7 +142,7 @@ class LiquibaseSchemaMigratorImpl(
                     Scope.Attr.resourceAccessor.name to lb.resourceAccessor
                 )
                 Scope.child(scopeObjects) {
-                    val factory = commandScopeFactory(UpdateCommandStep.COMMAND_NAME)
+                    val command = CommandScope(*UpdateCommandStep.COMMAND_NAME)
                         .addArgumentValue(DbUrlConnectionCommandStep.DATABASE_ARG, lb.database)
                         .addArgumentValue(UpdateCommandStep.CHANGELOG_FILE_ARG, lb.changeLogFile)
                         .addArgumentValue(UpdateCommandStep.CONTEXTS_ARG, Contexts().toString())
@@ -160,15 +156,17 @@ class LiquibaseSchemaMigratorImpl(
                             lb.changeLogParameters
                         )
                         .addArgumentValue(TagCommandStep.TAG_ARG, tag)
-                    if (null != sql) {
-                        factory.setOutput(
+                    if (sql != null) {
+                        command.setOutput(
                             WriterOutputStream(
                                 sql,
                                 GlobalConfiguration.OUTPUT_FILE_ENCODING.currentValue
                             )
                         )
                     }
-                    factory.execute()
+                    if (runChanges) {
+                        command.execute()
+                    }
                 }
             } catch (e: Exception) {
                 if (e is LiquibaseException) {
