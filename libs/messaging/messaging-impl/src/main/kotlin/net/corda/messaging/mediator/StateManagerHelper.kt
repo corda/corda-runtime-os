@@ -6,13 +6,14 @@ import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.metadata
+import net.corda.messaging.api.constants.MessagingMetadataKeys
+import net.corda.messaging.api.constants.MessagingMetadataKeys.FAILED_STATE
 import net.corda.messaging.api.processor.StateAndEventProcessor
 
 /**
  * Helper for working with [StateManager], used by [MultiSourceEventMediatorImpl].
  */
 class StateManagerHelper<S : Any>(
-    private val stateManager: StateManager,
     private val stateSerializer: CordaAvroSerializer<S>,
     private val stateDeserializer: CordaAvroDeserializer<S>,
 ) {
@@ -34,6 +35,18 @@ class StateManagerHelper<S : Any>(
             serializedValue,
             persistedState?.version ?: State.VERSION_INITIAL_VALUE,
             mergeMetadata(persistedState?.metadata, newState?.metadata),
+        )
+    }
+
+    fun failStateProcessing(key: String, originalState: State?) : State {
+        val newMetadata = (originalState?.metadata?.toMutableMap() ?: mutableMapOf()).also {
+            it[FAILED_STATE] = true
+        }
+        return State(
+            key,
+            byteArrayOf(),
+            version = originalState?.version ?: State.VERSION_INITIAL_VALUE,
+            metadata = Metadata(newMetadata)
         )
     }
 

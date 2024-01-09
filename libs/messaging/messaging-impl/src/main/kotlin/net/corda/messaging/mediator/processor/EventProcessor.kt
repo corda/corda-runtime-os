@@ -65,16 +65,8 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                 // If an intermittent error occurs here, the RPC client has failed to deliver a message to another part
                 // of the system despite the retry loop implemented there. This should trigger individual processing to
                 // fail.
-                val newMetadata = (state?.metadata?.toMutableMap() ?: mutableMapOf()).also {
-                    it[FAILED_STATE] = true
-                }
                 asyncOutputs.clear()
-                State(
-                    groupKey,
-                    byteArrayOf(),
-                    version = state?.version ?: VERSION_INITIAL_VALUE,
-                    metadata = Metadata(newMetadata)
-                )
+                stateManagerHelper.failStateProcessing(groupKey, state)
             }
             val stateChangeAndOperation = when {
                 state == null && processed != null -> StateChangeAndOperation.Create(processed)
