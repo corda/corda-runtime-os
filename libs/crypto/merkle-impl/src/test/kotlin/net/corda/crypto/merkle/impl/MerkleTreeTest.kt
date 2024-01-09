@@ -455,7 +455,7 @@ class MerkleTreeTest {
 
         val rng = Random(0)
 
-        // Test all the possible combinations of leaves for the proof.
+        // Test all the possible combinations of leaves for the proof, and a selection of subset proofs.
         for (sourceProofLeafSet in 1 until (1 shl treeSize)) {
             val leafIndicesCombination = (0 until treeSize).filter { (sourceProofLeafSet and (1 shl it)) != 0 }
             testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize).also {
