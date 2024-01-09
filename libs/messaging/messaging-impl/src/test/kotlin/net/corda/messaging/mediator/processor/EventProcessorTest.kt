@@ -2,7 +2,7 @@ package net.corda.messaging.mediator.processor
 
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.statemanager.api.State
-import net.corda.messaging.api.constants.FAILED_STATE
+import net.corda.messaging.api.constants.MessagingMetadataKeys.FAILED_STATE
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
@@ -100,7 +100,7 @@ class EventProcessorTest {
 
         val output = outputMap["key"]
         assertEquals(emptyList<MediatorMessage<Any>>(), output?.asyncOutputs)
-        assertNotNull(output?.stateUpdate?.outputState?.metadata?.get(FAILED_STATE))
+        assertNotNull(output?.stateChangeAndOperation?.outputState?.metadata?.get(FAILED_STATE))
     }
 
     private fun buildStringTestConfig() = EventMediatorConfig(
