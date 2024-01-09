@@ -163,7 +163,7 @@ class UtxoReceiveFinalityFlowV1(
             requireNotNull(filteredTransactionsAndSignatures) {
                 "filtered transaction and signatures cannot be found."
             }
-            receiveDependencyPayloadAndVerify(filteredTransactionsAndSignatures, initialTransaction, transferAdditionalSignatures)
+            verifyDependencies(filteredTransactionsAndSignatures, initialTransaction, transferAdditionalSignatures)
         }
     }
 
@@ -175,7 +175,7 @@ class UtxoReceiveFinalityFlowV1(
     )
 
     @Suspendable
-    private fun receiveDependencyPayloadAndVerify(
+    private fun verifyDependencies(
         filteredTransactionsAndSignatures: List<FilteredTransactionAndSignatures>,
         initialTransaction: UtxoSignedTransactionInternal,
         transferAdditionalSignatures: Boolean
