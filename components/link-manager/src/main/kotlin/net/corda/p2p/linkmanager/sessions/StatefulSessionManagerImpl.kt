@@ -13,6 +13,8 @@ import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.SimpleDominoTile
+import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
+import net.corda.p2p.crypto.protocol.api.SerialisableSessionData
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.sessions.metadata.InboundSessionMetadata
 import net.corda.p2p.linkmanager.sessions.metadata.InboundSessionStatus
@@ -104,7 +106,7 @@ internal class StatefulSessionManagerImpl(
                     processInitiatorHello(state, it.inboundSessionMessage)
                 }
                 is InboundSessionMessage.InitiatorHandshakeMessage -> {
-                    processInitiatorHandshake(state, it)
+                    processInitiatorHandshake(state, it.inboundSessionMessage)
                 }
             }
         }
@@ -119,17 +121,17 @@ internal class StatefulSessionManagerImpl(
      */
     private fun processInitiatorHello(
         state: State?,
-        messageContext: InboundSessionMessage.InitiatorHelloMessage,
-    ): Pair<LinkOutMessage?, State>? {
+        message: InboundSessionMessage.InitiatorHelloMessage,
+    ): Pair<LinkOutMessage, State>? {
         val metadata = state?.metadata?.let { metadataMap -> InboundSessionMetadata(metadataMap) }
-        when (metadata?.status) {
+        return when (metadata?.status) {
             null -> {
-                sessionManagerImpl.processInitiatorHello(messageContext.initiatorHelloMessage)?.let {
-                    (message, authenticationProtocol) ->
+                sessionManagerImpl.processInitiatorHello(message.initiatorHelloMessage)?.let {
+                    (responseMessage, authenticationProtocol) ->
                     val timestamp = Instant.now()
                     val newMetadata = InboundSessionMetadata(
-                        source = message.header.destinationIdentity.toCorda(),
-                        destination = message.header.sourceIdentity.toCorda(),
+                        source = responseMessage.header.destinationIdentity.toCorda(),
+                        destination = responseMessage.header.sourceIdentity.toCorda(),
                         lastSendTimestamp = timestamp,
                         encryptionKeyId = "",
                         encryptionKeyTenant = "",
@@ -137,13 +139,13 @@ internal class StatefulSessionManagerImpl(
                         expiry = Instant.now() + Duration.ofDays(7)
                     )
                     val newState = State(
-                        messageContext.initiatorHelloMessage.header.sessionId,
-                        SessionState(message, authenticationProtocol)
+                        message.initiatorHelloMessage.header.sessionId,
+                        SessionState(responseMessage, authenticationProtocol)
                             .toAvro(schemaRegistry, sessionEncryptionOpsClient).toByteBuffer().array(),
                         metadata = newMetadata.toMetadata()
                     )
-                    return message to newState
-                } ?: return null
+                    responseMessage to newState
+                }
             }
             InboundSessionStatus.SentResponderHello -> {
                 if (metadata.lastSendExpired()) {
@@ -156,28 +158,67 @@ internal class StatefulSessionManagerImpl(
                         version = state.version,
                         metadata = updatedMetadata.toMetadata()
                     )
-                    return responderHelloToResend to newState
+                    responderHelloToResend to newState
                 } else {
-                    return null
+                    null
                 }
             }
             InboundSessionStatus.SentResponderHandshake -> {
-                return null
+                null
             }
         }
     }
 
-    private fun processInitiatorHandshake(state: State?, messageContext: InboundSessionMessageContext): Pair<LinkOutMessage?, State>?{
+    private fun processInitiatorHandshake(
+        state: State?,
+        message: InboundSessionMessage.InitiatorHandshakeMessage,
+    ): Pair<LinkOutMessage, State>?{
         val metadata = state?.metadata?.let { metadataMap -> InboundSessionMetadata(metadataMap) }
-        when (metadata?.status) {
+        return when (metadata?.status) {
             null -> {
-
+                null
             }
             InboundSessionStatus.SentResponderHello -> {
-
+                val session = schemaRegistry.deserialize(
+                    ByteBuffer.wrap(state.value),
+                    SerialisableSessionData::class.java,
+                    null
+                ) as AuthenticationProtocolResponder
+                sessionManagerImpl.processInitiatorHandshake(session, message.initiatorHandshakeMessage)?.let { responseMessage ->
+                    val timestamp = Instant.now()
+                    val newMetadata = InboundSessionMetadata(
+                        source = responseMessage.header.sourceIdentity.toCorda(),
+                        destination = responseMessage.header.destinationIdentity.toCorda(),
+                        lastSendTimestamp = timestamp,
+                        encryptionKeyId = "",
+                        encryptionKeyTenant = "",
+                        status = InboundSessionStatus.SentResponderHandshake,
+                        expiry = Instant.now() + Duration.ofDays(7)
+                    )
+                    val newState = State(
+                        message.initiatorHandshakeMessage.header.sessionId,
+                        SessionState(responseMessage, session)
+                            .toAvro(schemaRegistry, sessionEncryptionOpsClient).toByteBuffer().array(),
+                        metadata = newMetadata.toMetadata()
+                    )
+                    responseMessage to newState
+                }
             }
             InboundSessionStatus.SentResponderHandshake -> {
-
+                if (metadata.lastSendExpired()) {
+                    val timestamp = Instant.now()
+                    val updatedMetadata = metadata.copy(lastSendTimestamp = timestamp)
+                    val responderHandshakeToResend = net.corda.data.p2p.state.SessionState.fromByteBuffer(ByteBuffer.wrap(state.value)).message
+                    val newState = State(
+                        key = state.key,
+                        value = state.value,
+                        version = state.version,
+                        metadata = updatedMetadata.toMetadata()
+                    )
+                    responderHandshakeToResend to newState
+                } else {
+                    null
+                }
             }
         }
     }

@@ -6,6 +6,7 @@ import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.client.SessionEncryptionOpsClient
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.p2p.crypto.protocol.RevocationCheckMode
@@ -44,6 +45,7 @@ import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
+import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.test.util.eventually
 import net.corda.test.util.lifecycle.usingLifecycle
 import net.corda.utilities.seconds
@@ -104,6 +106,12 @@ class LinkManagerIntegrationTest {
 
         @InjectService(timeout = 4000)
         lateinit var  groupParametersReaderService: GroupParametersReaderService
+
+        @InjectService(timeout = 4000)
+        lateinit var sessionEncryptionOpsClient: SessionEncryptionOpsClient
+
+        @InjectService(timeout = 4000)
+        lateinit var schemaRegistry: AvroSchemaRegistry
     }
 
     private val replayPeriod = 2000
@@ -217,6 +225,8 @@ class LinkManagerIntegrationTest {
             MembershipQueryClientStub(),
             groupParametersReaderService,
             StateManagerFactoryStub().create(bootstrapConfig),
+            sessionEncryptionOpsClient,
+            schemaRegistry,
         )
 
         linkManager.usingLifecycle {

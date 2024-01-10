@@ -790,8 +790,25 @@ internal class SessionManagerImpl(
         heartbeatManager.stopTrackingSpecifiedOutboundSession(sessionId)
     }
 
+    private fun processInitiatorHello(message: InitiatorHelloMessage): LinkOutMessage? {
+        return processInitiatorHello(message) { sessionId, maxMessageSize ->
+             pendingInboundSessions.computeIfAbsent(sessionId) {
+                val session = protocolFactory.createResponder(it, maxMessageSize)
+                session.receiveInitiatorHello(message)
+                session
+            }
+        }?.first
+    }
+
     //Only use by Stateful Session Manager
-    fun processInitiatorHello(message: InitiatorHelloMessage): Pair<LinkOutMessage, AuthenticationProtocolResponder>? {
+    internal fun processInitiatorHello(
+        message: InitiatorHelloMessage,
+        createSession: (sessionId: String, mexMessageSize: Int) -> AuthenticationProtocolResponder = { sessionId, maxMessageSize ->
+            val session = protocolFactory.createResponder(sessionId, maxMessageSize)
+            session.receiveInitiatorHello(message)
+            session
+        }
+    ): Pair<LinkOutMessage, AuthenticationProtocolResponder>? {
         logger.info("Processing ${message::class.java.simpleName} for session ${message.header.sessionId}.")
         //This will be adjusted so that we use the group policy coming from the CPI with the latest version deployed locally (CORE-5323).
         val hostedIdentitiesInSameGroup = linkManagerHostingMap.allLocallyHostedIdentities()
@@ -837,11 +854,7 @@ internal class SessionManagerImpl(
             return null
         }
 
-        val session = pendingInboundSessions.computeIfAbsent(message.header.sessionId) { sessionId ->
-            val session = protocolFactory.createResponder(sessionId, sessionManagerConfig.maxMessageSize)
-            session.receiveInitiatorHello(message)
-            session
-        }
+        val session = createSession(message.header.sessionId, sessionManagerConfig.maxMessageSize)
         val responderHello = session.generateResponderHello()
 
         logger.info("Remote identity ${peerMemberInfo.holdingIdentity} initiated new session ${message.header.sessionId}.")
@@ -855,7 +868,36 @@ internal class SessionManagerImpl(
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
         }
+        val responderHandshakeMessage = processInitiatorHandshake(session, message)
 
+        responderHandshakeMessage?.let {
+            val ourIdentity = responderHandshakeMessage.header.sourceIdentity.toCorda()
+            val peerIdentity = responderHandshakeMessage.header.destinationIdentity.toCorda()
+
+            activeInboundSessions[message.header.sessionId] = Pair(
+                SessionManager.Counterparties(
+                    ourIdentity,
+                    peerIdentity
+                ),
+                session.getSession()
+            )
+            sessionMessageReceived(
+                message.header.sessionId,
+                responderHandshakeMessage.header.destinationIdentity.toCorda(),
+                responderHandshakeMessage.header.sourceIdentity.toCorda()
+            )
+            logger.info(
+                "Inbound session ${message.header.sessionId} established (local=$ourIdentity, remote=$peerIdentity)."
+            )
+            /**
+            * We delay removing the session from pendingInboundSessions until we receive the first data message as before this point
+            * the other side (Initiator) might replay [InitiatorHandshakeMessage] in the case where the [ResponderHandshakeMessage] was lost.
+            * */
+        }
+        return responderHandshakeMessage
+    }
+
+    fun processInitiatorHandshake(session: AuthenticationProtocolResponder, message: InitiatorHandshakeMessage): LinkOutMessage? {
         val initiatorIdentityData = session.getInitiatorIdentity()
         val hostedIdentitiesInSameGroup = linkManagerHostingMap.allLocallyHostedIdentities()
             .filter { it.groupId == initiatorIdentityData.groupId }
@@ -943,19 +985,6 @@ internal class SessionManagerImpl(
             return null
         }
 
-        activeInboundSessions[message.header.sessionId] = Pair(
-            SessionManager.Counterparties(ourIdentityInfo.holdingIdentity, peer.holdingIdentity),
-            session.getSession()
-        )
-        sessionMessageReceived(message.header.sessionId, peer.holdingIdentity, ourIdentityInfo.holdingIdentity)
-        logger.info(
-            "Inbound session ${message.header.sessionId} established " +
-                "(local=${ourIdentityInfo.holdingIdentity}, remote=${peer.holdingIdentity})."
-        )
-        /**
-         * We delay removing the session from pendingInboundSessions until we receive the first data message as before this point
-         * the other side (Initiator) might replay [InitiatorHandshakeMessage] in the case where the [ResponderHandshakeMessage] was lost.
-         * */
         return createLinkOutMessage(response, ourIdentityInfo.holdingIdentity, peer, p2pParams.networkType)
     }
 

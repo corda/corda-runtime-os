@@ -1,8 +1,8 @@
 package net.corda.p2p.linkmanager.sessions.metadata
 
+import java.time.Duration
 import java.time.Instant
 import net.corda.libs.statemanager.api.Metadata
-import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 
@@ -15,8 +15,8 @@ private fun String.statusFromString(): InboundSessionStatus {
 }
 
 data class InboundSessionMetadata(
-    val source: HoldingIdentity?,
-    val destination: HoldingIdentity?,
+    val source: HoldingIdentity,
+    val destination: HoldingIdentity,
     val lastSendTimestamp: Instant,
     val encryptionKeyId: String,
     val encryptionKeyTenant: String,
@@ -32,6 +32,7 @@ data class InboundSessionMetadata(
         const val ENCRYPTION_TENANT = "encryptionTenant"
         const val STATUS = "status"
         const val EXPIRY = "expiry"
+        val SESSION_EXPIRY_PERIOD: Duration = Duration.ofDays(7)
     }
 
     constructor(metadata: Metadata): this(
@@ -45,7 +46,7 @@ data class InboundSessionMetadata(
     )
 
     fun lastSendExpired(): Boolean {
-        return Instant.now() > lastSendTimestamp + SessionManagerImpl.SessionManagerConfig
+        return Instant.now() > lastSendTimestamp + SESSION_EXPIRY_PERIOD
     }
 
     fun toMetadata(): Metadata{
