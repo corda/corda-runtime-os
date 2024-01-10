@@ -362,8 +362,7 @@ class MerkleTreeTest {
         """)
 
         val proof2 = proof.subset(trivialHashDigestProvider, listOf(4))
-        assertThat(proof2.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
-            """
+        assertThat(proof2.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
                 00000612 (calc)┳0000069F (input 1)┳unknown        ┳unknown            filtered
                                ┃                  ┃               ┗unknown            filtered
                                ┃                  ┗unknown        ┳unknown            filtered
