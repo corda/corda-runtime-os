@@ -16,6 +16,7 @@ import net.corda.lifecycle.domino.logic.SimpleDominoTile
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.SerialisableSessionData
 import net.corda.p2p.crypto.protocol.api.Session
+import net.corda.p2p.linkmanager.TraceableItem
 import net.corda.p2p.linkmanager.sessions.metadata.InboundSessionMetadata
 import net.corda.p2p.linkmanager.sessions.metadata.InboundSessionStatus
 import net.corda.p2p.linkmanager.state.SessionState
@@ -80,9 +81,10 @@ internal class StatefulSessionManagerImpl(
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 
-    private data class InboundSessionMessageContext(
+    private data class InboundSessionMessageContext <T>(
         val sessionId: String,
-        val inboundSessionMessage: InboundSessionMessage
+        val inboundSessionMessage: InboundSessionMessage,
+        val trace: T
     )
 
     private sealed class InboundSessionMessage {
@@ -94,24 +96,38 @@ internal class StatefulSessionManagerImpl(
         ): InboundSessionMessage()
     }
 
+    private data class TracableResult<T>(
+        val item: T,
+        val message: LinkOutMessage,
+        val stateUpdate: State
+    )
+
     private fun <T> processInboundSessionMessages(messages: List<Pair<T, LinkInMessage?>>): Collection<Pair<T, LinkOutMessage?>> {
         val messageContexts = messages.mapNotNull {
-            it.second?.payload?.getSessionIdIfInboundSessionMessage()
+            it.second?.payload?.getSessionIdIfInboundSessionMessage(it.first)
         }
         val states = stateManager.get(messageContexts.map { it.sessionId })
-        messageContexts.map {
+        val result = messageContexts.map {
             val state = states[it.sessionId]
             when (it.inboundSessionMessage) {
                 is InboundSessionMessage.InitiatorHelloMessage -> {
-                    processInitiatorHello(state, it.inboundSessionMessage)
+                    processInitiatorHello(state, it.inboundSessionMessage)?.let { (stateUpdate, message) ->
+                        TracableResult(it.trace, stateUpdate, message)
+                    }
                 }
                 is InboundSessionMessage.InitiatorHandshakeMessage -> {
-                    processInitiatorHandshake(state, it.inboundSessionMessage)
+                    processInitiatorHandshake(state, it.inboundSessionMessage)?.let { (stateUpdate, message) ->
+                        TracableResult(it.trace, stateUpdate, message)
+                    }
                 }
             }
+        }.toMutableList()
+        stateManager.update(result.mapNotNull { it?.stateUpdate }).map { (failedUpdateKey, _) ->
+            val toRemove = result.find { it?.stateUpdate?.key == failedUpdateKey }
+            result.remove(toRemove)
         }
 
-        return emptyList()
+        return result.mapNotNull { it?.let {  it.item to it.message }}
     }
 
     /**
@@ -223,10 +239,10 @@ internal class StatefulSessionManagerImpl(
         }
     }
 
-    private fun Any.getSessionIdIfInboundSessionMessage(): InboundSessionMessageContext? {
+    private fun <T> Any.getSessionIdIfInboundSessionMessage(trace: T): InboundSessionMessageContext<T>? {
         return when (this) {
-            is InitiatorHelloMessage -> InboundSessionMessageContext(this.header!!.sessionId, InboundSessionMessage.InitiatorHelloMessage(this))
-            is InitiatorHandshakeMessage -> InboundSessionMessageContext(this.header!!.sessionId, InboundSessionMessage.InitiatorHandshakeMessage(this))
+            is InitiatorHelloMessage -> InboundSessionMessageContext(this.header!!.sessionId, InboundSessionMessage.InitiatorHelloMessage(this), trace)
+            is InitiatorHandshakeMessage -> InboundSessionMessageContext(this.header!!.sessionId, InboundSessionMessage.InitiatorHandshakeMessage(this), trace)
             else -> null
         }
     }
