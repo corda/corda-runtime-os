@@ -1,6 +1,7 @@
 package net.corda.crypto.rest
 
 import net.corda.crypto.rest.response.KeyRotationResponse
+import net.corda.crypto.rest.response.KeyRotationStatusResponse
 import net.corda.rest.RestResource
 import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.annotations.HttpGET
@@ -29,14 +30,14 @@ interface KeyRotationRestResource : RestResource {
      *         the list of rotations runs in progress.
      */
     @HttpGET(
-        path = "unmanaged/rotation/{requestId}",
+        path = "unmanaged/rotation/{rootKeyAlias}",
         description = "This method gets the status of the current rotation.",
         responseDescription = "",
     )
     fun getKeyRotationStatus(
-        @RestPathParameter(description = "The requestId obtained when starting key rotation request.")
-        requestId: String
-    ): List<Pair<String, String>>
+        @RestPathParameter(description = "The rootKeyAlias we are rotating away from.")
+        rootKeyAlias: String
+    ): KeyRotationStatusResponse
 
     /**
      * Initiates the key rotation process. 

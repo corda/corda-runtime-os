@@ -7,10 +7,12 @@ import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.softhsm.WrappingRepositoryFactory
 import net.corda.data.crypto.wire.ops.key.rotation.IndividualKeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
-import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationStatus
 import net.corda.data.crypto.wire.ops.key.rotation.KeyType
+import net.corda.data.crypto.wire.ops.key.status.UnmanagedKeyStatus
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.STATE_TYPE
+import net.corda.libs.statemanager.api.MetadataFilter
+import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.processor.DurableProcessor
@@ -19,7 +21,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Crypto.REWRAP_MESSAGE_TOPIC
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.LoggerFactory
-import java.time.Instant
 import java.util.UUID
 
 /**
@@ -46,11 +47,38 @@ class CryptoRekeyBusProcessor(
     override fun onNext(events: List<Record<String, KeyRotationRequest>>): List<Record<*, *>> {
         logger.debug("received ${events.size} key rotation requests")
 
-        val serializer = cordaAvroSerializationFactory.createAvroSerializer<KeyRotationStatus>()
+        // should serializer be instantiated in the companion object as a static object for the whole class?
+        val serializer = cordaAvroSerializationFactory.createAvroSerializer<UnmanagedKeyStatus>()
 
         events.mapNotNull { it.timestamp to it.value }.forEach { (timestamp, request) ->
             logger.debug("processing $request")
             require(request != null)
+
+
+            // TODO: first delete the data in state manager, so we can correctly report on the key rotation status
+            // TODO: do we need to delete key status here as well? Probably yes, that means we don't need to filter, if key starts with 'kr' or 'ks'
+            // TODO: deal with optimistic locking, just in case. We should have checked in the rest worker if key rotation is in progress and don't start a new one if one is
+            val failedToDelete = stateManager!!.delete(
+                stateManager.findByMetadata(
+                    MetadataFilter(
+                        "rootKeyAlias",
+                        Operation.Equals,
+                        request.oldParentKeyAlias
+                    )
+                ).values
+            )
+
+            println("XXX: RekeyBusProcessor failed to delete following states from the state manager: ${failedToDelete.keys}")
+
+
+            // Check first if there is a finished key rotation for oldParentKeyAlias
+//            if (hasPreviousKeyRotationFinished(request.oldParentKeyAlias)) {
+//                deleteStateManagerRecords(request.oldParentKeyAlias)
+//            } else {
+//                logger.error("There is already a key rotation of unmanaged wrapping key with alias ${request.oldParentKeyAlias} in progress.")
+//                return emptyList()
+//            }
+
             // root (unmanaged) keys can be used in clusterDB and vNodeDB
             // then for each key we will send a record on Kafka
             // We do not have a code that deals with rewrapping the root key in a cluster DB
@@ -66,7 +94,7 @@ class CryptoRekeyBusProcessor(
             val virtualNodeTenantIds = virtualNodeInfo.map { it.holdingIdentity.shortHash.toString() }
 
             // we do not need to use separate wrapping repositories for the different cluster level tenants,
-            // since they share the cluster crypto database. So we scan over the virtual node tenants and an arbitary
+            // since they share the cluster crypto database. So we scan over the virtual node tenants and an arbitrary
             // choice of cluster level tenant. We pick CryptoTenants.CRYPTO as the arbitrary cluster level tenant,
             // and we should not also check CryptoTenants.P2P and CryptoTenants.REST since if we do we'll get duplicate.
             val allTenantIds = virtualNodeTenantIds + listOf(CryptoTenants.CRYPTO)
@@ -88,38 +116,66 @@ class CryptoRekeyBusProcessor(
                             request.newParentKeyAlias,
                             wrappingKeyInfo.alias,
                             KeyType.UNMANAGED
-                        )
+                        ),
+                        timestamp // TODO: probably remove timestamp? not sure if we need this here. If we are keeping the track of start time, than yes, this is useful
                     )
                 }.toList()
             )
 
-            val now = Instant.now()
-            val status = KeyRotationStatus(
-                request.requestId,
-                request.managedKey,
-                request.oldParentKeyAlias,
-                request.newParentKeyAlias,
-                request.oldGeneration,
-                request.tenantId,
-                0, // We don't know the new generation number at this stage
-                0, // We don't know how many keys are yet rotated
-                targetWrappingKeys.count(),
-                Instant.ofEpochMilli(timestamp),
-                now
-            )
 
-            val flattened = checkNotNull(serializer.serialize(status))
-            stateManager?.create(
-                listOf(
+            val records = mutableListOf<State>()
+
+            // First group by tenantId/vNode
+            targetWrappingKeys.groupBy { it.first }.forEach {
+                logger.info("XXX: Grouping wrapping keys by vNode/tenantId ${it.key}")
+                val status = UnmanagedKeyStatus(request.oldParentKeyAlias, it.value.size, 0)
+                records.add(
                     State(
-                        request.requestId,
-                        flattened, 1,
-                        Metadata(mapOf(STATE_TYPE to status::class.java.name))
+                        "kr${it.key}",
+                        serializer.serialize(status)!!,
+                        1,
+                        Metadata(
+                            mapOf("rootKeyAlias" to request.oldParentKeyAlias,
+                                STATE_TYPE to status::class.java.name)
+                        )
                     )
                 )
-            )
+
+            }
+
+            logger.info("XXX: Storing wrapping keys grouped by tenantId into state manager db.")
+            stateManager.create(records)
+
+
+            //val now = Instant.now()
+//            val status = KeyRotationStatus(
+//                request.requestId,
+//                request.managedKey,
+//                request.oldParentKeyAlias,
+//                request.newParentKeyAlias,
+//                request.oldGeneration,
+//                request.tenantId,
+//                0, // We don't know the new generation number at this stage
+//                0, // We don't know how many keys are yet rotated
+//                targetWrappingKeys.count(),
+//                Instant.ofEpochMilli(timestamp),
+//                now
+//            )
+//
+//            val flattend = checkNotNull(serializer.serialize(status))
+//            stateManager?.create(listOf(State(request.requestId, flattend, 1, Metadata(), now)))
         }
 
         return emptyList()
     }
+
+//    private fun hasPreviousKeyRotationFinished(oldParentKeyAlias: String): Boolean {
+//        // We need to expand this to check if the key rotation has finished!
+//        // That means to see if total number of expected keys to be rotated matches the actually rotated keys
+//        return stateManager!!.get(listOf(oldParentKeyAlias)).isNotEmpty()
+//    }
+//
+//    private fun deleteStateManagerRecords(oldParentKeyAlias: String) {
+//        stateManager!!.delete(stateManager.get(listOf(oldParentKeyAlias)).values)
+//    }
 }

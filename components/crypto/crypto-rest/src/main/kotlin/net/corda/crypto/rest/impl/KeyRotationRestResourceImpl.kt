@@ -5,12 +5,17 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.rest.KeyRotationRestResource
 import net.corda.crypto.rest.response.KeyRotationResponse
+import net.corda.crypto.rest.response.KeyRotationStatusResponse
+import net.corda.crypto.rest.response.TenantIdWrappingKeysStatus
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationStatus
 import net.corda.data.crypto.wire.ops.key.rotation.KeyType
+import net.corda.data.crypto.wire.ops.key.status.UnmanagedKeyStatus
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.libs.statemanager.api.MetadataFilter
+import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.DependentComponents
@@ -29,6 +34,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.rest.response.ResponseEntity
 import net.corda.schema.Schemas.Crypto.REKEY_MESSAGE_TOPIC
@@ -73,6 +79,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
     private var stateManager: StateManager? = null
     private val serializer = cordaAvroSerializationFactory.createAvroSerializer<KeyRotationStatus>()
     private val deserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, KeyRotationStatus::class.java)
+    private val deserializer1 = cordaAvroSerializationFactory.createAvroDeserializer({}, UnmanagedKeyStatus::class.java)
 
     override val targetInterface: Class<KeyRotationRestResource> = KeyRotationRestResource::class.java
     override val protocolVersion: Int = platformInfoProvider.localWorkerPlatformVersion
@@ -154,18 +161,25 @@ class KeyRotationRestResourceImpl @Activate constructor(
                 .also { it.start() }
     }
 
-    override fun getKeyRotationStatus(requestId: String): List<Pair<String, String>> {
+    override fun getKeyRotationStatus(rootKeyAlias: String): KeyRotationStatusResponse {
         tryWithExceptionHandling(logger, "retrieve key rotation status") {
             checkNotNull(stateManager)
         }
 
-        val entries = stateManager!!.get(listOf(requestId))
-        val result = mutableListOf<Pair<String, String>>()
-        entries.forEach { entry ->
-            val keyRotationStatus = deserializer.deserialize(entry.value.value)!!
-            result.add(keyRotationStatus.oldParentKeyAlias to keyRotationStatus.requestId.toString())
+        val entries = stateManager!!.findByMetadata(MetadataFilter("rootKeyAlias", Operation.Equals, rootKeyAlias))
+        // if entries are empty, there is no rootKeyAlias data stored in the state manager, so no key rotation is in progress
+        if (entries.isNullOrEmpty()) throw ResourceNotFoundException("No key rotation for $rootKeyAlias is in progress.")
+
+        val result = mutableListOf<Pair<String, TenantIdWrappingKeysStatus>>()
+        entries // TODO: we need to filter only those values where key starts with 'kr' (key rotation)
+            .forEach { (key, state) ->
+                val keyRotationStatus = deserializer1.deserialize(state.value)
+                println("XXX: key: $key, state.key: ${state.key}, state.value: $keyRotationStatus")
+                // key.drop(2) to remove first two chars from the key when printing it out?
+                result.add(key to TenantIdWrappingKeysStatus(keyRotationStatus!!.total, keyRotationStatus.rotatedKeys))
         }
-        return result
+
+        return KeyRotationStatusResponse(rootKeyAlias, result)
     }
 
     override fun startKeyRotation(oldKeyAlias: String, newKeyAlias: String): ResponseEntity<KeyRotationResponse> {
@@ -197,6 +211,11 @@ fun doKeyRotation(
 ): ResponseEntity<KeyRotationResponse> {
     // We cannot validate oldKeyAlias or newKeyAlias early here on the client side of the RPC since
     // those values are considered sensitive.
+
+
+    // TODO: we should now be able to check if another key rotation is in progress by checking the state manager db
+    // TODO: we can possibly add status in the key rotation metadata and if any rotation for tenantId hasn't yet finished,
+    // it can say so.
 
     val requestId = UUID.randomUUID().toString()
     val keyRotationRequest = KeyRotationRequest(
