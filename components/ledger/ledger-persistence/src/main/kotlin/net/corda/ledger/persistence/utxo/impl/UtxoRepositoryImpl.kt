@@ -378,7 +378,7 @@ class UtxoRepositoryImpl @Activate constructor(
         transactionId: String,
         groupIndex: Int
     ): List<MerkleProofDto> {
-        return entityManager.createNativeQuery(queryProvider.persistMerkleProof, Tuple::class.java)
+        return entityManager.createNativeQuery(queryProvider.findMerkleProofs, Tuple::class.java)
             .setParameter("transactionId", transactionId)
             .setParameter("groupIndex", groupIndex)
             .resultListAsTuples()
