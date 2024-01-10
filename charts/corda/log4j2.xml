@@ -2,7 +2,7 @@
 <Configuration status="INFO">
     <Appenders>
         <Console name="json" target="SYSTEM_OUT">
-            <JsonTemplateLayout file="cordaLayout.json">
+            <JsonTemplateLayout eventTemplateUri="classpath:cordaLayout.json">
             </JsonTemplateLayout>
         </Console>
         <Console name="text" target="SYSTEM_OUT">

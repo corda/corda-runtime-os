@@ -482,20 +482,6 @@ data:
 {{- end }}
 
 {{/*
-Config map for Log4J json template
-*/}}
-{{- define "corda.log4jJsonTemplateConfigMap" -}}
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: cordaLayout.json
-data:
-  cordaLayout.json: | {{ $.Files.Get "cordaLayout.json" | nindent 4 }}
-{{- end }}
-
-
-{{/*
 Secret creation
 */}}
 {{- define "corda.secret" -}}
