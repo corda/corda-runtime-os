@@ -34,31 +34,6 @@ interface ExternalEventResponseFactory {
     fun success(flowExternalEventContext: ExternalEventContext, payload: Any): Record<String, FlowEvent>
 
     /**
-     * Creates a response representing a failed attempt at processing an external event which should be retried by
-     * the calling flow.
-     *
-     * @param flowExternalEventContext The [ExternalEventContext] that the received event contained.
-     * @param throwable The error that occurred.
-     *
-     * @return A [FlowEvent] record containing a [ExternalEventResponse] to send back to the calling flow.
-     */
-    fun transientError(flowExternalEventContext: ExternalEventContext, throwable: Throwable): Record<String, FlowEvent>
-
-    /**
-     * Creates a response representing a failed attempt at processing an external event which should be retried by
-     * the calling flow.
-     *
-     * @param flowExternalEventContext The [ExternalEventContext] that the received event contained.
-     * @param exceptionEnvelope The error that occurred.
-     *
-     * @return A [FlowEvent] record containing a [ExternalEventResponse] to send back to the calling flow.
-     */
-    fun transientError(
-        flowExternalEventContext: ExternalEventContext,
-        exceptionEnvelope: ExceptionEnvelope
-    ): Record<String, FlowEvent>
-
-    /**
      * Creates a response representing a failed attempt at processing an external event which should be propagated to
      * the calling flow and rethrown.
      *
