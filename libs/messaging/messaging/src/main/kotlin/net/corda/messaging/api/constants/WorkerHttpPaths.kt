@@ -5,7 +5,7 @@ package net.corda.messaging.api.constants
  * full RPC endpoint URI. E.g.: "${messagingConfig.getString(CRYPTO_WORKER_REST_ENDPOINT)}$CRYPTO_PATH"
  *
  */
-object WorkerRPCPaths {
+object WorkerHttpPaths {
     const val CRYPTO_PATH = "/crypto"
     const val LEDGER_PATH = "/ledger"
     const val PERSISTENCE_PATH = "/persistence"

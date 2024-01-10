@@ -2,7 +2,7 @@ package net.corda.entityprocessor.impl
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.persistence.EntityRequest
-import net.corda.messaging.api.processor.SyncRPCProcessor
+import net.corda.messaging.api.processor.SyncHttpProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import org.assertj.core.api.Assertions
@@ -20,9 +20,9 @@ internal class EntityRequestSubscriptionFactoryImplTest {
         val expectedSubscription = mock<RPCSubscription<EntityRequest, FlowEvent>>()
 
         whenever(
-            subscriptionFactory.createHttpRPCSubscription(
+            subscriptionFactory.createSyncHttpSubscription(
                 any(),
-                any<SyncRPCProcessor<EntityRequest, FlowEvent>>(),
+                any<SyncHttpProcessor<EntityRequest, FlowEvent>>(),
             )
         ).thenReturn(expectedSubscription)
 

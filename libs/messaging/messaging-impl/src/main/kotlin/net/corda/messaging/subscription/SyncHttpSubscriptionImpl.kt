@@ -6,9 +6,9 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaHTTPServerTransientException
-import net.corda.messaging.api.processor.SyncRPCProcessor
+import net.corda.messaging.api.processor.SyncHttpProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
-import net.corda.messaging.api.subscription.config.SyncRPCConfig
+import net.corda.messaging.api.subscription.config.SyncHttpConfig
 import net.corda.rest.ResponseCode
 import net.corda.web.api.Endpoint
 import net.corda.web.api.HTTPMethod
@@ -19,14 +19,14 @@ import org.slf4j.LoggerFactory
 import java.util.*
 
 /**
- * HTTP-based implementation of a RPCSubscription that processes requests synchronously.
+ * HTTP-based implementation of a [RPCSubscription] that processes requests synchronously.
  *
  * This subscription will register and listen to an endpoint that will be registered to the webserver on
  * subscription start.
  *
  * @param REQUEST the request Type to be deserialized
  * @param RESPONSE the response Type to be serialized
- * @property rpcConfig the config object that contains endpoint for the subscription to listen on
+ * @property config the endpoint configuration for the subscription to listen on
  * @property processor processes incoming requests. Produces an output of RESPONSE.
  * @property lifecycleCoordinatorFactory
  * @property webServer webserver component
@@ -34,9 +34,9 @@ import java.util.*
  * @property cordaAvroDeserializer deserializer for the REQUEST type
  */
 @Suppress("LongParameterList")
-internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
-    private val rpcConfig: SyncRPCConfig,
-    private val processor: SyncRPCProcessor<REQUEST, RESPONSE>,
+internal class SyncHttpSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
+    private val config: SyncHttpConfig,
+    private val processor: SyncHttpProcessor<REQUEST, RESPONSE>,
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val webServer: WebServer,
     private val cordaAvroSerializer: CordaAvroSerializer<RESPONSE>,
@@ -46,13 +46,13 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private lateinit var endpoint: Endpoint
     override val subscriptionName =
         LifecycleCoordinatorName(
-            "RPCSubscription-${rpcConfig.endpoint.removePrefix("/")}-${UUID.randomUUID()}"
+            "RPCSubscription-${config.endpoint.removePrefix("/")}-${UUID.randomUUID()}"
         )
 
     private val coordinator = lifecycleCoordinatorFactory.createCoordinator(subscriptionName) { _, _ -> }
 
     override fun start() {
-         registerEndpoint(rpcConfig.endpoint, processor)
+         registerEndpoint(config.endpoint, processor)
         coordinator.start()
         coordinator.updateStatus(LifecycleStatus.UP)
     }
@@ -69,7 +69,7 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
 
     private fun registerEndpoint(
         rpcEndpoint: String,
-        processor: SyncRPCProcessor<REQUEST, RESPONSE>,
+        processor: SyncHttpProcessor<REQUEST, RESPONSE>,
     ) {
         val server = webServer
 
@@ -118,7 +118,7 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     ): WebContext {
         when (ex) {
             is CordaHTTPServerTransientException -> {
-                "Transient error processing RPC request for $endpoint: ${ex.message}".also { msg ->
+                "Transient error processing HTTP request for $endpoint: ${ex.message}".also { msg ->
                     log.warn(msg, ex)
                     context.result(msg)
                 }
@@ -126,7 +126,7 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             }
 
             else -> {
-                "Failed to process RPC request for $endpoint".also { message ->
+                "Failed to process HTTP request for $endpoint".also { message ->
                     log.warn(message, ex)
                     context.result(message)
                 }

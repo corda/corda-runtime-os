@@ -22,7 +22,7 @@ interface MessagingClientFactoryFactory {
      *
      * @param id RPC client ID.
      */
-    fun createRPCClientFactory(
+    fun createSyncHttpClientFactory(
         id: String
     ) : MessagingClientFactory
 }

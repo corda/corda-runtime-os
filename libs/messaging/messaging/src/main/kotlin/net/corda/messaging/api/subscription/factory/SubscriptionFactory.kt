@@ -4,7 +4,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
-import net.corda.messaging.api.processor.SyncRPCProcessor
+import net.corda.messaging.api.processor.SyncHttpProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -12,7 +12,7 @@ import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
-import net.corda.messaging.api.subscription.config.SyncRPCConfig
+import net.corda.messaging.api.subscription.config.SyncHttpConfig
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
@@ -154,20 +154,20 @@ interface SubscriptionFactory {
     ): RPCSubscription<REQUEST, RESPONSE>
 
     /**
-     * Create an http based instance of the [RPCSubscription]
+     * Create an http based instance of the [RPCSubscription].
      * This subscription is used to pick up requests of type [REQUEST]
      * The request is then processed and a response of type [RESPONSE] is posted back to the sender
      *
-     * HTTP RPC requests are handled synchronously.
+     * HTTP requests are handled synchronously.
      *
      * On start, the subscription registers a processor to an endpoint which will run anytime a request is
      * received by the underlying webserver
      *
-     * @param rpcConfig Define an endpoint for the subscription to listen on eg '/rpc-endpoint'.
+     * @param httpConfig Define an endpoint for the subscription to listen on.
      * @param processor processor in charge of handling incoming requests
      */
-    fun <REQUEST : Any, RESPONSE : Any> createHttpRPCSubscription(
-        rpcConfig: SyncRPCConfig,
-        processor: SyncRPCProcessor<REQUEST, RESPONSE>
+    fun <REQUEST : Any, RESPONSE : Any> createSyncHttpSubscription(
+        httpConfig: SyncHttpConfig,
+        processor: SyncHttpProcessor<REQUEST, RESPONSE>
     ): RPCSubscription<REQUEST, RESPONSE>
 }

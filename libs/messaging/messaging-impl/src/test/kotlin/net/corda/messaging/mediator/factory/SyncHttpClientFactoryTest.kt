@@ -7,14 +7,14 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 
-class RPCClientFactoryTest {
+class SyncHttpClientFactoryTest {
     private lateinit var cordaSerializationFactory: CordaAvroSerializationFactory
-    private lateinit var rpcClientFactory: RPCClientFactory
+    private lateinit var syncHttpClientFactory: SyncHttpClientFactory
 
     @BeforeEach
     fun beforeEach() {
         cordaSerializationFactory = mock(CordaAvroSerializationFactory::class.java)
-        rpcClientFactory = RPCClientFactory(
+        syncHttpClientFactory = SyncHttpClientFactory(
             "RPCClient1",
             mock(),
             mock()
@@ -24,7 +24,7 @@ class RPCClientFactoryTest {
     @Test
     fun testCreateRPCClient() {
         val config = MessagingClientConfig {}
-        val rpcClient = rpcClientFactory.create(config)
+        val rpcClient = syncHttpClientFactory.create(config)
         Assertions.assertNotNull(rpcClient)
     }
 }

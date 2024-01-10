@@ -8,7 +8,7 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.messaging.api.subscription.RPCSubscription
-import net.corda.messaging.api.subscription.config.SyncRPCConfig
+import net.corda.messaging.api.subscription.config.SyncHttpConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -34,7 +34,7 @@ class BatchedUniquenessCheckerLifecycleTests {
         }
         val subscription = mock<RPCSubscription<UniquenessCheckRequestAvro, FlowEvent>>()
         val subscriptionFactory = mock<SubscriptionFactory>() {
-            on { createHttpRPCSubscription(any(), any<UniquenessCheckMessageProcessor>()) } doReturn subscription
+            on { createSyncHttpSubscription(any(), any<UniquenessCheckMessageProcessor>()) } doReturn subscription
         }
         BatchedUniquenessCheckerLifecycleImpl(
             coordinatorFactory,
@@ -47,8 +47,8 @@ class BatchedUniquenessCheckerLifecycleTests {
         eventHandlerCaptor.firstValue
             .processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
 
-        verify(subscriptionFactory).createHttpRPCSubscription(
-            argThat { config: SyncRPCConfig ->
+        verify(subscriptionFactory).createSyncHttpSubscription(
+            argThat { config: SyncHttpConfig ->
                 config.endpoint == "/uniqueness-checker"
 
             },

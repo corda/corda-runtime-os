@@ -21,7 +21,7 @@ import net.corda.data.crypto.wire.ops.flow.queries.ByIdsFlowQuery
 import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.data.flow.event.FlowEvent
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
-import net.corda.messaging.api.processor.SyncRPCProcessor
+import net.corda.messaging.api.processor.SyncHttpProcessor
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
@@ -41,7 +41,7 @@ class CryptoFlowOpsProcessor(
     private val externalEventResponseFactory: ExternalEventResponseFactory,
     config: RetryingConfig,
     private val keyEncodingService: KeyEncodingService
-) : SyncRPCProcessor<FlowOpsRequest, FlowEvent> {
+) : SyncHttpProcessor<FlowOpsRequest, FlowEvent> {
 
     override val requestClass = FlowOpsRequest::class.java
     override val responseClass = FlowEvent::class.java

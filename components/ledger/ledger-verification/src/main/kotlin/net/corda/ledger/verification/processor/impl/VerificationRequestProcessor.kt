@@ -10,7 +10,7 @@ import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.verification.processor.VerificationRequestHandler
 import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.messaging.api.exception.CordaHTTPServerTransientException
-import net.corda.messaging.api.processor.SyncRPCProcessor
+import net.corda.messaging.api.processor.SyncHttpProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -24,7 +24,8 @@ import java.io.NotSerializableException
 import java.time.Duration
 
 /**
- * Handles incoming requests, typically from the flow worker, and sends responses.
+ * Handles incoming synchronous HTTP requests, typically from the flow worker, and returns responses
+ * via messaging library.
  */
 @Suppress("LongParameterList")
 class VerificationRequestProcessor(
@@ -32,7 +33,7 @@ class VerificationRequestProcessor(
     private val verificationSandboxService: VerificationSandboxService,
     private val requestHandler: VerificationRequestHandler,
     private val responseFactory: ExternalEventResponseFactory
-) : SyncRPCProcessor<TransactionVerificationRequest, FlowEvent> {
+) : SyncHttpProcessor<TransactionVerificationRequest, FlowEvent> {
 
     override val requestClass = TransactionVerificationRequest::class.java
     override val responseClass = FlowEvent::class.java

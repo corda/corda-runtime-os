@@ -37,7 +37,7 @@ class MessagingClientFactoryFactoryTest {
 
     @Test
     fun testCreateRPCClientFactory() {
-        val rpcClientFactory = messagingClientFactoryFactory.createRPCClientFactory(
+        val rpcClientFactory = messagingClientFactoryFactory.createSyncHttpClientFactory(
             "rpcClient1"
         )
 

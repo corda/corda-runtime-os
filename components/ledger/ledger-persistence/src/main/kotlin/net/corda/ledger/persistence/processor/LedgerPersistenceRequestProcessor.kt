@@ -7,7 +7,7 @@ import net.corda.flow.utils.toMap
 import net.corda.ledger.persistence.common.InconsistentLedgerStateException
 import net.corda.ledger.persistence.common.UnsupportedLedgerTypeException
 import net.corda.ledger.persistence.common.UnsupportedRequestTypeException
-import net.corda.messaging.api.processor.SyncRPCProcessor
+import net.corda.messaging.api.processor.SyncHttpProcessor
 import net.corda.metrics.CordaMetrics
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.ResponseFactory
@@ -29,7 +29,7 @@ class LedgerPersistenceRequestProcessor(
     private val entitySandboxService: EntitySandboxService,
     private val delegatedRequestHandlerSelector: DelegatedRequestHandlerSelector,
     private val responseFactory: ResponseFactory
-) : SyncRPCProcessor<LedgerPersistenceRequest, FlowEvent> {
+) : SyncHttpProcessor<LedgerPersistenceRequest, FlowEvent> {
 
     override val requestClass = LedgerPersistenceRequest::class.java
     override val responseClass = FlowEvent::class.java

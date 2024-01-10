@@ -6,7 +6,7 @@ import net.corda.ledger.utxo.token.cache.factories.TokenCacheEventProcessorFacto
 import net.corda.ledger.utxo.token.cache.impl.MINIMUM_SMART_CONFIG
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
 import net.corda.ledger.utxo.token.cache.services.TokenCacheSubscriptionHandler
-import net.corda.ledger.utxo.token.cache.services.TokenSelectionSyncRPCProcessor
+import net.corda.ledger.utxo.token.cache.services.TokenSelectionSyncHttpProcessor
 import net.corda.ledger.utxo.token.cache.services.internal.TokenCacheSubscriptionHandlerImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.StateManager
@@ -25,7 +25,7 @@ import org.mockito.kotlin.whenever
 class TokenCacheSubscriptionHandlerImplTest {
     private val rpcSubscription = mock<RPCSubscription<TokenPoolCacheEvent, FlowEvent>>()
     private val subscriptionFactory = mock<SubscriptionFactory>().apply {
-        whenever(createHttpRPCSubscription<TokenPoolCacheEvent, FlowEvent>(any(), any())).thenReturn(
+        whenever(createSyncHttpSubscription<TokenPoolCacheEvent, FlowEvent>(any(), any())).thenReturn(
             rpcSubscription
         )
     }
@@ -36,13 +36,13 @@ class TokenCacheSubscriptionHandlerImplTest {
     private val stateManagerFactory = mock<StateManagerFactory>().apply {
         whenever(create(any())).thenReturn(stateManager)
     }
-    private val tokenSelectionSyncRPCProcessor = mock<TokenSelectionSyncRPCProcessor>()
+    private val tokenSelectionSyncHttpProcessor = mock<TokenSelectionSyncHttpProcessor>()
     private val tokenCacheEventProcessorFactory = mock<TokenCacheEventProcessorFactory>().apply {
         whenever(
-            createTokenSelectionSyncRPCProcessor(
+            createTokenSelectionSyncHttpProcessor(
                 any()
             )
-        ).thenReturn(tokenSelectionSyncRPCProcessor)
+        ).thenReturn(tokenSelectionSyncHttpProcessor)
     }
 
     @Test
@@ -121,7 +121,7 @@ class TokenCacheSubscriptionHandlerImplTest {
         val context = getTokenCacheSubscriptionHandlerTestContext()
         val subName = LifecycleCoordinatorName("sub1")
 
-        whenever(tokenCacheEventProcessorFactory.createTokenSelectionSyncRPCProcessor(any())).thenThrow(IllegalStateException())
+        whenever(tokenCacheEventProcessorFactory.createTokenSelectionSyncHttpProcessor(any())).thenThrow(IllegalStateException())
 
         context.run {
             addDependency(subName)

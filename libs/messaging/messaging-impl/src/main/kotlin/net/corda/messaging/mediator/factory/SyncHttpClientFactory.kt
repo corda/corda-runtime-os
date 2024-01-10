@@ -7,9 +7,9 @@ import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.config.MessagingClientConfig
 import net.corda.messaging.api.mediator.factory.MessagingClientFactory
-import net.corda.messaging.mediator.RPCClient
+import net.corda.messaging.mediator.SyncHttpClient
 
-class RPCClientFactory(
+class SyncHttpClientFactory(
     private val id: String,
     private val cordaSerializationFactory: CordaAvroSerializationFactory,
     private val platformDigestService: PlatformDigestService
@@ -21,7 +21,7 @@ class RPCClientFactory(
     }
 
     override fun create(config: MessagingClientConfig): MessagingClient {
-        return RPCClient(
+        return SyncHttpClient(
             id,
             cordaSerializationFactory,
             platformDigestService,

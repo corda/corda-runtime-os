@@ -5,9 +5,9 @@ import net.corda.flow.external.events.responses.factory.ExternalEventResponseFac
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.verification.processor.VerificationSubscriptionFactory
 import net.corda.ledger.verification.sandbox.VerificationSandboxService
-import net.corda.messaging.api.constants.WorkerRPCPaths.VERIFICATION_PATH
+import net.corda.messaging.api.constants.WorkerHttpPaths.VERIFICATION_PATH
 import net.corda.messaging.api.subscription.RPCSubscription
-import net.corda.messaging.api.subscription.config.SyncRPCConfig
+import net.corda.messaging.api.subscription.config.SyncHttpConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import org.osgi.service.component.annotations.Activate
@@ -36,7 +36,7 @@ class VerificationSubscriptionFactoryImpl @Activate constructor(
             VerificationRequestHandlerImpl(responseFactory),
             responseFactory
         )
-        val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, VERIFICATION_PATH)
-        return subscriptionFactory.createHttpRPCSubscription(rpcConfig, processor)
+        val config = SyncHttpConfig(SUBSCRIPTION_NAME, VERIFICATION_PATH)
+        return subscriptionFactory.createSyncHttpSubscription(config, processor)
     }
 }

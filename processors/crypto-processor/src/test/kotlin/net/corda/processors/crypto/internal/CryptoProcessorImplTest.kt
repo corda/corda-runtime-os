@@ -122,14 +122,14 @@ class CryptoProcessorImplTest {
             )
                 .thenReturn(rpcOpsSubscription)
             whenever(
-                it.createHttpRPCSubscription(
+                it.createSyncHttpSubscription(
                     any(),
                     any<SessionDecryptionProcessor>()
                 )
             )
                 .thenReturn(decryptionSubscription)
             whenever(
-                it.createHttpRPCSubscription(
+                it.createSyncHttpSubscription(
                     any(),
                     any<SessionEncryptionProcessor>()
                 )

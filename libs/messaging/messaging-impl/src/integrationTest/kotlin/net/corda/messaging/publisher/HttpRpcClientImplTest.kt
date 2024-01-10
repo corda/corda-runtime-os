@@ -9,10 +9,10 @@ import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messagebus.kafka.serialization.CordaAvroDeserializerImpl
 import net.corda.messagebus.kafka.serialization.CordaAvroSerializerImpl
-import net.corda.messaging.api.processor.SyncRPCProcessor
+import net.corda.messaging.api.processor.SyncHttpProcessor
 import net.corda.messaging.api.publisher.send
-import net.corda.messaging.api.subscription.config.SyncRPCConfig
-import net.corda.messaging.subscription.SyncRPCSubscriptionImpl
+import net.corda.messaging.api.subscription.config.SyncHttpConfig
+import net.corda.messaging.subscription.SyncHttpSubscriptionImpl
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.web.server.JavalinServer
 import org.assertj.core.api.Assertions.assertThat
@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger
 class HttpRpcClientImplTest {
     @Test
     fun `client sends the correct request to the server`() {
-        val config = SyncRPCConfig(
+        val config = SyncHttpConfig(
             name = "test",
             endpoint = "/endpoint",
         )
@@ -48,7 +48,7 @@ class HttpRpcClientImplTest {
                 listOf("three"),
             )
         )
-        val processor = object : SyncRPCProcessor<GatewayTlsCertificates, GatewayTruststore> {
+        val processor = object : SyncHttpProcessor<GatewayTlsCertificates, GatewayTruststore> {
             private val index = AtomicInteger()
             override fun process(request: GatewayTlsCertificates): GatewayTruststore? {
                 requests.add(request)
@@ -73,7 +73,7 @@ class HttpRpcClientImplTest {
         }
         webServer.start(port)
         val schemaRegistry = AvroSchemaRegistryImpl()
-        SyncRPCSubscriptionImpl(
+        SyncHttpSubscriptionImpl(
             config,
             processor,
             lifecycleCoordinatorFactory,

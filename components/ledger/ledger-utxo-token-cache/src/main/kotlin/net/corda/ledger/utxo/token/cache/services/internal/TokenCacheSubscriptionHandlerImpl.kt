@@ -3,7 +3,7 @@ package net.corda.ledger.utxo.token.cache.services.internal
 import net.corda.ledger.utxo.token.cache.factories.TokenCacheEventProcessorFactory
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
 import net.corda.ledger.utxo.token.cache.services.TokenCacheSubscriptionHandler
-import net.corda.ledger.utxo.token.cache.services.TokenSelectionSyncRPCProcessor
+import net.corda.ledger.utxo.token.cache.services.TokenSelectionSyncHttpProcessor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
@@ -14,8 +14,8 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.constants.WorkerRPCPaths
-import net.corda.messaging.api.subscription.config.SyncRPCConfig
+import net.corda.messaging.api.constants.WorkerHttpPaths
+import net.corda.messaging.api.subscription.config.SyncHttpConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.utilities.debug
 import org.slf4j.Logger
@@ -35,7 +35,7 @@ class TokenCacheSubscriptionHandlerImpl(
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val RPC_SUBSCRIPTION = "TOKEN_RPC_SUBSCRIPTION"
-        private val rpcConfig = SyncRPCConfig("Token Selection Processor", WorkerRPCPaths.TOKEN_SELECTION_PATH)
+        private val config = SyncHttpConfig("Token Selection Processor", WorkerHttpPaths.TOKEN_SELECTION_PATH)
     }
 
     private val coordinator =
@@ -54,10 +54,10 @@ class TokenCacheSubscriptionHandlerImpl(
             // Create a new state manager and the token selection rpc processor
             val messagingConfig = toStateManagerConfig(config)
             val localStateManager = stateManagerFactory.create(messagingConfig)
-            val processor = tokenCacheEventProcessorFactory.createTokenSelectionSyncRPCProcessor(localStateManager)
+            val processor = tokenCacheEventProcessorFactory.createTokenSelectionSyncHttpProcessor(localStateManager)
 
             // Create the HTTP RPC subscription
-            createAndRegisterSyncRPCSubscription(processor)
+            createAndRegisterSyncHttpSubscription(processor)
 
             subscriptionRegistrationHandle = coordinator.followStatusChangesByName(
                 setOf(localStateManager.name)
@@ -99,10 +99,10 @@ class TokenCacheSubscriptionHandlerImpl(
         }
     }
 
-    private fun createAndRegisterSyncRPCSubscription(processor: TokenSelectionSyncRPCProcessor) {
+    private fun createAndRegisterSyncHttpSubscription(processor: TokenSelectionSyncHttpProcessor) {
         coordinator.createManagedResource(RPC_SUBSCRIPTION) {
-            subscriptionFactory.createHttpRPCSubscription(
-                rpcConfig,
+            subscriptionFactory.createSyncHttpSubscription(
+                config,
                 processor
             ).also {
                 it.start()

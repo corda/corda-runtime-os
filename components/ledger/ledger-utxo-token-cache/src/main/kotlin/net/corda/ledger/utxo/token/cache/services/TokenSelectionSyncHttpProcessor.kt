@@ -9,7 +9,7 @@ import net.corda.ledger.utxo.token.cache.converters.EntityConverter
 import net.corda.ledger.utxo.token.cache.converters.EventConverter
 import net.corda.ledger.utxo.token.cache.entities.TokenEvent
 import net.corda.messaging.api.exception.CordaHTTPServerTransientException
-import net.corda.messaging.api.processor.SyncRPCProcessor
+import net.corda.messaging.api.processor.SyncHttpProcessor
 import net.corda.utilities.debug
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -17,14 +17,14 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 @Suppress("LongParameterList")
-class TokenSelectionSyncRPCProcessor(
+class TokenSelectionSyncHttpProcessor(
     private val eventConverter: EventConverter,
     private val entityConverter: EntityConverter,
     private val tokenPoolCacheManager: TokenPoolCacheManager,
     private val claimStateStoreCache: ClaimStateStoreCache,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
     private val tokenSelectionMetrics: TokenSelectionMetrics
-) : SyncRPCProcessor<TokenPoolCacheEvent, FlowEvent> {
+) : SyncHttpProcessor<TokenPoolCacheEvent, FlowEvent> {
 
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)

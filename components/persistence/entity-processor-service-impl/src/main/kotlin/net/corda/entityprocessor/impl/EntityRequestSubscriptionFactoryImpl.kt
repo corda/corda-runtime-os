@@ -4,9 +4,9 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.persistence.EntityRequest
 import net.corda.entityprocessor.EntityRequestSubscriptionFactory
 import net.corda.entityprocessor.impl.internal.EntityRequestProcessor
-import net.corda.messaging.api.constants.WorkerRPCPaths.PERSISTENCE_PATH
+import net.corda.messaging.api.constants.WorkerHttpPaths.PERSISTENCE_PATH
 import net.corda.messaging.api.subscription.RPCSubscription
-import net.corda.messaging.api.subscription.config.SyncRPCConfig
+import net.corda.messaging.api.subscription.config.SyncHttpConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.ResponseFactory
@@ -37,7 +37,7 @@ class EntityRequestSubscriptionFactoryImpl @Activate constructor(
             entitySandboxService,
             responseFactory
         )
-        val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, PERSISTENCE_PATH)
-        return subscriptionFactory.createHttpRPCSubscription(rpcConfig, processor)
+        val config = SyncHttpConfig(SUBSCRIPTION_NAME, PERSISTENCE_PATH)
+        return subscriptionFactory.createSyncHttpSubscription(config, processor)
     }
 }

@@ -74,7 +74,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.SubscriptionBase
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
-import net.corda.messaging.api.subscription.config.SyncRPCConfig
+import net.corda.messaging.api.subscription.config.SyncHttpConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.processors.crypto.CryptoProcessor
@@ -449,8 +449,8 @@ class CryptoProcessorImpl @Activate constructor(
         )
 
         coordinator.createManagedResource(FLOW_OPS_SUBSCRIPTION) {
-            subscriptionFactory.createHttpRPCSubscription(
-                rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, CRYPTO_PATH),
+            subscriptionFactory.createSyncHttpSubscription(
+                httpConfig = SyncHttpConfig(SUBSCRIPTION_NAME, CRYPTO_PATH),
                 processor = flowOpsProcessor
             ).also {
                 it.start()
@@ -465,8 +465,8 @@ class CryptoProcessorImpl @Activate constructor(
         val subscriptionName = "crypto.session.encryption"
 
         coordinator.createManagedResource(SESSION_ENCRYPTION_SUBSCRIPTION) {
-            subscriptionFactory.createHttpRPCSubscription(
-                rpcConfig = SyncRPCConfig(subscriptionName, ENCRYPT_PATH),
+            subscriptionFactory.createSyncHttpSubscription(
+                httpConfig = SyncHttpConfig(subscriptionName, ENCRYPT_PATH),
                 processor = SessionEncryptionProcessor(cryptoService, retryingConfig),
             ).also {
                 it.start()
@@ -481,8 +481,8 @@ class CryptoProcessorImpl @Activate constructor(
         val subscriptionName = "crypto.session.decryption"
 
         coordinator.createManagedResource(SESSION_DECRYPTION_SUBSCRIPTION) {
-            subscriptionFactory.createHttpRPCSubscription(
-                rpcConfig = SyncRPCConfig(subscriptionName, DECRYPT_PATH),
+            subscriptionFactory.createSyncHttpSubscription(
+                httpConfig = SyncHttpConfig(subscriptionName, DECRYPT_PATH),
                 processor = SessionDecryptionProcessor(cryptoService, retryingConfig),
             ).also {
                 it.start()

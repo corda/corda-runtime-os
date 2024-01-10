@@ -10,8 +10,8 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.constants.WorkerRPCPaths.UNIQUENESS_PATH
-import net.corda.messaging.api.subscription.config.SyncRPCConfig
+import net.corda.messaging.api.constants.WorkerHttpPaths.UNIQUENESS_PATH
+import net.corda.messaging.api.subscription.config.SyncHttpConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.uniqueness.backingstore.BackingStoreLifecycle
 import net.corda.uniqueness.checker.UniquenessChecker
@@ -100,8 +100,8 @@ class BatchedUniquenessCheckerLifecycleImpl @Activate constructor(
             externalEventResponseFactory
         )
         lifecycleCoordinator.createManagedResource(RPC_SUBSCRIPTION) {
-            val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, UNIQUENESS_PATH)
-            subscriptionFactory.createHttpRPCSubscription(rpcConfig, processor).also {
+            val config = SyncHttpConfig(SUBSCRIPTION_NAME, UNIQUENESS_PATH)
+            subscriptionFactory.createSyncHttpSubscription(config, processor).also {
                 it.start()
             }
         }

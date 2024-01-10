@@ -32,7 +32,7 @@ import java.util.concurrent.TimeoutException
 const val CORDA_REQUEST_KEY_HEADER = "corda-request-key"
 
 @Suppress("LongParameterList")
-class RPCClient(
+class SyncHttpClient(
     override val id: String,
     cordaAvroSerializerFactory: CordaAvroSerializationFactory,
     private val platformDigestService: PlatformDigestService,
@@ -184,18 +184,18 @@ class RPCClient(
             is TimeoutException,
             is CordaHTTPClientErrorException,
             is CordaHTTPServerErrorException -> {
-                log.warn("Intermittent error in RPCClient request $endpoint: ", e)
+                log.warn("Intermittent error in SyncHttpClient request $endpoint: ", e)
                 CordaMessageAPIIntermittentException(e.message, e)
             }
 
             is IllegalArgumentException,
             is SecurityException -> {
-                log.warn("Fatal error in RPCClient request $endpoint: ", e)
+                log.warn("Fatal error in SyncHttpClient request $endpoint: ", e)
                 CordaMessageAPIFatalException(e.message, e)
             }
 
             else -> {
-                log.warn("Unhandled exception in RPCClient request $endpoint: ", e)
+                log.warn("Unhandled exception in SyncHttpClient request $endpoint: ", e)
                 e
             }
         }

@@ -15,12 +15,12 @@ import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.libs.statemanager.api.StateManager
-import net.corda.messaging.api.constants.WorkerRPCPaths.CRYPTO_PATH
-import net.corda.messaging.api.constants.WorkerRPCPaths.LEDGER_PATH
-import net.corda.messaging.api.constants.WorkerRPCPaths.PERSISTENCE_PATH
-import net.corda.messaging.api.constants.WorkerRPCPaths.TOKEN_SELECTION_PATH
-import net.corda.messaging.api.constants.WorkerRPCPaths.UNIQUENESS_PATH
-import net.corda.messaging.api.constants.WorkerRPCPaths.VERIFICATION_PATH
+import net.corda.messaging.api.constants.WorkerHttpPaths.CRYPTO_PATH
+import net.corda.messaging.api.constants.WorkerHttpPaths.LEDGER_PATH
+import net.corda.messaging.api.constants.WorkerHttpPaths.PERSISTENCE_PATH
+import net.corda.messaging.api.constants.WorkerHttpPaths.TOKEN_SELECTION_PATH
+import net.corda.messaging.api.constants.WorkerHttpPaths.UNIQUENESS_PATH
+import net.corda.messaging.api.constants.WorkerHttpPaths.VERIFICATION_PATH
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_TOPIC
@@ -68,7 +68,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
     companion object {
         private const val CONSUMER_GROUP = "FlowEventConsumer"
         private const val MESSAGE_BUS_CLIENT = "MessageBusClient"
-        private const val RPC_CLIENT = "RpcClient"
+        private const val HTTP_CLIENT = "HttpClient"
     }
 
     private val deserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
@@ -107,8 +107,8 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
             messagingClientFactoryFactory.createMessageBusClientFactory(
                 MESSAGE_BUS_CLIENT, messagingConfig
             ),
-            messagingClientFactoryFactory.createRPCClientFactory(
-                RPC_CLIENT
+            messagingClientFactoryFactory.createSyncHttpClientFactory(
+                HTTP_CLIENT
             )
         )
         .messageProcessor(messageProcessor)
@@ -121,7 +121,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
 
     private fun createMessageRouterFactory(messagingConfig: SmartConfig) = MessageRouterFactory { clientFinder ->
         val messageBusClient = clientFinder.find(MESSAGE_BUS_CLIENT)
-        val rpcClient = clientFinder.find(RPC_CLIENT)
+        val httpClient = clientFinder.find(HTTP_CLIENT)
 
         fun rpcEndpoint(endpoint: String, path: String) : String {
             val platformVersion = platformInfoProvider.localWorkerSoftwareShortVersion
@@ -130,21 +130,21 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
 
         MessageRouter { message ->
             when (val event = message.event()) {
-                is EntityRequest -> routeTo(rpcClient,
+                is EntityRequest -> routeTo(httpClient,
                     rpcEndpoint(PERSISTENCE_WORKER_REST_ENDPOINT, PERSISTENCE_PATH), SYNCHRONOUS)
                 is FlowMapperEvent -> routeTo(messageBusClient,
                     FLOW_MAPPER_SESSION_OUT, ASYNCHRONOUS)
-                is FlowOpsRequest -> routeTo(rpcClient,
+                is FlowOpsRequest -> routeTo(httpClient,
                     rpcEndpoint(CRYPTO_WORKER_REST_ENDPOINT, CRYPTO_PATH), SYNCHRONOUS)
                 is FlowStatus -> routeTo(messageBusClient,
                     FLOW_STATUS_TOPIC, ASYNCHRONOUS)
-                is LedgerPersistenceRequest -> routeTo(rpcClient,
+                is LedgerPersistenceRequest -> routeTo(httpClient,
                     rpcEndpoint(PERSISTENCE_WORKER_REST_ENDPOINT, LEDGER_PATH), SYNCHRONOUS)
-                is TokenPoolCacheEvent -> routeTo(rpcClient,
+                is TokenPoolCacheEvent -> routeTo(httpClient,
                     rpcEndpoint(TOKEN_SELECTION_WORKER_REST_ENDPOINT, TOKEN_SELECTION_PATH), SYNCHRONOUS)
-                is TransactionVerificationRequest -> routeTo(rpcClient,
+                is TransactionVerificationRequest -> routeTo(httpClient,
                     rpcEndpoint(VERIFICATION_WORKER_REST_ENDPOINT, VERIFICATION_PATH), SYNCHRONOUS)
-                is UniquenessCheckRequestAvro -> routeTo(rpcClient,
+                is UniquenessCheckRequestAvro -> routeTo(httpClient,
                     rpcEndpoint(UNIQUENESS_WORKER_REST_ENDPOINT, UNIQUENESS_PATH), SYNCHRONOUS)
                 is FlowEvent -> routeTo(messageBusClient,
                     FLOW_EVENT_TOPIC, ASYNCHRONOUS)

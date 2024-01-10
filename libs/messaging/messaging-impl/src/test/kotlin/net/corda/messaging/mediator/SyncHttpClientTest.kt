@@ -29,9 +29,9 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 
-class RPCClientTest {
+class SyncHttpClientTest {
 
-    private lateinit var client: RPCClient
+    private lateinit var client: SyncHttpClient
     private val secureHash = SecureHashImpl("alg", "abc".toByteArray())
     private val payload = "testPayload".toByteArray()
     private val message = MediatorMessage(
@@ -93,7 +93,7 @@ class RPCClientTest {
     private fun createClient(
         mocks: Mocks,
         onSerializationError: (ByteArray) -> Unit = mock(),
-    ): RPCClient {
+    ): SyncHttpClient {
         val mockSerializationFactory: CordaAvroSerializationFactory = mock()
 
         whenever(mockSerializationFactory.createAvroSerializer<Any>(any()))
@@ -102,7 +102,7 @@ class RPCClientTest {
         whenever(mockSerializationFactory.createAvroDeserializer(any(), eq(Any::class.java)))
             .thenReturn(mocks.deserializer)
 
-        return RPCClient(
+        return SyncHttpClient(
             "TestRPCClient1",
             mockSerializationFactory,
             mocks.digestService,

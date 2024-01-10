@@ -5,7 +5,7 @@ import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.libs.virtualnode.datamodel.repository.RequestsIdsRepository
 import net.corda.libs.virtualnode.datamodel.repository.RequestsIdsRepositoryImpl
-import net.corda.messaging.api.processor.SyncRPCProcessor
+import net.corda.messaging.api.processor.SyncHttpProcessor
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.ResponseFactory
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -28,7 +28,7 @@ class EntityRequestProcessor(
     private val entitySandboxService: EntitySandboxService,
     private val responseFactory: ResponseFactory,
     private val requestsIdsRepository: RequestsIdsRepository = RequestsIdsRepositoryImpl()
-) : SyncRPCProcessor<EntityRequest, FlowEvent> {
+) : SyncHttpProcessor<EntityRequest, FlowEvent> {
 
     override val requestClass = EntityRequest::class.java
     override val responseClass = FlowEvent::class.java

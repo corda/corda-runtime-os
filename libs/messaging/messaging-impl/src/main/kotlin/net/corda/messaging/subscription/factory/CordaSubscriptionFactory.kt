@@ -13,14 +13,14 @@ import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.messaging.api.processor.SyncRPCProcessor
+import net.corda.messaging.api.processor.SyncHttpProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
-import net.corda.messaging.api.subscription.config.SyncRPCConfig
+import net.corda.messaging.api.subscription.config.SyncHttpConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
@@ -33,7 +33,7 @@ import net.corda.messaging.subscription.EventLogSubscriptionImpl
 import net.corda.messaging.subscription.PubSubSubscriptionImpl
 import net.corda.messaging.subscription.RPCSubscriptionImpl
 import net.corda.messaging.subscription.StateAndEventSubscriptionImpl
-import net.corda.messaging.subscription.SyncRPCSubscriptionImpl
+import net.corda.messaging.subscription.SyncHttpSubscriptionImpl
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
@@ -186,15 +186,15 @@ class CordaSubscriptionFactory @Activate constructor(
         )
     }
 
-    override fun <REQUEST : Any, RESPONSE : Any> createHttpRPCSubscription(
-        rpcConfig: SyncRPCConfig,
-        processor: SyncRPCProcessor<REQUEST, RESPONSE>
+    override fun <REQUEST : Any, RESPONSE : Any> createSyncHttpSubscription(
+        httpConfig: SyncHttpConfig,
+        processor: SyncHttpProcessor<REQUEST, RESPONSE>
     ): RPCSubscription<REQUEST, RESPONSE> {
 
         val cordaAvroSerializer = cordaAvroSerializationFactory.createAvroSerializer<RESPONSE> { }
         val cordaAvroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({ }, processor.requestClass)
 
-        return SyncRPCSubscriptionImpl(rpcConfig, processor,
+        return SyncHttpSubscriptionImpl(httpConfig, processor,
             lifecycleCoordinatorFactory, webServer, cordaAvroSerializer, cordaAvroDeserializer)
     }
 

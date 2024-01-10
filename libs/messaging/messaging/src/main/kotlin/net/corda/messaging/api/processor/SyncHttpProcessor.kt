@@ -15,7 +15,7 @@ import net.corda.messaging.api.exception.CordaHTTPServerTransientException
  * processing of the same request should produce the same result. For example, deduplication measures can be implemented in the [process]
  * function. This is not handled by the synchronous HTTP subscription.
  */
-interface SyncRPCProcessor<REQUEST, RESPONSE> {
+interface SyncHttpProcessor<REQUEST, RESPONSE> {
 
     /**
      * Process a [request] and return a response of type [RESPONSE].

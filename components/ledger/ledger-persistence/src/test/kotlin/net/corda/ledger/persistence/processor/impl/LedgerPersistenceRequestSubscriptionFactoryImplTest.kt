@@ -2,7 +2,7 @@ package net.corda.ledger.persistence.processor.impl
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
-import net.corda.messaging.api.processor.SyncRPCProcessor
+import net.corda.messaging.api.processor.SyncHttpProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import org.assertj.core.api.Assertions.assertThat
@@ -19,9 +19,9 @@ internal class LedgerPersistenceRequestSubscriptionFactoryImplTest {
         val expectedSubscription = mock<RPCSubscription<LedgerPersistenceRequest, FlowEvent>>()
 
         whenever(
-            subscriptionFactory.createHttpRPCSubscription(
+            subscriptionFactory.createSyncHttpSubscription(
                 any(),
-                any<SyncRPCProcessor<LedgerPersistenceRequest, FlowEvent>>(),
+                any<SyncHttpProcessor<LedgerPersistenceRequest, FlowEvent>>(),
             )
         ).thenReturn(expectedSubscription)
 

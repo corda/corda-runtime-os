@@ -9,7 +9,7 @@ import net.corda.data.crypto.wire.ops.encryption.request.EncryptRpcCommand
 import net.corda.data.crypto.wire.ops.encryption.response.CryptoEncryptionResult
 import net.corda.data.crypto.wire.ops.encryption.response.EncryptionOpsError
 import net.corda.data.crypto.wire.ops.encryption.response.EncryptionOpsResponse
-import net.corda.messaging.api.processor.SyncRPCProcessor
+import net.corda.messaging.api.processor.SyncHttpProcessor
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
@@ -17,7 +17,7 @@ import java.nio.ByteBuffer
 class SessionEncryptionProcessor(
     private val cryptoService: CryptoService,
     config: RetryingConfig,
-) : SyncRPCProcessor<EncryptRpcCommand, EncryptionOpsResponse> {
+) : SyncHttpProcessor<EncryptRpcCommand, EncryptionOpsResponse> {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }

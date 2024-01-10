@@ -5,8 +5,8 @@ import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.exception.CordaHTTPServerTransientException
-import net.corda.messaging.api.processor.SyncRPCProcessor
-import net.corda.messaging.api.subscription.config.SyncRPCConfig
+import net.corda.messaging.api.processor.SyncHttpProcessor
+import net.corda.messaging.api.subscription.config.SyncHttpConfig
 import net.corda.rest.ResponseCode
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.web.api.Endpoint
@@ -26,7 +26,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-class SyncRPCSubscriptionImplTest {
+class SyncHttpSubscriptionImplTest {
 
     private val lifecycleCoordinator = mock<LifecycleCoordinator>()
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory> {
@@ -51,15 +51,15 @@ class SyncRPCSubscriptionImplTest {
     private val context = mock<WebContext> {
         on { bodyAsBytes() } doReturn serialisedRequest
     }
-    private val processor = mock<SyncRPCProcessor<String, String>> {
+    private val processor = mock<SyncHttpProcessor<String, String>> {
         on { process(requestData) } doReturn (responseData)
     }
-    private val rpcSubscriptionConfig = SyncRPCConfig(
+    private val rpcSubscriptionConfig = SyncHttpConfig(
         subscriptionName,
         endpointPath
     )
 
-    private val rpcSubscription = SyncRPCSubscriptionImpl(
+    private val rpcSubscription = SyncHttpSubscriptionImpl(
         rpcSubscriptionConfig, processor, lifecycleCoordinatorFactory, webServer, serializer, deserializer
     )
 
@@ -128,7 +128,7 @@ class SyncRPCSubscriptionImplTest {
             on { deserialize(serialisedRequest) } doReturn(null)
         }
 
-        SyncRPCSubscriptionImpl(
+        SyncHttpSubscriptionImpl(
             rpcSubscriptionConfig, processor, lifecycleCoordinatorFactory, webServer, serializer, invalidDeserializer
         ).start()
 
@@ -147,11 +147,11 @@ class SyncRPCSubscriptionImplTest {
         doNothing().whenever(webServer).registerEndpoint(endpointCaptor.capture())
 
         val ex = Exception("Foobar")
-        val invalidProcessor = mock<SyncRPCProcessor<String, String>> {
+        val invalidProcessor = mock<SyncHttpProcessor<String, String>> {
             on { process(requestData) }  doAnswer { throw ex }
         }
 
-        SyncRPCSubscriptionImpl(
+        SyncHttpSubscriptionImpl(
             rpcSubscriptionConfig, invalidProcessor, lifecycleCoordinatorFactory, webServer, serializer, deserializer
         ).start()
 
@@ -173,7 +173,7 @@ class SyncRPCSubscriptionImplTest {
             on { serialize(responseData) } doReturn(null)
         }
 
-        SyncRPCSubscriptionImpl(
+        SyncHttpSubscriptionImpl(
             rpcSubscriptionConfig, processor, lifecycleCoordinatorFactory, webServer, incompleteSerialiser, deserializer
         ).start()
 
@@ -191,7 +191,7 @@ class SyncRPCSubscriptionImplTest {
         doNothing().whenever(webServer).registerEndpoint(endpointCaptor.capture())
         whenever(processor.process(any())).thenThrow(CordaHTTPServerTransientException("transient error"))
 
-        SyncRPCSubscriptionImpl(
+        SyncHttpSubscriptionImpl(
             rpcSubscriptionConfig, processor, lifecycleCoordinatorFactory, webServer, serializer, deserializer
         ).start()
 
@@ -209,7 +209,7 @@ class SyncRPCSubscriptionImplTest {
         doNothing().whenever(webServer).registerEndpoint(endpointCaptor.capture())
         whenever(processor.process(any())).thenThrow(CordaRuntimeException("runtime error"))
 
-        SyncRPCSubscriptionImpl(
+        SyncHttpSubscriptionImpl(
             rpcSubscriptionConfig, processor, lifecycleCoordinatorFactory, webServer, serializer, deserializer
         ).start()
 

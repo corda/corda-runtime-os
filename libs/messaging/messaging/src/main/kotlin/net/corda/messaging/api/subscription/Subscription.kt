@@ -45,7 +45,7 @@ interface Subscription<K, V> : SubscriptionBase {
  * See [SubscriptionFactory] for the creation of each subscription.
  *
  * Each subscription will have a different processor for processing requests. See [SubscriptionFactory] for creation of
- * subscriptions. See [SyncRPCProcessor] and [RPCResponderProcessor] for more details on implementing a processor.
+ * subscriptions. See [SyncHttpProcessor] and [RPCResponderProcessor] for more details on implementing a processor.
  *
  * A subscription will be available to accept requests after it has been started. A subscription will stop accepting requests
  * and close any connections on close or stop.

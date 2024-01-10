@@ -4,7 +4,7 @@ import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.linkmanager.LinkManagerResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.platform.PlatformInfoProvider
-import net.corda.messaging.api.constants.WorkerRPCPaths.P2P_LINK_MANAGER_PATH
+import net.corda.messaging.api.constants.WorkerHttpPaths.P2P_LINK_MANAGER_PATH
 import net.corda.messaging.api.publisher.HttpRpcClient
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.schema.configuration.BootConfig.P2P_LINK_MANAGER_WORKER_REST_ENDPOINT

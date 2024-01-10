@@ -30,9 +30,9 @@ class MessagingClientFactoryFactoryImpl @Activate constructor(
         cordaProducerBuilder,
     )
 
-    override fun createRPCClientFactory(
+    override fun createSyncHttpClientFactory(
         id: String
-    ) = RPCClientFactory(
+    ) = SyncHttpClientFactory(
         id,
         cordaSerializationFactory,
         platformDigestService
