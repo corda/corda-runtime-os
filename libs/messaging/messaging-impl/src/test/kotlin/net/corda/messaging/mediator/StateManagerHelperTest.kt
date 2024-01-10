@@ -5,7 +5,7 @@ import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.State.Companion.VERSION_INITIAL_VALUE
-import net.corda.messaging.api.constants.MessagingMetadataKeys.FAILED_STATE
+import net.corda.messaging.api.constants.MessagingMetadataKeys.PROCESSING_FAILURE
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -126,7 +126,7 @@ class StateManagerHelperTest {
 
         assertEquals(persistedState.key, state.key)
         assertEquals(persistedState.version, state.version)
-        assertTrue(state.metadata[FAILED_STATE] as Boolean)
+        assertTrue(state.metadata[PROCESSING_FAILURE] as Boolean)
     }
 
     @Test
@@ -140,6 +140,6 @@ class StateManagerHelperTest {
 
         assertEquals(TEST_KEY, state.key)
         assertEquals(VERSION_INITIAL_VALUE, state.version)
-        assertTrue(state.metadata[FAILED_STATE] as Boolean)
+        assertTrue(state.metadata[PROCESSING_FAILURE] as Boolean)
     }
 }
