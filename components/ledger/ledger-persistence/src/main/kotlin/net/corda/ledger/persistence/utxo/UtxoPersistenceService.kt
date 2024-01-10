@@ -4,6 +4,7 @@ import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.common.InconsistentLedgerStateException
+import net.corda.ledger.utxo.data.transaction.MerkleProofDto
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.v5.crypto.SecureHash
@@ -66,4 +67,17 @@ interface UtxoPersistenceService {
     fun findSignedGroupParameters(hash: String): SignedGroupParameters?
 
     fun persistSignedGroupParametersIfDoNotExist(signedGroupParameters: SignedGroupParameters)
+
+    fun persistMerkleProof(
+        transactionId: String,
+        groupIndex: Int,
+        treeSize: Int,
+        leaves: List<Int>,
+        hashes: List<String>
+    )
+
+    fun findMerkleProofs(
+        transactionId: String,
+        groupIndex: Int
+    ): List<MerkleProofDto>
 }

@@ -11,6 +11,7 @@ import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.Command
@@ -80,6 +81,10 @@ class UtxoFilteredTransactionImpl(
                 else -> throw FilteredDataInconsistencyException("Unknown filtered data type.")
             }
         }
+    }
+
+    override fun getMerkleProofs(): Map<Int, MerkleProof> {
+        return filteredTransaction.filteredComponentGroups.mapValues { it.value.merkleProof }
     }
 
     private fun extractOutputStateAndRefs(

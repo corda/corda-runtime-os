@@ -119,4 +119,61 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
             WHERE id = :transactionId 
             AND (status = :newStatus OR status = '$UNVERIFIED')"""
             .trimIndent()
+
+    /**
+     * This query will join the Merkle proof table and the component group table together to find the leaf data
+     * the Merkle proof has revealed.
+     *
+     * A Merkle proof can be identified by the combination of the following properties:
+     * - transaction ID
+     * - component group index
+     * - revealed leaves
+     *
+     * Each row returned by this query will associate a Merkle proof with the leaf data it reveals.
+     * In case of multiple leaves revealed, a Merkle proof will have multiple rows associated with it.
+     *
+     * For example:
+     *
+     * Merkle proof table
+     * | transaction_id | group_idx | tree_size | leaves | hashes |
+     * |----------------|-----------|-----------|--------|--------|
+     * | SHA-256D:11111 | 8         | 2         | {0,1}  | {}     |
+     *
+     *
+     * Component table
+     * | transaction_id | group_idx | leaf_idx | data  |
+     * |----------------|-----------|----------|-------|
+     * | SHA-256D:11111 | 8         | 0        | bytes |
+     * | SHA-256D:11111 | 8         | 1        | bytes |
+     *
+     * In this case the query will return the following results:
+     *
+     * | transaction_id | group_idx | tree_size | leaves_string | leaf_idx | hashes_string | data  |
+     * |----------------|-----------|-----------|---------------|----------|---------------|-------|
+     * | SHA-256D:11111 | 8         | 2         | 0,1           | 0        |               | bytes |
+     * | SHA-256D:11111 | 8         | 2         | 0,1           | 1        |               | bytes |
+     *
+     * As it is clear from the example we will have one row for each leaf data revealed associated with the Merkle proof.
+     *
+     * TODO `array_to_string` is required because Hibernate cannot handle Postgres arrays (JDBC type 2003)
+     *  by default. We need to investigate whether extending our dialect with this type is possible.
+     */
+    override val findMerkleProofs: String
+        get() = """
+            SELECT 
+                utc.transaction_id,
+                utc.group_idx,
+                ump.tree_size,
+                array_to_string(ump.leaves, ',') AS leaves_string,
+                utc.leaf_idx, 
+                array_to_string(ump.hashes, ',') AS hashes_string,
+                utc."data"
+            FROM utxo_transaction_merkle_proof ump 
+            JOIN utxo_transaction_component utc 
+                ON utc.transaction_id = ump.transaction_id 
+                AND utc.group_idx = ump.group_idx 
+                AND utc.leaf_idx = any(ump.leaves)
+                AND ump.group_idx = :groupId
+                AND ump.transaction_id = :transactionId"""
+            .trimIndent()
 }

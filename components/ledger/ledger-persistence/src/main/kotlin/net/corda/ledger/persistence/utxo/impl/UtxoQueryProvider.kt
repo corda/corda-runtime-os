@@ -83,6 +83,11 @@ interface UtxoQueryProvider {
     val persistTransactionSignature: String
 
     /**
+     * @property persistMerkleProof SQL text for [UtxoRepositoryImpl.persistMerkleProof].
+     */
+    val persistMerkleProof: String
+
+    /**
      * @property updateTransactionStatus SQL text for [UtxoRepositoryImpl.updateTransactionStatus].
      */
     val updateTransactionStatus: String
@@ -96,4 +101,9 @@ interface UtxoQueryProvider {
      * @property findTransactionIdsAndStatuses SQL text for [UtxoRepositoryImpl.findTransactionIdsAndStatuses].
      */
     val findTransactionIdsAndStatuses: String
+
+    /**
+     * @property findMerkleProofs SQL text for [UtxoRepositoryImpl.findMerkleProofs].
+     */
+    val findMerkleProofs: String
 }

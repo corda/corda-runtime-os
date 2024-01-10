@@ -11,6 +11,7 @@ import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.persistence.common.mapToComponentGroups
 import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoRepository
+import net.corda.ledger.utxo.data.transaction.MerkleProofDto
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByPersistence
@@ -19,6 +20,7 @@ import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.ledger.utxo.StateRef
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -348,6 +350,74 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("createdAt", timestamp)
             .executeUpdate()
             .logResult("signed group parameters [$hash]")
+    }
+
+    override fun persistMerkleProof(
+        entityManager: EntityManager,
+        transactionId: String,
+        groupIndex: Int,
+        treeSize: Int,
+        leaves: List<Int>,
+        hashes: List<String>
+    ) {
+        entityManager.createNativeQuery(queryProvider.persistMerkleProof)
+            .setParameter("transactionId", transactionId)
+            .setParameter("groupIndex", groupIndex)
+            .setParameter("treeSize", treeSize)
+            // TODO We store these columns as arrays in the database, so we need to cast and
+            //  the only way we can cast is a {X,Y,Z} format.
+            //  Investigate if there's a better way to do this.
+            .setParameter("leaves", "{${leaves.joinToString(",")}}")
+            .setParameter("hashes", "{${hashes.joinToString(",")}}")
+            .executeUpdate()
+            .logResult("merkle proof for transaction: $transactionId")
+    }
+
+    override fun findMerkleProofs(
+        entityManager: EntityManager,
+        transactionId: String,
+        groupIndex: Int
+    ): List<MerkleProofDto> {
+        return entityManager.createNativeQuery(queryProvider.persistMerkleProof, Tuple::class.java)
+            .setParameter("transactionId", transactionId)
+            .setParameter("groupIndex", groupIndex)
+            .resultListAsTuples()
+            .groupBy { tuple ->
+                // If a Merkle proof revealed multiple leafs it will have multiple rows associated with it,
+                // each row containing the leaf data bytes. We first need to group these rows together
+                // to see which rows belong to the same Merkle proof. We do this based on the Merkle proof ID triple:
+                Triple(
+                    transactionId, // Transaction ID
+                    groupIndex, // component group index
+                    tuple.get(3) as String // revealed leaves list
+                )
+            }.map { (merkleProofId, merkleProofRows) ->
+                MerkleProofDto(
+                    merkleProofId.first,
+                    merkleProofId.second,
+
+                    merkleProofRows.associate { merkleProofRow ->
+                        // Here we go through each row that belongs to the given Merkle proof
+                        // and create a map of the revealed leaf index and the data it represents
+                        (merkleProofRow.get(4) as Int) to (merkleProofRow.get(6) as ByteArray)
+                    },
+
+                    // tree size will be the same for each row in the same Merkle proof,
+                    // so we can just pick the first one and get the tree size from there
+                    merkleProofRows.first().get(2) as Int,
+
+                    // hashes will be the same for each row in the same Merkle proof,
+                    // so we can just pick the first one and get the tree size from there
+                    (merkleProofRows.first().get(5) as String)
+                        // TODO Due to the fact that Hibernate cannot handle JDBC type 2003 (array)
+                        //  we return a comma separated string here that we need to split and
+                        //  filter out if it's blank (i.e. array was empty)
+                        .split(",")
+                        .filter { it.isNotBlank() }
+                        .map { parseSecureHash(it) }
+
+                )
+            }
     }
 
     private fun Int.logResult(entity: String): Int {

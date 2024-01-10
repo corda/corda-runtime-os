@@ -80,4 +80,13 @@ class PostgresUtxoQueryProvider @Activate constructor(
                 :hash, :parameters, :signature_public_key, :signature_content, :signature_spec, :createdAt)
             ON CONFLICT DO NOTHING"""
             .trimIndent()
+
+    override val persistMerkleProof: String
+        get() = """
+            INSERT INTO {h-schema}utxo_transaction_merkle_proof(
+                transaction_id, group_idx, tree_size, leaves, hashes)
+            VALUES (
+                :transactionId, :groupIndex, :treeSize, CAST(:leaves AS INTEGER[]), CAST(:hashes AS TEXT[]))
+            ON CONFLICT DO NOTHING"""
+            .trimIndent()
 }
