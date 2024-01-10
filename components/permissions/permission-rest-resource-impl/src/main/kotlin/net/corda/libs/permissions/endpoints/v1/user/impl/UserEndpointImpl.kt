@@ -31,6 +31,7 @@ import net.corda.rest.exception.InvalidStateChangeException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.response.ResponseEntity
 import net.corda.rest.authorization.AuthorizingSubject
+import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.security.CURRENT_REST_CONTEXT
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -76,16 +77,21 @@ class UserEndpointImpl @Activate constructor(
     override fun getAuthorizationProvider(): AuthorizationProvider {
         return object : AuthorizationProvider {
             override fun isAuthorized(subject: AuthorizingSubject, action: String): Boolean {
-                val pathParts = action.split(":", limit = 2)
-                val changePasswordMethodPath = this::class.memberFunctions
-                    .firstOrNull { it.name == ::changeUserPasswordSelf.name }
-                    ?.findAnnotation<HttpPOST>()
-                    ?.path
+                val requestedPath = action.split(":", limit = 2).last()
 
-                if (pathParts.firstOrNull() == changePasswordMethodPath) { //TODO: should be able to get annotation here? and use
-                    return true
+                val changeSelfPasswordMethodPath = this@UserEndpointImpl::class.memberFunctions
+                    .firstOrNull { it.name == ::changeUserPasswordSelf.name }
+                    ?.let { method ->
+                        UserEndpoint::class.memberFunctions.find { it.name == method.name }?.findAnnotation<HttpPOST>()
+                    }
+                    ?.path!!
+
+                // if requested Path is for /selfpassword we override the default authorization, as all users
+                // should be able to change their password
+                return if (requestedPath.endsWith(changeSelfPasswordMethodPath)) {
+                    true
                 } else {
-                    return AuthorizationProvider.Default.isAuthorized(subject, action)
+                    AuthorizationProvider.Default.isAuthorized(subject, action)
                 }
             }
         }
@@ -134,12 +140,14 @@ class UserEndpointImpl @Activate constructor(
     override fun changeUserPasswordSelf(password: String): UserResponseType {
         val principal = getRestThreadLocalContext()
 
-        val userResponseDto = try {
-            withPermissionManager(permissionManagementService.permissionManager, logger) {
+        val userResponseDto = withPermissionManager(permissionManagementService.permissionManager, logger) {
+            try {
                 changeUserPasswordSelf(ChangeUserPasswordDto(principal, principal.lowercase(), password))
+            } catch (e: NoSuchElementException) {
+                throw ResourceNotFoundException(e.message ?: "No resource found for this request.")
+            } catch (e: IllegalArgumentException) {
+                throw InvalidInputDataException(e.message ?: "Invalid argument in request.")
             }
-        } catch (e: IllegalArgumentException) {
-            throw InvalidStateChangeException(e.message ?: "New password must be different from old one.")
         }
 
         return userResponseDto.convertToEndpointType()
@@ -148,12 +156,14 @@ class UserEndpointImpl @Activate constructor(
     override fun changeOtherUserPassword(username: String, password: String): UserResponseType {
         val principal = getRestThreadLocalContext()
 
-        val userResponseDto = try {
-            withPermissionManager(permissionManagementService.permissionManager, logger) {
+        val userResponseDto = withPermissionManager(permissionManagementService.permissionManager, logger) {
+            try {
                 changeUserPasswordOther(ChangeUserPasswordDto(principal, username.lowercase(), password))
+            } catch (e: NoSuchElementException) {
+                throw ResourceNotFoundException(e.message ?: "No resource found for this request.")
+            } catch (e: IllegalArgumentException) {
+                throw InvalidInputDataException(e.message ?: "Invalid argument in request.")
             }
-        } catch (e: IllegalArgumentException) {
-            throw InvalidStateChangeException(e.message ?: "New password must be different from old one.")
         }
 
         return userResponseDto.convertToEndpointType()

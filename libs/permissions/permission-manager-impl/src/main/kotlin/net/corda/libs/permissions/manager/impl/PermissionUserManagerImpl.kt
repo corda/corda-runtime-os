@@ -105,19 +105,23 @@ class PermissionUserManagerImpl(
     }
 
     private fun validatePasswordAndGetHash(username: String, newPassword: String): PasswordHash {
+        if (newPassword.isBlank()) {
+            throw IllegalArgumentException("The passphrase must not be blank string.")
+        }
+
         val permissionManagementCache = checkNotNull(permissionManagementCacheRef.get()) {
             "Permission management cache is null."
         }
         val cachedUser: User = permissionManagementCache.getUser(username)
-            ?: throw IllegalStateException("Could not find user with username $username")
+            ?: throw NoSuchElementException("Could not find user with username $username")
 
-        val saltAndHash = passwordService.saltAndHash(newPassword)
+        val cachedPasswordHash = PasswordHash(cachedUser.saltValue, cachedUser.hashedPassword)
 
-        if (saltAndHash.value == cachedUser.hashedPassword) {
+        if (passwordService.verifies(newPassword, cachedPasswordHash)) {
             throw IllegalArgumentException("New password must be different from current one.")
         }
 
-        return saltAndHash
+        return passwordService.saltAndHash(newPassword)
     }
 
     override fun addRoleToUser(addRoleToUserRequestDto: AddRoleToUserRequestDto): UserResponseDto {
