@@ -813,13 +813,14 @@ class MerkleTreeTest {
     fun `Merkle proof size 1 with double SHA256`() {
         val treeSize = 1
         val sourceProofLeafSet = 1
+        val expected = """
+                        7901AF93 (calc) known leaf
+                    """
         val merkleTree = makeTestMerkleTree(treeSize, defaultHashDigestProvider)
         val leafIndicesCombination = (0 until treeSize).filter { (sourceProofLeafSet and (1 shl it)) != 0 }
         val proof = testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize, defaultHashDigestProvider)
 
-        assertThat(proof.render(defaultHashDigestProvider)).isEqualToIgnoringWhitespace("""
-                        7901AF93 (calc) known leaf
-                    """)
+        assertThat(proof.render(defaultHashDigestProvider)).isEqualToIgnoringWhitespace(expected)
     }
 
 
@@ -827,14 +828,14 @@ class MerkleTreeTest {
     fun `Merkle proof size 2 with trivial hash`() {
         val treeSize = 2
         val sourceProofLeafSet = 1
+        val expected ="""
+                            00000630 (calc)┳00000000 (calc)    known leaf
+                                           ┗00000001 (input 0) filtered
+        """
         val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
         val leafIndicesCombination = (0 until treeSize).filter { (sourceProofLeafSet and (1 shl it)) != 0 }
         val proof = testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize, trivialHashDigestProvider)
-
-        assertThat(proof.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
-                            00000630 (calc)┳00000000 (calc)    known leaf
-                                           ┗00000001 (input 0) filtered
-                    """)
+        assertThat(proof.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(expected)
     }
 
 
