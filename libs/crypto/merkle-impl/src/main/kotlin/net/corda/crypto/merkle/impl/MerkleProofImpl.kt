@@ -312,10 +312,10 @@ class MerkleProofImpl(
 
                 when {
                     x != null && x.consumed == null -> {
-                        // X is calculated so it will be calcuable in O, no proof hash needed in O
+                        // x is calculated so it can be calculated in o, no proof hash needed in O
                     }
                     y != null && y.consumed == null -> {
-                        // Y is calculated so it will be calcuble in O, no proof hash needed in O
+                        // y is calculated so it can be calculated in o, no proof hash needed in O
                     }
                     x?.consumed != null -> {
                         outHashes += x.node.hash
