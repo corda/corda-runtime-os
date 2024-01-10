@@ -166,7 +166,13 @@ class KeyRotationRestResourceImpl @Activate constructor(
             checkNotNull(stateManager)
         }
 
-        val entries = stateManager!!.findByMetadata(MetadataFilter("rootKeyAlias", Operation.Equals, rootKeyAlias))
+        val entries = stateManager!!.findByMetadataMatchingAll(
+            listOf(
+                MetadataFilter("rootKeyAlias", Operation.Equals, rootKeyAlias),
+                MetadataFilter("type", Operation.Equals, "keyRotation")
+            )
+        )
+        println("XXX: all key rotation entries in the state manager db for rootKeyAlias $rootKeyAlias are: $entries")
         // if entries are empty, there is no rootKeyAlias data stored in the state manager, so no key rotation is in progress
         if (entries.isNullOrEmpty()) throw ResourceNotFoundException("No key rotation for $rootKeyAlias is in progress.")
 
@@ -176,8 +182,8 @@ class KeyRotationRestResourceImpl @Activate constructor(
                 val keyRotationStatus = deserializer1.deserialize(state.value)
                 println("XXX: key: $key, state.key: ${state.key}, state.value: $keyRotationStatus")
                 // key.drop(2) to remove first two chars from the key when printing it out?
-                result.add(key to TenantIdWrappingKeysStatus(keyRotationStatus!!.total, keyRotationStatus.rotatedKeys))
-        }
+                result.add(state.metadata["rootKeyAlias"].toString() to TenantIdWrappingKeysStatus(keyRotationStatus!!.total, keyRotationStatus.rotatedKeys))
+            }
 
         return KeyRotationStatusResponse(rootKeyAlias, result)
     }

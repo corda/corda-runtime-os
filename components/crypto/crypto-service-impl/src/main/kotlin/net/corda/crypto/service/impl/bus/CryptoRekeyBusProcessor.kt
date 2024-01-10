@@ -58,17 +58,18 @@ class CryptoRekeyBusProcessor(
             // TODO: first delete the data in state manager, so we can correctly report on the key rotation status
             // TODO: do we need to delete key status here as well? Probably yes, that means we don't need to filter, if key starts with 'kr' or 'ks'
             // TODO: deal with optimistic locking, just in case. We should have checked in the rest worker if key rotation is in progress and don't start a new one if one is
-            val failedToDelete = stateManager!!.delete(
-                stateManager.findByMetadata(
-                    MetadataFilter(
-                        "rootKeyAlias",
-                        Operation.Equals,
-                        request.oldParentKeyAlias
-                    )
-                ).values
+            val toDelete = stateManager!!.findByMetadataMatchingAll(
+                listOf(
+                    MetadataFilter("rootKeyAlias", Operation.Equals, request.oldParentKeyAlias),
+                    MetadataFilter("type", Operation.Equals, "keyRotation")
+                )
+            )
+            println("XXX: deleting following records: ${toDelete.keys} for rootKeyAlias: ${request.oldParentKeyAlias}")
+            val failedToDelete = stateManager.delete(
+                toDelete.values
             )
 
-            println("XXX: RekeyBusProcessor failed to delete following states from the state manager: ${failedToDelete.keys}")
+            if (failedToDelete.isNotEmpty()) println("XXX: RekeyBusProcessor failed to delete following states from the state manager: ${failedToDelete.keys}")
 
 
             // Check first if there is a finished key rotation for oldParentKeyAlias
@@ -104,6 +105,34 @@ class CryptoRekeyBusProcessor(
                     wrappingRepo.findKeysWrappedByAlias(request.oldParentKeyAlias).map { wki -> tenantId to wki }
                 }
             }.flatten()
+
+            // First update state manager, then publish rewrap messages, so the state manager db is already populated
+            val records = mutableListOf<State>()
+
+            // First group by tenantId/vNode
+            targetWrappingKeys.groupBy { it.first }.forEach {
+                logger.info("XXX: Grouping wrapping keys by vNode/tenantId ${it.key}")
+                println("XXX: Grouping wrapping keys by vNode/tenantId ${it.key}")
+                val status = UnmanagedKeyStatus(request.oldParentKeyAlias, it.value.size, 0)
+                records.add(
+                    State(
+                        UUID.randomUUID().toString(),  //"kr${it.key}",
+                        serializer.serialize(status)!!,
+                        1,
+                        Metadata(
+                            mapOf("rootKeyAlias" to request.oldParentKeyAlias,
+                                "tenantId" to request.tenantId,
+                                "type" to "keyRotation", // maybe create an enum from type, so we can easily add more if needed
+                                STATE_TYPE to status::class.java.name)
+                        )
+                    )
+                )
+            }
+
+            logger.info("XXX: Storing wrapping keys grouped by tenantId into state manager db.")
+            println("XXX: Storing wrapping keys grouped by tenantId into state manager db.")
+            stateManager.create(records)
+
             rekeyPublisher.publish(
                 targetWrappingKeys.map { (tenantId, wrappingKeyInfo) ->
                     Record(
@@ -123,28 +152,7 @@ class CryptoRekeyBusProcessor(
             )
 
 
-            val records = mutableListOf<State>()
 
-            // First group by tenantId/vNode
-            targetWrappingKeys.groupBy { it.first }.forEach {
-                logger.info("XXX: Grouping wrapping keys by vNode/tenantId ${it.key}")
-                val status = UnmanagedKeyStatus(request.oldParentKeyAlias, it.value.size, 0)
-                records.add(
-                    State(
-                        "kr${it.key}",
-                        serializer.serialize(status)!!,
-                        1,
-                        Metadata(
-                            mapOf("rootKeyAlias" to request.oldParentKeyAlias,
-                                STATE_TYPE to status::class.java.name)
-                        )
-                    )
-                )
-
-            }
-
-            logger.info("XXX: Storing wrapping keys grouped by tenantId into state manager db.")
-            stateManager.create(records)
 
 
             //val now = Instant.now()
