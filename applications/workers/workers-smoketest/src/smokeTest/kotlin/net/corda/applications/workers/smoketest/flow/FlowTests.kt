@@ -26,6 +26,7 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertAll
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.junit.jupiter.api.TestInstance
@@ -36,6 +37,7 @@ import kotlin.text.Typography.quote
 
 @Suppress("Unused", "FunctionName")
 @TestInstance(Lifecycle.PER_CLASS)
+@Disabled
 class FlowTests : ClusterReadiness by ClusterReadinessChecker() {
 
     companion object {

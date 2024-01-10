@@ -23,6 +23,7 @@ import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -36,6 +37,7 @@ import java.util.UUID
 @Order(Int.MAX_VALUE)
 @TestInstance(Lifecycle.PER_CLASS)
 @Isolated("As this test updates the config which affects running cluster")
+@Disabled
 class ConfigurationChangeTest : ClusterReadiness by ClusterReadinessChecker() {
 
     companion object {

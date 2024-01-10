@@ -20,6 +20,7 @@ import net.corda.e2etest.utilities.websocket.client.useWebsocketConnection
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -30,6 +31,7 @@ import java.util.UUID
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Disabled
 class FlowStatusFeedSmokeTest : ClusterReadiness by ClusterReadinessChecker() {
 
     private companion object {

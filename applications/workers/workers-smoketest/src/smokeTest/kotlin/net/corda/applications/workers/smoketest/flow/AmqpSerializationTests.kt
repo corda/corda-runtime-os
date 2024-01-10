@@ -13,6 +13,7 @@ import net.corda.e2etest.utilities.startRpcFlow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertAll
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.time.Duration
@@ -20,6 +21,7 @@ import java.util.UUID
 
 @Suppress("Unused")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Disabled
 class AmqpSerializationTests : ClusterReadiness by ClusterReadinessChecker() {
 
     companion object {

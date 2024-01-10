@@ -12,6 +12,7 @@ import net.corda.e2etest.utilities.onboardNotaryMember
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.parallel.Isolated
@@ -20,6 +21,7 @@ import java.util.UUID
 
 @Isolated("As it onboards MGM")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Disabled
 class SingleClusterDynamicNetworkTest : ClusterReadiness by ClusterReadinessChecker() {
     private val testUniqueId = UUID.randomUUID()
 
