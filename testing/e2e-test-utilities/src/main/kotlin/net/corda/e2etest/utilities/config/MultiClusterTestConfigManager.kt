@@ -40,7 +40,7 @@ class MultiClusterTestConfigManager(
         return if(!hasNext()) {
             block()
         } else {
-            next().apply {
+            next().applyWithoutRevert {
                 this.applyWithoutRevert(block)
             }
         }
