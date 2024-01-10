@@ -1064,7 +1064,7 @@ internal class SessionManagerImpl(
 
         private fun fromConfig(config: Config): SessionHealthManagerConfig {
             return SessionHealthManagerConfig(
-                true,//config.getBoolean(LinkManagerConfiguration.HEARTBEAT_ENABLED_KEY),
+                config.getBoolean(LinkManagerConfiguration.HEARTBEAT_ENABLED_KEY),
                 Duration.ofMillis(config.getLong(LinkManagerConfiguration.HEARTBEAT_MESSAGE_PERIOD_KEY)),
                 Duration.ofMillis(config.getLong(LinkManagerConfiguration.SESSION_TIMEOUT_KEY))
             )
