@@ -415,54 +415,7 @@ class MerkleTreeTest {
     }
 
 
-    @Test
-    fun `merkle proof size 15 final countdown`() {
-        val treeSize = 15
-        val sourceProofLeafSet = 28416
-        val subsetProofLeafSet = 256
-        val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
-        val treeText = renderTree((0 until treeSize).map { it.toString() }, emptyMap())
-        assertThat(treeText).isEqualToIgnoringWhitespace("""
-                ┳┳┳┳0
-                ┃┃┃┗1
-                ┃┃┗┳2
-                ┃┃ ┗3
-                ┃┗┳┳4
-                ┃ ┃┗5
-                ┃ ┗┳6
-                ┃  ┗7
-                ┗┳┳┳8
-                 ┃┃┗9
-                 ┃┗┳10
-                 ┃ ┗11
-                 ┗┳┳12
-                  ┃┗13
-                  ┗━14
-        """.trimIndent())
-        val leafIndicesCombination = (0 until treeSize).filter { (sourceProofLeafSet and (1 shl it)) != 0 }
-        val proof = testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize)
-        val proofText = proof.render(trivialHashDigestProvider)
-        assertThat(proofText).isEqualToIgnoringWhitespace("""
-            00000547 (calc)┳00000589 (input 1)┳unknown        ┳unknown        ┳unknown            filtered
-                           ┃                  ┃               ┃               ┗unknown            filtered
-                           ┃                  ┃               ┗unknown        ┳unknown            filtered
-                           ┃                  ┃                               ┗unknown            filtered
-                           ┃                  ┗unknown        ┳unknown        ┳unknown            filtered
-                           ┃                                  ┃               ┗unknown            filtered
-                           ┃                                  ┗unknown        ┳unknown            filtered
-                           ┃                                                  ┗unknown            filtered
-                           ┗00000585 (calc)   ┳000006BF (calc)┳00000640 (calc)┳00000008 (calc)    known leaf
-                                              ┃               ┃               ┗00000009 (calc)    known leaf
-                                              ┃               ┗00000644 (calc)┳0000000A (calc)    known leaf
-                                              ┃                               ┗0000000B (calc)    known leaf
-                                              ┗0000068B (calc)┳00000648 (calc)┳0000000C (input 0) filtered
-                                                              ┃               ┗0000000D (calc)    known leaf
-                                                              ┗0000000E (calc)━0000000E (calc)    known leaf
-                                                          """.trimIndent())
-        val subLeafIndicesCombination = (0 until treeSize).filter { leaf -> (subsetProofLeafSet and (1 shl leaf)) != 0 }
-        val subproof = proof.subset(trivialHashDigestProvider, subLeafIndicesCombination)
-        println(subproof.render(trivialHashDigestProvider))
-    }
+
 
     private fun runMerkleProofTest(treeSize: Int) {
         // we don't want to take the time to do an expensive hash so we'll just make a cheap one
@@ -834,6 +787,72 @@ class MerkleTreeTest {
                                ┗00000638 (calc)   ━00000638 (calc)┳00000004 (calc)    known leaf
                                                                   ┗00000005 (input 0) filtered            
         """.trimIndent(), trivialHashDigestProvider)
+    }
+
+    @Test
+    fun `merkle proof size 15 subset to leaf set 8 using trivial hashes`() {
+        val treeSize = 15
+        val sourceProofLeafSet = 28416
+        val subsetProofLeafSet = 256
+        val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
+        val treeText = renderTree((0 until treeSize).map { it.toString() }, emptyMap())
+        assertThat(treeText).isEqualToIgnoringWhitespace("""
+                ┳┳┳┳0
+                ┃┃┃┗1
+                ┃┃┗┳2
+                ┃┃ ┗3
+                ┃┗┳┳4
+                ┃ ┃┗5
+                ┃ ┗┳6
+                ┃  ┗7
+                ┗┳┳┳8
+                 ┃┃┗9
+                 ┃┗┳10
+                 ┃ ┗11
+                 ┗┳┳12
+                  ┃┗13
+                  ┗━14
+        """.trimIndent())
+        val leafIndicesCombination = (0 until treeSize).filter { (sourceProofLeafSet and (1 shl it)) != 0 }
+        val proof = testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize)
+        val proofText = proof.render(trivialHashDigestProvider)
+        assertThat(proofText).isEqualToIgnoringWhitespace("""
+            00000547 (calc)┳00000589 (input 1)┳unknown        ┳unknown        ┳unknown            filtered
+                           ┃                  ┃               ┃               ┗unknown            filtered
+                           ┃                  ┃               ┗unknown        ┳unknown            filtered
+                           ┃                  ┃                               ┗unknown            filtered
+                           ┃                  ┗unknown        ┳unknown        ┳unknown            filtered
+                           ┃                                  ┃               ┗unknown            filtered
+                           ┃                                  ┗unknown        ┳unknown            filtered
+                           ┃                                                  ┗unknown            filtered
+                           ┗00000585 (calc)   ┳000006BF (calc)┳00000640 (calc)┳00000008 (calc)    known leaf
+                                              ┃               ┃               ┗00000009 (calc)    known leaf
+                                              ┃               ┗00000644 (calc)┳0000000A (calc)    known leaf
+                                              ┃                               ┗0000000B (calc)    known leaf
+                                              ┗0000068B (calc)┳00000648 (calc)┳0000000C (input 0) filtered
+                                                              ┃               ┗0000000D (calc)    known leaf
+                                                              ┗0000000E (calc)━0000000E (calc)    known leaf
+                                                          """.trimIndent())
+        val subLeafIndicesCombination = (0 until treeSize).filter { leaf -> (subsetProofLeafSet and (1 shl leaf)) != 0 }
+        val subproof = proof.subset(trivialHashDigestProvider, subLeafIndicesCombination)
+        val subproofText = subproof.render(trivialHashDigestProvider)
+        assertThat(subproofText).isEqualToIgnoringWhitespace("""
+            00000547 (calc)┳00000589 (input 3)┳unknown           ┳unknown           ┳unknown            filtered
+                           ┃                  ┃                  ┃                  ┗unknown            filtered
+                           ┃                  ┃                  ┗unknown           ┳unknown            filtered
+                           ┃                  ┃                                     ┗unknown            filtered
+                           ┃                  ┗unknown           ┳unknown           ┳unknown            filtered
+                           ┃                                     ┃                  ┗unknown            filtered
+                           ┃                                     ┗unknown           ┳unknown            filtered
+                           ┃                                                        ┗unknown            filtered
+                           ┗00000585 (calc)   ┳000006BF (calc)   ┳00000640 (calc)   ┳00000008 (calc)    known leaf
+                                              ┃                  ┃                  ┗00000009 (input 0) filtered
+                                              ┃                  ┗00000644 (input 1)┳unknown            filtered
+                                              ┃                                     ┗unknown            filtered
+                                              ┗0000068B (input 2)┳unknown           ┳unknown            filtered
+                                                                 ┃                  ┗unknown            filtered
+                                                                 ┗unknown           ━unknown            filtered
+        """.trimIndent())
     }
 
 }
