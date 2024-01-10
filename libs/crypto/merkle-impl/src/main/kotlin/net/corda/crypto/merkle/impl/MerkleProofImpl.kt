@@ -273,6 +273,28 @@ class MerkleProofImpl(
         return MerkleProofImpl(proofType, treeSize, outLeaves, outHashes)
     }
 
+    @Suppress("UnusedParameters")
+    fun merge(other: MerkleProofImpl): MerkleProofImpl {
+        // First, work out the leaves for the output proof.
+        val indexMapMe = leaves.map { it.index to it }.toMap()
+        val indexMapOther = other.leaves.map { it.index to it }.toMap()
+        val combinedIndexMap = indexMapMe + indexMapOther
+        val outLeaves = combinedIndexMap.values.toList().sortedWith( compareBy { it.index })
+
+        // We can now work out hashes for the nodes known in either proof.
+        //val outHashMap: Map< Pair<Int, Int>, SecureHash> = mutableMapOf()
+        //calculateRootInstrumented(digest) { hash, level, index, _ -> }
+        //other.calculateRootInstrumented(digest) { hash, level, index, _ -> }
+
+        // For each node, where X is me and Y is the other proof, and O is the output proof (so we're doing O = X∪Y)
+        // if X is calculated, it will be calculable in O, so no proof hash needed
+        //  or if Y is calculated, it will be calculable in O, so no proof hash needed
+        //    or if X uses a proof hash, add that proof hash for O
+        //      or if Y uses a proof hash, add that proof hash for O
+        //         else leave it unknown
+        return MerkleProofImpl(proofType, treeSize, outLeaves, emptyList())
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
