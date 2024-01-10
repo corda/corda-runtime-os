@@ -105,10 +105,10 @@ class MerkleProofImpl(
         var hashIndex = 0
         val sortedLeaves = leaves.sortedBy { it.index }
         // work out nodeHashes, which is a list of node information for the current level we operate at
-        var nodeHashes: List<Pair<Int, SecureHash>> =
-            sortedLeaves.map { Pair(it.index, digest.leafHash(it.index, it.nonce, it.leafData)) }
+        var nodeHashes: List<MerkleNode> =
+            sortedLeaves.map { MerkleNode(it.index, digest.leafHash(it.index, it.nonce, it.leafData)) }
         var treeDepth = MerkleTreeImpl.treeDepth(treeSize)         // initialised to the depth of tree we should
-        nodeHashes.forEach { item -> onNewHash(item.second, treeDepth, item.first, null)  }
+        nodeHashes.forEach { item -> onNewHash(item.hash, treeDepth, item.index, null)  }
         // need for the number of elements
         var currentSize = treeSize                                 // outer loop variable; the number of
         // leaves left as we roll up the tree
@@ -133,7 +133,7 @@ class MerkleProofImpl(
             // - $treeDepth is the level of the tree, counting from the root of the tree where $currentSize==1
             // - $nodeHashes has a list of pairs of the index and hash of the node. We checked we have some content.
 
-            val newItems = mutableListOf<Pair<Int, SecureHash>>()   // this will become nodeHashes at the end of this
+            val newItems = mutableListOf<MerkleNode>()   // this will become nodeHashes at the end of this
             // out iteration
 
             // Now walk over the hashes at this tree level, striding over 1 or 2 at a time
@@ -146,22 +146,22 @@ class MerkleProofImpl(
                 //
                 // Since index == item.first we don't really need to use item.first
 
-                if (item.first < currentSize and 0x7FFFFFFE) {      // If the level has odd elements, we'll process
+                if (item.index < currentSize and 0x7FFFFFFE) {      // If the level has odd elements, we'll process
                     // the last element later.
                     if (index < nodeHashes.size - 1) {              // If there is a next element...
                         val next = nodeHashes[index + 1]
                         // Decide if we can consume the next two elements since they are adjacent in the Merkle tree
-                        if (item.first xor next.first == 1) {       // ... and they are a pair with the current
+                        if (item.index xor next.index == 1) {       // ... and they are a pair with the current
                             // We now know that the indices ${item.first} and ${next.first} only differ on the bottom bit,
                             // i.e. they are adjacent. Therefore, we can combine them.
 
                             // So, make a single new item, computing a new hash
                             // (Pair is the Kotlin type, nothing to do with pairing nodes)
                             // in the original tree, we create their parent.
-                            val newHash = digest.nodeHash(treeDepth, item.second, next.second)
-                            val newIndex = item.first / 2
+                            val newHash = digest.nodeHash(treeDepth, item.hash, next.hash)
+                            val newIndex = item.index / 2
                             onNewHash( newHash, treeDepth, newIndex, null)
-                            newItems += Pair(newIndex, newHash)
+                            newItems.add(MerkleNode(newIndex, newHash))
                             // and record that we consumed two values from our working set, and skip on to the
                             // start of the next loop
                             index += 2                              // we've consumed two
@@ -179,35 +179,35 @@ class MerkleProofImpl(
                             "MerkleProof root calculation requires more hashes than the proof has."
                         )
                     }
-                    val newIndex = item.first /2
+                    val newIndex = item.index /2
 
                     // We pair the current element with a hash from the proof
-                    newItems += if ((item.first and 1) == 0) {      // Even index means, that the item is on the left
+                    newItems.add(if ((item.index and 1) == 0) {      // Even index means, that the item is on the left
                         // Make new node with
-                        //   - left being current element, index $item.first, hash $item.second
+                        //   - left being current element
                         //   - right being a consumed incoming hash from $hashes[$hashIndex]
                         //
                         // Also remember we used $hashIndex by bumping the counter
-                        onNewHash(hashes[hashIndex], treeDepth+1, item.first + 1, hashIndex)
-                        val newHash = digest.nodeHash(treeDepth, item.second, hashes[hashIndex++])
-                        onNewHash( newHash, treeDepth, newIndex, null)
-                        Pair(newIndex, newHash)
+                        onNewHash(hashes[hashIndex], treeDepth+1, item.index + 1, hashIndex)
+                        val newHash = digest.nodeHash(treeDepth, item.hash, hashes[hashIndex++])
+                        onNewHash(newHash, treeDepth, newIndex, null)
+                        MerkleNode(newIndex, newHash)
                     } else {
                         // Make new node with:
                         //   - left being proof of hash at $hashIndex
                         //   - right being current element, index $item.first, hash $item.second
                         //
                         // Also remember we used hashIndex by bumping the counter.
-                        onNewHash(hashes[hashIndex], treeDepth+1, item.first-1, hashIndex)
-                        val newHash = digest.nodeHash(treeDepth, hashes[hashIndex++], item.second)
-                        onNewHash( newHash, treeDepth, newIndex, null)
-                        Pair(newIndex, newHash)
-                    }
+                        onNewHash(hashes[hashIndex], treeDepth+1, item.index-1, hashIndex)
+                        val newHash = digest.nodeHash(treeDepth, hashes[hashIndex++], item.hash)
+                        onNewHash(newHash, treeDepth, newIndex, null)
+                        MerkleNode(newIndex, newHash)
+                    })
                 } else {
-                    val newIndex = (item.first + 1) / 2
-                    onNewHash( item.second, treeDepth, newIndex, null)
+                    val newIndex = (item.index + 1) / 2
+                    onNewHash( item.hash, treeDepth, newIndex, null)
                     // The last odd element, just gets lifted.
-                    newItems += Pair(newIndex, item.second)
+                    newItems += MerkleNode(newIndex, item.hash)
                 }
                 ++index // whatever of the last 3 cases we took, we consumed one element
             }
@@ -226,7 +226,7 @@ class MerkleProofImpl(
                 "MerkleProof root hash calculation ended with ${nodeHashes.size} node hashes instead of one."
             )
         }
-        return nodeHashes.single().second
+        return nodeHashes.single().hash
     }
 
     /**
