@@ -62,9 +62,8 @@ class MerkleProofImpl(
      *                          The arguments are the hash of the node, level (with top of the tree at 0),
      *                          index (position across from the left hand side of the tree, starting at 0),
      *                          plus the index of that hash within the incoming hashes (starting at 0),
-     *                          or null for calculated nodes. This will be called left to right then bottom to top.
-     *                          The order that this is called is left to right then bottom to top, i.e. the same
-     *                          order as input hashes are consumed.
+     *                          or null for calculated nodes. This will be called left to right then bottom to top,
+     *                          i.e. the same order as input hashes are consumed.
      * @return the secure hash of the root of the Merkle proof
      */
     @Suppress("NestedBlockDepth", "ThrowsCount")
