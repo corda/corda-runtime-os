@@ -156,12 +156,13 @@ class MerkleProofImpl(
                             // We now know that the indices ${item.first} and ${next.first} only differ on the bottom bit,
                             // i.e. they are adjacent. Therefore, we can combine them.
 
-                            val newHash = digest.nodeHash(treeDepth, item.second, next.second)
-                            onNewHash( newHash, treeDepth, newItems.size, null)
                             // So, make a single new item, computing a new hash
                             // (Pair is the Kotlin type, nothing to do with pairing nodes)
                             // in the original tree, we create their parent.
-                            newItems += Pair(item.first / 2, newHash)
+                            val newHash = digest.nodeHash(treeDepth, item.second, next.second)
+                            val newIndex = item.first / 2
+                            onNewHash( newHash, treeDepth, newIndex, null)
+                            newItems += Pair(newIndex, newHash)
                             // and record that we consumed two values from our working set, and skip on to the
                             // start of the next loop
                             index += 2                              // we've consumed two
@@ -303,7 +304,6 @@ class MerkleProofImpl(
 
     fun render(digest: MerkleTreeHashDigest): String {
         val nodeLabels: MutableMap<Pair<Int,Int>, String> = mutableMapOf()
-        val treeDepth = MerkleTreeImpl.treeDepth(treeSize)
         for(x in 0..treeSize)
             for (y in 0 until (1 shl x))
                 nodeLabels[x to y] = "unknown"
@@ -311,10 +311,8 @@ class MerkleProofImpl(
             nodeLabels[level to nodeIndex] = hash.toString().substringAfter(":")
                 .take(8) + (if (consumed!=null) " (input $consumed)" else " (calc)")
         }
-        val leafHashes = (0 until treeSize).map { nodeLabels[treeDepth to it]?:"unknown"}
-        val longestLeafHash = leafHashes.maxOfOrNull { it.length } ?: 0
         val leafLabels =  (0 until treeSize).map {
-            "${leafHashes[it].padEnd(longestLeafHash)} ${if (it in getLeaves().map { l -> l.index }) "known leaf" else "filtered"}"
+            if (it in getLeaves().map { l -> l.index }) "known leaf" else "filtered"
         }
         return renderTree(leafLabels, nodeLabels)
     }
