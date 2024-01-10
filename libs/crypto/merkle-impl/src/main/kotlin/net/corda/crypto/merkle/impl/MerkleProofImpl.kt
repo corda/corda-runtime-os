@@ -178,7 +178,9 @@ class MerkleProofImpl(
                             "MerkleProof root calculation requires more hashes than the proof has."
                         )
                     }
-                    val newIndex = item.index /2
+
+                    // Make up a new node, which will be a level up so will have a node index shifted right one
+                    val newIndex = item.index / 2
 
                     // We pair the current element with a hash from the proof
                     val newNode = (if ((item.index and 1) == 0) {      // Even index means, that the item is on the left
