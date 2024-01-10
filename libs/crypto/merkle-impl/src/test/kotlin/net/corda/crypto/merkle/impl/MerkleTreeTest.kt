@@ -504,20 +504,14 @@ class MerkleTreeTest {
         for (sourceProofLeafSet in 1 until (1 shl treeSize)) {
             val leafIndicesCombination = (0 until treeSize).filter { (sourceProofLeafSet and (1 shl it)) != 0 }
             testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize).also { proof ->
-
-                val hashes = calculateLeveledHashes(proof, trivialHashDigestProvider)
-
-                // `it` is a Merkle proof for a tree of size $treeSize with ${hashes.size}
+                // proof is a Merkle proof for a tree of size $treeSize with ${hashes.size}
                 // hashes supplied in the proof where we know $leafIndicesCombination
+                val hashes = calculateLeveledHashes(proof, trivialHashDigestProvider)
 
                 if (sourceProofLeafSet == 1 && treeSize == 2) {
                     assertThat(hashes).hasSize(1)
                     assertHash(hashes[0].hash, "00000001")
                     assertThat(hashes[0].level).isEqualTo(0)
-                    assertThat(proof.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
-                            00000630 (calc)┳00000000 (calc)    known leaf
-                                           ┗00000001 (input 0) filtered
-                    """)
                 }
                 if (sourceProofLeafSet == 1 && treeSize == 3) {
                     assertThat(hashes).hasSize(2)
@@ -816,7 +810,7 @@ class MerkleTreeTest {
     }
 
     @Test
-    fun `Merkle proof size 1`() {
+    fun `Merkle proof size 1 with double SHA256`() {
         val treeSize = 1
         val sourceProofLeafSet = 1
         val merkleTree = makeTestMerkleTree(treeSize, defaultHashDigestProvider)
@@ -827,6 +821,23 @@ class MerkleTreeTest {
                         7901AF93 (calc) known leaf
                     """)
     }
+
+
+    @Test
+    fun `Merkle proof size 2 with trivial hash`() {
+        val treeSize = 2
+        val sourceProofLeafSet = 1
+        val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
+        val leafIndicesCombination = (0 until treeSize).filter { (sourceProofLeafSet and (1 shl it)) != 0 }
+        val proof = testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize, trivialHashDigestProvider)
+
+        assertThat(proof.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
+                            00000630 (calc)┳00000000 (calc)    known leaf
+                                           ┗00000001 (input 0) filtered
+                    """)
+    }
+
+
 }
 
 fun SecureHash.hex() = bytes.joinToString(separator = "") { "%02x".format(it) }
