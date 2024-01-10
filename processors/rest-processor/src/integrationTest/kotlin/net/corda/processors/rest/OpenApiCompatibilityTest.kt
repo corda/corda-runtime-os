@@ -1,15 +1,12 @@
 @file:Suppress("DEPRECATION")
+
 package net.corda.processors.rest
 
 import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.models.OpenAPI
+import net.corda.crypto.rest.KeyRotationRestResource
 import net.corda.flow.rest.v1.FlowClassRestResource
 import net.corda.flow.rest.v1.FlowRestResource
-import net.corda.rest.PluggableRestResource
-import net.corda.rest.RestResource
-import net.corda.rest.server.config.models.RestContext
-import net.corda.rest.server.config.models.RestServerSettings
-import net.corda.rest.server.factory.RestServerFactory
 import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
@@ -28,7 +25,12 @@ import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.MemberRegistrationRestResource
 import net.corda.membership.rest.v1.NetworkRestResource
 import net.corda.processors.rest.diff.diff
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.RestResource
 import net.corda.rest.annotations.RestApiVersion
+import net.corda.rest.server.config.models.RestContext
+import net.corda.rest.server.config.models.RestServerSettings
+import net.corda.rest.server.factory.RestServerFactory
 import net.corda.utilities.NetworkHostAndPort
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -68,11 +70,12 @@ class OpenApiCompatibilityTest {
             PermissionEndpoint::class.java, // REST
             RoleEndpoint::class.java, // REST
             UserEndpoint::class.java, // REST
-            VirtualNodeMaintenanceRestResource::class.java // REST
+            VirtualNodeMaintenanceRestResource::class.java, // REST
+            KeyRotationRestResource::class.java, // Crypto
         )
 
         // `cardinality` is not equal to `importantRestResources.size` as there might be some test RestResource as well
-        @InjectService(service = PluggableRestResource::class, cardinality = 17, timeout = 10_000)
+        @InjectService(service = PluggableRestResource::class, cardinality = 18, timeout = 10_000)
         lateinit var dynamicRestResources: List<RestResource>
 
         @InjectService(service = RestServerFactory::class, timeout = 10_000)
@@ -82,9 +85,11 @@ class OpenApiCompatibilityTest {
     @Test
     fun test() {
         val allOps = dynamicRestResources.map { (it as PluggableRestResource<*>).targetInterface }.sortedBy { it.name }
-        assertThat(allOps.filterNot {
-            it.name.contains("HelloRestResource") // the only test, i.e. not important REST resources we have
-        }.toSet()).isEqualTo(importantRestResources)
+        assertThat(
+            allOps.filterNot {
+                it.name.contains("HelloRestResource") // the only test, i.e. not important REST resources we have
+            }.toSet()
+        ).isEqualTo(importantRestResources)
 
         logger.info("REST resources discovered: ${allOps.map { it.simpleName }}")
 
@@ -96,7 +101,8 @@ class OpenApiCompatibilityTest {
             val diffReport = existingSwaggerJson.second.diff(baselineSwagger)
 
             val tmpBaselineFile = kotlin.io.path.createTempFile(
-                prefix = "open-api-baseline-${apiVersion.versionPath}", suffix = ".json"
+                prefix = "open-api-baseline-${apiVersion.versionPath}",
+                suffix = ".json"
             )
             File(tmpBaselineFile.toUri()).printWriter().use {
                 it.println(existingSwaggerJson.second.toJson())
@@ -104,18 +110,17 @@ class OpenApiCompatibilityTest {
 
             assertThat(diffReport).withFailMessage(
                 "Version: '${apiVersion.versionPath}': Produced Open API content:\n" + existingSwaggerJson.first +
-                        "\nis different to the baseline. Differences noted: ${diffReport.joinToString(" ## ")}\n\n" +
-                        "New baseline written to: $tmpBaselineFile"
+                    "\nis different to the baseline. Differences noted: ${diffReport.joinToString(" ## ")}\n\n" +
+                    "New baseline written to: $tmpBaselineFile"
             ).isEmpty()
         }
     }
 
     private fun fetchBaseline(apiVersion: RestApiVersion): OpenAPI {
-
         val stream = with("/swaggerBaseline-${apiVersion.versionPath}.json") {
             val classLoader = OpenApiCompatibilityTest::class.java.classLoader
             val resource = classLoader.getResource(this)
-            val errMsg =  { "File '$this' cannot be found on the classpath. Please check 'resources' folder." }
+            val errMsg = { "File '$this' cannot be found on the classpath. Please check 'resources' folder." }
             requireNotNull(resource, errMsg)
             val resourceAsStream: InputStream? = resource.openStream()
             requireNotNull(resourceAsStream, errMsg)
@@ -145,18 +150,20 @@ class OpenApiCompatibilityTest {
 
         val server = httpServerFactory.createRestServer(
             dynamicRestResources.map { it as PluggableRestResource<out RestResource> }.sortedBy { it.targetInterface.name },
-            { FakeSecurityManager() }, restServerSettings, multipartDir, devMode = true
+            { FakeSecurityManager() },
+            restServerSettings,
+            multipartDir,
+            devMode = true
         ).apply { start() }
 
         val url = "http://${serverAddress.host}:${server.port}/${context.basePath}/${apiVersion.versionPath}/swagger.json"
         logger.info("Swagger should be accessible on: $url")
 
         return server.use {
-
             // It may be handy to leave the HTTP Server running for a little while such that when developers
             // experimenting with new endpoints locally could access URL: http://localhost:port/api/v1/swagger to see
             // how their newly introduced OpenAPI is looking in SwaggerUI.
-            //Thread.sleep(1_000_000)
+            // Thread.sleep(1_000_000)
 
             val client = HttpClient.newHttpClient()
             val request = HttpRequest.newBuilder(URI.create(url))

@@ -2,6 +2,7 @@ package net.corda.crypto.service.impl.infra
 
 import org.assertj.core.api.Assertions.assertThat
 import java.time.Instant
+import kotlin.time.Duration
 
 fun assertThatIsBetween(actual: Instant, before: Instant, after: Instant) {
     assertThat(actual.toEpochMilli())
@@ -26,6 +27,13 @@ open class ActResultTimestamps(
 ) {
     fun assertThatIsBetween(timestamp: Instant) = assertThatIsBetween(timestamp, before, after)
 }
+
+
+fun assertClose(actual: Instant, expected: Instant, tolerance: Duration) =
+    assertThat(actual.toEpochMilli()).isBetween(
+        expected.toEpochMilli() - tolerance.inWholeMilliseconds,
+        expected.toEpochMilli() + tolerance.inWholeMilliseconds
+    )
 
 class ActResult<RESULT>(
     before: Instant,

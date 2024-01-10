@@ -3,6 +3,7 @@ package net.corda.libs.virtualnode.endpoints.v1
 import net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity
+import net.corda.libs.virtualnode.endpoints.v1.types.UpdateVirtualNodeDbRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
 import net.corda.rest.RestResource
@@ -42,6 +43,25 @@ interface VirtualNodeRestResource : RestResource {
     ): ResponseEntity<AsyncResponse>
 
     /**
+     * Requests an update to an existing virtual node database.
+     *
+     * @throws `HttpApiException` If the request returns an exceptional response.
+     */
+    @HttpPUT(
+        path = "{virtualNodeShortId}/db",
+        title = "Update virtual node",
+        description = "This method updates virtual node connection strings.",
+        responseDescription = "The details of the updated virtual node.",
+        minVersion = RestApiVersion.C5_2
+    )
+    fun updateVirtualNodeDb(
+        @RestPathParameter(description = "Short ID of the virtual node instance to update")
+        virtualNodeShortId: String,
+        @ClientRequestBodyParameter(description = "Details of the virtual node to be updated")
+        request: UpdateVirtualNodeDbRequest
+    ): ResponseEntity<AsyncResponse>
+
+    /**
      * Lists all virtual nodes onboarded to the cluster.
      *
      * @throws `HttpApiException` If the request returns an exceptional response.
@@ -68,8 +88,10 @@ interface VirtualNodeRestResource : RestResource {
     fun updateVirtualNodeState(
         @RestPathParameter(description = "Short ID of the virtual node instance to update")
         virtualNodeShortId: String,
-        @RestPathParameter(description = "State to transition virtual node instance into. " +
-                "Possible values are: MAINTENANCE and ACTIVE.")
+        @RestPathParameter(
+            description = "State to transition virtual node instance into. " +
+                "Possible values are: MAINTENANCE and ACTIVE."
+        )
         newState: String
     ): ChangeVirtualNodeStateResponse
 
@@ -104,6 +126,49 @@ interface VirtualNodeRestResource : RestResource {
         requestId: String
     ): AsyncOperationStatus
 
+    @HttpGET(
+        path = "create/db/crypto",
+        title = "Gets Crypto creation schema SQL",
+        description = "This method returns the Crypto SQL needed for intention to create a virtual node.",
+        responseDescription = "SQL needed to create the Crypto DB",
+        minVersion = RestApiVersion.C5_2
+    )
+    fun getCreateCryptoSchemaSQL(): String
+
+    @HttpGET(
+        path = "create/db/uniqueness",
+        title = "Gets Uniqueness creation schema SQL",
+        description = "This method returns the Uniqueness SQL needed for intention to create a virtual node.",
+        responseDescription = "SQL needed to create the Uniqueness DB",
+        minVersion = RestApiVersion.C5_2
+    )
+    fun getCreateUniquenessSchemaSQL(): String
+
+    @HttpGET(
+        path = "create/db/vault/{cpiChecksum}",
+        title = "Gets Vault creation schema SQL",
+        description = "This method returns the Vault SQL needed for intention to create a virtual node and latest uploaded CPI.",
+        responseDescription = "SQL needed to create the Vault DB and CPI",
+        minVersion = RestApiVersion.C5_2
+    )
+    fun getCreateVaultSchemaSQL(
+        @RestPathParameter(description = "The file checksum of the CPI")
+        cpiChecksum: String,
+    ): String
+
+    @HttpGET(
+        path = "{virtualNodeShortId}/db/vault/{newCpiChecksum}",
+        title = "Gets migration schema SQL",
+        description = "This method returns the SQL needed to update the virtual node's CPI",
+        responseDescription = "SQL needed to bring schema up to date.",
+        minVersion = RestApiVersion.C5_2
+    )
+    fun getUpdateSchemaSQL(
+        @RestPathParameter(description = "Short ID of the virtual node instance")
+        virtualNodeShortId: String,
+        @RestPathParameter(description = "The file checksum of the CPI to be upgraded to")
+        newCpiChecksum: String
+    ): String
 
     /**
      * Asynchronous endpoint to upgrade a virtual node's CPI.

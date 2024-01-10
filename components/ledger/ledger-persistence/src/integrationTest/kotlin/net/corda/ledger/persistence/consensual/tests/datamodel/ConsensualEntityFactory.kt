@@ -12,6 +12,7 @@ class ConsensualEntityFactory(entityManagerFactory: EntityManagerFactory) {
     val consensualTransactionStatus: Class<*> get() = classFor("ConsensualTransactionStatusEntity")
     val consensualTransactionSignature: Class<*> get() = classFor("ConsensualTransactionSignatureEntity")
 
+    @Suppress("LongParameterList")
     fun createConsensualCpkEntity(
         fileChecksum: String,
         name: String,
@@ -21,7 +22,12 @@ class ConsensualEntityFactory(entityManagerFactory: EntityManagerFactory) {
         created: Instant
     ): Any {
         return consensualCpk.constructors.single { it.parameterCount == 6 }.newInstance(
-            fileChecksum, name, signerSummaryHash, version, data, created
+            fileChecksum,
+            name,
+            signerSummaryHash,
+            version,
+            data,
+            created
         )
     }
 
@@ -32,10 +38,14 @@ class ConsensualEntityFactory(entityManagerFactory: EntityManagerFactory) {
         created: Instant
     ): Any {
         return consensualTransaction.constructors.single { it.parameterCount == 4 }.newInstance(
-            transactionId, privacySalt, accountId, created
+            transactionId,
+            privacySalt,
+            accountId,
+            created
         )
     }
 
+    @Suppress("LongParameterList")
     fun createConsensualTransactionComponentEntity(
         consensualTransaction: Any,
         groupIdx: Int,
@@ -45,7 +55,12 @@ class ConsensualEntityFactory(entityManagerFactory: EntityManagerFactory) {
         created: Instant
     ): Any {
         return consensualTransactionComponent.constructors.single { it.parameterCount == 6 }.newInstance(
-            consensualTransaction, groupIdx, leafIdx, component, hash, created
+            consensualTransaction,
+            groupIdx,
+            leafIdx,
+            component,
+            hash,
+            created
         )
     }
 
@@ -55,7 +70,9 @@ class ConsensualEntityFactory(entityManagerFactory: EntityManagerFactory) {
         created: Instant
     ): Any {
         return consensualTransactionStatus.constructors.single { it.parameterCount == 3 }.newInstance(
-            consensualTransaction, status, created
+            consensualTransaction,
+            status,
+            created
         )
     }
 
@@ -67,7 +84,11 @@ class ConsensualEntityFactory(entityManagerFactory: EntityManagerFactory) {
         created: Instant
     ): Any {
         return consensualTransactionSignature.constructors.single { it.parameterCount == 5 }.newInstance(
-            consensualTransaction, signatureIndex, signature, publicKeyHash, created
+            consensualTransaction,
+            signatureIndex,
+            signature,
+            publicKeyHash,
+            created
         )
     }
 

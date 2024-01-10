@@ -8,6 +8,8 @@ plugins {
 
 description 'Corda UTXO ledger - flow implementation'
 
+ext.cordaEnableFormatting = true
+
 configurations {
     cpis {
         canBeConsumed = false
@@ -48,10 +50,6 @@ dependencies {
     implementation project(':libs:virtual-node:sandbox-group-context')
     implementation project(':notary-plugins:notary-plugin-common')
     implementation project(':libs:configuration:configuration-core')
-
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 
     testImplementation project(':testing:test-serialization')
     testImplementation project(':testing:kryo-serialization-testkit')

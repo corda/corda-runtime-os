@@ -5,6 +5,8 @@ plugins {
 
 description 'Permission Validation API'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 

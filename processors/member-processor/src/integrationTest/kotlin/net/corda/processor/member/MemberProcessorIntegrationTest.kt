@@ -44,12 +44,13 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookUpBySes
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookup
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookupFails
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeBootstrapConfig
+import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeCryptoConfig
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeMembershipConfig
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeMessagingConfig
-import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishMembershipConf
-import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeCryptoConfig
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishDefaultCryptoConf
+import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishEmptyStateManagerConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishGatewayConfig
+import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishMembershipConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishMessagingConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishRawGroupPolicyData
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.register
@@ -144,28 +145,28 @@ class MemberProcessorIntegrationTest {
         private val clusterDb = TestDbInfo.createConfig()
 
         private val cryptoDb = TestDbInfo(
-            name = CordaDb.Crypto.persistenceUnitName
+            name = CordaDb.Crypto.persistenceUnitName,
         )
 
         private val aliceVNodeDb = TestDbInfo(
             name = VirtualNodeDbType.CRYPTO.getConnectionName(aliceVNodeId),
-            schemaName = "vnode_crypto_alice"
+            schemaName = "vnode_crypto_alice",
         )
 
         private val bobVNodeDb = TestDbInfo(
             name = VirtualNodeDbType.CRYPTO.getConnectionName(bobVNodeId),
-            schemaName = "vnode_crypto_bob"
+            schemaName = "vnode_crypto_bob",
         )
 
         private val charlieVNodeDb = TestDbInfo(
             name = VirtualNodeDbType.CRYPTO.getConnectionName(charlieVNodeId),
-            schemaName = "vnode_crypto_charlie"
+            schemaName = "vnode_crypto_charlie",
         )
 
         private val boostrapConfig = makeBootstrapConfig(
             mapOf(
-                BOOT_DB to clusterDb.config
-            )
+                BOOT_DB to clusterDb.config,
+            ),
         )
 
         private val membershipConfig = makeMembershipConfig()
@@ -199,25 +200,26 @@ class MemberProcessorIntegrationTest {
                     LifecycleCoordinatorName.forComponent<CryptoProcessor>(),
                     LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
                     LifecycleCoordinatorName.forComponent<MembersClientCertificatePublisher>(),
-                    LifecycleCoordinatorName.forComponent<HSMRegistrationClient>()
-                )
+                    LifecycleCoordinatorName.forComponent<HSMRegistrationClient>(),
+                ),
             ).also { it.startAndWait() }
 
             publisher.publishMessagingConf(messagingConfig)
             publisher.publishMembershipConf(membershipConfig)
             publisher.publishDefaultCryptoConf(cryptoConfig)
+            publisher.publishEmptyStateManagerConf()
             publisher.publishGatewayConfig()
             publisher.publishRawGroupPolicyData(
                 virtualNodeInfoReader,
                 cpiInfoReader,
                 aliceHoldingIdentity,
-                connectionIds.getValue(aliceVNodeDb.name)
+                connectionIds.getValue(aliceVNodeDb.name),
             )
             publisher.publishRawGroupPolicyData(
                 virtualNodeInfoReader,
                 cpiInfoReader,
                 bobHoldingIdentity,
-                connectionIds.getValue(bobVNodeDb.name)
+                connectionIds.getValue(bobVNodeDb.name),
             )
 
             // Wait for published content to be picked up by components.
@@ -239,26 +241,26 @@ class MemberProcessorIntegrationTest {
             val configEmf = databaseInstaller.setupClusterDatabase(
                 clusterDb,
                 "config",
-                ConfigurationEntities.classes
+                ConfigurationEntities.classes,
             )
             databaseInstaller.setupDatabase(
                 cryptoDb,
-                "crypto"
+                "crypto",
             ).close()
             databaseInstaller.setupDatabase(
                 aliceVNodeDb,
                 "vnode-crypto",
-                CryptoEntities.classes
+                CryptoEntities.classes,
             ).close()
             databaseInstaller.setupDatabase(
                 bobVNodeDb,
                 "vnode-crypto",
-                CryptoEntities.classes
+                CryptoEntities.classes,
             ).close()
             databaseInstaller.setupDatabase(
                 charlieVNodeDb,
                 "vnode-crypto",
-                CryptoEntities.classes
+                CryptoEntities.classes,
             ).close()
             connectionIds = addDbConnectionConfigs(configEmf, cryptoDb, aliceVNodeDb, bobVNodeDb, charlieVNodeDb)
             configEmf.close()
@@ -272,7 +274,8 @@ class MemberProcessorIntegrationTest {
                     val existing = it.createQuery(
                         """
                         SELECT c FROM DbConnectionConfig c WHERE c.name=:name AND c.privilege=:privilege
-                    """.trimIndent(), DbConnectionConfig::class.java
+                        """.trimIndent(),
+                        DbConnectionConfig::class.java,
                     )
                         .setParameter("name", db.name)
                         .setParameter("privilege", DbPrivilege.DML)
@@ -285,7 +288,7 @@ class MemberProcessorIntegrationTest {
                             clock.instant(),
                             "sa",
                             "Test ${db.name}",
-                            configAsString
+                            configAsString,
                         )
                         it.persist(record)
                         record.id
@@ -303,7 +306,7 @@ class MemberProcessorIntegrationTest {
     @Test
     fun `Group policy can be retrieved for valid holding identity`() {
         assertGroupPolicy(
-            getGroupPolicy(groupPolicyProvider, aliceHoldingIdentity)
+            getGroupPolicy(groupPolicyProvider, aliceHoldingIdentity),
         )
     }
 
@@ -311,7 +314,7 @@ class MemberProcessorIntegrationTest {
     fun `Additional group policy reads return the same (cached) instance`() {
         assertEquals(
             getGroupPolicy(groupPolicyProvider, aliceHoldingIdentity),
-            getGroupPolicy(groupPolicyProvider, aliceHoldingIdentity)
+            getGroupPolicy(groupPolicyProvider, aliceHoldingIdentity),
         )
     }
 
@@ -319,7 +322,7 @@ class MemberProcessorIntegrationTest {
     fun `Get group policy fails for unknown holding identity`() {
         getGroupPolicyFails(
             groupPolicyProvider,
-            invalidHoldingIdentity
+            invalidHoldingIdentity,
         )
     }
 
@@ -335,13 +338,13 @@ class MemberProcessorIntegrationTest {
             cpiInfoReader,
             aliceHoldingIdentity,
             connectionIds.getValue(aliceVNodeDb.name),
-            groupPolicy = sampleGroupPolicy2
+            groupPolicy = sampleGroupPolicy2,
         )
 
         eventually(duration = waitDuration) {
             assertSecondGroupPolicy(
                 getGroupPolicy(groupPolicyProvider, aliceHoldingIdentity),
-                groupPolicy1
+                groupPolicy1,
             )
         }
         publisher.publishRawGroupPolicyData(
@@ -349,14 +352,14 @@ class MemberProcessorIntegrationTest {
             cpiInfoReader,
             aliceHoldingIdentity,
             connectionIds.getValue(aliceVNodeDb.name),
-            groupPolicy = sampleGroupPolicy1
+            groupPolicy = sampleGroupPolicy1,
         )
 
         // Wait for the group policy change to be visible (so following tests don't fail as a result)
         eventually(duration = waitDuration) {
             assertEquals(
                 groupPolicy1.groupId,
-                getGroupPolicy(groupPolicyProvider, aliceHoldingIdentity).groupId
+                getGroupPolicy(groupPolicyProvider, aliceHoldingIdentity).groupId,
             )
         }
     }
@@ -400,6 +403,5 @@ class MemberProcessorIntegrationTest {
 
         assertEquals(aliceMemberInfo, lookUpBySessionKey(aliceGroupReader, aliceMemberInfo))
         assertEquals(bobMemberInfo, lookUpBySessionKey(aliceGroupReader, bobMemberInfo))
-
     }
 }

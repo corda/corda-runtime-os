@@ -1,5 +1,6 @@
 package net.corda.p2p.crypto.protocol.api
 
+import net.corda.data.p2p.crypto.protocol.RevocationCheckMode
 import net.corda.data.p2p.gateway.certificates.Active
 import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
 import net.corda.data.p2p.gateway.certificates.Revoked
@@ -17,18 +18,18 @@ class CertificateValidatorTest {
         val certificateFactory: CertificateFactory = CertificateFactory.getInstance(certificateFactoryType)
     }
 
-    private val aliceX500Name =  MemberX500Name.parse("CN=Alice, O=R3 Test, L=London, C=GB")
+    private val aliceX500Name = MemberX500Name.parse("CN=Alice, O=R3 Test, L=London, C=GB")
     private val aliceCert = Certificates.aliceKeyStorePem.readText()
     private val alicePublicKey = certificateFactory.generateCertificate(
-        ByteArrayInputStream(Certificates.aliceKeyStorePem.readBytes())
+        ByteArrayInputStream(Certificates.aliceKeyStorePem.readBytes()),
     ).publicKey
     private val wrongPublicKey = certificateFactory.generateCertificate(
-        ByteArrayInputStream(Certificates.bobKeyStorePem.readBytes())
+        ByteArrayInputStream(Certificates.bobKeyStorePem.readBytes()),
     ).publicKey
     private val trustStore = listOf(Certificates.truststoreCertificatePem.readText())
     private val trustStoreWithRevocation = listOf(Certificates.truststoreCertificatePem.readText())
     private val wrongTrustStore = listOf(Certificates.c4TruststoreCertificatePem.readText())
-    private val revokedResponse =  RevocationCheckResponse(Revoked("The certificate was revoked.", 0))
+    private val revokedResponse = RevocationCheckResponse(Revoked("The certificate was revoked.", 0))
 
     @Test
     fun `valid certificate passes validation`() {

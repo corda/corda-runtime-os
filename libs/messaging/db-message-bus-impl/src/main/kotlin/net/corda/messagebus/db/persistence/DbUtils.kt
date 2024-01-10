@@ -1,7 +1,7 @@
 package net.corda.messagebus.db.persistence
 
 import net.corda.db.core.InMemoryDataSourceFactory
-import net.corda.db.core.PostgresDataSourceFactory
+import net.corda.db.core.createDataSource
 import net.corda.db.schema.DbSchema.DB_MESSAGE_BUS
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
@@ -21,7 +21,8 @@ internal fun EntityManagerFactoryFactory.create(
     val dbSource = if (jdbcUrl == null || jdbcUrl.contains("hsqldb", ignoreCase = true)) {
         InMemoryDataSourceFactory().create(DB_MESSAGE_BUS)
     } else {
-        PostgresDataSourceFactory().create(
+        createDataSource(
+            "org.postgresql.Driver",
             jdbcUrl,
             jdbcUser,
             jdbcPass

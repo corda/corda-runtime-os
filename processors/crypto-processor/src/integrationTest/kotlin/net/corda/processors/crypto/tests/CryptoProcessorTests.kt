@@ -9,10 +9,10 @@ import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.client.SessionEncryptionOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
-import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
@@ -22,13 +22,11 @@ import net.corda.crypto.hes.EphemeralKeyPairEncryptor
 import net.corda.crypto.hes.HybridEncryptionParams
 import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.crypto.persistence.db.model.CryptoEntities
-import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.DbPrivilege
@@ -36,6 +34,7 @@ import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.schema.CordaDb
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.TestDbInfo
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -62,11 +61,12 @@ import net.corda.processors.crypto.tests.infra.makeCryptoConfig
 import net.corda.processors.crypto.tests.infra.makeMessagingConfig
 import net.corda.processors.crypto.tests.infra.publishVirtualNodeInfo
 import net.corda.processors.crypto.tests.infra.randomDataByteArray
+import net.corda.processors.crypto.tests.infra.webServerPort
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Config.CONFIG_TOPIC
-import net.corda.schema.Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
 import net.corda.test.util.TestRandom
 import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -75,6 +75,8 @@ import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.web.api.WebServer
+import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jcajce.provider.util.DigestFactory
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -83,6 +85,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -129,6 +132,9 @@ class CryptoProcessorTests {
         lateinit var opsClient: CryptoOpsClient
 
         @InjectService(timeout = 5000L)
+        lateinit var sessionEncryptionOpsClient: SessionEncryptionOpsClient
+
+        @InjectService(timeout = 5000L)
         lateinit var verifier: SignatureVerificationService
 
         @InjectService(timeout = 5000L)
@@ -154,6 +160,9 @@ class CryptoProcessorTests {
 
         @InjectService(timeout = 5000L)
         lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
+
+        @InjectService(timeout = 5000L)
+        lateinit var webServer: WebServer
 
         private lateinit var publisher: Publisher
 
@@ -204,6 +213,7 @@ class CryptoProcessorTests {
         @JvmStatic
         @AfterAll
         fun cleanup() {
+            webServer.stop()
             if (::flowOpsResponsesSub.isInitialized) {
                 flowOpsResponsesSub.close()
             }
@@ -235,6 +245,16 @@ class CryptoProcessorTests {
                         Configuration(
                             cryptoConfig.root().render(),
                             cryptoConfig.root().render(),
+                            0,
+                            ConfigurationSchemaVersion(1, 0)
+                        )
+                    ),
+                    Record(
+                        CONFIG_TOPIC,
+                        STATE_MANAGER_CONFIG,
+                        Configuration(
+                            SmartConfigImpl.empty().root().render(),
+                            SmartConfigImpl.empty().root().render(),
                             0,
                             ConfigurationSchemaVersion(1, 0)
                         )
@@ -354,8 +374,10 @@ class CryptoProcessorTests {
         }
 
         private fun startDependencies() {
+            webServer.start(webServerPort)
             cryptoProcessor.start(boostrapConfig)
             opsClient.start()
+            sessionEncryptionOpsClient.start()
             hsmRegistrationClient.start()
             stableDecryptor.start()
             tracker = TestDependenciesTracker(
@@ -364,7 +386,9 @@ class CryptoProcessorTests {
             setOf(
                 LifecycleCoordinatorName.forComponent<CryptoProcessor>(),
                 LifecycleCoordinatorName.forComponent<HSMRegistrationClient>(),
-                LifecycleCoordinatorName.forComponent<StableKeyPairDecryptor>()
+                LifecycleCoordinatorName.forComponent<StableKeyPairDecryptor>(),
+                LifecycleCoordinatorName.forComponent<SessionEncryptionOpsClient>(),
+                LifecycleCoordinatorName.forComponent<WebServer>(),
             )
             ).also {
                 it.start()
@@ -435,6 +459,15 @@ class CryptoProcessorTests {
             keyIds = listOf(ShortHash.of(publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())))
         )
         assertEquals(0, found.size)
+    }
+
+    @Test
+    fun `test encrypt and decrypt`() {
+        val data = "hello world".toByteArray()
+        val encrypted = sessionEncryptionOpsClient.encryptSessionData(data)
+        assertThat(encrypted).isNotEqualTo(data)
+        val decrypted = sessionEncryptionOpsClient.decryptSessionData(encrypted)
+        assertThat(decrypted).isEqualTo(data)
     }
 //
 //    @ParameterizedTest
@@ -742,96 +775,96 @@ class CryptoProcessorTests {
         )
     }
 
-    private fun `Should be able to sign by flow ops and verify`(
-        tenantId: String,
-        publicKey: PublicKey
-    ) {
-        schemeMetadata.supportedSignatureSpec(schemeMetadata.findKeyScheme(publicKey)).forEach { spec ->
-            val data = randomDataByteArray()
-            val key = UUID.randomUUID().toString()
-            val requestId = UUID.randomUUID().toString()
-            val event = transformer.createSign(
-                requestId = requestId,
-                tenantId = tenantId,
-                encodedPublicKeyBytes = publicKey.encoded,
-                signatureSpec = spec,
-                data = data,
-                flowExternalEventContext = ExternalEventContext(requestId, key, KeyValuePairList(emptyList()))
-            )
-            logger.info(
-                "Publishing: createSign({}, {}, {}), request id: $requestId, flow id: $key",
-                tenantId,
-                publicKey.publicKeyId(),
-                spec
-            )
-            publisher.publish(
-                listOf(
-                    Record(
-                        topic = FLOW_OPS_MESSAGE_TOPIC,
-                        key = key,
-                        value = event
-                    )
-                )
-            ).forEach { it.get() }
-            logger.info("Waiting for response for createSign")
-            val response = flowOpsResponses.waitForResponse(key)
-            val signature = transformer.transform(response) as DigitalSignatureWithKey
-            assertEquals(publicKey, signature.by)
-            assertTrue(signature.bytes.isNotEmpty())
-            verifier.verify(
-                originalData = data,
-                signatureData = signature.bytes,
-                publicKey = publicKey,
-                signatureSpec = spec
-            )
-        }
-    }
-
-    private fun `Should be able to sign by flow ops and verify bu inferring signature spec`(
-        tenantId: String,
-        publicKey: PublicKey
-    ) {
-        schemeMetadata.inferableDigestNames(schemeMetadata.findKeyScheme(publicKey)).forEach { digest ->
-            val data = randomDataByteArray()
-            val key = UUID.randomUUID().toString()
-            val spec = schemeMetadata.inferSignatureSpec(publicKey, digest)!!
-            val requestId = UUID.randomUUID().toString()
-            val event = transformer.createSign(
-                requestId = requestId,
-                tenantId = tenantId,
-                encodedPublicKeyBytes = publicKey.encoded,
-                signatureSpec = spec,
-                data = data,
-                flowExternalEventContext = ExternalEventContext(requestId, key, KeyValuePairList(emptyList()))
-            )
-            logger.info(
-                "Publishing: createSign({}, {}, {})",
-                tenantId,
-                publicKey.publicKeyId(),
-                spec
-            )
-            publisher.publish(
-                listOf(
-                    Record(
-                        topic = FLOW_OPS_MESSAGE_TOPIC,
-                        key = key,
-                        value = event
-                    )
-                )
-            ).forEach { it.get() }
-            logger.info("Waiting for response for createSign")
-            val response = flowOpsResponses.waitForResponse(key)
-            val signature = transformer.transform(response) as DigitalSignatureWithKey
-            assertEquals(publicKey, signature.by)
-            assertTrue(signature.bytes.isNotEmpty())
-            verifier.verify(
-                originalData = data,
-                signatureData = signature.bytes,
-                publicKey = publicKey,
-                digest = digest
-            )
-        }
-    }
+//    private fun `Should be able to sign by flow ops and verify`(
+//        tenantId: String,
+//        publicKey: PublicKey
+//    ) {
+//        schemeMetadata.supportedSignatureSpec(schemeMetadata.findKeyScheme(publicKey)).forEach { spec ->
+//            val data = randomDataByteArray()
+//            val key = UUID.randomUUID().toString()
+//            val requestId = UUID.randomUUID().toString()
+//            val event = transformer.createSign(
+//                requestId = requestId,
+//                tenantId = tenantId,
+//                encodedPublicKeyBytes = publicKey.encoded,
+//                signatureSpec = spec,
+//                data = data,
+//                flowExternalEventContext = ExternalEventContext(requestId, key, KeyValuePairList(emptyList()))
+//            )
+//            logger.info(
+//                "Publishing: createSign({}, {}, {}), request id: $requestId, flow id: $key",
+//                tenantId,
+//                publicKey.publicKeyId(),
+//                spec
+//            )
+//            publisher.publish(
+//                listOf(
+//                    Record(
+//                        topic = FLOW_OPS_MESSAGE_TOPIC,
+//                        key = key,
+//                        value = event
+//                    )
+//                )
+//            ).forEach { it.get() }
+//            logger.info("Waiting for response for createSign")
+//            val response = flowOpsResponses.waitForResponse(key)
+//            val signature = transformer.transform(response) as DigitalSignatureWithKey
+//            assertEquals(publicKey, signature.by)
+//            assertTrue(signature.bytes.isNotEmpty())
+//            verifier.verify(
+//                originalData = data,
+//                signatureData = signature.bytes,
+//                publicKey = publicKey,
+//                signatureSpec = spec
+//            )
+//        }
+//    }
+//
+//    private fun `Should be able to sign by flow ops and verify bu inferring signature spec`(
+//        tenantId: String,
+//        publicKey: PublicKey
+//    ) {
+//        schemeMetadata.inferableDigestNames(schemeMetadata.findKeyScheme(publicKey)).forEach { digest ->
+//            val data = randomDataByteArray()
+//            val key = UUID.randomUUID().toString()
+//            val spec = schemeMetadata.inferSignatureSpec(publicKey, digest)!!
+//            val requestId = UUID.randomUUID().toString()
+//            val event = transformer.createSign(
+//                requestId = requestId,
+//                tenantId = tenantId,
+//                encodedPublicKeyBytes = publicKey.encoded,
+//                signatureSpec = spec,
+//                data = data,
+//                flowExternalEventContext = ExternalEventContext(requestId, key, KeyValuePairList(emptyList()))
+//            )
+//            logger.info(
+//                "Publishing: createSign({}, {}, {})",
+//                tenantId,
+//                publicKey.publicKeyId(),
+//                spec
+//            )
+//            publisher.publish(
+//                listOf(
+//                    Record(
+//                        topic = FLOW_OPS_MESSAGE_TOPIC,
+//                        key = key,
+//                        value = event
+//                    )
+//                )
+//            ).forEach { it.get() }
+//            logger.info("Waiting for response for createSign")
+//            val response = flowOpsResponses.waitForResponse(key)
+//            val signature = transformer.transform(response) as DigitalSignatureWithKey
+//            assertEquals(publicKey, signature.by)
+//            assertTrue(signature.bytes.isNotEmpty())
+//            verifier.verify(
+//                originalData = data,
+//                signatureData = signature.bytes,
+//                publicKey = publicKey,
+//                digest = digest
+//            )
+//        }
+//    }
 //
 //    @Test
 //    fun `filterMyKeys filters and returns keys owned by the specified vnode`() {

@@ -72,81 +72,93 @@ internal class RestServerInternal(
 
     private val webSocketRouteAdaptors = LinkedList<AutoCloseable>()
     private val credentialResolver = DefaultCredentialResolver()
-    private val server = Javalin.create {
-        it.jsonMapper(JavalinJackson(serverJacksonObjectMapper))
-        it.registerPlugin(RedirectToLowercasePathPlugin())
-        configureJavalinForTracing(it)
 
+    private lateinit var server: Javalin
+    private val serverFactory: () -> Javalin = {
+        Javalin.create {
+            it.jsonMapper(JavalinJackson(serverJacksonObjectMapper))
+            it.registerPlugin(RedirectToLowercasePathPlugin())
+            configureJavalinForTracing(it)
 
-        val swaggerUiBundle = getSwaggerUiBundle()
-        // In an OSGi context, webjars cannot be loaded automatically using `JavalinConfig.enableWebJars`.
-        // We instruct loading Swagger UI static files manually instead.
-        // Note: `addStaticFiles` perform a check that resource does exist.
-        // The actual loading of resources though is happening at `start()` time below.
-        if (swaggerUiBundle != null) {
-            val swaggerUiClassloader = swaggerUiBundle.adapt(BundleWiring::class.java).classLoader
-            executeWithThreadContextClassLoader(swaggerUiClassloader) {
-                it.addStaticFiles("/META-INF/resources/", Location.CLASSPATH)
-            }
-        } else {
-            it.enableWebjars()
-        }
-
-        if (log.isDebugEnabled) {
-            it.enableDevLogging()
-        }
-        it.server {
-            configurationsProvider.getSSLKeyStorePath()
-                ?.let { createSecureServer() }
-                ?: INSECURE_SERVER_DEV_MODE_WARNING.let { msg ->
-                    if (configurationsProvider.isDevModeEnabled())
-                        log.warn(msg)
-                    else {
-                        log.error(msg)
-                        throw UnsupportedOperationException(msg)
-                    }
-                    createInsecureServer()
+            val swaggerUiBundle = getSwaggerUiBundle()
+            // In an OSGi context, webjars cannot be loaded automatically using `JavalinConfig.enableWebJars`.
+            // We instruct loading Swagger UI static files manually instead.
+            // Note: `addStaticFiles` perform a check that resource does exist.
+            // The actual loading of resources though is happening at `start()` time below.
+            if (swaggerUiBundle != null) {
+                val swaggerUiClassloader = swaggerUiBundle.adapt(BundleWiring::class.java).classLoader
+                executeWithThreadContextClassLoader(swaggerUiClassloader) {
+                    it.addStaticFiles("/META-INF/resources/", Location.CLASSPATH)
                 }
-        }
-        it.defaultContentType = contentTypeApplicationJson
-        it.enableCorsForAllOrigins()
-    }.apply {
-        addRoutes()
-        addOpenApiRoutes()
-        addWsRoutes()
-        // In order for multipart content to be stored onto disk, we need to override some properties
-        // which are set by default by Javalin such that entire content is read into memory
-        MultipartUtil.preUploadFunction = { req ->
-            req.setAttribute("org.eclipse.jetty.multipartConfig",
-                MultipartConfigElement(
-                    multiPartDir.toString(),
-                    configurationsProvider.maxContentLength().toLong(),
-                    configurationsProvider.maxContentLength().toLong(),
-                    1024))
+            } else {
+                it.enableWebjars()
+            }
+
+            if (log.isDebugEnabled) {
+                it.enableDevLogging()
+            }
+            it.server {
+                configurationsProvider.getSSLKeyStorePath()
+                    ?.let { createSecureServer() }
+                    ?: INSECURE_SERVER_DEV_MODE_WARNING.let { msg ->
+                        if (configurationsProvider.isDevModeEnabled()) {
+                            log.warn(msg)
+                        } else {
+                            log.error(msg)
+                            throw UnsupportedOperationException(msg)
+                        }
+                        createInsecureServer()
+                    }
+            }
+            it.defaultContentType = contentTypeApplicationJson
+            it.enableCorsForAllOrigins()
+        }.apply {
+            addRoutes()
+            addOpenApiRoutes()
+            addWsRoutes()
+            // In order for multipart content to be stored onto disk, we need to override some properties
+            // which are set by default by Javalin such that entire content is read into memory
+            MultipartUtil.preUploadFunction = { req ->
+                req.setAttribute(
+                    "org.eclipse.jetty.multipartConfig",
+                    MultipartConfigElement(
+                        multiPartDir.toString(),
+                        configurationsProvider.maxContentLength().toLong(),
+                        configurationsProvider.maxContentLength().toLong(),
+                        1024
+                    )
+                )
+            }
         }
     }
 
     private fun addExceptionHandlers(app: Javalin) {
-
         app.exception(HttpResponseException::class.java) { e, ctx ->
             if (ctx.header(Header.ACCEPT)?.contains(ContentType.JSON) == true || ctx.res.contentType == ContentType.JSON) {
-                ctx.status(e.status).result("""{
+                ctx.status(e.status).result(
+                    """{
                 |    "title": "${e.message?.let { JsonEscapeUtil.escape(it) }}",
                 |    "status": ${e.status},
                 |    "details": {${e.details.map { """"${it.key}":"${JsonEscapeUtil.escape(it.value)}"""" }.joinToString(",")}}
-                |}""".trimMargin()
+                |}
+                    """.trimMargin()
                 ).contentType(ContentType.APPLICATION_JSON)
             } else {
-                val result = if (e.details.isEmpty()) "${e.message}" else """
+                val result = if (e.details.isEmpty()) {
+                    "${e.message}"
+                } else {
+                    """
                 |${e.message}
                 |${
-                    e.details.map {
-                        """
+                        e.details.map {
+                            """
                 |${it.key}:
                 |${it.value}
                 |"""
-                    }.joinToString("")
-                }""".trimMargin()
+                        }.joinToString("")
+                    }
+                    """.trimMargin()
+                }
                 ctx.status(e.status).result(result)
             }
         }
@@ -164,7 +176,6 @@ internal class RestServerInternal(
 
     @SuppressWarnings("ComplexMethod", "ThrowsCount")
     private fun Javalin.addRoutes() {
-
         try {
             log.trace { "Add routes by method." }
             // It is important to add no authentication get routes first such that
@@ -180,7 +191,8 @@ internal class RestServerInternal(
                     // "testEntity/getprotocolversion" and mistakenly finds "before" handler where there should be none.
                     // Javalin provides no way for modifying "before" handler finding logic.
                     if (resourceProvider.httpNoAuthRequiredGetRoutes.none { routeInfo -> routeInfo.fullPath == it.path() } &&
-                            it.method() == "GET") {
+                        it.method() == "GET"
+                    ) {
                         val clientHttpRequestContext = ClientHttpRequestContext(it)
                         val authorizingSubject = authenticate(clientHttpRequestContext, restAuthProvider, credentialResolver)
                         authorize(authorizingSubject, clientHttpRequestContext.getResourceAccessString())
@@ -209,7 +221,7 @@ internal class RestServerInternal(
     private fun Javalin.registerHandlerForRoute(routeInfo: RouteInfo, handlerType: HandlerType) {
         try {
             addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeHttpMethod())
-            log.debug { "Added \"$handlerType\" handler for \"${routeInfo.fullPath}\"." }
+            log.info("Added \"$handlerType\" handler for \"${routeInfo.fullPath}\".")
         } catch (e: Exception) {
             "Error during adding route. Handler type=$handlerType, Path=\"${routeInfo.fullPath}\"".let {
                 log.error("$it: ${e.message}")
@@ -226,12 +238,14 @@ internal class RestServerInternal(
                 // condition below both handlers will be used - which will be redundant.
                 if (it.method() == handlerType.name) {
                     with(configurationsProvider.maxContentLength()) {
-                        if (it.contentLength() > this) throw BadRequestResponse(
-                            CONTENT_LENGTH_EXCEEDS_LIMIT.format(
-                                it.contentLength(),
-                                this
+                        if (it.contentLength() > this) {
+                            throw BadRequestResponse(
+                                CONTENT_LENGTH_EXCEEDS_LIMIT.format(
+                                    it.contentLength(),
+                                    this
+                                )
                             )
-                        )
+                        }
                     }
                     val clientHttpRequestContext = ClientHttpRequestContext(it)
                     val authorizingSubject = authenticate(clientHttpRequestContext, restAuthProvider, credentialResolver)
@@ -246,8 +260,9 @@ internal class RestServerInternal(
         try {
             log.trace { "Add OpenApi route." }
             openApiInfoProviders.forEach { openApiInfoProvider ->
-                get(openApiInfoProvider.pathForOpenApiJson)
-                    { ctx -> ctx.result(openApiInfoProvider.openApiString).contentType(contentTypeApplicationJson) }
+                get(
+                    openApiInfoProvider.pathForOpenApiJson
+                ) { ctx -> ctx.result(openApiInfoProvider.openApiString).contentType(contentTypeApplicationJson) }
                 get(openApiInfoProvider.pathForOpenApiUI, openApiInfoProvider.swaggerUIRenderer)
             }
             log.trace { "Add OpenApi route completed." }
@@ -260,12 +275,12 @@ internal class RestServerInternal(
     }
 
     fun start() {
-        JavalinStarter.startServer(
+        server = JavalinStarter.startServer(
             "REST API",
-            server,
+            serverFactory,
             configurationsProvider.getHostAndPort().port,
             configurationsProvider.getHostAndPort().host,
-            getSwaggerUiBundle()?.let { listOf(it) }?: emptyList()
+            getSwaggerUiBundle()?.let { listOf(it) } ?: emptyList()
         )
         addExceptionHandlers(server)
     }
@@ -307,10 +322,12 @@ internal class RestServerInternal(
 
         fun Server.addHttp11SslConnector() {
             val ssl = SslConnectionFactory(sslContextFactory, http11.protocol)
-            addConnector(ServerConnector(this, ssl, http11).apply {
-                port = configurationsProvider.getHostAndPort().port
-                host = configurationsProvider.getHostAndPort().host
-            })
+            addConnector(
+                ServerConnector(this, ssl, http11).apply {
+                    port = configurationsProvider.getHostAndPort().port
+                    host = configurationsProvider.getHostAndPort().host
+                }
+            )
         }
 
         try {
@@ -338,11 +355,13 @@ internal class RestServerInternal(
             log.trace { "Create insecure (HTTP) server." }
 
             return Server().apply {
-                //HTTP/1.1 Connector
-                addConnector(ServerConnector(this).apply {
-                    port = configurationsProvider.getHostAndPort().port
-                    host = configurationsProvider.getHostAndPort().host
-                })
+                // HTTP/1.1 Connector
+                addConnector(
+                    ServerConnector(this).apply {
+                        port = configurationsProvider.getHostAndPort().port
+                        host = configurationsProvider.getHostAndPort().host
+                    }
+                )
             }.also { log.trace { "Create insecure (HTTP) server completed." } }
         } catch (e: Exception) {
             "Error during Create insecure (HTTP) server".let {

@@ -1297,6 +1297,27 @@
                                         "$ref": "#/$defs/basicAuthConfig"
                                     }
                                 ]
+                            },
+                            "rest": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/basicAuthConfig"
+                                    }
+                                ]
+                            },
+                            "crypto": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/basicAuthConfig"
+                                    }
+                                ]
+                            },
+                            "p2pLinkManager": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/basicAuthConfig"
+                                    }
+                                ]
                             }
                         },
                         "clientImage": {
@@ -1644,7 +1665,8 @@
                         {
                             "additionalProperties": false,
                             "required": [
-                                "clusterDbConnectionPool"
+                                "clusterDbConnectionPool",
+                                "stateManager"
                             ],
                             "properties": {
                                 "image": {},
@@ -1656,6 +1678,9 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "stateManager": {
+                                    "$ref": "#/$defs/stateManager"
+                                },
                                 "clusterDbConnectionPool": {
                                     "type": "object",
                                     "default": {},
@@ -2045,7 +2070,8 @@
                         },
                         {
                             "required": [
-                                "service"
+                                "service",
+                                "stateManager"
                             ],
                             "additionalProperties": false,
                             "properties": {
@@ -2058,6 +2084,9 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "stateManager" : {
+                                    "$ref": "#/$defs/stateManager"
+                                },
                                 "service": {
                                     "type": "object",
                                     "default": {},
@@ -2291,6 +2320,9 @@
                             "$ref": "#/$defs/worker"
                         },
                         {
+                            "required": [
+                                "stateManager"
+                            ],
                             "additionalProperties": false,
                             "properties": {
                                 "image": {},
@@ -2301,7 +2333,10 @@
                                 "logging": {},
                                 "profiling": {},
                                 "resources": {},
-                                "kafka": {}
+                                "kafka": {},
+                                "stateManager": {
+                                    "$ref": "#/$defs/stateManager"
+                                }
                             },
                             "examples": [
                                 {

@@ -14,6 +14,8 @@ import net.corda.data.crypto.wire.ops.flow.queries.ByIdsFlowQuery
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponse
+import net.corda.e2etest.utilities.ClusterReadiness
+import net.corda.e2etest.utilities.ClusterReadinessChecker
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
@@ -24,6 +26,7 @@ import net.corda.messagebus.kafka.serialization.CordaAvroSerializationFactoryImp
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.test.util.time.AutoTickTestClock
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.byLessThan
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -38,13 +41,14 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 /**
  * Tests for the Crypto RPC service
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class CryptoRPCSmokeTests {
+class CryptoRPCSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
     private val httpClient: HttpClient = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(30))
         .build()
@@ -96,6 +100,9 @@ class CryptoRPCSmokeTests {
 
     @BeforeAll
     fun beforeAll() {
+        // check cluster is ready
+        assertIsReady(Duration.ofMinutes(1), Duration.ofMillis(100))
+
         DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
 
         conditionallyUploadCordaPackage(
@@ -135,7 +142,8 @@ class CryptoRPCSmokeTests {
 
         assertThat(responseEvent).isNotNull
 
-        val deserializedExternalEventResponse = avroCryptoDeserializer.deserialize((responseEvent?.payload as ExternalEventResponse).payload.array())
+        val deserializedExternalEventResponse =
+            avroCryptoDeserializer.deserialize((responseEvent?.payload as ExternalEventResponse).payload.array())
 
         assertThat(deserializedExternalEventResponse).isNotNull
         assertStandardSuccessResponse(deserializedExternalEventResponse!!, testClock)
@@ -185,7 +193,7 @@ class CryptoRPCSmokeTests {
         assertThat(response.statusCode()).isEqualTo(404).withFailMessage("status code on response: ${response.statusCode()} url: $url")
     }
 
-    private val testClock = AutoTickTestClock(Instant.MAX, Duration.ofSeconds(1))
+    private val testClock = AutoTickTestClock(Instant.now(), Duration.ofSeconds(1))
 
     /**
      * Generate simple request to lookup for keys by their full key ids.
@@ -250,7 +258,7 @@ class CryptoRPCSmokeTests {
     private fun assertValidTimestamp(timestamp: Instant, clock: AutoTickTestClock? = null) {
         assertThat(timestamp).isAfter(Instant.MIN)
         if (clock != null) {
-            assertThat(timestamp).isBeforeOrEqualTo(clock.peekTime())
+            assertThat(timestamp).isCloseTo(clock.peekTime(), byLessThan(1, ChronoUnit.MINUTES))
         }
     }
 }

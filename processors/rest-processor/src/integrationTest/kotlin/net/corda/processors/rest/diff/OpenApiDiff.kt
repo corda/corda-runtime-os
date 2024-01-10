@@ -10,19 +10,20 @@ import io.swagger.v3.oas.models.tags.Tag
 
 internal fun OpenAPI.diff(baseline: OpenAPI): List<String> {
     return info.diff(baseline.info) +
-            paths.diff(baseline.paths) +
-            tags.diff(baseline.tags) +
-            components.diff(baseline.components)
+        paths.diff(baseline.paths) +
+        tags.diff(baseline.tags) +
+        components.diff(baseline.components)
 }
 
 private fun Info.diff(baseline: Info): List<String> {
     return if (this != baseline) {
         listOf("Info is different, baseline: $baseline, current: $this")
-    } else emptyList()
+    } else {
+        emptyList()
+    }
 }
 
 private fun Paths?.diff(baseline: Paths?): List<String> {
-
     if (areBothEmptyOrIdentical(this?.entries, baseline?.entries)) {
         return emptyList()
     }
@@ -46,7 +47,7 @@ private fun Paths?.diff(baseline: Paths?): List<String> {
 
     entries.forEach { entry ->
         val baselineValue: PathItem? = baseline[entry.key]
-        if(baselineValue == null) {
+        if (baselineValue == null) {
             differences.add("Path absent in baseline: Current path: ${entry.key}")
         } else {
             if (entry.value != baselineValue) {
@@ -59,7 +60,6 @@ private fun Paths?.diff(baseline: Paths?): List<String> {
 }
 
 private fun List<Tag>?.diff(baseline: List<Tag>?): List<String> {
-
     if (areBothEmptyOrIdentical(this, baseline)) {
         return emptyList()
     }
@@ -98,10 +98,11 @@ private fun Components?.diff(baseline: Components?): List<String> {
 }
 
 private fun areBothEmptyOrIdentical(one: Collection<*>?, another: Collection<*>?): Boolean {
-    if (one == another)
+    if (one == another) {
         return true
+    }
 
-    if (one == null && (another?.isEmpty() == true) ) {
+    if (one == null && (another?.isEmpty() == true)) {
         return true
     }
 
@@ -109,7 +110,6 @@ private fun areBothEmptyOrIdentical(one: Collection<*>?, another: Collection<*>?
 }
 
 private fun Map<String, Schema<Any>>?.diff(baseline: Map<String, Schema<Any>>?): List<String> {
-
     if (areBothEmptyOrIdentical(this?.entries, baseline?.entries)) {
         return emptyList()
     }

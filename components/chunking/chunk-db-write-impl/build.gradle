@@ -33,6 +33,7 @@ dependencies {
     implementation project(':libs:db:db-orm')
     implementation project(':libs:db:db-admin')
     implementation project(':libs:configuration:configuration-validation')
+    implementation project(':libs:platform-info')
 
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:messaging:messaging")
@@ -67,8 +68,6 @@ dependencies {
     integrationTestImplementation project(':libs:platform-info')
 
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"

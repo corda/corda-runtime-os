@@ -39,7 +39,8 @@ class InvalidRequestTest : RestServerTestBase() {
                 20000L
             )
             server = RestServerImpl(
-                listOf(TestHealthCheckAPIImpl(),
+                listOf(
+                    TestHealthCheckAPIImpl(),
                     TestJavaPrimitivesRestResourceImpl()
                 ),
                 ::securityManager,
@@ -48,8 +49,10 @@ class InvalidRequestTest : RestServerTestBase() {
                 true
             ).apply { start() }
             client =
-                TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:${server.port}/" +
-                        "${restServerSettings.context.basePath}/${apiVersion.versionPath}/")
+                TestHttpClientUnirestImpl(
+                    "http://${restServerSettings.address.host}:${server.port}/" +
+                        "${restServerSettings.context.basePath}/${apiVersion.versionPath}/"
+                )
         }
 
         @AfterAll
@@ -61,7 +64,6 @@ class InvalidRequestTest : RestServerTestBase() {
 
     @Test
     fun `POST ping with duplicate json key returns 400 BAD REQUEST`() {
-
         val pingResponse = client.call(
             HttpVerb.POST,
             WebRequest("health/ping", """{"data": {"data": "stringdata","data": "duplicate"}}"""),
@@ -77,7 +79,6 @@ class InvalidRequestTest : RestServerTestBase() {
 
     @Test
     fun `POST plusdouble returns returns 400 BAD REQUEST`() {
-
         val plusDoubleResponse = client.call(
             HttpVerb.POST,
             WebRequest<Any>("health/plusdouble", """{"number": 1,0}"""),
@@ -92,7 +93,6 @@ class InvalidRequestTest : RestServerTestBase() {
 
     @Test
     fun `POST negateinteger over max size should return 400 BAD REQUEST`() {
-
         val negateIntResponse = client.call(
             HttpVerb.POST,
             WebRequest("java/negateinteger", """{"number": 3147483647}"""),
@@ -108,7 +108,6 @@ class InvalidRequestTest : RestServerTestBase() {
 
     @Test
     fun `POST ping null value for non-nullable String should return 400 BAD REQUEST`() {
-
         fun WebResponse<String>.doAssert() {
             assertEquals(HttpStatus.SC_BAD_REQUEST, responseStatus)
             val responseBody = body
@@ -135,7 +134,6 @@ class InvalidRequestTest : RestServerTestBase() {
 
     @Test
     fun `POST ping missing value for non-nullable String should return 400 BAD REQUEST`() {
-
         fun WebResponse<String>.doAssert() {
             assertEquals(HttpStatus.SC_BAD_REQUEST, responseStatus)
             val responseBody = body
@@ -158,12 +156,10 @@ class InvalidRequestTest : RestServerTestBase() {
             userName,
             password
         ).doAssert()
-
     }
 
     @Test
     fun `Timezone specified in date should return 400 BAD REQUEST`() {
-
         fun WebResponse<String>.doAssert() {
             assertEquals(HttpStatus.SC_BAD_REQUEST, responseStatus)
             val responseBody = body
@@ -190,14 +186,13 @@ class InvalidRequestTest : RestServerTestBase() {
 
     @Test
     fun `Wrong date format should return 400 BAD REQUEST`() {
-
         fun WebResponse<String>.doAssert() {
             assertEquals(HttpStatus.SC_BAD_REQUEST, responseStatus)
             val responseBody = body
             assertNotNull(responseBody)
             assertThat(responseBody).contains(WRONG_PARAMETER)
 
-            //CORE-2404 case #1 exception contains line break, this is invalid in a json string
+            // CORE-2404 case #1 exception contains line break, this is invalid in a json string
             val json = JsonParser.parseString(responseBody) as JsonObject
             val responseTitle = json["title"].asString
             assertThat(responseTitle).doesNotContain("\n")
@@ -222,7 +217,6 @@ class InvalidRequestTest : RestServerTestBase() {
 
     @Test
     fun `passing 3 backslashes as UUID should be handled properly`() {
-
         val parseUuidResponse =
             client.call(HttpVerb.POST, WebRequest<String>("health/parseuuid/%5C%5C%5C"), userName, password)
         assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, parseUuidResponse.responseStatus)

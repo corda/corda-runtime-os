@@ -6,6 +6,7 @@ import net.corda.ledger.common.flow.impl.transaction.filtered.FilteredTransactio
 import net.corda.ledger.common.flow.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters
+import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters.AuditProof
 import net.corda.ledger.common.flow.transaction.filtered.factory.FilteredTransactionFactory
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
@@ -19,7 +20,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
-import java.util.function.Predicate
 
 @Component(
     service = [ FilteredTransactionFactory::class, SingletonSerializeAsToken::class, UsedByFlow::class ],
@@ -40,7 +40,6 @@ class FilteredTransactionFactoryImpl @Activate constructor(
         wireTransaction: WireTransaction,
         componentGroupFilterParameters: List<ComponentGroupFilterParameters>
     ): FilteredTransaction {
-
         requireUniqueComponentGroupIndexes(componentGroupFilterParameters)
 
         // Guarantees construction of [WireTransaction.rootMerkleTree] as it is lazily constructed.
@@ -71,7 +70,6 @@ class FilteredTransactionFactoryImpl @Activate constructor(
         wireTransaction: WireTransaction,
         parameters: ComponentGroupFilterParameters
     ): FilteredComponentGroup {
-
         val componentGroupIndex = parameters.componentGroupIndex
         val componentGroup = wireTransaction.getComponentGroupList(componentGroupIndex)
 
@@ -85,21 +83,30 @@ class FilteredTransactionFactoryImpl @Activate constructor(
             }
 
         val merkleProof = when (parameters) {
-            is ComponentGroupFilterParameters.AuditProof<*> -> {
-
+            is AuditProof<*> -> {
                 val skipFiltering = componentGroupIndex == 0
 
                 val filteredComponents = componentGroup
                     .mapIndexed { index, component -> index to component }
-                    .filter { (_, component) ->
-                        skipFiltering || (parameters.predicate as Predicate<Any>).test(
-                            serializationService.deserialize(
-                                component,
-                                parameters.deserializedClass
-                            )
-                        )
+                    .filter { (index, component) ->
+                        if (skipFiltering) {
+                            true
+                        } else {
+                            when (val predicate = parameters.predicate) {
+                                is AuditProof.AuditProofPredicate.Content -> {
+                                    (predicate as AuditProof.AuditProofPredicate.Content<Any>).test(
+                                        serializationService.deserialize(
+                                            component,
+                                            parameters.deserializedClass
+                                        )
+                                    )
+                                }
+                                is AuditProof.AuditProofPredicate.Index -> {
+                                    predicate.test(index)
+                                }
+                            }
+                        }
                     }
-
                 wireTransaction.componentMerkleTrees[componentGroupIndex]!!.let { merkleTree ->
                     if (filteredComponents.isEmpty()) {
                         if (componentGroup.isEmpty()) {
@@ -115,7 +122,6 @@ class FilteredTransactionFactoryImpl @Activate constructor(
                 }
             }
             is ComponentGroupFilterParameters.SizeProof -> {
-
                 wireTransaction.componentMerkleTrees[componentGroupIndex]!!.let { merkleTree ->
                     if (wireTransaction.getComponentGroupList(componentGroupIndex).isEmpty()) {
                         merkleTree.createAuditProof(listOf(0))

@@ -30,12 +30,12 @@ import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
-import net.corda.v5.ledger.utxo.observer.UtxoToken
 
 @Suppress("LongParameterList")
 class UtxoPersistenceServiceImpl(
@@ -89,7 +89,9 @@ class UtxoPersistenceServiceImpl(
 
                 val allStateRefs = (transaction.inputStateRefs + transaction.referenceStateRefs).distinct()
 
-                val stateRefsToStateAndRefs = resolveStateRefs(allStateRefs)
+                // Note: calling the `resolveStateRefs` function would result in a new connection being established,
+                // so we call the repository directly instead
+                val stateRefsToStateAndRefs = repository.resolveStateRefs(em, allStateRefs)
                     .associateBy { StateRef(parseSecureHash(it.transactionId), it.leafIndex) }
 
                 val inputStateAndRefs = transaction.inputStateRefs.map {
@@ -108,7 +110,7 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
-    override fun <T: ContractState> findUnconsumedVisibleStatesByType(stateClass: Class<out T>): List<UtxoVisibleTransactionOutputDto> {
+    override fun <T : ContractState> findUnconsumedVisibleStatesByType(stateClass: Class<out T>): List<UtxoVisibleTransactionOutputDto> {
         return entityManagerFactory.transaction { em ->
             repository.findUnconsumedVisibleStatesByType(em)
         }.filter {
@@ -270,7 +272,6 @@ class UtxoPersistenceServiceImpl(
     private fun extractJsonDataFromState(stateAndRef: StateAndRef<*>): String {
         val contractState = stateAndRef.state.contractState
         val jsonMap = factoryStorage.getFactoriesForClass(contractState).associate {
-
             val jsonToParse = try {
                 @Suppress("unchecked_cast")
                 (it as ContractStateVaultJsonFactory<ContractState>)
@@ -278,15 +279,18 @@ class UtxoPersistenceServiceImpl(
                     .ifBlank { "{}" } // Default to "{}" if the provided factory returns empty string to avoid exception
             } catch (e: Exception) {
                 // We can't log the JSON string here because the failed before we have a JSON
-                log.warn("Error while processing factory for class: ${it.stateType.name}. Defaulting to empty JSON.")
+                log.warn("Error while processing factory for class: ${it.stateType.name}. Defaulting to empty JSON.", e)
                 "{}"
             }
 
             it.stateType.name to try {
                 jsonMarshallingService.parse(jsonToParse, Any::class.java)
             } catch (e: Exception) {
-                log.warn("Error while processing factory for class: ${it.stateType.name}. " +
-                        "JSON that could not be processed: $jsonToParse. Defaulting to empty JSON.")
+                log.warn(
+                    "Error while processing factory for class: ${it.stateType.name}. " +
+                        "JSON that could not be processed: $jsonToParse. Defaulting to empty JSON.",
+                    e
+                )
                 jsonMarshallingService.parse("{}", Any::class.java)
             }
         }.toMutableMap()
@@ -297,7 +301,7 @@ class UtxoPersistenceServiceImpl(
                 Any::class.java
             )
         } catch (e: Exception) {
-            log.warn("Error while processing factory for class: ${ContractState::class.java.name}. Defaulting to empty JSON.")
+            log.warn("Error while processing factory for class: ${ContractState::class.java.name}. Defaulting to empty JSON.", e)
             jsonMarshallingService.parse("{}", Any::class.java)
         }
 
@@ -305,7 +309,7 @@ class UtxoPersistenceServiceImpl(
             jsonMarshallingService.format(jsonMap)
         } catch (e: JsonProcessingException) {
             // Since we validate the factory outputs one-by-one this should not happen.
-            log.warn("Error while formatting combined JSON, defaulting to empty JSON.")
+            log.warn("Error while formatting combined JSON, defaulting to empty JSON.", e)
             "{}"
         }
     }

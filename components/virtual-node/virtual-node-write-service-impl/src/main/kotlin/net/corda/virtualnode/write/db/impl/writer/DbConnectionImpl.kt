@@ -5,7 +5,6 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.DatabaseConfig.DB_PASS
 import net.corda.schema.configuration.DatabaseConfig.DB_USER
 
-
 class DbConnectionImpl(
     override val name: String,
     override val privilege: DbPrivilege,

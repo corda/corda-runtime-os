@@ -27,7 +27,7 @@ class NotaryVirtualNodeSelectorServiceImplTest {
 
         private val memberLookup = mock<MemberLookup> {
             on { lookup() } doReturn
-                    listOf(NOTARY_WORKER_1, NOTARY_WORKER_2, NOTARY_WORKER_3, NOTARY_WORKER_4)
+                listOf(NOTARY_WORKER_1, NOTARY_WORKER_2, NOTARY_WORKER_3, NOTARY_WORKER_4)
         }
 
         private val selector = NotaryVirtualNodeSelectorServiceImpl(memberLookup)
@@ -37,7 +37,8 @@ class NotaryVirtualNodeSelectorServiceImplTest {
                 notary,
                 null,
                 emptyList(),
-                emptyList()
+                emptyList(),
+                true
             )
             val mockMemberContext: MemberContext = mock {
                 on { entries } doReturn mapOf(

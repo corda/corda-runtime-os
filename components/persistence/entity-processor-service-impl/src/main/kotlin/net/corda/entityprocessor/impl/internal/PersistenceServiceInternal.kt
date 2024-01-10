@@ -10,9 +10,8 @@ import net.corda.data.persistence.FindEntities
 import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.data.persistence.MergeEntities
 import net.corda.data.persistence.PersistEntities
-import net.corda.utilities.serialization.deserialize
 import net.corda.persistence.common.exceptions.InvalidPaginationException
-import net.corda.persistence.common.exceptions.NullParameterException
+import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
@@ -51,9 +50,7 @@ import javax.persistence.criteria.Selection
  * to the given [HoldingIdentity]
  * */
 class PersistenceServiceInternal(
-    private val classProvider: (fullyQualifiedClassName: String) -> Class<*>,
-    private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer
-) {
+    private val classProvider: (fullyQualifiedClassName: String) -> Class<*>) {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -78,7 +75,7 @@ class PersistenceServiceInternal(
         val clazz = classProvider(payload.entityClassName)
         val results = payload.ids.mapNotNull { serializedId ->
             val id = serializationService.deserialize(serializedId.array(), Any::class.java)
-            entityManager.find(clazz, id)?.let { entity -> payloadCheck(serializationService.toBytes(entity)) }
+            entityManager.find(clazz, id)?.let { entity -> serializationService.toBytes(entity) }
         }
         return EntityResponse(results, KeyValuePairList(emptyList()), null)
     }
@@ -92,7 +89,7 @@ class PersistenceServiceInternal(
             val entity = serializationService.deserialize(it.array(), Any::class.java)
             entityManager.merge(entity)
         }
-        return EntityResponse(results.map { payloadCheck(serializationService.toBytes(it)) }, KeyValuePairList(emptyList()), null)
+        return EntityResponse(results.map { serializationService.toBytes(it) }, KeyValuePairList(emptyList()), null)
     }
 
     fun deleteEntities(
@@ -161,26 +158,12 @@ class PersistenceServiceInternal(
         payload: FindWithNamedQuery
     ): EntityResponse {
         val query = entityManager.createNamedQuery(payload.queryName)
-        // We do not support null values for parameters. This is because:
-        // 1. SQL equality to a null parameter to the query mostly doesn't do what the user might expect, in that
-        //    it won't match since you typically have to use "IS NULL" rather than "foo=:param" where param is null.
-        // 2. Hibernate does not translate = NULL to IS NULL.
-        // 3. Nulls introduce complexity into the serialization - you have to have a way of saying "null of type X".
-        //    Our Kotlin serialization code uses type Any which is non-nullable for serialization, so
-        //    our code should never put null into the value.
-        //
-        //    We do not want to assume the Avro generated code and/or some caller producing messages by some other
-        //    means couldn't somehow get a null in a parameter value, so we'll throw an error, which we expect to get
-        //    caught and send back an error response message in the calling code.
-        val nullParamNames = payload.parameters.filter { it.value == null }.map { it.key }
-        if (nullParamNames.isNotEmpty()) {
-            val msg = "Null value found for parameters ${nullParamNames.joinToString(", ")}"
-            logger.error(msg)
-            throw NullParameterException(msg)
-        }
-        payload.parameters.filter { it.value != null}.forEach { rec ->
-            val bytes = rec.value.array()
-            query.setParameter(rec.key, serializationService.deserialize(bytes))
+
+        payload.parameters.forEach { rec ->
+            query.setParameter(
+                rec.key,
+                rec.value?.let { serializationService.deserialize(it.array()) }
+            )
         }
         return findWithQuery(serializationService, query, payload.offset, payload.limit)
     }
@@ -207,7 +190,7 @@ class PersistenceServiceInternal(
         val results = query.resultList
         val result = when (results ) {
             null -> emptyList()
-            else -> results.filterNotNull().map { item -> payloadCheck(serializationService.toBytes(item)) }
+            else -> results.filterNotNull().map { item -> serializationService.toBytes(item) }
         }
         return EntityResponse(result, KeyValuePairList(listOf(KeyValuePair("numberOfRowsFromQuery", results.size.toString()))), null)
     }

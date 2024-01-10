@@ -16,16 +16,17 @@ import net.corda.flow.FLOW_ID_1
 import net.corda.flow.REQUEST_ID_1
 import net.corda.flow.external.events.impl.ExternalEventManager
 import net.corda.flow.pipeline.exceptions.FlowFatalException
-import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.impl.CheckpointMetadataKeys.STATE_META_SESSION_EXPIRY_KEY
 import net.corda.flow.test.utils.buildFlowEventContext
+import net.corda.flow.utils.KeyValueStore
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig.SESSION_TIMEOUT_WINDOW
+import net.corda.session.manager.Constants
 import net.corda.session.manager.SessionManager
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
@@ -101,13 +102,11 @@ class FlowGlobalPostProcessorImplTest {
     private val flowRecordFactory = mock<FlowRecordFactory>()
     private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider>()
     private val membershipGroupReader = mock<MembershipGroupReader>()
-    private val flowMessageFactory = mock<FlowMessageFactory>()
     private val checkpoint = mock<FlowCheckpoint>()
     private val testContext = buildFlowEventContext(checkpoint, Any())
     private val flowGlobalPostProcessor = FlowGlobalPostProcessorImpl(
         externalEventManager,
         sessionManager,
-        flowMessageFactory,
         flowRecordFactory,
         membershipGroupReaderProvider
     )
@@ -372,6 +371,32 @@ class FlowGlobalPostProcessorImplTest {
         val output = flowGlobalPostProcessor.postProcess(testContext)
         val window = Duration.ofMillis(testContext.flowConfig.getLong(SESSION_TIMEOUT_WINDOW))
         val expectedExpiry = (earliestInstant + window).epochSecond
+        assertThat(output.metadata).containsEntry(STATE_META_SESSION_EXPIRY_KEY, expectedExpiry)
+    }
+
+    @Test
+    fun `when open session exists session specific timeout is set in metadata`() {
+        val earliestInstant = Instant.now().minusSeconds(20)
+        val window = Duration.ofMillis(testContext.flowConfig.getLong(SESSION_TIMEOUT_WINDOW))
+        val session1Timeout = window.dividedBy(2)
+        val session2Timeout = window.dividedBy(3)
+        sessionState1.apply {
+            lastReceivedMessageTime = earliestInstant
+            status = SessionStateType.CONFIRMED
+            sessionProperties = KeyValueStore().apply {
+                put(Constants.FLOW_SESSION_TIMEOUT_MS, session1Timeout.toMillis().toString())
+            }.avro
+        }
+        sessionState2.apply {
+            lastReceivedMessageTime = earliestInstant.plusSeconds(4)
+            status = SessionStateType.CONFIRMED
+            sessionProperties = KeyValueStore().apply {
+                put(Constants.FLOW_SESSION_TIMEOUT_MS, session2Timeout.toMillis().toString())
+            }.avro
+        }
+        whenever(checkpoint.sessions).thenReturn(listOf(sessionState1, sessionState2))
+        val output = flowGlobalPostProcessor.postProcess(testContext)
+        val expectedExpiry = (earliestInstant + session2Timeout).epochSecond
         assertThat(output.metadata).containsEntry(STATE_META_SESSION_EXPIRY_KEY, expectedExpiry)
     }
 

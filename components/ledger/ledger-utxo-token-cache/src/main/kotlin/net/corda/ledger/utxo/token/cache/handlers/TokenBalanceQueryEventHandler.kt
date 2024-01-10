@@ -18,7 +18,6 @@ class TokenBalanceQueryEventHandler(
         state: PoolCacheState,
         event: BalanceQuery
     ): Record<String, FlowEvent> {
-
         val tokenBalance = availableTokenService.queryBalance(event.poolKey, event.ownerHash, event.tagRegex, state.claimedTokens())
 
         return recordFactory.getBalanceResponse(

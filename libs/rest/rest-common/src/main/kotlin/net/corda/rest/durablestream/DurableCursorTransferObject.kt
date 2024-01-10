@@ -27,6 +27,7 @@ class DurableCursorTransferObject<T>
 
     override var positionManager: PositionManager
         get() = throw UnsupportedOperationException("getting position manager not meant to be called")
+
         @Suppress("unused_parameter")
         set(value) = throw UnsupportedOperationException("setting position manager not meant to be called")
 

@@ -1,13 +1,11 @@
 package net.corda.ledger.utxo.token.cache.impl
 
 import com.typesafe.config.ConfigFactory
-import net.corda.data.ledger.utxo.token.selection.data.Token
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaim
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 import net.corda.libs.configuration.SmartConfigFactory
-import java.util.UUID
 
 const val SECURE_HASH = "sh"
 
@@ -46,14 +44,4 @@ val TOKEN_POOL_CACHE_STATE_2: TokenPoolCacheState = TokenPoolCacheState.newBuild
     .setTokenClaims(listOf(TOKEN_CLAIM))
     .build()
 
-
 val MINIMUM_SMART_CONFIG = SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
-
-fun getUniqueTokenPoolCacheState(tokenPoolKey: TokenPoolKey): TokenPoolCacheState {
-    val randomToken = Token().apply { stateRef = UUID.randomUUID().toString() }
-    return TokenPoolCacheState.newBuilder()
-        .setPoolKey(tokenPoolKey.toAvro())
-        .setAvailableTokens(listOf(randomToken))
-        .setTokenClaims(listOf())
-        .build()
-}

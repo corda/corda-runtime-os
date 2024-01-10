@@ -14,7 +14,8 @@ class VirtualNodeDbChangeLogTest {
         CpkDbChangeLogIdentifier(
             SecureHashImpl("SHA-256", "abc".toByteArray()),
             VirtualNodeDbChangeLog.MASTER_CHANGE_LOG
-        ), "migration1"
+        ),
+        "migration1"
     )
     private val otherFile1 = CpkDbChangeLog(
         CpkDbChangeLogIdentifier(SecureHashImpl("SHA-256", "abc".toByteArray()), "another-one.xml"),
@@ -24,7 +25,8 @@ class VirtualNodeDbChangeLogTest {
         CpkDbChangeLogIdentifier(
             SecureHashImpl("SHA-256", "abc".toByteArray()),
             VirtualNodeDbChangeLog.MASTER_CHANGE_LOG
-        ), "migration3"
+        ),
+        "migration3"
     )
 
     @Test

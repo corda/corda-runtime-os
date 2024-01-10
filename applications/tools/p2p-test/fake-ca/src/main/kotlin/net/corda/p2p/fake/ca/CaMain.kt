@@ -10,6 +10,6 @@ fun main(args: Array<String>) {
         CommandLine(Ca())
             .setCaseInsensitiveEnumValuesAllowed(true)
             .setExecutionExceptionHandler(ExceptionHandler())
-            .execute(*args)
+            .execute(*args),
     )
 }

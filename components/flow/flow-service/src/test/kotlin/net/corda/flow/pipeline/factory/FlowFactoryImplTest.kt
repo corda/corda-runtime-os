@@ -67,13 +67,13 @@ class FlowFactoryImplTest {
 
     @Test
     fun `create initiated flow throws flow fatal exception on error`() {
-        whenever(flowSessionFactory.createInitiatedFlowSession(SESSION_ID_1, true, BOB_X500_NAME, contextMap))
+        whenever(flowSessionFactory.createInitiatedFlowSession(SESSION_ID_1, true, null, BOB_X500_NAME, contextMap))
             .thenReturn(flowSession)
         whenever(sandboxGroup.loadClassFromMainBundles("com.MyClassName", ResponderFlow::class.java))
             .thenThrow(IllegalStateException())
 
         assertThatThrownBy {
-            flowFactory.createInitiatedFlow(flowStartContext, true, sandboxGroupContext, contextMap)
+            flowFactory.createInitiatedFlow(flowStartContext, true, null, sandboxGroupContext, contextMap)
         }.isInstanceOf(FlowFatalException::class.java)
     }
 
@@ -125,7 +125,7 @@ class FlowFactoryImplTest {
         doReturn(flowClass).whenever(sandboxGroup)
             .loadClassFromMainBundles(testFlowClassName, ResponderFlow::class.java)
 
-        assertThatThrownBy { flowFactory.createInitiatedFlow(flowStartContext, true, sandboxGroupContext, contextMap) }
+        assertThatThrownBy { flowFactory.createInitiatedFlow(flowStartContext, true, null, sandboxGroupContext, contextMap) }
             .hasMessageContaining(testFlowClassName)
             .isInstanceOf(FlowFatalException::class.java)
             .hasCauseInstanceOf(NoSuchMethodException::class.java)
@@ -141,7 +141,7 @@ class FlowFactoryImplTest {
         doReturn(flowClass).whenever(sandboxGroup)
             .loadClassFromMainBundles(testFlowClassName, ResponderFlow::class.java)
 
-        assertThatThrownBy { flowFactory.createInitiatedFlow(flowStartContext, true, sandboxGroupContext, contextMap) }
+        assertThatThrownBy { flowFactory.createInitiatedFlow(flowStartContext, true, null, sandboxGroupContext, contextMap) }
             .hasMessageContaining(testFlowClassName)
             .isInstanceOf(FlowFatalException::class.java)
             .hasCauseInstanceOf(IllegalAccessException::class.java)
@@ -169,13 +169,13 @@ class FlowFactoryImplTest {
     fun `create initiated flow`(flowClass: Class<*>) {
         val testFlowClassName = flowClass.name
         flowStartContext.flowClassName = testFlowClassName
-        whenever(flowSessionFactory.createInitiatedFlowSession(SESSION_ID_1, true, BOB_X500_NAME, contextMap)).thenReturn(
+        whenever(flowSessionFactory.createInitiatedFlowSession(SESSION_ID_1, true, null, BOB_X500_NAME, contextMap)).thenReturn(
             flowSession
         )
         doReturn(flowClass).whenever(sandboxGroup)
             .loadClassFromMainBundles(testFlowClassName, ResponderFlow::class.java)
 
-        val result = flowFactory.createInitiatedFlow(flowStartContext, true, sandboxGroupContext, contextMap) as InitiatedFlow
+        val result = flowFactory.createInitiatedFlow(flowStartContext, true, null, sandboxGroupContext, contextMap) as InitiatedFlow
         assertThat(result.logic).isInstanceOf(flowClass)
     }
 

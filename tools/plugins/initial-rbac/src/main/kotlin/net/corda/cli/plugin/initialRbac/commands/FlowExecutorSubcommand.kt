@@ -16,9 +16,11 @@ private const val FLOW_EXECUTOR_ROLE = "FlowExecutorRole"
 
 @CommandLine.Command(
     name = "flow-executor",
-    description = ["""Creates a role ('$FLOW_EXECUTOR_ROLE') which will permit for a vNode supplied: 
+    description = [
+        """Creates a role ('$FLOW_EXECUTOR_ROLE') which will permit for a vNode supplied: 
         - Starting any flow
-        - Enquire about the status of the running flow"""],
+        - Enquire about the status of the running flow"""
+    ],
     mixinStandardHelpOptions = true
 )
 @Suppress("unused")
@@ -33,14 +35,26 @@ class FlowExecutorSubcommand : RestCommand(), Callable<Int> {
 
     private val permissionsToCreate: Set<PermissionTemplate> get() = setOf(
         // Endpoint level commands
-        PermissionTemplate("Start Flow endpoint",
-            "POST:/api/$VERSION_PATH_REGEX/flow/$vnodeShortHash", null),
-        PermissionTemplate("Get status for all flows",
-            "GET:/api/$VERSION_PATH_REGEX/flow/$vnodeShortHash", null),
-        PermissionTemplate("Get status for a specific flow",
-            "GET:/api/$VERSION_PATH_REGEX/flow/$vnodeShortHash/$CLIENT_REQ_REGEX", null),
-        PermissionTemplate("Get a list of startable flows",
-            "GET:/api/$VERSION_PATH_REGEX/flowclass/$vnodeShortHash", null),
+        PermissionTemplate(
+            "Start Flow endpoint",
+            "POST:/api/$VERSION_PATH_REGEX/flow/$vnodeShortHash",
+            null
+        ),
+        PermissionTemplate(
+            "Get status for all flows",
+            "GET:/api/$VERSION_PATH_REGEX/flow/$vnodeShortHash",
+            null
+        ),
+        PermissionTemplate(
+            "Get status for a specific flow",
+            "GET:/api/$VERSION_PATH_REGEX/flow/$vnodeShortHash/$CLIENT_REQ_REGEX",
+            null
+        ),
+        PermissionTemplate(
+            "Get a list of startable flows",
+            "GET:/api/$VERSION_PATH_REGEX/flowclass/$vnodeShortHash",
+            null
+        ),
         PermissionTemplate(
             "Get status for a specific flow via WebSocket",
             "WS:/api/$VERSION_PATH_REGEX/flow/$vnodeShortHash/$CLIENT_REQ_REGEX",
@@ -48,16 +62,19 @@ class FlowExecutorSubcommand : RestCommand(), Callable<Int> {
         ),
 
         // Flow start related
-        PermissionTemplate("Start any flow",
-            "$START_FLOW_PREFIX$PREFIX_SEPARATOR$FLOW_NAME_REGEX", vnodeShortHash)
+        PermissionTemplate(
+            "Start any flow",
+            "$START_FLOW_PREFIX$PREFIX_SEPARATOR$FLOW_NAME_REGEX",
+            vnodeShortHash
+        )
     )
 
     override fun call(): Int {
-
         if (!wildcardMatch(vnodeShortHash, VNODE_SHORT_HASH_REGEX)) {
             throw IllegalArgumentException(
                 """Supplied vNode ID "$vnodeShortHash" is invalid,""" +
-                        """ it must conform to the pattern "$VNODE_SHORT_HASH_REGEX".""")
+                    """ it must conform to the pattern "$VNODE_SHORT_HASH_REGEX"."""
+            )
         }
 
         return checkOrCreateRole("$FLOW_EXECUTOR_ROLE-$vnodeShortHash", permissionsToCreate)

@@ -7,6 +7,7 @@ import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
 import net.corda.utilities.time.Clock
+import org.slf4j.LoggerFactory
 import java.time.Duration
 
 class PoolCacheStateImpl(
@@ -15,6 +16,10 @@ class PoolCacheStateImpl(
     private val entityConverter: EntityConverter,
     private val clock: Clock
 ) : PoolCacheState {
+
+    private companion object {
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     private var claimedTokens: Map<String, CachedToken>
     private val claimTimeoutOffsetMillis = Duration
@@ -87,6 +92,23 @@ class PoolCacheStateImpl(
             if (tokenClaim.claimTimestamp == null) {
                 tokenClaim.claimTimestamp = now
             }
+        }
+    }
+
+    override fun removeInvalidClaims() {
+        // Temporary logic that covers the upgrade from release/5.0 to release/5.1
+        // The field claimedTokens has been added to the TokenClaim avro object, and it will replace claimedTokenStateRefs.
+        // In order to avoid breaking compatibility, the claimedTokenStateRefs has been deprecated, and it will eventually
+        // be removed. Any claim that contains a non-empty claimedTokenStateRefs field are considered invalid because
+        // this means the avro object is an old one, and it should be replaced by the new format.
+        val invalidClaims =
+            cacheState.tokenClaims.filterNot { it.claimedTokenStateRefs.isNullOrEmpty() }
+        if (invalidClaims.isNotEmpty()) {
+            val invalidClaimsId = invalidClaims.map {
+                removeClaim(it.claimId)
+                it.claimId
+            }
+            logger.warn("Invalid claims were found and have been discarded. Invalid claims: $invalidClaimsId")
         }
     }
 

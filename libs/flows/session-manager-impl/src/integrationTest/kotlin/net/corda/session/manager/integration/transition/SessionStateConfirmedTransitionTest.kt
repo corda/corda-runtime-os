@@ -4,7 +4,9 @@ import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.utils.INITIATED_SESSION_ID_SUFFIX
+import net.corda.flow.utils.KeyValueStore
 import net.corda.messaging.api.chunking.MessagingChunkFactory
+import net.corda.session.manager.Constants
 import net.corda.session.manager.impl.SessionManagerImpl
 import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
 import net.corda.session.manager.integration.SessionMessageType
@@ -39,7 +41,7 @@ class SessionStateConfirmedTransitionTest {
     @Test
     fun `Send close when in state confirmed`() {
         val sessionState = buildConfirmedState()
-        sessionState.requireClose = true
+        sessionState.requireClose(true)
         sessionState.sessionId += INITIATED_SESSION_ID_SUFFIX
         val sessionEvent = generateMessage(SessionMessageType.CLOSE, instant)
 
@@ -83,7 +85,15 @@ class SessionStateConfirmedTransitionTest {
             0,
             listOf(),
             1,
-            listOf()
+            listOf(),
+            sessionProperties = KeyValueStore().apply {
+                put(Constants.FLOW_SESSION_REQUIRE_CLOSE, false.toString())
+            }.avro
         )
     }
+
+    private fun SessionState.requireClose(requireClose: Boolean) =
+        KeyValueStore(sessionProperties).apply {
+            put(Constants.FLOW_SESSION_REQUIRE_CLOSE, requireClose.toString())
+        }
 }

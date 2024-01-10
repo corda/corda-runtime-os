@@ -22,7 +22,7 @@ class VaultNamedParameterizedQueryImpl<T>(
     private val externalEventExecutor: ExternalEventExecutor,
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     private val resultSetFactory: ResultSetFactory,
-    private var parameters: MutableMap<String, Any>,
+    private var parameters: MutableMap<String, Any?>,
     private var limit: Int,
     private var offset: Int,
     private val resultClass: Class<T>,
@@ -34,7 +34,7 @@ class VaultNamedParameterizedQueryImpl<T>(
     }
 
     override fun setLimit(limit: Int): VaultNamedParameterizedQuery<T> {
-        require (limit > 0) { "Limit cannot be negative or zero" }
+        require(limit > 0) { "Limit cannot be negative or zero" }
         this.limit = limit
         return this
     }
@@ -43,12 +43,12 @@ class VaultNamedParameterizedQueryImpl<T>(
         throw UnsupportedOperationException("This query does not support offset functionality.")
     }
 
-    override fun setParameter(name: String, value: Any): VaultNamedParameterizedQuery<T> {
+    override fun setParameter(name: String, value: Any?): VaultNamedParameterizedQuery<T> {
         parameters[name] = value
         return this
     }
 
-    override fun setParameters(parameters: Map<String, Any>): VaultNamedParameterizedQuery<T> {
+    override fun setParameters(parameters: Map<String, Any?>): VaultNamedParameterizedQuery<T> {
         val timestampLimit = parameters[TIMESTAMP_LIMIT_PARAM_NAME]
         this.parameters = parameters.toMutableMap()
         if (timestampLimit != null) {
@@ -78,7 +78,8 @@ class VaultNamedParameterizedQueryImpl<T>(
                             queryName,
                             serializedParameters,
                             limit,
-                            resumePoint)
+                            resumePoint
+                        )
                     )
                 }
             }

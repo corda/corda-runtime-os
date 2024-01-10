@@ -26,8 +26,11 @@ internal class URLPathParameterNotDeclaredValidator(private val clazz: Class<out
             pathParamRegex.findAll(path).fold(RestValidationResult()) { total, next ->
                 val pathParamNameInURL = next.groupValues[1]
                 val existsInFunction = params.pathParameters.any { getParameterName(it).equals(pathParamNameInURL, ignoreCase = true) }
-                total + if (existsInFunction) RestValidationResult()
-                else RestValidationResult(listOf("Path parameter $pathParamNameInURL does not exist in function signature"))
+                total + if (existsInFunction) {
+                    RestValidationResult()
+                } else {
+                    RestValidationResult(listOf("Path parameter $pathParamNameInURL does not exist in function signature"))
+                }
             }
         } ?: RestValidationResult()
     }

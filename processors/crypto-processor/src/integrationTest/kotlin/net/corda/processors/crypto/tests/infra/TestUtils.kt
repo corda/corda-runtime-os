@@ -1,6 +1,7 @@
 package net.corda.processors.crypto.tests.infra
 
 import com.typesafe.config.ConfigFactory
+import net.corda.crypto.config.impl.KeyDerivationParameters
 import java.time.Instant
 import kotlin.random.Random
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
@@ -16,10 +17,14 @@ import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
+import java.net.ServerSocket
 
 const val RESPONSE_TOPIC = "test.response"
 
-private const val MESSAGING_CONFIGURATION_VALUE: String = """
+internal val webServerPort = ServerSocket(0).use {
+    it.localPort
+}
+private val MESSAGING_CONFIGURATION_VALUE: String = """
             componentVersion="5.1"
             maxAllowedMessageSize = 1000000
             subscription {
@@ -35,8 +40,10 @@ private const val MESSAGING_CONFIGURATION_VALUE: String = """
                     close.timeout = 6000
                 }
             }
+            worker {
+                endpoints.crypto = "localhost:$webServerPort"
+            }
       """
-
 private const val BOOT_CONFIGURATION = """
         instanceId=1
         topicPrefix=""
@@ -83,7 +90,7 @@ fun makeBootstrapConfig(dbParams: SmartConfig): SmartConfig = smartConfigFactory
         )
 )
 
-fun makeCryptoConfig(): SmartConfig = createDefaultCryptoConfig("master-key-pass", "master-key-salt")
+fun makeCryptoConfig(): SmartConfig = createDefaultCryptoConfig(listOf(KeyDerivationParameters("master-key-pass", "master-key-salt")))
 
 fun randomDataByteArray(): ByteArray {
     val random = Random(Instant.now().toEpochMilli())

@@ -3,6 +3,7 @@ package net.corda.messagebus.db.consumer
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -28,12 +29,20 @@ class ConsumerGroup(
     private val topicPartitions: MutableMap<String, Set<CordaTopicPartition>> = ConcurrentHashMap()
     private val topicToConsumersMap: MutableMap<String, MutableSet<DBCordaConsumerImpl<*, *>>> = ConcurrentHashMap()
     private val partitionsPerConsumer: MutableMap<String, MutableSet<CordaTopicPartition>> = ConcurrentHashMap()
+    
+    private val logger = LoggerFactory.getLogger("ConsumerGroup-$groupId")
 
     internal fun getTopicPartitionsFor(consumer: DBCordaConsumerImpl<*, *>): Set<CordaTopicPartition> {
         return apiLock.withLock {
             verifyValid()
-            partitionsPerConsumer[consumer.clientId]?.toSet()
-                ?: throw CordaMessageAPIFatalException("Consumer not part of consumer group $groupId")
+            val cordaTopicPartitions = partitionsPerConsumer[consumer.clientId]
+            if (cordaTopicPartitions == null) {
+                // This can happen if no partitions been assigned to consumer yet
+                logger.info("Consumer(${consumer.clientId}) is not part of consumer group $groupId")
+                emptySet()
+            } else {
+                cordaTopicPartitions.toSet()
+            }
         }
     }
 

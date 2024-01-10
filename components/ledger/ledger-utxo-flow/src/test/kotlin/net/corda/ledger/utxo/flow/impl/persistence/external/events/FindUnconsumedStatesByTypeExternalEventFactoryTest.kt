@@ -6,7 +6,6 @@ import net.corda.data.ledger.persistence.FindUnconsumedStatesByType
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.flow.state.FlowCheckpoint
-import net.corda.schema.Schemas
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -46,7 +45,6 @@ class FindUnconsumedStatesByTypeExternalEventFactoryTest {
             FindUnconsumedStatesByTypeParameters(stateClass)
         )
 
-        assertEquals(Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC, externalEventRecord.topic)
         assertNull(externalEventRecord.key)
         assertEquals(
             LedgerPersistenceRequest(

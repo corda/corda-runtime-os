@@ -16,12 +16,11 @@ import net.corda.rest.test.utils.WebRequest
 import net.corda.rest.test.utils.multipartDir
 import net.corda.rest.tools.HttpVerb
 import net.corda.utilities.NetworkHostAndPort
-import org.slf4j.LoggerFactory
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.slf4j.LoggerFactory
 import kotlin.test.assertEquals
-
 
 class RestServerAzureAdTest {
 
@@ -53,8 +52,10 @@ class RestServerAzureAdTest {
             multipartDir,
             true
         ).apply { start() }
-        client = TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:${restServer.port}/" +
-                "${restServerSettings.context.basePath}/${RestServerTestBase.apiVersion.versionPath}/")
+        client = TestHttpClientUnirestImpl(
+            "http://${restServerSettings.address.host}:${restServer.port}/" +
+                "${restServerSettings.context.basePath}/${RestServerTestBase.apiVersion.versionPath}/"
+        )
     }
 
     @AfterEach

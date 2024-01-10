@@ -3,6 +3,7 @@ package net.corda.processor.member
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.config.impl.KeyDerivationParameters
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts
@@ -12,6 +13,7 @@ import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
@@ -51,6 +53,7 @@ import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 
+@Suppress("TooManyFunctions")
 class MemberProcessorTestUtils {
     companion object {
 
@@ -81,15 +84,21 @@ class MemberProcessorTestUtils {
 
         private const val KEY_SCHEME = "corda.key.scheme"
 
-        fun makeMembershipConfig() : SmartConfig =
+        fun makeMembershipConfig(): SmartConfig =
             SmartConfigFactory.createWithoutSecurityServices().create(
                 ConfigFactory.empty()
-                    .withValue(MAX_DURATION_BETWEEN_SYNC_REQUESTS_MINUTES,
-                        ConfigValueFactory.fromAnyRef(100L))
-                    .withValue(MAX_DURATION_BETWEEN_EXPIRED_REGISTRATION_REQUESTS_POLLS,
-                        ConfigValueFactory.fromAnyRef(300L))
-                    .withValue(EXPIRATION_DATE_FOR_REGISTRATION_REQUESTS,
-                        ConfigValueFactory.fromAnyRef(180L))
+                    .withValue(
+                        MAX_DURATION_BETWEEN_SYNC_REQUESTS_MINUTES,
+                        ConfigValueFactory.fromAnyRef(100L),
+                    )
+                    .withValue(
+                        MAX_DURATION_BETWEEN_EXPIRED_REGISTRATION_REQUESTS_POLLS,
+                        ConfigValueFactory.fromAnyRef(300L),
+                    )
+                    .withValue(
+                        EXPIRATION_DATE_FOR_REGISTRATION_REQUESTS,
+                        ConfigValueFactory.fromAnyRef(180L),
+                    ),
             )
 
         private val smartConfigFactory: SmartConfigFactory = SmartConfigFactory.createWith(
@@ -97,17 +106,19 @@ class MemberProcessorTestUtils {
                 """
             ${EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY}=passphrase
             ${EncryptionSecretsServiceFactory.SECRET_SALT_KEY}=salt
-        """.trimIndent()
+                """.trimIndent(),
             ),
-            listOf(EncryptionSecretsServiceFactory())
+            listOf(EncryptionSecretsServiceFactory()),
         )
 
-        fun makeCryptoConfig(): SmartConfig = createDefaultCryptoConfig("master-key-pass", "master-key-salt")
+        fun makeCryptoConfig(): SmartConfig = createDefaultCryptoConfig(
+            listOf(KeyDerivationParameters("master-key-pass", "master-key-salt")),
+        )
 
         fun makeMessagingConfig(): SmartConfig =
             smartConfigFactory.create(
                 ConfigFactory.parseString(MESSAGING_CONFIGURATION_VALUE)
-                    .withFallback(ConfigFactory.parseString(BOOT_CONFIGURATION))
+                    .withFallback(ConfigFactory.parseString(BOOT_CONFIGURATION)),
             )
 
         fun makeBootstrapConfig(extra: Map<String, SmartConfig>): SmartConfig {
@@ -115,15 +126,15 @@ class MemberProcessorTestUtils {
                 ConfigFactory
                     .parseString(MESSAGING_CONFIGURATION_VALUE)
                     .withFallback(
-                        ConfigFactory.parseString(BOOT_CONFIGURATION)
+                        ConfigFactory.parseString(BOOT_CONFIGURATION),
                     )
                     .withFallback(
                         ConfigFactory.parseMap(
                             mapOf(
-                                BOOT_CRYPTO to createCryptoBootstrapParamsMap(CryptoConsts.SOFT_HSM_ID)
-                            )
-                        )
-                    )
+                                BOOT_CRYPTO to createCryptoBootstrapParamsMap(CryptoConsts.SOFT_HSM_ID),
+                            ),
+                        ),
+                    ),
             )
             extra.forEach {
                 cfg = cfg.withFallback(cfg.withValue(it.key, ConfigValueFactory.fromMap(it.value.root().unwrapped())))
@@ -147,7 +158,7 @@ class MemberProcessorTestUtils {
             cpiInfoReadService: CpiInfoReadService,
             holdingIdentity: HoldingIdentity,
             cryptoConnectionId: UUID,
-            groupPolicy: String = sampleGroupPolicy1
+            groupPolicy: String = sampleGroupPolicy1,
         ) {
             val cpiVersion = UUID.randomUUID().toString()
             val previous = getVirtualNodeInfo(virtualNodeInfoReader, holdingIdentity)
@@ -155,7 +166,7 @@ class MemberProcessorTestUtils {
             // Create test data
             val cpiMetadata = getCpiMetadata(
                 groupPolicy = groupPolicy,
-                cpiVersion = cpiVersion
+                cpiVersion = cpiVersion,
             )
             val virtualNodeInfo = VirtualNodeInfo(
                 holdingIdentity = holdingIdentity,
@@ -163,7 +174,7 @@ class MemberProcessorTestUtils {
                 vaultDmlConnectionId = UUID.randomUUID(),
                 cryptoDmlConnectionId = cryptoConnectionId,
                 uniquenessDmlConnectionId = UUID.randomUUID(),
-                timestamp = clock.instant()
+                timestamp = clock.instant(),
             )
 
             // Publish test data
@@ -209,11 +220,11 @@ class MemberProcessorTestUtils {
          */
         fun register(
             registrationProxy: RegistrationProxy,
-            holdingIdentity: HoldingIdentity
+            holdingIdentity: HoldingIdentity,
         ) {
             val context = mapOf(KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME)
             return eventually(
-                waitBetween = Duration.ofMillis(1000)
+                waitBetween = Duration.ofMillis(1000),
             ) {
                 assertDoesNotThrow {
                     registrationProxy.register(UUID.randomUUID(), holdingIdentity, context)
@@ -248,7 +259,7 @@ class MemberProcessorTestUtils {
 
         fun getGroupPolicyFails(
             groupPolicyProvider: GroupPolicyProvider,
-            holdingIdentity: HoldingIdentity
+            holdingIdentity: HoldingIdentity,
         ) = eventually {
             val gp = assertDoesNotThrow { groupPolicyProvider.getGroupPolicy(holdingIdentity) }
             assertThat(gp).isNull()
@@ -256,7 +267,7 @@ class MemberProcessorTestUtils {
 
         fun getGroupPolicy(
             groupPolicyProvider: GroupPolicyProvider,
-            holdingIdentity: HoldingIdentity
+            holdingIdentity: HoldingIdentity,
         ) = eventually {
             val policy = assertDoesNotThrow { groupPolicyProvider.getGroupPolicy(holdingIdentity) }
             assertThat(policy).isNotNull
@@ -287,6 +298,9 @@ class MemberProcessorTestUtils {
         fun Publisher.publishDefaultCryptoConf(cryptoConfig: SmartConfig) =
             publishConf(ConfigKeys.CRYPTO_CONFIG, cryptoConfig.root().render())
 
+        fun Publisher.publishEmptyStateManagerConf() =
+            publishConf(ConfigKeys.STATE_MANAGER_CONFIG, SmartConfigImpl.empty().root().render())
+
         fun Publisher.publishGatewayConfig() =
             publishConf(
                 ConfigKeys.P2P_GATEWAY_CONFIG,
@@ -294,7 +308,7 @@ class MemberProcessorTestUtils {
             sslConfig {
                 tlsType: "ONE_WAY"
             }
-        """
+        """,
             )
 
         private fun getSampleGroupPolicy(fileName: String): String {
@@ -305,25 +319,25 @@ class MemberProcessorTestUtils {
 
         private fun getCpiIdentifier(
             name: String = "INTEGRATION_TEST",
-            version: String
+            version: String,
         ) = CpiIdentifier(name, version, parseSecureHash("SHA-256:0000000000000000"))
 
         private fun getCpiMetadata(
             cpiVersion: String,
             groupPolicy: String,
-            cpiIdentifier: CpiIdentifier = getCpiIdentifier(version = cpiVersion)
+            cpiIdentifier: CpiIdentifier = getCpiIdentifier(version = cpiVersion),
         ) = CpiMetadata(
             cpiIdentifier,
             parseSecureHash("SHA-256:0000000000000000"),
             emptyList(),
             groupPolicy,
             -1,
-            clock.instant()
+            clock.instant(),
         )
 
         private fun getVirtualNodeInfo(
             virtualNodeInfoReader: VirtualNodeInfoReadService,
-            holdingIdentity: HoldingIdentity
+            holdingIdentity: HoldingIdentity,
         ) =
             virtualNodeInfoReader.get(holdingIdentity)
 
@@ -343,9 +357,9 @@ class MemberProcessorTestUtils {
                     Record(
                         Schemas.VirtualNode.VIRTUAL_NODE_INFO_TOPIC,
                         virtualNodeInfo.holdingIdentity.toAvro(),
-                        virtualNodeInfo.toAvro()
-                    )
-                )
+                        virtualNodeInfo.toAvro(),
+                    ),
+                ),
             )
         }
 

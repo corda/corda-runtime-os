@@ -24,12 +24,13 @@ import java.io.Closeable
 import java.time.Duration
 import java.time.Instant
 
-class Receiver(private val subscriptionFactory: SubscriptionFactory,
-               private val configMerger: ConfigMerger,
-               private val topicAdmin: KafkaTopicAdmin,
-               private val commonConfig: CommonConfig,
-               private val topicCreationParams: TopicCreationParams
-    ): Closeable {
+class Receiver(
+    private val subscriptionFactory: SubscriptionFactory,
+    private val configMerger: ConfigMerger,
+    private val topicAdmin: KafkaTopicAdmin,
+    private val commonConfig: CommonConfig,
+    private val topicCreationParams: TopicCreationParams,
+) : Closeable {
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -41,26 +42,32 @@ class Receiver(private val subscriptionFactory: SubscriptionFactory,
     fun start() {
         AppSimulatorTopicCreator(commonConfig.bootConfig, topicAdmin, topicCreationParams).createTopic()
         for (i in 1..commonConfig.clients) {
-            val subscriptionConfig = SubscriptionConfig("app-simulator-receiver", commonConfig.parameters.receiveTopic,)
+            val subscriptionConfig = SubscriptionConfig("app-simulator-receiver", commonConfig.parameters.receiveTopic)
             val configWithInstanceId = commonConfig.bootConfig
                 .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef("${commonConfig.parameters.instanceId}-$i".hashCode()))
                 .withValue(MessagingConfig.MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(10000000))
             val messagingConfig = configMerger.getMessagingConfig(configWithInstanceId)
 
-            val subscription = subscriptionFactory.createEventLogSubscription(subscriptionConfig,
-                InboundMessageProcessor(APP_RECEIVED_MESSAGES_TOPIC), messagingConfig, null)
+            val subscription = subscriptionFactory.createEventLogSubscription(
+                subscriptionConfig,
+                InboundMessageProcessor(APP_RECEIVED_MESSAGES_TOPIC),
+                messagingConfig,
+                null,
+            )
             subscription.start()
             subscriptions.add(subscription)
         }
-        logger.info("Started consuming messages fom ${commonConfig.parameters.receiveTopic}. When you want to stop the consumption, you " +
-                "can do so using Ctrl+C.")
+        logger.info(
+            "Started consuming messages fom ${commonConfig.parameters.receiveTopic}. When you want to stop the consumption, you " +
+                "can do so using Ctrl+C.",
+        )
     }
 
     override fun close() {
         subscriptions.forEach { it.close() }
     }
 
-    private inner class InboundMessageProcessor(val destinationTopic: String): EventLogProcessor<String, AppMessage> {
+    private inner class InboundMessageProcessor(val destinationTopic: String) : EventLogProcessor<String, AppMessage> {
 
         override val keyClass: Class<String>
             get() = String::class.java
@@ -72,11 +79,16 @@ class Receiver(private val subscriptionFactory: SubscriptionFactory,
             return events.mapNotNull {
                 val authenticatedMessage = it.value?.message as? AuthenticatedMessage
 
-                //Only JSON deserialize messages from another app-simulator (not sent by the MGM for example).
+                // Only JSON deserialize messages from another app-simulator (not sent by the MGM for example).
                 if (authenticatedMessage?.header?.subsystem == APP_SIMULATOR_SUBSYSTEM) {
                     val payload = objectMapper.readValue<MessagePayload>(authenticatedMessage.payload.array())
-                    val messageReceivedEvent = MessageReceivedEvent(payload.sender,
-                        authenticatedMessage.header.messageId, payload.sendTimestamp, now, Duration.between(payload.sendTimestamp, now))
+                    val messageReceivedEvent = MessageReceivedEvent(
+                        payload.sender,
+                        authenticatedMessage.header.messageId,
+                        payload.sendTimestamp,
+                        now,
+                        Duration.between(payload.sendTimestamp, now),
+                    )
                     Record(destinationTopic, messageReceivedEvent.messageId, objectMapper.writeValueAsString(messageReceivedEvent))
                 } else {
                     null

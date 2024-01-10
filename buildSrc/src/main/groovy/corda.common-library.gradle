@@ -2,6 +2,7 @@
 
 plugins {
     id 'java-library'
+    id 'org.jetbrains.kotlin.jvm'
     id 'biz.aQute.bnd.builder'
 }
 
@@ -32,11 +33,6 @@ configurations {
                         attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
                     }
                 }
-                substitute module('org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm') using variant(project(':libs:kotlin-coroutines')) {
-                    attributes {
-                        attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
-                    }
-                }
             }
         }
     }
@@ -44,12 +40,10 @@ configurations {
 
 dependencies {
     compileOnly "org.jetbrains:annotations:$jetbrainsAnnotationsVersion"
-    testImplementation "org.junit.jupiter:junit-jupiter:$junit5Version"
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation libs.bundles.test
+    testRuntimeOnly libs.bundles.test.runtime
 
-    integrationTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
-    integrationTestRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    integrationTestRuntimeOnly libs.bundles.test.runtime
 }
 
 tasks.named('jar', Jar) {

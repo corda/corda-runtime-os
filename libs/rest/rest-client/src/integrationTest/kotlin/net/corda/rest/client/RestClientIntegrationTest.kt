@@ -1,6 +1,8 @@
 package net.corda.rest.client
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.rest.HttpFileUpload
+import net.corda.rest.JsonObject
 import net.corda.rest.client.config.RestClientConfig
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.server.impl.RestServerImpl
@@ -14,8 +16,12 @@ import net.corda.rest.test.NumberSequencesRestResourceImpl
 import net.corda.rest.test.NumberTypeEnum
 import net.corda.rest.test.TestEntityRestResource
 import net.corda.rest.test.TestEntityRestResourceImpl
+import net.corda.rest.test.TestFileUploadAPI
+import net.corda.rest.test.TestFileUploadImpl
 import net.corda.rest.test.TestHealthCheckAPI
 import net.corda.rest.test.TestHealthCheckAPIImpl
+import net.corda.rest.test.utils.ChecksumUtil.generateChecksum
+import net.corda.rest.test.utils.multipartDir
 import net.corda.test.util.eventually
 import net.corda.utilities.NetworkHostAndPort
 import net.corda.utilities.seconds
@@ -34,12 +40,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.test.fail
-import net.corda.rest.HttpFileUpload
-import net.corda.rest.JsonObject
-import net.corda.rest.test.TestFileUploadAPI
-import net.corda.rest.test.TestFileUploadImpl
-import net.corda.rest.test.utils.ChecksumUtil.generateChecksum
-import net.corda.rest.test.utils.multipartDir
 
 internal class RestClientIntegrationTest : RestIntegrationTestBase() {
     companion object {
@@ -288,6 +288,7 @@ internal class RestClientIntegrationTest : RestIntegrationTestBase() {
         }
     }
 
+    @Suppress("MaxLineLength")
     @Test
     @Timeout(100)
     fun `start client against server with less than rest version since but valid version for the resource fails only on the unsupported call`() {
@@ -349,7 +350,6 @@ internal class RestClientIntegrationTest : RestIntegrationTestBase() {
             val connection = client.start()
 
             with(connection.proxy) {
-
                 SoftAssertions.assertSoftly {
                     it.assertThat(create(TestEntityRestResource.CreationParams("TestName", 20)))
                         .isEqualTo("Created using: CreationParams(name=TestName, amount=20)")
@@ -621,5 +621,4 @@ internal class RestClientIntegrationTest : RestIntegrationTestBase() {
             }
         }
     }
-
 }

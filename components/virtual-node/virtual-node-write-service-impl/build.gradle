@@ -3,7 +3,9 @@ plugins {
     id 'corda.common-library'
 }
 
-description "Configuration Write Service Impl"
+description "Virtual Node Write Service Impl"
+
+ext.cordaEnableFormatting = true
 
 dependencies {
     api project(':libs:virtual-node:virtual-node-info')
@@ -53,9 +55,6 @@ dependencies {
     testImplementation project(':libs:db:db-orm-impl')
     testImplementation project(':testing:db-testkit')
     testImplementation project(':testing:test-utilities')
-
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"

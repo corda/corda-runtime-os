@@ -9,6 +9,7 @@ import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.messaging.DynamicKeyStore
 import net.corda.p2p.gateway.messaging.http.TrustStoresMap
+import net.corda.utilities.flags.Features
 
 internal class CommonComponents(
     subscriptionFactory: SubscriptionFactory,
@@ -16,6 +17,8 @@ internal class CommonComponents(
     messagingConfiguration: SmartConfig,
     cryptoOpsClient: CryptoOpsClient,
 ) : LifecycleWithDominoTile {
+    val features: Features = Features()
+
     val dynamicKeyStore = DynamicKeyStore(
         lifecycleCoordinatorFactory,
         subscriptionFactory,

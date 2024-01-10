@@ -46,6 +46,14 @@ bootstrap:
             secretKeyRef:
               name: "state-manager-db-postgresql"
               key: "postgres-password"
+      p2pLinkManager:
+        username:
+          value: "postgres"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "state-manager-db-postgresql"
+              key: "postgres-password"
 workers:
   flow:
     stateManager:
@@ -71,6 +79,40 @@ workers:
               key: "password"
 
   tokenSelection:
+    stateManager:
+      db:
+        host: "state-manager-db-postgresql"
+        username:
+          value: "statemanager-user"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "state-manager-db-postgresql"
+              key: "password"
+
+  rest:
+    stateManager:
+      db:
+        host: "state-manager-db-postgresql"
+        username:
+          value: "statemanager-user"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "state-manager-db-postgresql"
+              key: "password"
+  crypto:
+    stateManager:
+      db:
+        host: "state-manager-db-postgresql"
+        username:
+          value: "statemanager-user"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "state-manager-db-postgresql"
+              key: "password"
+  p2pLinkManager:
     stateManager:
       db:
         host: "state-manager-db-postgresql"

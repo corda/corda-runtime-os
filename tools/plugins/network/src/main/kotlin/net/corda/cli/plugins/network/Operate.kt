@@ -5,12 +5,12 @@ import picocli.CommandLine.Command
 @Command(
     name = "operate",
     description = [
-        "MGM operations for managing application networks"
+        "MGM operations for managing application networks",
     ],
     subcommands = [
         AllowClientCertificate::class,
-        ExportGroupPolicy::class
+        ExportGroupPolicy::class,
     ],
-    mixinStandardHelpOptions = true
+    mixinStandardHelpOptions = true,
 )
 class Operate

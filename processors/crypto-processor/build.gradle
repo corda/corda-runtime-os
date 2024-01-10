@@ -44,6 +44,9 @@ dependencies {
     implementation project(":libs:virtual-node:virtual-node-info")
     implementation project(':libs:flows:external-event-responses')
     implementation project(":libs:serialization:serialization-avro")
+    implementation project(":libs:state-manager:state-manager-api")
+    implementation project(':libs:serialization:serialization-avro')
+    runtimeOnly project(':libs:state-manager:state-manager-db-impl')
 
     implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
 
@@ -83,6 +86,7 @@ dependencies {
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 
     integrationTestImplementation project(":testing:db-message-bus-testkit")
+    integrationTestImplementation project(":libs:web:web")
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(":components:crypto:crypto-client-impl")
     integrationTestRuntimeOnly project(":components:crypto:crypto-client-hsm-impl")
@@ -95,9 +99,6 @@ dependencies {
     integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(':libs:lifecycle:lifecycle-test-impl')
     testRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
 }

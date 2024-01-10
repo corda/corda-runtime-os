@@ -3,6 +3,7 @@ package net.corda.p2p.crypto.protocol.api
 import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.utils.PemCertificate
 import net.corda.data.p2p.crypto.ProtocolMode
+import net.corda.data.p2p.crypto.protocol.RevocationCheckMode
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.MIN_PACKET_SIZE
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SignatureSpec
@@ -101,16 +102,18 @@ class AuthenticationProtocolTest {
     }
 
     @Suppress("LongParameterList")
-    private fun executeProtocol(partyASessionKey: KeyPair,
-                                partyBSessionKey: KeyPair,
-                                signature: Signature,
-                                signatureSpec: SignatureSpec,
-                                partyACertificate: List<PemCertificate>? = null,
-                                partyBCertificate: List<PemCertificate>? = null,
-                                duplicateInvocations: Boolean = false,
-                                certificateCheckMode: CertificateCheckMode = CertificateCheckMode.NoCertificate,
-                                certificateValidatorInitiator: CertificateValidator? = null,
-                                certificateValidatorResponder: CertificateValidator? = null,) {
+    private fun executeProtocol(
+        partyASessionKey: KeyPair,
+        partyBSessionKey: KeyPair,
+        signature: Signature,
+        signatureSpec: SignatureSpec,
+        partyACertificate: List<PemCertificate>? = null,
+        partyBCertificate: List<PemCertificate>? = null,
+        duplicateInvocations: Boolean = false,
+        certificateCheckMode: CertificateCheckMode = CertificateCheckMode.NoCertificate,
+        certificateValidatorInitiator: CertificateValidator? = null,
+        certificateValidatorResponder: CertificateValidator? = null,
+    ) {
         val protocolInitiator = if (certificateValidatorInitiator != null) {
             AuthenticationProtocolInitiator(
                 sessionId,
@@ -118,7 +121,7 @@ class AuthenticationProtocolTest {
                 partyAMaxMessageSize,
                 partyASessionKey.public,
                 groupId,
-                certificateCheckMode
+                certificateCheckMode,
             ) { _, _, _ -> certificateValidatorInitiator }
         } else {
             AuthenticationProtocolInitiator(
@@ -127,7 +130,7 @@ class AuthenticationProtocolTest {
                 partyAMaxMessageSize,
                 partyASessionKey.public,
                 groupId,
-                certificateCheckMode
+                certificateCheckMode,
             )
         }
         val protocolResponder = if (certificateValidatorResponder != null) {
@@ -177,7 +180,7 @@ class AuthenticationProtocolTest {
         val initiatorHandshakeMessage = protocolInitiator.generateOurHandshakeMessage(
             partyBSessionKey.public,
             partyACertificate,
-            signingCallbackForA
+            signingCallbackForA,
         )
         assertThat(initiatorHandshakeMessage.toByteBuffer().array().size).isLessThanOrEqualTo(MIN_PACKET_SIZE)
         protocolResponder.validatePeerHandshakeMessage(
@@ -207,7 +210,7 @@ class AuthenticationProtocolTest {
         val responderHandshakeMessage = protocolResponder.generateOurHandshakeMessage(
             partyBSessionKey.public,
             partyBCertificate,
-            signingCallbackForB
+            signingCallbackForB,
         )
         assertThat(responderHandshakeMessage.toByteBuffer().array().size).isLessThanOrEqualTo(MIN_PACKET_SIZE)
         protocolInitiator.validatePeerHandshakeMessage(

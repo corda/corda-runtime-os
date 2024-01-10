@@ -21,7 +21,7 @@ interface ResultSetFactory {
      * @return A [ResultSet] that retrieves data based on the implementation of [offsetResultSetExecutor].
      */
     fun <R> create(
-        parameters: Map<String, Any>,
+        parameters: Map<String, Any?>,
         limit: Int,
         offset: Int,
         resultClass: Class<R>,
@@ -42,7 +42,7 @@ interface ResultSetFactory {
      * @return A [ResultSet] that retrieves data based on the implementation of [offsetResultSetExecutor].
      */
     fun <R> create(
-        parameters: Map<String, Any>,
+        parameters: Map<String, Any?>,
         limit: Int,
         resultClass: Class<R>,
         resultSetExecutor: StableResultSetExecutor<R>

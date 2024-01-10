@@ -97,6 +97,50 @@ internal class HttpTest : TestBase() {
 
     @Test
     @Timeout(30)
+    fun `when server returns 410 connection is not closed`() {
+        val listener = object : RequestListener {
+            override fun onRequest(httpWriter: HttpWriter, request: HttpRequest) {
+                assertEquals(clientMessageContent, String(request.payload))
+                httpWriter.write(HttpResponseStatus.GONE, request.source, serverResponseContent.toByteArray(Charsets.UTF_8))
+            }
+        }
+        HttpServer(
+            listener,
+            MAX_REQUEST_SIZE,
+            GatewayServerConfiguration(
+                serverAddress.host,
+                serverAddress.port,
+                "/",
+            ),
+            aliceKeyStore,
+            null,
+        ).use { server ->
+            server.startAndWaitForStarted()
+            var connectionClosings = 0
+            val connectionListener = object: HttpConnectionListener {
+                override fun onClose(event: HttpConnectionEvent) {
+                    connectionClosings++
+                }
+            }
+            HttpClient(
+                DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore, null),
+                bobSslConfig,
+                NioEventLoopGroup(1),
+                NioEventLoopGroup(1),
+                ConnectionConfiguration(),
+                connectionListener,
+            ).use { client ->
+                client.start()
+                val response = client.write(clientMessageContent.toByteArray(Charsets.UTF_8)).get()
+                assertThat(response.statusCode).isEqualTo(HttpResponseStatus.GONE)
+                // confirm that even though the response was not 200, the server didn't close the connection.
+                assertThat(connectionClosings).isEqualTo(0)
+            }
+        }
+    }
+
+    @Test
+    @Timeout(30)
     fun `multiple clients multiple requests`() {
         val requestNo = 10
         val threadNo = 2

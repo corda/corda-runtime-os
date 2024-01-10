@@ -24,11 +24,13 @@ internal class PermissionEndpointEventHandlerTest {
 
     @BeforeEach
     fun setUp() {
-        whenever(coordinator.followStatusChangesByName(
-            setOf(
-                LifecycleCoordinatorName.forComponent<PermissionManagementService>()
+        whenever(
+            coordinator.followStatusChangesByName(
+                setOf(
+                    LifecycleCoordinatorName.forComponent<PermissionManagementService>()
+                )
             )
-        )).thenReturn(registrationHandle)
+        ).thenReturn(registrationHandle)
     }
 
     @Test
@@ -58,5 +60,4 @@ internal class PermissionEndpointEventHandlerTest {
 
         verify(coordinator).updateStatus(LifecycleStatus.DOWN)
     }
-
 }

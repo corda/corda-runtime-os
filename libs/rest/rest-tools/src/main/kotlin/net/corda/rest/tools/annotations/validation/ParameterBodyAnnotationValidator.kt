@@ -15,7 +15,9 @@ internal class ParameterBodyAnnotationValidator(private val clazz: Class<out Res
         clazz.methods.fold(RestValidationResult()) { total, method ->
             total + if (method.annotations.any { it is HttpGET || it is HttpDELETE || it is HttpWS }) {
                 validateNoBodyParam(method)
-            } else RestValidationResult()
+            } else {
+                RestValidationResult()
+            }
         }
 
     private fun validateNoBodyParam(method: Method) =

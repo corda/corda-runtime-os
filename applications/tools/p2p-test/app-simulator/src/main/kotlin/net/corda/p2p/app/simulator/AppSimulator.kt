@@ -119,7 +119,7 @@ class AppSimulator @Activate constructor(
             commonConfig,
             connectionDetails,
             loadGenerationParams,
-            clock
+            clock,
         )
         sender.start()
         resources.add(sender)
@@ -138,7 +138,7 @@ class AppSimulator @Activate constructor(
             configMerger,
             topicAdmin,
             commonConfig,
-            topicCreationParams
+            topicCreationParams,
         )
         receiver.start()
         resources.add(receiver)
@@ -146,6 +146,7 @@ class AppSimulator @Activate constructor(
 
     private fun runSink(commonConfig: CommonConfig) {
         val connectionDetails = DBParams.read(commonConfig)
+            ?: throw IllegalArgumentException("Database parameters must be specified on the command line, or in a config file.")
         val sink = Sink(subscriptionFactory, configMerger, commonConfig, connectionDetails)
         sink.start()
         resources.add(sink)
@@ -169,25 +170,25 @@ class AppSimulator @Activate constructor(
 class CliParameters {
     @CommandLine.Option(
         names = ["-m", "--messaging-params"],
-        description = ["Messaging parameters for the simulator."]
+        description = ["Messaging parameters for the simulator."],
     )
     var messagingParams = emptyMap<String, String>()
 
     @CommandLine.Option(
         names = ["-d", "--database-params"],
-        description = ["Database parameters for the simulator."]
+        description = ["Database parameters for the simulator."],
     )
     var databaseParams = emptyMap<String, String>()
 
     @CommandLine.Option(
         names = ["-l", "--load-generation-params"],
-        description = ["Load generation parameters for the simulator."]
+        description = ["Load generation parameters for the simulator."],
     )
     var loadGenerationParams = emptyMap<String, String>()
 
     @CommandLine.Option(
         names = ["-t", "--topic-creation-params"],
-        description = ["Topic creation parameters for the simulator."]
+        description = ["Topic creation parameters for the simulator."],
     )
     var topicCreationParams = emptyMap<String, String>()
 
@@ -195,26 +196,26 @@ class CliParameters {
         names = ["-i", "--instance-id"],
         description = [
             "The instance ID. Defaults to the value of the env." +
-                " variable INSTANCE_ID or a random number, if that hasn't been set."
-        ]
+                " variable INSTANCE_ID or a random number, if that hasn't been set.",
+        ],
     )
     var instanceId = System.getenv("INSTANCE_ID") ?: Random.nextInt().toString()
 
     @CommandLine.Option(
         names = ["--simulator-config"],
-        description = ["File containing configuration parameters for simulator. Default to \${DEFAULT-VALUE}"]
+        description = ["File containing configuration parameters for simulator. Default to \${DEFAULT-VALUE}"],
     )
     var simulatorConfig: File? = null
 
     @CommandLine.Option(
         names = ["--clients"],
-        description = [" Default to \${DEFAULT-VALUE}."]
+        description = [" Default to \${DEFAULT-VALUE}."],
     )
     var clients: Int? = null
 
     @CommandLine.Option(
         names = ["--mode"],
-        description = [" Default to \${DEFAULT-VALUE}."]
+        description = [" Default to \${DEFAULT-VALUE}."],
     )
     val simulationMode: SimulationMode? = null
 
@@ -222,8 +223,8 @@ class CliParameters {
         names = ["--send-topic"],
         description = [
             "Topic to send the messages to. " +
-                "Defaults to \${DEFAULT-VALUE}, if not specified."
-        ]
+                "Defaults to \${DEFAULT-VALUE}, if not specified.",
+        ],
     )
     var sendTopic: String = P2P_OUT_TOPIC
 
@@ -231,8 +232,8 @@ class CliParameters {
         names = ["--receive-topic"],
         description = [
             "Topic to receive messages from. " +
-                "Defaults to  \${DEFAULT-VALUE}, if not specified."
-        ]
+                "Defaults to  \${DEFAULT-VALUE}, if not specified.",
+        ],
     )
     var receiveTopic: String = P2P_IN_TOPIC
 
@@ -242,13 +243,13 @@ class CliParameters {
 
 enum class LoadGenerationType {
     ONE_OFF,
-    CONTINUOUS
+    CONTINUOUS,
 }
 
 enum class SimulationMode {
     SENDER,
     RECEIVER,
-    DB_SINK
+    DB_SINK,
 }
 
 class CommonConfig(val parameters: CliParameters) {
@@ -268,11 +269,11 @@ class CommonConfig(val parameters: CliParameters) {
             ConfigFactory.parseMap(parsedMessagingParams)
                 .withValue(
                     BootConfig.TOPIC_PREFIX,
-                    ConfigValueFactory.fromAnyRef("")
+                    ConfigValueFactory.fromAnyRef(""),
                 ).withValue(
                     MessagingConfig.Bus.BUS_TYPE,
-                    ConfigValueFactory.fromAnyRef("KAFKA")
-                )
+                    ConfigValueFactory.fromAnyRef("KAFKA"),
+                ),
         )
         configFromFile = parameters.simulatorConfig?.let { ConfigFactory.parseFile(it) } ?: ConfigFactory.empty()
         clients = parameters.clients ?: configFromFile.getIntOrNull(AppSimulator.PARALLEL_CLIENTS_KEY)
@@ -285,10 +286,16 @@ data class TopicCreationParams(val numPartitions: Int, val replicationFactor: In
     companion object {
         fun read(commonConfig: CommonConfig): TopicCreationParams {
             val numPartitions = getTopicCreationParameter(
-                "numPartitions", DEFAULT_NUMBER_OF_PARTITIONS, commonConfig.configFromFile, commonConfig.parameters
+                "numPartitions",
+                DEFAULT_NUMBER_OF_PARTITIONS,
+                commonConfig.configFromFile,
+                commonConfig.parameters,
             )
             val replicationFactor = getTopicCreationParameter(
-                "replicationFactor", DEFAULT_REPLICATION_FACTOR, commonConfig.configFromFile, commonConfig.parameters
+                "replicationFactor",
+                DEFAULT_REPLICATION_FACTOR,
+                commonConfig.configFromFile,
+                commonConfig.parameters,
             )
             return TopicCreationParams(numPartitions, replicationFactor)
         }
@@ -297,11 +304,15 @@ data class TopicCreationParams(val numPartitions: Int, val replicationFactor: In
 
 data class DBParams(val username: String, val password: String, val host: String, val db: String) {
     companion object {
-        fun read(commonConfig: CommonConfig): DBParams {
+        fun read(commonConfig: CommonConfig): DBParams? {
             val username = getDbParameter("username", commonConfig.configFromFile, commonConfig.parameters)
+                ?: return null
             val password = getDbParameter("password", commonConfig.configFromFile, commonConfig.parameters)
+                ?: return null
             val host = getDbParameter("host", commonConfig.configFromFile, commonConfig.parameters)
+                ?: return null
             val db = getDbParameter("db", commonConfig.configFromFile, commonConfig.parameters)
+                ?: return null
             return DBParams(username, password, host, db)
         }
     }
@@ -315,7 +326,7 @@ data class LoadGenerationParams(
     val batchSize: Int,
     val interBatchDelay: Duration,
     val messageSizeBytes: Int,
-    val expireAfterTime: Duration?
+    val expireAfterTime: Duration?,
 ) {
     init {
         when (loadGenerationType) {
@@ -351,12 +362,14 @@ data class LoadGenerationParams(
                     "interBatchDelay",
                     AppSimulator.DEFAULT_INTER_BATCH_DELAY,
                     commonConfig.configFromFile,
-                    commonConfig.parameters
+                    commonConfig.parameters,
                 )
             val messageSizeBytes =
                 getLoadGenIntParameter(
                     "messageSizeBytes",
-                    AppSimulator.DEFAULT_MESSAGE_SIZE_BYTES, commonConfig.configFromFile, commonConfig.parameters
+                    AppSimulator.DEFAULT_MESSAGE_SIZE_BYTES,
+                    commonConfig.configFromFile,
+                    commonConfig.parameters,
                 )
             val expireAfterTime = getLoadGenDurationOrNull("expireAfterTime", commonConfig.configFromFile, commonConfig.parameters)
             return LoadGenerationParams(
@@ -367,7 +380,7 @@ data class LoadGenerationParams(
                 batchSize,
                 interBatchDelay,
                 messageSizeBytes,
-                expireAfterTime
+                expireAfterTime,
             )
         }
     }
@@ -380,5 +393,5 @@ data class MessageReceivedEvent(
     val messageId: String,
     val sendTimestamp: Instant,
     val receiveTimestamp: Instant,
-    val deliveryLatency: Duration
+    val deliveryLatency: Duration,
 )

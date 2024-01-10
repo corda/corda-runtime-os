@@ -7,6 +7,7 @@ import java.util.LinkedList
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 internal class Partition(
     val partitionId: Int,
@@ -47,5 +48,12 @@ internal class Partition(
 
     fun latestOffset(): Long {
         return currentOffset.get()
+    }
+
+    fun clear() {
+        lock.write {
+            records.clear()
+            currentOffset.set(0)
+        }
     }
 }

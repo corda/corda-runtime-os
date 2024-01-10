@@ -10,10 +10,16 @@ import net.corda.crypto.config.impl.PASSPHRASE
 import net.corda.crypto.config.impl.RETRYING
 import net.corda.crypto.config.impl.SALT
 import net.corda.crypto.config.impl.WRAPPING_KEYS
+import net.corda.crypto.service.impl.rpc.SessionDecryptionProcessor
+import net.corda.crypto.service.impl.rpc.SessionEncryptionProcessor
 import net.corda.crypto.softhsm.impl.HSMRepositoryImpl
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
+import net.corda.data.crypto.wire.ops.encryption.request.DecryptRpcCommand
+import net.corda.data.crypto.wire.ops.encryption.request.EncryptRpcCommand
+import net.corda.data.crypto.wire.ops.encryption.response.DecryptionOpsResponse
+import net.corda.data.crypto.wire.ops.encryption.response.EncryptionOpsResponse
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
@@ -93,6 +99,8 @@ class CryptoProcessorImplTest {
     fun `bus subscriptions created on ConfigChangedEvent, closed and re-created on new ConfigChangedEvent`() {
         val flowOpsSubscription = mock<Subscription<String, FlowOpsRequest>>()
         val rpcOpsSubscription = mock<RPCSubscription<RpcOpsRequest, RpcOpsResponse>>()
+        val encryptionSubscription = mock<RPCSubscription<EncryptRpcCommand, EncryptionOpsResponse>>()
+        val decryptionSubscription = mock<RPCSubscription<DecryptRpcCommand, DecryptionOpsResponse>>()
         val hsmRegSubscription = mock<RPCSubscription<HSMRegistrationRequest, HSMRegistrationResponse>>()
         val subscriptionFactory = mock<SubscriptionFactory>().also {
             whenever(it.createDurableSubscription<String, FlowOpsRequest>(any(), any(), any(), anyOrNull()))
@@ -113,6 +121,20 @@ class CryptoProcessorImplTest {
                 )
             )
                 .thenReturn(rpcOpsSubscription)
+            whenever(
+                it.createHttpRPCSubscription(
+                    any(),
+                    any<SessionDecryptionProcessor>()
+                )
+            )
+                .thenReturn(decryptionSubscription)
+            whenever(
+                it.createHttpRPCSubscription(
+                    any(),
+                    any<SessionEncryptionProcessor>()
+                )
+            )
+                .thenReturn(encryptionSubscription)
             whenever(
                 it.createRPCSubscription(
                     eq(
@@ -159,8 +181,10 @@ class CryptoProcessorImplTest {
                     keyEncodingService = mock(),
                     layeredPropertyMapFactory = mock(),
                     digestService = mock(),
-                    schemeMetadata = mock()
-                )
+                    schemeMetadata = mock(),
+                    publisherFactory = mock(),
+                    stateManagerFactory = mock(),
+                    cordaAvroSerializationFactory = mock())
                 cryptoProcessor.lifecycleCoordinator
             }.run {
                 testClass.start()
@@ -173,6 +197,8 @@ class CryptoProcessorImplTest {
                 verifyIsUp<CryptoProcessor>()
                 verify(flowOpsSubscription, times(1)).start()
                 verify(rpcOpsSubscription, times(1)).start()
+                verify(decryptionSubscription, times(1)).start()
+                verify(encryptionSubscription, times(1)).start()
                 verify(hsmRegSubscription, times(1)).start()
 
                 sendConfigUpdate<CryptoProcessor>(mapOf(CRYPTO_CONFIG to cryptoConfig, MESSAGING_CONFIG to mock()))
@@ -180,9 +206,13 @@ class CryptoProcessorImplTest {
                 verify(flowOpsSubscription, times(1)).close()
                 verify(rpcOpsSubscription, times(1)).close()
                 verify(hsmRegSubscription, times(1)).close()
+                verify(decryptionSubscription, times(1)).close()
+                verify(encryptionSubscription, times(1)).close()
 
                 verify(flowOpsSubscription, times(2)).start()
                 verify(rpcOpsSubscription, times(2)).start()
+                verify(hsmRegSubscription, times(2)).start()
+                verify(encryptionSubscription, times(2)).start()
                 verify(hsmRegSubscription, times(2)).start()
             }
         }

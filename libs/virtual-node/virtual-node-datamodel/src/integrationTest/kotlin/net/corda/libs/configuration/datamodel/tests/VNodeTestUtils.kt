@@ -1,8 +1,5 @@
 package net.corda.libs.configuration.datamodel.tests
 
-import java.time.Instant
-import java.util.UUID
-import javax.persistence.EntityManagerFactory
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.cpi.datamodel.repository.CpiMetadataRepository
@@ -17,8 +14,12 @@ import net.corda.test.util.TestRandom
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
+import java.time.Instant
+import java.util.UUID
+import javax.persistence.EntityManagerFactory
 
 internal object VNodeTestUtils {
+    @Suppress("LongParameterList")
     fun newVNode(
         entityManagerFactory: EntityManagerFactory,
         cpiName: String,
@@ -29,7 +30,6 @@ internal object VNodeTestUtils {
         externalMessagingRouteConfig: String?,
         cpiMetadataRepository: CpiMetadataRepository
     ): VirtualNodeEntity {
-
         println("Creating VNode for testing: $cpiName, $cpiVersion, $cpiSignerSummaryHash")
 
         val holdingIdentity = holdingIdentityEntity ?: newHoldingIdentityEntity(cpiName)
@@ -103,12 +103,14 @@ internal object VNodeTestUtils {
             Instant.now(),
             "test",
             "test connection",
-            "{}")
+            "{}"
+        )
 
     fun newHoldingIdentityEntity(id: String): HoldingIdentityEntity {
         val hi = HoldingIdentity(
             MemberX500Name.parse("C=GB,L=London,O=$id"),
-            "dummy")
+            "dummy"
+        )
         return HoldingIdentityEntity(
             holdingIdentityShortHash = hi.shortHash.value,
             holdingIdentityFullHash = hi.fullHash,

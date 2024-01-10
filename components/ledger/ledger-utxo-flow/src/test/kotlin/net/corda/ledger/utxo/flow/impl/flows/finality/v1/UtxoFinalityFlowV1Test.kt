@@ -1,7 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality.v1
 
-import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
+import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.fullId
 import net.corda.crypto.core.fullIdHash
@@ -13,6 +13,7 @@ import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesExce
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
+import net.corda.ledger.utxo.flow.impl.PluggableNotaryDetails
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
@@ -34,6 +35,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
+import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
@@ -44,10 +46,12 @@ import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionUnknown
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.membership.MemberInfo
+import net.corda.v5.membership.NotaryInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -60,6 +64,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.spy
+import org.mockito.kotlin.timeout
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
@@ -72,6 +77,14 @@ class UtxoFinalityFlowV1Test {
         val TX_ID = SecureHashImpl("algo", byteArrayOf(1, 2, 3))
         val ALICE = MemberX500Name("Alice", "London", "GB")
         val BOB = MemberX500Name("Bob", "London", "GB")
+    }
+
+    private val notaryInfo = mock<NotaryInfo>().also {
+        whenever(it.name).thenReturn(notaryX500Name)
+        whenever(it.isBackchainRequired).thenReturn(true)
+    }
+    private val notaryLookup = mock<NotaryLookup>().also {
+        whenever(it.lookup(notaryX500Name)).thenReturn(notaryInfo)
     }
 
     private val memberLookup = mock<MemberLookup>()
@@ -126,6 +139,7 @@ class UtxoFinalityFlowV1Test {
     private val updatedTxAllSigs = mock<UtxoSignedTransactionInternal>()
     private val notarizedTx = mock<UtxoSignedTransactionInternal>()
 
+    private val pluggableNotaryDetails = mock<PluggableNotaryDetails>()
     private val pluggableNotaryClientFlow = mock<PluggableNotaryClientFlow>()
     private val ledgerTransaction = mock<UtxoLedgerTransaction>()
 
@@ -192,6 +206,8 @@ class UtxoFinalityFlowV1Test {
         whenever(stateAndRef.state).thenReturn(transactionState)
         whenever(transactionState.contractType).thenReturn(TestContact::class.java)
         whenever(transactionState.contractState).thenReturn(testState)
+
+        whenever(pluggableNotaryDetails.flowClass).thenReturn(pluggableNotaryClientFlow.javaClass)
     }
 
     @Test
@@ -222,7 +238,10 @@ class UtxoFinalityFlowV1Test {
     fun `called with an invalid transaction initially throws and persists as invalid`() {
         whenever(transactionVerificationService.verify(any())).thenThrow(
             TransactionVerificationException(
-                TX_ID, TransactionVerificationStatus.INVALID, null, "Verification error"
+                TX_ID,
+                TransactionVerificationStatus.INVALID,
+                null,
+                "Verification error"
             )
         )
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
@@ -243,10 +262,14 @@ class UtxoFinalityFlowV1Test {
             )
         )
 
-        whenever(flowMessaging.receiveAllMap(mapOf(
-            sessionAlice to Payload::class.java,
-            sessionBob to Payload::class.java
-        ))).thenReturn(
+        whenever(
+            flowMessaging.receiveAllMap(
+                mapOf(
+                    sessionAlice to Payload::class.java,
+                    sessionBob to Payload::class.java
+                )
+            )
+        ).thenReturn(
             mapOf(
                 sessionAlice to Payload.Success(
                     listOf(
@@ -295,10 +318,12 @@ class UtxoFinalityFlowV1Test {
         verify(persistenceService).persist(txAfterBobSignature, TransactionStatus.UNVERIFIED, emptyList())
         verify(persistenceService).persist(notarizedTx, TransactionStatus.VERIFIED, listOf(0))
 
-        verify(flowMessaging).receiveAllMap(mapOf(
-            sessionAlice to Payload::class.java,
-            sessionBob to Payload::class.java
-        ))
+        verify(flowMessaging).receiveAllMap(
+            mapOf(
+                sessionAlice to Payload::class.java,
+                sessionBob to Payload::class.java
+            )
+        )
         verify(flowMessaging).sendAllMap(
             mapOf(
                 sessionAlice to listOf(signatureBob),
@@ -318,10 +343,14 @@ class UtxoFinalityFlowV1Test {
             )
         )
 
-        whenever(flowMessaging.receiveAllMap(mapOf(
-            sessionAlice to Payload::class.java,
-            sessionBob to Payload::class.java
-        ))).thenReturn(
+        whenever(
+            flowMessaging.receiveAllMap(
+                mapOf(
+                    sessionAlice to Payload::class.java,
+                    sessionBob to Payload::class.java
+                )
+            )
+        ).thenReturn(
             mapOf(
                 sessionAlice to Payload.Success(
                     listOf(
@@ -375,10 +404,12 @@ class UtxoFinalityFlowV1Test {
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(persistenceService).persist(txAfterBobSignature, TransactionStatus.INVALID)
 
-        verify(flowMessaging).receiveAllMap(mapOf(
-            sessionAlice to Payload::class.java,
-            sessionBob to Payload::class.java
-        ))
+        verify(flowMessaging).receiveAllMap(
+            mapOf(
+                sessionAlice to Payload::class.java,
+                sessionBob to Payload::class.java
+            )
+        )
         verify(flowMessaging).sendAllMap(
             mapOf(
                 sessionAlice to listOf(signatureBob),
@@ -389,9 +420,10 @@ class UtxoFinalityFlowV1Test {
         verify(flowMessaging).sendAll(
             Payload.Failure<List<DigitalSignatureAndMetadata>>(
                 "Notarization failed permanently with Unable to notarize transaction <Unknown>:" +
-                        " notarization error.",
+                    " notarization error.",
                 FinalityNotarizationFailureType.FATAL.value
-            ), sessions
+            ),
+            sessions
         )
     }
 
@@ -405,10 +437,14 @@ class UtxoFinalityFlowV1Test {
             )
         )
 
-        whenever(flowMessaging.receiveAllMap(mapOf(
-            sessionAlice to Payload::class.java,
-            sessionBob to Payload::class.java
-        ))).thenReturn(
+        whenever(
+            flowMessaging.receiveAllMap(
+                mapOf(
+                    sessionAlice to Payload::class.java,
+                    sessionBob to Payload::class.java
+                )
+            )
+        ).thenReturn(
             mapOf(
                 sessionAlice to Payload.Success(
                     listOf(
@@ -461,10 +497,12 @@ class UtxoFinalityFlowV1Test {
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.INVALID), any())
 
-        verify(flowMessaging).receiveAllMap(mapOf(
-            sessionAlice to Payload::class.java,
-            sessionBob to Payload::class.java
-        ))
+        verify(flowMessaging).receiveAllMap(
+            mapOf(
+                sessionAlice to Payload::class.java,
+                sessionBob to Payload::class.java
+            )
+        )
         verify(flowMessaging).sendAllMap(
             mapOf(
                 sessionAlice to listOf(signatureBob),
@@ -476,7 +514,8 @@ class UtxoFinalityFlowV1Test {
             Payload.Failure<List<DigitalSignatureAndMetadata>>(
                 "Notarization failed with Unable to notarize transaction <Unknown>: notarization error.",
                 FinalityNotarizationFailureType.UNKNOWN.value
-            ), sessions
+            ),
+            sessions
         )
     }
 
@@ -490,10 +529,14 @@ class UtxoFinalityFlowV1Test {
             )
         )
 
-        whenever(flowMessaging.receiveAllMap(mapOf(
-            sessionAlice to Payload::class.java,
-            sessionBob to Payload::class.java
-        ))).thenReturn(
+        whenever(
+            flowMessaging.receiveAllMap(
+                mapOf(
+                    sessionAlice to Payload::class.java,
+                    sessionBob to Payload::class.java
+                )
+            )
+        ).thenReturn(
             mapOf(
                 sessionAlice to Payload.Success(
                     listOf(
@@ -544,10 +587,12 @@ class UtxoFinalityFlowV1Test {
         verify(persistenceService).persist(txAfterBobSignature, TransactionStatus.INVALID)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
 
-        verify(flowMessaging).receiveAllMap(mapOf(
-            sessionAlice to Payload::class.java,
-            sessionBob to Payload::class.java
-        ))
+        verify(flowMessaging).receiveAllMap(
+            mapOf(
+                sessionAlice to Payload::class.java,
+                sessionBob to Payload::class.java
+            )
+        )
         verify(flowMessaging).sendAllMap(
             mapOf(
                 sessionAlice to listOf(signatureBob),
@@ -568,10 +613,14 @@ class UtxoFinalityFlowV1Test {
             )
         )
 
-        whenever(flowMessaging.receiveAllMap(mapOf(
-            sessionAlice to Payload::class.java,
-            sessionBob to Payload::class.java
-        ))).thenReturn(
+        whenever(
+            flowMessaging.receiveAllMap(
+                mapOf(
+                    sessionAlice to Payload::class.java,
+                    sessionBob to Payload::class.java
+                )
+            )
+        ).thenReturn(
             mapOf(
                 sessionAlice to Payload.Success(
                     listOf(
@@ -622,10 +671,12 @@ class UtxoFinalityFlowV1Test {
         verify(persistenceService).persist(txAfterBobSignature, TransactionStatus.INVALID)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
 
-        verify(flowMessaging).receiveAllMap(mapOf(
-            sessionAlice to Payload::class.java,
-            sessionBob to Payload::class.java
-        ))
+        verify(flowMessaging).receiveAllMap(
+            mapOf(
+                sessionAlice to Payload::class.java,
+                sessionBob to Payload::class.java
+            )
+        )
         verify(flowMessaging).sendAllMap(
             mapOf(
                 sessionAlice to listOf(signatureBob),
@@ -649,10 +700,14 @@ class UtxoFinalityFlowV1Test {
             )
         )
 
-        whenever(flowMessaging.receiveAllMap(mapOf(
-            sessionAlice to Payload::class.java,
-            sessionBob to Payload::class.java
-        ))).thenReturn(
+        whenever(
+            flowMessaging.receiveAllMap(
+                mapOf(
+                    sessionAlice to Payload::class.java,
+                    sessionBob to Payload::class.java
+                )
+            )
+        ).thenReturn(
             mapOf(
                 sessionAlice to Payload.Success(
                     listOf(
@@ -701,10 +756,12 @@ class UtxoFinalityFlowV1Test {
         verify(persistenceService).persist(txAfterBobSignature, TransactionStatus.INVALID)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
 
-        verify(flowMessaging).receiveAllMap(mapOf(
-            sessionAlice to Payload::class.java,
-            sessionBob to Payload::class.java
-        ))
+        verify(flowMessaging).receiveAllMap(
+            mapOf(
+                sessionAlice to Payload::class.java,
+                sessionBob to Payload::class.java
+            )
+        )
         verify(flowMessaging).sendAllMap(
             mapOf(
                 sessionAlice to listOf(signatureBob),
@@ -721,10 +778,14 @@ class UtxoFinalityFlowV1Test {
 
         whenever(initialTx.getMissingSignatories()).thenReturn(setOf(publicKeyAlice1, publicKeyBob))
 
-        whenever(flowMessaging.receiveAllMap(mapOf(
-            sessionAlice to Payload::class.java,
-            sessionBob to Payload::class.java
-        ))).thenReturn(
+        whenever(
+            flowMessaging.receiveAllMap(
+                mapOf(
+                    sessionAlice to Payload::class.java,
+                    sessionBob to Payload::class.java
+                )
+            )
+        ).thenReturn(
             mapOf(
                 sessionAlice to Payload.Success(
                     listOf(
@@ -766,10 +827,12 @@ class UtxoFinalityFlowV1Test {
         verify(persistenceService).persist(txAfterBobSignature, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persist(notarizedTx, TransactionStatus.VERIFIED)
 
-        verify(flowMessaging).receiveAllMap(mapOf(
-            sessionAlice to Payload::class.java,
-            sessionBob to Payload::class.java
-        ))
+        verify(flowMessaging).receiveAllMap(
+            mapOf(
+                sessionAlice to Payload::class.java,
+                sessionBob to Payload::class.java
+            )
+        )
         verify(flowMessaging).sendAllMap(
             mapOf(
                 sessionAlice to listOf(signatureBob),
@@ -790,10 +853,14 @@ class UtxoFinalityFlowV1Test {
             )
         )
 
-        whenever(flowMessaging.receiveAllMap(mapOf(
-            sessionAlice to Payload::class.java,
-            sessionBob to Payload::class.java
-        ))).thenThrow(CordaRuntimeException("session error"))
+        whenever(
+            flowMessaging.receiveAllMap(
+                mapOf(
+                    sessionAlice to Payload::class.java,
+                    sessionBob to Payload::class.java
+                )
+            )
+        ).thenThrow(CordaRuntimeException("session error"))
 
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CordaRuntimeException::class.java)
@@ -812,10 +879,14 @@ class UtxoFinalityFlowV1Test {
 
     @Test
     fun `receiving a failure payload throws an exception`() {
-        whenever(flowMessaging.receiveAllMap(mapOf(
-            sessionAlice to Payload::class.java,
-            sessionBob to Payload::class.java
-        ))).thenReturn(
+        whenever(
+            flowMessaging.receiveAllMap(
+                mapOf(
+                    sessionAlice to Payload::class.java,
+                    sessionBob to Payload::class.java
+                )
+            )
+        ).thenReturn(
             mapOf(
                 sessionAlice to Payload.Success(
                     listOf(
@@ -857,10 +928,14 @@ class UtxoFinalityFlowV1Test {
 
     @Test
     fun `failing to verify a received signature throws an exception`() {
-        whenever(flowMessaging.receiveAllMap(mapOf(
-            sessionAlice to Payload::class.java,
-            sessionBob to Payload::class.java
-        ))).thenReturn(
+        whenever(
+            flowMessaging.receiveAllMap(
+                mapOf(
+                    sessionAlice to Payload::class.java,
+                    sessionBob to Payload::class.java
+                )
+            )
+        ).thenReturn(
             mapOf(
                 sessionAlice to Payload.Success(
                     listOf(
@@ -875,7 +950,6 @@ class UtxoFinalityFlowV1Test {
                 )
             )
         )
-
 
         val txAfterAlice1Signature = mock<UtxoSignedTransactionInternal>()
         whenever(initialTx.addSignature(signatureAlice1)).thenReturn(txAfterAlice1Signature)
@@ -902,10 +976,14 @@ class UtxoFinalityFlowV1Test {
     fun `missing signatures when verifying all signatures rethrows exception with useful message`() {
         val aliceSignatures = listOf(signatureAlice1, signatureAlice2)
 
-        whenever(flowMessaging.receiveAllMap(mapOf(
-            sessionAlice to Payload::class.java,
-            sessionBob to Payload::class.java
-        ))).thenReturn(
+        whenever(
+            flowMessaging.receiveAllMap(
+                mapOf(
+                    sessionAlice to Payload::class.java,
+                    sessionBob to Payload::class.java
+                )
+            )
+        ).thenReturn(
             mapOf(
                 sessionAlice to Payload.Success(aliceSignatures),
                 sessionBob to Payload.Success(
@@ -938,10 +1016,14 @@ class UtxoFinalityFlowV1Test {
 
     @Test
     fun `failing to verify all signatures throws exception`() {
-        whenever(flowMessaging.receiveAllMap(mapOf(
-            sessionAlice to Payload::class.java,
-            sessionBob to Payload::class.java
-        ))).thenReturn(
+        whenever(
+            flowMessaging.receiveAllMap(
+                mapOf(
+                    sessionAlice to Payload::class.java,
+                    sessionBob to Payload::class.java
+                )
+            )
+        ).thenReturn(
             mapOf(
                 sessionAlice to Payload.Success(
                     listOf(
@@ -980,10 +1062,14 @@ class UtxoFinalityFlowV1Test {
         whenever(initialTx.inputStateRefs).thenReturn(listOf(mock()))
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(signatureNotary))
 
-        whenever(flowMessaging.receiveAllMap(mapOf(
-            sessionAlice to Payload::class.java,
-            sessionBob to Payload::class.java
-        ))).thenReturn(
+        whenever(
+            flowMessaging.receiveAllMap(
+                mapOf(
+                    sessionAlice to Payload::class.java,
+                    sessionBob to Payload::class.java
+                )
+            )
+        ).thenReturn(
             mapOf(
                 sessionAlice to Payload.Success(
                     listOf(
@@ -1009,10 +1095,14 @@ class UtxoFinalityFlowV1Test {
 
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(signatureNotary))
 
-        whenever(flowMessaging.receiveAllMap(mapOf(
-            sessionAlice to Payload::class.java,
-            sessionBob to Payload::class.java
-        ))).thenReturn(
+        whenever(
+            flowMessaging.receiveAllMap(
+                mapOf(
+                    sessionAlice to Payload::class.java,
+                    sessionBob to Payload::class.java
+                )
+            )
+        ).thenReturn(
             mapOf(
                 sessionAlice to Payload.Success(
                     listOf(
@@ -1036,9 +1126,13 @@ class UtxoFinalityFlowV1Test {
             setOf(publicKeyBob)
         )
 
-        whenever(flowMessaging.receiveAllMap(mapOf(
-            sessionBob to Payload::class.java
-        ))).thenReturn(
+        whenever(
+            flowMessaging.receiveAllMap(
+                mapOf(
+                    sessionBob to Payload::class.java
+                )
+            )
+        ).thenReturn(
             mapOf(
                 sessionBob to Payload.Success(
                     listOf(
@@ -1075,10 +1169,14 @@ class UtxoFinalityFlowV1Test {
             )
         )
 
-        whenever(flowMessaging.receiveAllMap(mapOf(
-            sessionAlice to Payload::class.java,
-            sessionBob to Payload::class.java
-        ))).thenReturn(
+        whenever(
+            flowMessaging.receiveAllMap(
+                mapOf(
+                    sessionAlice to Payload::class.java,
+                    sessionBob to Payload::class.java
+                )
+            )
+        ).thenReturn(
             mapOf(
                 sessionAlice to Payload.Success(
                     listOf(
@@ -1121,16 +1219,130 @@ class UtxoFinalityFlowV1Test {
         )
     }
 
+    @Test
+    fun `notarize with backchain not required notary should skip backchain flow`() {
+        whenever(initialTx.getMissingSignatories()).thenReturn(
+            setOf(
+                publicKeyAlice1,
+                publicKeyAlice2,
+                publicKeyBob
+            )
+        )
+
+        whenever(
+            flowMessaging.receiveAllMap(
+                mapOf(
+                    sessionAlice to Payload::class.java,
+                    sessionBob to Payload::class.java
+                )
+            )
+        ).thenReturn(
+            mapOf(
+                sessionAlice to Payload.Success(
+                    listOf(
+                        signatureAlice1,
+                        signatureAlice2
+                    )
+                ),
+                sessionBob to Payload.Success(
+                    listOf(
+                        signatureBob
+                    )
+                )
+            )
+        )
+        val txAfterAlice1Signature = mock<UtxoSignedTransactionInternal>()
+        whenever(initialTx.addSignature(signatureAlice1)).thenReturn(txAfterAlice1Signature)
+        val txAfterAlice2Signature = mock<UtxoSignedTransactionInternal>()
+        whenever(txAfterAlice1Signature.addSignature(signatureAlice2)).thenReturn(txAfterAlice2Signature)
+        val txAfterBobSignature = mock<UtxoSignedTransactionInternal>()
+        whenever(txAfterBobSignature.notaryName).thenReturn(notaryX500Name)
+        whenever(txAfterAlice2Signature.addSignature(signatureBob)).thenReturn(txAfterBobSignature)
+        whenever(txAfterBobSignature.addSignature(signatureNotary)).thenReturn(notarizedTx)
+
+        whenever(txAfterBobSignature.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
+        whenever(notarizedTx.outputStateAndRefs).thenReturn(listOf(stateAndRef))
+
+        whenever(visibilityChecker.containsMySigningKeys(listOf(publicKeyAlice1))).thenReturn(true)
+        whenever(visibilityChecker.containsMySigningKeys(listOf(publicKeyBob))).thenReturn(true)
+
+        whenever(notaryInfo.isBackchainRequired).thenReturn(false)
+        whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(signatureNotary))
+
+        callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob))
+
+        verify(flowEngine, timeout(100).times(0)).subFlow(any<TransactionBackchainSenderFlow>())
+    }
+
+    @Test
+    fun `notarize with backchain required notary should run backchain flow`() {
+        whenever(initialTx.getMissingSignatories()).thenReturn(
+            setOf(
+                publicKeyAlice1,
+                publicKeyAlice2,
+                publicKeyBob
+            )
+        )
+
+        whenever(
+            flowMessaging.receiveAllMap(
+                mapOf(
+                    sessionAlice to Payload::class.java,
+                    sessionBob to Payload::class.java
+                )
+            )
+        ).thenReturn(
+            mapOf(
+                sessionAlice to Payload.Success(
+                    listOf(
+                        signatureAlice1,
+                        signatureAlice2
+                    )
+                ),
+                sessionBob to Payload.Success(
+                    listOf(
+                        signatureBob
+                    )
+                )
+            )
+        )
+        val inputState = mock<StateRef>()
+        whenever(initialTx.inputStateRefs).thenReturn(listOf(inputState))
+        whenever(initialTx.referenceStateRefs).thenReturn(listOf())
+
+        val txAfterAlice1Signature = mock<UtxoSignedTransactionInternal>()
+        whenever(initialTx.addSignature(signatureAlice1)).thenReturn(txAfterAlice1Signature)
+        val txAfterAlice2Signature = mock<UtxoSignedTransactionInternal>()
+        whenever(txAfterAlice1Signature.addSignature(signatureAlice2)).thenReturn(txAfterAlice2Signature)
+        val txAfterBobSignature = mock<UtxoSignedTransactionInternal>()
+        whenever(txAfterBobSignature.notaryName).thenReturn(notaryX500Name)
+        whenever(txAfterAlice2Signature.addSignature(signatureBob)).thenReturn(txAfterBobSignature)
+        whenever(txAfterBobSignature.addSignature(signatureNotary)).thenReturn(notarizedTx)
+
+        whenever(txAfterBobSignature.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
+        whenever(notarizedTx.outputStateAndRefs).thenReturn(listOf(stateAndRef))
+
+        whenever(visibilityChecker.containsMySigningKeys(listOf(publicKeyAlice1))).thenReturn(true)
+        whenever(visibilityChecker.containsMySigningKeys(listOf(publicKeyBob))).thenReturn(true)
+        whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(signatureNotary))
+
+        callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob))
+
+        verify(flowEngine, timeout(100).atLeastOnce()).subFlow(any<TransactionBackchainSenderFlow>())
+    }
 
     private fun callFinalityFlow(signedTransaction: UtxoSignedTransactionInternal, sessions: List<FlowSession>) {
-        val flow = spy(UtxoFinalityFlowV1(
-            signedTransaction,
-            sessions,
-            pluggableNotaryClientFlow.javaClass
-        ))
+        val flow = spy(
+            UtxoFinalityFlowV1(
+                signedTransaction,
+                sessions,
+                pluggableNotaryDetails
+            )
+        )
 
         doReturn(pluggableNotaryClientFlow).whenever(flow).newPluggableNotaryClientFlowInstance(any())
 
+        flow.notaryLookup = notaryLookup
         flow.memberLookup = memberLookup
         flow.flowEngine = flowEngine
         flow.flowMessaging = flowMessaging

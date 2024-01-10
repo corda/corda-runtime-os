@@ -1,7 +1,7 @@
 package net.corda.ledger.utxo.token.cache.entities
 
-import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaim
+import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 
 /**
  * The [PoolCacheState] represents the current state for a pool of cached [CachedToken]s
@@ -70,6 +70,11 @@ interface PoolCacheState {
      * Ensures any claims that have breached their expiry are removed from the state.
      */
     fun removeExpiredClaims()
+
+    /**
+     * Ensures that all claims which are classified as invalid are removed from the state.
+     */
+    fun removeInvalidClaims()
 
     /**
      * Creates an Avro representation of the [PoolCacheState].

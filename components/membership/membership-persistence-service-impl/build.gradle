@@ -38,12 +38,7 @@ dependencies {
     implementation project(':libs:utilities')
     implementation project(':libs:serialization:serialization-avro')
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation project(':testing:test-utilities')
-
-    integrationTestImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 
     integrationTestImplementation 'net.corda:corda-crypto'
     integrationTestImplementation 'net.corda:corda-membership'

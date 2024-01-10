@@ -7,13 +7,13 @@ import net.corda.rest.test.TestHealthCheckAPIImpl
 import net.corda.rest.test.utils.TestHttpClientUnirestImpl
 import net.corda.rest.test.utils.multipartDir
 import net.corda.utilities.NetworkHostAndPort
-import org.slf4j.LoggerFactory
 import org.eclipse.jetty.client.HttpClient
 import org.eclipse.jetty.util.ssl.SslContextFactory
 import org.eclipse.jetty.websocket.client.WebSocketClient
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.mockito.kotlin.mock
+import org.slf4j.LoggerFactory
 import java.nio.file.Files
 
 class RestServerHTTPSWebsocketTest : AbstractWebsocketTest() {
@@ -31,7 +31,7 @@ class RestServerHTTPSWebsocketTest : AbstractWebsocketTest() {
         @JvmStatic
         @Suppress("unused")
         fun setUpBeforeClass() {
-            //System.setProperty("javax.net.debug", "all")
+            // System.setProperty("javax.net.debug", "all")
             val keyStoreInfo = sslService.getOrCreateKeyStoreInfo(mock())
             val sslConfig = RestSSLSettings(keyStoreInfo.path, keyStoreInfo.password)
 
@@ -54,7 +54,8 @@ class RestServerHTTPSWebsocketTest : AbstractWebsocketTest() {
                 true
             ).apply { start() }
             client = TestHttpClientUnirestImpl(
-                "https://${restServerSettings.address.host}:${server.port}/${restServerSettings.context.basePath}/${apiVersion.versionPath}/",
+                "https://${restServerSettings.address.host}:${server.port}" +
+                    "/${restServerSettings.context.basePath}/${apiVersion.versionPath}/",
                 true
             )
         }

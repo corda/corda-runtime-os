@@ -22,6 +22,9 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.ConcurrentMap
 import java.util.stream.Stream
 
 
@@ -45,8 +48,8 @@ class VirtualNodeInfoReadServiceFake internal constructor(
         private val file = File("virtual-node-info-read-service-fake.yaml")
     }
 
-    private val map: MutableMap<HoldingIdentity, VirtualNodeInfo> = virtualNodeInfos.toMutableMap()
-    private val callbacks: MutableList<VirtualNodeInfoListener> = callbacks.toMutableList()
+    private val map: ConcurrentMap<HoldingIdentity, VirtualNodeInfo> = ConcurrentHashMap(virtualNodeInfos)
+    private val callbacks: ConcurrentLinkedQueue<VirtualNodeInfoListener> = ConcurrentLinkedQueue(callbacks)
 
     init {
         map += VirtualNodeInfoReadServiceFakeParser.loadFrom(file).associateBy { it.holdingIdentity }
@@ -126,7 +129,7 @@ class VirtualNodeInfoReadServiceFake internal constructor(
         return AutoCloseable { callbacks.remove(listener) }
     }
 
-    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>>? {
+    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>> {
         throw CordaRuntimeException("Not yet implemented")
     }
 

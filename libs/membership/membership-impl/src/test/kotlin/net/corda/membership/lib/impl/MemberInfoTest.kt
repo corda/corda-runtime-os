@@ -1,6 +1,5 @@
 package net.corda.membership.lib.impl
 
-import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -9,28 +8,17 @@ import net.corda.data.membership.SignedData
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.layeredpropertymap.toAvro
-import net.corda.membership.lib.EndpointInfoFactory
-import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
-import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
-import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
-import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
-import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
-import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
-import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
-import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
-import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
+import net.corda.membership.lib.impl.utils.createDummyMemberInfo
+import net.corda.membership.lib.impl.utils.keyEncodingService
+import net.corda.membership.lib.impl.utils.ledgerKeys
 import net.corda.membership.lib.toSortedMap
-import net.corda.test.util.time.TestClock
 import net.corda.utilities.parse
 import net.corda.utilities.parseList
 import net.corda.v5.base.exceptions.ValueNotFoundException
@@ -45,16 +33,8 @@ import org.apache.avro.specific.SpecificDatumWriter
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doAnswer
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
 import java.io.File
 import java.nio.ByteBuffer
-import java.security.PublicKey
-import java.time.Instant
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -63,26 +43,6 @@ import kotlin.test.assertTrue
 @Suppress("MaxLineLength")
 class MemberInfoTest {
     companion object {
-        private val keyEncodingService = Mockito.mock(CipherSchemeMetadata::class.java)
-        private const val KEY = "12345"
-        private val key = Mockito.mock(PublicKey::class.java)
-
-
-        private val clock = TestClock(Instant.ofEpochSecond(100))
-        private val modifiedTime = clock.instant()
-        private val endpointInfoFactory: EndpointInfoFactory = mock {
-            on { create(any(), any()) } doAnswer { invocation ->
-                mock {
-                    on { this.url } doReturn invocation.getArgument(0)
-                    on { this.protocolVersion } doReturn invocation.getArgument(1)
-                }
-            }
-        }
-        private val endpoints = listOf(
-            endpointInfoFactory.create("https://localhost:10000"),
-            endpointInfoFactory.create("https://google.com", 10)
-        )
-        private val ledgerKeys = listOf(key, key)
         private val testObjects = listOf(
             DummyObjectWithNumberAndText(1, "dummytext1"),
             DummyObjectWithNumberAndText(2, "dummytext2")
@@ -98,58 +58,11 @@ class MemberInfoTest {
             DummyConverter()
         )
 
-        private const val NULL_KEY = "nullKey"
         private const val DUMMY_KEY = "dummyKey"
 
         private const val INVALID_LIST_KEY = "invalidList"
         private val MemberInfo.dummy: List<String>
             get() = memberProvidedContext.parseList(INVALID_LIST_KEY)
-
-        @Suppress("SpreadOperator")
-        private fun createDummyMemberInfo(): MemberInfo = MemberInfoImpl(
-            memberProvidedContext = LayeredPropertyMapMocks.create<MemberContextImpl>(
-                sortedMapOf(
-                    PARTY_NAME to "O=Alice,L=London,C=GB",
-                    String.format(PARTY_SESSION_KEYS, 0) to KEY,
-                    GROUP_ID to "DEFAULT_MEMBER_GROUP_ID",
-                    *convertPublicKeys().toTypedArray(),
-                    *convertEndpoints().toTypedArray(),
-                    *convertTestObjects().toTypedArray(),
-                    *createInvalidListFormat().toTypedArray(),
-                    SOFTWARE_VERSION to "5.0.0",
-                    PLATFORM_VERSION to "5000",
-                    DUMMY_KEY to "dummyValue",
-                    NULL_KEY to null,
-                ),
-                converters
-            ),
-            mgmProvidedContext = LayeredPropertyMapMocks.create<MGMContextImpl>(
-                sortedMapOf(
-                    STATUS to MEMBER_STATUS_ACTIVE,
-                    MODIFIED_TIME to modifiedTime.toString(),
-                    DUMMY_KEY to "dummyValue",
-                    SERIAL to "1",
-                ),
-                converters
-            )
-        )
-
-        private fun convertEndpoints(): List<Pair<String, String>> {
-            val result = mutableListOf<Pair<String, String>>()
-            for (i in endpoints.indices) {
-                result.add(Pair(String.format(URL_KEY, i), endpoints[i].url))
-                result.add(Pair(String.format(PROTOCOL_VERSION, i), endpoints[i].protocolVersion.toString()))
-            }
-            return result
-        }
-
-        private fun convertPublicKeys(): List<Pair<String, String>> =
-            ledgerKeys.mapIndexed { i, ledgerKey ->
-                String.format(
-                    LEDGER_KEYS_KEY,
-                    i
-                ) to keyEncodingService.encodeAsString(ledgerKey)
-            }
 
         private fun convertTestObjects(): List<Pair<String, String>> {
             val result = mutableListOf<Pair<String, String>>()
@@ -182,14 +95,10 @@ class MemberInfoTest {
         @BeforeAll
         @JvmStatic
         fun setUp() {
-            whenever(
-                keyEncodingService.decodePublicKey(KEY)
-            ).thenReturn(key)
-            whenever(
-                keyEncodingService.encodeAsString(key)
-            ).thenReturn(KEY)
-
-            memberInfo = createDummyMemberInfo()
+            memberInfo = createDummyMemberInfo(
+                converters = converters,
+                additionalMemberContext = convertTestObjects() + createInvalidListFormat(),
+            )
         }
     }
 
