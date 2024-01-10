@@ -8,6 +8,7 @@ import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.util.MapReferenceResolver
 import com.esotericsoftware.kryo.util.Pool
 import net.corda.data.flow.state.checkpoint.FlowStackItem
+import net.corda.internal.serialization.encoding.EncoderType
 import net.corda.kryoserialization.KryoCheckpointSerializerTest.SerializableFunction
 import net.corda.kryoserialization.TestClass.Companion.TEST_INT
 import net.corda.kryoserialization.TestClass.Companion.TEST_STRING
@@ -332,6 +333,20 @@ class KryoCheckpointSerializerTest {
         assertThat(tested.list).isEqualTo(collection)
         assertThat(tested.iterator.next()).isEqualTo(2)
         assertThat(tested.iterator.hasNext()).isTrue
+
+
+        val uncompressedSerializer = KryoCheckpointSerializer(
+            DefaultKryoCustomizer.customize(
+                Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver()),
+                emptyMap(),
+                ClassSerializer(sandboxGroup)
+            ).toPool(),
+            streamEncoderType = EncoderType.NOOP
+        )
+        val uncompressedBytes = uncompressedSerializer.serialize(tester)
+        // Assume we should get at least 20% back - conservative on purpose
+        // We do the assert here on collections, which are hundreds of bytes, as _very_ small objects don't compress
+        assertThat(uncompressedBytes.size * 0.8).isGreaterThan(bytes.size * 1.0)
     }
 
     private fun runTestWithCollection(collection: MutableMap<Int, Int>) {

@@ -12,7 +12,8 @@ import java.io.ByteArrayInputStream
 
 class KryoCheckpointSerializer(
     private val kryoPool: Pool<Kryo>,
-    streamEncoderServiceFactory: EncoderService = EncoderServiceFactory()
+    streamEncoderServiceFactory: EncoderService = EncoderServiceFactory(),
+    streamEncoderType: EncoderType = EncoderType.SNAPPY
 ) : CheckpointSerializer {
 
     private companion object {
@@ -20,7 +21,7 @@ class KryoCheckpointSerializer(
     }
 
     // The encoders are thread safe as they create new streams each time
-    private val encoder: Encoder = streamEncoderServiceFactory.get(EncoderType.SNAPPY)
+    private val encoder: Encoder = streamEncoderServiceFactory.get(streamEncoderType)
 
     override fun <T : Any> deserialize(
         bytes: ByteArray,
