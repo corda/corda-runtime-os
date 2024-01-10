@@ -18,6 +18,7 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -67,7 +68,8 @@ class VerificationRequestProcessorTest {
             )
         }
 
-    private fun defaultSetup() {
+    @BeforeEach
+    fun setup() {
         whenever(verificationSandboxService.get(cordaHoldingIdentity, cpkSummaries)).thenReturn(sandbox)
         whenever(sandbox.virtualNodeContext).thenReturn(virtualNodeContext)
         whenever(virtualNodeContext.holdingIdentity).thenReturn(cordaHoldingIdentity)
@@ -76,7 +78,6 @@ class VerificationRequestProcessorTest {
 
     @Test
     fun `successful response messages`() {
-        defaultSetup()
         val request = createRequest("r1")
         val responseRecord = Record("", "1", flowEvent)
         whenever(verificationRequestHandler.handleRequest(sandbox, request)).thenReturn(responseRecord)
@@ -89,7 +90,6 @@ class VerificationRequestProcessorTest {
 
     @Test
     fun `failed request returns transient failure response back to the flow`() {
-        defaultSetup()
         val request = createRequest("r2")
         val response = IllegalStateException()
 
@@ -104,7 +104,6 @@ class VerificationRequestProcessorTest {
 
     @Test
     fun `not allowed cpk exception results in platform exception`() {
-        defaultSetup()
         val request = createRequest("r2")
         val failureResponseRecord = Record("", "3", FlowEvent())
         val response = NotAllowedCpkException("not allowed cpk")
@@ -121,7 +120,6 @@ class VerificationRequestProcessorTest {
 
     @Test
     fun `not serializable exception results in platform exception`() {
-        defaultSetup()
         val request = createRequest("r2")
         val failureResponseRecord = Record("", "3", FlowEvent())
         val response = NotSerializableException("not serializable")

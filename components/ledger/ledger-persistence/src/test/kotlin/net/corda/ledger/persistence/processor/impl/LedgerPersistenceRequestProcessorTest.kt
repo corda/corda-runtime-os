@@ -23,6 +23,7 @@ import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
@@ -63,7 +64,8 @@ class LedgerPersistenceRequestProcessorTest {
         }
     }
 
-    private fun defaultSetup() {
+    @BeforeEach
+    fun setup() {
         whenever(entitySandboxService.get(cordaHoldingIdentity, cpkHashes)).thenReturn(sandbox)
         whenever(sandbox.virtualNodeContext).thenReturn(virtualNodeContext)
         whenever(virtualNodeContext.holdingIdentity).thenReturn(cordaHoldingIdentity)
@@ -72,7 +74,6 @@ class LedgerPersistenceRequestProcessorTest {
 
     @Test
     fun `requests routed to handlers to generate response messages`() {
-        defaultSetup()
         val request = createRequest("r1")
         val responseRecord = Record("", "1", flowEvent)
         val response = listOf(responseRecord)
@@ -86,7 +87,6 @@ class LedgerPersistenceRequestProcessorTest {
 
     @Test
     fun `failed request returns failure response back to the flow`() {
-        defaultSetup()
         val request = createRequest("r2")
         val failureResponseRecord = Record("", "3", FlowEvent())
         val response = IllegalStateException()
