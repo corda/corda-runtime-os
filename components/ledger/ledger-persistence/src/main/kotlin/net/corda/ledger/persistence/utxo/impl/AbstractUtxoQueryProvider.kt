@@ -168,8 +168,8 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
                 utc.leaf_idx, 
                 array_to_string(ump.hashes, ',') AS hashes_string,
                 utc."data"
-            FROM utxo_transaction_merkle_proof ump 
-            JOIN utxo_transaction_component utc 
+            FROM {h-schema}utxo_transaction_merkle_proof ump 
+            JOIN {h-schema}utxo_transaction_component utc 
                 ON utc.transaction_id = ump.transaction_id 
                 AND utc.group_idx = ump.group_idx 
                 AND utc.leaf_idx = any(ump.leaves)
