@@ -261,7 +261,7 @@ class MerkleProofImpl(
             val siblingLeftmostLeaf = siblingIndex shl height
             val afterSiblingLeaf = min((siblingIndex + 1) shl height, treeSize)
             val siblingWillBeKnown = (siblingLeftmostLeaf until afterSiblingLeaf).any { it in availableLeaves }
-            // we need this hash in the subset proof iff it covers unknown content ($unknowns is true),
+            // we need this hash in the subset proof if and only if it covers unknown content ($unknowns is true),
             // and either there is:
             // - some known leaves under this node ($allUnknown is false)
             // - the sibling node has known leaves ($siblingWillBeKnown is true)
