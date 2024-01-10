@@ -2,7 +2,38 @@
 <Configuration status="INFO">
     <Appenders>
         <Console name="json" target="SYSTEM_OUT">
-            <JsonTemplateLayout eventTemplateUri="classpath:cordaLayout.json">
+            <JsonTemplateLayout eventTemplateUri="classpath:JsonLayout.json">
+                <EventTemplateAdditionalField
+                    key="thrown"
+                    format="JSON"
+                    value='{
+                    "message": {
+                      "$resolver": "exception",
+                      "field": "message"
+                    },
+                    "name": {
+                      "$resolver": "exception",
+                      "field": "className"
+                    },
+                    "extendedStackTrace": {
+                      "$resolver": "exception",
+                      "field": "stackTrace",
+                      "stackTrace": {
+                        "stringified": true
+                      }
+                    }
+                  }'/>
+                <EventTemplateAdditionalField
+                    key="instant"
+                    format="JSON"
+                    value='{
+                    "$resolver": "timestamp",
+                    "pattern": {
+                        "format": "HH:mm:ss.SSS",
+                        "timeZone": "UTC"
+                        }
+                    }
+                '/>
             </JsonTemplateLayout>
         </Console>
         <Console name="text" target="SYSTEM_OUT">
