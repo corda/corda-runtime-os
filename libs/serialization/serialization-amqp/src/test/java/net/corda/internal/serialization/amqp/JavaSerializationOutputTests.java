@@ -189,7 +189,7 @@ public class JavaSerializationOutputTests {
         SerializerFactory factory1 = testDefaultFactory();
         SerializerFactory factory2 = testDefaultFactory();
         SerializationOutput ser = new SerializationOutput(factory1);
-        SerializedBytes<Object> bytes = ser.serialize(obj, TestSerializationContext.testSerializationContext);
+        SerializedBytes<Object> bytes = ser.serialize(obj, TestSerializationContext.testSerializationContext.withEncoding(null));
 
         DecoderImpl decoder = new DecoderImpl();
 

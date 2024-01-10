@@ -1,5 +1,6 @@
 package net.corda.kryoserialization
 
+import net.corda.internal.serialization.encoding.EncoderServiceFactory
 import net.corda.kryoserialization.TestClass.Companion.TEST_INT
 import net.corda.kryoserialization.TestClass.Companion.TEST_STRING
 import net.corda.kryoserialization.impl.KryoCheckpointSerializerBuilderImpl
@@ -30,7 +31,8 @@ class KryoCheckpointSerializerBuilderImplTest {
     @Test
     fun `builder builds a serializer correctly`() {
         val sandboxGroup: SandboxGroup = mockSandboxGroup(setOf(TestClass::class.java))
-        val builder: CheckpointSerializerBuilder = KryoCheckpointSerializerBuilderImpl(mock(), mock(), sandboxGroup)
+        val builder: CheckpointSerializerBuilder =
+            KryoCheckpointSerializerBuilderImpl(mock(), EncoderServiceFactory(), sandboxGroup)
 
         val serializer = builder
             .addSerializer(TestClass::class.java, TestClass.Serializer())
@@ -49,7 +51,7 @@ class KryoCheckpointSerializerBuilderImplTest {
         val instance = Tester(1)
         val builder: CheckpointSerializerBuilder = KryoCheckpointSerializerBuilderImpl(
             mock(),
-            mock(),
+            EncoderServiceFactory(),
             mockSandboxGroup(setOf(Tester::class.java))
         )
         val serializer = builder
