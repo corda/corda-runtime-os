@@ -41,6 +41,11 @@ class MerkleTreeTest {
         val digestAlgorithm = DigestAlgorithmName.SHA2_256D
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
+        // Since there are 2^(2*n) permutations of source leafs we don't want to test too many,
+        // so we do a few at random. In local testing I've taken this up to 1000 which takes 30 minutes
+        // on my laptop.
+        private const val NUMBER_OF_SUBSETS_TO_TEST = 10
+
         private lateinit var digestService: DigestService
         private lateinit var defaultHashDigestProvider: DefaultHashDigestProvider
         private lateinit var nonceHashDigestProvider: NonceHashDigestProvider
@@ -502,7 +507,9 @@ class MerkleTreeTest {
                     subproof.render(trivialHashDigestProvider)
                 }
 
-                for (subsetProofLeafSet in (0 until (1 shl treeSize)).toList().shuffled(rng).take(10)) {
+                for (subsetProofLeafSet in (0 until (1 shl treeSize)).toList().shuffled(rng).take(
+                    NUMBER_OF_SUBSETS_TO_TEST
+                )) {
                     val subLeafIndicesCombination = (0 until treeSize).filter { leaf -> (subsetProofLeafSet and (1 shl leaf)) != 0 }
                     val missingLeaves = (0 until treeSize).filter {
                         leaf -> subsetProofLeafSet and (1 shl leaf) != 0 &&  (sourceProofLeafSet and (1 shl leaf)) == 0
