@@ -25,4 +25,8 @@ data class Endpoint(val methodType: HTTPMethod, val path: String, val webHandler
 
     private fun isValidEndpoint(endpoint: String): Boolean =
         UrlValidator(UrlValidator.ALLOW_LOCAL_URLS).isValid("http://localhost$endpoint")
+
+    override fun toString(): String {
+        return "Endpoint(methodType=$methodType, path='$path', isApi=$isApi)"
+    }
 }

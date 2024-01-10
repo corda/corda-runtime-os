@@ -23,6 +23,7 @@ import net.corda.messaging.api.constants.WorkerRPCPaths.TOKEN_SELECTION_PATH
 import net.corda.messaging.api.constants.WorkerRPCPaths.UNIQUENESS_PATH
 import net.corda.messaging.api.constants.WorkerRPCPaths.VERIFICATION_PATH
 import net.corda.messaging.api.mediator.MediatorMessage
+import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactoryFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFactoryFactory
@@ -63,7 +64,7 @@ class FlowEventMediatorFactoryImplTest {
         `when`(multiSourceEventMediatorFactory.create(captor.capture()))
             .thenReturn(mock())
 
-        `when`(config.getInt(MessagingConfig.Subscription.PROCESSING_THREAD_POOL_SIZE)).thenReturn(10)
+        `when`(config.getInt(MessagingConfig.Subscription.MEDIATOR_PROCESSING_THREAD_POOL_SIZE)).thenReturn(10)
 
         flowEventMediatorFactory = FlowEventMediatorFactoryImpl(
             flowEventProcessorFactory,
@@ -112,5 +113,15 @@ class FlowEventMediatorFactoryImplTest {
         assertThat(router.getDestination(MediatorMessage(UniquenessCheckRequestAvro())).endpoint).isEqualTo(
             endpoint(UNIQUENESS_PATH)
         )
+
+        // External messaging
+        val externalMessagingKafkaTopic = "custom.kafka.topic"
+        val externalMessagingMessage = "message"
+        assertThat(router.getDestination(
+            MediatorMessage(
+                payload = externalMessagingMessage,
+                properties = mutableMapOf(MessagingClient.MSG_PROP_TOPIC to externalMessagingKafkaTopic)
+            )
+        ).endpoint).isEqualTo(externalMessagingKafkaTopic)
     }
 }

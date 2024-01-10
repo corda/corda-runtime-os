@@ -25,7 +25,7 @@ class AuthenticatedEncryptionPersistenceTest {
 
     private val sessionId = UUID.randomUUID().toString()
     private val groupId = "some-group-id"
-    private val aliceX500Name =  MemberX500Name.parse("CN=alice, OU=MyUnit, O=MyOrg, L=London, S=London, C=GB")
+    private val aliceX500Name = MemberX500Name.parse("CN=alice, OU=MyUnit, O=MyOrg, L=London, S=London, C=GB")
 
     // party A
     private val partyAMaxMessageSize = 1_000_000
@@ -38,7 +38,7 @@ class AuthenticatedEncryptionPersistenceTest {
         groupId,
         CertificateCheckMode.NoCertificate,
     )
-    private val authenticationProtocolA : AuthenticationProtocolInitiator
+    private val authenticationProtocolA: AuthenticationProtocolInitiator
         get() {
             val details = _authenticationProtocolA.toAvro()
             _authenticationProtocolA = details.toCorda {
@@ -51,7 +51,7 @@ class AuthenticatedEncryptionPersistenceTest {
     private val partyBMaxMessageSize = 1_500_000
     private val partyBSessionKey = keyPairGenerator.generateKeyPair()
     private var _authenticationProtocolB = AuthenticationProtocolResponder(sessionId, partyBMaxMessageSize)
-    private val authenticationProtocolB : AuthenticationProtocolResponder
+    private val authenticationProtocolB: AuthenticationProtocolResponder
         get() {
             val details = _authenticationProtocolB.toAvro()
             _authenticationProtocolB = details.toCorda()
@@ -74,6 +74,7 @@ class AuthenticatedEncryptionPersistenceTest {
             Security.addProvider(BouncyCastleProvider())
         }
     }
+
     @Test
     fun `session can be established while being persisted and restored`() {
         // Step 1: initiator sending hello message to responder.
@@ -97,7 +98,7 @@ class AuthenticatedEncryptionPersistenceTest {
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(
             partyBSessionKey.public,
             null,
-            signingCallbackForA
+            signingCallbackForA,
         )
 
         authenticationProtocolB.validatePeerHandshakeMessage(
@@ -110,7 +111,7 @@ class AuthenticatedEncryptionPersistenceTest {
         authenticationProtocolB.validateEncryptedExtensions(
             CertificateCheckMode.NoCertificate,
             setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
-            aliceX500Name
+            aliceX500Name,
         )
 
         // Step 4: responder sending handshake message and initiator validating it.
@@ -122,15 +123,14 @@ class AuthenticatedEncryptionPersistenceTest {
         val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(
             partyBSessionKey.public,
             null,
-            signingCallbackForB
+            signingCallbackForB,
         )
 
         authenticationProtocolA.validatePeerHandshakeMessage(
             responderHandshakeMessage,
             aliceX500Name,
-            listOf(partyBSessionKey.public to SignatureSpecs.ECDSA_SHA256,),
+            listOf(partyBSessionKey.public to SignatureSpecs.ECDSA_SHA256),
         )
-
 
         for (i in 1..3) {
             // Data exchange: A sends message to B, which decrypts and validates it
@@ -138,12 +138,14 @@ class AuthenticatedEncryptionPersistenceTest {
             val encryptionResult = authenticatedSessionOnA.encryptData(payload)
             val initiatorMsg = AuthenticatedEncryptedDataMessage(
                 encryptionResult.header,
-                ByteBuffer.wrap(encryptionResult.encryptedPayload), ByteBuffer.wrap(encryptionResult.authTag)
+                ByteBuffer.wrap(encryptionResult.encryptedPayload),
+                ByteBuffer.wrap(encryptionResult.authTag),
             )
 
             val decryptedPayload = authenticatedSessionOnB.decryptData(
-                initiatorMsg.header, initiatorMsg.encryptedPayload.array(),
-                initiatorMsg.authTag.array()
+                initiatorMsg.header,
+                initiatorMsg.encryptedPayload.array(),
+                initiatorMsg.authTag.array(),
             )
             assertThat(decryptedPayload).isEqualTo(payload)
         }
@@ -154,15 +156,16 @@ class AuthenticatedEncryptionPersistenceTest {
             val encryptionResult = authenticatedSessionOnB.encryptData(payload)
             val responderMsg = AuthenticatedEncryptedDataMessage(
                 encryptionResult.header,
-                ByteBuffer.wrap(encryptionResult.encryptedPayload), ByteBuffer.wrap(encryptionResult.authTag)
+                ByteBuffer.wrap(encryptionResult.encryptedPayload),
+                ByteBuffer.wrap(encryptionResult.authTag),
             )
 
             val decryptedPayload = authenticatedSessionOnA.decryptData(
-                responderMsg.header, responderMsg.encryptedPayload.array(),
-                responderMsg.authTag.array()
+                responderMsg.header,
+                responderMsg.encryptedPayload.array(),
+                responderMsg.authTag.array(),
             )
             assertThat(decryptedPayload).isEqualTo(payload)
         }
     }
-
 }

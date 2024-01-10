@@ -11,21 +11,16 @@ import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.PLATFORM_ERROR
-import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.getLongOrDefault
 import net.corda.messaging.api.records.Record
-import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_WINDOW_DURATION
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.time.Duration
-import java.time.Instant
 
 @Suppress("Unused", "TooManyFunctions")
 @Component(service = [FlowEventExceptionProcessor::class])
@@ -44,15 +39,9 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private const val DEFAULT_MAX_RETRY_WINDOW_DURATION_MS = 300000L // 5 minutes
     }
 
-    private var maxRetryWindowDuration = Duration.ZERO
-
     override fun configure(config: SmartConfig) {
-        maxRetryWindowDuration = Duration.ofMillis(
-            config.getLongOrDefault(PROCESSING_MAX_RETRY_WINDOW_DURATION, DEFAULT_MAX_RETRY_WINDOW_DURATION_MS)
-        )
     }
 
     override fun process(throwable: Throwable, context: FlowEventContext<*>): FlowEventContext<*> {
@@ -62,58 +51,6 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             outputRecords = listOf(),
             sendToDlq = true
         )
-    }
-
-    override fun process(
-        exception: FlowTransientException,
-        context: FlowEventContext<*>
-    ): FlowEventContext<*> {
-        return withEscalation(context) {
-            val flowCheckpoint = context.checkpoint
-
-            /** If the retry window has expired then we escalate this to a fatal exception and DLQ the flow */
-            if (retryWindowExpired(flowCheckpoint.firstFailureTimestamp)) {
-                return@withEscalation process(
-                    FlowFatalException(
-                        "Execution failed with \"${exception.message}\" after " +
-                                "${flowCheckpoint.currentRetryCount} retry attempts in a retry window of $maxRetryWindowDuration.",
-                        exception
-                    ), context
-                )
-            }
-
-            log.info("Flow ${context.checkpoint.flowId} encountered a transient problem and is retrying: ${exception.message}")
-
-            val payload = context.inputEventPayload ?: return@withEscalation process(
-                FlowFatalException(
-                    "Could not process a retry as the input event has no payload.",
-                    exception
-                ), context
-            )
-
-            /**
-             * As we're still inside the retry window, republish the record that needs retrying here. If the system is
-             * under load, there may be some delay before it is retried. This is reasonable however, as the system may
-             * need to wait for the underlying transient problem to clear up.
-             */
-            val records = createStatusRecord(context.checkpoint.flowId) {
-                flowMessageFactory.createFlowRetryingStatusMessage(context.checkpoint)
-            } + flowRecordFactory.createFlowEventRecord(context.checkpoint.flowId, payload)
-
-            // Set up records before the rollback, just in case a transient exception happens after a flow is initialised
-            // but before the first checkpoint has been recorded.
-            flowCheckpoint.rollback()
-            flowCheckpoint.markForRetry(context.inputEvent, exception)
-
-            removeCachedFlowFiber(flowCheckpoint)
-
-            context.copy(outputRecords = context.outputRecords + records)
-        }
-    }
-
-    private fun retryWindowExpired(firstFailureTimestamp: Instant?): Boolean {
-        return firstFailureTimestamp != null &&
-                Duration.between(firstFailureTimestamp, Instant.now()) >= maxRetryWindowDuration
     }
 
     override fun process(

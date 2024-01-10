@@ -9,7 +9,7 @@ import java.util.Properties
 class AppSimulatorTopicCreator(
     private val bootstrapConfig: SmartConfig,
     private val topicAdmin: KafkaTopicAdmin,
-    topicCreationParams: TopicCreationParams
+    topicCreationParams: TopicCreationParams,
 ) {
     companion object {
         internal const val APP_RECEIVED_MESSAGES_TOPIC = "p2p.app.received_msg"
@@ -21,16 +21,16 @@ class AppSimulatorTopicCreator(
                 "topicName" to APP_RECEIVED_MESSAGES_TOPIC,
                 "numPartitions" to topicCreationParams.numPartitions,
                 "replicationFactor" to topicCreationParams.replicationFactor,
-                "config" to mapOf("cleanup.policy" to "delete")
-            )
-        )
+                "config" to mapOf("cleanup.policy" to "delete"),
+            ),
+        ),
     )
 
     fun createTopic() {
         val topicCreationConfig = ConfigFactory.parseMap(appReceivedMessageTopicConf)
         topicAdmin.createTopics(
             bootstrapConfig.getConfig(BootConfig.BOOT_KAFKA_COMMON).toKafkaProperties(),
-            topicCreationConfig.root().render()
+            topicCreationConfig.root().render(),
         )
     }
 

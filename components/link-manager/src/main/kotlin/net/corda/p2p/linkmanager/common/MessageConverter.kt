@@ -62,21 +62,30 @@ internal class MessageConverter(
             source: HoldingIdentity,
             dest: MemberInfo,
             networkType: NetworkType
-        ): LinkOutMessage {
-            val header = generateLinkOutHeaderFromPeer(source, dest, networkType)
-            return LinkOutMessage(header, payload)
+        ): LinkOutMessage? {
+            return generateLinkOutHeaderFromPeer(source, dest, networkType)?.let { header ->
+                LinkOutMessage(header, payload)
+            }
         }
 
         private fun generateLinkOutHeaderFromPeer(
             source: HoldingIdentity,
             peer: MemberInfo,
             networkType: NetworkType
-        ): LinkOutHeader {
+        ): LinkOutHeader? {
             val endPoint = peer.endpoints
                 .filter {
                     it.protocolVersion == ProtocolConstants.PROTOCOL_VERSION
                 }.shuffled().firstOrNull()
                 ?.url
+            if (endPoint == null) {
+                val availableEndpoints = peer.endpoints.map {
+                    "${it.url} with version ${it.protocolVersion}"
+                }.joinToString()
+                logger.warn("Could not find any valid endpoint to send a message to ${peer.name}." +
+                        " It has $availableEndpoints while we need ${ProtocolConstants.PROTOCOL_VERSION}.")
+                return null
+            }
             return LinkOutHeader(
                 peer.holdingIdentity.toAvro(),
                 source.toAvro(),
@@ -189,7 +198,7 @@ internal class MessageConverter(
             source: HoldingIdentity,
             destMemberInfo: MemberInfo,
             networkType: NetworkType,
-        ): LinkOutMessage {
+        ): LinkOutMessage? {
             return createLinkOutMessage(
                 message,
                 source,

@@ -198,6 +198,8 @@ class VirtualNodeRestTest : ClusterReadiness by ClusterReadinessChecker() {
         }
 
         val cpis = assertWithRetryIgnoringExceptions {
+            timeout(retryTimeout)
+            interval(retryInterval)
             command { cpiList() }
             condition { resp ->
                 resp.code == ResponseCode.OK.statusCode && resp.cpiJsonNode() != null

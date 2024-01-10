@@ -4,12 +4,14 @@ import net.corda.data.p2p.AuthenticatedMessageAck
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.MessageAck
+import net.corda.data.p2p.NetworkType
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.crypto.AuthenticatedDataMessage
 import net.corda.data.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.data.p2p.crypto.CommonHeader
+import net.corda.data.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
@@ -34,12 +36,20 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.p2p.crypto.protocol.api.EncryptionResult
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.PROTOCOL_VERSION
+import net.corda.p2p.linkmanager.common.MessageConverter.Companion.createLinkOutMessage
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.mockMembersAndGroups
 import net.corda.schema.Schemas
 import net.corda.test.util.time.MockTimeFacilitiesProvider
+import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.membership.EndpointInfo
+import net.corda.v5.membership.MemberContext
+import net.corda.v5.membership.MemberInfo
 import org.junit.jupiter.api.Nested
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -230,6 +240,65 @@ class MessageConverterTest {
             "Could not find the group info in the GroupPolicyProvider for our identity = $us." +
                     " The message was discarded."
         )
+    }
+
+    @Test
+    fun `createLinkOutMessage will fail if the peer has no valid endpoints`(){
+        val payload = mock<InitiatorHandshakeMessage>()
+        val groupId = "groupId"
+        val source = createTestHoldingIdentity("CN=Source, O=R3, L=LDN, C=GB", groupId)
+        val endpointsList = (6.. 8).map {  version ->
+            mock<EndpointInfo> {
+                on { protocolVersion } doReturn version
+            }
+        }
+        val memberContext = mock<MemberContext> {
+            on { parseList(ENDPOINTS, EndpointInfo::class.java) } doReturn endpointsList
+        }
+        val destination = mock<MemberInfo> {
+            on { memberProvidedContext } doReturn memberContext
+        }
+        val networkType = NetworkType.CORDA_5
+
+        val message = createLinkOutMessage(
+            payload,
+            source,
+            destination,
+            networkType
+        )
+
+        assertThat(message).isNull()
+    }
+
+    @Test
+    fun `createLinkOutMessage will choose the correct endpoint`(){
+        val payload = mock<InitiatorHandshakeMessage>()
+        val groupId = "groupId"
+        val source = createTestHoldingIdentity("CN=Source, O=R3, L=LDN, C=GB", groupId)
+        val endpointsList = ((PROTOCOL_VERSION - 3).. (PROTOCOL_VERSION + 3)).map {  version ->
+            mock<EndpointInfo> {
+                on { protocolVersion } doReturn version
+                on { url } doReturn "https://www.r3.com:8080/$version"
+            }
+        }
+        val memberContext = mock<MemberContext> {
+            on { parseList(ENDPOINTS, EndpointInfo::class.java) } doReturn endpointsList
+            on { parse(MemberInfoExtension.GROUP_ID, String::class.java) } doReturn groupId
+        }
+        val destination = mock<MemberInfo> {
+            on { memberProvidedContext } doReturn memberContext
+            on { name } doReturn MemberX500Name.parse("CN=Destination, O=R3, L=LDN, C=GB")
+        }
+        val networkType = NetworkType.CORDA_5
+
+        val message = createLinkOutMessage(
+            payload,
+            source,
+            destination,
+            networkType
+        )
+
+        assertThat(message?.header?.address).isEqualTo("https://www.r3.com:8080/$PROTOCOL_VERSION")
     }
 
     @Nested

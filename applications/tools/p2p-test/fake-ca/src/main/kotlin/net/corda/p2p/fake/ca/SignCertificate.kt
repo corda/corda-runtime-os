@@ -21,7 +21,7 @@ import java.io.File
 class SignCertificate : Runnable {
     @Option(
         names = ["-n", "--name"],
-        description = ["The filename of the certificate (defaults to the CSR file name)."]
+        description = ["The filename of the certificate (defaults to the CSR file name)."],
     )
     private var name: String? = null
 

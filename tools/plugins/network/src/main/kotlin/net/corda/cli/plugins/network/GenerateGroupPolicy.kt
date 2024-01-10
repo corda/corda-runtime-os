@@ -19,34 +19,34 @@ import java.util.UUID
 @CommandLine.Command(
     name = "groupPolicy",
     description = ["Generates GroupPolicy.json file."],
-    mixinStandardHelpOptions = true
+    mixinStandardHelpOptions = true,
 )
 class GenerateGroupPolicy(private val output: Output = ConsoleOutput()) : Runnable {
 
     @CommandLine.Option(
         names = ["--endpoint"],
         arity = "0..1",
-        description = ["Endpoint base URL"]
+        description = ["Endpoint base URL"],
     )
     var endpoint: String? = null
 
     @CommandLine.Option(
         names = ["--endpoint-protocol"],
         arity = "0..1",
-        description = ["Version of end-to-end authentication protocol"]
+        description = ["Version of end-to-end authentication protocol"],
     )
     var endpointProtocol: Int? = null
 
     @CommandLine.Option(
         names = ["--name"],
-        description = ["Member's X.500 name"]
+        description = ["Member's X.500 name"],
     )
     var names: List<String>? = null
 
     @CommandLine.Option(
         names = ["--file", "-f"],
         arity = "0..1",
-        description = ["Path to a JSON or YAML file that contains static network information"]
+        description = ["Path to a JSON or YAML file that contains static network information"],
     )
     var filePath: Path? = null
 
@@ -73,7 +73,7 @@ class GenerateGroupPolicy(private val output: Output = ConsoleOutput()) : Runnab
                 "sessionKeyPolicy" to "Combined",
                 "staticNetwork" to mapOf(
                     "members" to members,
-                )
+                ),
             ),
             "p2pParameters" to mapOf(
                 "sessionTrustRoots" to listOf(
@@ -164,8 +164,8 @@ class GenerateGroupPolicy(private val output: Output = ConsoleOutput()) : Runnab
                         "name" to name!!,
                         "memberStatus" to MEMBER_STATUS_ACTIVE,
                         "endpointUrl-1" to content["endpoint"]!!,
-                        "endpointProtocol-1" to content["endpointProtocol"]!!
-                    )
+                        "endpointProtocol-1" to content["endpointProtocol"]!!,
+                    ),
                 )
             }
         }
@@ -179,14 +179,14 @@ class GenerateGroupPolicy(private val output: Output = ConsoleOutput()) : Runnab
                         "name" to x500,
                         "memberStatus" to (member["status"] ?: MEMBER_STATUS_ACTIVE),
                         "endpointUrl-1" to (
-                                member["endpoint"] ?: content["endpoint"]
+                            member["endpoint"] ?: content["endpoint"]
                                 ?: throw IllegalArgumentException("No endpoint specified.")
-                                ),
+                            ),
                         "endpointProtocol-1" to (
-                                member["endpointProtocol"] ?: content["endpointProtocol"]
+                            member["endpointProtocol"] ?: content["endpointProtocol"]
                                 ?: throw IllegalArgumentException("No endpoint protocol specified.")
-                                )
-                    )
+                            ),
+                    ),
                 )
             }
         }
@@ -210,8 +210,8 @@ class GenerateGroupPolicy(private val output: Output = ConsoleOutput()) : Runnab
                     "name" to name,
                     "memberStatus" to MEMBER_STATUS_ACTIVE,
                     "endpointUrl-1" to endpoint!!,
-                    "endpointProtocol-1" to endpointProtocol!!
-                )
+                    "endpointProtocol-1" to endpointProtocol!!,
+                ),
             )
         }
         return members

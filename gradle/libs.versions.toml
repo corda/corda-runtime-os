@@ -10,10 +10,20 @@ javalinVersion = "4.6.8"
 jettyVersion = "9.4.53.v20231009"
 
 # Testing
-assertjVersion = "3.24.2"
+assertjVersion = "3.25.1"
 junitVersion = "5.10.1"
 mockitoVersion = "5.8.0"
 mockitoKotlinVersion = "5.2.1"
+
+# Plugins
+gradleDataVersion = "1.12.1"
+gradleEnterpriseVersion = "3.16.1"
+detektVersion = "1.23.4"
+dependencyCheckVersion = "0.50.0"
+snykVersion = "0.5"
+cyclonedxVersion = "1.8.1"
+dokkaVersion = "1.9.10"
+testLoggerVersion = "4.0.0"
 
 [libraries]
 assertj-core = { group = "org.assertj", name = "assertj-core", version.ref = "assertjVersion" }
@@ -40,6 +50,7 @@ jetty-websocket-servlet = { group = "org.eclipse.jetty.websocket", name = "webso
 jetty-websocket-server = { group = "org.eclipse.jetty.websocket", name = "websocket-server", version.ref = "jettyVersion" }
 jetty-websocket-client = { group = "org.eclipse.jetty.websocket", name = "websocket-client", version.ref = "jettyVersion" }
 jetty-http2-server = { group = "org.eclipse.jetty.http2", name = "http2-server", version.ref = "jettyVersion" }
+gradle-enterprise = { group = "com.gradle", name = "gradle-enterprise-gradle-plugin", version.ref = "gradleEnterpriseVersion" }
 
 [bundles]
 bouncycastle = ["bouncycastle-prov", "bouncycastle-pkix"]
@@ -51,3 +62,11 @@ test-runtime = ["junit-engine", "junit-platform"]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlinVersion" }
 kotlin-allopen = { id = "org.jetbrains.kotlin.plugin.allopen", version.ref = "kotlinVersion" }
 kotlin-jpa = { id = "org.jetbrains.kotlin.plugin.jpa", version.ref = "kotlinVersion" }
+gradle-data = { id = "com.gradle.common-custom-user-data-gradle-plugin", version.ref = "gradleDataVersion" }
+gradle-enterprise = { id = "com.gradle.enterprise", version.ref = "gradleEnterpriseVersion" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detektVersion" }
+dependency-check-versions = { id = "com.github.ben-manes.versions", version.ref = "dependencyCheckVersion" }
+snyk = { id = "io.snyk.gradle.plugin.snykplugin", version.ref = "snykVersion" }
+cyclonedx-bom = { id = "org.cyclonedx.bom", version.ref = "cyclonedxVersion" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokkaVersion" }
+test-logger = { id = "com.adarshr.test-logger", version.ref = "testLoggerVersion" }

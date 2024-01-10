@@ -63,7 +63,7 @@ class AuthenticationProtocolResponderTest {
                             "alg-2",
                             ByteBuffer.wrap(byteArrayOf(3)),
                         ),
-                    )
+                    ),
                 ),
                 null,
                 null,
