@@ -468,7 +468,9 @@ class StaticMemberRegistrationService(
             validateNotaryDetails(staticMemberInfo, staticMemberList, notaryInfo, membershipGroupReader)
         }
 
+        logger.info("QQQ in $memberName going to assignSoftHSM...", Exception("QQQ"))
         hsmRegistrationClient.assignSoftHSM(memberId, LEDGER)
+        logger.info("QQQ in $memberName gone... (${Thread.currentThread().id})")
         val ledgerKey = keysFactory.getOrGenerateKeyPair(LEDGER)
         val ledgerKeyEntries = if (roles.any { it is MemberRole.Notary }) {
             emptyMap()

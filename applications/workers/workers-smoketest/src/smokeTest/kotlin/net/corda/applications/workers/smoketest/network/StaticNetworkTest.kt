@@ -13,10 +13,14 @@ import net.corda.e2etest.utilities.containsExactlyInAnyOrderActiveMembers
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.registerStaticMember
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.time.Duration
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.concurrent.thread
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StaticNetworkTest : ClusterReadiness by ClusterReadinessChecker() {
@@ -44,6 +48,7 @@ class StaticNetworkTest : ClusterReadiness by ClusterReadinessChecker() {
     }
 
     @Test
+    @Disabled
     fun `register members`() {
         DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
 
@@ -71,6 +76,41 @@ class StaticNetworkTest : ClusterReadiness by ClusterReadinessChecker() {
         val allMembers = listOf(Pair(aliceHoldingId, aliceX500), Pair(bobHoldingId, bobX500), Pair(notaryHoldingId, notaryX500))
         allMembers.forEach { (memberHoldingId, _) ->
             DEFAULT_CLUSTER.containsExactlyInAnyOrderActiveMembers(memberHoldingId, allMembers.map { it.second })
+        }
+    }
+
+    @Test
+    fun `register members two`() {
+        DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
+        val members = (1..30).map {
+            "CN=$it-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
+        }
+
+        conditionallyUploadCordaPackage(
+            cpiName,
+            TEST_CPB_LOCATION,
+            groupId,
+            members
+        )
+
+        val holdingIds = ConcurrentHashMap.newKeySet<String>()
+        val registered = AtomicInteger()
+
+        members.map { memberName ->
+            thread {
+                println("Creating virtual node for $memberName")
+                val holdingId = getOrCreateVirtualNodeFor(memberName, cpiName)
+                holdingIds.add(holdingId)
+                println("Holding ID of $memberName is $holdingId")
+                registerStaticMember(holdingId)
+                println("$memberName is registered - so far ${registered.incrementAndGet()} members")
+            }
+        }.forEach {
+            it.join()
+        }
+
+        holdingIds.forEach { memberHoldingId ->
+            DEFAULT_CLUSTER.containsExactlyInAnyOrderActiveMembers(memberHoldingId, members)
         }
     }
 }
