@@ -41,12 +41,12 @@ internal open class LocalCertificatesAuthority(
     private val validDuration: Duration,
     private val defaultPrivateKeyAndCertificate: PrivateKeyWithCertificate?,
     firstSerialNumber: Long = 1,
+    issuerName: String?,
 ) : CertificateAuthority {
 
     protected val serialNumber = AtomicLong(firstSerialNumber)
     private val now = System.currentTimeMillis()
-
-    private val issuer = X500Name("C=UK, CN=r3.com, OU=${UUID.randomUUID()}")
+    internal val issuer = X500Name(issuerName ?: "C=UK, CN=r3.com, OU=${UUID.randomUUID()}")
 
     private fun generateKeyPair(): KeyPair {
         val keysFactory = KeyPairGenerator.getInstance(keysFactoryDefinitions.algorithm.name, BouncyCastleProvider())

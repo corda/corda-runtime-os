@@ -50,7 +50,7 @@ class StateManagerImpl(
         return if (keys.isEmpty()) {
             emptyMap()
         } else {
-            dataSource.connection.transaction { connection ->
+            dataSource.connection.use { connection ->
                 stateRepository.get(connection, keys)
             }.map {
                 it.fromPersistentEntity()
@@ -137,7 +137,7 @@ class StateManagerImpl(
         return if (filters.isEmpty()) {
             emptyMap()
         } else {
-            dataSource.connection.transaction { connection ->
+            dataSource.connection.use { connection ->
                 stateRepository.filterByAll(connection, filters)
             }.map {
                 it.fromPersistentEntity()
@@ -151,7 +151,7 @@ class StateManagerImpl(
         return if (filters.isEmpty()) {
             emptyMap()
         } else {
-            dataSource.connection.transaction { connection ->
+            dataSource.connection.use { connection ->
                 stateRepository.filterByAny(connection, filters)
             }.map {
                 it.fromPersistentEntity()
@@ -165,7 +165,7 @@ class StateManagerImpl(
         intervalFilter: IntervalFilter,
         metadataFilters: Collection<MetadataFilter>
     ): Map<String, State> {
-        return dataSource.connection.transaction { connection ->
+        return dataSource.connection.use { connection ->
             stateRepository.filterByUpdatedBetweenWithMetadataMatchingAll(connection, intervalFilter, metadataFilters)
         }.map {
             it.fromPersistentEntity()
@@ -178,7 +178,7 @@ class StateManagerImpl(
         intervalFilter: IntervalFilter,
         metadataFilters: Collection<MetadataFilter>
     ): Map<String, State> {
-        return dataSource.connection.transaction { connection ->
+        return dataSource.connection.use { connection ->
             stateRepository.filterByUpdatedBetweenWithMetadataMatchingAny(connection, intervalFilter, metadataFilters)
         }.map {
             it.fromPersistentEntity()

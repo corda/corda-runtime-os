@@ -22,11 +22,10 @@ import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getDogClass
 import net.corda.db.schema.DbSchema
 import net.corda.entityprocessor.impl.internal.EntityRequestProcessor
-import net.corda.entityprocessor.impl.tests.helpers.assertEventResponseWithError
 import net.corda.entityprocessor.impl.tests.helpers.assertEventResponseWithoutError
-import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.flow.utils.toKeyValuePairList
+import net.corda.messaging.api.exception.CordaHTTPServerTransientException
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.EntitySandboxServiceFactory
 import net.corda.persistence.common.ResponseFactory
@@ -52,6 +51,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
@@ -181,15 +181,9 @@ class PersistenceExceptionTests {
             )
         )
 
-        // Now "send" the request for processing and "receive" the responses.
-        val response = processor.process(ignoredRequest)
-
-        val result = response.payload as ExternalEventResponse
-        assertThat(result.error).isNotNull
-        // The failure is correctly categorised.
-        assertThat(result.error.errorType).isEqualTo(ExternalEventResponseErrorType.TRANSIENT)
-        // The failure also captures the exception name.
-        assertThat(result.error.exception.errorType).isEqualTo(CpkNotAvailableException::class.java.name)
+        assertThrows<CordaHTTPServerTransientException> {
+            processor.process(ignoredRequest)
+        }
     }
 
     @Test
@@ -217,15 +211,9 @@ class PersistenceExceptionTests {
             responseFactory
         )
 
-        // Now "send" the request for processing and "receive" the responses.
-        val response = processor.process(ignoredRequest)
-
-        val result = response.payload as ExternalEventResponse
-        assertThat(result.error).isNotNull
-        // The failure is correctly categorised.
-        assertThat(result.error.errorType).isEqualTo(ExternalEventResponseErrorType.TRANSIENT)
-        // The failure also captures the exception name.
-        assertThat(result.error.exception.errorType).isEqualTo(VirtualNodeException::class.java.name)
+        assertThrows<CordaHTTPServerTransientException> {
+            processor.process(ignoredRequest)
+        }
     }
 
     @Test
@@ -303,8 +291,9 @@ class PersistenceExceptionTests {
 
         val userDuplicatePersistEntitiesRequest = createDogPersistRequest(dogId)
         // the following should now throw as it is different request that violates PK
-        val userDuplicateResponse = processor.process(userDuplicatePersistEntitiesRequest)
-        assertEventResponseWithError(userDuplicateResponse)
+        assertThrows<CordaHTTPServerTransientException> {
+            processor.process(userDuplicatePersistEntitiesRequest)
+        }
     }
 
     private fun createDogPersistRequest(dogId: UUID = UUID.randomUUID()): EntityRequest {

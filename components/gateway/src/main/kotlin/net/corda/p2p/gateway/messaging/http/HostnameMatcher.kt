@@ -35,7 +35,6 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
             null -> MatchType.NONE
             true -> MatchType.C5
             false -> MatchType.C4
-
         }
     }
 

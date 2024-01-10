@@ -57,7 +57,7 @@ class MediatorComponentFactoryTest {
     )
     private val messageRouterFactory = mock<MessageRouterFactory>()
     private val groupAllocator = mock<GroupAllocator>()
-    private val stateManagerHelper = mock<StateManagerHelper<String, String, String>>()
+    private val stateManagerHelper = mock<StateManagerHelper<String>>()
     private val taskManager = mock<TaskManager>()
     private val messageRouter = mock<MessageRouter>()
     private val mediatorState = MediatorState(AtomicBoolean(false), AtomicBoolean(false))

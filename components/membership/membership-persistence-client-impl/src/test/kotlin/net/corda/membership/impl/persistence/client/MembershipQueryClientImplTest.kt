@@ -417,11 +417,11 @@ class MembershipQueryClientImplTest {
     }
 
     @Test
-    fun `Response timestamp before request timestamp causes failed response`() {
+    fun `Response timestamp over two minutes before request timestamp causes failed response`() {
         postConfigChangedEvent()
         mockPersistenceResponse(
             MemberInfoQueryResponse(emptyList()),
-            rsTimestampOverride = clock.instant().minusSeconds(10)
+            rsTimestampOverride = clock.instant().minusSeconds(180)
         )
         assertThat(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))).isInstanceOf(
             MembershipQueryResult.Failure::class.java
