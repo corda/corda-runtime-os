@@ -9,15 +9,22 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope
 
 @Component(
-    service = [ MerkleProofProvider::class],
+    service = [MerkleProofProvider::class],
     scope = ServiceScope.PROTOTYPE
 )
 class MerkleProofProviderImpl : MerkleProofProvider {
-    override fun createMerkleProof(proofType: MerkleProofType, treeSize: Int, leaves: List<IndexedMerkleLeaf>,
+    override fun createMerkleProof(
+        proofType: MerkleProofType,
+        treeSize: Int,
+        leaves: List<IndexedMerkleLeaf>,
         hashes: List<SecureHash>
-    ): MerkleProof  =
+    ): MerkleProof =
         MerkleProofImpl(proofType, treeSize, leaves, hashes)
 
-    override fun createIndexedMerkleLeaf(index: Int, nonce: ByteArray?, leafData: ByteArray): IndexedMerkleLeaf
-        = IndexedMerkleLeafImpl(index, nonce, leafData)
+    override fun createIndexedMerkleLeaf(
+        index: Int,
+        nonce: ByteArray?,
+        leafData: ByteArray
+    ): IndexedMerkleLeaf =
+        IndexedMerkleLeafImpl(index, nonce, leafData)
 }

@@ -11,7 +11,6 @@ import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import com.r3.corda.demo.utxo.contract.TestUtxoState
-import net.corda.crypto.cipher.suite.merkle.MerkleProofProvider
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -21,7 +20,7 @@ import org.mockito.kotlin.whenever
 import java.security.KeyPairGenerator
 
 class TestPeekTransactionFlow {
-        private val jsonMarshallingService = JsonMarshallingServiceImpl(mock<MerkleProofProvider>{})
+        private val jsonMarshallingService = JsonMarshallingServiceImpl(mock {})
 
         private lateinit var digestService: DigestService
 
