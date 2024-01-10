@@ -17,6 +17,7 @@ const val USER_ADMIN_ROLE = "UserAdminRole"
         - creation/deletion of users
         - creation/deletion of permissions
         - creation/deletion of roles
+        - changing password of users
         - assigning/un-assigning roles to users
         - assigning/un-assigning permissions to roles"""
     ],
@@ -29,6 +30,8 @@ class UserAdminSubcommand : RestCommand(), Callable<Int> {
         "CreateUsers" to "POST:/api/$VERSION_PATH_REGEX/user",
         "GetUsersV1" to "GET:/api/v1/user\\?loginName=$USER_URL_REGEX",
         "GetUsers" to "GET:/api/$VERSION_PATH_REGEX/user/$USER_URL_REGEX",
+        "ChangeSelfUserPassword" to "POST:/api/$VERSION_PATH_REGEX/user/selfpassword",
+        "ChangeOtherUserPassword" to "POST:/api/$VERSION_PATH_REGEX/user/otheruserpassword",
         "AddRoleToUser" to "PUT:/api/$VERSION_PATH_REGEX/user/$USER_URL_REGEX/role/$UUID_REGEX",
         "DeleteRoleFromUser" to "DELETE:/api/$VERSION_PATH_REGEX/user/$USER_URL_REGEX/role/$UUID_REGEX",
         "GetPermissionsSummary" to "GET:/api/$VERSION_PATH_REGEX/user/$USER_URL_REGEX/permissionSummary",
