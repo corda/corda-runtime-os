@@ -822,21 +822,19 @@ class MerkleTreeTest {
     @Test
     fun `Merkle proof size 2 with trivial hash`() {
         testProof(2, 1, """
-                            00000630 (calc)┳00000000 (calc)    known leaf
-                                           ┗00000001 (input 0) filtered
+            00000630 (calc)┳00000000 (calc)    known leaf
+                           ┗00000001 (input 0) filtered
         """, trivialHashDigestProvider)
     }
 
     @Test
     fun `Merkle proof size 3`() {
         testProof(3, 1, """
-                                    00000667 (calc)┳00000630 (calc)   ┳00000000 (calc)    known leaf
-                                       ┃                  ┗00000001 (input 0) filtered
-                                       ┗00000002 (input 1)━unknown            filtered
-        """.trimIndent(), trivialHashDigestProvider)
+            A9D5543C (calc)┳BAB170B1 (calc)   ┳7901AF93 (calc)    known leaf
+                           ┃                  ┗471864D3 (input 0) filtered
+                           ┗66973B1A (input 1)━unknown            filtered
+        """.trimIndent())
     }
-
-
 }
 
 fun SecureHash.hex() = bytes.joinToString(separator = "") { "%02x".format(it) }
