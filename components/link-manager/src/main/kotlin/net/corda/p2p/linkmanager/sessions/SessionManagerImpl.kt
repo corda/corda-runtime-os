@@ -1388,7 +1388,7 @@ internal class SessionManagerImpl(
          */
         private inner class MessageAckSessionHealthMonitor: SessionHealthMonitor {
             override fun sessionEstablished(session: Session) {
-                check(trackedOutboundSessions.contains(session.sessionId)) {
+                check(trackedOutboundSessions.containsKey(session.sessionId)) {
                     "A message was sent on session with Id ${session.sessionId} which is not tracked."
                 }
                 logger.debug(
