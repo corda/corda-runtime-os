@@ -722,7 +722,12 @@ class MerkleTreeTest {
         }
     }
 
-    private fun testProof(treeSize: Int, leaves: List<Int>, expected: String, digest: MerkleTreeHashDigestProvider = defaultHashDigestProvider) {
+    private fun testProof(
+        treeSize: Int,
+        leaves: List<Int>,
+        expected: String,
+        digest: MerkleTreeHashDigestProvider = defaultHashDigestProvider
+    ) {
         val tree = makeTestMerkleTree(treeSize, digest)
         val proof = testLeafCombination(tree, leaves, tree.root, treeSize, digest)
         assertThat(proof.render(digest)).isEqualToIgnoringWhitespace(expected)
