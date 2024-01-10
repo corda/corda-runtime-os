@@ -7,9 +7,7 @@ import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.utils.INITIATED_SESSION_ID_SUFFIX
-import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
-import net.corda.session.manager.Constants
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions.assertThat
@@ -17,11 +15,6 @@ import org.junit.jupiter.api.Test
 import java.time.Instant
 
 class SessionCloseProcessorSendTest {
-    companion object {
-        val SESSION_PROPERTIES = KeyValueStore().apply {
-            put(Constants.FLOW_SESSION_REQUIRE_CLOSE, true.toString())
-        }.avro
-    }
 
     @Test
     fun `Send close when status is ERROR`() {
@@ -34,8 +27,7 @@ class SessionCloseProcessorSendTest {
         )
 
         val inputState = buildSessionState(
-            SessionStateType.ERROR, 0, emptyList(), 0, mutableListOf(),
-            sessionProperties = SESSION_PROPERTIES
+            SessionStateType.ERROR, 0, emptyList(), 0, mutableListOf()
         )
 
         val result = SessionCloseProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
@@ -56,8 +48,7 @@ class SessionCloseProcessorSendTest {
         )
 
         val inputState = buildSessionState(
-            SessionStateType.CONFIRMED, 0, mutableListOf(SessionEvent()), 0, mutableListOf(),
-            sessionProperties = SESSION_PROPERTIES
+            SessionStateType.CONFIRMED, 0, mutableListOf(SessionEvent()), 0, mutableListOf()
         )
 
         val result = SessionCloseProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
@@ -86,7 +77,7 @@ class SessionCloseProcessorSendTest {
             sessionStartTime = Instant.now(),
             sessionId = "sessionId-$INITIATED_SESSION_ID_SUFFIX",
             counterpartyIdentity = HoldingIdentity("Alice", "group1"),
-            sessionProperties = SESSION_PROPERTIES
+            requireClose = true
         )
 
         val result = SessionCloseProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
@@ -109,8 +100,7 @@ class SessionCloseProcessorSendTest {
         )
 
         val inputState = buildSessionState(
-            SessionStateType.CREATED, 0, mutableListOf(), 0, mutableListOf(),
-            sessionProperties = SESSION_PROPERTIES
+            SessionStateType.CREATED, 0, mutableListOf(), 0, mutableListOf()
         )
 
         val result = SessionCloseProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
@@ -131,8 +121,7 @@ class SessionCloseProcessorSendTest {
         )
 
         val inputState = buildSessionState(
-            SessionStateType.CLOSED, 0, mutableListOf(), 0, mutableListOf(),
-            sessionProperties = SESSION_PROPERTIES
+            SessionStateType.CLOSED, 0, mutableListOf(), 0, mutableListOf()
         )
 
         val result = SessionCloseProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
@@ -150,8 +139,7 @@ class SessionCloseProcessorSendTest {
         )
 
         val inputState = buildSessionState(
-            SessionStateType.CLOSING, 0, mutableListOf(sessionEvent), 0, mutableListOf(),
-            sessionProperties = SESSION_PROPERTIES
+            SessionStateType.CLOSING, 0, mutableListOf(sessionEvent), 0, mutableListOf()
         )
 
         val result = SessionCloseProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
@@ -172,8 +160,7 @@ class SessionCloseProcessorSendTest {
         )
 
         val inputState = buildSessionState(
-            SessionStateType.CLOSING, 0, mutableListOf(), 0, mutableListOf(sessionEvent),
-            sessionProperties = SESSION_PROPERTIES
+            SessionStateType.CLOSING, 0, mutableListOf(), 0, mutableListOf(sessionEvent)
         )
 
         val result = SessionCloseProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()

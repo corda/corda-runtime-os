@@ -55,6 +55,7 @@ class UtxoFilteredTransactionImpl(
             ?.let { serializationService.deserialize(it.second, PublicKey::class.java) }
     }
 
+
     override fun getSignatories(): UtxoFilteredData<PublicKey> {
         return getFilteredData(UtxoComponentGroup.SIGNATORIES.ordinal)
     }
@@ -97,19 +98,15 @@ class UtxoFilteredTransactionImpl(
                             TransactionStateImpl(value, info.notaryName, info.notaryKey, info.getEncumbranceGroup()),
                             StateRef(id, key)
                         )
-                    }
-                )
+                    })
                 FilteredDataAuditImpl(filteredOutputStates.size, values)
             }
 
             else -> {
-                if (filteredOutputStates.size == 0) {
-                    FilteredDataSizeImpl(0)
-                } else {
-                    throw FilteredDataInconsistencyException(
-                        "Output infos have been removed. Cannot reconstruct outputs"
-                    )
-                }
+                if (filteredOutputStates.size == 0) FilteredDataSizeImpl(0)
+                else throw FilteredDataInconsistencyException(
+                    "Output infos have been removed. Cannot reconstruct outputs"
+                )
             }
         }
     }
@@ -147,18 +144,15 @@ class UtxoFilteredTransactionImpl(
                 MerkleProofType.SIZE -> return FilteredDataSizeImpl(group.merkleProof.treeSize)
                 MerkleProofType.AUDIT -> {
                     // if it's an audit proof of an empty list, we need to strip the marker
-                    return if (group.merkleProof.leaves.size == 1 &&
-                        group.merkleProof.leaves.first().leafData.isEmpty()
-                    ) {
-                        FilteredDataAuditImpl(0, emptyMap())
-                    } else {
-                        FilteredDataAuditImpl(
-                            group.merkleProof.treeSize,
-                            group.merkleProof.leaves.associateBy({ leaf -> leaf.index }, { leaf ->
-                                serializationService.deserialize(leaf.leafData)
-                            })
-                        )
-                    }
+                    return if (group.merkleProof.leaves.size == 1
+                        && group.merkleProof.leaves.first().leafData.isEmpty()
+                    ) FilteredDataAuditImpl(0, emptyMap())
+                    else FilteredDataAuditImpl(
+                        group.merkleProof.treeSize,
+                        group.merkleProof.leaves.associateBy({ leaf -> leaf.index }, { leaf ->
+                            serializationService.deserialize(leaf.leafData)
+                        })
+                    )
                 }
             }
         } ?: return FilteredDataRemovedImpl()

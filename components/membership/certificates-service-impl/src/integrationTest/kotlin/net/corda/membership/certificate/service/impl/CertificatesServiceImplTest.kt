@@ -112,8 +112,7 @@ internal class CertificatesServiceImplTest {
         val importedCertificate = entityManagerFactory.transaction {
             it.find(ClusterCertificate::class.java, testAlias)
         }
-        assertThat(importedCertificate)
-            .isEqualTo(ClusterCertificate(testAlias, CertificateUsage.CODE_SIGNER.publicName, testRawCertificate))
+        assertThat(importedCertificate).isEqualTo(ClusterCertificate(testAlias, CertificateUsage.CODE_SIGNER.publicName, testRawCertificate))
     }
 
     @Test

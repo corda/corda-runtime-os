@@ -31,17 +31,12 @@ import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
-import net.corda.p2p.linkmanager.TraceableItem
-import net.corda.p2p.linkmanager.metrics.recordInboundHeartbeatMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordInboundMessagesMetric
-import net.corda.p2p.linkmanager.metrics.recordInboundSessionMessagesMetric
-import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
 import net.corda.schema.Schemas
 import net.corda.tracing.traceEventProcessing
 import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.toCorda
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
@@ -56,203 +51,143 @@ internal class InboundMessageProcessor(
 ) :
     EventLogProcessor<String, LinkInMessage> {
 
-    private companion object {
-        val logger: Logger = LoggerFactory.getLogger(this::class.java.name)
-        const val tracingEventName = "P2P Link Manager Inbound Event"
-    }
+    private var logger = LoggerFactory.getLogger(this::class.java.name)
 
     override fun onNext(events: List<EventLogRecord<String, LinkInMessage>>): List<Record<*, *>> {
-        val dataMessages = mutableListOf<SessionIdAndMessage>()
-        val sessionMessages = mutableListOf<TraceableItem<LinkInMessage, LinkInMessage>>()
-        val recordsForUnauthenticatedMessage = mutableListOf<TraceableItem<List<Record<String, AppMessage>>, LinkInMessage>>()
-
-        events.forEach { event ->
+        val records = mutableListOf<Record<*, *>>()
+        for (event in events) {
             val message = event.value
-            when (val payload = message?.payload) {
-                is AuthenticatedDataMessage -> {
-                    payload.header.sessionId.let { sessionId ->
-                        dataMessages.add(
-                            SessionIdAndMessage(sessionId,
-                                TraceableItem(AvroSealedClasses.DataMessage.Authenticated(payload), event)
-                            )
-                        )
-                    }
-                }
-                is AuthenticatedEncryptedDataMessage -> {
-                    payload.header.sessionId.let { sessionId ->
-                        dataMessages.add(
-                            SessionIdAndMessage(sessionId,
-                                TraceableItem(AvroSealedClasses.DataMessage.AuthenticatedAndEncrypted(payload), event)
-                            )
-                        )
-                    }
-                }
-                is ResponderHelloMessage, is ResponderHandshakeMessage, is InitiatorHandshakeMessage, is InitiatorHelloMessage -> {
-                    sessionMessages.add(
-                        TraceableItem(message, event)
-                    )
-                }
-                is InboundUnauthenticatedMessage -> {
-                    logger.debug {
-                        "Processing unauthenticated message ${payload.header.messageId}"
-                    }
-                    recordInboundMessagesMetric(payload)
-                    recordsForUnauthenticatedMessage.add(
-                        TraceableItem(
-                            listOf(
-                                Record(
-                                    Schemas.P2P.P2P_IN_TOPIC,
-                                    LinkManager.generateKey(),
-                                    AppMessage(payload),
-                                )
-                            ),
-                            event,
-                        )
+            if (message == null) {
+                logger.error("Received null message. The message was discarded.")
+                continue
+            }
+            records += traceEventProcessing(event, "P2P Link Manager Inbound Event") {
+                when (val payload = message.payload) {
+                    is AuthenticatedDataMessage -> processDataMessage(
+                        payload.header.sessionId,
+                        AvroSealedClasses.DataMessage.Authenticated(payload)
                     )
 
-                }
-                null -> logger.error("Received null message. The message was discarded.")
-                else -> {
-                    logger.error("Received unknown payload type ${payload::class.java.simpleName}. The message was discarded.")
-                }
-            }
-        }
+                    is AuthenticatedEncryptedDataMessage -> processDataMessage(
+                        payload.header.sessionId,
+                        AvroSealedClasses.DataMessage.AuthenticatedAndEncrypted(payload)
+                    )
 
-        return (processSessionMessages(sessionMessages) + processDataMessages(dataMessages) + recordsForUnauthenticatedMessage)
-            .flatMap { traceable ->
-                traceable.originalRecord?.let { traceEventProcessing(it, tracingEventName) { traceable.item } }
-                traceable.item
-            }
-    }
+                    is ResponderHelloMessage, is ResponderHandshakeMessage, is InitiatorHandshakeMessage, is InitiatorHelloMessage -> {
+                        processSessionMessage(message)
+                    }
 
-    private fun processSessionMessages(messages: List<TraceableItem<LinkInMessage, LinkInMessage>>):
-            List<TraceableItem<List<Record<String, *>>, LinkInMessage>> {
-        recordInboundSessionMessagesMetric()
-        val responses = sessionManager.processSessionMessages(messages) {message -> message.item}
-        return responses.map { (traceableMessage, response) ->
-            if (response != null) {
-                when (val payload = response.payload) {
-                    is ResponderHelloMessage -> {
-                        val partitionsAssigned = inboundAssignmentListener.getCurrentlyAssignedPartitions()
-                        if (partitionsAssigned.isNotEmpty()) {
-                            recordOutboundSessionMessagesMetric(response.header.sourceIdentity, response.header.destinationIdentity)
-                            TraceableItem(
-                                listOf(
-                                    Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response),
-                                    Record(
-                                        Schemas.P2P.SESSION_OUT_PARTITIONS,
-                                        payload.header.sessionId,
-                                        SessionPartitions(partitionsAssigned.toList())
-                                    )
-                                ),
-                                traceableMessage.originalRecord
-                            )
-                        } else {
-                            logger.warn(
-                                "No partitions from topic ${Schemas.P2P.LINK_IN_TOPIC} are currently assigned to " +
-                                        "the inbound message processor." +
-                                        " Not going to reply to session initiation for session ${payload.header.sessionId}."
-                            )
-                            TraceableItem(emptyList(), traceableMessage.originalRecord)
+                    is InboundUnauthenticatedMessage -> {
+                        logger.debug {
+                            "Processing unauthenticated message ${payload.header.messageId}"
                         }
-                    }
-                    else -> {
-                        recordOutboundSessionMessagesMetric(response.header.sourceIdentity, response.header.destinationIdentity)
-                        TraceableItem(
-                            listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response)),
-                            traceableMessage.originalRecord
+                        recordInboundMessagesMetric(payload)
+                        listOf(
+                            Record(
+                                Schemas.P2P.P2P_IN_TOPIC,
+                                LinkManager.generateKey(),
+                                AppMessage(payload)
+                            )
                         )
                     }
-                }
-            } else {
-                TraceableItem(emptyList(), traceableMessage.originalRecord)
-            }
-        }
-    }
 
-    internal data class SessionIdAndMessage(
-        val sessionId: String,
-        val message: TraceableItem<out AvroSealedClasses.DataMessage, LinkInMessage>
-    )
-
-    private fun processDataMessages(
-        sessionIdAndMessages: List<SessionIdAndMessage>
-    ): List<TraceableItem<List<Record<*, *>>, LinkInMessage>> {
-        return sessionManager.getSessionsById(sessionIdAndMessages) { it.sessionId }.mapNotNull { (sessionIdAndMessage, sessionDirection) ->
-            when (sessionDirection) {
-                is SessionManager.SessionDirection.Inbound ->
-                    TraceableItem(
-                        processInboundDataMessages(sessionIdAndMessage, sessionDirection),
-                        sessionIdAndMessage.message.originalRecord
-                    )
-                is SessionManager.SessionDirection.Outbound -> processOutboundDataMessage(sessionIdAndMessage, sessionDirection)?.let {
-                    TraceableItem(listOf(it), sessionIdAndMessage.message.originalRecord)
-                }
-                is SessionManager.SessionDirection.NoSession -> {
-                    logger.warn("Received message with SessionId = ${sessionIdAndMessage.sessionId} for which there is no active session." +
-                            " The message was discarded."
-                    )
-                    null
+                    else -> {
+                        logger.error("Received unknown payload type ${message.payload::class.java.simpleName}. The message was discarded.")
+                        emptyList()
+                    }
                 }
             }
         }
+        return records
     }
 
-    private fun processInboundDataMessages(
-        sessionIdAndMessage: SessionIdAndMessage,
-        sessionDirection: SessionManager.SessionDirection.Inbound
-    ): List<Record<*, *>> {
-        sessionManager.dataMessageReceived(
-            sessionIdAndMessage.sessionId,
-            sessionDirection.counterparties.counterpartyId,
-            sessionDirection.counterparties.ourId
-        )
-        return if (isCommunicationAllowed(sessionDirection.counterparties)) {
-            processLinkManagerPayload(
-                sessionDirection.counterparties,
-                sessionDirection.session,
-                sessionIdAndMessage.sessionId,
-                sessionIdAndMessage.message.item
-            )
+    private fun processSessionMessage(message: LinkInMessage): List<Record<String, *>> {
+        val response = sessionManager.processSessionMessage(message)
+        return if (response != null) {
+            when (val payload = message.payload) {
+                is InitiatorHelloMessage -> {
+                    sessionManager.sessionMessageReceived(payload.header.sessionId)
+                    val partitionsAssigned =
+                        inboundAssignmentListener.getCurrentlyAssignedPartitions()
+                    if (partitionsAssigned.isNotEmpty()) {
+                        listOf(
+                            Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response),
+                            Record(
+                                Schemas.P2P.SESSION_OUT_PARTITIONS,
+                                payload.header.sessionId,
+                                SessionPartitions(partitionsAssigned.toList())
+                            )
+                        )
+                    } else {
+                        logger.warn(
+                            "No partitions from topic ${Schemas.P2P.LINK_IN_TOPIC} are currently assigned to " +
+                                "the inbound message processor." +
+                                " Not going to reply to session initiation for session ${payload.header.sessionId}."
+                        )
+                        emptyList()
+                    }
+                }
+                is InitiatorHandshakeMessage -> {
+                    sessionManager.sessionMessageReceived(payload.header.sessionId)
+                    listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response))
+                }
+                else -> {
+                    listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response))
+                }
+            }
         } else {
             emptyList()
         }
     }
 
-    private fun processOutboundDataMessage(
-        sessionIdAndMessage: SessionIdAndMessage,
-        sessionDirection: SessionManager.SessionDirection.Outbound
-    ): Record<*, *>?  {
-        return if (isCommunicationAllowed(sessionDirection.counterparties)) {
-            MessageConverter.extractPayload(
-                sessionDirection.session,
-                sessionIdAndMessage.sessionId,
-                sessionIdAndMessage.message.item,
-                MessageAck::fromByteBuffer
-            )?.let {
-                when (val ack = it.ack) {
-                    is AuthenticatedMessageAck -> {
-                        logger.debug { "Processing ack for message ${ack.messageId} from session $sessionIdAndMessage." }
-                        sessionManager.messageAcknowledged(sessionIdAndMessage.sessionId)
-                        val record = makeMarkerForAckMessage(ack)
-                        record
-                    }
-                    is HeartbeatMessageAck -> {
-                        logger.debug { "Processing heartbeat ack from session $sessionIdAndMessage." }
-                        sessionManager.messageAcknowledged(sessionIdAndMessage.sessionId)
-                        null
-                    }
-                    else -> {
-                        logger.warn("Received an inbound message with unexpected type for SessionId = $sessionIdAndMessage.")
-                        null
+    private fun processDataMessage(sessionId: String, message: AvroSealedClasses.DataMessage): List<Record<*, *>> {
+        val messages = mutableListOf<Record<*, *>>()
+        when (val sessionDirection = sessionManager.getSessionById(sessionId)) {
+            is SessionManager.SessionDirection.Inbound -> {
+                sessionManager.dataMessageReceived(sessionId)
+                checkAllowedCommunication(sessionDirection.counterparties) {
+                    messages.addAll(
+                        processLinkManagerPayload(
+                            sessionDirection.counterparties,
+                            sessionDirection.session,
+                            sessionId,
+                            message
+                        )
+                    )
+                }
+            }
+            is SessionManager.SessionDirection.Outbound -> {
+                checkAllowedCommunication(sessionDirection.counterparties) {
+                    MessageConverter.extractPayload(
+                        sessionDirection.session,
+                        sessionId,
+                        message,
+                        MessageAck::fromByteBuffer
+                    )?.let {
+                        when (val ack = it.ack) {
+                            is AuthenticatedMessageAck -> {
+                                logger.debug { "Processing ack for message ${ack.messageId} from session $sessionId." }
+                                sessionManager.messageAcknowledged(sessionId)
+                                messages.add(makeMarkerForAckMessage(ack))
+                            }
+                            is HeartbeatMessageAck -> {
+                                logger.debug { "Processing heartbeat ack from session $sessionId." }
+                                sessionManager.messageAcknowledged(sessionId)
+                            }
+                            else -> logger.warn("Received an inbound message with unexpected type for SessionId = $sessionId.")
+                        }
                     }
                 }
             }
-        } else {
-            null
+            is SessionManager.SessionDirection.NoSession -> {
+                logger.warn(
+                    "Received message with SessionId = $sessionId for which there is no active session." +
+                        " The message was discarded."
+                )
+            }
         }
+        return messages
     }
-
 
     private fun checkIdentityBeforeProcessing(
         counterparties: SessionManager.Counterparties,
@@ -270,6 +205,7 @@ internal class InboundMessageProcessor(
                     "of type ${innerMessage.message.javaClass} from session ${session.sessionId}"
             }
             messages.add(Record(Schemas.P2P.P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
+            recordInboundMessagesMetric(innerMessage.message)
             makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
             sessionManager.inboundSessionEstablished(session.sessionId)
         } else if (sessionSource != messageSource.toCorda()) {
@@ -298,11 +234,9 @@ internal class InboundMessageProcessor(
             when (val innerMessage = it.message) {
                 is HeartbeatMessage -> {
                     logger.debug { "Processing heartbeat message from session $sessionId" }
-                    recordInboundHeartbeatMessagesMetric(counterparties.counterpartyId, counterparties.ourId)
                     makeAckMessageForHeartbeatMessage(counterparties, session)?.let { ack -> messages.add(ack) }
                 }
                 is AuthenticatedMessageAndKey -> {
-                    recordInboundMessagesMetric(innerMessage.message)
                     checkIdentityBeforeProcessing(
                         counterparties,
                         innerMessage,
@@ -367,11 +301,13 @@ internal class InboundMessageProcessor(
         )
     }
 
-    private fun isCommunicationAllowed(
+    private fun <T> checkAllowedCommunication(
         counterparties: SessionManager.Counterparties,
-    ): Boolean = networkMessagingValidator.isValidInbound(
+        func: () -> T
+    ) = networkMessagingValidator.invokeIfValidInbound(
         counterparties.counterpartyId,
         counterparties.ourId,
+        func
     )
 
 

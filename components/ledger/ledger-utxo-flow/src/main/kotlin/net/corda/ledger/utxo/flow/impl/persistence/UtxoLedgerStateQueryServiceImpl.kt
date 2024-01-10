@@ -65,7 +65,7 @@ class UtxoLedgerStateQueryServiceImpl @Activate constructor(
                     val resolvedStateRefs = wrapWithPersistenceException {
                         externalEventExecutor.execute(
                             ResolveStateRefsExternalEventFactory::class.java,
-                            ResolveStateRefsParameters(nonCachedStateRefs)
+                            ResolveStateRefsParameters(stateRefs)
                         )
                     }.map { it.toStateAndRef<ContractState>(serializationService) }
                     stateAndRefCache.putAll(resolvedStateRefs)

@@ -3,9 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description "Virtual Node Management Sender"
-
-ext.cordaEnableFormatting = true
+description "Virtual Node RPC Ops Common"
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
@@ -27,4 +25,6 @@ dependencies {
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-topic-schema'
     // Test
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

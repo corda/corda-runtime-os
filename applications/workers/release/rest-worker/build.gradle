@@ -6,8 +6,6 @@ plugins {
 
 description 'REST Worker'
 
-ext.cordaEnableFormatting = true
-
 sourceSets {
     e2eTest {
         kotlin {
@@ -85,13 +83,6 @@ dependencies {
     e2eTestImplementation "net.corda:corda-avro-schema"
     e2eTestImplementation "net.corda:corda-topic-schema"
     e2eTestRuntimeOnly 'org.osgi:osgi.core'
-
-    // This puts the jdbc driver into the docker image in the /opt/jdbc-driver folder
-    // this folder can contain many jdbc drivers (and DataSourceFactory provider bundles).
-    // Postgres doesn't need a DataSourceFactory provider bundle (e.g. pax-jdbc), because
-    // the postgres devs have written their own and it's in this jar (PGDataSourceFactory).
-    dockerImageJdbc "org.postgresql:postgresql:$postgresDriverVersion"
-
 }
 
 tasks.register('e2eTest', Test) {

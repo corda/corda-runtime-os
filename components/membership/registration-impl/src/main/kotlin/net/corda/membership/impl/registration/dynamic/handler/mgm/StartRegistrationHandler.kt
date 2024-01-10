@@ -12,7 +12,6 @@ import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
-import net.corda.membership.impl.registration.RegistrationLogger
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
@@ -114,34 +113,21 @@ internal class StartRegistrationHandler(
             state.registrationId, state.mgm.toCorda(), state.registeringMember.toCorda()
         )
 
-        val registrationLogger = RegistrationLogger(logger)
-            .setRegistrationId(registrationId)
-            .setMember(pendingMemberHoldingId)
-            .setMgm(mgmHoldingId)
-
         val outputRecords: MutableList<Record<String, out SpecificRecordBase>> = mutableListOf()
 
         val outputCommand = try {
-            val mgmMemberInfo = getMGMMemberInfo(mgmHoldingId, registrationLogger)
+            val mgmMemberInfo = getMGMMemberInfo(mgmHoldingId)
             val registrationRequest = membershipQueryClient.queryRegistrationRequest(mgmHoldingId, registrationId)
                 .getOrThrow()
-            validateRegistrationRequest(
-                registrationRequest != null,
-                registrationLogger,
-                "Could not find registration request.",
-                DECLINED_REASON_FOR_USER_INTERNAL_ERROR
-            )
+            validateRegistrationRequest(registrationRequest != null,
+                "Could not find registration request with ID `$registrationId`.", DECLINED_REASON_FOR_USER_INTERNAL_ERROR)
 
-            registrationLogger.info("Registering member with MGM.")
-            val pendingMemberInfo = buildPendingMemberInfo(registrationRequest!!, registrationLogger)
+            logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
+            val pendingMemberInfo = buildPendingMemberInfo(registrationRequest!!)
             // Parse the registration request and verify contents
             // The MemberX500Name matches the source MemberX500Name from the P2P messaging
-            validateRegistrationRequest(
-                pendingMemberInfo.name == pendingMemberHoldingId.x500Name,
-                registrationLogger,
-                DECLINED_REASON_NAME_IN_REQUEST_NOT_MATCHING_NAME_IN_P2P_MSG,
-                DECLINED_REASON_NAME_IN_REQUEST_NOT_MATCHING_NAME_IN_P2P_MSG
-            )
+            validateRegistrationRequest(pendingMemberInfo.name == pendingMemberHoldingId.x500Name,
+                DECLINED_REASON_NAME_IN_REQUEST_NOT_MATCHING_NAME_IN_P2P_MSG, DECLINED_REASON_NAME_IN_REQUEST_NOT_MATCHING_NAME_IN_P2P_MSG)
 
             val persistentMemberInfo = memberInfoFactory.createPersistentMemberInfo(
                 mgmMemberInfo.holdingIdentity.toAvro(),
@@ -164,7 +150,7 @@ internal class StartRegistrationHandler(
                 }
             outputRecords.add(pendingMemberRecord)
 
-            registrationLogger.info("Updating the status of the registration request.")
+            logger.info("Updating the status of the registration request.")
             membershipPersistenceClient.setRegistrationRequestStatus(
                 mgmHoldingId,
                 registrationId,
@@ -176,24 +162,12 @@ internal class StartRegistrationHandler(
                 }
             }
 
-            validateRegistrationRequest(
-                registrationRequest.serial != null,
-                registrationLogger,
-                DECLINED_REASON_SERIAL_NULL,
-                DECLINED_REASON_SERIAL_NULL
-            )
-            validateRegistrationRequest(
-                registrationRequest.serial!! >= 0,
-                registrationLogger,
-                DECLINED_REASON_SERIAL_NEGATIVE,
-                DECLINED_REASON_SERIAL_NEGATIVE
-            )
-            validateRegistrationRequest(
-                !memberTypeChecker.isMgm(pendingMemberHoldingId),
-                registrationLogger,
-                DECLINED_REASON_RESISTRANT_IS_MGM,
-                DECLINED_REASON_RESISTRANT_IS_MGM
-            )
+            validateRegistrationRequest(registrationRequest.serial != null,
+                DECLINED_REASON_SERIAL_NULL, DECLINED_REASON_SERIAL_NULL)
+            validateRegistrationRequest(registrationRequest.serial!! >= 0,
+                DECLINED_REASON_SERIAL_NEGATIVE, DECLINED_REASON_SERIAL_NEGATIVE)
+            validateRegistrationRequest(!memberTypeChecker.isMgm(pendingMemberHoldingId),
+                DECLINED_REASON_RESISTRANT_IS_MGM, DECLINED_REASON_RESISTRANT_IS_MGM)
 
             val activeOrSuspendedInfo = membershipQueryClient.queryMemberInfo(
                 mgmHoldingId,
@@ -204,33 +178,20 @@ internal class StartRegistrationHandler(
             if (registrationRequest.serial!! > 0) { //re-registration
                 val serialShouldBeZero =
                     "Member has not registered previously so serial number should be 0, but it was ${registrationRequest.serial}."
-                validateRegistrationRequest(
-                    activeOrSuspendedInfo != null,
-                    registrationLogger,
-                    serialShouldBeZero,
-                    serialShouldBeZero
-                )
+                validateRegistrationRequest(activeOrSuspendedInfo != null, serialShouldBeZero, serialShouldBeZero)
 
                 val serialNotUpToDate =
                     "Registration request was submitted for an older version of member info. " +
                     "The submitted serial was ${registrationRequest.serial}, but the latest serial is ${activeOrSuspendedInfo!!.serial}. " +
                     "Please submit a new request with an up-to-date serial number."
-                validateRegistrationRequest(
-                    activeOrSuspendedInfo.serial <= registrationRequest.serial!!,
-                    registrationLogger,
-                    serialNotUpToDate,
-                    serialNotUpToDate
-                )
+                validateRegistrationRequest(activeOrSuspendedInfo.serial <= registrationRequest.serial!!,
+                    serialNotUpToDate, serialNotUpToDate)
             } else if (registrationRequest.serial!! == 0L) { // initial registration
-                validateRegistrationRequest(
-                    activeOrSuspendedInfo == null,
-                    registrationLogger,
-                    DECLINED_REASON_FOR_USER_GENERAL_INVALID_REASON,
-                    DECLINED_REASON_FOR_USER_GENERAL_INVALID_REASON
-                )
+                validateRegistrationRequest(activeOrSuspendedInfo == null,
+                    DECLINED_REASON_FOR_USER_GENERAL_INVALID_REASON, DECLINED_REASON_FOR_USER_GENERAL_INVALID_REASON)
             }
 
-            validatePreAuthTokenUsage(mgmHoldingId, pendingMemberInfo, registrationRequest, registrationLogger)
+            validatePreAuthTokenUsage(mgmHoldingId, pendingMemberInfo, registrationRequest)
 
             activeOrSuspendedInfo?.let { previous ->
                 val previousContext = previous.memberProvidedContext.toMap()
@@ -243,40 +204,27 @@ internal class StartRegistrationHandler(
                         it.key.startsWith("corda.notary")
                     }
                 val diffInvalidMsgFn = { "Fields ${diff.map { it.key }} cannot be added, removed or updated during re-registration." }
-                validateRegistrationRequest(
-                    diff.isEmpty(),
-                    registrationLogger,
-                    diffInvalidMsgFn,
-                    diffInvalidMsgFn
-                )
+                validateRegistrationRequest(diff.isEmpty(), diffInvalidMsgFn, diffInvalidMsgFn)
             }
 
             // The group ID matches the group ID of the MGM
-            validateRegistrationRequest(
-                pendingMemberInfo.groupId == mgmMemberInfo.groupId,
-                registrationLogger,
-                DECLINED_REASON_GROUP_ID_IN_REQUEST_NOT_MATCHING_TARGET,
-                DECLINED_REASON_GROUP_ID_IN_REQUEST_NOT_MATCHING_TARGET
-            )
+            validateRegistrationRequest(pendingMemberInfo.groupId == mgmMemberInfo.groupId,
+                DECLINED_REASON_GROUP_ID_IN_REQUEST_NOT_MATCHING_TARGET, DECLINED_REASON_GROUP_ID_IN_REQUEST_NOT_MATCHING_TARGET)
 
             // There is at least one endpoint specified
-            validateRegistrationRequest(
-                pendingMemberInfo.endpoints.isNotEmpty(),
-                registrationLogger,
-                DECLINED_REASON_NO_ENDPOINTS_SPECIFIED,
-                DECLINED_REASON_NO_ENDPOINTS_SPECIFIED
-            )
+            validateRegistrationRequest(pendingMemberInfo.endpoints.isNotEmpty(),
+                DECLINED_REASON_NO_ENDPOINTS_SPECIFIED, DECLINED_REASON_NO_ENDPOINTS_SPECIFIED)
 
             // Validate role-specific information if any role is set
-            validateRoleInformation(mgmHoldingId, pendingMemberInfo, registrationLogger)
+            validateRoleInformation(mgmHoldingId, pendingMemberInfo)
 
-            registrationLogger.info("Successful initial validation of registration request.")
+            logger.info("Successful initial validation of registration request with ID ${registrationRequest.registrationId}")
             VerifyMember()
         } catch (ex: InvalidRegistrationRequestException) {
-            registrationLogger.warn("Declined registration. ${ex.originalMessage}")
+            logger.warn("Declined registration. ${ex.originalMessage}")
             DeclineRegistration(ex.originalMessage, ex.reasonForUser)
         } catch (ex: Exception) {
-            registrationLogger.warn("Declined registration. ${ex.message}")
+            logger.warn("Declined registration. ${ex.message}")
             DeclineRegistration("Failed to verify registration request due to: [${ex.message}]", DECLINED_REASON_FOR_USER_INTERNAL_ERROR)
         }
         outputRecords.add(Record(REGISTRATION_COMMAND_TOPIC, key, RegistrationCommand(outputCommand)))
@@ -294,52 +242,30 @@ internal class StartRegistrationHandler(
 
     private class InvalidRegistrationRequestException(reason: String, val reasonForUser: String?) : CordaRuntimeException(reason)
 
-    private fun validateRegistrationRequest(
-        condition: Boolean,
-        registrationLogger: RegistrationLogger,
-        errorMsg: String,
-        reasonForUser: String?
-    ) {
+    private fun validateRegistrationRequest(condition: Boolean, errorMsg: String, reasonForUser: String?) {
         if (!condition) {
-            registrationLogger.info(errorMsg)
+            logger.info(errorMsg)
             throw InvalidRegistrationRequestException(errorMsg, reasonForUser)
         }
     }
 
-    private fun validateRegistrationRequest(
-        condition: Boolean,
-        registrationLogger: RegistrationLogger,
-        errorMsgFn: () -> String,
-        reasonForUserFn: () -> String?
-    ) {
+    private fun validateRegistrationRequest(condition: Boolean, errorMsgFn: () -> String, reasonForUserFn: () -> String?) {
         if (!condition) {
             val errorMsg = errorMsgFn()
             val reasonForUser = reasonForUserFn()
-            registrationLogger.info(errorMsg)
+            logger.info(errorMsg)
             throw InvalidRegistrationRequestException(errorMsg, reasonForUser)
         }
     }
 
-    private fun buildPendingMemberInfo(
-        registrationRequest: RegistrationRequestDetails,
-        registrationLogger: RegistrationLogger
-    ): SelfSignedMemberInfo {
+    private fun buildPendingMemberInfo(registrationRequest: RegistrationRequestDetails): SelfSignedMemberInfo {
         val memberContext = registrationRequest.memberProvidedContext.data.array().deserializeContext(keyValuePairListDeserializer)
-        validateRegistrationRequest(
-            memberContext.isNotEmpty(),
-            registrationLogger,
-            DECLINED_REASON_EMPTY_REGISTRATION_CONTEXT,
-            DECLINED_REASON_EMPTY_REGISTRATION_CONTEXT
-        )
+        validateRegistrationRequest(memberContext.isNotEmpty(),
+            DECLINED_REASON_EMPTY_REGISTRATION_CONTEXT, DECLINED_REASON_EMPTY_REGISTRATION_CONTEXT)
 
         val customFieldsValid = registrationContextCustomFieldsVerifier.verify(memberContext)
         val errorMsgFn = { (customFieldsValid as RegistrationContextCustomFieldsVerifier.Result.Failure).reason }
-        validateRegistrationRequest(
-            customFieldsValid !is RegistrationContextCustomFieldsVerifier.Result.Failure,
-            registrationLogger,
-            errorMsgFn,
-            errorMsgFn
-        )
+        validateRegistrationRequest(customFieldsValid !is RegistrationContextCustomFieldsVerifier.Result.Failure, errorMsgFn, errorMsgFn)
 
         val now = clock.instant().toString()
         val mgmContext = sortedMapOf(
@@ -359,55 +285,31 @@ internal class StartRegistrationHandler(
     private fun SortedMap<String, String>.toKeyValuePairList() =
         KeyValuePairList(entries.map { KeyValuePair(it.key, it.value) }.toList())
 
-    private fun getMGMMemberInfo(
-        mgm: HoldingIdentity,
-        registrationLogger: RegistrationLogger
-    ): MemberInfo {
+    private fun getMGMMemberInfo(mgm: HoldingIdentity): MemberInfo {
         return memberTypeChecker.getMgmMemberInfo(mgm).apply {
-            validateRegistrationRequest(
-                this != null,
-                registrationLogger,
-                DECLINED_REASON_NOT_MGM_IDENTITY,
-                DECLINED_REASON_NOT_MGM_IDENTITY
-            )
+            validateRegistrationRequest(this != null, DECLINED_REASON_NOT_MGM_IDENTITY, DECLINED_REASON_NOT_MGM_IDENTITY)
         }!!
     }
 
-    private fun validateRoleInformation(
-        mgmHoldingId: HoldingIdentity,
-        member: MemberInfo,
-        registrationLogger: RegistrationLogger
-    ) {
+    private fun validateRoleInformation(mgmHoldingId: HoldingIdentity, member: MemberInfo) {
         val groupReader = membershipGroupReaderProvider.getGroupReader(mgmHoldingId)
         val groupParameters = groupReader.groupParameters
             ?: throw MembershipRegistrationException("Could not read group parameters of the membership group '${member.groupId}'.")
         // If role is set to notary, notary details are specified
         member.notaryDetails?.let { notary ->
-            validateRegistrationRequest(
-                notary.keys.isNotEmpty(),
-                registrationLogger,
-                DECLINED_REASON_NOTARY_MISSING_NOTARY_DETAILS,
-                DECLINED_REASON_NOTARY_MISSING_NOTARY_DETAILS
-            )
+            validateRegistrationRequest(notary.keys.isNotEmpty(),
+                DECLINED_REASON_NOTARY_MISSING_NOTARY_DETAILS, DECLINED_REASON_NOTARY_MISSING_NOTARY_DETAILS)
 
             notary.serviceProtocol?.let {
-                validateRegistrationRequest(
-                    it.isNotBlank(),
-                    registrationLogger,
-                    DECLINED_REASON_INVALID_NOTARY_SERVICE_PLUGIN_TYPE,
-                    DECLINED_REASON_INVALID_NOTARY_SERVICE_PLUGIN_TYPE
-                )
+                validateRegistrationRequest(it.isNotBlank(),
+                    DECLINED_REASON_INVALID_NOTARY_SERVICE_PLUGIN_TYPE, DECLINED_REASON_INVALID_NOTARY_SERVICE_PLUGIN_TYPE)
             }
 
-            val differentNotaryServiceVnodeNameFn = { "The virtual node and the notary service `${notary.serviceName}`" +
+            val differentNotaryServiceVnodeNameFn = { "The virtual node `${member.name}` and the notary service `${notary.serviceName}`" +
                     " name cannot be the same." }
             // The notary service x500 name is different from the notary virtual node being registered.
-            validateRegistrationRequest(
-                member.name != notary.serviceName,
-                registrationLogger,
-                differentNotaryServiceVnodeNameFn,
-                differentNotaryServiceVnodeNameFn
-            )
+            validateRegistrationRequest(member.name != notary.serviceName,
+                differentNotaryServiceVnodeNameFn, differentNotaryServiceVnodeNameFn)
 
             val serviceNameExistsForOtherVnodeFn =
                 { "There is a virtual node having the same name as the notary service ${notary.serviceName}." }
@@ -416,33 +318,22 @@ internal class StartRegistrationHandler(
                 membershipQueryClient.queryMemberInfo(
                     mgmHoldingId,
                     listOf(HoldingIdentity(notary.serviceName, member.groupId))
-                ).getOrThrow().firstOrNull() == null,
-                registrationLogger,
-                serviceNameExistsForOtherVnodeFn,
-                ::DECLINED_REASON_FOR_USER_GENERAL_INVALID_REASON
-            )
+                ).getOrThrow().firstOrNull() == null, serviceNameExistsForOtherVnodeFn, { DECLINED_REASON_FOR_USER_GENERAL_INVALID_REASON })
 
             val notaryServiceExistsFn = { "Notary service '${notary.serviceName}' already exists." }
             validateRegistrationRequest(
                 groupReader.lookup().none {
                     it.notaryDetails?.serviceName == notary.serviceName && it.name != member.name
-                },
-                registrationLogger,
-                notaryServiceExistsFn,
-                ::DECLINED_REASON_FOR_USER_GENERAL_INVALID_REASON
-            )
+                }, notaryServiceExistsFn, { DECLINED_REASON_FOR_USER_GENERAL_INVALID_REASON })
 
             if (member.ledgerKeys.isNotEmpty()) {
                   throw InvalidRegistrationRequestException(DECLINED_REASON_NOTARY_LEDGER_KEY, DECLINED_REASON_NOTARY_LEDGER_KEY)
             }
         }
 
-        validateRegistrationRequest(
-            groupParameters.notaries.none { it.name == member.name },
-            registrationLogger,
-            { "Registering member's name is already in use as a notary service name." },
-            ::DECLINED_REASON_FOR_USER_GENERAL_INVALID_REASON
-        )
+        validateRegistrationRequest(groupParameters.notaries.none { it.name == member.name }, {
+            "Registering member's name '${member.name}' is already in use as a notary service name."
+        }, { DECLINED_REASON_FOR_USER_GENERAL_INVALID_REASON })
     }
 
     /**
@@ -452,8 +343,7 @@ internal class StartRegistrationHandler(
     private fun validatePreAuthTokenUsage(
         mgmHoldingId: HoldingIdentity,
         pendingMemberInfo: MemberInfo,
-        registrationRequest: RegistrationRequestDetails,
-        registrationLogger: RegistrationLogger
+        registrationRequest: RegistrationRequestDetails
     ) {
         try {
             registrationRequest.getPreAuthToken(keyValuePairListDeserializer)?.let {
@@ -463,53 +353,45 @@ internal class StartRegistrationHandler(
                     preAuthTokenId = it,
                     viewInactive = false
                 ).getOrThrow()
-                validateRegistrationRequest(
-                    result.isNotEmpty(),
-                    registrationLogger,
-                    {
-                        registrationLogger.warn("Failed attempt to register with invalid pre-auth token '$it'.")
-                        "Registration attempted to use a pre-auth token which is not currently active for this member."
-                    },
-                    ::DECLINED_REASON_FOR_USER_GENERAL_INVALID_REASON
-                )
-                result.first().ttl?.let {
-                    validateRegistrationRequest(
-                        it >= clock.instant(),
-                        registrationLogger,
-                        "Registration attempted to use a pre-auth token which has expired.",
-                        DECLINED_REASON_FOR_USER_GENERAL_INVALID_REASON
+                validateRegistrationRequest(result.isNotEmpty(), {
+                    logger.warn(
+                        "'${pendingMemberInfo.name}' in group '${pendingMemberInfo.groupId}' attempted to " +
+                                "register with invalid pre-auth token '$it'."
                     )
+                    "Registration attempted to use a pre-auth token which is " +
+                            "not currently active for this member."
+                }, { DECLINED_REASON_FOR_USER_GENERAL_INVALID_REASON })
+                result.first().ttl?.let {
+                    validateRegistrationRequest(it >= clock.instant(),
+                        "Registration attempted to use a pre-auth token which has expired.",
+                        DECLINED_REASON_FOR_USER_GENERAL_INVALID_REASON)
                 }
-                registrationLogger.info("Valid pre-auth token '$it' provided during registration.")
+                logger.info(
+                    "'${pendingMemberInfo.name}' in group '${pendingMemberInfo.groupId}' has provided " +
+                            "valid pre-auth token '$it' during registration."
+                )
             }
         } catch (e: IllegalArgumentException) {
             val reason = "Registration failed due to invalid format for the provided pre-auth token."
             e.mapToInvalidRegistrationRequestException(
-                registrationLogger,
                 reason,
                 reason
             )
         } catch (e: MembershipQueryResult.QueryException) {
             e.mapToInvalidRegistrationRequestException(
-                registrationLogger,
                 "Registration failed due to failure to query configured pre-auth tokens.",
                 DECLINED_REASON_FOR_USER_INTERNAL_ERROR
             )
         } catch (e: ContextDeserializationException) {
             e.mapToInvalidRegistrationRequestException(
-                registrationLogger,
                 "Registration failed due to failure when deserializing registration context.",
                 DECLINED_REASON_FOR_USER_INTERNAL_ERROR
             )
         }
     }
 
-    private fun Exception.mapToInvalidRegistrationRequestException(
-        registrationLogger: RegistrationLogger,
-        message: String,
-        reasonForUser: String?
-    ) {
-        registrationLogger.info(message, this)
+    private fun Exception.mapToInvalidRegistrationRequestException(message: String, reasonForUser: String?) {
+        logger.info(message, this)
         throw InvalidRegistrationRequestException(message, reasonForUser)
     }
 }

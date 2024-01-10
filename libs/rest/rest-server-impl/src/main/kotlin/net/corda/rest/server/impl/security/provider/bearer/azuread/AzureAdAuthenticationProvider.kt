@@ -20,8 +20,7 @@ internal class AzureAdAuthenticationProvider(
         jwtProcessor,
         PriorityListJwtClaimExtractor(settings.getPrincipalClaimList()),
         restSecurityManagerSupplier
-    ),
-    AuthenticationSchemeProvider {
+    ), AuthenticationSchemeProvider {
     companion object {
         const val SCOPE_KEY = "scope"
         const val CLIENT_ID_KEY = "client_id"

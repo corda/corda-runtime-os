@@ -14,5 +14,6 @@ dependencies {
     implementation "net.corda:corda-base"
 
     api "org.slf4j:slf4j-api:$slf4jVersion"
-    api libs.bundles.bouncycastle
+    api "org.bouncycastle:bcprov-jdk18on:$bouncycastleVersion"
+    api "org.bouncycastle:bcpkix-jdk18on:$bouncycastleVersion"
 }

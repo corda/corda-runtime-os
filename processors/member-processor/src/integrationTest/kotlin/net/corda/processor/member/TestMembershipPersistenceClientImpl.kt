@@ -19,14 +19,14 @@ import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
-import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils.mgmSigningKeyAlgorithm
-import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils.mgmSigningKeyProvider
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.records.Record
+import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils.mgmSigningKeyAlgorithm
+import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils.mgmSigningKeyProvider
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
@@ -42,7 +42,6 @@ import java.util.UUID
 
 @ServiceRanking(Int.MAX_VALUE)
 @Component(service = [MembershipPersistenceClient::class, MembershipQueryClient::class])
-@Suppress("TooManyFunctions")
 internal class TestMembershipPersistenceClientImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
@@ -52,20 +51,20 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
     private var groupParameters = KeyValuePairList(
         listOf(
             KeyValuePair(EPOCH_KEY, "1"),
-            KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
-        ),
+            KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
+        )
     )
 
     override fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
         memberInfos: Collection<SelfSignedMemberInfo>,
-    ): MembershipPersistenceOperation<Unit> = Operation(MembershipPersistenceResult.success())
+    ) : MembershipPersistenceOperation<Unit> = Operation(MembershipPersistenceResult.success())
 
     override fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
         groupPolicy: LayeredPropertyMap,
         version: Long,
-    ): MembershipPersistenceOperation<Unit> = Operation(MembershipPersistenceResult.success())
+    ) : MembershipPersistenceOperation<Unit> = Operation(MembershipPersistenceResult.success())
 
     override fun persistGroupParametersInitialSnapshot(viewOwningIdentity: HoldingIdentity) =
         throw NotImplementedError("Not implemented for test service")
@@ -73,7 +72,7 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         groupParameters: InternalGroupParameters,
-    ): MembershipPersistenceOperation<InternalGroupParameters> = Operation(MembershipPersistenceResult.Success(groupParameters))
+    ) : MembershipPersistenceOperation<InternalGroupParameters> = Operation(MembershipPersistenceResult.Success(groupParameters))
 
     override fun addNotaryToGroupParameters(notary: PersistentMemberInfo) = throw NotImplementedError("Not implemented for test service")
 
@@ -86,7 +85,7 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         viewOwningIdentity: HoldingIdentity,
         approvedMember: HoldingIdentity,
         registrationRequestId: String,
-    ): MembershipPersistenceOperation<PersistentMemberInfo> =
+    ) : MembershipPersistenceOperation<PersistentMemberInfo> =
         Operation(MembershipPersistenceResult.Failure("Unsupported!"))
 
     override fun setRegistrationRequestStatus(
@@ -117,7 +116,7 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun consumePreAuthToken(
         mgmHoldingIdentity: HoldingIdentity,
         ownerX500Name: MemberX500Name,
-        preAuthTokenId: UUID,
+        preAuthTokenId: UUID
     ): MembershipPersistenceOperation<Unit> = Operation(MembershipPersistenceResult.success())
 
     override fun revokePreAuthToken(
@@ -134,40 +133,31 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun deleteApprovalRule(
         viewOwningIdentity: HoldingIdentity,
         ruleId: String,
-        ruleType: ApprovalRuleType,
+        ruleType: ApprovalRuleType
     ): MembershipPersistenceOperation<Unit> = Operation(MembershipPersistenceResult.success())
 
     override fun suspendMember(
-        viewOwningIdentity: HoldingIdentity,
-        memberX500Name: MemberX500Name,
-        serialNumber: Long?,
-        reason: String?,
-    ): MembershipPersistenceOperation<Pair<PersistentMemberInfo, InternalGroupParameters?>> = Operation(
-        MembershipPersistenceResult.Success(PersistentMemberInfo() to null),
-    )
+        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+    ): MembershipPersistenceOperation<Pair<PersistentMemberInfo, InternalGroupParameters?>>
+        = Operation(MembershipPersistenceResult.Success(PersistentMemberInfo() to null))
 
     override fun activateMember(
-        viewOwningIdentity: HoldingIdentity,
-        memberX500Name: MemberX500Name,
-        serialNumber: Long?,
-        reason: String?,
-    ): MembershipPersistenceOperation<Pair<PersistentMemberInfo, InternalGroupParameters?>> = Operation(
-        MembershipPersistenceResult.Success(PersistentMemberInfo() to null),
-    )
+        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+    ): MembershipPersistenceOperation<Pair<PersistentMemberInfo, InternalGroupParameters?>>
+        = Operation(MembershipPersistenceResult.Success(PersistentMemberInfo() to null))
 
     override fun updateStaticNetworkInfo(info: StaticNetworkInfo): MembershipPersistenceOperation<StaticNetworkInfo> {
         return Operation(MembershipPersistenceResult.Success(info))
     }
 
     override fun updateGroupParameters(
-        viewOwningIdentity: HoldingIdentity,
-        newGroupParameters: Map<String, String>,
+        viewOwningIdentity: HoldingIdentity, newGroupParameters: Map<String, String>
     ): MembershipPersistenceOperation<InternalGroupParameters> =
         throw NotImplementedError("Not implemented for test service")
 
     private val persistenceCoordinator =
         coordinatorFactory.createCoordinator(
-            LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
+            LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>()
         ) { event, coordinator ->
             if (event is StartEvent) {
                 coordinator.updateStatus(LifecycleStatus.UP)
@@ -175,7 +165,7 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         }
     private val queryCoordinator =
         coordinatorFactory.createCoordinator(
-            LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
+            LifecycleCoordinatorName.forComponent<MembershipQueryClient>()
         ) { event, coordinator ->
             if (event is StartEvent) {
                 coordinator.updateStatus(LifecycleStatus.UP)
@@ -210,7 +200,7 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
 
     override fun mutualTlsListAllowedCertificates(mgmHoldingIdentity: HoldingIdentity): MembershipQueryResult<Collection<String>> =
         MembershipQueryResult.Success(
-            emptyList(),
+            emptyList()
         )
 
     override fun queryPreAuthTokens(
@@ -227,8 +217,7 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
 
     override fun queryStaticNetworkInfo(groupId: String): MembershipQueryResult<StaticNetworkInfo> {
         val (public, private) = KeyPairGenerator.getInstance(
-            mgmSigningKeyAlgorithm,
-            mgmSigningKeyProvider,
+            mgmSigningKeyAlgorithm, mgmSigningKeyProvider
         ).genKeyPair().let { it.public.encoded to it.private.encoded }
         return MembershipQueryResult.Success(
             StaticNetworkInfo(
@@ -237,7 +226,7 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
                 ByteBuffer.wrap(public),
                 ByteBuffer.wrap(private),
                 1,
-            ),
+            )
         )
     }
 
@@ -253,9 +242,10 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         queryCoordinator.stop()
     }
 
-    private class Operation<T>(private val result: MembershipPersistenceResult<T>) : MembershipPersistenceOperation<T> {
-        override fun execute() = result
+    private class Operation<T>(private val result: MembershipPersistenceResult<T>): MembershipPersistenceOperation<T> {
+        override fun execute() =  result
 
         override fun createAsyncCommands(): Collection<Record<*, *>> = emptyList()
+
     }
 }

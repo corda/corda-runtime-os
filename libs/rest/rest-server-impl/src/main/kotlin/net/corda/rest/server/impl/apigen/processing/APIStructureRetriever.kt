@@ -1,18 +1,10 @@
 package net.corda.rest.server.impl.apigen.processing
 
-import net.corda.rest.PluggableRestResource
-import net.corda.rest.RestResource
-import net.corda.rest.annotations.HttpDELETE
+import net.corda.rest.durablestream.DurableStreamContext
+import org.slf4j.LoggerFactory
 import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPOST
-import net.corda.rest.annotations.HttpPUT
 import net.corda.rest.annotations.HttpRestResource
-import net.corda.rest.annotations.HttpWS
-import net.corda.rest.annotations.isRestEndpointAnnotation
-import net.corda.rest.annotations.retrieveApiVersionsSet
-import net.corda.rest.durablestream.DurableStreamContext
-import net.corda.rest.durablestream.api.isFiniteDurableStreamsMethod
-import net.corda.rest.durablestream.api.returnsDurableCursorBuilder
 import net.corda.rest.server.impl.apigen.models.Endpoint
 import net.corda.rest.server.impl.apigen.models.EndpointMethod
 import net.corda.rest.server.impl.apigen.models.EndpointParameter
@@ -21,15 +13,23 @@ import net.corda.rest.server.impl.apigen.models.Resource
 import net.corda.rest.server.impl.apigen.models.ResponseBody
 import net.corda.rest.server.impl.apigen.processing.streams.DurableReturnResult
 import net.corda.rest.server.impl.apigen.processing.streams.FiniteDurableReturnResult
+import net.corda.rest.tools.annotations.validation.RestInterfaceValidator
+import net.corda.rest.durablestream.api.returnsDurableCursorBuilder
+import net.corda.rest.durablestream.api.isFiniteDurableStreamsMethod
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.RestResource
+import net.corda.rest.annotations.HttpDELETE
+import net.corda.rest.annotations.HttpPUT
+import net.corda.rest.annotations.HttpWS
+import net.corda.rest.annotations.isRestEndpointAnnotation
+import net.corda.rest.annotations.retrieveApiVersionsSet
 import net.corda.rest.tools.annotations.extensions.name
 import net.corda.rest.tools.annotations.extensions.path
 import net.corda.rest.tools.annotations.extensions.title
-import net.corda.rest.tools.annotations.validation.RestInterfaceValidator
 import net.corda.rest.tools.isStaticallyExposedGet
 import net.corda.rest.tools.responseDescription
 import net.corda.utilities.debug
 import net.corda.utilities.trace
-import org.slf4j.LoggerFactory
 import java.lang.reflect.Method
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.createInstance
@@ -114,12 +114,12 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
         try {
             log.trace { "Retrieve target interface for implementation \"${impl::class.java.name}\"." }
             return impl.targetInterface.takeIf { it.annotations.any { annotation -> annotation is HttpRestResource } }
-                .also {
-                    log.trace {
-                        "Retrieved target interface \"${impl.targetInterface.name}\" " +
-                            "for implementation \"${impl::class.java.name}\" completed."
+                    .also {
+                        log.trace {
+                            "Retrieved target interface \"${impl.targetInterface.name}\" " +
+                                    "for implementation \"${impl::class.java.name}\" completed."
+                        }
                     }
-                }
         } catch (e: Exception) {
             "Error during retrieve target interface for implementation \"${impl::class.java.name}\"".let {
                 log.error("$it: ${e.message}")
@@ -176,10 +176,8 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
         log.debug { "Is implicitly exposed method check for method \"${method.name} \"." }
         return (method.isStaticallyExposedGet())
             .also {
-                log.trace {
-                    "Is implicitly exposed method check for method \"${method.name} \", " +
-                        "result \"$it\" completed."
-                }
+                log.trace { "Is implicitly exposed method check for method \"${method.name} \", " +
+                        "result \"$it\" completed." }
             }
     }
 

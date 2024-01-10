@@ -47,7 +47,7 @@ class WireTransactionFactoryImpl @Activate constructor(
     override fun create(componentGroupLists: List<List<ByteArray>>): WireTransaction {
         val metadata =
             parseMetadata(componentGroupLists[TransactionMetadataImpl.ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first())
-        check((metadata as TransactionMetadataInternal).getNumberOfComponentGroups() == componentGroupLists.size) {
+        check((metadata as TransactionMetadataInternal).getNumberOfComponentGroups() == componentGroupLists.size){
             "Number of component groups in metadata structure description does not match with the real number!"
         }
         return create(componentGroupLists, generatePrivacySalt())
@@ -109,7 +109,7 @@ class WireTransactionFactoryImpl @Activate constructor(
 
         check(metadata.getDigestSettings() == WireTransactionDigestSettings.defaultValues) {
             "Only the default digest settings are acceptable now! ${metadata.getDigestSettings()} vs " +
-                "${WireTransactionDigestSettings.defaultValues}"
+                    "${WireTransactionDigestSettings.defaultValues}"
         }
         return metadata
     }

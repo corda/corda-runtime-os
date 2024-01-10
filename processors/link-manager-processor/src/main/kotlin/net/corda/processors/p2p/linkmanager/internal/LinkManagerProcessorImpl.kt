@@ -6,8 +6,6 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger
-import net.corda.libs.statemanager.api.StateManager
-import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -25,9 +23,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
-import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.MessagingConfig.Subscription.POLL_TIMEOUT
-import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -65,10 +61,6 @@ class LinkManagerProcessorImpl @Activate constructor(
     private val membershipQueryClient: MembershipQueryClient,
     @Reference(service = GroupParametersReaderService::class)
     private val groupParametersReaderService: GroupParametersReaderService,
-    @Reference(service = AvroSchemaRegistry::class)
-    private val avroSchemaRegistry: AvroSchemaRegistry,
-    @Reference(service = StateManagerFactory::class)
-    private val stateManagerFactory: StateManagerFactory,
 ) : LinkManagerProcessor {
 
     private companion object {
@@ -77,7 +69,6 @@ class LinkManagerProcessorImpl @Activate constructor(
 
     private var registration: RegistrationHandle? = null
     private var linkManager: LinkManager? = null
-    private var stateManager: StateManager? = null
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<LinkManagerProcessorImpl>(::eventHandler)
 
@@ -106,10 +97,6 @@ class LinkManagerProcessorImpl @Activate constructor(
             is BootConfigEvent -> {
                 configurationReadService.bootstrapConfig(event.config)
 
-                val localStateManager = stateManagerFactory.create(event.config.getConfig(BootConfig.BOOT_STATE_MANAGER))
-                    .also { it.start() }
-                log.info("StateManager ${localStateManager.name} has been created and started.")
-
                 Security.addProvider(BouncyCastleProvider())
 
                 val linkManager = LinkManager(
@@ -125,18 +112,16 @@ class LinkManagerProcessorImpl @Activate constructor(
                     membershipGroupReaderProvider,
                     membershipQueryClient,
                     groupParametersReaderService,
-                    localStateManager,
                 )
 
-                stateManager = localStateManager
                 this.linkManager = linkManager
 
                 registration?.close()
                 registration = lifecycleCoordinator.followStatusChangesByName(
                     setOf(
                         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                        linkManager.dominoTile.coordinatorName,
-                    ),
+                        linkManager.dominoTile.coordinatorName
+                    )
                 )
 
                 linkManager.start()
@@ -144,8 +129,6 @@ class LinkManagerProcessorImpl @Activate constructor(
             is StopEvent -> {
                 linkManager?.stop()
                 linkManager = null
-                stateManager?.stop()
-                stateManager = null
                 registration?.close()
                 registration = null
             }
@@ -158,7 +141,7 @@ class LinkManagerProcessorImpl @Activate constructor(
             // Specifically, state & event subscriptions have an issue where they are polling with high timeout on events topic,
             // leading to slow syncing upon startup. See: https://r3-cev.atlassian.net/browse/CORE-3163
             POLL_TIMEOUT,
-            ConfigValueFactory.fromAnyRef(100),
+            ConfigValueFactory.fromAnyRef(100)
         )
     }
 }

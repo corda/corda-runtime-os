@@ -42,6 +42,8 @@ dependencies {
     runtimeOnly project(':libs:tracing-impl')
 
     testImplementation 'org.osgi:osgi.core'
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(':libs:application:addon')
     testImplementation project(':libs:application:banner')
 

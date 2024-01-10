@@ -41,10 +41,8 @@ class RestServerResponseEntityTest : RestServerTestBase() {
                 true
             ).apply { start() }
             client =
-                TestHttpClientUnirestImpl(
-                    "http://${restServerSettings.address.host}:${server.port}/" +
-                        "${restServerSettings.context.basePath}/${apiVersion.versionPath}/"
-                )
+                TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:${server.port}/" +
+                        "${restServerSettings.context.basePath}/${apiVersion.versionPath}/")
         }
 
         @AfterAll

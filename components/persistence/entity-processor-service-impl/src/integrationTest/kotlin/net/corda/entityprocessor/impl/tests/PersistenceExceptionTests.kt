@@ -7,6 +7,7 @@ import net.corda.cpk.read.CpkReadService
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
@@ -27,6 +28,7 @@ import net.corda.entityprocessor.impl.tests.helpers.assertEventResponseWithoutEr
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.flow.utils.toKeyValuePairList
+import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.EntitySandboxServiceFactory
 import net.corda.persistence.common.ResponseFactory
@@ -74,6 +76,7 @@ import java.util.UUID
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PersistenceExceptionTests {
     companion object {
+        const val TOPIC = "pretend-topic"
         private const val TIMEOUT_MILLIS = 10000L
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
@@ -157,7 +160,8 @@ class PersistenceExceptionTests {
             processor = EntityRequestProcessor(
                 currentSandboxGroupContext,
                 entitySandboxService,
-                responseFactory
+                responseFactory,
+                this::noOpPayloadCheck
             )
         }
 
@@ -182,14 +186,16 @@ class PersistenceExceptionTests {
         )
 
         // Now "send" the request for processing and "receive" the responses.
-        val response = processor.process(ignoredRequest)
+        val responses = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), ignoredRequest)))
 
-        val result = response.payload as ExternalEventResponse
-        assertThat(result.error).isNotNull
+        assertThat(responses.size).isEqualTo(1)
+        val flowEvent = responses.first().value as FlowEvent
+        val response = flowEvent.payload as ExternalEventResponse
+        assertThat(response.error).isNotNull
         // The failure is correctly categorised.
-        assertThat(result.error.errorType).isEqualTo(ExternalEventResponseErrorType.TRANSIENT)
+        assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.TRANSIENT)
         // The failure also captures the exception name.
-        assertThat(result.error.exception.errorType).isEqualTo(CpkNotAvailableException::class.java.name)
+        assertThat(response.error.exception.errorType).isEqualTo(CpkNotAvailableException::class.java.name)
     }
 
     @Test
@@ -214,18 +220,21 @@ class PersistenceExceptionTests {
         val processor = EntityRequestProcessor(
             currentSandboxGroupContext,
             brokenEntitySandboxService,
-            responseFactory
+            responseFactory,
+            this::noOpPayloadCheck
         )
 
         // Now "send" the request for processing and "receive" the responses.
-        val response = processor.process(ignoredRequest)
+        val responses = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), ignoredRequest)))
 
-        val result = response.payload as ExternalEventResponse
-        assertThat(result.error).isNotNull
+        assertThat(responses.size).isEqualTo(1)
+        val flowEvent = responses.first().value as FlowEvent
+        val response = flowEvent.payload as ExternalEventResponse
+        assertThat(response.error).isNotNull
         // The failure is correctly categorised.
-        assertThat(result.error.errorType).isEqualTo(ExternalEventResponseErrorType.TRANSIENT)
+        assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.TRANSIENT)
         // The failure also captures the exception name.
-        assertThat(result.error.exception.errorType).isEqualTo(VirtualNodeException::class.java.name)
+        assertThat(response.error.exception.errorType).isEqualTo(VirtualNodeException::class.java.name)
     }
 
     @Test
@@ -245,14 +254,17 @@ class PersistenceExceptionTests {
             )
 
         // Now "send" the request for processing and "receive" the responses.
-        val response = processor.process(badRequest)
+        val responses = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), badRequest)))
 
-        val result = response.payload as ExternalEventResponse
-        assertThat(result.error).isNotNull
+
+        assertThat(responses.size).isEqualTo(1)
+        val flowEvent = responses.first().value as FlowEvent
+        val response = flowEvent.payload as ExternalEventResponse
+        assertThat(response.error).isNotNull
         // The failure is correctly categorised.
-        assertThat(result.error.errorType).isEqualTo(ExternalEventResponseErrorType.FATAL)
+        assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.FATAL)
         // The failure also captures the exception name.
-        assertThat(result.error.exception.errorType).isEqualTo(CordaRuntimeException::class.java.name)
+        assertThat(response.error.exception.errorType).isEqualTo(CordaRuntimeException::class.java.name)
     }
 
     @Test
@@ -260,13 +272,13 @@ class PersistenceExceptionTests {
         createDogDb()
         val persistEntitiesRequest = createDogPersistRequest()
 
-        val response = processor.process(persistEntitiesRequest)
-        assertEventResponseWithoutError(response)
+        val record1 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
+        assertEventResponseWithoutError(record1.single())
         // duplicate request
-        val duplicateResponse = processor.process(persistEntitiesRequest)
+        val record2 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
         // The below should not contain a PK violation error as it should be identified it is the same persistence request
         // and therefore not executed
-        assertEventResponseWithoutError(duplicateResponse)
+        assertEventResponseWithoutError(record2.single())
     }
 
     @Test
@@ -276,11 +288,11 @@ class PersistenceExceptionTests {
 
         val initialDogDbCount = getDogDbCount(virtualNodeInfo.vaultDmlConnectionId)
 
-        val response = processor.process(persistEntitiesRequest)
-        assertEventResponseWithoutError(response)
+        val record1 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
+        assertEventResponseWithoutError(record1.single())
         // duplicate request
-        val duplicateResponse = processor.process(persistEntitiesRequest)
-        assertEventResponseWithoutError(duplicateResponse)
+        val record2 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
+        assertEventResponseWithoutError(record2.single())
 
         val dogDbCount = getDogDbCount(virtualNodeInfo.vaultDmlConnectionId)
         // There shouldn't be a dog duplicate entry in the DB, i.e. dogs count in the DB should still be 1
@@ -293,21 +305,23 @@ class PersistenceExceptionTests {
         val dogId = UUID.randomUUID()
         val persistEntitiesRequest = createDogPersistRequest(dogId)
 
-        val response = processor.process(persistEntitiesRequest)
-        assertEventResponseWithoutError(response)
+        val record1 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
+        assertEventResponseWithoutError(record1.single())
         // duplicate request
-        val duplicateResponse = processor.process(persistEntitiesRequest)
+        val record2 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
         // The below should not contain a PK violation error as it should be identified it is the same persistence request
         // and therefore not executed
-        assertEventResponseWithoutError(duplicateResponse)
+        assertEventResponseWithoutError(record2.single())
 
         val userDuplicatePersistEntitiesRequest = createDogPersistRequest(dogId)
         // the following should now throw as it is different request that violates PK
-        val userDuplicateResponse = processor.process(userDuplicatePersistEntitiesRequest)
-        assertEventResponseWithError(userDuplicateResponse)
+        val record3 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), userDuplicatePersistEntitiesRequest)))
+        assertEventResponseWithError(record3.single())
     }
 
-    private fun createDogPersistRequest(dogId: UUID = UUID.randomUUID()): EntityRequest {
+    private fun noOpPayloadCheck(bytes: ByteBuffer) = bytes
+
+    private fun createDogPersistRequest(dogId :UUID = UUID.randomUUID()): EntityRequest {
         val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
         // create dog using dog-aware sandbox
         val dog = sandbox.createDog("Stray", id = dogId, owner = "Not Known").instance
@@ -358,10 +372,9 @@ class PersistenceExceptionTests {
         }
     }
 
-    @Suppress("NestedBlockDepth")
     private fun getDogDbCount(connectionId: UUID, dogDBTable: String = "dog"): Int =
         dbConnectionManager
-            .getDataSource(connectionId).connection.use { connection ->
+                .getDataSource(connectionId).connection.use { connection ->
                 connection.prepareStatement("SELECT count(*) FROM $dogDBTable").use {
                     it.executeQuery().use { rs ->
                         if (!rs.next()) {

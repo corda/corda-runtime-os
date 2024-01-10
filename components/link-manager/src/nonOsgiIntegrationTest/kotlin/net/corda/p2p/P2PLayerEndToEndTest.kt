@@ -20,7 +20,6 @@ import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
-import net.corda.data.p2p.crypto.protocol.RevocationCheckMode
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerProcessedMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
@@ -35,13 +34,9 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_PERIOD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REPLAY_ALGORITHM_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REVOCATION_CHECK_KEY
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_FOR_MEMBER_KEY
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_FOR_MGM_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_REFRESH_THRESHOLD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
-import net.corda.libs.platform.PlatformInfoProvider
-import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -68,6 +63,7 @@ import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
 import net.corda.p2p.crypto.protocol.ProtocolConstants
+import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
@@ -80,7 +76,6 @@ import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
-import net.corda.schema.configuration.BootConfig.P2P_LINK_MANAGER_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
@@ -521,9 +516,7 @@ class P2PLayerEndToEndTest {
                 .withValue(MAX_REPLAYING_MESSAGES_PER_PEER, ConfigValueFactory.fromAnyRef(100))
                 .withValue(HEARTBEAT_MESSAGE_PERIOD_KEY, ConfigValueFactory.fromAnyRef(Duration.ofSeconds(2)))
                 .withValue(SESSION_TIMEOUT_KEY, ConfigValueFactory.fromAnyRef(Duration.ofSeconds(10)))
-                .withValue(SESSIONS_PER_PEER_KEY, ConfigValueFactory.fromAnyRef(null))
-                .withValue(SESSIONS_PER_PEER_FOR_MEMBER_KEY, ConfigValueFactory.fromAnyRef(2))
-                .withValue(SESSIONS_PER_PEER_FOR_MGM_KEY, ConfigValueFactory.fromAnyRef(1))
+                .withValue(SESSIONS_PER_PEER_KEY, ConfigValueFactory.fromAnyRef(4))
                 .withValue(SESSION_REFRESH_THRESHOLD_KEY, ConfigValueFactory.fromAnyRef(432000))
                 .withValue(
                     REPLAY_ALGORITHM_KEY,
@@ -572,11 +565,8 @@ class P2PLayerEndToEndTest {
                     }
                 }?.public
 
-        private inline fun  <reified T: Lifecycle> mockLifeCycle(
-            coordinatorName: LifecycleCoordinatorName? = null,
-            stubbing: KStubbing<T>.(T) -> Unit
-        ): T {
-            val name = coordinatorName ?: LifecycleCoordinatorName.forComponent<T>()
+        private inline fun  <reified T: Lifecycle> mockLifeCycle(stubbing: KStubbing<T>.(T) -> Unit): T {
+            val name = LifecycleCoordinatorName.forComponent<T>()
             val coordinator = lifecycleCoordinatorFactory.createCoordinator(name) { _, coordinator ->
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
@@ -656,11 +646,6 @@ class P2PLayerEndToEndTest {
             on { getGroupReader(any()) } doReturn groupReader
         }
 
-        private val stateManagerName = mock<LifecycleCoordinatorName>()
-        private val stateManager = mockLifeCycle<StateManager>(stateManagerName) {
-            on { name } doReturn stateManagerName
-        }
-
         private val linkManager =
             LinkManager(
                 subscriptionFactory,
@@ -675,18 +660,6 @@ class P2PLayerEndToEndTest {
                 membershipGroupReaderProvider,
                 mock(),
                 mock(),
-                stateManager,
-            )
-        private val platformInfoProvider = object : PlatformInfoProvider {
-            override val activePlatformVersion = 1
-            override val localWorkerPlatformVersion = 1
-            override val localWorkerSoftwareVersion = "5.2"
-        }
-        private val bootConfig = SmartConfigFactory.createWithoutSecurityServices()
-            .create(ConfigFactory.empty())
-            .withValue(
-                P2P_LINK_MANAGER_WORKER_REST_ENDPOINT,
-                ConfigValueFactory.fromAnyRef("localhost:8080"),
             )
 
         private val gateway =
@@ -695,11 +668,9 @@ class P2PLayerEndToEndTest {
                 subscriptionFactory,
                 publisherFactory,
                 lifecycleCoordinatorFactory,
-                cryptoOpsClient,
-                AvroSchemaRegistryImpl(),
-                platformInfoProvider,
-                bootConfig,
                 bootstrapConfig,
+                cryptoOpsClient,
+                AvroSchemaRegistryImpl()
             )
 
         private fun Publisher.publishConfig(key: String, config: Config) {
@@ -777,7 +748,6 @@ class P2PLayerEndToEndTest {
         override fun close() {
             linkManager.close()
             gateway.close()
-            topicService.close()
         }
 
         fun addReadWriter(): Subscription<String, AppMessage> {

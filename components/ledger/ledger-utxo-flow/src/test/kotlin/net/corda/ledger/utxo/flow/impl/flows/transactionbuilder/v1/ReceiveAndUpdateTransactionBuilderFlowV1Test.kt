@@ -67,7 +67,7 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     @Test
     fun `called with original notary null and receives new notary returns a builder with the new notary`() {
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(notaryName = notaryX500Name)
+            UtxoTransactionBuilderContainer(notaryName = notaryX500Name )
         )
 
         val returnedTransactionBuilder = callSendFlow()
@@ -185,8 +185,7 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
                 setOf(
                     stateRef1.transactionId,
                     stateRef2.transactionId
-                ),
-                session
+                ), session
             )
         )
     }
@@ -205,8 +204,7 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
             TransactionBackchainResolutionFlow(
                 setOf(
                     stateRef1.transactionId,
-                ),
-                session
+                ), session
             )
         )
     }
@@ -226,8 +224,7 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
                 setOf(
                     stateRef1.transactionId,
                     stateRef2.transactionId
-                ),
-                session
+                ), session
             )
         )
     }
@@ -246,8 +243,7 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
                 setOf(
                     stateRef1.transactionId,
                     stateRef2.transactionId
-                ),
-                session
+                ), session
             )
         )
     }
@@ -266,8 +262,7 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
             TransactionBackchainResolutionFlow(
                 setOf(
                     stateRef1.transactionId,
-                ),
-                session
+                ), session
             )
         )
     }
@@ -287,8 +282,7 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
                 setOf(
                     stateRef1.transactionId,
                     stateRef2.transactionId
-                ),
-                session
+                ), session
             )
         )
     }

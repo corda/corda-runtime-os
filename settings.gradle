@@ -40,6 +40,9 @@ pluginManagement {
         id 'com.gradle.enterprise' version gradleEnterpriseVersion
         id 'com.gradle.common-custom-user-data-gradle-plugin' version gradleDataPlugin
         id 'net.corda.cordapp.cordapp-configuration' version cordaApiVersion
+        id 'org.jetbrains.kotlin.jvm' version kotlinVersion
+        id 'org.jetbrains.kotlin.plugin.allopen' version kotlinVersion
+        id 'org.jetbrains.kotlin.plugin.jpa' version kotlinVersion
         id 'net.corda.plugins.cordapp-cpk2' version cordaGradlePluginsVersion
         id 'net.corda.plugins.cordapp-cpb2' version cordaGradlePluginsVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
@@ -98,7 +101,6 @@ include 'components:crypto:crypto-hes'
 include 'components:crypto:crypto-hes-core-impl'
 include 'components:crypto:crypto-hes-impl'
 include 'components:crypto:crypto-persistence'
-include 'components:crypto:crypto-rest'
 include 'components:crypto:crypto-service-impl'
 include 'components:crypto:crypto-softhsm-impl'
 include 'components:db:db-connection-manager'
@@ -180,6 +182,7 @@ include 'components:uniqueness:backing-store-impl'
 include 'components:uniqueness:uniqueness-checker'
 include 'components:uniqueness:uniqueness-checker-client-service-impl'
 include 'components:uniqueness:uniqueness-checker-impl'
+include 'components:uniqueness:uniqueness-checker-impl-osgi-tests'
 include 'components:virtual-node:cpi-info-read-service'
 include 'components:virtual-node:cpi-info-read-service-impl'
 include 'components:virtual-node:cpi-info-write-service'
@@ -271,6 +274,7 @@ include 'libs:lifecycle:lifecycle-impl'
 include 'libs:lifecycle:lifecycle-test-impl'
 include 'libs:lifecycle:registry'
 include 'libs:membership:certificates-datamodel'
+include 'libs:membership:ledger-identity'
 include 'libs:membership:membership-common'
 include 'libs:membership:membership-datamodel'
 include 'libs:membership:membership-impl'
@@ -372,9 +376,6 @@ include 'notary-plugins:notary-plugin-common'
 include 'notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-api'
 include 'notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-client'
 include 'notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-server'
-include 'notary-plugins:notary-plugin-contract-verifying:notary-plugin-contract-verifying-api'
-include 'notary-plugins:notary-plugin-contract-verifying:notary-plugin-contract-verifying-client'
-include 'notary-plugins:notary-plugin-contract-verifying:notary-plugin-contract-verifying-server'
 include 'osgi-framework-api'
 include 'osgi-framework-bootstrap'
 include 'processors:crypto-processor'
@@ -453,7 +454,6 @@ include 'testing:sandboxes:test-api'
 include 'testing:sandboxes-testkit'
 include 'testing:security-manager-utilities'
 include 'testing:test-serialization'
-include 'testing:test-state-manager'
 include 'testing:test-utilities'
 include 'testing:uniqueness:backing-store-fake'
 include 'testing:uniqueness:uniqueness-utilities'
@@ -538,3 +538,6 @@ gradleEnterprise {
         }
     }
 }
+include 'libs:kotlin-coroutines'
+findProject(':libs:kotlin-coroutines')?.name = 'kotlin-coroutines'
+

@@ -8,3 +8,4 @@ interface TokenPoolCacheStateSerialization {
 
     fun deserialize(bytes: ByteArray): TokenPoolCacheState
 }
+

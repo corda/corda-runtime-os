@@ -50,7 +50,6 @@ class ResponseEntity<T : Any?>(
         fun <T : Any?> seeOther(responseBody: T): ResponseEntity<T> {
             return ResponseEntity(ResponseCode.SEE_OTHER, responseBody)
         }
-
         // See: https://www.rfc-editor.org/rfc/rfc7234#section-5.5
         fun <T : Any?> okButDeprecated(responseBody: T, msg: String): ResponseEntity<T> {
             return ResponseEntity(ResponseCode.OK, responseBody, mapOf("Warning" to "299 - $msg"))

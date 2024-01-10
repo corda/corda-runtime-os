@@ -1,7 +1,6 @@
 package net.corda.messaging.api.publisher.factory
 
 import net.corda.libs.configuration.SmartConfig
-import net.corda.messaging.api.publisher.HttpRpcClient
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -42,15 +41,4 @@ interface PublisherFactory {
         rpcConfig: RPCConfig<REQUEST, RESPONSE>,
         messagingConfig: SmartConfig,
     ): RPCSender<REQUEST, RESPONSE>
-
-    /**
-     * Create an instance of the [HttpRpcClient]
-     *
-     * The HTTP RPC client will send an RPC requests over HTTP.
-     *
-     * The client is responsible for retries
-     *
-     * The responder side can be found in [SubscriptionFactory] under [createHttpRPCSubscription]
-     */
-    fun createHttpRpcClient(): HttpRpcClient
 }

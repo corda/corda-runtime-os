@@ -108,8 +108,9 @@ class MemberProcessorImpl @Activate constructor(
     private val coordinator =
         lifecycleCoordinatorFactory.createCoordinator<MemberProcessor>(
             dependentComponents,
-            MemberProcessorLifecycleHandler(configurationReadService),
+            MemberProcessorLifecycleHandler(configurationReadService)
         )
+
 
     override fun start(bootConfig: SmartConfig) {
         logger.info("Member processor starting.")

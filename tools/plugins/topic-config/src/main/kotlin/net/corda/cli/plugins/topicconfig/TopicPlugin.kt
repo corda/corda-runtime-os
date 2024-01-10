@@ -1,6 +1,5 @@
 package net.corda.cli.plugins.topicconfig
 
-import net.corda.cli.api.AbstractCordaCliVersionProvider
 import net.corda.cli.api.CordaCliPlugin
 import org.apache.kafka.clients.admin.AdminClientConfig
 import org.pf4j.Extension
@@ -10,8 +9,6 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.FileInputStream
 import java.util.Properties
-
-class VersionProvider : AbstractCordaCliVersionProvider()
 
 class TopicPlugin : Plugin() {
 
@@ -33,8 +30,7 @@ class TopicPlugin : Plugin() {
         name = "topic",
         subcommands = [Create::class],
         description = ["Plugin for Kafka topic operations."],
-        mixinStandardHelpOptions = true,
-        versionProvider = VersionProvider::class
+        mixinStandardHelpOptions = true
     )
     class Topic : CordaCliPlugin {
 

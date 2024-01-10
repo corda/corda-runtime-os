@@ -6,10 +6,13 @@ import net.corda.flow.rest.FlowRestResourceService
 import net.corda.flow.rest.FlowStatusCacheService
 import net.corda.flow.rest.v1.FlowRestResource
 import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
@@ -29,7 +32,35 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.util.stream.Stream
+
+class LifecycleTestContext {
+    val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
+    val lifecycleCoordinator = mock<LifecycleCoordinator>()
+    val lifecycleEventRegistration = mock<RegistrationHandle>()
+
+    private var eventHandler: LifecycleEventHandler? = null
+
+    init {
+        whenever(lifecycleCoordinatorFactory.createCoordinator(any(), any())).thenReturn(lifecycleCoordinator)
+        whenever(lifecycleCoordinator.followStatusChangesByName(any())).thenReturn(lifecycleEventRegistration)
+    }
+
+    fun getEventHandler(): LifecycleEventHandler {
+        if (eventHandler == null) {
+            argumentCaptor<LifecycleEventHandler>().apply {
+                verify(lifecycleCoordinatorFactory).createCoordinator(
+                    any(),
+                    capture()
+                )
+                eventHandler = firstValue
+            }
+        }
+
+        return eventHandler!!
+    }
+}
 
 class FlowRestResourceServiceImplTest {
     private val configurationReadService = mock<ConfigurationReadService>()

@@ -55,5 +55,7 @@ dependencies {
     testImplementation project(":testing:test-utilities")
 
     testImplementation "net.corda:corda-serialization"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }

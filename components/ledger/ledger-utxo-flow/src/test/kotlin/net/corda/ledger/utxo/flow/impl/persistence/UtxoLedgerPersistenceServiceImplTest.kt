@@ -26,7 +26,6 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
-import net.corda.ledger.utxo.flow.impl.transaction.verifier.NotarySignatureVerificationServiceInternal
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.VirtualNodeContext
@@ -58,7 +57,6 @@ class UtxoLedgerPersistenceServiceImplTest {
     private val externalEventExecutor = mock<ExternalEventExecutor>()
     private val serializationService = mock<SerializationService>()
     private val transactionSignatureService = mock<TransactionSignatureServiceInternal>()
-    private val notarySignatureVerificationService = mock<NotarySignatureVerificationServiceInternal>()
     private val utxoSignedTransactionFactory = mock<UtxoSignedTransactionFactory>()
     private val utxoLedgerTransactionFactory = mock<UtxoLedgerTransactionFactory>()
     private val sandbox = mock<SandboxGroupContext>()
@@ -176,7 +174,6 @@ class UtxoLedgerPersistenceServiceImplTest {
         val expectedObj = UtxoSignedTransactionImpl(
             serializationService,
             transactionSignatureService,
-            notarySignatureVerificationService,
             mock<UtxoLedgerTransactionFactory>(),
             wireTransaction,
             signatures

@@ -3,18 +3,6 @@ package net.corda.components.rest.internal
 import net.corda.components.rbac.RBACSecurityManagerService
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.libs.configuration.SmartConfig
-import net.corda.lifecycle.Lifecycle
-import net.corda.lifecycle.LifecycleCoordinator
-import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.LifecycleEvent
-import net.corda.lifecycle.LifecycleEventHandler
-import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationHandle
-import net.corda.lifecycle.RegistrationStatusChangeEvent
-import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.StopEvent
-import net.corda.permissions.management.PermissionManagementService
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.RestResource
 import net.corda.rest.server.RestServer
@@ -27,6 +15,18 @@ import net.corda.rest.server.config.models.SsoSettings
 import net.corda.rest.server.factory.RestServerFactory
 import net.corda.rest.ssl.SslCertReadService
 import net.corda.rest.ssl.SslCertReadServiceFactory
+import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
+import net.corda.permissions.management.PermissionManagementService
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.REST_ADDRESS
 import net.corda.schema.configuration.ConfigKeys.REST_AZUREAD_CLIENT_ID
@@ -127,6 +127,7 @@ internal class RestGatewayEventHandler(
                                 upTransition(coordinator, it)
                             }
                         }
+
                     }
                     LifecycleStatus.DOWN -> {
                         log.info("Registration received DOWN status. Stopping the REST Gateway.")
@@ -229,9 +230,7 @@ internal class RestGatewayEventHandler(
             val clientSecret = REST_AZUREAD_CLIENT_SECRET.let {
                 if (hasPath(it)) {
                     getString(it)
-                } else {
-                    null
-                }
+                } else null
             }
             SsoSettings(AzureAdSettings(clientId, clientSecret, tenantId))
         }

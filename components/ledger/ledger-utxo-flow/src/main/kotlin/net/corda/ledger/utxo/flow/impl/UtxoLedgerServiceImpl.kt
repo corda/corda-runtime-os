@@ -8,8 +8,6 @@ import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityFlow
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoReceiveFinalityFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.ReceiveAndUpdateTransactionBuilderFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.SendTransactionBuilderDiffFlow
-import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.ReceiveTransactionFlow
-import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.SendTransactionFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
 import net.corda.ledger.utxo.flow.impl.persistence.VaultNamedParameterizedQueryImpl
@@ -20,7 +18,6 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInterna
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionBuilderImpl
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactory
-import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
@@ -66,9 +63,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Reference(service = CurrentSandboxGroupContext::class) private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = NotaryLookup::class) private val notaryLookup: NotaryLookup,
     @Reference(service = ExternalEventExecutor::class) private val externalEventExecutor: ExternalEventExecutor,
-    @Reference(service = ResultSetFactory::class) private val resultSetFactory: ResultSetFactory,
-    @Reference(service = UtxoLedgerTransactionVerificationService::class)
-    private val transactionVerificationService: UtxoLedgerTransactionVerificationService
+    @Reference(service = ResultSetFactory::class) private val resultSetFactory: ResultSetFactory
 ) : UtxoLedgerService, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
@@ -79,11 +74,6 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Suspendable
     override fun createTransactionBuilder() =
         UtxoTransactionBuilderImpl(utxoSignedTransactionFactory, notaryLookup)
-
-    @Suspendable
-    override fun verify(ledgerTransaction: UtxoLedgerTransaction) {
-        transactionVerificationService.verify(ledgerTransaction)
-    }
 
     @Suppress("UNCHECKED_CAST")
     @Suspendable
@@ -109,14 +99,11 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Suspendable
     override fun filterSignedTransaction(signedTransaction: UtxoSignedTransaction): UtxoFilteredTransactionBuilder {
         return UtxoFilteredTransactionBuilderImpl(
-            utxoFilteredTransactionFactory,
-            signedTransaction as UtxoSignedTransactionInternal
+            utxoFilteredTransactionFactory, signedTransaction as UtxoSignedTransactionInternal
         )
     }
 
     @Suspendable
-    @Deprecated("Deprecated in inherited API")
-    @Suppress("deprecation", "removal")
     override fun <T : ContractState> findUnconsumedStatesByType(type: Class<T>): List<StateAndRef<T>> {
         return utxoLedgerStateQueryService.findUnconsumedStatesByType(type)
     }
@@ -143,18 +130,16 @@ class UtxoLedgerServiceImpl @Activate constructor(
         /*
         Need [doPrivileged] due to [contextLogger] being used in the flow's constructor.
         Creating the executing the SubFlow must be independent otherwise the security manager causes issues with Quasar.
-         */
+        */
         val utxoFinalityFlow = try {
             @Suppress("deprecation", "removal")
-            java.security.AccessController.doPrivileged(
-                PrivilegedExceptionAction {
-                    UtxoFinalityFlow(
-                        signedTransaction as UtxoSignedTransactionInternal,
-                        sessions,
-                        getPluggableNotaryDetails(signedTransaction.notaryName)
-                    )
-                }
-            )
+            java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
+                UtxoFinalityFlow(
+                    signedTransaction as UtxoSignedTransactionInternal,
+                    sessions,
+                    getPluggableNotaryClientFlow(signedTransaction.notaryName)
+                )
+            })
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }
@@ -163,16 +148,13 @@ class UtxoLedgerServiceImpl @Activate constructor(
 
     @Suspendable
     override fun receiveFinality(
-        session: FlowSession,
-        validator: UtxoTransactionValidator
+        session: FlowSession, validator: UtxoTransactionValidator
     ): FinalizationResult {
         val utxoReceiveFinalityFlow = try {
             @Suppress("deprecation", "removal")
-            java.security.AccessController.doPrivileged(
-                PrivilegedExceptionAction {
-                    UtxoReceiveFinalityFlow(session, validator)
-                }
-            )
+            java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
+                UtxoReceiveFinalityFlow(session, validator)
+            })
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }
@@ -194,38 +176,13 @@ class UtxoLedgerServiceImpl @Activate constructor(
         )
     }
 
-    @Suspendable
-    override fun persistDraftSignedTransaction(utxoSignedTransaction: UtxoSignedTransaction) {
-        // Verifications need to be at least as strong as what
-        // net.corda.ledger.utxo.flow.impl.flows.finality.v1.UtxoFinalityFlowV1.call
-        // does before the initial persist()
-
-        utxoSignedTransaction as UtxoSignedTransactionInternal
-        // verifyExistingSignatures
-        check(utxoSignedTransaction.signatures.isNotEmpty()) {
-            "Received draft transaction without signatures."
-        }
-        utxoSignedTransaction.signatures.forEach {
-            utxoSignedTransaction.verifySignatorySignature(it)
-        }
-        // verifyTransaction
-        transactionVerificationService.verify(utxoSignedTransaction.toLedgerTransaction())
-
-        // Initial verifications passed, the transaction can be saved in the database.
-        utxoLedgerPersistenceService.persist(utxoSignedTransaction, TransactionStatus.DRAFT)
-    }
-
-    @Suspendable
-    override fun findDraftSignedTransaction(id: SecureHash): UtxoSignedTransaction? {
-        return utxoLedgerPersistenceService.findSignedTransaction(id, TransactionStatus.DRAFT)
-    }
-
     // Retrieve notary client plugin class for specified notary service identity. This is done in
     // a non-suspendable function to avoid trying (and failing) to serialize the objects used
     // internally.
     @VisibleForTesting
     @Suppress("ThrowsCount")
-    internal fun getPluggableNotaryDetails(notary: MemberX500Name): PluggableNotaryDetails {
+    internal fun getPluggableNotaryClientFlow(notary: MemberX500Name): Class<PluggableNotaryClientFlow> {
+
         val notaryInfo = notaryLookup.notaryServices.firstOrNull { it.name == notary }
             ?: throw CordaRuntimeException(
                 "Notary service $notary has not been registered on the network."
@@ -245,15 +202,11 @@ class UtxoLedgerServiceImpl @Activate constructor(
         if (!PluggableNotaryClientFlow::class.java.isAssignableFrom(flowClass)) {
             throw CordaRuntimeException(
                 "Notary client flow class $flowName is invalid because " +
-                    "it does not inherit from ${PluggableNotaryClientFlow::class.simpleName}."
+                        "it does not inherit from ${PluggableNotaryClientFlow::class.simpleName}."
             )
         }
 
-        @Suppress("UNCHECKED_CAST")
-        return PluggableNotaryDetails(
-            flowClass as Class<PluggableNotaryClientFlow>,
-            notaryInfo.isBackchainRequired
-        )
+        @Suppress("UNCHECKED_CAST") return flowClass as Class<PluggableNotaryClientFlow>
     }
 
     @Suspendable
@@ -267,16 +220,6 @@ class UtxoLedgerServiceImpl @Activate constructor(
         return UtxoBaselinedTransactionBuilder(
             receivedTransactionBuilder as UtxoTransactionBuilderInternal
         )
-    }
-
-    @Suspendable
-    override fun receiveTransaction(session: FlowSession): UtxoSignedTransaction {
-        return flowEngine.subFlow(ReceiveTransactionFlow(session))
-    }
-
-    @Suspendable
-    override fun sendTransaction(signedTransaction: UtxoSignedTransaction, sessions: List<FlowSession>) {
-        flowEngine.subFlow(SendTransactionFlow(signedTransaction, sessions))
     }
 
     @Suspendable

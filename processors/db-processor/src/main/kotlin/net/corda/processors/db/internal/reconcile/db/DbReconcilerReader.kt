@@ -14,13 +14,11 @@ import net.corda.reconciliation.VersionedRecord
 import org.slf4j.LoggerFactory
 
 /**
- * A [DbReconcilerReader] for database data that map to compacted topics data.
- *
- * This class has its own lifecycle. What's special about it is, when its public API [getAllVersionedRecords] method gets called,
- * if an error occurs during the call the exception needs to get captured and its lifecycle to be notified with a
- * [GetRecordsErrorEvent] (depending on if the exception is a transient error or not its lifecycle should
- * be set to [LifecycleStatus.DOWN] or [LifecycleStatus.ERROR]). And then the exception needs to be re-thrown
- * for the reconciler to be notified immediately.
+ * A [DbReconcilerReader] for database data that map to compacted topics data. This class is a [Lifecycle] and therefore
+ * has its own lifecycle. What's special about it is, when its public API [getAllVersionedRecords] method gets called,
+ * if an error occurs during the call the exception gets captured and its lifecycle state gets notified with a
+ * [GetRecordsErrorEvent]. Then depending on if the exception is a transient or not its state should be taken to
+ * [LifecycleStatus.DOWN] or [LifecycleStatus.ERROR].
  */
 @Suppress("LongParameterList")
 class DbReconcilerReader<K : Any, V : Any>(
@@ -67,13 +65,13 @@ class DbReconcilerReader<K : Any, V : Any>(
 
     /**
      * [getAllVersionedRecords] is public API for this service i.e. it can be called by other lifecycle services,
-     * therefore it must be guarded against thrown exceptions. No exceptions should escape from it, instead an
+     * therefore it must be guarded from thrown exceptions. No exceptions should escape from it, instead an
      * event should be scheduled notifying the service about the error. Then the calling service which should
      * be following this service will get notified of this service's stop event as well.
      */
     @Suppress("SpreadOperator")
-    override fun getAllVersionedRecords(): Stream<VersionedRecord<K, V>> {
-        val streamOfStreams: Stream<Stream<VersionedRecord<K, V>>> = reconciliationContextFactory().map { context ->
+    override fun getAllVersionedRecords(): Stream<VersionedRecord<K, V>>? {
+        return reconciliationContextFactory().map { context ->
             try {
                 val currentTransaction = context.getOrCreateEntityManager().transaction
                 currentTransaction.begin()
@@ -84,12 +82,10 @@ class DbReconcilerReader<K : Any, V : Any>(
                     context.close()
                 }
             } catch (e: Exception) {
-                logger.warn("Error while retrieving DB records for reconciliation for ${context.prettyPrint()}", e)
-                context.close()
-                Stream.empty()
+                logger.warn("Error while retrieving DB records for reconciliation", e)
+                throw e
             }
-        }
-        return streamOfStreams.flatMap { i -> i }
+        }.flatMap { i -> i }
     }
 
     override val isRunning: Boolean

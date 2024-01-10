@@ -2,13 +2,11 @@ package net.corda.crypto.service.impl.bus
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.cipher.suite.sha256Bytes
-import net.corda.crypto.config.impl.KeyDerivationParameters
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.config.impl.retrying
 import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoService
-import net.corda.crypto.service.impl.infra.assertClose
 import net.corda.crypto.softhsm.TenantInfoService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
@@ -42,7 +40,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
-import kotlin.time.Duration.Companion.seconds
 
 class HSMRegistrationBusProcessorTests {
     companion object {
@@ -51,7 +48,8 @@ class HSMRegistrationBusProcessorTests {
         private val configEvent = ConfigChangedEvent(
             setOf(ConfigKeys.CRYPTO_CONFIG),
             mapOf(ConfigKeys.CRYPTO_CONFIG to SmartConfigFactory.createWithoutSecurityServices().create(
-                createDefaultCryptoConfig(listOf(KeyDerivationParameters("pass", "salt"))))
+                createDefaultCryptoConfig("pass", "salt")
+            )
             )
         )
 
@@ -69,11 +67,14 @@ class HSMRegistrationBusProcessorTests {
         )
 
         private fun assertResponseContext(expected: CryptoRequestContext, actual: CryptoResponseContext) {
+            val now = Instant.now()
             assertEquals(expected.tenantId, actual.tenantId)
             assertEquals(expected.requestId, actual.requestId)
             assertEquals(expected.requestingComponent, actual.requestingComponent)
-            assertClose(actual.requestTimestamp, expected.requestTimestamp, 5.seconds)
-            assertClose(actual.responseTimestamp, expected.requestTimestamp, 5.seconds)
+            assertEquals(expected.requestTimestamp, actual.requestTimestamp)
+            assertThat(actual.responseTimestamp.toEpochMilli())
+                .isGreaterThanOrEqualTo(expected.requestTimestamp.toEpochMilli())
+                .isLessThanOrEqualTo(now.toEpochMilli())
             assertTrue(
                 actual.other.items.size == expected.other.items.size &&
                         actual.other.items.containsAll(expected.other.items) &&

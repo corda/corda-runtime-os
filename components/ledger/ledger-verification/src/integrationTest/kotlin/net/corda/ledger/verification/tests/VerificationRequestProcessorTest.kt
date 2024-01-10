@@ -1,15 +1,16 @@
 package net.corda.ledger.verification.tests
 
+import net.corda.common.json.validation.JsonValidator
+import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.core.parseSecureHash
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
-import net.corda.common.json.validation.JsonValidator
-import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.core.DigitalSignatureWithKey
-import net.corda.crypto.core.parseSecureHash
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
@@ -30,6 +31,7 @@ import net.corda.ledger.verification.processor.impl.VerificationRequestProcessor
 import net.corda.ledger.verification.tests.helpers.VirtualNodeService
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.membership.lib.GroupParametersFactory
+import net.corda.messaging.api.records.Record
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
 import net.corda.sandboxgroupcontext.SandboxGroupContext
@@ -75,6 +77,7 @@ import java.util.UUID
 @TestInstance(PER_CLASS)
 class VerificationRequestProcessorTest {
     private companion object {
+        const val TOPIC = "ledger-verification-dummy-topic"
         const val TEST_CPB = "/META-INF/ledger-utxo-demo-app.cpb"
         const val VERIFICATION_ERROR_MESSAGE = "Output state has invalid field value"
         const val TIMEOUT_MILLIS = 10000L
@@ -86,9 +89,7 @@ class VerificationRequestProcessorTest {
             }.genKeyPair().public
         val REQUEST_ID = UUID.randomUUID().toString()
         val EXTERNAL_EVENT_CONTEXT = ExternalEventContext(
-            REQUEST_ID,
-            "flow id",
-            KeyValuePairList(listOf(KeyValuePair("corda.account", "test account")))
+            REQUEST_ID, "flow id", KeyValuePairList(listOf(KeyValuePair("corda.account", "test account")))
         )
         val NON_EXISTING_CPK = CordaPackageSummary(
             "NonExistingCPK",
@@ -163,8 +164,12 @@ class VerificationRequestProcessorTest {
         )
 
         // Send request to message processor
-        val flowEvent = processor.process(request)
+        val records = processor.onNext(
+            listOf(Record(TOPIC, REQUEST_ID, request))
+        )
 
+        assertThat(records).hasSize(1)
+        val flowEvent = records.first().value as FlowEvent
         val response = flowEvent.payload as ExternalEventResponse
         assertThat(response.error).isNull()
         assertThat(response.requestId).isEqualTo(REQUEST_ID)
@@ -195,8 +200,12 @@ class VerificationRequestProcessorTest {
         )
 
         // Send request to message processor
-        val flowEvent = processor.process(request)
+        val records = processor.onNext(
+            listOf(Record(TOPIC, REQUEST_ID, request))
+        )
 
+        assertThat(records).hasSize(1)
+        val flowEvent = records.first().value as FlowEvent
         val response = flowEvent.payload as ExternalEventResponse
         assertThat(response.error).isNull()
         assertThat(response.requestId).isEqualTo(REQUEST_ID)
@@ -222,16 +231,21 @@ class VerificationRequestProcessorTest {
         val transaction = createTestTransaction(sandbox, isValid = true)
         val request = createRequest(sandbox, holdingIdentity, transaction, listOf(NON_EXISTING_CPK))
 
+        // Create request processor
         val processor = VerificationRequestProcessor(
             currentSandboxGroupContext,
             verificationSandboxService,
             VerificationRequestHandlerImpl(externalEventResponseFactory),
-            externalEventResponseFactory
+            externalEventResponseFactory,
         )
 
         // Send request to message processor (there were max number of redeliveries)
-        val flowEvent = processor.process(request)
+        val records = processor.onNext(
+            listOf(Record(TOPIC, REQUEST_ID, request))
+        )
 
+        assertThat(records).hasSize(1)
+        val flowEvent = records.first().value as FlowEvent
         val response = flowEvent.payload as ExternalEventResponse
         assertThat(response.error).isNotNull
         val error = response.error
@@ -253,12 +267,7 @@ class VerificationRequestProcessorTest {
 
         val outputInfo = ctx.getSerializationService().serialize(
             UtxoOutputInfoComponent(
-                null,
-                null,
-                NOTARY_X500_NAME,
-                PUBLIC_KEY,
-                outputState::class.java.canonicalName,
-                "contract tag"
+                null, null, NOTARY_X500_NAME, PUBLIC_KEY, outputState::class.java.canonicalName, "contract tag"
             )
         ).bytes
 
@@ -331,7 +340,7 @@ class VerificationRequestProcessorTest {
         getObjectByKey(RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE)
             ?: throw CordaRuntimeException(
                 "Entity serialization service not found within the sandbox for identity: " +
-                    "${virtualNodeContext.holdingIdentity}"
+                        "${virtualNodeContext.holdingIdentity}"
             )
 
     @BelongsToContract(TestContract::class)

@@ -4,7 +4,6 @@ import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.cli.plugins.packaging.signing.SigningOptions
 import net.corda.utilities.deleteRecursively
 import net.corda.utilities.readAll
-import org.junit.jupiter.api.Assertions.assertEquals
 import java.io.FileNotFoundException
 import java.io.InputStream
 import java.nio.file.Files
@@ -68,7 +67,7 @@ object CpiLoader {
 
             // Create CPI
             val cpiPath = tempDirectory.resolve("cpi")
-            val exitCode = CreateCpiV2().apply {
+            CreateCpiV2().apply {
                 cpbPath?.let {
                     cpbFileName = it.toString()
                 }
@@ -82,9 +81,7 @@ object CpiLoader {
                     keyStorePass = signOptions.keyStorePassword
                     keyAlias = signOptions.keyAlias
                 }
-            }.call()
-
-            assertEquals(0, exitCode, "Create CPI returned non-zero exit code")
+            }.run()
 
             // Read CPI
             return cpiPath.readAll().inputStream()

@@ -17,7 +17,6 @@ class GroupParametersNotaryUpdater(
         const val NOTARIES_KEY = "corda.notary.service."
         private const val NOTARY_SERVICE_KEY_PREFIX = "corda.notary.service.%s"
         const val NOTARY_SERVICE_NAME_KEY = "$NOTARY_SERVICE_KEY_PREFIX.name"
-        const val NOTARY_SERVICE_BACKCHAIN_REQUIRED_KEY = "$NOTARY_SERVICE_KEY_PREFIX.backchain.required"
         const val NOTARY_SERVICE_PROTOCOL_KEY = "$NOTARY_SERVICE_KEY_PREFIX.flow.protocol.name"
         const val NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY = "$NOTARY_SERVICE_KEY_PREFIX.flow.protocol.version.%s"
         const val NOTARY_SERVICE_KEYS_PREFIX = "$NOTARY_SERVICE_KEY_PREFIX.keys"
@@ -35,7 +34,6 @@ class GroupParametersNotaryUpdater(
         notaryDetails: MemberNotaryDetails,
     ): Pair<Int, KeyValuePairList> {
         val notaryServiceName = notaryDetails.serviceName.toString()
-        val notaryBackchainRequired = notaryDetails.isBackchainRequired
         logger.info("Adding notary to group parameters under new notary service '$notaryServiceName'.")
         requireNotNull(notaryDetails.serviceProtocol) {
             throw InvalidGroupParametersUpdateException("Cannot add notary to group parameters - notary protocol must be" +
@@ -60,11 +58,7 @@ class GroupParametersNotaryUpdater(
                 )
             } + listOf(
             KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, newNotaryServiceNumber), notaryServiceName),
-            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, newNotaryServiceNumber), notaryDetails.serviceProtocol),
-            KeyValuePair(
-                String.format(NOTARY_SERVICE_BACKCHAIN_REQUIRED_KEY, newNotaryServiceNumber),
-                notaryBackchainRequired.toString()
-            )
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, newNotaryServiceNumber), notaryDetails.serviceProtocol)
         ) + protocolVersions
         val newEpoch = currentParameters[EPOCH_KEY]!!.toInt() + 1
         val parametersWithUpdatedEpoch = with(currentParameters) {

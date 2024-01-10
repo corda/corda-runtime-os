@@ -46,7 +46,7 @@ class ScheduledTaskProcessorTest {
     @Test
     fun `when scheduled task handler generates new records, ID of each retrieved state is present in output events`() {
         val stateManager = mock<StateManager>()
-        whenever(stateManager.findUpdatedBetweenWithMetadataMatchingAny(any(), any())).thenReturn(closingStates+errorStates)
+        whenever(stateManager.findUpdatedBetweenWithMetadataFilter(any(), any())).thenReturn(closingStates+errorStates)
         val scheduledTaskProcessor = ScheduledTaskProcessor(
             stateManager,
             clock,
@@ -55,19 +55,20 @@ class ScheduledTaskProcessorTest {
         val output = scheduledTaskProcessor.onNext(listOf(inputEvent))
         val ids = output.flatMap { (it.value as ExecuteCleanup).ids }
         assertThat(ids).contains("key1", "key4")
-        verify(stateManager).findUpdatedBetweenWithMetadataMatchingAny(
+        verify(stateManager).findUpdatedBetweenWithMetadataFilter(
             IntervalFilter(Instant.EPOCH, clock.instant() - Duration.ofMillis(window)),
-            listOf(
-                MetadataFilter(FLOW_MAPPER_STATUS, Operation.Equals, FlowMapperStateType.ERROR.toString()),
-                MetadataFilter(FLOW_MAPPER_STATUS, Operation.Equals, FlowMapperStateType.CLOSING.toString()),
-            )
+            MetadataFilter(FLOW_MAPPER_STATUS, Operation.Equals, FlowMapperStateType.CLOSING.toString())
+        )
+        verify(stateManager).findUpdatedBetweenWithMetadataFilter(
+            IntervalFilter(Instant.EPOCH, clock.instant() - Duration.ofMillis(window)),
+            MetadataFilter(FLOW_MAPPER_STATUS, Operation.Equals, FlowMapperStateType.ERROR.toString())
         )
     }
 
     @Test
     fun `when batch size is set to one, a record per id is present in output events`() {
         val stateManager = mock<StateManager>()
-        whenever(stateManager.findUpdatedBetweenWithMetadataMatchingAny(any(), any())).thenReturn(closingStates)
+        whenever(stateManager.findUpdatedBetweenWithMetadataFilter(any(), any())).thenReturn(closingStates)
         val scheduledTaskProcessor = ScheduledTaskProcessor(
             stateManager,
             clock,
@@ -81,7 +82,7 @@ class ScheduledTaskProcessorTest {
     @Test
     fun `when the last updated time is far enough in the past, no records are returned`() {
         val stateManager = mock<StateManager>()
-        whenever(stateManager.findUpdatedBetweenWithMetadataMatchingAny(any(), any())).thenReturn(mapOf())
+        whenever(stateManager.findUpdatedBetweenWithMetadataFilter(any(), any())).thenReturn(mapOf())
         val scheduledTaskProcessor = ScheduledTaskProcessor(
             stateManager,
             clock,
@@ -89,12 +90,9 @@ class ScheduledTaskProcessorTest {
         )
         val output = scheduledTaskProcessor.onNext(listOf(inputEvent))
         assertThat(output).isEmpty()
-        verify(stateManager).findUpdatedBetweenWithMetadataMatchingAny(
+        verify(stateManager).findUpdatedBetweenWithMetadataFilter(
             IntervalFilter(Instant.EPOCH, clock.instant() - Duration.ofMillis(window * 5)),
-            listOf(
-                MetadataFilter(FLOW_MAPPER_STATUS, Operation.Equals, FlowMapperStateType.ERROR.toString()),
-                MetadataFilter(FLOW_MAPPER_STATUS, Operation.Equals, FlowMapperStateType.CLOSING.toString()),
-            )
+            MetadataFilter(FLOW_MAPPER_STATUS, Operation.Equals, FlowMapperStateType.CLOSING.toString())
         )
     }
 
@@ -113,7 +111,7 @@ class ScheduledTaskProcessorTest {
         )
         val output = scheduledTaskProcessor.onNext(listOf(input))
         assertThat(output).isEmpty()
-        verify(stateManager, never()).findUpdatedBetweenWithMetadataMatchingAny(any(), any())
+        verify(stateManager, never()).findUpdatedBetweenWithMetadataFilter(any(), any())
     }
 
     private fun createStateEntry(

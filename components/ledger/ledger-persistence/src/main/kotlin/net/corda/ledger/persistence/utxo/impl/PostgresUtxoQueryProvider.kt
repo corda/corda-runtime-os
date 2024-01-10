@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory
 class PostgresUtxoQueryProvider @Activate constructor(
     @Reference(target = POSTGRES_TYPE_FILTER)
     databaseTypeProvider: DatabaseTypeProvider
-) : AbstractUtxoQueryProvider() {
+): AbstractUtxoQueryProvider() {
     init {
         LoggerFactory.getLogger(this::class.java).debug { "Activated for ${databaseTypeProvider.databaseType}" }
     }
@@ -24,7 +24,7 @@ class PostgresUtxoQueryProvider @Activate constructor(
                 VALUES (:id, :privacySalt, :accountId, :createdAt, :status, :updatedAt, :metadataHash)
             ON CONFLICT(id) DO
                 UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated
-            WHERE utxo_transaction.status in (EXCLUDED.status, '$UNVERIFIED', '$DRAFT')"""
+            WHERE utxo_transaction.status = EXCLUDED.status OR utxo_transaction.status = '$UNVERIFIED'"""
             .trimIndent()
 
     override val persistTransactionMetadata: String

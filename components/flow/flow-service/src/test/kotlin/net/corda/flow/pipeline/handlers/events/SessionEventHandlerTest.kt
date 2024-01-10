@@ -30,7 +30,6 @@ import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSIONS_SUPPORTED
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_REQUIRE_CLOSE
-import net.corda.session.manager.Constants.Companion.FLOW_SESSION_TIMEOUT_MS
 import net.corda.session.manager.SessionManager
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
@@ -206,7 +205,6 @@ class SessionEventHandlerTest {
             put(FLOW_PROTOCOL, PROTOCOL.protocol)
             put(FLOW_PROTOCOL_VERSIONS_SUPPORTED, "1")
             put(FLOW_SESSION_REQUIRE_CLOSE, "true")
-            put(FLOW_SESSION_TIMEOUT_MS, "1800000")
         }.avro
     }
     private fun createSessionEvent(payload: Any): SessionEvent {

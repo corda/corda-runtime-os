@@ -7,8 +7,6 @@ ext {
     releasable = false
 }
 
-ext.cordaEnableFormatting = true
-
 dependencies {
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"

@@ -55,6 +55,9 @@ dependencies {
     implementation project(":libs:utilities")
 
     testImplementation "org.hibernate:hibernate-core:$hibernateVersion"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:crypto-testkit")
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:uniqueness:backing-store-fake")
@@ -99,12 +102,11 @@ tasks.register('backingStoreBenchmark', Test) {
     systemProperty "bsBenchNumIterations", project.getProperty("bsBenchNumIterations")
     systemProperty "bsBenchNumOpsPerIteration", project.getProperty("bsBenchNumOpsPerIteration")
 
-    systemProperty "databaseName", project.getProperty("databaseName")
-    systemProperty "databaseHost", project.getProperty("databaseHost")
-    systemProperty "databaseAdminPassword", project.getProperty("databaseAdminPassword")
-    systemProperty "databasePort", project.getProperty("databasePort")
-    systemProperty "databaseAdminUser", project.getProperty("databaseAdminUser")
-    systemProperty "databaseType", project.getProperty("databaseType")
+    systemProperty "postgresDb", project.getProperty("postgresDb")
+    systemProperty "postgresHost", project.getProperty("postgresHost")
+    systemProperty "postgresPassword", project.getProperty("postgresPassword")
+    systemProperty "postgresPort", project.getProperty("postgresPort")
+    systemProperty "postgresUser", project.getProperty("postgresUser")
 
     // Ensures benchmark is always re-run if executed from the console
     outputs.upToDateWhen { false }

@@ -10,6 +10,7 @@ import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -17,6 +18,7 @@ import org.mockito.kotlin.mock
 
 class StartFlowEventHandlerTest {
     private val holdingIdentity = BOB_X500_HOLDING_IDENTITY
+    private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
     private val startFlow = StartFlow(
         FlowStartContext().apply {
              identity = holdingIdentity
@@ -35,7 +37,7 @@ class StartFlowEventHandlerTest {
             holdingIdentity.toCorda(),
             contextExpected.checkpoint
         )
-        val handler = StartFlowEventHandler(fakeCheckpointInitializer)
+        val handler = StartFlowEventHandler(virtualNodeInfoReadService, fakeCheckpointInitializer)
         val actualContext = handler.preProcess(contextExpected)
         assertThat(actualContext).isEqualTo(contextExpected)
     }

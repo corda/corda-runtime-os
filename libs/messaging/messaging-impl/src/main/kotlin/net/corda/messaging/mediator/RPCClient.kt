@@ -13,9 +13,6 @@ import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_KEY
 import net.corda.messaging.utils.HTTPRetryConfig
 import net.corda.messaging.utils.HTTPRetryExecutor
 import net.corda.metrics.CordaMetrics
-import net.corda.tracing.addTraceContextToHttpRequest
-import net.corda.tracing.addTraceContextToMediatorMessage
-import net.corda.tracing.traceSend
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -66,19 +63,13 @@ class RPCClient(
     }
 
     private fun processMessage(message: MediatorMessage<*>): MediatorMessage<*>? {
-        val response = traceHttpSend(message.properties, URI(message.endpoint())) {
-            val request = buildHttpRequest(message)
-            sendWithRetry(request)
-        }
+        val request = buildHttpRequest(message)
+        val response = sendWithRetry(request)
 
         val deserializedResponse = deserializePayload(response.body())
 
-        // Convert the response to an instance of the MediatorMessage class and enrich the instance with a trace context
         return deserializedResponse?.let {
-            addTraceContextToMediatorMessage(
-                MediatorMessage(deserializedResponse, mutableMapOf("statusCode" to response.statusCode())),
-                message.properties
-            )
+            MediatorMessage(deserializedResponse, mutableMapOf("statusCode" to response.statusCode()))
         }
     }
 
@@ -94,23 +85,6 @@ class RPCClient(
             log.warn(errorMsg, e)
             onSerializationError?.invoke(errorMsg.toByteArray())
             throw e
-        }
-    }
-
-    private inline fun <T> traceHttpSend(traceHeaders: Map<String, Any>, uri: URI, send: () -> T): T {
-        val traceContext = traceSend(traceHeaders, "http client - send request to path ${uri.path}")
-
-        traceContext.traceTag("path", uri.path.toString())
-
-        return traceContext.markInScope().use {
-            try {
-                val response = send()
-                traceContext.finish()
-                response
-            } catch (ex: Exception) {
-                traceContext.errorAndFinish(ex)
-                throw ex
-            }
         }
     }
 
@@ -131,13 +105,8 @@ class RPCClient(
             builder.header(CORDA_REQUEST_KEY_HEADER, keyValue)
         }
 
-        builder.addTraceContext()
-
         return builder.build()
     }
-
-    private fun HttpRequest.Builder.addTraceContext() =
-        addTraceContextToHttpRequest(this)
 
     private fun sendWithRetry(request: HttpRequest): HttpResponse<ByteArray> {
         val startTime = System.nanoTime()

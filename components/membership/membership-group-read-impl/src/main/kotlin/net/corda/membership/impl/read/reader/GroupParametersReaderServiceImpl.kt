@@ -96,7 +96,7 @@ class GroupParametersReaderServiceImpl internal constructor(
         coordinator.stop()
     }
 
-    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, InternalGroupParameters>> =
+    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, InternalGroupParameters>>? =
         impl.getAllVersionedRecords()
 
     override fun get(identity: HoldingIdentity) = impl.get(identity)

@@ -31,7 +31,7 @@ fun TransactionWithMetadata.getBatchSignatureMetadataSettings(): Map<String, Str
     SIGNATURE_BATCH_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY to this.batchMerkleTreeDigestOptionsNodePrefixB64
 )
 
-fun List<TransactionWithMetadata>.confirmHashPrefixesAreDifferent() {
+fun List<TransactionWithMetadata>.confirmHashPrefixesAreDifferent(){
     require(this.none { it.batchMerkleTreeDigestOptionsLeafPrefix contentEquals it.rootMerkleTreeDigestOptionsLeafPrefix }) {
         "The transaction can be batch signed only if the leaf prefixes for its root and the batch tree are different."
     }
@@ -40,7 +40,7 @@ fun List<TransactionWithMetadata>.confirmHashPrefixesAreDifferent() {
     }
 }
 
-fun List<TransactionWithMetadata>.confirmBatchSigningRequirements() {
+fun List<TransactionWithMetadata>.confirmBatchSigningRequirements(){
     require(this.isNotEmpty()) { "Cannot sign empty batch." }
     require(this.all { it.batchMerkleTreeDigestProviderName == HashDigestConstants.HASH_DIGEST_PROVIDER_TWEAKABLE_NAME }) {
         "Batch signature supports only ${HashDigestConstants.HASH_DIGEST_PROVIDER_TWEAKABLE_NAME}."
@@ -54,44 +54,34 @@ fun List<TransactionWithMetadata>.confirmBatchSigningRequirements() {
     require(this.map { it.batchMerkleTreeDigestOptionsNodePrefix }.distinct().size == 1) {
         "Batch merkle tree digest node prefixes should be the same in a batch to be signed."
     }
-    require(
-        this.none {
-            it.batchMerkleTreeDigestOptionsLeafPrefix contentEquals it.batchMerkleTreeDigestOptionsNodePrefix
-        }
-    ) {
+    require(this.none {
+        it.batchMerkleTreeDigestOptionsLeafPrefix contentEquals it.batchMerkleTreeDigestOptionsNodePrefix
+    }) {
         "Batch merkle tree digest node prefixes and leaf prefixes need to be different for each this."
     }
 
-    require(
-        this.all {
-            it.batchMerkleTreeDigestOptionsLeafPrefixB64 contentEquals
+    require(this.all {
+        it.batchMerkleTreeDigestOptionsLeafPrefixB64 contentEquals
                 WireTransactionDigestSettings.defaultValues[BATCH_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY]
-        }
-    ) {
+    }) {
         "Batch merkle tree digest leaf prefixes can only be the default values."
     }
-    require(
-        this.all {
-            it.batchMerkleTreeDigestOptionsNodePrefixB64 contentEquals
+    require(this.all {
+        it.batchMerkleTreeDigestOptionsNodePrefixB64 contentEquals
                 WireTransactionDigestSettings.defaultValues[BATCH_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY]
-        }
-    ) {
+    }) {
         "Batch merkle tree digest node prefixes can only be the default values."
     }
-    require(
-        this.all {
-            it.rootMerkleTreeDigestOptionsLeafPrefixB64 contentEquals
+    require(this.all {
+        it.rootMerkleTreeDigestOptionsLeafPrefixB64 contentEquals
                 WireTransactionDigestSettings.defaultValues[ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY]
-        }
-    ) {
+    }) {
         "Root merkle tree digest leaf prefixes can only be the default values."
     }
-    require(
-        this.all {
-            it.rootMerkleTreeDigestOptionsNodePrefixB64 contentEquals
+    require(this.all {
+        it.rootMerkleTreeDigestOptionsNodePrefixB64 contentEquals
                 WireTransactionDigestSettings.defaultValues[ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY]
-        }
-    ) {
+    }) {
         "Root merkle tree digest node prefixes can only be the default values."
     }
 
@@ -114,13 +104,13 @@ fun TransactionWithMetadata.confirmBatchMerkleSettingsMatch(
     }
     require(
         this.batchMerkleTreeDigestOptionsLeafPrefix contentEquals
-            signatureWithMetadata.batchMerkleTreeDigestOptionsLeafPrefix
+                signatureWithMetadata.batchMerkleTreeDigestOptionsLeafPrefix
     ) {
         "Batch signature leaf prefix should match with the transaction batch merkle leaf prefix."
     }
     require(
         this.batchMerkleTreeDigestOptionsNodePrefix contentEquals
-            signatureWithMetadata.batchMerkleTreeDigestOptionsNodePrefix
+                signatureWithMetadata.batchMerkleTreeDigestOptionsNodePrefix
     ) {
         "Batch signature node prefix should match with the transaction batch merkle node prefix."
     }

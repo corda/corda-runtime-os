@@ -1,6 +1,5 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality
 
-import net.corda.ledger.utxo.flow.impl.PluggableNotaryDetails
 import net.corda.ledger.utxo.flow.impl.flows.finality.v1.UtxoFinalityFlowV1
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.libs.platform.PlatformVersion.CORDA_5_1
@@ -17,10 +16,7 @@ class UtxoFinalityFlowVersionedFlowFactoryTest {
     private val transaction = mock<UtxoSignedTransactionInternal>().apply {
         whenever(this.id).thenReturn(mock())
     }
-    private val pluggableNotaryDetails = mock<PluggableNotaryDetails>().apply {
-        whenever(this.flowClass).thenReturn(PluggableNotaryClientFlow::class.java)
-    }
-    private val factory = UtxoFinalityFlowVersionedFlowFactory(transaction, pluggableNotaryDetails)
+    private val factory = UtxoFinalityFlowVersionedFlowFactory(transaction, PluggableNotaryClientFlow::class.java)
 
     @Test
     fun `with platform version 1 throws a CordaRuntimeException`() {
@@ -45,6 +41,8 @@ class UtxoFinalityFlowVersionedFlowFactoryTest {
 
     @Test
     fun `with platform version 0 throws exception`() {
-        assertThatThrownBy { factory.create(0, emptyList()) }.isInstanceOf(IllegalArgumentException::class.java)
+        assertThatThrownBy {factory.create(0, emptyList()) }.isInstanceOf(IllegalArgumentException::class.java)
     }
+
+
 }

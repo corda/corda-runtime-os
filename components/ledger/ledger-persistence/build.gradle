@@ -8,8 +8,6 @@ plugins {
 
 description 'Corda ledger consensual - persistence implementation'
 
-ext.cordaEnableFormatting = true
-
 configurations {
     cpis {
         canBeConsumed = false
@@ -61,6 +59,7 @@ dependencies {
     testImplementation project(':testing:db-testkit')
     testImplementation project(':testing:persistence-testkit')
 
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")
@@ -83,7 +82,7 @@ dependencies {
     // IMPORTANT:  do NOT attempt to use mockito-kotlin in the integration tests.
     // It's not an OSGi bundle, so you will get errors (despite Intellij appearing to allow you to use it).
 
-    integrationTestImplementation libs.mockito.core
+    integrationTestImplementation("org.mockito:mockito-core:$mockitoVersion")
     integrationTestImplementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
 
     integrationTestImplementation project(':libs:db:db-admin-impl')

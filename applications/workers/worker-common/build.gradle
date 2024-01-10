@@ -34,9 +34,9 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "info.picocli:picocli:$picocliVersion"
-    implementation libs.javalin
+    implementation "io.javalin:javalin-osgi:$javalinVersion"
     constraints {
-        implementation(libs.bundles.jetty) {
+        implementation("org.eclipse.jetty:jetty-server:$jettyVersion") {
             because 'Javalin uses an older version of Jetty which is exposed to CVE-2023-26048 and CVE-2023-26049. ' +
                     'This might be resolved in the future versions of Javalin.'
         }
@@ -53,6 +53,8 @@ dependencies {
     runtimeOnly project(':libs:web:web-impl')
     runtimeOnly "org.apache.commons:commons-lang3:$commonsLangVersion"
 
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":libs:web:web-impl")
 
     testRuntimeOnly 'org.osgi:osgi.core'

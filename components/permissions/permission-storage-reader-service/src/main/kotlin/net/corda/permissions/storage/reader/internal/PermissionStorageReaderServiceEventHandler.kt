@@ -183,6 +183,7 @@ class PermissionStorageReaderServiceEventHandler(
             ReconcilePermissionSummaryEvent(key)
         }
     }
+
 }
 
 internal data class ReconcilePermissionSummaryEvent(override val key: String) : TimerEvent

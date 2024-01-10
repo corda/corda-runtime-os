@@ -63,7 +63,7 @@ class LinkManagerWorker @Activate constructor(
         val config = WorkerHelpers.getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
-            configurationValidatorFactory.createConfigValidator(),
+            configurationValidatorFactory.createConfigValidator()
         )
         webServer.start(params.defaultParams.workerServerPort)
         linkManagerProcessor.start(config)
@@ -76,7 +76,6 @@ class LinkManagerWorker @Activate constructor(
         shutdownTracing()
     }
 }
-
 /** Additional parameters for the member worker are added here. */
 private class LinkManagerWorkerParams {
     @CommandLine.Mixin

@@ -9,8 +9,6 @@ import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResponseAvro
-import net.corda.e2etest.utilities.ClusterReadiness
-import net.corda.e2etest.utilities.ClusterReadinessChecker
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
@@ -45,7 +43,7 @@ import kotlin.random.Random
  * Tests for the UniquenessChecker RPC service
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class UniquenessCheckerRPCSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
+class UniquenessCheckerRPCSmokeTests {
     private val httpClient: HttpClient = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(30))
         .build()
@@ -88,9 +86,6 @@ class UniquenessCheckerRPCSmokeTests : ClusterReadiness by ClusterReadinessCheck
 
     @BeforeAll
     fun beforeAll() {
-        // check cluster is ready
-        assertIsReady(Duration.ofMinutes(1), Duration.ofMillis(100))
-
         DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
 
         conditionallyUploadCordaPackage(
@@ -143,8 +138,7 @@ class UniquenessCheckerRPCSmokeTests : ClusterReadiness by ClusterReadinessCheck
 
         assertThat(responseEvent).isNotNull
 
-        val deserializedExternalEventResponse =
-            avroUniquenessDeserializer.deserialize((responseEvent?.payload as ExternalEventResponse).payload.array())
+        val deserializedExternalEventResponse = avroUniquenessDeserializer.deserialize((responseEvent?.payload as ExternalEventResponse).payload.array())
 
         assertThat(deserializedExternalEventResponse).isNotNull
         UniquenessAssertions.assertStandardSuccessResponse(deserializedExternalEventResponse!!, testClock)

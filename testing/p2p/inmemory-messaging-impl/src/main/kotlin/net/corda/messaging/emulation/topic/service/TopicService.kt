@@ -1,6 +1,5 @@
 package net.corda.messaging.emulation.topic.service
 
-import net.corda.lifecycle.Resource
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.emulation.topic.model.Consumer
 import net.corda.messaging.emulation.topic.model.Consumption
@@ -8,7 +7,7 @@ import net.corda.messaging.emulation.topic.model.Consumption
 /**
  * Service to interact with the kafka topic emulator
  */
-interface TopicService : Resource {
+interface TopicService {
     /**
      * Add a list of records to each of their topics.
      * This operation is done atomically per partition.

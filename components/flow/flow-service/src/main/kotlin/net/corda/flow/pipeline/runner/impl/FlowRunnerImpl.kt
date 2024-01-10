@@ -25,14 +25,12 @@ import net.corda.flow.utils.toMap
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_REQUIRE_CLOSE
-import net.corda.session.manager.Constants.Companion.FLOW_SESSION_TIMEOUT_MS
 import net.corda.v5.application.flows.FlowContextPropertyKeys
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.time.Duration
 
 @Suppress("LongParameterList")
 @Component(service = [FlowRunner::class])
@@ -122,9 +120,7 @@ class FlowRunnerImpl @Activate constructor(
             mapOf("corda.account" to "account-zero")
         )
 
-        val sessionProps = sessionEvent.contextSessionProperties.toMap()
-        val requireClose = sessionProps[FLOW_SESSION_REQUIRE_CLOSE].toBoolean()
-        val sessionTimeout = sessionProps[FLOW_SESSION_TIMEOUT_MS]?.let { Duration.ofMillis(it.toLong()) }
+        val requireClose = getRequireClose(sessionEvent)
 
         return startFlow(
             context,
@@ -132,7 +128,6 @@ class FlowRunnerImpl @Activate constructor(
                 flowFactory.createInitiatedFlow(
                     flowStartContext,
                     requireClose,
-                    sessionTimeout,
                     sgc,
                     localContext.sessionProperties
                 )
@@ -144,6 +139,11 @@ class FlowRunnerImpl @Activate constructor(
                 localContext.platformProperties
             )
         )
+    }
+
+    private fun getRequireClose(sessionEvent: SessionEvent): Boolean {
+        val sessionProps = sessionEvent.contextSessionProperties.toMap()
+        return sessionProps[FLOW_SESSION_REQUIRE_CLOSE].toBoolean()
     }
 
     private fun addFlowStackItemSession(fsi: FlowStackItem, sessionId: String) {

@@ -50,7 +50,7 @@ class StateManagerHelper<K : Any, S : Any, E : Any>(
         val latestValuesForFailedStates = mutableMapOf<String, State?>()
         if (newStateTasks.isNotEmpty()) {
             val newStates = newStateTasks.mapNotNull { it.updatedState }
-            val failedStatesKeys = stateManager.create(newStates)
+            val failedStatesKeys = stateManager.create(newStates).keys
             if (failedStatesKeys.isNotEmpty()) {
                 val latestStatesValues = stateManager.get(failedStatesKeys)
                 latestValuesForFailedStates.putAll(failedStatesKeys.associateWith { key ->

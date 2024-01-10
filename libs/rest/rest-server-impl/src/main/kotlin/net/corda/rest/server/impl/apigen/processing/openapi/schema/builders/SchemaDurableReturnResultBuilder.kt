@@ -47,8 +47,6 @@ internal class SchemaDurableReturnResultBuilder(private val schemaModelProvider:
                         listOf(positionedValueType)
                     )
                 )
-            } else {
-                genericParameterizedTypes
-            }
+            } else genericParameterizedTypes
         }
 }

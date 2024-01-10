@@ -56,7 +56,6 @@ import net.corda.membership.impl.persistence.service.dummy.TestVirtualNodeInfoRe
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MPV_KEY
-import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_BACKCHAIN_REQUIRED_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_KEYS_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_PROTOCOL_KEY
@@ -230,10 +229,8 @@ class MembershipPersistenceTest {
         lateinit var keyEncodingService: KeyEncodingService
 
         /**
-         * Wrapper class which allows the client to wait until the underlying DB message bus has been set
-         * up correctly with partitions required.
-         * Without this the client often tries to send RPC requests before the service has set up the kafka
-         * topics required
+         * Wrapper class which allows the client to wait until the underlying DB message bus has been set up correctly with partitions required.
+         * Without this the client often tries to send RPC requests before the service has set up the kafka topics required
          * for the DB message bus.
          */
         val membershipPersistenceClientWrapper = object : MembershipPersistenceClient {
@@ -874,7 +871,6 @@ class MembershipPersistenceTest {
         val endpointUrl = "https://localhost:8080"
         val notaryServiceName = "O=New Service, L=London, C=GB"
         val notaryServicePlugin = "Notary Plugin"
-        val notaryBackchainRequired = true
         val notaryKey = generator.generateKeyPair().public
         val memberContext = notaryMemberContext(memberx500Name, groupId, endpointUrl, notaryServiceName, notaryServicePlugin, notaryKey)
         val mgmContext = KeyValuePairList(
@@ -897,7 +893,6 @@ class MembershipPersistenceTest {
         val expectedGroupParameters = listOf(
             KeyValuePair(EPOCH_KEY, "51"),
             KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
-            KeyValuePair(String.format(NOTARY_SERVICE_BACKCHAIN_REQUIRED_KEY, 0), notaryBackchainRequired.toString()),
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
             KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), keyEncodingService.encodeAsString(notaryKey)),
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
@@ -937,7 +932,6 @@ class MembershipPersistenceTest {
         val endpointUrl = "http://localhost:8080"
         val notaryServiceName = "O=New Service, L=London, C=GB"
         val notaryServicePlugin = "Notary Plugin"
-        val notaryBackchainRequired = true
         val generator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider())
         val notaryKey = generator.generateKeyPair().public
         val notaryKeyAsString = keyEncodingService.encodeAsString(notaryKey)
@@ -971,7 +965,6 @@ class MembershipPersistenceTest {
                             KeyValuePair(EPOCH_KEY, "100"),
                             KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
                             KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
-                            KeyValuePair(String.format(NOTARY_SERVICE_BACKCHAIN_REQUIRED_KEY, 0), notaryBackchainRequired.toString()),
                             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
                             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
                         )
@@ -986,7 +979,6 @@ class MembershipPersistenceTest {
         val expectedGroupParameters = listOf(
             KeyValuePair(EPOCH_KEY, "101"),
             KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
-            KeyValuePair(String.format(NOTARY_SERVICE_BACKCHAIN_REQUIRED_KEY, 0), notaryBackchainRequired.toString()),
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
             KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), notaryKeyAsString),
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
@@ -1028,7 +1020,6 @@ class MembershipPersistenceTest {
         val endpointUrl = "http://localhost:8080"
         val notaryServiceName = "O=New Service, L=London, C=GB"
         val notaryServicePlugin = "Notary Plugin"
-        val notaryBackchainRequired = true
         val notaryKey = with(keyGenerator) {
             generateKeyPair().public
         }
@@ -1090,7 +1081,6 @@ class MembershipPersistenceTest {
                             KeyValuePair(EPOCH_KEY, "150"),
                             KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
                             KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
-                            KeyValuePair(String.format(NOTARY_SERVICE_BACKCHAIN_REQUIRED_KEY, 0), notaryBackchainRequired.toString()),
                             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
                             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
                             KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), oldNotaryKeyAsString)
@@ -1107,7 +1097,6 @@ class MembershipPersistenceTest {
         val expectedGroupParameters = listOf(
             KeyValuePair(EPOCH_KEY, "151"),
             KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
-            KeyValuePair(String.format(NOTARY_SERVICE_BACKCHAIN_REQUIRED_KEY, 0), notaryBackchainRequired.toString()),
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
             KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), oldNotaryKeyAsString),
@@ -1502,7 +1491,6 @@ class MembershipPersistenceTest {
     }
 
     @Test
-    @Suppress("ForEachOnRange")
     fun `queryRegistrationRequest retrieves the oldest queued registration request`() {
         vnodeEmf.transaction {
             it.createQuery("DELETE FROM RegistrationRequestEntity").executeUpdate()
@@ -1786,7 +1774,6 @@ class MembershipPersistenceTest {
         val memberX500Name = MemberX500Name.parse("O=Notary, C=GB, L=London")
         val notaryServiceName = "O=New Service, L=London, C=GB"
         val notaryPlugin = "Notary Plugin"
-        val notaryBackchainRequired = true
         val notaryPublicKey = generator.generateKeyPair().public
         val notaryVersions = listOf("1")
         val memberContext = notaryMemberContext(
@@ -1828,7 +1815,6 @@ class MembershipPersistenceTest {
         val updatedEpoch = 51
         val expectedGroupParameters = listOf(KeyValuePair(EPOCH_KEY, updatedEpoch.toString()),
             KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
-            KeyValuePair(String.format(NOTARY_SERVICE_BACKCHAIN_REQUIRED_KEY, 0), notaryBackchainRequired.toString()),
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryPlugin),
             KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), keyEncodingService.encodeAsString(notaryPublicKey)),
             ) + notaryVersions.mapIndexed { i, version -> KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, i), version) }
@@ -1929,7 +1915,6 @@ class MembershipPersistenceTest {
         val notaryPublicKey = generator.generateKeyPair().public
         val notaryParameters = listOf(
             KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), "O=New Service, L=London, C=GB"),
-            KeyValuePair(String.format(NOTARY_SERVICE_BACKCHAIN_REQUIRED_KEY, 0), "true"),
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), "Notary Plugin"),
             KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), keyEncodingService.encodeAsString(notaryPublicKey))
         ) + listOf("1").mapIndexed {
@@ -1990,7 +1975,6 @@ class MembershipPersistenceTest {
             ?.items
             ?.associate { it.key to it.value } ?: fail("Failed to deserialize context.")
 
-    @Suppress("LongParameterList")
     private fun notaryMemberContext(
         memberX500Name: MemberX500Name,
         groupId: String,

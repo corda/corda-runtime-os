@@ -34,7 +34,6 @@ dependencies {
     integrationTestImplementation project(":libs:messaging:topic-admin")
     integrationTestImplementation project(":libs:schema-registry:schema-registry")
     integrationTestImplementation project(":testing:test-utilities")
-    integrationTestImplementation project(":testing:test-state-manager")
 
     integrationTestImplementation platform("net.corda:corda-api:$cordaApiVersion")
     integrationTestImplementation "net.corda:corda-avro-schema"
@@ -43,6 +42,8 @@ dependencies {
     integrationTestImplementation 'net.corda:corda-topic-schema'
 
     integrationTestImplementation "com.typesafe:config:$typeSafeConfigVersion"
+    integrationTestImplementation "org.assertj:assertj-core:$assertjVersion"
+    integrationTestImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     integrationTestImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
     integrationTestImplementation "javax.persistence:javax.persistence-api"
     integrationTestImplementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"

@@ -35,13 +35,13 @@ interface UtxoRepository {
     /** Retrieves transaction component leaves related to visible unspent states and subclass states.*/
     fun findUnconsumedVisibleStatesByType(
         entityManager: EntityManager
-    ): List<UtxoVisibleTransactionOutputDto>
+    ):  List<UtxoVisibleTransactionOutputDto>
 
     /** Retrieves transaction component leafs related to specific StateRefs */
     fun resolveStateRefs(
         entityManager: EntityManager,
         stateRefs: List<StateRef>
-    ): List<UtxoVisibleTransactionOutputDto>
+    ):  List<UtxoVisibleTransactionOutputDto>
 
     /** Retrieves transaction signatures */
     fun findTransactionSignatures(

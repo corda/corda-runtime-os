@@ -6,20 +6,14 @@ import java.security.KeyStore
 import java.security.PrivateKey
 import java.time.Duration
 
-@Suppress("LongParameterList")
 internal class FileSystemCertificatesAuthorityImpl(
     keysFactoryDefinitions: KeysFactoryDefinitions,
     validDuration: Duration,
     defaultPrivateKeyAndCertificate: PrivateKeyWithCertificate?,
     private val home: File,
     firstSerialNumber: Long,
-    issuer: String?,
 ) : LocalCertificatesAuthority(
-    keysFactoryDefinitions,
-    validDuration,
-    defaultPrivateKeyAndCertificate,
-    firstSerialNumber,
-    issuer,
+    keysFactoryDefinitions, validDuration, defaultPrivateKeyAndCertificate, firstSerialNumber
 ),
     FileSystemCertificatesAuthority {
     companion object {
@@ -28,33 +22,23 @@ internal class FileSystemCertificatesAuthorityImpl(
             validDuration: Duration,
             home: File,
         ): FileSystemCertificatesAuthority {
-            val (firstSerialNumber, defaultPrivateKeyAndCertificate, issuer) = if (home.exists()) {
+            val (firstSerialNumber, defaultPrivateKeyAndCertificate) = if (home.exists()) {
                 val serialNumber = File(home, "serialNumber.txt").readText().toLong()
                 val keyStoreFile = File(home, "keystore.jks")
-                val issuer = File(home, "issuer.txt").let {
-                    if (it.exists()) {
-                        it.readText()
-                    } else {
-                        null
-                    }
-                }
                 val keyStore = keyStoreFile.inputStream().use { input ->
                     KeyStore.getInstance("JKS").also { keyStore ->
                         keyStore.load(input, PASSWORD.toCharArray())
                     }
                 }
                 val alias = keyStore.aliases().nextElement()
-                Triple(
-                    serialNumber,
+                serialNumber to
                     PrivateKeyWithCertificate(
                         keyStore.getKey(alias, PASSWORD.toCharArray())
-                                as PrivateKey,
+                            as PrivateKey,
                         keyStore.getCertificate(alias)
-                    ),
-                    issuer,
-                )
+                    )
             } else {
-                Triple(1L, null, null)
+                1L to null
             }
             return FileSystemCertificatesAuthorityImpl(
                 keysFactoryDefinitions,
@@ -62,7 +46,6 @@ internal class FileSystemCertificatesAuthorityImpl(
                 defaultPrivateKeyAndCertificate,
                 home,
                 firstSerialNumber,
-                issuer,
             )
         }
     }
@@ -70,7 +53,6 @@ internal class FileSystemCertificatesAuthorityImpl(
     override fun save() {
         home.mkdirs()
         File(home, "serialNumber.txt").writeText(serialNumber.toString())
-        File(home, "issuer.txt").writeText(issuer.toString())
         File(home, "keystore.jks").outputStream().use {
             asKeyStore("alias").store(it, PASSWORD.toCharArray())
         }

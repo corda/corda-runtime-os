@@ -19,7 +19,6 @@ import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.state.FlowCheckpoint
-import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.isInitiatingIdentity
 import net.corda.flow.utils.keyValuePairListOf
 import net.corda.libs.configuration.SmartConfig
@@ -245,10 +244,7 @@ class FlowSessionManagerImpl @Activate constructor(
             checkpoint,
             sessionIds,
             setOf(SessionStateType.CREATED, SessionStateType.CONFIRMED, SessionStateType.CLOSING)
-        ).partition { sessionState ->
-            val sessionProperties = KeyValueStore(sessionState.sessionProperties)
-            sessionProperties[Constants.FLOW_SESSION_REQUIRE_CLOSE].toBoolean()
-        }
+        ).partition { sessionState -> sessionState.requireClose }
         return Pair(statePair.first.map { it.sessionId }, statePair.second.map { it.sessionId })
     }
 

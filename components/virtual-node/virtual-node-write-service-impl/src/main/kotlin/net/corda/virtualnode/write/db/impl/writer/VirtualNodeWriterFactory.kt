@@ -3,7 +3,6 @@ package net.corda.virtualnode.write.db.impl.writer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
-import net.corda.data.virtualnode.VirtualNodeDbConnectionUpdateRequest
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
@@ -32,7 +31,6 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.orm.JpaEntitiesRegistry
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_ASYNC_REQUEST_TOPIC
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
 import net.corda.schema.configuration.VirtualNodeDatasourceConfig
@@ -42,12 +40,9 @@ import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyn
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationProcessor
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.factories.RecordFactoryImpl
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.CreateVirtualNodeOperationHandler
-import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.UpdateVirtualNodeDbOperationHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeOperationStatusHandler
-import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeSchemaHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeUpgradeOperationHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.services.CreateVirtualNodeServiceImpl
-import net.corda.virtualnode.write.db.impl.writer.asyncoperation.services.UpdateVirtualNodeServiceImpl
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.utility.MigrationUtilityImpl
 import org.slf4j.LoggerFactory
 
@@ -66,7 +61,6 @@ internal class VirtualNodeWriterFactory(
     private val memberInfoFactory: MemberInfoFactory,
     private val cpiCpkRepositoryFactory: CpiCpkRepositoryFactory,
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     private val cpkDbChangeLogRepository: CpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository(),
 ) {
 
@@ -124,13 +118,6 @@ internal class VirtualNodeWriterFactory(
             publisher
         )
 
-        val updateVirtualNodeService = UpdateVirtualNodeServiceImpl(
-            dbConnectionManager,
-            VirtualNodeRepositoryImpl(),
-            HoldingIdentityRepositoryImpl(),
-            publisher
-        )
-
         val virtualNodesDdlPoolConfig = vnodeDatasourceConfig.getConfig(VirtualNodeDatasourceConfig.VNODE_DDL_POOL_CONFIG)
         val virtualNodesDmlPoolConfig = vnodeDatasourceConfig.getConfig(VirtualNodeDatasourceConfig.VNODE_DML_POOL_CONFIG)
 
@@ -168,15 +155,6 @@ internal class VirtualNodeWriterFactory(
                 publisher,
                 externalMessagingRouteConfigGenerator,
                 LoggerFactory.getLogger(CreateVirtualNodeOperationHandler::class.java)
-            ),
-
-            VirtualNodeDbConnectionUpdateRequest::class.java to UpdateVirtualNodeDbOperationHandler(
-                dbConnectionManager.getClusterEntityManagerFactory(),
-                updateVirtualNodeService,
-                virtualNodeDbFactory,
-                recordFactory,
-                publisher,
-                LoggerFactory.getLogger(UpdateVirtualNodeDbOperationHandler::class.java)
             )
         )
 
@@ -186,10 +164,7 @@ internal class VirtualNodeWriterFactory(
         )
 
         return subscriptionFactory.createDurableSubscription(
-            subscriptionConfig,
-            asyncOperationProcessor,
-            messagingConfig,
-            null
+            subscriptionConfig, asyncOperationProcessor, messagingConfig, null
         )
     }
 
@@ -212,6 +187,7 @@ internal class VirtualNodeWriterFactory(
         messagingConfig: SmartConfig,
         vNodePublisher: Publisher,
     ): RPCSubscription<VirtualNodeManagementRequest, VirtualNodeManagementResponse> {
+
         val rpcConfig = RPCConfig(
             GROUP_NAME,
             CLIENT_NAME_RPC,
@@ -229,22 +205,14 @@ internal class VirtualNodeWriterFactory(
         val virtualNodeOperationStatusHandler =
             VirtualNodeOperationStatusHandler(dbConnectionManager, virtualNodeRepository)
 
-        val virtualNodeSchemaHandler = VirtualNodeSchemaHandler(
-            dbConnectionManager,
-            schemaMigrator,
-            virtualNodeRepository
-        )
-
         val processor = VirtualNodeWriterProcessor(
             vNodePublisher,
             dbConnectionManager,
             virtualNodeEntityRepository,
             virtualNodeOperationStatusHandler,
-            virtualNodeSchemaHandler,
             cpkDbChangeLogRepository,
             virtualNodeRepository = virtualNodeRepository,
-            migrationUtility = MigrationUtilityImpl(dbConnectionManager, schemaMigrator),
-            jpaEntitiesRegistry
+            migrationUtility = MigrationUtilityImpl(dbConnectionManager, schemaMigrator)
         )
 
         return subscriptionFactory.createRPCSubscription(rpcConfig, messagingConfig, processor)

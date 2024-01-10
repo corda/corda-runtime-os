@@ -20,4 +20,5 @@ data class UtxoTransactionBuilderContainer(
     override fun getNotaryName(): MemberX500Name? {
         return notaryName
     }
+
 }

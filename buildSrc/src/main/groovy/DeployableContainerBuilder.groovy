@@ -130,7 +130,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
 
     @Input
     final Property<String> baseImageTag =
-            getObjects().property(String).convention('17.0.8.1-17.44.53')
+            getObjects().property(String).convention('17.0.4.1-17.36.17')
 
     @Input
     final Property<String> subDir =

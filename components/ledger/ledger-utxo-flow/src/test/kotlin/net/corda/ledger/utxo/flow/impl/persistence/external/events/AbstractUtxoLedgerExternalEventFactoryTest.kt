@@ -7,6 +7,7 @@ import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.data.persistence.EntityResponse
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.schema.Schemas
 import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -51,6 +52,7 @@ class AbstractUtxoLedgerExternalEventFactoryTest {
             externalEventContext,
             payload
         )
+        assertEquals(Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC, externalEventRecord.topic)
         assertNull(externalEventRecord.key)
         assertEquals(
             LedgerPersistenceRequest(

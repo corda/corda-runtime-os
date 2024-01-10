@@ -25,10 +25,9 @@ class WrappedUtxoWireTransaction(
         const val timeWindowIndex: Int = 2
     }
 
-    init {
+    init{
         verifyMetadata(wireTransaction.metadata)
-        check(
-            wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal].size ==
+        check(wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal].size ==
                 wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal].size
         ) {
             "The length of the outputs and output infos component groups needs to be the same."
@@ -73,8 +72,7 @@ class WrappedUtxoWireTransaction(
                 .getComponentGroupList(UtxoComponentGroup.OUTPUTS.ordinal).size
         ) { index ->
             UtxoVisibleTransactionOutputDto(
-                id.toString(),
-                index,
+                id.toString(), index,
                 wireTransaction
                     .getComponentGroupList(UtxoComponentGroup.OUTPUTS_INFO.ordinal)[index],
                 wireTransaction

@@ -1,6 +1,5 @@
 package net.corda.ledger.common.flow.impl.transaction.serializer.kryo
 
-import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
@@ -8,6 +7,7 @@ import net.corda.sandbox.type.UsedByFlow
 import net.corda.serialization.checkpoint.CheckpointInput
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.CheckpointOutput
+import net.corda.ledger.common.data.transaction.PrivacySalt
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -30,7 +30,6 @@ class WireTransactionKryoSerializer @Activate constructor(
 
     override fun read(input: CheckpointInput, type: Class<out WireTransaction>): WireTransaction {
         val privacySalt = input.readClassAndObject() as PrivacySalt
-
         @Suppress("unchecked_cast")
         val componentGroupLists = input.readClassAndObject() as List<List<ByteArray>>
         return wireTransactionFactory.create(
@@ -39,3 +38,4 @@ class WireTransactionKryoSerializer @Activate constructor(
         )
     }
 }
+

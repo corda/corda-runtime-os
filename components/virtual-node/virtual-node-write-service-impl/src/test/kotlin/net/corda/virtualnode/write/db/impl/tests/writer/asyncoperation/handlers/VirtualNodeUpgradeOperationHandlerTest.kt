@@ -181,7 +181,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
                         "${GroupPolicyConstants.PolicyKeys.ProtocolParameters.STATIC_NETWORK}": {}
                     }
                 }
-        """.trimIndent()
+                """.trimIndent()
     }
 
     private fun genDynamicGroupPolicy(groupId: String): String {
@@ -189,7 +189,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
                 {
                     "${GroupPolicyConstants.PolicyKeys.Root.GROUP_ID}": "$groupId"
                 }
-        """.trimIndent()
+                """.trimIndent()
     }
 
     private val targetCpiChecksum = "targetCpi"
@@ -305,10 +305,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
                 Instant.now(),
                 requestId,
                 VirtualNodeUpgradeRequest(
-                    null,
-                    "aaaa",
-                    null,
-                    false
+                    null, "aaaa", null, false
                 )
             )
         }
@@ -321,10 +318,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
                 Instant.now(),
                 requestId,
                 VirtualNodeUpgradeRequest(
-                    vnodeId,
-                    null,
-                    null,
-                    false
+                    vnodeId, null, null, false
                 )
             )
         }
@@ -403,7 +397,6 @@ class VirtualNodeUpgradeOperationHandlerTest {
                 any(), any(), any(), any(), any(), any(), any(), any(), any(),
             )
         ).thenReturn(vNode)
-        whenever(virtualNodeRepository.completedOperation(any(), any())).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
         whenever(oldVirtualNodeEntityRepository.getCPIMetadataById(any(), any())).thenReturn(currentCpiMetadata)
         whenever(virtualNodeInfoPublisher.publish(any())).thenReturn(emptyList())
@@ -415,7 +408,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
         )
 
         verify(virtualNodeRepository, times(1)).upgradeVirtualNodeCpi(any(), any(), any(), any(), any(), any(), any(), any(), any())
-    }
+}
 
     @Test
     fun `upgrade handler can't find target CPI throws`() {
@@ -536,14 +529,13 @@ class VirtualNodeUpgradeOperationHandlerTest {
                 eq(request.toString())
             )
         ).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
-        whenever(virtualNodeRepository.completedOperation(any(), any())).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
 
         val vnodeInfoCapture =
             argumentCaptor<List<Record<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo>>>()
 
         handler.handle(requestTimestamp, requestId, request)
 
-        verify(virtualNodeInfoPublisher, times(2)).publish(vnodeInfoCapture.capture())
+        verify(virtualNodeInfoPublisher, times(1)).publish(vnodeInfoCapture.capture())
 
         assertUpgradedVnodeInfoIsPublished(
             vnodeInfoCapture.firstValue,
@@ -575,7 +567,6 @@ class VirtualNodeUpgradeOperationHandlerTest {
                 eq(request.toString())
             )
         ).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
-        whenever(virtualNodeRepository.completedOperation(any(), any())).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
         val mgmRecord = mock<Record<*, *>>()
         whenever(recordFactory.createMgmInfoRecord(any(), eq(newMgmInfo))).thenReturn(mgmRecord)
 
@@ -607,7 +598,6 @@ class VirtualNodeUpgradeOperationHandlerTest {
                 eq(request.toString())
             )
         ).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
-        whenever(virtualNodeRepository.completedOperation(any(), any())).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
 
         val memberBytes = byteArrayOf(1, 2)
         val registrationRequest = mock<RegistrationRequestDetails> {
@@ -616,14 +606,9 @@ class VirtualNodeUpgradeOperationHandlerTest {
         }
         whenever(deserializer.deserialize(any()))
             .thenReturn(KeyValuePairList(listOf(KeyValuePair("key", "value"))))
-        whenever(
-            membershipQueryClient.queryRegistrationRequests(
-                eq(mockHoldingIdentity),
-                eq(mockHoldingIdentity.x500Name),
-                eq(listOf(RegistrationStatus.APPROVED)),
-                anyOrNull(),
-            )
-        ).thenReturn(MembershipQueryResult.Success(listOf(registrationRequest)))
+        whenever(membershipQueryClient.queryRegistrationRequests(
+            eq(mockHoldingIdentity), eq(mockHoldingIdentity.x500Name), eq(listOf(RegistrationStatus.APPROVED)), anyOrNull(),
+        )).thenReturn(MembershipQueryResult.Success(listOf(registrationRequest)))
         val requestCaptor = argumentCaptor<Map<String, String>>()
         whenever(memberResourceClient.startRegistration(eq(mockHoldingIdentity.shortHash), requestCaptor.capture()))
             .thenReturn(mock())
@@ -658,7 +643,6 @@ class VirtualNodeUpgradeOperationHandlerTest {
                 eq(request.toString())
             )
         ).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
-        whenever(virtualNodeRepository.completedOperation(any(), any())).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
 
         val memberBytes = byteArrayOf(1, 2)
         val registrationRequest = mock<RegistrationRequestDetails> {
@@ -667,14 +651,9 @@ class VirtualNodeUpgradeOperationHandlerTest {
         }
         whenever(deserializer.deserialize(any()))
             .thenReturn(KeyValuePairList(listOf(KeyValuePair("key", "value"))))
-        whenever(
-            membershipQueryClient.queryRegistrationRequests(
-                eq(mockHoldingIdentity),
-                eq(mockHoldingIdentity.x500Name),
-                eq(listOf(RegistrationStatus.APPROVED)),
-                anyOrNull(),
-            )
-        ).thenReturn(MembershipQueryResult.Success(listOf(registrationRequest)))
+        whenever(membershipQueryClient.queryRegistrationRequests(
+            eq(mockHoldingIdentity), eq(mockHoldingIdentity.x500Name), eq(listOf(RegistrationStatus.APPROVED)), anyOrNull(),
+        )).thenReturn(MembershipQueryResult.Success(listOf(registrationRequest)))
         val requestCaptor = argumentCaptor<Map<String, String>>()
         whenever(memberResourceClient.startRegistration(eq(mockHoldingIdentity.shortHash), requestCaptor.capture()))
             .thenReturn(mock())

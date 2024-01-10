@@ -64,6 +64,7 @@ class RoleWriterImpl(
     }
 
     override fun addPermissionToRole(request: AddPermissionToRoleRequest, requestUserId: String): AvroRole {
+
         log.debug { "Received request to add permission to a role: $request" }
 
         return entityManagerFactory.transaction { entityManager ->

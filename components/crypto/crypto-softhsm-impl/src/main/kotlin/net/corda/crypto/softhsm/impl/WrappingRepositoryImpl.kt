@@ -23,14 +23,14 @@ class WrappingRepositoryImpl(
 
     override fun close() = entityManagerFactory.close()
 
-    override fun saveKeyWithId(key: WrappingKeyInfo, id: UUID?): WrappingKeyInfo =
-        entityManagerFactory.createEntityManager().use { em ->
-            em.transaction { t ->
-                t.merge(
+    override fun saveKeyWithId(alias: String, key: WrappingKeyInfo, id: UUID?): WrappingKeyInfo =
+        entityManagerFactory.createEntityManager().use {
+            return it.transaction {
+                it.merge(
                     WrappingKeyEntity(
-                        id = id ?: UUID.randomUUID(),
+                        id = id?:UUID.randomUUID(),
                         generation = key.generation,
-                        alias = key.alias,
+                        alias = alias,
                         created = Instant.now(),
                         rotationDate = LocalDate.parse("9999-12-31").atStartOfDay().toInstant(ZoneOffset.UTC),
                         encodingVersion = key.encodingVersion,
@@ -41,12 +41,12 @@ class WrappingRepositoryImpl(
                     )
                 )
             }.toDto().also {
-                logger.info("Storing wrapping key with alias ${key.alias} generation ${key.generation} in tenant $tenantId")
+                logger.info("Storing wrapping key with alias $alias in tenant $tenantId")
             }
         }
 
-    override fun saveKey(key: WrappingKeyInfo): WrappingKeyInfo =
-        saveKeyWithId(key, null)
+    override fun saveKey(alias: String, key: WrappingKeyInfo): WrappingKeyInfo =
+        saveKeyWithId(alias, key, null)
 
     override fun findKey(alias: String): WrappingKeyInfo? = findKeyAndId(alias)?.second
     override fun findKeyAndId(alias: String): Pair<UUID, WrappingKeyInfo>? =
@@ -58,21 +58,6 @@ class WrappingRepositoryImpl(
                 Pair(dao.id, dao.toDto())
             }
         }
-
-    override fun findKeysWrappedByAlias(alias: String): List<WrappingKeyInfo> =
-        entityManagerFactory.createEntityManager().use {
-            it.createQuery(
-                "FROM ${WrappingKeyEntity::class.simpleName} AS k WHERE k.parentKeyReference = :alias",
-                WrappingKeyEntity::class.java
-            ).setParameter("alias", alias).resultList.map { dao -> dao.toDto() }
-        }
-
-    override fun getKeyById(id: UUID): WrappingKeyInfo? = entityManagerFactory.createEntityManager().use {
-        it.createQuery(
-            "FROM ${WrappingKeyEntity::class.simpleName} AS k WHERE k.id = :id",
-            WrappingKeyEntity::class.java
-        ).setParameter("id", id).resultStream.map {dao -> dao.toDto() }.findFirst().orElse(null)
-    }
 }
 
 // NOTE: this should be on the entity object directly, but this means this repo (and the DTOs) need
@@ -83,7 +68,6 @@ fun WrappingKeyEntity.toDto() =
         algorithmName = this.algorithmName,
         keyMaterial = this.keyMaterial,
         generation = this.generation,
-        parentKeyAlias = this.parentKeyReference,
-        alias = this.alias
+        parentKeyAlias = this.parentKeyReference
     )
         

@@ -8,18 +8,15 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.crypto.protocol.api.Session
-import net.corda.p2p.linkmanager.common.MessageConverter
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.util.LinkedList
 import java.util.Queue
 
-@Suppress("LongParameterList")
 internal class PendingSessionMessageQueuesImpl(
     publisherFactory: PublisherFactory,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    messagingConfiguration: SmartConfig,
-    private val messageConverter: MessageConverter,
+    messagingConfiguration: SmartConfig
 ) : PendingSessionMessageQueues {
 
     companion object {
@@ -70,9 +67,7 @@ internal class PendingSessionMessageQueuesImpl(
                     "Sending queued message ${message.message.header.messageId} " +
                         "to newly established session ${session.sessionId} with ${counterparties.counterpartyId}"
                 }
-                records.addAll(messageConverter.recordsForSessionEstablished(
-                    sessionManager , session, counterparties.serial, message
-                ))
+                records.addAll(sessionManager.recordsForSessionEstablished(session, message, counterparties.serial))
             }
             publisher.publish(records)
         }

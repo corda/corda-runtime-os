@@ -208,11 +208,6 @@ object CordaMetrics {
         object OutboundSessionTimeoutCount : Metric<Counter>("p2p.session.outbound.timeout", Metrics::counter)
 
         /**
-         * Number of inbound peer-to-peer sessions that timed out (indicating communication issues with peers).
-         */
-        object InboundSessionTimeoutCount : Metric<Counter>("p2p.session.inbound.timeout", Metrics::counter)
-
-        /**
          * Number of outbound peer-to-peer sessions.
          */
         class OutboundSessionCount(computation: Supplier<Number>): ComputedValue<Nothing>("p2p.session.outbound", computation)
@@ -388,11 +383,6 @@ object CordaMetrics {
              * The time taken for crypto signature spec operations.
              */
             object SignatureSpecTimer: Metric<Timer>("$PREFIX.signature.spec.time", CordaMetrics::timer)
-
-            /**
-             * The time taken for rewrapping keys in key rotation
-             */
-            object RewrapKeysTimer: Metric<Timer>("$PREFIX.rewrap.time", CordaMetrics::timer)
 
         }
 

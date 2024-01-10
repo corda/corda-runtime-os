@@ -11,7 +11,6 @@ import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.impl.transaction.filtered.factory.FilteredTransactionFactoryImpl
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters
-import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters.AuditProof.AuditProofPredicate
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
@@ -62,6 +61,7 @@ class FilteredTransactionImplIntegrationTest {
 
     @Test
     fun `transaction can be filtered and successfully verified`() {
+
         whenever(serializationService.deserialize(COMPONENT_1, Any::class.java)).thenReturn(MyClassA())
         whenever(serializationService.deserialize(COMPONENT_2, Any::class.java)).thenReturn(MyClassB())
         whenever(serializationService.deserialize(COMPONENT_3, Any::class.java)).thenReturn(MyClassC())
@@ -92,33 +92,13 @@ class FilteredTransactionImplIntegrationTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(
-                    0,
-                    TransactionMetadataImpl::class.java,
-                    AuditProofPredicate.Content { true }
-                ),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java) { true },
                 ComponentGroupFilterParameters.SizeProof(1),
-                ComponentGroupFilterParameters.AuditProof(
-                    2,
-                    Any::class.java,
-                    AuditProofPredicate.Content { it is MyClassC }
-                ),
-                ComponentGroupFilterParameters.AuditProof(
-                    3,
-                    Any::class.java,
-                    AuditProofPredicate.Content { it is MyClassC }
-                ),
+                ComponentGroupFilterParameters.AuditProof(2, Any::class.java) { it is MyClassC },
+                ComponentGroupFilterParameters.AuditProof(3, Any::class.java) { it is MyClassC },
                 ComponentGroupFilterParameters.SizeProof(4),
-                ComponentGroupFilterParameters.AuditProof(
-                    5,
-                    Any::class.java,
-                    AuditProofPredicate.Content { it is MyClassC }
-                ),
-                ComponentGroupFilterParameters.AuditProof(
-                    6,
-                    Any::class.java,
-                    AuditProofPredicate.Content { it is MyClassC }
-                ),
+                ComponentGroupFilterParameters.AuditProof(5, Any::class.java) { it is MyClassC },
+                ComponentGroupFilterParameters.AuditProof(6, Any::class.java) { it is MyClassC },
                 ComponentGroupFilterParameters.SizeProof(9),
             )
         )
@@ -128,6 +108,7 @@ class FilteredTransactionImplIntegrationTest {
 
     @Test
     fun `component group content can be retrieved from a filtered transaction when the merkle proof for the group is an audit proof`() {
+
         whenever(serializationService.deserialize(COMPONENT_1, Any::class.java)).thenReturn(MyClassA())
         whenever(serializationService.deserialize(COMPONENT_2, Any::class.java)).thenReturn(MyClassB())
 
@@ -145,14 +126,9 @@ class FilteredTransactionImplIntegrationTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(
-                    0,
-                    TransactionMetadataImpl::class.java,
-                    AuditProofPredicate.Content { true }
-
-                ),
-                ComponentGroupFilterParameters.AuditProof(1, Any::class.java, AuditProofPredicate.Content { true }),
-                ComponentGroupFilterParameters.AuditProof(2, Any::class.java, AuditProofPredicate.Content { true }),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java) { true },
+                ComponentGroupFilterParameters.AuditProof(1, Any::class.java) { true },
+                ComponentGroupFilterParameters.AuditProof(2, Any::class.java) { true },
             )
         )
 
@@ -171,6 +147,7 @@ class FilteredTransactionImplIntegrationTest {
 
     @Test
     fun `retrieved component group content does not included filtered content when the merkle proof for the group is an audit proof`() {
+
         whenever(serializationService.deserialize(COMPONENT_1, Any::class.java)).thenReturn(MyClassA())
         whenever(serializationService.deserialize(COMPONENT_2, Any::class.java)).thenReturn(MyClassB())
         whenever(serializationService.deserialize(COMPONENT_3, Any::class.java)).thenReturn(MyClassC())
@@ -189,9 +166,9 @@ class FilteredTransactionImplIntegrationTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java, AuditProofPredicate.Content { true }),
-                ComponentGroupFilterParameters.AuditProof(1, Any::class.java, AuditProofPredicate.Content { it is MyClassA || it is MyClassC }),
-                ComponentGroupFilterParameters.AuditProof(2, Any::class.java, AuditProofPredicate.Content { it is MyClassA || it is MyClassC }),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java) { true },
+                ComponentGroupFilterParameters.AuditProof(1, Any::class.java) { it is MyClassA || it is MyClassC },
+                ComponentGroupFilterParameters.AuditProof(2, Any::class.java) { it is MyClassA || it is MyClassC },
             )
         )
 
@@ -210,6 +187,7 @@ class FilteredTransactionImplIntegrationTest {
 
     @Test
     fun `cannot retrieve filtered out component group content when the merkle proof for the group is an audit proof`() {
+
         whenever(serializationService.deserialize(COMPONENT_1, Any::class.java)).thenReturn(MyClassA())
         whenever(serializationService.deserialize(COMPONENT_2, Any::class.java)).thenReturn(MyClassB())
         whenever(serializationService.deserialize(COMPONENT_3, Any::class.java)).thenReturn(MyClassC())
@@ -228,8 +206,8 @@ class FilteredTransactionImplIntegrationTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java, AuditProofPredicate.Content { true }),
-                ComponentGroupFilterParameters.AuditProof(1, Any::class.java, AuditProofPredicate.Content { it is MyClassA || it is MyClassC }),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java) { true },
+                ComponentGroupFilterParameters.AuditProof(1, Any::class.java) { it is MyClassA || it is MyClassC },
             )
         )
 
@@ -243,6 +221,7 @@ class FilteredTransactionImplIntegrationTest {
 
     @Test
     fun `original component group content cannot be retrieved from a filtered transaction when the merkle proof for the group is a size proof`() {
+
         whenever(serializationService.deserialize(COMPONENT_1, Any::class.java)).thenReturn(MyClassA())
         whenever(serializationService.deserialize(COMPONENT_2, Any::class.java)).thenReturn(MyClassB())
 
@@ -260,7 +239,7 @@ class FilteredTransactionImplIntegrationTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java, AuditProofPredicate.Content { true }),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java) { true },
                 ComponentGroupFilterParameters.SizeProof(1),
                 ComponentGroupFilterParameters.SizeProof(2),
             )

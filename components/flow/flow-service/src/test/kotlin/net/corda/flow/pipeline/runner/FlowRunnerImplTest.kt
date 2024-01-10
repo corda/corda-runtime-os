@@ -255,7 +255,6 @@ class FlowRunnerImplTest {
             flowFactory.createInitiatedFlow(
                 flowStartContext,
                 true,
-                sessionTimeout = null,
                 sandboxGroupContext,
                 localContextProperties.sessionProperties
             )

@@ -12,8 +12,6 @@ ext {
 
 group 'net.corda.cli.deployment'
 
-ext.cordaEnableFormatting = true
-
 dependencies {
     constraints {
         implementation('org.slf4j:slf4j-api') {
@@ -43,9 +41,9 @@ dependencies {
     implementation project(':libs:configuration:configuration-endpoints')
     implementation project(':libs:membership:membership-common')
 
-    testImplementation libs.bundles.test
     testImplementation "net.corda.cli.host:api:$pluginHostVersion"
     testImplementation "org.pf4j:pf4j:${pf4jVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
     testImplementation "com.github.stefanbirkner:system-lambda:1.2.1"
 
     pluginSmokeTestImplementation project(':testing:e2e-test-utilities')

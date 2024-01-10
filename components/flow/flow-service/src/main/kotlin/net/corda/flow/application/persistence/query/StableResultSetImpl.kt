@@ -11,7 +11,7 @@ import java.nio.ByteBuffer
  */
 data class StableResultSetImpl<R> internal constructor(
     private val serializationService: SerializationService,
-    private var serializedParameters: MutableMap<String, ByteBuffer?>,
+    private var serializedParameters: MutableMap<String, ByteBuffer>,
     private var limit: Int,
     private val resultClass: Class<R>,
     private val resultSetExecutor: StableResultSetExecutor<R>

@@ -89,8 +89,7 @@ class NotaryLookupImplTest {
                 alice,
                 "net.corda.Plugin1",
                 emptyList(),
-                emptyList(),
-                true
+                emptyList()
             )
         )
         whenever(groupReader.lookup(alice)).thenReturn(member)

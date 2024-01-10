@@ -10,13 +10,12 @@ import net.corda.ledger.utxo.token.cache.entities.TokenEvent
 
 class EventConverterImpl(private val entityConverter: EntityConverter) : EventConverter {
 
-    override fun convert(tokenPoolCacheEvent: TokenPoolCacheEvent): TokenEvent {
-        val key = tokenPoolCacheEvent.poolKey
+    override fun convert(tokenPoolCacheEvent: TokenPoolCacheEvent?): TokenEvent {
+        val event = checkNotNull(tokenPoolCacheEvent) { "The received TokenPoolCacheEvent is null." }
+        val key = event.poolKey
 
-        return when (
-            val payload =
-                checkNotNull(tokenPoolCacheEvent.payload) { "The received TokenPoolCacheEvent payload is null." }
-        ) {
+        return when (val payload =
+            checkNotNull(event.payload) { "The received TokenPoolCacheEvent payload is null." }) {
             is TokenClaimQuery -> {
                 entityConverter.toClaimQuery(key, payload)
             }
@@ -38,8 +37,9 @@ class EventConverterImpl(private val entityConverter: EntityConverter) : EventCo
             }
 
             else -> {
-                error("The event payload type '${payload.javaClass}' is not supported. Found in event '$tokenPoolCacheEvent'")
+                error("The event payload type '${payload.javaClass}' is not supported. Found in event '${tokenPoolCacheEvent}'")
             }
         }
     }
 }
+

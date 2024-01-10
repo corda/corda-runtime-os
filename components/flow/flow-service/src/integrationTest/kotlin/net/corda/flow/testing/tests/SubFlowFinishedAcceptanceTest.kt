@@ -50,7 +50,6 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
-    @Suppress("MaxLineLength")
     @Test
     fun `when an initiating session subFlow with requireClose set to true closes a session and then the subFlow finishes, the flow completes and schedules cleanup`() {
 
@@ -80,7 +79,6 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
-    @Suppress("MaxLineLength")
     @Test
     fun `when an initiating session subFlow with requireClose set to false closes a session and then the subFlow finishes, the flow completes and schedules cleanup`() {
 
@@ -104,7 +102,6 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
-    @Suppress("MaxLineLength")
     @Test
     fun `Given an initiated top level flow with requireClose set to true, when it finishes and calls SubFlowFinished it completes flow, sends a close, and schedules cleanup`() {
         given {
@@ -129,7 +126,6 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
-    @Suppress("MaxLineLength")
     @Test
     fun `Given an initiated top level flow with requireClose set to false, when it finishes and calls SubFlowFinished it completes flow and schedules cleanup`() {
         given {
@@ -154,7 +150,6 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
-    @Suppress("MaxLineLength")
     @Test
     fun `Given an initiated top level flow with an errored session when it finishes and calls SubFlowFinished, cleanup is scheduled`() {
         given {

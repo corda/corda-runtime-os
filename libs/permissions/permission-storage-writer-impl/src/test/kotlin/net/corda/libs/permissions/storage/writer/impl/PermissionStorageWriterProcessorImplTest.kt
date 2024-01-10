@@ -1,8 +1,10 @@
 package net.corda.libs.permissions.storage.writer.impl
 
+import java.time.Instant
+import net.corda.data.permissions.PermissionType
+import java.util.concurrent.CompletableFuture
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.permissions.ChangeDetails
-import net.corda.data.permissions.PermissionType
 import net.corda.data.permissions.RoleAssociation
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
@@ -28,11 +30,9 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.time.Instant
-import java.util.concurrent.CompletableFuture
-import net.corda.data.permissions.Permission as AvroPermission
-import net.corda.data.permissions.Role as AvroRole
 import net.corda.data.permissions.User as AvroUser
+import net.corda.data.permissions.Role as AvroRole
+import net.corda.data.permissions.Permission as AvroPermission
 
 class PermissionStorageWriterProcessorImplTest {
 
@@ -43,11 +43,8 @@ class PermissionStorageWriterProcessorImplTest {
     }
     private val createRoleRequest = CreateRoleRequest("role1", null)
 
-    private val createPermissionRequest = CreatePermissionRequest(
-        PermissionType.ALLOW,
-        "permissionString",
-        null
-    )
+    private val createPermissionRequest = CreatePermissionRequest(PermissionType.ALLOW,
+        "permissionString", null)
 
     private val creatorUserId = "creatorUserId"
     private val avroUser = AvroUser().apply {
@@ -285,4 +282,5 @@ class PermissionStorageWriterProcessorImplTest {
             assertEquals(avroUser, user)
         }
     }
+
 }

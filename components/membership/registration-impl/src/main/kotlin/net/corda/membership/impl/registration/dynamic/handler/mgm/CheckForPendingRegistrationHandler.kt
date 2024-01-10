@@ -5,7 +5,6 @@ import net.corda.data.membership.command.registration.mgm.CheckForPendingRegistr
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
-import net.corda.membership.impl.registration.RegistrationLogger
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -28,28 +27,28 @@ class CheckForPendingRegistrationHandler(
     override fun getOwnerHoldingId(state: RegistrationState?, command: CheckForPendingRegistration) = state?.mgm
 
     override fun invoke(state: RegistrationState?, key: String, command: CheckForPendingRegistration): RegistrationHandlerResult {
-        val registrationLogger = RegistrationLogger(logger)
-            .setMember(command.member)
-            .setMgm(command.mgm)
         val (outputState, outputCommand) = try {
             if(command.numberOfRetriesSoFar < MAX_RETRIES) {
                 state?.let {
-                    registrationLogger.setRegistrationId(it.registrationId)
-                    registrationLogger.info("There is a registration in progress for member. " +
-                            "The service will wait until processing the previous request finishes.")
+                    logger.info("There is a registration in progress for member ${state.registeringMember.x500Name} " +
+                            "from group `${state.registeringMember.groupId}` " +
+                            "with ID `${state.registrationId}`. The service will wait until processing the previous " +
+                            "request finishes.")
                     Pair(state, null)
                 } ?: run {
-                    getNextRequest(command, registrationLogger)
+                    getNextRequest(command)
                 }
             } else {
-                registrationLogger.warn(
-                    "Max re-tries exceeded to get next registration request registration. Registration is discarded."
+                logger.warn(
+                    "Max re-tries exceeded to get next registration request registration " +
+                            "for member ${command.member.x500Name} from group `${command.member.groupId}`. " +
+                            "Registration is discarded."
                 )
                 Pair(state, null)
             }
         } catch (ex: Exception) {
-            registrationLogger.warn("Exception happened while looking for the next request to process for member. " +
-                    "Will re-try again.", ex)
+            logger.warn("Exception happened while looking for the next request to process for member " +
+                    "${command.member.x500Name} from group `${command.member.groupId}`. Will re-try again.", ex)
             Pair(state, increaseNumberOfRetries(command))
         }
         return if(outputCommand != null) {
@@ -64,11 +63,9 @@ class CheckForPendingRegistrationHandler(
         }
     }
 
-    private fun getNextRequest(
-        command: CheckForPendingRegistration,
-        registrationLogger: RegistrationLogger
-    ): Pair<RegistrationState?, StartRegistration?> {
-        registrationLogger.info("Looking for the next request for member.")
+    private fun getNextRequest(command: CheckForPendingRegistration): Pair<RegistrationState?, StartRegistration?> {
+        logger.info("Looking for the next request for member ${command.member.x500Name} from " +
+                "group `${command.member.groupId}`.")
         val nextRequest = membershipQueryClient.queryRegistrationRequests(
             command.mgm.toCorda(),
             command.member.toCorda().x500Name,
@@ -77,12 +74,14 @@ class CheckForPendingRegistrationHandler(
         ).getOrThrow().firstOrNull()
         // need to check if there were any results at all
         return if(nextRequest != null) {
-            registrationLogger.setRegistrationId(nextRequest.registrationId)
-            registrationLogger.info("Retrieved next request for member from the database. Proceeding with registration.")
+            logger.info("Retrieved next request for member ${command.member.x500Name} from " +
+                    "group `${command.member.groupId}` " +
+                    "with ID `${nextRequest.registrationId}` from the database. Proceeding with registration.")
             // create state to make sure we process one registration at the same time
             Pair(RegistrationState(nextRequest.registrationId, command.member, command.mgm, emptyList()), StartRegistration())
         } else {
-            registrationLogger.info("There are no registration requests queued for member.")
+            logger.info("There are no registration requests queued " +
+                    "for member ${command.member.x500Name} from group `${command.member.groupId}`.")
             Pair(null, null)
         }
     }

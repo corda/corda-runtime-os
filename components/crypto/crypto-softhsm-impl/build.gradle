@@ -39,6 +39,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
     testImplementation project(":components:crypto:crypto-component-test-utils")
     testImplementation project(":components:crypto:crypto-hes-impl")

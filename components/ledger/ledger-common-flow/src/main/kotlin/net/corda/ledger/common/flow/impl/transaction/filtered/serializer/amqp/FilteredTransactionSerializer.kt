@@ -6,7 +6,6 @@ import net.corda.ledger.common.flow.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
 import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow
-import net.corda.sandbox.type.UsedByVerification
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -19,7 +18,7 @@ import org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Component(
-    service = [ InternalCustomSerializer::class, UsedByFlow::class, UsedByVerification::class ],
+    service = [ InternalCustomSerializer::class, UsedByFlow::class ],
     property = [ CORDA_UNINJECTABLE_SERVICE ],
     scope = PROTOTYPE
 )
@@ -28,7 +27,7 @@ class FilteredTransactionSerializer @Activate constructor(
     private val jsonMarshallingService: JsonMarshallingService,
     @Reference(service = MerkleTreeProvider::class)
     private val merkleTreeProvider: MerkleTreeProvider
-) : BaseProxySerializer<FilteredTransaction, FilteredTransactionProxy>(), UsedByFlow, UsedByVerification {
+) : BaseProxySerializer<FilteredTransaction, FilteredTransactionProxy>(), UsedByFlow {
 
     override val proxyType
         get() = FilteredTransactionProxy::class.java

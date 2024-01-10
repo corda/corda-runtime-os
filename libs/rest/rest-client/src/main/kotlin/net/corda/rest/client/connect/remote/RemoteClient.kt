@@ -59,6 +59,7 @@ internal class RemoteUnirestClient(
     private val unirestInstance = UnirestInstance(config)
 
     override fun <T> call(verb: HttpVerb, webRequest: WebRequest<T>, responseType: Type, context: RequestContext): WebResponse<Any> {
+
         return doCall(verb, webRequest, context) {
             val genericType = object : GenericType<Any>() {
                 override fun getType(): Type {
@@ -81,9 +82,7 @@ internal class RemoteUnirestClient(
 
     @Suppress("ComplexMethod", "ThrowsCount")
     private fun <T, R> doCall(
-        verb: HttpVerb,
-        webRequest: WebRequest<T>,
-        context: RequestContext,
+        verb: HttpVerb, webRequest: WebRequest<T>, context: RequestContext,
         remoteCallFn: HttpRequest<*>.() -> HttpResponse<R>
     ): WebResponse<R> where R : Any {
         val path = baseAddress + webRequest.path
@@ -96,7 +95,7 @@ internal class RemoteUnirestClient(
             HttpVerb.DELETE -> unirestInstance.delete(path)
         }
 
-        request = if (isMultipartFormRequest(webRequest)) {
+        request = if(isMultipartFormRequest(webRequest)) {
             buildMultipartFormRequest(webRequest, request)
         } else {
             buildApplicationJsonRequest(webRequest, request)
@@ -124,13 +123,10 @@ internal class RemoteUnirestClient(
             }
 
             return WebResponse(
-                response.body,
-                response.headers.all().associateBy({ it.name }, { it.value }),
-                response.status,
-                response.statusText
-            ).also {
-                log.debug { """Do call "$verb $path" completed.""" }
-            }
+                response.body, response.headers.all().associateBy({ it.name }, { it.value }),
+                response.status, response.statusText).also {
+                    log.debug { """Do call "$verb $path" completed.""" }
+                }
         } catch (e: UnirestException) {
             log.error("Unable to make HTTP call", e)
             when (val exceptionCause = e.cause) {
@@ -144,16 +140,16 @@ internal class RemoteUnirestClient(
 
     private fun <T> buildMultipartFormRequest(webRequest: WebRequest<T>, request: HttpRequest<*>): HttpRequest<*> {
         var requestBuilder = request.header("accept", "multipart/form-data")
-        if (request is HttpRequestWithBody) {
+        if(request is HttpRequestWithBody) {
             requestBuilder = request.multiPartContent() as MultipartBody
 
-            if (!webRequest.formParameters.isNullOrEmpty()) {
+            if(!webRequest.formParameters.isNullOrEmpty()) {
                 webRequest.formParameters.forEach {
                     requestBuilder.field(it.key, it.value)
                 }
             }
 
-            if (!webRequest.files.isNullOrEmpty()) {
+            if(!webRequest.files.isNullOrEmpty()) {
                 webRequest.files.forEach { filesForParameter ->
                     addFilesForEachField(filesForParameter, requestBuilder)
                 }
@@ -175,7 +171,7 @@ internal class RemoteUnirestClient(
         requestBuilder.header("accept", "application/json")
         requestBuilder.header("accept", "text/plain")
 
-        if (requestBuilder is HttpRequestWithBody) {
+        if(requestBuilder is HttpRequestWithBody) {
             if (webRequest.body != null) {
                 requestBuilder = requestBuilder.body(webRequest.body)
             }
@@ -185,6 +181,7 @@ internal class RemoteUnirestClient(
 
     private fun Config.addSslParams() {
         if (enableSsl) {
+
             log.debug { "Add Ssl params." }
 
             val apacheClient = if (secureSsl) {

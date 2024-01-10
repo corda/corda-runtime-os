@@ -20,4 +20,5 @@ class UtxoTransactionBuilderSerializerTest {
         assertThatThrownBy { UtxoTransactionBuilderSerializer().fromProxy(UtxoTransactionBuilderProxy(), mock()) }
             .isInstanceOf(CordaRuntimeException::class.java)
     }
+
 }

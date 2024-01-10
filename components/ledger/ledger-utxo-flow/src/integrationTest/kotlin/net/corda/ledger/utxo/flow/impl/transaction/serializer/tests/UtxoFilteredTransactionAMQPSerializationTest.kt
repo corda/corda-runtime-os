@@ -194,4 +194,5 @@ class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest()
         val outputs = deserialized.outputStateAndRefs as UtxoFilteredData.SizeOnly
         assertThat(outputs.size).isEqualTo(2)
     }
+
 }

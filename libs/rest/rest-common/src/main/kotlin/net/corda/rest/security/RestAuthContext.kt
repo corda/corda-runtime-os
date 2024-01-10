@@ -7,6 +7,7 @@ data class RestAuthContext(
     private val authorizer: AuthorizingSubject
 ) : AuthorizingSubject by authorizer
 
+
 @JvmField
 val CURRENT_REST_CONTEXT: ThreadLocal<RestAuthContext> = CurrentRestContext()
 
@@ -28,7 +29,7 @@ internal class CurrentRestContext : ThreadLocal<RestAuthContext>() {
             context != null -> {
                 super.set(context)
                 // this is needed here as well because the Shell sets the context without going through the RestServer
-                // context.invocation.pushToLoggingContext()
+                //context.invocation.pushToLoggingContext()
             }
             else -> remove()
         }

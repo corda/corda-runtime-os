@@ -17,7 +17,6 @@ import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.FlowSessionConfiguration
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
@@ -26,7 +25,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
-import java.time.Duration
 import java.util.UUID
 
 @Suppress("TooManyFunctions")
@@ -49,17 +47,12 @@ class FlowMessagingImpl @Activate constructor(
 
     @Suspendable
     override fun initiateFlow(x500Name: MemberX500Name, requireClose: Boolean): FlowSession {
-        return doInitiateFlow(x500Name, requireClose)
-    }
-
-    @Suspendable
-    override fun initiateFlow(x500Name: MemberX500Name, sessionConfiguration: FlowSessionConfiguration): FlowSession {
-        return doInitiateFlow(x500Name, sessionConfiguration.isRequireClose, sessionConfiguration.timeout)
+        return doInitiateFlow(x500Name, requireClose, null)
     }
 
     @Suspendable
     override fun initiateFlow(x500Name: MemberX500Name, flowContextPropertiesBuilder: FlowContextPropertiesBuilder): FlowSession {
-        return doInitiateFlow(x500Name, true, sessionTimeout = null, flowContextPropertiesBuilder)
+        return doInitiateFlow(x500Name, true, flowContextPropertiesBuilder)
     }
 
     @Suspendable
@@ -68,21 +61,7 @@ class FlowMessagingImpl @Activate constructor(
         requireClose: Boolean,
         flowContextPropertiesBuilder: FlowContextPropertiesBuilder
     ): FlowSession {
-        return doInitiateFlow(x500Name, requireClose, sessionTimeout = null, flowContextPropertiesBuilder)
-    }
-
-    @Suspendable
-    override fun initiateFlow(
-        x500Name: MemberX500Name,
-        sessionConfiguration: FlowSessionConfiguration,
-        flowContextPropertiesBuilder: FlowContextPropertiesBuilder
-    ): FlowSession {
-        return doInitiateFlow(
-            x500Name,
-            sessionConfiguration.isRequireClose,
-            sessionConfiguration.timeout,
-            flowContextPropertiesBuilder
-        )
+        return doInitiateFlow(x500Name, requireClose, flowContextPropertiesBuilder)
     }
 
     @Suspendable
@@ -194,22 +173,16 @@ class FlowMessagingImpl @Activate constructor(
     }
 
     @Suspendable
+    @Suppress("unused_parameter")
     private fun doInitiateFlow(
         x500Name: MemberX500Name,
         requireClose: Boolean,
-        sessionTimeout: Duration? = null,
-        flowContextPropertiesBuilder: FlowContextPropertiesBuilder? = null
+        flowContextPropertiesBuilder: FlowContextPropertiesBuilder?
     ): FlowSession {
         val sessionId = UUID.randomUUID().toString()
         checkFlowCanBeInitiated()
         addSessionIdToFlowStackItem(sessionId)
-        return flowSessionFactory.createInitiatingFlowSession(
-            sessionId,
-            requireClose,
-            sessionTimeout,
-            x500Name,
-            flowContextPropertiesBuilder
-        )
+        return flowSessionFactory.createInitiatingFlowSession(sessionId, requireClose, x500Name, flowContextPropertiesBuilder)
     }
 
     private fun checkFlowCanBeInitiated() {

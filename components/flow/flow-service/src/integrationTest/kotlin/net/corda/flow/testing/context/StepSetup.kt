@@ -8,7 +8,6 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
 
-@Suppress("TooManyFunctions")
 interface StepSetup {
 
     val initiatedIdentityMemberName: MemberX500Name
@@ -16,7 +15,6 @@ interface StepSetup {
     val initiatingIdentityMemberName: MemberX500Name
 
 
-    @Suppress("LongParameterList")
     fun virtualNode(
         cpiId: String,
         holdingId: HoldingIdentity,
@@ -40,7 +38,6 @@ interface StepSetup {
 
     fun initiatingToInitiatedFlow(protocol: String, initiatingFlowClassName: String, initiatedFlowClassName: String)
 
-    @Suppress("LongParameterList")
     fun startFlowEventReceived(
         flowId: String,
         requestId: String,
@@ -50,7 +47,6 @@ interface StepSetup {
         platformContext: Map<String, String> = emptyMap()
     ): FlowIoRequestSetup
 
-    @Suppress("LongParameterList")
     fun sessionCounterpartyInfoRequestReceived(
         flowId: String,
         sessionId: String,

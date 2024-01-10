@@ -9,6 +9,7 @@ class ListenerForTest : VirtualNodeInfoListener {
     var lastSnapshot = mapOf<HoldingIdentity, VirtualNodeInfo>()
     var changedKeys = emptySet<HoldingIdentity>()
 
+
     override fun onUpdate(
         changedKeys: Set<HoldingIdentity>,
         currentSnapshot: Map<HoldingIdentity, VirtualNodeInfo>

@@ -36,9 +36,7 @@ class TokenClaimCheckpointServiceImpl @Activate constructor(
     }
 
     override fun getTokenClaims(checkpoint: FlowCheckpoint): List<TokenClaimCheckpointState> {
-        return (
-            checkpoint.readCustomState(TokenClaimsCheckpointState::class.java)
-                ?: TokenClaimsCheckpointState(mutableListOf())
-            ).claims
+        return (checkpoint.readCustomState(TokenClaimsCheckpointState::class.java)
+            ?: TokenClaimsCheckpointState(mutableListOf())).claims
     }
 }

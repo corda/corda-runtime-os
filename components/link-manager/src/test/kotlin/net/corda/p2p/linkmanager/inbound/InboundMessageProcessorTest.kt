@@ -9,7 +9,6 @@ import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.LinkOutHeader
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.MessageAck
-import net.corda.data.p2p.NetworkType
 import net.corda.data.p2p.SessionPartitions
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
@@ -52,6 +51,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -59,9 +59,6 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
-import net.corda.p2p.linkmanager.TraceableItem
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doAnswer
 
 class InboundMessageProcessorTest {
     companion object {
@@ -88,7 +85,10 @@ class InboundMessageProcessorTest {
     private val loggingInterceptor = LoggingInterceptor.setupLogging()
 
     private val networkMessagingValidator = mock<NetworkMessagingValidator> {
-        on { isValidInbound(any(), any()) } doReturn true
+        on { invokeIfValidInbound<Unit>(any(), any(), any()) } doAnswer {
+            @Suppress("unchecked_cast")
+            (it.arguments[2] as (() -> Unit)).invoke()
+        }
         on { validateInbound(any(), any()) } doReturn Either.Left(Unit)
     }
 
@@ -106,13 +106,6 @@ class InboundMessageProcessorTest {
     @AfterEach
     fun cleanUp() {
         loggingInterceptor.reset()
-    }
-
-    private fun setupGetSessionsById(direction: SessionManager.SessionDirection) {
-        val captor = argumentCaptor<List<InboundMessageProcessor.SessionIdAndMessage>>()
-        whenever(sessionManager.getSessionsById(captor.capture(), any())).thenAnswer {
-            captor.firstValue.map { it to direction }
-        }
     }
 
     @Test
@@ -169,7 +162,7 @@ class InboundMessageProcessorTest {
             val session = mock<AuthenticatedSession> {
                 on { createMac(any()) } doReturn authenticationResult
             }
-            setupGetSessionsById(
+            whenever(sessionManager.getSessionById(any())).thenReturn(
                 SessionManager.SessionDirection.Inbound(
                     SessionManager.Counterparties(
                         remoteIdentity,
@@ -209,13 +202,13 @@ class InboundMessageProcessorTest {
                 }
                 false
             }
-            verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
+            verify(sessionManager).dataMessageReceived(SESSION_ID)
         }
 
         @Test
         fun `AuthenticatedDataMessage with Outbound session will process the message ack`() {
             val session = mock<AuthenticatedSession>()
-            setupGetSessionsById(
+            whenever(sessionManager.getSessionById(any())).thenReturn(
                 SessionManager.SessionDirection.Outbound(
                     SessionManager.Counterparties(
                         remoteIdentity,
@@ -247,13 +240,13 @@ class InboundMessageProcessorTest {
                     value.marker is LinkManagerReceivedMarker && value.timestamp == 1000000L
             }
             verify(sessionManager).messageAcknowledged(SESSION_ID)
-            verify(sessionManager, never()).dataMessageReceived(eq(SESSION_ID), any(), any())
+            verify(sessionManager, never()).dataMessageReceived(SESSION_ID)
         }
 
         @Test
         fun `AuthenticatedDataMessage with Outbound session will process HeartbeatMessageAck`() {
             val session = mock<AuthenticatedSession>()
-            setupGetSessionsById(
+            whenever(sessionManager.getSessionById(any())).thenReturn(
                 SessionManager.SessionDirection.Outbound(
                     SessionManager.Counterparties(
                         remoteIdentity,
@@ -278,13 +271,13 @@ class InboundMessageProcessorTest {
 
             assertThat(records).hasSize(0)
             verify(sessionManager).messageAcknowledged(SESSION_ID)
-            verify(sessionManager, never()).dataMessageReceived(eq(SESSION_ID), any(), any())
+            verify(sessionManager, never()).dataMessageReceived(SESSION_ID)
         }
 
         @Test
         fun `AuthenticatedDataMessage with Outbound session will not process invalid message`() {
             val session = mock<AuthenticatedSession>()
-            setupGetSessionsById(
+            whenever(sessionManager.getSessionById(any())).thenReturn(
                 SessionManager.SessionDirection.Outbound(
                     SessionManager.Counterparties(
                         remoteIdentity,
@@ -309,13 +302,13 @@ class InboundMessageProcessorTest {
             assertThat(loggingInterceptor.errors).allSatisfy {
                 assertThat(it).matches("Could not deserialize message for session Session.* The message was discarded\\.")
             }
-            verify(sessionManager, never()).dataMessageReceived(eq(SESSION_ID), any(), any())
+            verify(sessionManager, never()).dataMessageReceived(SESSION_ID)
         }
 
         @Test
         fun `AuthenticatedMessageAck with InboundSession session will discard the message`() {
             val session = mock<AuthenticatedSession>()
-            setupGetSessionsById(
+            whenever(sessionManager.getSessionById(any())).thenReturn(
                 SessionManager.SessionDirection.Inbound(
                     SessionManager.Counterparties(
                         remoteIdentity,
@@ -346,7 +339,7 @@ class InboundMessageProcessorTest {
                 .anySatisfy {
                     assertThat(it).matches("Could not deserialize message for session Session\\..* Cannot resolve schema for fingerprint.*")
                 }
-            verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
+            verify(sessionManager).dataMessageReceived(SESSION_ID)
         }
 
         @Test
@@ -364,7 +357,7 @@ class InboundMessageProcessorTest {
                 "key"
             )
             val messageAndPayload = DataMessagePayload(authenticatedMessageAndKey)
-            setupGetSessionsById(
+            whenever(sessionManager.getSessionById(any())).thenReturn(
                 SessionManager.SessionDirection.NoSession
             )
             val dataMessage = AuthenticatedDataMessage(
@@ -382,16 +375,18 @@ class InboundMessageProcessorTest {
             assertThat(loggingInterceptor.warnings)
                 .hasSize(1)
                 .contains("Received message with SessionId = Session for which there is no active session. The message was discarded.")
-            verify(sessionManager, never()).dataMessageReceived(eq(SESSION_ID), any(), any())
+            verify(sessionManager, never()).dataMessageReceived(SESSION_ID)
         }
 
         @Test
         fun `AuthenticatedDataMessage with Inbound session which fails membership messaging validation will drop messages`() {
             whenever(
-                networkMessagingValidator.isValidInbound(any(), any())
-            ).doReturn(false)
+                networkMessagingValidator.invokeIfValidInbound<Unit>(any(), any(), any())
+            ).doAnswer {
+                // do nothing to mimic failed validation
+            }
 
-            setupGetSessionsById(
+            whenever(sessionManager.getSessionById(any())).thenReturn(
                 SessionManager.SessionDirection.Inbound(
                     SessionManager.Counterparties(remoteIdentity, myIdentity),
                     mock<AuthenticatedSession>()
@@ -408,17 +403,19 @@ class InboundMessageProcessorTest {
             )
 
             assertThat(records).isEmpty()
-            verify(networkMessagingValidator).isValidInbound(eq(myIdentity), eq(remoteIdentity))
-            verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
+            verify(networkMessagingValidator).invokeIfValidInbound<Unit>(eq(myIdentity), eq(remoteIdentity), any())
+            verify(sessionManager).dataMessageReceived(SESSION_ID)
         }
 
         @Test
         fun `AuthenticatedDataMessage with Outbound session which fails membership messaging validation will drop messages`() {
             whenever(
-                networkMessagingValidator.isValidInbound(any(), any())
-            ).doReturn(false)
+                networkMessagingValidator.invokeIfValidInbound<Unit>(any(), any(), any())
+            ).doAnswer {
+                // do nothing to mimic failed validation
+            }
 
-            setupGetSessionsById(
+            whenever(sessionManager.getSessionById(any())).thenReturn(
                 SessionManager.SessionDirection.Outbound(
                     SessionManager.Counterparties(remoteIdentity, myIdentity),
                     mock<AuthenticatedSession>()
@@ -436,8 +433,8 @@ class InboundMessageProcessorTest {
 
             assertThat(records).isEmpty()
             verify(sessionManager, never()).messageAcknowledged(any())
-            verify(networkMessagingValidator).isValidInbound(eq(myIdentity), eq(remoteIdentity))
-            verify(sessionManager, never()).dataMessageReceived(eq(SESSION_ID), any(), any())
+            verify(networkMessagingValidator).invokeIfValidInbound<Unit>(eq(myIdentity), eq(remoteIdentity), any())
+            verify(sessionManager, never()).dataMessageReceived(SESSION_ID)
         }
     }
 
@@ -475,7 +472,7 @@ class InboundMessageProcessorTest {
                     )
                 } doReturn messageAndPayload.toByteBuffer().array()
             }
-            setupGetSessionsById(
+            whenever(sessionManager.getSessionById(any())).thenReturn(
                 SessionManager.SessionDirection.Inbound(
                     SessionManager.Counterparties(
                         remoteIdentity,
@@ -510,7 +507,7 @@ class InboundMessageProcessorTest {
                 false
             }
             verify(sessionManager).inboundSessionEstablished(anyOrNull())
-            verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
+            verify(sessionManager).dataMessageReceived(SESSION_ID)
         }
 
         @Test
@@ -545,7 +542,7 @@ class InboundMessageProcessorTest {
                     )
                 } doReturn messageAndPayload.toByteBuffer().array()
             }
-            setupGetSessionsById(
+            whenever(sessionManager.getSessionById(any())).thenReturn(
                 SessionManager.SessionDirection.Inbound(
                     SessionManager.Counterparties(
                         myIdentity,
@@ -571,7 +568,7 @@ class InboundMessageProcessorTest {
                             " which indicates a spoofing attempt! The message was discarded\\."
                     )
                 }
-            verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
+            verify(sessionManager).dataMessageReceived(SESSION_ID)
         }
 
         @Test
@@ -606,7 +603,7 @@ class InboundMessageProcessorTest {
                     )
                 } doReturn messageAndPayload.toByteBuffer().array()
             }
-            setupGetSessionsById(
+            whenever(sessionManager.getSessionById(any())).thenReturn(
                 SessionManager.SessionDirection.Inbound(
                     SessionManager.Counterparties(
                         myIdentity,
@@ -632,7 +629,7 @@ class InboundMessageProcessorTest {
                             " which indicates a spoofing attempt! The message was discarded"
                     )
                 }
-            verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
+            verify(sessionManager).dataMessageReceived(SESSION_ID)
         }
 
         @Test
@@ -656,7 +653,7 @@ class InboundMessageProcessorTest {
                     )
                 } doReturn messageAndPayload.toByteBuffer().array()
             }
-            setupGetSessionsById(
+            whenever(sessionManager.getSessionById(any())).thenReturn(
                 SessionManager.SessionDirection.Inbound(
                     SessionManager.Counterparties(
                         remoteIdentity,
@@ -684,14 +681,16 @@ class InboundMessageProcessorTest {
                 }
                 false
             }
-            verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
+            verify(sessionManager).dataMessageReceived(SESSION_ID)
         }
 
         @Test
         fun `receiving data message with Inbound session that fails membership messaging validation will not produce any messages`() {
             whenever(
-                networkMessagingValidator.isValidInbound(any(), any())
-            ).doReturn(false)
+                networkMessagingValidator.invokeIfValidInbound<Unit>(any(), any(), any())
+            ).doAnswer {
+                // do nothing to mimic failed validation
+            }
 
             val dataMessage = AuthenticatedEncryptedDataMessage(
                 commonHeader,
@@ -699,7 +698,7 @@ class InboundMessageProcessorTest {
                 ByteBuffer.wrap("encryptedPayload".toByteArray())
             )
 
-            setupGetSessionsById(
+            whenever(sessionManager.getSessionById(any())).thenReturn(
                 SessionManager.SessionDirection.Inbound(
                     SessionManager.Counterparties(remoteIdentity, myIdentity),
                     mock<AuthenticatedEncryptionSession>()
@@ -712,15 +711,17 @@ class InboundMessageProcessorTest {
 
             assertThat(records).isEmpty()
             verify(sessionManager, never()).inboundSessionEstablished(anyOrNull())
-            verify(networkMessagingValidator).isValidInbound(myIdentity, remoteIdentity)
-            verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
+            verify(networkMessagingValidator).invokeIfValidInbound<Unit>(eq(myIdentity), eq(remoteIdentity), any())
+            verify(sessionManager).dataMessageReceived(SESSION_ID)
         }
 
         @Test
         fun `receiving data message with Outbound session that fails membership messaging validation will not produce any messages`() {
             whenever(
-                networkMessagingValidator.isValidInbound(any(), any())
-            ).doReturn(false)
+                networkMessagingValidator.invokeIfValidInbound<Unit>(any(), any(), any())
+            ).doAnswer {
+                // do nothing to mimic failed validation
+            }
 
             val dataMessage = AuthenticatedEncryptedDataMessage(
                 commonHeader,
@@ -728,7 +729,7 @@ class InboundMessageProcessorTest {
                 ByteBuffer.wrap("encryptedPayload".toByteArray())
             )
 
-            setupGetSessionsById(
+            whenever(sessionManager.getSessionById(any())).thenReturn(
                 SessionManager.SessionDirection.Outbound(
                     SessionManager.Counterparties(remoteIdentity, myIdentity),
                     mock<AuthenticatedEncryptionSession>()
@@ -742,8 +743,8 @@ class InboundMessageProcessorTest {
             assertThat(records).isEmpty()
             verify(sessionManager, never()).inboundSessionEstablished(anyOrNull())
             verify(sessionManager, never()).messageAcknowledged(any())
-            verify(networkMessagingValidator).isValidInbound(myIdentity, remoteIdentity)
-            verify(sessionManager, never()).dataMessageReceived(eq(SESSION_ID), any(), any())
+            verify(networkMessagingValidator).invokeIfValidInbound<Unit>(eq(myIdentity), eq(remoteIdentity), any())
+            verify(sessionManager, never()).dataMessageReceived(SESSION_ID)
         }
     }
 
@@ -751,17 +752,8 @@ class InboundMessageProcessorTest {
     inner class SessionMessageTests {
         @Test
         fun `ResponderHelloMessage calls to processSessionMessage`() {
-            val hello = mock<InitiatorHelloMessage> {
-                on { header } doReturn commonHeader
-            }
             val responderHelloMessage = mock<ResponderHelloMessage>()
             val message = LinkInMessage(responderHelloMessage)
-            val header = LinkOutHeader(myIdentity.toAvro(), remoteIdentity.toAvro(), NetworkType.CORDA_5, "https://example.com")
-            val response = LinkOutMessage(header, hello)
-            val captor = argumentCaptor<List<TraceableItem<LinkInMessage, LinkInMessage>>>()
-            whenever(sessionManager.processSessionMessages(captor.capture(), any())).doAnswer {
-                captor.firstValue.map { it to response }
-            }
 
             processor.onNext(
                 listOf(
@@ -769,21 +761,13 @@ class InboundMessageProcessorTest {
                 )
             )
 
-            assertThat(captor.firstValue.single().item).isEqualTo(message)
+            verify(sessionManager).processSessionMessage(message)
+            verify(sessionManager, never()).sessionMessageReceived(any())
         }
         @Test
         fun `ResponderHandshakeMessage calls to processSessionMessage`() {
-            val hello = mock<InitiatorHelloMessage> {
-                on { header } doReturn commonHeader
-            }
             val responderHandshakeMessage = mock<ResponderHandshakeMessage>()
             val message = LinkInMessage(responderHandshakeMessage)
-            val header = LinkOutHeader(myIdentity.toAvro(), remoteIdentity.toAvro(), NetworkType.CORDA_5, "https://example.com")
-            val response = LinkOutMessage(header, hello)
-            val captor = argumentCaptor<List<TraceableItem<LinkInMessage, LinkInMessage>>>()
-            whenever(sessionManager.processSessionMessages(captor.capture(), any())).doAnswer {
-                captor.firstValue.map { it to response }
-            }
 
             processor.onNext(
                 listOf(
@@ -791,22 +775,13 @@ class InboundMessageProcessorTest {
                 )
             )
 
-            assertThat(captor.firstValue.single().item).isEqualTo(message)
+            verify(sessionManager).processSessionMessage(message)
+            verify(sessionManager, never()).sessionMessageReceived(any())
         }
-
         @Test
         fun `InitiatorHandshakeMessage calls to processSessionMessage`() {
-            val hello = mock<InitiatorHelloMessage> {
-                on { header } doReturn commonHeader
-            }
             val initiatorHandshakeMessage = mock<InitiatorHandshakeMessage>()
             val message = LinkInMessage(initiatorHandshakeMessage)
-            val header = LinkOutHeader(myIdentity.toAvro(), remoteIdentity.toAvro(), NetworkType.CORDA_5, "https://example.com")
-            val response = LinkOutMessage(header, hello)
-            val captor = argumentCaptor<List<TraceableItem<LinkInMessage, LinkInMessage>>>()
-            whenever(sessionManager.processSessionMessages(captor.capture(), any())).doAnswer {
-                captor.firstValue.map { it to response }
-            }
 
             processor.onNext(
                 listOf(
@@ -814,22 +789,13 @@ class InboundMessageProcessorTest {
                 )
             )
 
-            assertThat(captor.firstValue.single().item).isEqualTo(message)
+            verify(sessionManager).processSessionMessage(message)
         }
 
         @Test
         fun `InitiatorHelloMessage calls to processSessionMessage`() {
-            val hello = mock<InitiatorHelloMessage> {
-                on { header } doReturn commonHeader
-            }
             val initiatorHelloMessage = mock<InitiatorHelloMessage>()
             val message = LinkInMessage(initiatorHelloMessage)
-            val header = LinkOutHeader(myIdentity.toAvro(), remoteIdentity.toAvro(), NetworkType.CORDA_5, "https://example.com")
-            val response = LinkOutMessage(header, hello)
-            val captor = argumentCaptor<List<TraceableItem<LinkInMessage, LinkInMessage>>>()
-            whenever(sessionManager.processSessionMessages(captor.capture(), any())).doAnswer {
-                captor.firstValue.map { it to response }
-            }
 
             processor.onNext(
                 listOf(
@@ -837,17 +803,14 @@ class InboundMessageProcessorTest {
                 )
             )
 
-            assertThat(captor.firstValue.single().item).isEqualTo(message)
+            verify(sessionManager).processSessionMessage(message)
         }
 
         @Test
         fun `null response from sessionManager will produce no records`() {
             val initiatorHelloMessage = mock<InitiatorHelloMessage>()
             val message = LinkInMessage(initiatorHelloMessage)
-            val captor = argumentCaptor<List<TraceableItem<LinkInMessage, LinkInMessage>>>()
-            whenever(sessionManager.processSessionMessages(captor.capture(), any())).doAnswer {
-                captor.firstValue.map { it to null }
-            }
+            whenever(sessionManager.processSessionMessage(message)).thenReturn(null)
 
             val records = processor.onNext(
                 listOf(
@@ -862,12 +825,8 @@ class InboundMessageProcessorTest {
         fun `non null responses from sessionManager will produce link out message`() {
             val handshake = ResponderHandshakeMessage()
             val message = LinkInMessage(handshake)
-            val header = LinkOutHeader(myIdentity.toAvro(), remoteIdentity.toAvro(), NetworkType.CORDA_5, "https://example.com")
-            val response = LinkOutMessage(header, handshake)
-            val captor = argumentCaptor<List<TraceableItem<LinkInMessage, LinkInMessage>>>()
-            whenever(sessionManager.processSessionMessages(captor.capture(), any())).doAnswer {
-                captor.firstValue.map { it to response }
-            }
+            val response = LinkOutMessage(LinkOutHeader(), handshake)
+            whenever(sessionManager.processSessionMessage(message)).thenReturn(response)
 
             val records = processor.onNext(
                 listOf(
@@ -883,16 +842,12 @@ class InboundMessageProcessorTest {
 
         @Test
         fun `InitiatorHelloMessage responses from sessionManager without partitions will produce no records`() {
-            val hello = mock<ResponderHelloMessage> {
+            val hello = mock<InitiatorHelloMessage> {
                 on { header } doReturn commonHeader
             }
             val message = LinkInMessage(hello)
-            val header = LinkOutHeader(myIdentity.toAvro(), remoteIdentity.toAvro(), NetworkType.CORDA_5, "https://example.com")
-            val response = LinkOutMessage(header, hello)
-            val captor = argumentCaptor<List<TraceableItem<LinkInMessage, LinkInMessage>>>()
-            whenever(sessionManager.processSessionMessages(captor.capture(), any())).doAnswer {
-                captor.firstValue.map { it to response }
-            }
+            val response = LinkOutMessage(LinkOutHeader(), hello)
+            whenever(sessionManager.processSessionMessage(message)).thenReturn(response)
             whenever(assignedListener.getCurrentlyAssignedPartitions()).thenReturn(emptySet())
 
             val records = processor.onNext(
@@ -908,23 +863,16 @@ class InboundMessageProcessorTest {
                     "No partitions from topic link.in are currently assigned to the inbound message processor. " +
                             "Not going to reply to session initiation for session Session."
                 )
+            verify(sessionManager).sessionMessageReceived(SESSION_ID)
         }
-
         @Test
         fun `InitiatorHelloMessage responses from sessionManager with partitions will produce records to the correct topics`() {
             val hello = mock<InitiatorHelloMessage> {
                 on { header } doReturn commonHeader
             }
-            val responderHello = mock<ResponderHelloMessage> {
-                on { header } doReturn commonHeader
-            }
             val message = LinkInMessage(hello)
-            val header = LinkOutHeader(myIdentity.toAvro(), remoteIdentity.toAvro(), NetworkType.CORDA_5, "https://example.com")
-            val response = LinkOutMessage(header, responderHello)
-            val captor = argumentCaptor<List<TraceableItem<LinkInMessage, LinkInMessage>>>()
-            whenever(sessionManager.processSessionMessages(captor.capture(), any())).doAnswer {
-                captor.firstValue.map { it to response }
-            }
+            val response = LinkOutMessage(LinkOutHeader(), hello)
+            whenever(sessionManager.processSessionMessage(message)).thenReturn(response)
             whenever(assignedListener.getCurrentlyAssignedPartitions()).thenReturn(setOf(4, 5, 8))
 
             val records = processor.onNext(
@@ -941,6 +889,7 @@ class InboundMessageProcessorTest {
                 assertThat(it.key).isSameAs(SESSION_ID)
                 assertThat(it.value).isEqualTo(SessionPartitions(listOf(4, 5, 8)))
             }
+            verify(sessionManager).sessionMessageReceived(SESSION_ID)
         }
     }
 

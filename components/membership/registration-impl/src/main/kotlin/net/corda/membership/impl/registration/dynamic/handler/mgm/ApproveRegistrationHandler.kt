@@ -11,7 +11,6 @@ import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
-import net.corda.membership.impl.registration.RegistrationLogger
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
@@ -72,19 +71,14 @@ internal class ApproveRegistrationHandler(
         val approvedBy = state.mgm
         val approvedMember = state.registeringMember
         val registrationId = state.registrationId
-        val registrationLogger = RegistrationLogger(logger)
-            .setRegistrationId(registrationId)
-            .setMember(approvedMember)
-            .setMgm(approvedBy)
-        registrationLogger.info("Processing registration approval.")
         val messages = try {
             val mgm = memberTypeChecker.getMgmMemberInfo(approvedBy.toCorda())
                 ?: throw CordaRuntimeException(
-                    "Could not approve registration request. Member is not an MGM."
+                    "Could not approve registration request: '$registrationId' - member ${approvedBy.x500Name} is not an MGM."
                 )
             if (memberTypeChecker.isMgm(approvedMember)) {
                 throw CordaRuntimeException(
-                    "The registration request cannot be approved for member as it is an MGM."
+                    "The registration request: '$registrationId' cannot be approved by ${approvedMember.x500Name} as it is an MGM."
                 )
             }
             val groupParameters = groupReaderProvider.getGroupReader(approvedBy.toCorda()).groupParameters
@@ -157,7 +151,7 @@ internal class ApproveRegistrationHandler(
 
             listOfNotNull(memberRecord, persistApproveMessage, distributionAction, commandToStartProcessingTheNextRequest)
         } catch (e: Exception) {
-            registrationLogger.warn("Could not approve registration request.", e)
+            logger.warn("Could not approve registration request: '$registrationId'", e)
             return RegistrationHandlerResult(
                 state,
                 listOf(Record(REGISTRATION_COMMAND_TOPIC, key,

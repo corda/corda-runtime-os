@@ -3,9 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description "Virtual Node Write Service"
-
-ext.cordaEnableFormatting = true
+description "Configuration Write Service"
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'

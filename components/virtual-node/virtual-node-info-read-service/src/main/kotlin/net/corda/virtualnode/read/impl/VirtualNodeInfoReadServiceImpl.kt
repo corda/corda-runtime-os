@@ -91,14 +91,13 @@ class VirtualNodeInfoReadServiceImpl @Activate constructor(
 
     override fun get(holdingIdentity: HoldingIdentity): VirtualNodeInfo? = virtualNodeInfoProcessor.get(holdingIdentity)
 
-    override fun getByHoldingIdentityShortHash(holdingIdentityShortHash: ShortHash): VirtualNodeInfo? = virtualNodeInfoProcessor.getById(
-        holdingIdentityShortHash
-    )
+    override fun getByHoldingIdentityShortHash(holdingIdentityShortHash: ShortHash): VirtualNodeInfo?
+        = virtualNodeInfoProcessor.getById(holdingIdentityShortHash)
 
     override fun registerCallback(listener: VirtualNodeInfoListener): AutoCloseable =
         virtualNodeInfoProcessor.registerCallback(listener)
 
-    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>> =
+    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>>? =
         getAll()
             .stream()
             .map {

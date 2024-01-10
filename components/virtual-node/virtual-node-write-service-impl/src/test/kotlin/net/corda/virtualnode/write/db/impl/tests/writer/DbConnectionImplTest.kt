@@ -66,6 +66,7 @@ class DbConnectionImplTest {
         assertThat(dbConnection.getPassword()).isNull()
     }
 
+
     private fun getConfig(config: Map<String, Any>): SmartConfig {
         return SmartConfigFactory.createWithoutSecurityServices().create(
             ConfigFactory.parseMap(config)

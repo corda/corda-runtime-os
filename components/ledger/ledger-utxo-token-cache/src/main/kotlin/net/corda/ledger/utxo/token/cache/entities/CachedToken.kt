@@ -27,3 +27,4 @@ interface CachedToken {
      */
     fun toAvro(): Token
 }
+

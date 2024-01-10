@@ -39,8 +39,7 @@ internal class OutboundLinkManager(
         membershipGroupReaderProvider,
         commonComponents.inboundAssignmentListener,
         commonComponents.messagesPendingSession,
-        clock,
-        commonComponents.messageConverter,
+        clock
     )
     private val deliveryTracker = DeliveryTracker(
         lifecycleCoordinatorFactory,

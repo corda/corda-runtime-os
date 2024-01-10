@@ -15,8 +15,6 @@ configurations {
     }
 }
 
-ext.cordaEnableFormatting = true
-
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
@@ -42,6 +40,8 @@ dependencies {
     testImplementation project(':testing:layered-property-map-testkit')
     testImplementation project(':testing:ledger:ledger-common-base-test')
     testImplementation project(':testing:test-serialization')
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     integrationTestImplementation project(':testing:ledger:ledger-common-base-integration-test')
     integrationTestImplementation project(':testing:group-policy-test-common')

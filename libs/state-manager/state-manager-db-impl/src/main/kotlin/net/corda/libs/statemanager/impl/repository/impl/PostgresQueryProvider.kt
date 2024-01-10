@@ -1,28 +1,21 @@
 package net.corda.libs.statemanager.impl.repository.impl
 
+import net.corda.libs.statemanager.api.Operation
 import net.corda.db.schema.DbSchema.STATE_MANAGER_TABLE
 import net.corda.libs.statemanager.api.MetadataFilter
-import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.KEY_COLUMN
-import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.METADATA_COLUMN
-import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.MODIFIED_TIME_COLUMN
 import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.VALUE_COLUMN
+import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.METADATA_COLUMN
 import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.VERSION_COLUMN
+import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.MODIFIED_TIME_COLUMN
 
 class PostgresQueryProvider : AbstractQueryProvider() {
 
-    override fun createStates(size: Int): String = """
-        WITH data ($KEY_COLUMN, $VALUE_COLUMN, $VERSION_COLUMN, $METADATA_COLUMN, $MODIFIED_TIME_COLUMN) as (
-            VALUES ${List(size) { "(?, ?, ?, CAST(? AS JSONB), CURRENT_TIMESTAMP AT TIME ZONE 'UTC')" }.joinToString(",")}
-        )
-        INSERT INTO $STATE_MANAGER_TABLE
-        SELECT * FROM data d
-        WHERE NOT EXISTS (
-            SELECT 1 FROM $STATE_MANAGER_TABLE t
-            WHERE t.$KEY_COLUMN = d.$KEY_COLUMN
-        )
-        RETURNING $STATE_MANAGER_TABLE.$KEY_COLUMN;
-    """.trimIndent()
+    override val createState: String
+        get() = """
+            INSERT INTO $STATE_MANAGER_TABLE
+            VALUES (?, ?, ?, CAST(? as JSONB), CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+        """.trimIndent()
 
     override fun updateStates(size: Int): String = """
             UPDATE $STATE_MANAGER_TABLE AS s 
@@ -38,31 +31,27 @@ class PostgresQueryProvider : AbstractQueryProvider() {
             ) AS temp(key, value, metadata, version)
             WHERE temp.key = s.$KEY_COLUMN AND temp.version = s.$VERSION_COLUMN
             RETURNING s.$KEY_COLUMN
-    """.trimIndent()
+        """.trimIndent()
 
     override fun findStatesByMetadataMatchingAll(filters: Collection<MetadataFilter>) =
         """
             SELECT s.$KEY_COLUMN, s.$VALUE_COLUMN, s.$METADATA_COLUMN, s.$VERSION_COLUMN, s.$MODIFIED_TIME_COLUMN 
             FROM $STATE_MANAGER_TABLE s
-            WHERE (${metadataKeyFilters(filters).joinToString(" AND ")})
+            WHERE ${metadataKeyFilters(filters).joinToString(" AND ")}
         """.trimIndent()
 
     override fun findStatesByMetadataMatchingAny(filters: Collection<MetadataFilter>) =
         """
             SELECT s.$KEY_COLUMN, s.$VALUE_COLUMN, s.$METADATA_COLUMN, s.$VERSION_COLUMN, s.$MODIFIED_TIME_COLUMN 
             FROM $STATE_MANAGER_TABLE s
-            WHERE (${metadataKeyFilters(filters).joinToString(" OR ")})
+            WHERE ${metadataKeyFilters(filters).joinToString(" OR ")}
         """.trimIndent()
 
-    override fun findStatesUpdatedBetweenWithMetadataMatchingAll(filters: Collection<MetadataFilter>): String {
+    override fun findStatesUpdatedBetweenAndFilteredByMetadataKey(filter: MetadataFilter): String {
         return """
-            ${findStatesByMetadataMatchingAll(filters)} AND (${updatedBetweenFilter()})
-        """.trimIndent()
-    }
-
-    override fun findStatesUpdatedBetweenWithMetadataMatchingAny(filters: Collection<MetadataFilter>): String {
-        return """
-            ${findStatesByMetadataMatchingAny(filters)} AND (${updatedBetweenFilter()})
+            SELECT s.$KEY_COLUMN, s.$VALUE_COLUMN, s.$METADATA_COLUMN, s.$VERSION_COLUMN, s.$MODIFIED_TIME_COLUMN
+            FROM $STATE_MANAGER_TABLE s
+            WHERE (${metadataKeyFilter(filter)}) AND (${updatedBetweenFilter()})
         """.trimIndent()
     }
 

@@ -29,7 +29,6 @@ import net.corda.membership.impl.registration.KeyDetails
 import net.corda.membership.impl.registration.KeysFactory
 import net.corda.membership.impl.registration.MemberRole
 import net.corda.membership.impl.registration.MemberRole.Companion.toMemberInfo
-import net.corda.membership.impl.registration.RegistrationLogger
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_PROTOCOL
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
 import net.corda.membership.impl.registration.staticnetwork.StaticNetworkGroupParametersUtils.addNotary
@@ -223,9 +222,6 @@ class StaticMemberRegistrationService(
         member: HoldingIdentity,
         context: Map<String, String>
     ): Collection<Record<*, *>> {
-        val registrationLogger = RegistrationLogger(logger)
-            .setRegistrationId(registrationId.toString())
-            .setMember(member)
         if (!isRunning || coordinator.status == LifecycleStatus.DOWN) {
             throw MembershipRegistrationException(
                 "Registration failed. Reason: StaticMemberRegistrationService is not running/down."
@@ -240,14 +236,15 @@ class StaticMemberRegistrationService(
                     context
                 )
         } catch (ex: MembershipSchemaValidationException) {
-            val err = "Registration failed. The registration context is invalid: " + ex.message
-            registrationLogger.info(err)
-            throw InvalidMembershipRegistrationException(err, ex)
+            throw InvalidMembershipRegistrationException(
+                "Registration failed. The registration context is invalid: " + ex.message,
+                ex,
+            )
         }
         val customFieldsValid = customFieldsVerifier.verify(context)
         if (customFieldsValid is RegistrationContextCustomFieldsVerifier.Result.Failure) {
-            val errorMessage = "Registration failed. ${customFieldsValid.reason}"
-            registrationLogger.warn(errorMessage)
+            val errorMessage = "Registration failed for ID '$registrationId'. ${customFieldsValid.reason}"
+            logger.warn(errorMessage)
             throw InvalidMembershipRegistrationException(errorMessage)
         }
         val membershipGroupReader = membershipGroupReaderProvider.getGroupReader(member)
@@ -297,19 +294,19 @@ class StaticMemberRegistrationService(
 
             return emptyList()
         } catch (e: InvalidMembershipRegistrationException) {
-            registrationLogger.warn("Registration failed. Reason:", e)
+            logger.warn("Registration failed. Reason:", e)
             throw e
         } catch (e: IllegalArgumentException) {
-            registrationLogger.warn("Registration failed. Reason:", e)
+            logger.warn("Registration failed. Reason:", e)
             throw InvalidMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
         } catch (e: MembershipPersistenceResult.PersistenceRequestException) {
-            registrationLogger.warn("Registration failed. Reason:", e)
+            logger.warn("Registration failed. Reason:", e)
             throw NotReadyMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
         } catch(e: InvalidGroupParametersUpdateException) {
-            registrationLogger.warn("Registration failed. Reason:", e)
+            logger.warn("Registration failed. Reason:", e)
             throw InvalidMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
         } catch (e: Exception) {
-            registrationLogger.warn("Registration failed. Reason:", e)
+            logger.warn("Registration failed. Reason:", e)
             throw NotReadyMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
         }
     }

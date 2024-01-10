@@ -42,7 +42,7 @@ internal class SandboxGroupContextCacheImpl private constructor(
         }.forEach { listener ->
             try {
                 listener.onEviction(vnc)
-            } catch (e: Exception) {
+            } catch(e: Exception) {
                 logger.warn("Error while evicting sandbox $vnc", e)
             }
         }
@@ -238,11 +238,14 @@ internal class SandboxGroupContextCacheImpl private constructor(
         }
 
         return sandboxCache.get(virtualNodeContext) {
-            logger.info(
-                "Creating {} sandbox for {}",
-                virtualNodeContext.sandboxGroupType,
-                virtualNodeContext.holdingIdentity.x500Name
-            )
+            if (logger.isDebugEnabled) {
+                logger.debug(
+                    "Caching {} sandbox for {} (cache size: {})",
+                    virtualNodeContext.sandboxGroupType,
+                    virtualNodeContext.holdingIdentity.x500Name,
+                    sandboxCache.estimatedSize()
+                )
+            }
             SandboxGroupContextWrapper(createFunction(virtualNodeContext))
         }
     }

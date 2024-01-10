@@ -1,5 +1,4 @@
 @file:JvmName("MethodUtils")
-
 package net.corda.rest.durablestream.api
 
 import java.lang.reflect.Method

@@ -18,7 +18,6 @@ class MetadataTests {
                 true
             )
     }
-
     @ParameterizedTest
     @MethodSource("acceptedTypes")
     fun `accept primitive types`(value: Any) {

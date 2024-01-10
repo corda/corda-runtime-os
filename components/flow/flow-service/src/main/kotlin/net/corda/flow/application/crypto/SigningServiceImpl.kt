@@ -1,6 +1,7 @@
 package net.corda.flow.application.crypto
 
 import io.micrometer.core.instrument.Timer
+import java.security.PublicKey
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.core.fullIdHash
@@ -24,7 +25,6 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.security.PublicKey
 
 @Component(
     service = [SigningService::class, UsedByFlow::class],

@@ -62,9 +62,6 @@ import net.corda.v5.ledger.utxo.EncumbranceGroup
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TransactionState
-import net.corda.v5.ledger.utxo.observer.UtxoToken
-import net.corda.v5.ledger.utxo.observer.UtxoTokenFilterFields
-import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -94,6 +91,9 @@ import java.time.temporal.ChronoUnit
 import java.util.Random
 import java.util.concurrent.atomic.AtomicInteger
 import javax.persistence.EntityManagerFactory
+import net.corda.v5.ledger.utxo.observer.UtxoToken
+import net.corda.v5.ledger.utxo.observer.UtxoTokenFilterFields
+import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
@@ -122,8 +122,7 @@ class UtxoPersistenceServiceImplTest {
         private const val TESTING_DATAMODEL_CPB = "/META-INF/testing-datamodel.cpb"
         private const val TIMEOUT_MILLIS = 10000L
         private val testClock = AutoTickTestClock(
-            Instant.now().truncatedTo(ChronoUnit.MILLIS),
-            Duration.ofSeconds(1)
+            Instant.now().truncatedTo(ChronoUnit.MILLIS), Duration.ofSeconds(1)
         )
         private val seedSequence = AtomicInteger((0..Int.MAX_VALUE / 2).random())
         private val notaryX500Name = MemberX500Name.parse("O=ExampleNotaryService, L=London, C=GB")
@@ -303,10 +302,8 @@ class UtxoPersistenceServiceImplTest {
         val visibleTransactionOutput = unconsumedStates.first()
         assertThat(visibleTransactionOutput.transactionId).isEqualTo(transaction1.id.toString())
         assertThat(visibleTransactionOutput.leafIndex).isEqualTo(1)
-        assertThat(visibleTransactionOutput.info)
-            .isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal][1])
-        assertThat(visibleTransactionOutput.data)
-            .isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][1])
+        assertThat(visibleTransactionOutput.info).isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal][1])
+        assertThat(visibleTransactionOutput.data).isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][1])
     }
 
     @Test
@@ -330,12 +327,8 @@ class UtxoPersistenceServiceImplTest {
 
             assertThat(visibleTransactionOutput.transactionId).isEqualTo(transactions[i].id.toString())
             assertThat(visibleTransactionOutput.leafIndex).isEqualTo(i)
-            assertThat(visibleTransactionOutput.info)
-                .isEqualTo(
-                    transactions[i].wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal][i]
-                )
-            assertThat(visibleTransactionOutput.data)
-                .isEqualTo(transactions[i].wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][i])
+            assertThat(visibleTransactionOutput.info).isEqualTo(transactions[i].wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal][i])
+            assertThat(visibleTransactionOutput.data).isEqualTo(transactions[i].wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][i])
         }
     }
 
@@ -434,7 +427,7 @@ class UtxoPersistenceServiceImplTest {
                     assertThat(dbComponentGroup).hasSameSizeAs(componentGroup)
                     dbComponentGroup.zip(componentGroup)
                         .forEachIndexed { leafIndex, (dbComponent, component) ->
-                            assertThat(dbComponent.field<Int>("groupIndex")).isEqualTo(groupIndex + 1)
+                            assertThat(dbComponent.field<Int>("groupIndex")).isEqualTo(groupIndex +1 )
                             assertThat(dbComponent.field<Int>("leafIndex")).isEqualTo(leafIndex)
                             assertThat(dbComponent.field<ByteArray>("data")).isEqualTo(component)
                             assertThat(dbComponent.field<String>("hash")).isEqualTo(
@@ -458,8 +451,8 @@ class UtxoPersistenceServiceImplTest {
                 .resultList
 
             assertThat(dbTransactionSources).allMatch {
-                it.field<Int>("groupIndex") == UtxoComponentGroup.INPUTS.ordinal ||
-                    it.field<Int>("groupIndex") == UtxoComponentGroup.REFERENCES.ordinal
+                it.field<Int>("groupIndex") == UtxoComponentGroup.INPUTS.ordinal
+                        || it.field<Int>("groupIndex") == UtxoComponentGroup.REFERENCES.ordinal
             }
 
             val (dbTransactionInputs, dbTransactionReferences) = dbTransactionSources.partition {
@@ -497,7 +490,7 @@ class UtxoPersistenceServiceImplTest {
                 .setParameter("transactionId", signedTransaction.id.toString())
                 .resultList
             assertThat(dbTransactionOutputs).isNotNull
-                .hasSameSizeAs(componentGroupListsWithoutMetadata[UtxoComponentGroup.OUTPUTS.ordinal - 1])
+                .hasSameSizeAs(componentGroupListsWithoutMetadata[UtxoComponentGroup.OUTPUTS.ordinal-1])
             dbTransactionOutputs
                 .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
                 .zip(defaultVisibleTransactionOutputs)
@@ -560,17 +553,10 @@ class UtxoPersistenceServiceImplTest {
 
         val persistedSignedGroupParameters = persistenceService.findSignedGroupParameters(hash)
 
-        assertThat(
-            persistedSignedGroupParameters?.mgmSignature?.publicKey.toString()
-        )
-            .isEqualTo(signedGroupParameters.mgmSignature?.publicKey.toString())
-        assertThat(
-            persistedSignedGroupParameters?.mgmSignatureSpec.toString()
-        )
-            .isEqualTo(signedGroupParameters.mgmSignatureSpec.toString())
+        assertThat(persistedSignedGroupParameters?.mgmSignature?.publicKey.toString()).isEqualTo(signedGroupParameters.mgmSignature?.publicKey.toString())
+        assertThat(persistedSignedGroupParameters?.mgmSignatureSpec.toString()).isEqualTo(signedGroupParameters.mgmSignatureSpec.toString())
     }
 
-    @Suppress("LongParameterList")
     private fun createUtxoTokenMap(
         transactionReader: TestUtxoTransactionReader,
         tokenType: String,
@@ -670,8 +656,7 @@ class UtxoPersistenceServiceImplTest {
      * field is at least the floor time.
      */
     private fun assertTransactionStatus(
-        transactionId: String,
-        status: TransactionStatus,
+        transactionId: String, status: TransactionStatus,
         entityFactory: UtxoEntityFactory,
         floorDateTime: Instant
     ) {
@@ -697,20 +682,10 @@ class UtxoPersistenceServiceImplTest {
             listOf("group2_component1".toByteArray()),
             listOf(
                 UtxoOutputInfoComponent(
-                    null,
-                    null,
-                    notaryExampleName,
-                    notaryExampleKey,
-                    TestContractState1::class.java.name,
-                    "contract tag"
+                    null, null, notaryExampleName, notaryExampleKey, TestContractState1::class.java.name, "contract tag"
                 ).toBytes(),
                 UtxoOutputInfoComponent(
-                    null,
-                    null,
-                    notaryExampleName,
-                    notaryExampleKey,
-                    TestContractState2::class.java.name,
-                    "contract tag"
+                    null, null, notaryExampleName, notaryExampleKey, TestContractState2::class.java.name, "contract tag"
                 ).toBytes()
             ),
             listOf("group4_component1".toByteArray()),
@@ -839,18 +814,16 @@ class UtxoPersistenceServiceImplTest {
         return SecureHashImpl(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
     }
 
-    private fun utxoTransactionMetadataExample(cpkPackageSeed: String? = null) = TransactionMetadataImpl(
-        mapOf(
-            TransactionMetadataImpl.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.name,
-            TransactionMetadataImpl.LEDGER_VERSION_KEY to UtxoTransactionMetadata.LEDGER_VERSION,
-            TransactionMetadataImpl.TRANSACTION_SUBTYPE_KEY to UtxoTransactionMetadata.TransactionSubtype.GENERAL,
-            TransactionMetadataImpl.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
-            TransactionMetadataImpl.PLATFORM_VERSION_KEY to 123,
-            TransactionMetadataImpl.CPI_METADATA_KEY to cpiPackageSummaryExample,
-            TransactionMetadataImpl.CPK_METADATA_KEY to cpkPackageSummaryListExample(cpkPackageSeed),
-            TransactionMetadataImpl.SCHEMA_VERSION_KEY to TransactionMetadataImpl.SCHEMA_VERSION,
-            TransactionMetadataImpl.COMPONENT_GROUPS_KEY to utxoComponentGroupStructure,
-            TransactionMetadataImpl.MEMBERSHIP_GROUP_PARAMETERS_HASH_KEY to "MEMBERSHIP_GROUP_PARAMETERS_HASH"
-        )
-    )
+    private fun utxoTransactionMetadataExample(cpkPackageSeed: String? = null) = TransactionMetadataImpl(mapOf(
+        TransactionMetadataImpl.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.name,
+        TransactionMetadataImpl.LEDGER_VERSION_KEY to UtxoTransactionMetadata.LEDGER_VERSION,
+        TransactionMetadataImpl.TRANSACTION_SUBTYPE_KEY to UtxoTransactionMetadata.TransactionSubtype.GENERAL,
+        TransactionMetadataImpl.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
+        TransactionMetadataImpl.PLATFORM_VERSION_KEY to 123,
+        TransactionMetadataImpl.CPI_METADATA_KEY to cpiPackageSummaryExample,
+        TransactionMetadataImpl.CPK_METADATA_KEY to cpkPackageSummaryListExample(cpkPackageSeed),
+        TransactionMetadataImpl.SCHEMA_VERSION_KEY to TransactionMetadataImpl.SCHEMA_VERSION,
+        TransactionMetadataImpl.COMPONENT_GROUPS_KEY to utxoComponentGroupStructure,
+        TransactionMetadataImpl.MEMBERSHIP_GROUP_PARAMETERS_HASH_KEY to "MEMBERSHIP_GROUP_PARAMETERS_HASH"
+    ))
 }

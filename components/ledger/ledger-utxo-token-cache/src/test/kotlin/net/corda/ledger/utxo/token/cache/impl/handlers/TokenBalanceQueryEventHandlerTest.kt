@@ -4,8 +4,8 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.ledger.utxo.token.cache.entities.BalanceQuery
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
+import net.corda.ledger.utxo.token.cache.entities.TokenBalance
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
-import net.corda.ledger.utxo.token.cache.entities.internal.TokenBalanceCacheImpl
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
 import net.corda.ledger.utxo.token.cache.handlers.TokenBalanceQueryEventHandler
 import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
@@ -56,8 +56,6 @@ class TokenBalanceQueryEventHandlerTest {
     fun `empty cache should return a balance equal to zero`() {
         val target = TokenBalanceQueryEventHandler(recordFactory, availableTokenService)
         val balanceQuery = createBalanceQuery()
-        val tokenBalance = TokenBalanceCacheImpl(BigDecimal(0), BigDecimal(0))
-
         whenever(recordFactory.getBalanceResponse(any(), any(), any(), any())).thenReturn(balanceQueryResult)
         whenever(
             availableTokenService.queryBalance(
@@ -66,7 +64,7 @@ class TokenBalanceQueryEventHandlerTest {
                 isNull(),
                 any()
             )
-        ).thenReturn(tokenBalance)
+        ).thenReturn(TokenBalance(BigDecimal(0), BigDecimal(0)))
 
         val result = target.handle(tokenCache, poolCacheState, balanceQuery)
 
@@ -75,7 +73,7 @@ class TokenBalanceQueryEventHandlerTest {
             flowId,
             balanceId,
             POOL_KEY,
-            tokenBalance
+            TokenBalance(BigDecimal(0.0), BigDecimal(0.0))
         )
     }
 
@@ -83,8 +81,6 @@ class TokenBalanceQueryEventHandlerTest {
     fun `the correct balance is calculated - balance availableBalance totalBalance are the same`() {
         val target = TokenBalanceQueryEventHandler(recordFactory, availableTokenService)
         val balanceQuery = createBalanceQuery()
-        val tokenBalance = TokenBalanceCacheImpl(BigDecimal(99), BigDecimal(99))
-
         whenever(recordFactory.getBalanceResponse(any(), any(), any(), any())).thenReturn(balanceQueryResult)
         whenever(
             availableTokenService.queryBalance(
@@ -93,7 +89,7 @@ class TokenBalanceQueryEventHandlerTest {
                 isNull(),
                 any()
             )
-        ).thenReturn(tokenBalance)
+        ).thenReturn(TokenBalance(BigDecimal(99), BigDecimal(99)))
         cachedTokens += token99
 
         val result = target.handle(tokenCache, poolCacheState, balanceQuery)
@@ -103,7 +99,7 @@ class TokenBalanceQueryEventHandlerTest {
             flowId,
             balanceId,
             POOL_KEY,
-            tokenBalance
+            TokenBalance(BigDecimal(99), BigDecimal(99))
         )
     }
 
@@ -111,8 +107,6 @@ class TokenBalanceQueryEventHandlerTest {
     fun `the correct balance is calculated - availableBalance and totalBalance are different`() {
         val target = TokenBalanceQueryEventHandler(recordFactory, availableTokenService)
         val balanceQuery = createBalanceQuery()
-        val tokenBalance = TokenBalanceCacheImpl(BigDecimal(99), BigDecimal(199))
-
         whenever(recordFactory.getBalanceResponse(any(), any(), any(), any())).thenReturn(balanceQueryResult)
         whenever(
             availableTokenService.queryBalance(
@@ -121,7 +115,7 @@ class TokenBalanceQueryEventHandlerTest {
                 isNull(),
                 any()
             )
-        ).thenReturn(tokenBalance)
+        ).thenReturn(TokenBalance(BigDecimal(99), BigDecimal(199)))
         cachedTokens += token99
         cachedTokens += token100
 
@@ -136,7 +130,7 @@ class TokenBalanceQueryEventHandlerTest {
             flowId,
             balanceId,
             POOL_KEY,
-            tokenBalance
+            TokenBalance(BigDecimal(99), BigDecimal(199))
         )
     }
 
@@ -144,3 +138,4 @@ class TokenBalanceQueryEventHandlerTest {
         return BalanceQuery(balanceId, flowId, null, null, POOL_KEY)
     }
 }
+

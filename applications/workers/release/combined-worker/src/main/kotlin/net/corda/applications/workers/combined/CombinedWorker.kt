@@ -3,6 +3,7 @@ package net.corda.applications.workers.combined
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory.fromAnyRef
+import java.time.Duration
 import net.corda.application.dbsetup.PostgresDbSetup
 import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.BusType
@@ -57,7 +58,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
-import java.time.Duration
 
 
 // We use a different port for the combined worker since it is often run on Macs, which 
@@ -311,9 +311,6 @@ private class CombinedWorkerParams {
     @Option(names = ["--hsm-id"], description = ["HSM ID which is handled by this worker instance."])
     var hsmId = ""
 
-    @Option(names = ["--serviceEndpoint"], description = ["Internal REST endpoints for Corda workers"])
-    val workerEndpoints: Map<String, String> =
-        listOf("crypto", "verification", "uniqueness", "persistence", "tokenSelection", "p2pLinkManager")
-            .associate { "endpoints.$it" to "localhost:7004" }
-            .toMap()
+    @Option(names = ["--serviceEndpoint"], description = ["Internal REST endpoints for Corda workers"], required = true)
+    val workerEndpoints: Map<String, String> = emptyMap()
 }

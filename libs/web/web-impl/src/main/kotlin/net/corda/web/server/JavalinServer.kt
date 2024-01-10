@@ -69,23 +69,22 @@ class JavalinServer(
     private fun startServer(port: Int) {
         // Ensure the server can only be started once at a time.
             log.info("Starting Worker Web Server on port: $port")
-            
-            server = JavalinStarter.startServer(
+            server = javalinFactory()
+            endpoints.forEach {
+                registerEndpointInternal(it)
+            }
+
+            JavalinStarter.startServer(
                 "RPC Server",
-                javalinFactory,
+                server!!,
                 port,
             )
-        
+
             server?.events {
                 it.handlerAdded { meta ->
                     log.info("Handler added to webserver: $meta")
                 }
             }
-
-            endpoints.forEach {
-                registerEndpointInternal(it)
-            }
-        
             server?.exception(NotFoundResponse::class.java) { _, ctx ->
                 log.warn("Received request on non-existing endpoint: ${ctx.req.requestURI}")
                 ctx.result("404 Not Found")

@@ -29,8 +29,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicReference
 
 @Component(service = [GroupParametersWriterService::class])
 class GroupParametersWriterServiceImpl @Activate constructor(
@@ -46,13 +44,12 @@ class GroupParametersWriterServiceImpl @Activate constructor(
     private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val SERVICE = "GroupParametersWriterService"
-        val idIndex = AtomicInteger()
     }
 
     override val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<GroupParametersWriterService>()
     private val coordinator = coordinatorFactory.createCoordinator(lifecycleCoordinatorName, ::handleEvent)
 
-    private var impl: AtomicReference<InnerGroupParametersWriterService> = AtomicReference(InactiveImpl)
+    private var impl: InnerGroupParametersWriterService = InactiveImpl
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
@@ -68,15 +65,22 @@ class GroupParametersWriterServiceImpl @Activate constructor(
     }
 
     override fun put(recordKey: HoldingIdentity, recordValue: InternalGroupParameters) =
-        impl.get().put(recordKey, recordValue)
+        impl.put(recordKey, recordValue)
 
-    override fun remove(recordKey: HoldingIdentity) = impl.get().remove(recordKey)
+    override fun remove(recordKey: HoldingIdentity) = impl.remove(recordKey)
 
     // for watching the dependencies
     private var dependencyHandle: RegistrationHandle? = null
 
     // for watching the config changes
     private var configHandle: AutoCloseable? = null
+    private var _publisher: Publisher? = null
+
+    /**
+     * Publisher for Kafka messaging. Recreated after every [MESSAGING_CONFIG] change.
+     */
+    private val publisher: Publisher
+        get() = _publisher ?: throw IllegalArgumentException("Publisher is not initialized.")
 
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -98,9 +102,7 @@ class GroupParametersWriterServiceImpl @Activate constructor(
 
     }
 
-    private inner class ActiveImpl(
-        private val publisher: Publisher
-    ) : InnerGroupParametersWriterService {
+    private inner class ActiveImpl : InnerGroupParametersWriterService {
         override fun put(recordKey: HoldingIdentity, recordValue: InternalGroupParameters) {
             publisher.publish(
                 listOf(
@@ -119,21 +121,15 @@ class GroupParametersWriterServiceImpl @Activate constructor(
         override fun close() = publisher.close()
     }
 
-    private fun activate(
-        coordinator: LifecycleCoordinator,
-        publisher: Publisher,
-    ) {
-        impl.getAndSet(
-            ActiveImpl(publisher)
-        ).close()
+    private fun activate(coordinator: LifecycleCoordinator) {
+        impl = ActiveImpl()
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
     private fun deactivate(coordinator: LifecycleCoordinator) {
         coordinator.updateStatus(LifecycleStatus.DOWN)
-        impl
-            .getAndSet(InactiveImpl)
-            .close()
+        impl.close()
+        impl = InactiveImpl
     }
 
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -163,6 +159,8 @@ class GroupParametersWriterServiceImpl @Activate constructor(
         dependencyHandle = null
         configHandle?.close()
         configHandle = null
+        _publisher?.close()
+        _publisher = null
     }
 
     private fun handleRegistrationChangeEvent(
@@ -188,13 +186,11 @@ class GroupParametersWriterServiceImpl @Activate constructor(
 
     private fun handleConfigChange(event: ConfigChangedEvent) {
         logger.info("Handling config changed event.")
-
-        val publisher = publisherFactory.createPublisher(
-            PublisherConfig("group-parameters-writer-service-${idIndex.incrementAndGet()}"),
+        _publisher?.close()
+        _publisher = publisherFactory.createPublisher(
+            PublisherConfig("group-parameters-writer-service"),
             event.config.getConfig(MESSAGING_CONFIG)
-        ).also {
-            it.start()
-        }
-        activate(coordinator, publisher)
+        ).also { it.start() }
+        activate(coordinator)
     }
 }

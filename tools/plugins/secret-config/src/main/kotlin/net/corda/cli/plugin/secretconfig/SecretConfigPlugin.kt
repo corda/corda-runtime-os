@@ -1,7 +1,6 @@
 package net.corda.cli.plugin.secretconfig
 
 import com.typesafe.config.ConfigRenderOptions
-import net.corda.cli.api.AbstractCordaCliVersionProvider
 import net.corda.cli.api.CordaCliPlugin
 import net.corda.libs.configuration.helper.VaultSecretConfigGenerator
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
@@ -15,8 +14,6 @@ import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
 import java.lang.IllegalArgumentException
 
-class VersionProvider : AbstractCordaCliVersionProvider()
-
 class SecretConfigPlugin : Plugin() {
     @Extension
     @Command(
@@ -24,8 +21,7 @@ class SecretConfigPlugin : Plugin() {
         description = ["Generate secret Config values which can be inserted into your Corda Config, removing the need to " +
                 "put sensitive values in plain text. The output will depend on the type of secrets service being used. " +
                 "See 'type' for more information."],
-        mixinStandardHelpOptions = true,
-        versionProvider = VersionProvider::class
+        mixinStandardHelpOptions = true
     )
     class PluginEntryPoint : CordaCliPlugin {
         enum class SecretsServiceType {

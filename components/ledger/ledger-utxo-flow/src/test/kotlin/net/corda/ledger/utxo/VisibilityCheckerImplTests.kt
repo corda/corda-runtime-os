@@ -32,6 +32,7 @@ class VisibilityCheckerImplTests {
 
     @Test
     fun `VisibilityChecker_containsMySigningKeys should return true when all specified keys belong to Alice`() {
+
         // Arrange
         val sut = VisibilityCheckerImpl(aliceSigningService)
 
@@ -44,6 +45,7 @@ class VisibilityCheckerImplTests {
 
     @Test
     fun `VisibilityChecker_containsMySigningKeys should return true when any specified keys belong to Alice`() {
+
         // Arrange
         val sut = VisibilityCheckerImpl(aliceSigningService)
 
@@ -56,6 +58,7 @@ class VisibilityCheckerImplTests {
 
     @Test
     fun `VisibilityChecker_containsMySigningKeys should return true when no specified keys belong to Alice`() {
+
         // Arrange
         val sut = VisibilityCheckerImpl(aliceSigningService)
 

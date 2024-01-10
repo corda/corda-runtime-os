@@ -95,7 +95,7 @@ class VirtualNodeLoaderImpl @Activate constructor(
         return AutoCloseable {}
     }
 
-    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>> {
+    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>>? {
         TODO("Not yet implemented - getAllVersionedRecords")
     }
 

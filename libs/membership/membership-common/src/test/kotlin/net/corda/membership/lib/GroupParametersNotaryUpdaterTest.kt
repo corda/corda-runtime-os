@@ -4,7 +4,6 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.KeyValuePair
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
-import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_BACKCHAIN_REQUIRED_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_KEYS_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_PROTOCOL_KEY
@@ -59,7 +58,7 @@ class GroupParametersNotaryUpdaterTest {
     fun `can add new notary service to group parameters`() {
         val publicKey = mock<PublicKey>()
         val notaryKey = MemberNotaryKey(publicKey, mock(), mock())
-        val notaryDetails = MemberNotaryDetails(notaryAx500Name, NOTARY_PROTOCOL_A, setOf(1, 3), listOf(notaryKey), true)
+        val notaryDetails = MemberNotaryDetails(notaryAx500Name, NOTARY_PROTOCOL_A, setOf(1, 3), listOf(notaryKey))
         val (epoch, updatedGroupParameters) = notaryUpdater.addNewNotaryService(originalGroupParameters, notaryDetails)
 
         verify(keyEncodingService).encodeAsString(publicKey)
@@ -72,7 +71,6 @@ class GroupParametersNotaryUpdaterTest {
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), NOTARY_PROTOCOL_A),
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 1), "3"),
-            KeyValuePair(String.format(NOTARY_SERVICE_BACKCHAIN_REQUIRED_KEY,  0), true.toString())
         )
     }
 
@@ -80,7 +78,7 @@ class GroupParametersNotaryUpdaterTest {
     fun `notary protocol must be specified to add new notary service`() {
         val publicKey = mock<PublicKey>()
         val notaryKey = MemberNotaryKey(publicKey, mock(), mock())
-        val notaryToAdd = MemberNotaryDetails(notaryAx500Name, null, setOf(1, 3), listOf(notaryKey), true)
+        val notaryToAdd = MemberNotaryDetails(notaryAx500Name, null, setOf(1, 3), listOf(notaryKey))
 
         val ex = assertThrows<InvalidGroupParametersUpdateException> {
             notaryUpdater.addNewNotaryService(originalGroupParameters, notaryToAdd)
@@ -92,7 +90,7 @@ class GroupParametersNotaryUpdaterTest {
     fun `exception is thrown when adding new notary if notary protocol is specified but versions are missing`() {
         val publicKey = mock<PublicKey>()
         val notaryKey = MemberNotaryKey(publicKey, mock(), mock())
-        val notaryToAdd = MemberNotaryDetails(notaryAx500Name, NOTARY_PROTOCOL_A, emptySet(), listOf(notaryKey), true)
+        val notaryToAdd = MemberNotaryDetails(notaryAx500Name, NOTARY_PROTOCOL_A, emptySet(), listOf(notaryKey))
 
         val ex = assertThrows<InvalidGroupParametersUpdateException> {
             notaryUpdater.addNewNotaryService(originalGroupParameters, notaryToAdd)
@@ -111,7 +109,7 @@ class GroupParametersNotaryUpdaterTest {
         )
         val publicKey = mock<PublicKey>()
         val notaryKey = MemberNotaryKey(publicKey, mock(), mock())
-        val notaryDetails = MemberNotaryDetails(notaryAx500Name, NOTARY_PROTOCOL_A, setOf(1, 3), listOf(notaryKey), true)
+        val notaryDetails = MemberNotaryDetails(notaryAx500Name, NOTARY_PROTOCOL_A, setOf(1, 3), listOf(notaryKey))
 
         val (epoch, updatedGroupParameters) = notaryUpdater.updateExistingNotaryService(
             currentGroupParameters,
@@ -145,7 +143,7 @@ class GroupParametersNotaryUpdaterTest {
         )
         val publicKey = mock<PublicKey>()
         val notaryKey = MemberNotaryKey(publicKey, mock(), mock())
-        val notaryDetails = MemberNotaryDetails(notaryAx500Name, NOTARY_PROTOCOL_A, setOf(1, 3, 4), listOf(notaryKey), true)
+        val notaryDetails = MemberNotaryDetails(notaryAx500Name, NOTARY_PROTOCOL_A, setOf(1, 3, 4), listOf(notaryKey))
 
         val (epoch, updatedGroupParameters) = notaryUpdater.updateExistingNotaryService(
             currentGroupParameters,
@@ -179,7 +177,7 @@ class GroupParametersNotaryUpdaterTest {
         )
         val publicKey = mock<PublicKey>()
         val notaryKey = MemberNotaryKey(publicKey, mock(), mock())
-        val notaryDetails = MemberNotaryDetails(notaryAx500Name, "incorrect.plugin.type", emptySet(), listOf(notaryKey), true)
+        val notaryDetails = MemberNotaryDetails(notaryAx500Name, "incorrect.plugin.type", emptySet(), listOf(notaryKey))
 
         val ex = assertThrows<InvalidGroupParametersUpdateException> { notaryUpdater.updateExistingNotaryService(
             currentGroupParameters,
@@ -201,7 +199,7 @@ class GroupParametersNotaryUpdaterTest {
         )
         val publicKey = mock<PublicKey>()
         val notaryKey = MemberNotaryKey(publicKey, mock(), mock())
-        val notaryDetails = MemberNotaryDetails(notaryAx500Name, NOTARY_PROTOCOL_A, emptySet(), listOf(notaryKey), true)
+        val notaryDetails = MemberNotaryDetails(notaryAx500Name, NOTARY_PROTOCOL_A, emptySet(), listOf(notaryKey))
 
         val ex = assertThrows<InvalidGroupParametersUpdateException> { notaryUpdater.updateExistingNotaryService(
             currentGroupParameters,
@@ -221,7 +219,7 @@ class GroupParametersNotaryUpdaterTest {
             String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 0) to "1",
             String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 1) to "3",
         )
-        val notaryDetails = MemberNotaryDetails(notaryAx500Name, NOTARY_PROTOCOL_A, setOf(1, 2, 3), emptyList(), true)
+        val notaryDetails = MemberNotaryDetails(notaryAx500Name, NOTARY_PROTOCOL_A, setOf(1, 2, 3), emptyList())
 
         val (epoch, updatedGroupParameters) = notaryUpdater.updateExistingNotaryService(
             currentGroupParameters,
@@ -316,9 +314,9 @@ class GroupParametersNotaryUpdaterTest {
         val notaryToRemoveKey = MemberNotaryKey(notaryToRemovePublicKey, mock(), mock())
         val otherPublicKey = mock<PublicKey>()
         val notaryKey = MemberNotaryKey(otherPublicKey, mock(), mock())
-        val notaryToRemove = MemberNotaryDetails(notaryAx500Name, NOTARY_PROTOCOL_A, setOf(1, 3), listOf(notaryToRemoveKey), true)
-        val otherNotary1 = MemberNotaryDetails(notaryBx500Name, NOTARY_PROTOCOL_A, setOf(1, 2, 3, 4, 5), listOf(notaryKey), true)
-        val otherNotary2 = MemberNotaryDetails(notaryCx500Name, NOTARY_PROTOCOL_A, setOf(1, 2, 3, 6, 7), listOf(notaryKey), true)
+        val notaryToRemove = MemberNotaryDetails(notaryAx500Name, NOTARY_PROTOCOL_A, setOf(1, 3), listOf(notaryToRemoveKey))
+        val otherNotary1 = MemberNotaryDetails(notaryBx500Name, NOTARY_PROTOCOL_A, setOf(1, 2, 3, 4, 5), listOf(notaryKey))
+        val otherNotary2 = MemberNotaryDetails(notaryCx500Name, NOTARY_PROTOCOL_A, setOf(1, 2, 3, 6, 7), listOf(notaryKey))
 
         val (epoch, updatedGroupParameters) = notaryUpdater.removeNotaryFromExistingNotaryService(
             currentGroupParameters,
@@ -354,9 +352,9 @@ class GroupParametersNotaryUpdaterTest {
         val notaryToRemoveKey = MemberNotaryKey(notaryToRemovePublicKey, mock(), mock())
         val otherPublicKey = mock<PublicKey>()
         val notaryKey = MemberNotaryKey(otherPublicKey, mock(), mock())
-        val notaryToRemove = MemberNotaryDetails(notaryAx500Name, NOTARY_PROTOCOL_B, setOf(1, 3), listOf(notaryToRemoveKey), true)
-        val otherNotary1 = MemberNotaryDetails(notaryBx500Name, NOTARY_PROTOCOL_A, setOf(1), listOf(notaryKey), true)
-        val otherNotary2 = MemberNotaryDetails(notaryCx500Name, NOTARY_PROTOCOL_A, setOf(1), listOf(notaryKey), true)
+        val notaryToRemove = MemberNotaryDetails(notaryAx500Name, NOTARY_PROTOCOL_B, setOf(1, 3), listOf(notaryToRemoveKey))
+        val otherNotary1 = MemberNotaryDetails(notaryBx500Name, NOTARY_PROTOCOL_A, setOf(1), listOf(notaryKey))
+        val otherNotary2 = MemberNotaryDetails(notaryCx500Name, NOTARY_PROTOCOL_A, setOf(1), listOf(notaryKey))
 
         val ex = assertThrows<InvalidGroupParametersUpdateException> { notaryUpdater.removeNotaryFromExistingNotaryService(
             currentGroupParameters,
@@ -378,9 +376,9 @@ class GroupParametersNotaryUpdaterTest {
         val notaryToRemoveKey = MemberNotaryKey(notaryToRemovePublicKey, mock(), mock())
         val otherPublicKey = mock<PublicKey>()
         val notaryKey = MemberNotaryKey(otherPublicKey, mock(), mock())
-        val notaryToRemove = MemberNotaryDetails(notaryAx500Name, NOTARY_PROTOCOL_A, emptySet(), listOf(notaryToRemoveKey), true)
-        val otherNotary1 = MemberNotaryDetails(notaryBx500Name, NOTARY_PROTOCOL_A, setOf(1), listOf(notaryKey), true)
-        val otherNotary2 = MemberNotaryDetails(notaryCx500Name, NOTARY_PROTOCOL_A, setOf(1), listOf(notaryKey), true)
+        val notaryToRemove = MemberNotaryDetails(notaryAx500Name, NOTARY_PROTOCOL_A, emptySet(), listOf(notaryToRemoveKey))
+        val otherNotary1 = MemberNotaryDetails(notaryBx500Name, NOTARY_PROTOCOL_A, setOf(1), listOf(notaryKey))
+        val otherNotary2 = MemberNotaryDetails(notaryCx500Name, NOTARY_PROTOCOL_A, setOf(1), listOf(notaryKey))
 
         val ex = assertThrows<InvalidGroupParametersUpdateException> { notaryUpdater.removeNotaryFromExistingNotaryService(
             currentGroupParameters,

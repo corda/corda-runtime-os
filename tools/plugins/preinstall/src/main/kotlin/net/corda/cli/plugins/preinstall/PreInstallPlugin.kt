@@ -8,7 +8,6 @@ import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientBuilder
 import io.fabric8.kubernetes.client.KubernetesClientException
-import net.corda.cli.api.AbstractCordaCliVersionProvider
 import java.io.File
 import java.io.FileNotFoundException
 import java.util.Base64
@@ -18,8 +17,6 @@ import org.pf4j.Plugin
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
-
-class VersionProvider : AbstractCordaCliVersionProvider()
 
 class PreInstallPlugin : Plugin() {
 
@@ -39,8 +36,7 @@ class PreInstallPlugin : Plugin() {
     @CommandLine.Command(name = "preinstall",
         subcommands = [CheckLimits::class, CheckPostgres::class, CheckKafka::class, RunAll::class],
         mixinStandardHelpOptions = true,
-        description = ["Preinstall checks for Corda."],
-        versionProvider = VersionProvider::class)
+        description = ["Preinstall checks for Corda."])
     class PreInstallPluginEntry : CordaCliPlugin
 
     // Common class for plugins to inherit methods from

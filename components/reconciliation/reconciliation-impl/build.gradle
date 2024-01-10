@@ -19,4 +19,8 @@ dependencies {
     implementation project(':libs:metrics')
     implementation project(':libs:utilities')
     implementation project(':components:reconciliation:reconciliation')
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

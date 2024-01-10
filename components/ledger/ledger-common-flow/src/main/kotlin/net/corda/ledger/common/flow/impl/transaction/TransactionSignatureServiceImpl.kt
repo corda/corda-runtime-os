@@ -47,10 +47,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
     private val flowEngine: FlowEngine,
     @Reference(service = TransactionSignatureVerificationServiceInternal::class)
     private val transactionSignatureVerificationServiceInternal: TransactionSignatureVerificationServiceInternal
-) : TransactionSignatureService,
-    TransactionSignatureServiceInternal,
-    SingletonSerializeAsToken,
-    UsedByFlow,
+) : TransactionSignatureService, TransactionSignatureServiceInternal, SingletonSerializeAsToken, UsedByFlow,
     TransactionSignatureVerificationServiceInternal by transactionSignatureVerificationServiceInternal {
 
     @Suspendable

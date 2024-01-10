@@ -27,4 +27,7 @@ dependencies {
             because "Version bundled with current version of 'com.networknt:json-schema-validator' does not have OSGi manifest."
         }
     }
+
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

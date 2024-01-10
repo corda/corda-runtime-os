@@ -72,8 +72,7 @@ internal object ContextUtils {
                             this::javaClass.toString(),
                             MemberX500Name.parse(CORDA_X500_NAME)
                         )
-                    ),
-                    it
+                    ), it
                 )
                 CURRENT_REST_CONTEXT.set(restAuthContext)
                 log.trace { """Authenticate user "${it.principal}" completed.""" }
@@ -91,9 +90,9 @@ internal object ContextUtils {
         val expectsMultipart = routeInfo.isMultipartFileUpload
         val receivesMultipartRequest = ctx.isMultipart()
 
-        if (expectsMultipart && !receivesMultipartRequest) {
+        if(expectsMultipart && !receivesMultipartRequest) {
             throw IllegalArgumentException("Endpoint expects Content-Type [multipart/form-data] but received [${ctx.contentType()}].")
-        } else if (receivesMultipartRequest && !expectsMultipart) {
+        } else if(receivesMultipartRequest && !expectsMultipart) {
             throw IllegalArgumentException("Unexpected Content-Type [${ctx.contentType()}].")
         }
     }

@@ -75,10 +75,10 @@ class RestWorker @Activate constructor(
         configureTracing("REST Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
 
         val config = getBootstrapConfig(
-            secretsServiceFactoryResolver,
-            params.defaultParams,
-            configurationValidatorFactory.createConfigValidator(),
-            listOf(WorkerHelpers.createConfigFromParams(BOOT_REST, params.restParams))
+                secretsServiceFactoryResolver,
+                params.defaultParams,
+                configurationValidatorFactory.createConfigValidator(),
+                listOf(WorkerHelpers.createConfigFromParams(BOOT_REST, params.restParams))
         )
         webServer.start(params.defaultParams.workerServerPort)
         processor.start(config)
@@ -104,10 +104,8 @@ private class RestWorkerParams {
         if (restParams.containsKey(BOOT_REST_TLS_KEYSTORE_FILE_PATH) &&
             restParams.containsKey(BOOT_REST_TLS_CRT_PATH)
         ) {
-            throw IllegalStateException(
-                "'$BOOT_REST_TLS_KEYSTORE_FILE_PATH' and '$BOOT_REST_TLS_CRT_PATH' " +
-                    "are mutually exclusive for TLS certificate provisions."
-            )
+            throw IllegalStateException("'$BOOT_REST_TLS_KEYSTORE_FILE_PATH' and '$BOOT_REST_TLS_CRT_PATH' " +
+                    "are mutually exclusive for TLS certificate provisions.")
         }
     }
 }

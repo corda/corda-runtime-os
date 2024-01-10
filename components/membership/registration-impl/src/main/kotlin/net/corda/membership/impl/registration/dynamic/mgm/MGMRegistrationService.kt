@@ -17,7 +17,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
-import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -138,7 +137,7 @@ class MGMRegistrationService @Activate constructor(
         private val mgmRegistrationContextValidator = MGMRegistrationContextValidator(
             membershipSchemaValidatorFactory,
             configurationGetService = configurationGetService,
-            clock = UTCClock(),
+            clock = UTCClock()
         )
         private val mgmRegistrationMemberInfoHandler = MGMRegistrationMemberInfoHandler(
             clock,
@@ -146,7 +145,6 @@ class MGMRegistrationService @Activate constructor(
             keyEncodingService,
             memberInfoFactory,
             membershipPersistenceClient,
-            membershipQueryClient,
             platformInfoProvider,
             virtualNodeInfoReadService,
             cordaAvroSerializationFactory,
@@ -154,7 +152,6 @@ class MGMRegistrationService @Activate constructor(
         private val mgmRegistrationGroupPolicyHandler = MGMRegistrationGroupPolicyHandler(
             layeredPropertyMapFactory,
             membershipPersistenceClient,
-            membershipQueryClient,
         )
         private val mgmRegistrationOutputPublisher = MGMRegistrationOutputPublisher(memberInfoFactory)
 
@@ -164,35 +161,15 @@ class MGMRegistrationService @Activate constructor(
             context: Map<String, String>
         ): Collection<Record<*, *>> {
             return try {
-                val lastRegistrationRequest = mgmRegistrationRequestHandler.getLastRegistrationRequest(member)
-                val mgmInfo = if (lastRegistrationRequest != null) {
-                    val lastMemberInfo = mgmRegistrationMemberInfoHandler.queryForMGMMemberInfo(member)
-                    val newSerial = calculateSerial(lastMemberInfo.serial, lastRegistrationRequest.serial)
-                    val mgmInfo = mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
-                        member,
-                        context,
-                        newSerial,
-                        lastMemberInfo.mgmProvidedContext[CREATION_TIME],
-                    )
-                    mgmRegistrationContextValidator.validateMemberContext(mgmInfo, lastMemberInfo)
-                    val lastGroupPolicy = mgmRegistrationGroupPolicyHandler.getLastGroupPolicy(member)
-                    mgmRegistrationContextValidator.validateGroupPolicy(context, lastGroupPolicy)
-                    mgmRegistrationMemberInfoHandler.persistMgmMemberInfo(member, mgmInfo)
-                    mgmRegistrationRequestHandler.persistRegistrationRequest(
-                        registrationId,
-                        member,
-                        context,
-                        newSerial - 1,
-                    )
-                    mgmInfo
-                } else {
-                    mgmRegistrationContextValidator.validate(context)
-                    val mgmInfo = mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(member, context)
-                    mgmRegistrationMemberInfoHandler.persistMgmMemberInfo(member, mgmInfo)
-                    mgmRegistrationGroupPolicyHandler.buildAndPersist(
-                        member,
-                        context
-                    )
+                mgmRegistrationRequestHandler.throwIfRegistrationAlreadyApproved(member)
+                mgmRegistrationContextValidator.validate(context)
+
+                val mgmInfo = mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(member, context)
+
+                mgmRegistrationGroupPolicyHandler.buildAndPersist(
+                    member,
+                    context
+                )
 
                 // Persist group parameters snapshot
                 val groupParametersPersistenceResult =
@@ -203,11 +180,9 @@ class MGMRegistrationService @Activate constructor(
                 }
                 mgmRegistrationRequestHandler.persistRegistrationRequest(registrationId, member, context)
 
-                    // Publish group parameters to Kafka
-                    val groupParameters = groupParametersPersistenceResult.getOrThrow()
-                    groupParametersWriterService.put(member, groupParameters)
-                    mgmInfo
-                }
+                // Publish group parameters to Kafka
+                val groupParameters = groupParametersPersistenceResult.getOrThrow()
+                groupParametersWriterService.put(member, groupParameters)
 
                 expirationProcessor.scheduleProcessingOfExpiredRequests(member)
 
@@ -230,21 +205,6 @@ class MGMRegistrationService @Activate constructor(
         }
     }
 
-    /**
-     * Calculates the serial based on latest member as accurate as possible, so
-     * we compare the serial from the member info with the serial from the request.
-     */
-    private fun calculateSerial(serialFromInfo: Long, serialFromRequest: Long): Long {
-        val futureSerialBasedOnInfo = serialFromInfo + 1
-        // Need to add 2 here as the registration request is persisted with the serial number of the previous member
-        // info (or 0 if it was first time registration).
-        val futureSerialBasedOnRequest = serialFromRequest + 2
-        return if (futureSerialBasedOnInfo >= futureSerialBasedOnRequest) {
-            futureSerialBasedOnInfo
-        } else {
-            futureSerialBasedOnRequest
-        }
-    }
 
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {

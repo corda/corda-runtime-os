@@ -6,8 +6,6 @@ plugins {
 
 description 'P2P Gateway Worker'
 
-ext.cordaEnableFormatting = true
-
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:osgi.core'

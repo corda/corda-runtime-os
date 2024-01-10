@@ -5,8 +5,6 @@ plugins {
 
 description "P2P Testing tools - Dump topic"
 
-ext.cordaEnableFormatting = true
-
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "org.osgi:osgi.core"

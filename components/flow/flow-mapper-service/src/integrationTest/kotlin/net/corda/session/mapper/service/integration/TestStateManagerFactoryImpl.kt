@@ -3,7 +3,6 @@ package net.corda.session.mapper.service.integration
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
-import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
@@ -31,10 +30,10 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
         return object : StateManager {
             override val name = LifecycleCoordinatorName("MockStateManager", UUID.randomUUID().toString())
 
-            override fun create(states: Collection<State>): Set<String> {
+            override fun create(states: Collection<State>): Map<String, Exception> {
                 return states.mapNotNull {
                     storage.putIfAbsent(it.key, it)
-                }.map { it.key }.toSet()
+                }.associate { it.key to RuntimeException("State already exists [$it]") }
             }
 
             override fun get(keys: Collection<String>): Map<String, State> {
@@ -90,66 +89,10 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
             ): Map<String, State> {
                 return storage.filter { (_, state) ->
                     state.modifiedTime >= intervalFilter.start && state.modifiedTime <= intervalFilter.finish
-                }.filter {
-                    matchesAll(it.value, listOf(metadataFilter))
+                }.filter { (_, state) ->
+                    state.metadata.containsKey(metadataFilter.key) && state.metadata[metadataFilter.key] == metadataFilter.value
                 }
             }
-
-            override fun findUpdatedBetweenWithMetadataMatchingAll(
-                intervalFilter: IntervalFilter,
-                metadataFilters: Collection<MetadataFilter>
-            ): Map<String, State> {
-                return storage.filter { (_, state) ->
-                    state.modifiedTime >= intervalFilter.start && state.modifiedTime <= intervalFilter.finish
-                }.filter {
-                    matchesAll(it.value, metadataFilters)
-                }
-            }
-
-            override fun findUpdatedBetweenWithMetadataMatchingAny(
-                intervalFilter: IntervalFilter,
-                metadataFilters: Collection<MetadataFilter>
-            ): Map<String, State> {
-                return storage.filter { (_, state) ->
-                    state.modifiedTime >= intervalFilter.start && state.modifiedTime <= intervalFilter.finish
-                }.filter {
-                    matchesAny(it.value, metadataFilters)
-                }
-            }
-
-            @Suppress("UNCHECKED_CAST")
-            private fun matchesAny(state: State, filters: Collection<MetadataFilter>) =
-                filters.any {
-                    if (state.metadata.containsKey(it.key)) {
-                        val source = state.metadata[it.key] as Comparable<Any>
-
-                        when (it.operation) {
-                            Operation.Equals -> source == it.value
-                            Operation.NotEquals -> source != it.value
-                            Operation.LesserThan -> source < it.value
-                            Operation.GreaterThan -> source > it.value
-                        }
-                    } else {
-                        false
-                    }
-                }
-
-            @Suppress("UNCHECKED_CAST")
-            private fun matchesAll(state: State, filters: Collection<MetadataFilter>) =
-                filters.all {
-                    if (state.metadata.containsKey(it.key)) {
-                        val source = state.metadata[it.key] as Comparable<Any>
-
-                        when (it.operation) {
-                            Operation.Equals -> source == it.value
-                            Operation.NotEquals -> source != it.value
-                            Operation.LesserThan -> source < it.value
-                            Operation.GreaterThan -> source > it.value
-                        }
-                    } else {
-                        false
-                    }
-                }
 
             override val isRunning: Boolean
                 get() = true

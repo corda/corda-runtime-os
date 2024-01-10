@@ -4,7 +4,6 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
@@ -22,9 +21,7 @@ import net.corda.p2p.linkmanager.forwarding.gateway.mtls.ClientCertificatePublis
 import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
 import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueuesImpl
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
-import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl
 import net.corda.schema.Schemas
-import net.corda.utilities.flags.Features
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
@@ -44,8 +41,6 @@ internal class CommonComponents(
     membershipQueryClient: MembershipQueryClient,
     groupParametersReaderService: GroupParametersReaderService,
     clock: Clock,
-    internal val stateManager: StateManager,
-    features: Features = Features(),
 ) : LifecycleWithDominoTile {
     private companion object {
         const val LISTENER_NAME = "link.manager.group.policy.listener"
@@ -55,38 +50,25 @@ internal class CommonComponents(
         Schemas.P2P.LINK_IN_TOPIC
     )
 
-    internal val messageConverter = MessageConverter(
-        groupPolicyProvider,
-        membershipGroupReaderProvider,
-        clock,
-    )
-
     internal val messagesPendingSession = PendingSessionMessageQueuesImpl(
         publisherFactory,
         lifecycleCoordinatorFactory,
-        messagingConfiguration,
-        messageConverter,
+        messagingConfiguration
     )
 
-    internal val sessionManager = if(features.useStatefulSessionManager) {
-        StatefulSessionManagerImpl(
-            lifecycleCoordinatorFactory,
-        )
-    } else {
-        SessionManagerImpl(
-            groupPolicyProvider,
-            membershipGroupReaderProvider,
-            cryptoOpsClient,
-            messagesPendingSession,
-            publisherFactory,
-            configurationReaderService,
-            lifecycleCoordinatorFactory,
-            messagingConfiguration,
-            inboundAssignmentListener,
-            linkManagerHostingMap,
-            clock = clock,
-        )
-    }
+    internal val sessionManager = SessionManagerImpl(
+        groupPolicyProvider,
+        membershipGroupReaderProvider,
+        cryptoOpsClient,
+        messagesPendingSession,
+        publisherFactory,
+        configurationReaderService,
+        lifecycleCoordinatorFactory,
+        messagingConfiguration,
+        inboundAssignmentListener,
+        linkManagerHostingMap,
+        clock = clock,
+    )
 
     private val trustStoresPublisher = TrustStoresPublisher(
         subscriptionFactory,
@@ -141,7 +123,7 @@ internal class CommonComponents(
             mtlsClientCertificatePublisher.dominoTile.coordinatorName,
         ) + externalDependencies.map {
             it.name
-        } + stateManager.name,
+        },
         managedChildren = listOf(
             linkManagerHostingMap.dominoTile.toNamedLifecycle(),
             messagesPendingSession.dominoTile.toNamedLifecycle(),

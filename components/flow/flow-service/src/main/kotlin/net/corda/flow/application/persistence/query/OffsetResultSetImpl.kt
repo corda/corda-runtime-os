@@ -11,7 +11,7 @@ import java.nio.ByteBuffer
  */
 data class OffsetResultSetImpl<R> internal constructor(
     private val serializationService: SerializationService,
-    private var serializedParameters: Map<String, ByteBuffer?>,
+    private var serializedParameters: Map<String, ByteBuffer>,
     private var limit: Int,
     private var offset: Int,
     private val resultClass: Class<R>,

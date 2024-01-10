@@ -7,7 +7,6 @@ import net.corda.ledger.utxo.token.cache.queries.impl.SqlQueryProviderTokens.Com
 import net.corda.ledger.utxo.token.cache.queries.impl.SqlQueryProviderTokens.Companion.SQL_PARAMETER_OWNER_HASH
 import net.corda.ledger.utxo.token.cache.queries.impl.SqlQueryProviderTokens.Companion.SQL_PARAMETER_SYMBOL
 import net.corda.ledger.utxo.token.cache.queries.impl.SqlQueryProviderTokens.Companion.SQL_PARAMETER_TAG_FILTER
-import net.corda.ledger.utxo.token.cache.queries.impl.SqlQueryProviderTokens.Companion.SQL_PARAMETER_TOKEN_NOTARY_X500_NAME
 import net.corda.ledger.utxo.token.cache.queries.impl.SqlQueryProviderTokens.Companion.SQL_PARAMETER_TOKEN_TYPE
 import net.corda.ledger.utxo.token.cache.repositories.UtxoTokenRepository
 import net.corda.ledger.utxo.token.cache.services.UtxoTokenMapper
@@ -16,6 +15,7 @@ import java.math.BigDecimal
 import javax.persistence.EntityManager
 import javax.persistence.Query
 import javax.persistence.Tuple
+import net.corda.ledger.utxo.token.cache.queries.impl.SqlQueryProviderTokens.Companion.SQL_PARAMETER_TOKEN_NOTARY_X500_NAME
 
 class UtxoTokenRepositoryImpl(
     private val sqlQueryProvider: SqlQueryProvider,
@@ -28,6 +28,7 @@ class UtxoTokenRepositoryImpl(
         regexTag: String?,
         maxTokens: Int
     ): AvailTokenQueryResult {
+
         val sqlQuery = sqlQueryProvider.getPagedSelectQuery(
             maxTokens,
             regexTag != null,

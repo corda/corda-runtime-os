@@ -6,6 +6,7 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.schema.Schemas
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -30,7 +31,7 @@ class FilterMyKeysExternalEventFactory @Activate constructor(
                     candidateKeys = parameters,
                     flowExternalEventContext = flowExternalEventContext
                 )
-        return ExternalEventRecord(payload = flowOpsRequest)
+        return ExternalEventRecord(topic = Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC, payload = flowOpsRequest)
     }
 
     override fun resumeWith(checkpoint: FlowCheckpoint, response: FlowOpsResponse): List<PublicKey> {

@@ -110,6 +110,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
         consensualTransactionBuilder: ConsensualTransactionBuilder,
         metadataBytes: ByteArray
     ): List<List<ByteArray>> {
+
         val currentSandboxGroup = currentSandboxGroupContext.get().sandboxGroup
 
         val requiredSigningKeys = consensualTransactionBuilder
@@ -147,7 +148,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
             }
     }
 
-    private fun verifyTransaction(wireTransaction: WireTransaction) {
+    private fun verifyTransaction(wireTransaction: WireTransaction){
         ConsensualLedgerTransactionVerifier(
             ConsensualLedgerTransactionImpl(wireTransaction, serializationService)
         ).verify()

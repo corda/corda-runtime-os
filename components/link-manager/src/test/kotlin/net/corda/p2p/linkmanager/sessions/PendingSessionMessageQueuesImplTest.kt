@@ -10,7 +10,6 @@ import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationResult
-import net.corda.p2p.linkmanager.common.MessageConverter
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -21,9 +20,9 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
-import org.mockito.kotlin.verify
 
 class PendingSessionMessageQueuesImplTest {
 
@@ -36,8 +35,9 @@ class PendingSessionMessageQueuesImplTest {
         on { createMac(any()) } doReturn mac
     }
     private val recordForSessionEstablished = Record("topic", "key", mock<LinkOutMessage>())
-
-    private val sessionManager = mock<SessionManager>()
+    private val sessionManager = mock<SessionManager> {
+        on { recordsForSessionEstablished(any(), any(), any()) } doReturn listOf(recordForSessionEstablished)
+    }
     private val publisherWithDominoLogic = mockConstruction(PublisherWithDominoLogic::class.java) { mock, _ ->
         whenever(mock.isRunning).doReturn(true)
         @Suppress("UNCHECKED_CAST")
@@ -49,22 +49,14 @@ class PendingSessionMessageQueuesImplTest {
         whenever(mock.publish(publishedRecords.capture())).doReturn(emptyList())
     }
     private val serial = 1L
-    private val carol = createTestHoldingIdentity("CN=Carol, O=Corp, L=LDN, C=GB", "group-1")
-    private val david = createTestHoldingIdentity("CN=Carol, O=Corp, L=LDN, C=GB", "group-1")
     private val sessionCounterparties = SessionManager.SessionCounterparties(
-        carol,
-        david,
+        createTestHoldingIdentity("CN=Carol, O=Corp, L=LDN, C=GB", "group-1"),
+        createTestHoldingIdentity("CN=David, O=Corp, L=LDN, C=GB", "group-1"),
         MembershipStatusFilter.ACTIVE,
-        serial,
-        false,
+        serial
     )
-    private val messageConverter = mock<MessageConverter>{
-        on { recordsForSessionEstablished(any(), any(), any(), any()) } doReturn listOf(recordForSessionEstablished)
-    }
 
-    private val queue = PendingSessionMessageQueuesImpl(
-        mock(), mock(), mock(), messageConverter
-    )
+    private val queue = PendingSessionMessageQueuesImpl(mock(), mock(), mock())
 
     @AfterEach
     fun cleanUp() {
@@ -119,7 +111,7 @@ class PendingSessionMessageQueuesImplTest {
         queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties, session)
 
         messages.forEach {
-            verify(messageConverter).recordsForSessionEstablished(sessionManager, session, serial, it)
+            verify(sessionManager).recordsForSessionEstablished(session, it, serial)
         }
     }
 
@@ -145,8 +137,7 @@ class PendingSessionMessageQueuesImplTest {
             createTestHoldingIdentity("CN=Carol, O=Corp, L=LDN, C=GB", "group-2"),
             createTestHoldingIdentity("CN=David, O=Corp, L=LDN, C=GB", "group-1"),
             MembershipStatusFilter.ACTIVE,
-            serial,
-            false,
+            serial
         )
         queue.sessionNegotiatedCallback(sessionManager, anotherSessionCounterparties, session)
 

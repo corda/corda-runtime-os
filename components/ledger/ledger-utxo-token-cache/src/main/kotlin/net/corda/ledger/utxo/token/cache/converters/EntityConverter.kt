@@ -105,3 +105,4 @@ interface EntityConverter {
      */
     fun toTokenPoolKey(avroTokenPoolKey: TokenPoolCacheKey): TokenPoolKey
 }
+

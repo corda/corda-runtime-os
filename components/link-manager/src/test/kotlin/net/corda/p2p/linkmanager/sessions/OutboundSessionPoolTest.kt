@@ -31,7 +31,6 @@ class OutboundSessionPoolTest {
             counterpartyId = mock(),
             status = MembershipStatusFilter.ACTIVE,
             serial = 4L,
-            communicationWithMgm = false,
         )
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
@@ -54,7 +53,6 @@ class OutboundSessionPoolTest {
             counterpartyId = mock(),
             status = MembershipStatusFilter.ACTIVE,
             serial = 4L,
-            communicationWithMgm = false,
         )
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
@@ -80,7 +78,6 @@ class OutboundSessionPoolTest {
             counterpartyId = mock(),
             status = MembershipStatusFilter.ACTIVE,
             serial = 4L,
-            communicationWithMgm = false,
         )
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
@@ -112,7 +109,6 @@ class OutboundSessionPoolTest {
             counterpartyId = mock(),
             status = MembershipStatusFilter.ACTIVE,
             serial = 4L,
-            communicationWithMgm = false,
         )
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
@@ -152,7 +148,6 @@ class OutboundSessionPoolTest {
             counterpartyId = mock(),
             status = MembershipStatusFilter.ACTIVE,
             serial = 4L,
-            communicationWithMgm = false,
         )
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
@@ -199,7 +194,6 @@ class OutboundSessionPoolTest {
             counterpartyId = mock(),
             status = MembershipStatusFilter.ACTIVE,
             serial = 4L,
-            communicationWithMgm = false,
         )
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
@@ -247,7 +241,6 @@ class OutboundSessionPoolTest {
             counterpartyId = mock(),
             status = MembershipStatusFilter.ACTIVE,
             serial = 4L,
-            communicationWithMgm = false,
         )
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
@@ -293,7 +286,6 @@ class OutboundSessionPoolTest {
             counterpartyId = mock(),
             status = MembershipStatusFilter.ACTIVE,
             serial = 4L,
-            communicationWithMgm = false,
         )
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
@@ -345,7 +337,6 @@ class OutboundSessionPoolTest {
             counterpartyId = mock(),
             status = MembershipStatusFilter.ACTIVE,
             serial = 4L,
-            communicationWithMgm = false,
         )
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
@@ -407,7 +398,6 @@ class OutboundSessionPoolTest {
             counterpartyId = mock(),
             status = MembershipStatusFilter.ACTIVE,
             serial = 4L,
-            communicationWithMgm = false,
         )
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()

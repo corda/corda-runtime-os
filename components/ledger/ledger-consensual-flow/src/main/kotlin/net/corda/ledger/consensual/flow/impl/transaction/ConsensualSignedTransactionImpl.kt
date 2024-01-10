@@ -43,10 +43,8 @@ class ConsensualSignedTransactionImpl(
 
     override fun addSignature(signature: DigitalSignatureAndMetadata): ConsensualSignedTransactionInternal =
         ConsensualSignedTransactionImpl(
-            serializationService,
-            transactionSignatureService,
-            wireTransaction,
-            signatures + signature
+            serializationService, transactionSignatureService,
+            wireTransaction, signatures + signature
         )
 
     @Suspendable
@@ -69,7 +67,7 @@ class ConsensualSignedTransactionImpl(
 
     private fun getSignatoryKeyFromKeyId(keyId: SecureHash): PublicKey? {
         val keyIdToPublicKey = keyIdToSignatories.getOrPut(keyId.algorithm) {
-            // Prepare keyIds for all public keys related to signatories for the relevant algorithm
+            //Prepare keyIds for all public keys related to signatories for the relevant algorithm
             requiredSignatories.map { signatory ->
                 getKeyOrLeafKeys(signatory).map {
                     transactionSignatureService.getIdOfPublicKey(

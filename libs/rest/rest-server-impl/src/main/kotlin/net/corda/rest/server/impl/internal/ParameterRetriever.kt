@@ -3,13 +3,13 @@ package net.corda.rest.server.impl.internal
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import net.corda.rest.exception.BadRequestException
+import java.io.InputStream
 import net.corda.rest.server.impl.apigen.processing.Parameter
 import net.corda.rest.server.impl.apigen.processing.ParameterType
 import net.corda.rest.server.impl.apigen.processing.RouteInfo
 import net.corda.rest.server.impl.utils.mapTo
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
-import java.io.InputStream
 import java.net.URLDecoder
 import java.util.function.Function
 
@@ -25,18 +25,12 @@ internal object ParameterRetrieverFactory {
         when (parameter.type) {
             ParameterType.PATH -> PathParameterRetriever(parameter)
             ParameterType.QUERY -> {
-                if (parameter.classType == List::class.java) {
-                    QueryParameterListRetriever(parameter)
-                } else {
-                    QueryParameterRetriever(parameter)
-                }
+                if (parameter.classType == List::class.java) QueryParameterListRetriever(parameter)
+                else QueryParameterRetriever(parameter)
             }
             ParameterType.BODY -> {
-                if (routeInfo.isMultipartFileUpload) {
-                    MultipartParameterRetriever(parameter)
-                } else {
-                    BodyParameterRetriever(parameter, routeInfo)
-                }
+                if (routeInfo.isMultipartFileUpload) MultipartParameterRetriever(parameter)
+                else BodyParameterRetriever(parameter, routeInfo)
             }
         }
 }
@@ -74,9 +68,8 @@ private class QueryParameterListRetriever(private val parameter: Parameter) : Pa
             log.trace { "Cast \"${parameter.name}\" to query parameter list." }
             val paramValues = ctx.queryParams(parameter.name)
 
-            if (parameter.required && paramValues.isEmpty()) {
+            if (parameter.required && paramValues.isEmpty())
                 throw BadRequestException("Missing query parameter \"${parameter.name}\".")
-            }
 
             return paramValues.map { it.decodeRawString() }
                 .also { log.trace { "Cast \"${parameter.name}\" to query parameter list completed." } }
@@ -99,9 +92,8 @@ private class QueryParameterRetriever(private val parameter: Parameter) : Parame
         try {
             log.trace { "Cast \"${parameter.name}\" to query parameter." }
 
-            if (parameter.required && ctx.queryParam(parameter.name) == null) {
+            if (parameter.required && ctx.queryParam(parameter.name) == null)
                 throw BadRequestException("Missing query parameter \"${parameter.name}\".")
-            }
 
             val rawQueryParam: String? = ctx.queryParam(parameter.name, parameter.default)
             return rawQueryParam?.decodeRawString()?.mapTo(parameter.classType)
@@ -156,9 +148,7 @@ private class BodyParameterRetriever(private val parameter: Parameter, private v
         val rootNode = ctx.bodyAsClass(ObjectNode::class.java)
         return rootNode.get(parameter.name) ?: if (routeInfo.isSingleBodyParam) {
             rootNode
-        } else {
-            null
-        }
+        } else null
     }
 }
 
@@ -176,13 +166,11 @@ private class MultipartParameterRetriever(private val parameter: Parameter) : Pa
             if (parameter.isFileUpload) {
                 val uploadedFiles = ctx.uploadedFiles(parameter.name)
 
-                if (uploadedFiles.isEmpty()) {
+                if (uploadedFiles.isEmpty())
                     throw BadRequestException("Expected file with parameter name \"${parameter.name}\" but it was not found.")
-                }
 
-                if (Collection::class.java.isAssignableFrom(parameter.classType)) {
+                if (Collection::class.java.isAssignableFrom(parameter.classType))
                     return uploadedFiles
-                }
 
                 if (InputStream::class.java.isAssignableFrom(parameter.classType)) {
                     return uploadedFiles.first().content

@@ -3,6 +3,7 @@ package net.corda.flow.state
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.external.ExternalEventState
 import net.corda.data.flow.state.session.SessionState
@@ -11,6 +12,7 @@ import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import java.nio.ByteBuffer
+import java.time.Instant
 
 /**
  * The FlowCheckpoint provides an API for managing the checkpoint during the processing of a flow.
@@ -41,6 +43,14 @@ interface FlowCheckpoint : NonSerializable {
 
     val doesExist: Boolean
 
+    val currentRetryCount: Int
+
+    val firstFailureTimestamp: Instant?
+
+    val inRetryState: Boolean
+
+    val retryEvent: FlowEvent
+
     val pendingPlatformError: ExceptionEnvelope?
 
     val flowContext: FlowContext
@@ -65,7 +75,13 @@ interface FlowCheckpoint : NonSerializable {
 
     fun rollback()
 
+    fun markForRetry(flowEvent: FlowEvent, exception: Exception)
+
+    fun markRetrySuccess()
+
     fun clearPendingPlatformError()
+
+    fun setFlowSleepDuration(sleepTimeMs: Int)
 
     fun setPendingPlatformError(type: String, message: String)
 

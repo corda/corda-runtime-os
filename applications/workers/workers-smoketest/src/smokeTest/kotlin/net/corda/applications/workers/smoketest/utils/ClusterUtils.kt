@@ -26,6 +26,7 @@ fun ClusterBuilder.eventuallyUploadCpi(
         .let { it.toJson()["id"].textValue() }
     Assertions.assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
+    // BUG:  returning "OK" feels 'weakly' typed
     val json = assertWithRetryIgnoringExceptions {
         timeout(retryTimeout)
         interval(retryInterval)
@@ -35,6 +36,10 @@ fun ClusterBuilder.eventuallyUploadCpi(
         }
         immediateFailCondition {
             it.code == ResponseCode.CONFLICT.statusCode
+                    && null != it.toJson()["details"]
+                    && it.toJson()["details"]["code"].textValue().equals(ResponseCode.CONFLICT.toString())
+                    && null != it.toJson()["title"]
+                    && it.toJson()["title"].textValue().contains("already uploaded")
         }
     }.toJson()
 

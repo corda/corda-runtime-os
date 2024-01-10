@@ -61,4 +61,5 @@ class UtxoLedgerTransactionVerifier(
     private fun verifyInputsAreOlderThanOutputs() {
         // TODO CORE-8957 (needs to access the previous transactions from the backchain somehow)
     }
+
 }

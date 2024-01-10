@@ -3,12 +3,12 @@ package net.corda.ledger.utxo.flow.impl.flows.backchain.v1
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.sandbox.CordaSystemFlow
-import net.corda.utilities.trace
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.utilities.trace
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -43,7 +43,7 @@ class TransactionBackchainSenderFlowV1(
     override fun call() {
         log.trace {
             "Backchain resolution of $headTransactionIds - Waiting to be told what transactions to send to ${session.counterparty} " +
-                "so that the backchain can be resolved"
+                    "so that the backchain can be resolved"
         }
         while (true) {
             when (val request = session.receive(TransactionBackchainRequestV1::class.java)) {
@@ -55,14 +55,14 @@ class TransactionBackchainSenderFlowV1(
                     session.send(transactions)
                     log.trace {
                         "Backchain resolution of $headTransactionIds - Sent backchain transactions ${transactions.map { it.id }} to " +
-                            session.counterparty
+                                session.counterparty
                     }
                 }
 
                 is TransactionBackchainRequestV1.Stop -> {
                     log.trace {
                         "Backchain resolution of $headTransactionIds - Received stop, finishing sending of backchain transaction to " +
-                            session.counterparty
+                                session.counterparty
                     }
                     return
                 }
@@ -84,7 +84,7 @@ class TransactionBackchainSenderFlowV1(
         session.send(signedGroupParameters)
         log.trace {
             "Backchain resolution of $headTransactionIds - Sent signed group parameters (${request.groupParametersHash}) to " +
-                session.counterparty
+                    session.counterparty
         }
     }
 

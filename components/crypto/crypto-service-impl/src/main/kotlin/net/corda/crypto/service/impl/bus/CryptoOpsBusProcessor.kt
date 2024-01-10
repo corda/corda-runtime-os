@@ -10,6 +10,7 @@ import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.KeyOrderBy
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toSignatureSpec
@@ -65,7 +66,10 @@ class CryptoOpsBusProcessor(
             }
     }
 
-    private val executor = CryptoRetryingExecutor(logger, config.maxAttempts.toLong(), config.waitBetweenMills)
+    private val executor = CryptoRetryingExecutor(
+        logger,
+        BackoffStrategy.createBackoff(config.maxAttempts, config.waitBetweenMills)
+    )
 
     override fun onNext(request: RpcOpsRequest, respFuture: CompletableFuture<RpcOpsResponse>) {
         try {

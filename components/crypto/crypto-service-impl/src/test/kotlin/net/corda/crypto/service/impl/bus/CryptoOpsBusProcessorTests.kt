@@ -1,7 +1,6 @@
 package net.corda.crypto.service.impl.bus
 
 import net.corda.configuration.read.ConfigChangedEvent
-import net.corda.crypto.config.impl.KeyDerivationParameters
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.config.impl.retrying
 import net.corda.crypto.config.impl.toCryptoConfig
@@ -110,7 +109,7 @@ class CryptoOpsBusProcessorTests {
             mapOf(
                 ConfigKeys.CRYPTO_CONFIG to
                         SmartConfigFactory.createWithoutSecurityServices().create(
-                            createDefaultCryptoConfig(listOf(KeyDerivationParameters("pass", "salt")))
+                            createDefaultCryptoConfig("pass", "salt")
                         )
             )
         )

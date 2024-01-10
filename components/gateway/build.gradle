@@ -33,8 +33,9 @@ dependencies {
     implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
     implementation project(':libs:schema-registry:schema-registry')
     implementation project(":libs:metrics")
-    implementation project(':libs:platform-info')
 
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:test-utilities")
     integrationTestRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     integrationTestImplementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
@@ -68,5 +69,4 @@ sourceSets {
 tasks.named('integrationTest') {
     final String hostsFilePath = new File(project.sourceSets["integrationTest"].output.resourcesDir.absolutePath, "hosts").absolutePath
     jvmArgs "-Djdk.net.hosts.file=$hostsFilePath"
-    jvmArgs "-Djdk.tls.client.enableCAExtension=true"
 }

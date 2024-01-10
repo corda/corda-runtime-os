@@ -17,9 +17,7 @@ import javax.persistence.NamedQuery
     NamedQuery(name = "Dog.summonLike", query = "SELECT d FROM Dog d WHERE d.name LIKE :name ORDER BY d.name"),
     NamedQuery(name = "Dog.all", query = "SELECT d FROM Dog d ORDER BY d.name"),
     NamedQuery(name = "Dog.release", query = "UPDATE Dog SET owner=null"),
-    NamedQuery(name = "Dog.count", query = "SELECT COUNT(1) FROM Dog"),
-    NamedQuery(name = "Dog.nullableParam", query = "SELECT d FROM Dog d WHERE :nullableParam is null"),
-    NamedQuery(name = "Dog.nullableParamOrCondition", query = "SELECT d FROM Dog d WHERE :nullableParam is null OR d.name = :nullableParam")
+    NamedQuery(name = "Dog.count", query = "SELECT COUNT(1) FROM Dog")
 )
 data class Dog(
     @get:Id

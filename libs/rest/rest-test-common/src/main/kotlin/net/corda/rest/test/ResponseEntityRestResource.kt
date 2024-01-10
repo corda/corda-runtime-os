@@ -39,4 +39,5 @@ interface ResponseEntityRestResource : RestResource {
 
     @HttpDELETE(path = "async-delete-returns-accepted")
     fun asyncDeleteReturnsAccepted(): ResponseEntity<DeleteStatus>
+
 }

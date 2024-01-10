@@ -4,12 +4,16 @@ import com.example.ledger.testing.datamodel.utxo.UtxoTransactionComponentEntity
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionComponentEntityId
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionEntity
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionMetadataEntity
+import com.example.ledger.testing.datamodel.utxo.UtxoVisibleTransactionOutputEntity
+import com.example.ledger.testing.datamodel.utxo.UtxoVisibleTransactionOutputEntityId
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionSignatureEntity
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionSignatureEntityId
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionSourceEntity
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionSourceEntityId
-import com.example.ledger.testing.datamodel.utxo.UtxoVisibleTransactionOutputEntity
-import com.example.ledger.testing.datamodel.utxo.UtxoVisibleTransactionOutputEntityId
+import java.time.Instant
+import java.util.UUID
+import javax.persistence.EntityManagerFactory
+import javax.persistence.Query
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.connection.manager.DbConnectionManager
@@ -30,10 +34,6 @@ import org.junit.jupiter.api.assertAll
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.time.Instant
-import java.util.UUID
-import javax.persistence.EntityManagerFactory
-import javax.persistence.Query
 
 @TestInstance(PER_CLASS)
 @ExtendWith(ServiceExtension::class)
@@ -149,12 +149,10 @@ class HsqldbVaultNamedQueryTest {
         }
     }
 
-    private fun executeQuery(sqlText: String, txId: UUID, parameters: (Query) -> Unit):
-            List<UtxoVisibleTransactionOutputEntity> {
+    private fun executeQuery(sqlText: String, txId: UUID, parameters: (Query) -> Unit): List<UtxoVisibleTransactionOutputEntity> {
         @Suppress("unchecked_cast")
         return entityManagerFactory.transaction { em ->
-            em.createNativeQuery(
-                "$BASE_QUERY $sqlText AND transaction_id = :txId", UtxoVisibleTransactionOutputEntity::class.java)
+            em.createNativeQuery("$BASE_QUERY $sqlText AND transaction_id = :txId", UtxoVisibleTransactionOutputEntity::class.java)
                 .setParameter("txId", txId.toString())
                 .also(parameters)
                 .resultList
@@ -170,12 +168,9 @@ class HsqldbVaultNamedQueryTest {
             StateData(30, 50, "{ \"a\": { \"b\": 999 }, \"e\": 200 }")
         ))
 
-        val sqlText = vaultNamedQueryParser.parseWhereJson(
-            "WHERE (visible_state.custom_representation)->(a)->>(b) = :value")
+        val sqlText = vaultNamedQueryParser.parseWhereJson("WHERE (visible_state.custom_representation)->(a)->>(b) = :value")
         assertThat(sqlText)
-            .isEqualTo(
-                "JsonFieldAsText( JsonFieldAsObject( CAST(visible_state.custom_representation AS " +
-                        "$JSON_SQL_TYPE), 'a'), 'b') = :value")
+            .isEqualTo("JsonFieldAsText( JsonFieldAsObject( CAST(visible_state.custom_representation AS $JSON_SQL_TYPE), 'a'), 'b') = :value")
 
         val numberResult = executeQuery(sqlText, txId) { query ->
             query.setParameter("value", 999)
@@ -205,13 +200,9 @@ class HsqldbVaultNamedQueryTest {
             StateData(200, 250, "{ \"a\": [], \"e\": 200 }")
         ))
 
-        val sqlText =
-            vaultNamedQueryParser.parseWhereJson(
-                "WHERE (visible_state.custom_representation)->(a)->>(:index::int) = :value")
+        val sqlText = vaultNamedQueryParser.parseWhereJson("WHERE (visible_state.custom_representation)->(a)->>(:index::int) = :value")
         assertThat(sqlText)
-            .isEqualTo(
-                "JsonFieldAsText( JsonFieldAsObject( CAST(visible_state.custom_representation AS " +
-                        "$JSON_SQL_TYPE), 'a'), ( CAST(:index AS int))) = :value")
+            .isEqualTo("JsonFieldAsText( JsonFieldAsObject( CAST(visible_state.custom_representation AS $JSON_SQL_TYPE), 'a'), ( CAST(:index AS int))) = :value")
 
         val numberResult = executeQuery(sqlText, txId) { query ->
             query.setParameter("index", 3)
@@ -243,13 +234,9 @@ class HsqldbVaultNamedQueryTest {
             StateData(300, 350, "[]")
         ))
 
-        val sqlText =
-            vaultNamedQueryParser.parseWhereJson(
-                "WHERE (visible_state.custom_representation)->(:index::int)->>(c) = :value")
+        val sqlText = vaultNamedQueryParser.parseWhereJson("WHERE (visible_state.custom_representation)->(:index::int)->>(c) = :value")
         assertThat(sqlText)
-            .isEqualTo(
-                "JsonFieldAsText( JsonFieldAsObject( CAST(visible_state.custom_representation AS " +
-                        "$JSON_SQL_TYPE), ( CAST(:index AS int))), 'c') = :value")
+            .isEqualTo("JsonFieldAsText( JsonFieldAsObject( CAST(visible_state.custom_representation AS $JSON_SQL_TYPE), ( CAST(:index AS int))), 'c') = :value")
 
         val numberResult = executeQuery(sqlText, txId) { query ->
             query.setParameter("index", 2)
@@ -302,13 +289,9 @@ class HsqldbVaultNamedQueryTest {
             StateData(30, 50, "{ \"a\": { \"b\": 999 } }")
         ))
 
-        val sqlText =
-            vaultNamedQueryParser.parseWhereJson(
-                "WHERE (visible_state.custom_representation)->(a)->>(b)::int = :value")
+        val sqlText = vaultNamedQueryParser.parseWhereJson("WHERE (visible_state.custom_representation)->(a)->>(b)::int = :value")
         assertThat(sqlText)
-            .isEqualTo(
-                "CAST( JsonFieldAsText( JsonFieldAsObject( CAST(visible_state.custom_representation AS " +
-                        "$JSON_SQL_TYPE), 'a'), 'b') AS int) = :value")
+            .isEqualTo("CAST( JsonFieldAsText( JsonFieldAsObject( CAST(visible_state.custom_representation AS $JSON_SQL_TYPE), 'a'), 'b') AS int) = :value")
 
         val visibleState = executeQuery(sqlText, txId) { query ->
             query.setParameter("value", 10)

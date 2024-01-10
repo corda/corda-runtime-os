@@ -1,6 +1,5 @@
 package net.corda.messaging.emulation.topic.model
 
-import net.corda.lifecycle.Resource
 import net.corda.messaging.emulation.properties.SubscriptionConfiguration
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
@@ -13,7 +12,7 @@ internal class ConsumerGroup(
     internal val subscriptionConfig: SubscriptionConfiguration,
     firstConsumer: Consumer,
     internal val lock: ReentrantReadWriteLock = ReentrantReadWriteLock(),
-): Resource {
+) {
     private val consumers = ConcurrentHashMap<Consumer, ConsumptionLoop>()
     private val commitments = ConcurrentHashMap<Partition, Long>()
 
@@ -175,14 +174,5 @@ internal class ConsumerGroup(
             },
             loop = loop!!
         )
-    }
-
-    override fun close() {
-        lock.write {
-            while (consumers.isNotEmpty()) {
-                consumers.values.firstOrNull()?.close()
-            }
-            commitments.clear()
-        }
     }
 }

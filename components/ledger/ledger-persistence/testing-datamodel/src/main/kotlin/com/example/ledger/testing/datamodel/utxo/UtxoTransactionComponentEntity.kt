@@ -1,6 +1,5 @@
 package com.example.ledger.testing.datamodel.utxo
 
-import net.corda.v5.base.annotations.CordaSerializable
 import java.io.Serializable
 import javax.persistence.Column
 import javax.persistence.Embeddable
@@ -10,6 +9,7 @@ import javax.persistence.IdClass
 import javax.persistence.JoinColumn
 import javax.persistence.ManyToOne
 import javax.persistence.Table
+import net.corda.v5.base.annotations.CordaSerializable
 
 @Suppress("LongParameterList")
 @CordaSerializable

@@ -2,8 +2,6 @@ package net.corda.flow.rest.impl.v1
 
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.flow.FlowKey
-import net.corda.data.flow.output.FlowStates
-import net.corda.data.flow.output.FlowStatus
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.data.virtualnode.VirtualNodeOperationalState
 import net.corda.flow.rest.FlowStatusCacheService
@@ -23,6 +21,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.publisher.waitOnPublisherFutures
 import net.corda.messaging.api.records.Record
 import net.corda.permissions.validation.PermissionValidationService
 import net.corda.rbac.schema.RbacKeys
@@ -56,8 +55,9 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.concurrent.TimeUnit
 
-@Suppress("LongParameterList", "TooManyFunctions")
+@Suppress("LongParameterList")
 @Component(service = [FlowRestResource::class, PluggableRestResource::class])
 class FlowRestResourceImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReadService::class)
@@ -78,6 +78,7 @@ class FlowRestResourceImpl @Activate constructor(
 
     private companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        const val PUBLICATION_TIMEOUT_SECONDS = 30L
     }
 
     override val isRunning: Boolean get() = publisher != null
@@ -202,44 +203,33 @@ class FlowRestResourceImpl @Activate constructor(
             val status = messageFactory.createStartFlowStatus(clientRequestId, vNode, flowClassName)
 
             val records = listOf(
-                addTraceContextToRecord(
-                    Record(
-                        FLOW_MAPPER_START,
-                        getKeyForStartEvent(status.key, holdingIdentityShortHash), startEvent
-                    )
-                ),
+                addTraceContextToRecord(Record(FLOW_MAPPER_START,
+                    getKeyForStartEvent(status.key, holdingIdentityShortHash), startEvent)),
                 Record(FLOW_STATUS_TOPIC, status.key, status),
             )
 
-            val batchFuture = try {
+            val recordFutures = try {
                 tryWithExceptionHandling(
                     log,
                     "Publishing start flow events",
                     untranslatedExceptions = setOf(CordaMessageAPIFatalException::class.java)
                 ) {
-                    publisher!!.batchPublish(records)
+                    listOf(publisher!!.batchPublish(records))
                 }
             } catch (ex: CordaMessageAPIFatalException) {
                 throw markFatalAndReturnFailureException(ex)
             }
-
-            // Do not block REST thread execution till future completes, instead add a hook to log an error if batch
-            // publication fails for whatever reason and return to the REST caller that flow start been accepted.
-            // Should they wish to check the actual execution progress, they can always check the status using
-            // client request id provided.
-            batchFuture.exceptionally {
-                log.warn(
-                    "Failed to publish start flow batch for flowClass: $flowClassName, " +
-                            "clientRequestId: $clientRequestId on vNode $holdingIdentityShortHash", it
-                )
-
-                if (it is CordaMessageAPIFatalException) {
-                    // Note: not throwing returned exception as this call will be performed asynchronously from 
-                    // publisher's thread pool, just calling this method to log the fatal error
-                    markFatalAndReturnFailureException(it)
+            waitOnPublisherFutures(recordFutures, PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS) { ex, failureIsFatal ->
+                if (failureIsFatal) {
+                    throw markFatalAndReturnFailureException(ex)
+                } else {
+                    val msg = ex.message ?: ""
+                    throw InternalServerException(
+                        FlowRestExceptionConstants.NON_FATAL_ERROR,
+                        mapOf("cause" to ex::class.java.simpleName, "reason" to msg)
+                    )
                 }
             }
-
             ResponseEntity.accepted(messageFactory.createFlowStatusResponse(status))
         }
     }
@@ -252,7 +242,7 @@ class FlowRestResourceImpl @Activate constructor(
         fatalErrorOccurred = true
         log.error(FlowRestExceptionConstants.FATAL_ERROR, exception)
         onFatalError()
-        return InternalServerException(FlowRestExceptionConstants.FATAL_ERROR)
+        throw InternalServerException(FlowRestExceptionConstants.FATAL_ERROR)
     }
 
     private fun getStartableFlows(holdingIdentityShortHash: String, vNode: VirtualNodeInfo): List<String> {
@@ -275,28 +265,8 @@ class FlowRestResourceImpl @Activate constructor(
     }
 
     override fun getMultipleFlowStatus(holdingIdentityShortHash: String): FlowStatusResponses {
-        return getMultipleFlowStatus(holdingIdentityShortHash, null)
-    }
-
-    override fun getMultipleFlowStatus(holdingIdentityShortHash: String, status: String?): FlowStatusResponses {
         val vNode = getVirtualNode(holdingIdentityShortHash)
         val flowStatuses = flowStatusCacheService.getStatusesPerIdentity(vNode.holdingIdentity)
-
-        val filteredStatuses = status?.let {
-            val flowState = try {
-                FlowStates.valueOf(it)
-            } catch (e: IllegalArgumentException) {
-                throw BadRequestException(
-                    "Status to filter by is not found in list of valid statuses: ${FlowStates.values()}"
-                )
-            }
-            flowStatuses.filter { statusFilter -> statusFilter.flowStatus == flowState }
-        } ?: flowStatuses
-
-        return createFlowStatusResponses(filteredStatuses)
-    }
-
-    private fun createFlowStatusResponses(flowStatuses: List<FlowStatus>): FlowStatusResponses {
         return FlowStatusResponses(flowStatusResponses = flowStatuses.map { messageFactory.createFlowStatusResponse(it) })
     }
 

@@ -72,7 +72,6 @@ class InMemoryCompactedSubscriptionIntegrationTest {
         }
     }
 
-    @Suppress("SpreadOperator")
     @Test
     fun `test compact subscription`() {
         publish(

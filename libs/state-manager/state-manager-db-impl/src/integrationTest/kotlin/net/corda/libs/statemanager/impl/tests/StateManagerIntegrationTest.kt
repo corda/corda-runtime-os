@@ -19,8 +19,6 @@ import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.model.v1.resultSetAsStateEntityCollection
 import net.corda.libs.statemanager.impl.repository.impl.PostgresQueryProvider
 import net.corda.libs.statemanager.impl.repository.impl.StateRepositoryImpl
-import net.corda.libs.statemanager.impl.tests.MultiThreadedTestHelper.runMultiThreadedOptimisticLockingTest
-import net.corda.libs.statemanager.impl.tests.MultiThreadedTestHelper.updateStateObjects
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
@@ -34,15 +32,16 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.kotlin.mock
+import java.sql.SQLException
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
+import kotlin.concurrent.thread
 
 // TODO-[CORE-16663]: make database provider pluggable
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StateManagerIntegrationTest {
-    private val maxConcurrentThreadJdbcConnections = 10
-    private val dataSource = DbUtils.createDataSource(maximumPoolSize = maxConcurrentThreadJdbcConnections)
+    private val dataSource = DbUtils.createPostgresDataSource()
 
     init {
         val dbChange = ClassloaderChangeLog(
@@ -92,12 +91,12 @@ class StateManagerIntegrationTest {
             val stateEntity =
                 StateEntity(key, stateContent(i, key).toByteArray(), metadataContent(i, key), version(i, key))
 
-            connection.prepareStatement(queryProvider.createStates(1)).use {
+            connection.prepareStatement(queryProvider.createState).use {
                 it.setString(1, stateEntity.key)
                 it.setBytes(2, stateEntity.value)
                 it.setInt(3, stateEntity.version)
                 it.setString(4, stateEntity.metadata)
-                it.execute()
+                it.executeUpdate()
             }
         }
     }
@@ -205,7 +204,7 @@ class StateManagerIntegrationTest {
         val failures = stateManager.create(states)
         assertThat(failures).hasSize(failedSates)
         for (i in 1..failedSates) {
-            assertThat(failures).contains(buildStateKey(i))
+            assertThat(failures[buildStateKey(i)]).isInstanceOf(SQLException::class.java)
         }
         softlyAssertPersistedStateEntities(
             (failedSates + 1..totalStates),
@@ -272,7 +271,8 @@ class StateManagerIntegrationTest {
     }
 
     @Test
-    fun `optimistic locking prevents sequentially updating states with mismatched versions and does not halt entire batch`() {
+    @DisplayName(value = "optimistic locking checks for concurrent updates do not halt the entire batch")
+    fun optimisticLockingChecksForConcurrentUpdatesDoNotHaltTheEntireBatch() {
         val totalCount = 20
         persistStateEntities(
             (1..totalCount),
@@ -285,125 +285,46 @@ class StateManagerIntegrationTest {
         val conflictingKeys = (1..totalCount).filter { it % 2 == 0 }.map { buildStateKey(it) }
         val persistedStates = stateManager.get(allKeys)
 
-        val statesToUpdateA = mutableListOf<State>()
-        conflictingKeys.forEach { key ->
-            val state = persistedStates[key]!!
-            statesToUpdateA.add(
-                State(state.key, "a_$key".toByteArray(), state.version, metadata("a" to key))
+        val latch = CountDownLatch(1)
+        val updater1 = thread {
+            val statesToUpdateFirstThread = mutableListOf<State>()
+            conflictingKeys.forEach {
+                val state = persistedStates[it]!!
+                statesToUpdateFirstThread.add(
+                    State(state.key, "u1_$it".toByteArray(), state.version, metadata("u1" to it))
+                )
+            }
+
+            assertThat(stateManager.update(statesToUpdateFirstThread)).isEmpty()
+            latch.countDown()
+        }
+
+        val updater2 = thread {
+            val statesToUpdateSecondThread = mutableListOf<State>()
+            allKeys.forEach {
+                val state = persistedStates[it]!!
+                statesToUpdateSecondThread.add(
+                    State(state.key, "u2_$it".toByteArray(), state.version, metadata("u2" to it))
+                )
+            }
+
+            latch.await()
+            val failedUpdates = stateManager.update(statesToUpdateSecondThread)
+            assertThat(failedUpdates).containsOnlyKeys(conflictingKeys)
+            assertThat(failedUpdates).containsValues(
+                *statesToUpdateSecondThread.filter { conflictingKeys.contains(it.key) }.toTypedArray()
             )
         }
 
-        assertThat(stateManager.update(statesToUpdateA)).isEmpty()
-
-        val statesToUpdateB = mutableMapOf<String, State>()
-        allKeys.forEach {
-            val state = persistedStates[it]!!
-            statesToUpdateB[state.key] = State(state.key, "b_$it".toByteArray(), state.version, metadata("b" to it))
-        }
-
-        val failedUpdates = stateManager.update(statesToUpdateB.values)
-        assertThat(failedUpdates).containsOnlyKeys(conflictingKeys)
-        assertSoftly {
-            failedUpdates.values.map { state ->
-                it.assertThat(state).isNotNull
-                // update A has already bumped the version by 1, causing B's state update to fail
-                it.assertThat(state!!.version).isEqualTo(statesToUpdateB[state.key]!!.version + 1)
-                it.assertThat(state.value).isEqualTo("a_${state.key}".toByteArray())
-                it.assertThat(state.metadata).isEqualTo(metadata("a" to state.key))
-            }
-        }
+        updater1.join()
+        updater2.join()
 
         softlyAssertPersistedStateEntities(
             (1..totalCount),
             { _, _ -> 1 },
-            { _, key -> if (conflictingKeys.contains(key)) "a_$key" else "b_$key" },
-            { _, key -> if (conflictingKeys.contains(key)) metadata("a" to key) else metadata("b" to key) },
+            { _, key -> if (conflictingKeys.contains(key)) "u1_$key" else "u2_$key" },
+            { _, key -> if (conflictingKeys.contains(key)) metadata("u1" to key) else metadata("u2" to key) },
         )
-    }
-
-    @Suppress("SpreadOperator")
-    @Test
-    fun `optimistic locking ensures no double updates across threads`() {
-        val totalStates = 100
-        val numThreads = maxConcurrentThreadJdbcConnections
-        val sharedStatesPerThread = 5
-
-        persistStateEntities(
-            (1..totalStates),
-            { _, _ -> State.VERSION_INITIAL_VALUE },
-            { i, _ -> "existingState_$i" },
-            { i, _ -> """{"k1": "v$i", "k2": $i}""" }
-        )
-
-        val allKeys = (1..totalStates).map { buildStateKey(it) }
-        val allStatesInTest = stateManager.get(allKeys).values.toList()
-
-        val latch = CountDownLatch(numThreads)
-        val threadResults = runMultiThreadedOptimisticLockingTest(
-            allStatesInTest,
-            numThreads,
-            sharedStatesPerThread
-        ) { threadIndex, stateGroup ->
-            // try to make the call to update as contentious among threads as possible
-            val updatedStates = updateStateObjects(stateGroup.getStatesForTest(), testUniqueId, threadIndex)
-            latch.countDown()
-            latch.await()
-            MultiThreadedTestHelper.FailedKeysSummary(failedUpdates = stateManager.update(updatedStates).map { it.key })
-        }
-
-        val actualFailedKeys = threadResults.map { it.failedKeysSummary.failedUpdates }.flatten()
-        val expectedFailedKeys = threadResults.map { it.assignedStateGrouping.overlappingStates }.flatten().map { it.key }
-        assertThat(actualFailedKeys)
-            .containsExactlyInAnyOrder(*expectedFailedKeys.toTypedArray())
-            .withFailMessage("Expected one failure for every state shared between another thread")
-    }
-
-    @Suppress("SpreadOperator")
-    @Test
-    fun `optimistic locking ensures no exceptions when double deletes across threads`() {
-        val totalStates = 100
-        val numThreads = maxConcurrentThreadJdbcConnections
-        val sharedStatesPerThread = 5
-
-        persistStateEntities(
-            (1..totalStates),
-            { _, _ -> State.VERSION_INITIAL_VALUE },
-            { i, _ -> "existingState_$i" },
-            { i, _ -> """{"id": "$i"}""" }
-        )
-
-        val allKeys = (1..totalStates).map { buildStateKey(it) }
-        val allStatesInTest = stateManager.get(allKeys).values.toList()
-
-        val latch = CountDownLatch(numThreads)
-        val threadResults = runMultiThreadedOptimisticLockingTest(
-            allStatesInTest,
-            numThreads,
-            sharedStatesPerThread
-        ) { threadIndex, stateGroup ->
-            // Thread will attempt to update its own assigned states, and delete the states overlapping into the next group.
-            // This means every thread will have race condition with the next thread.
-            val statesToUpdate = updateStateObjects(stateGroup.assignedStates, testUniqueId, threadIndex)
-            val statesToDelete = stateGroup.overlappingStates
-
-            latch.countDown()
-            latch.await()
-            val failedUpdates = stateManager.update(statesToUpdate).map { it.key }
-            val failedDeletes = stateManager.delete(statesToDelete).map { it.key }
-            MultiThreadedTestHelper.FailedKeysSummary(failedUpdates, failedDeletes)
-        }
-
-        val allFailedUpdates = threadResults.map { it.failedKeysSummary.failedUpdates }.flatten()
-        val allFailedDeletes = threadResults.map { it.failedKeysSummary.failedDeletes }.flatten()
-        val expectedFailedKeys = threadResults.map { it.assignedStateGrouping.overlappingStates }.flatten().map { it.key }
-
-        // if a thread tries to update a state that was already deleted, it gets that key back as a "failed key", associated with null.
-        // if a thread tries to delete a state that was already updated, it gets that key back as a "failed key".
-        // we expect to see a failed key for every overlapping state, because in the race between two threads only
-        // one can update or delete it.
-        assertThat(allFailedUpdates + allFailedDeletes)
-            .containsExactlyInAnyOrder(*expectedFailedKeys.toTypedArray())
-            .withFailMessage("Expected one failure for every state shared between another thread")
     }
 
     @ValueSource(ints = [1, 5, 10, 20, 50])
@@ -427,18 +348,8 @@ class StateManagerIntegrationTest {
     }
 
     @Test
-    fun `delete returns empty collection of keys if the states were never present`() {
-        val statesToDelete = (1..20).map {
-            State(buildStateKey(it), "".toByteArray(), it)
-        }
-        // Double check that the states we're requesting do not exist.
-        assertThat(stateManager.get(statesToDelete.map { it.key })).isEmpty()
-        val failed = stateManager.delete(statesToDelete)
-        assertThat(failed).isEmpty()
-    }
-
-    @Test
-    fun `optimistic locking prevents sequentially deleting states with mismatched versions and does not halt entire batch`() {
+    @DisplayName(value = "optimistic locking checks for concurrent deletes do not halt the entire batch")
+    fun optimisticLockingCheckForConcurrentDeletesDoesNotHaltTheEntireBatch() {
         val totalCount = 20
         persistStateEntities(
             (1..totalCount),
@@ -451,30 +362,37 @@ class StateManagerIntegrationTest {
         val conflictingKeys = (1..totalCount).filter { it % 2 == 0 }.map { buildStateKey(it) }
         val persistedStates = stateManager.get(allKeys)
 
-        val statesToUpdate = mutableListOf<State>()
-        conflictingKeys.forEach {
-            val state = persistedStates[it]!!
-            statesToUpdate.add(
-                State(state.key, "u1_$it".toByteArray(), state.version, metadata("u1" to it))
+        val latch = CountDownLatch(1)
+        val updater = thread {
+            val statesToUpdate = mutableListOf<State>()
+            conflictingKeys.forEach {
+                val state = persistedStates[it]!!
+                statesToUpdate.add(
+                    State(state.key, "u1_$it".toByteArray(), state.version, metadata("u1" to it))
+                )
+            }
+
+            assertThat(stateManager.update(statesToUpdate)).isEmpty()
+            latch.countDown()
+        }
+
+        val deleter = thread {
+            val statesToDelete = mutableListOf<State>()
+            allKeys.forEach {
+                val state = persistedStates[it]!!
+                statesToDelete.add(State(state.key, "delete".toByteArray(), state.version))
+            }
+
+            latch.await()
+            val failedDeletes = stateManager.delete(statesToDelete)
+            assertThat(failedDeletes).containsOnlyKeys(conflictingKeys)
+            assertThat(failedDeletes).containsValues(
+                *statesToDelete.filter { conflictingKeys.contains(it.key) }.toTypedArray()
             )
         }
 
-        assertThat(stateManager.update(statesToUpdate)).isEmpty()
-
-        val statesToDelete = mutableMapOf<String, State>()
-        allKeys.forEach {
-            val state = persistedStates[it]!!
-            statesToDelete[state.key] = State(state.key, "delete".toByteArray(), state.version)
-        }
-
-        val failedDeletes = stateManager.delete(statesToDelete.values)
-        assertThat(failedDeletes).containsOnlyKeys(conflictingKeys)
-        assertSoftly {
-            failedDeletes.values.map { state ->
-                // assert the real version has bumped by one
-                it.assertThat(state.version).isEqualTo(statesToDelete[state.key]!!.version + 1)
-            }
-        }
+        updater.join()
+        deleter.join()
 
         softlyAssertPersistedStateEntities(
             (2..totalCount step 2),
@@ -598,45 +516,29 @@ class StateManagerIntegrationTest {
             { i, _ -> """{ "number": $i, "boolean": ${i % 2 == 0}, "string": "random_$i" }""" }
         )
 
-        assertThat(
-            stateManager.findByMetadataMatchingAll(
-                listOf(
-                    MetadataFilter("number", Operation.GreaterThan, 5),
-                    MetadataFilter("number", Operation.LesserThan, 7),
-                    MetadataFilter("boolean", Operation.Equals, true),
-                    MetadataFilter("string", Operation.Equals, "random_6"),
-                )
-            )
-        ).hasSize(1)
+        assertThat(stateManager.findByMetadataMatchingAll(listOf(
+            MetadataFilter("number", Operation.GreaterThan, 5),
+            MetadataFilter("number", Operation.LesserThan, 7),
+            MetadataFilter("boolean", Operation.Equals, true),
+            MetadataFilter("string", Operation.Equals, "random_6"),
+        ))).hasSize(1)
 
-        assertThat(
-            stateManager.findByMetadataMatchingAll(
-                listOf(
-                    MetadataFilter("number", Operation.GreaterThan, 5),
-                    MetadataFilter("number", Operation.LesserThan, 7),
-                    MetadataFilter("boolean", Operation.Equals, true),
-                    MetadataFilter("string", Operation.Equals, "non_existing_value"),
-                )
-            )
-        ).isEmpty()
+        assertThat(stateManager.findByMetadataMatchingAll(listOf(
+            MetadataFilter("number", Operation.GreaterThan, 5),
+            MetadataFilter("number", Operation.LesserThan, 7),
+            MetadataFilter("boolean", Operation.Equals, true),
+            MetadataFilter("string", Operation.Equals, "non_existing_value"),
+        ))).isEmpty()
 
-        assertThat(
-            stateManager.findByMetadataMatchingAll(
-                listOf(
-                    MetadataFilter("number", Operation.GreaterThan, 0),
-                    MetadataFilter("boolean", Operation.Equals, true),
-                )
-            )
-        ).hasSize(count / 2)
+        assertThat(stateManager.findByMetadataMatchingAll(listOf(
+            MetadataFilter("number", Operation.GreaterThan, 0),
+            MetadataFilter("boolean", Operation.Equals, true),
+        ))).hasSize(count / 2)
 
-        assertThat(
-            stateManager.findByMetadataMatchingAll(
-                listOf(
-                    MetadataFilter("number", Operation.NotEquals, 0),
-                    MetadataFilter("string", Operation.Equals, "non_existing_key"),
-                )
-            )
-        ).isEmpty()
+        assertThat(stateManager.findByMetadataMatchingAll(listOf(
+            MetadataFilter("number", Operation.NotEquals, 0),
+            MetadataFilter("string", Operation.Equals, "non_existing_key"),
+        ))).isEmpty()
     }
 
     @Test
@@ -650,51 +552,31 @@ class StateManagerIntegrationTest {
             { i, _ -> """{ "number": $i, "boolean": ${i % 2 == 0}, "string": "random_$i" }""" }
         )
 
-        assertThat(
-            stateManager.findByMetadataMatchingAny(
-                listOf(
-                    MetadataFilter("number", Operation.Equals, 5),
-                    MetadataFilter("number", Operation.Equals, 7),
-                    MetadataFilter("string", Operation.Equals, "random_6"),
-                )
-            )
-        ).hasSize(3)
+        assertThat(stateManager.findByMetadataMatchingAny(listOf(
+            MetadataFilter("number", Operation.Equals, 5),
+            MetadataFilter("number", Operation.Equals, 7),
+            MetadataFilter("string", Operation.Equals, "random_6"),
+        ))).hasSize(3)
 
-        assertThat(
-            stateManager.findByMetadataMatchingAny(
-                listOf(
-                    MetadataFilter("number", Operation.GreaterThan, 5),
-                    MetadataFilter("number", Operation.LesserThan, 7),
-                )
-            )
-        ).hasSize(count)
+        assertThat(stateManager.findByMetadataMatchingAny(listOf(
+            MetadataFilter("number", Operation.GreaterThan, 5),
+            MetadataFilter("number", Operation.LesserThan, 7),
+        ))).hasSize(count)
 
-        assertThat(
-            stateManager.findByMetadataMatchingAny(
-                listOf(
-                    MetadataFilter("boolean", Operation.Equals, false),
-                    MetadataFilter("boolean", Operation.Equals, true),
-                )
-            )
-        ).hasSize(count)
+        assertThat(stateManager.findByMetadataMatchingAny(listOf(
+            MetadataFilter("boolean", Operation.Equals, false),
+            MetadataFilter("boolean", Operation.Equals, true),
+        ))).hasSize(count)
 
-        assertThat(
-            stateManager.findByMetadataMatchingAny(
-                listOf(
-                    MetadataFilter("number", Operation.GreaterThan, 20),
-                    MetadataFilter("boolean", Operation.Equals, true),
-                )
-            )
-        ).hasSize(count / 2)
+        assertThat(stateManager.findByMetadataMatchingAny(listOf(
+            MetadataFilter("number", Operation.GreaterThan, 20),
+            MetadataFilter("boolean", Operation.Equals, true),
+        ))).hasSize(count / 2)
 
-        assertThat(
-            stateManager.findByMetadataMatchingAny(
-                listOf(
-                    MetadataFilter("number", Operation.Equals, 0),
-                    MetadataFilter("string", Operation.Equals, "non_existing_key"),
-                )
-            )
-        ).isEmpty()
+        assertThat(stateManager.findByMetadataMatchingAny(listOf(
+            MetadataFilter("number", Operation.Equals, 0),
+            MetadataFilter("string", Operation.Equals, "non_existing_key"),
+        ))).isEmpty()
     }
 
     @Test
@@ -742,141 +624,6 @@ class StateManagerIntegrationTest {
             stateManager.findUpdatedBetweenWithMetadataFilter(
                 IntervalFilter(finishTime, finishTime.plusSeconds(30)),
                 MetadataFilter("number", Operation.LesserThan, count)
-            )
-        ).isEmpty()
-    }
-
-    @Test
-    @DisplayName(value = "can filter states using multiple conjunctive comparisons on metadata values and last updated time")
-    fun canFilterStatesUsingMultipleConjunctiveComparisonsOnMetadataValuesAndLastUpdatedTime() {
-        val count = 20
-        val half = count / 2
-        val keyIndexRange = 1..count
-        persistStateEntities(
-            (keyIndexRange),
-            { _, _ -> State.VERSION_INITIAL_VALUE },
-            { i, _ -> "state_$i" },
-            { i, _ -> """{ "number": $i, "boolean": ${i % 2 == 0}, "string": "random_$i" }""" }
-        )
-        val (halfTime, finishTime) = getIntervalBetweenEntities(
-            buildStateKey(keyIndexRange.elementAt(half)),
-            buildStateKey(keyIndexRange.last)
-        )
-
-        assertThat(
-            stateManager.findUpdatedBetweenWithMetadataMatchingAll(
-                IntervalFilter(Instant.EPOCH, halfTime),
-                listOf(
-                    MetadataFilter("number", Operation.GreaterThan, 5),
-                    MetadataFilter("number", Operation.LesserThan, 7),
-                    MetadataFilter("boolean", Operation.Equals, true),
-                    MetadataFilter("string", Operation.Equals, "random_6"),
-                )
-            )
-        ).hasSize(1)
-
-        assertThat(
-            stateManager.findUpdatedBetweenWithMetadataMatchingAll(
-                IntervalFilter(finishTime, finishTime.plusSeconds(60)),
-                listOf(
-                    MetadataFilter("number", Operation.GreaterThan, 5),
-                    MetadataFilter("number", Operation.LesserThan, 7),
-                    MetadataFilter("boolean", Operation.Equals, true),
-                    MetadataFilter("string", Operation.Equals, "random_6"),
-                )
-            )
-        ).isEmpty()
-
-        assertThat(
-            stateManager.findUpdatedBetweenWithMetadataMatchingAll(
-                IntervalFilter(halfTime, finishTime),
-                listOf(
-                    MetadataFilter("number", Operation.GreaterThan, 10),
-                    MetadataFilter("boolean", Operation.Equals, true),
-                )
-            )
-        ).hasSize(half / 2)
-
-        assertThat(
-            stateManager.findUpdatedBetweenWithMetadataMatchingAll(
-                IntervalFilter(Instant.EPOCH, finishTime.plusSeconds(60)),
-                listOf(
-                    MetadataFilter("number", Operation.GreaterThan, 1),
-                    MetadataFilter("boolean", Operation.Equals, true),
-                    MetadataFilter("string", Operation.Equals, "non_existing_value"),
-                )
-            )
-        ).isEmpty()
-
-        assertThat(
-            stateManager.findUpdatedBetweenWithMetadataMatchingAll(
-                IntervalFilter(halfTime, finishTime),
-                listOf(
-                    MetadataFilter("number", Operation.GreaterThan, 10),
-                    MetadataFilter("number", Operation.LesserThan, 50),
-                    MetadataFilter("string", Operation.NotEquals, "non_existing_value"),
-                )
-            )
-        ).hasSize(half)
-    }
-
-    @Test
-    @DisplayName(value = "can filter states using multiple disjunctive comparisons on metadata values and last updated time")
-    fun canFilterStatesUsingMultipleDisjunctiveComparisonsOnMetadataValuesAndLastUpdatedTime() {
-        val count = 20
-        val half = count / 2
-        val keyIndexRange = 1..count
-        persistStateEntities(
-            (keyIndexRange),
-            { _, _ -> State.VERSION_INITIAL_VALUE },
-            { i, _ -> "state_$i" },
-            { i, _ -> """{ "number": $i, "boolean": ${i % 2 == 0}, "string": "random_$i" }""" }
-        )
-        val (halfTime, finishTime) = getIntervalBetweenEntities(
-            buildStateKey(keyIndexRange.elementAt(half)),
-            buildStateKey(keyIndexRange.last)
-        )
-
-        assertThat(
-            stateManager.findUpdatedBetweenWithMetadataMatchingAny(
-                IntervalFilter(Instant.EPOCH, halfTime),
-                listOf(
-                    MetadataFilter("number", Operation.Equals, 5),
-                    MetadataFilter("number", Operation.Equals, 7),
-                    MetadataFilter("string", Operation.Equals, "random_6"),
-                )
-            )
-        ).hasSize(3)
-
-        assertThat(
-            stateManager.findUpdatedBetweenWithMetadataMatchingAny(
-                IntervalFilter(finishTime, finishTime.plusSeconds(60)),
-                listOf(
-                    MetadataFilter("number", Operation.GreaterThan, 5),
-                    MetadataFilter("number", Operation.LesserThan, 7),
-                    MetadataFilter("boolean", Operation.Equals, true),
-                    MetadataFilter("string", Operation.Equals, "random_6"),
-                )
-            )
-        ).hasSize(1)
-
-        assertThat(
-            stateManager.findUpdatedBetweenWithMetadataMatchingAny(
-                IntervalFilter(halfTime, finishTime),
-                listOf(
-                    MetadataFilter("number", Operation.GreaterThan, 1),
-                    MetadataFilter("boolean", Operation.Equals, true),
-                )
-            )
-        ).hasSize(half)
-
-        assertThat(
-            stateManager.findUpdatedBetweenWithMetadataMatchingAny(
-                IntervalFilter(Instant.EPOCH, finishTime.plusSeconds(60)),
-                listOf(
-                    MetadataFilter("number", Operation.Equals, 25),
-                    MetadataFilter("string", Operation.Equals, "non_existing_value"),
-                )
             )
         ).isEmpty()
     }

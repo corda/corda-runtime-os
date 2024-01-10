@@ -26,7 +26,7 @@ internal class VirtualNodeWriteEventHandler(
 ) : LifecycleEventHandler {
 
     private companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private var registrationHandle: AutoCloseable? = null
@@ -64,8 +64,7 @@ internal class VirtualNodeWriteEventHandler(
         } catch (e: Exception) {
             coordinator.updateStatus(ERROR)
             throw VirtualNodeWriteServiceException(
-                "Could not start the virtual node writer for handling virtual node creation requests.",
-                e
+                "Could not start the virtual node writer for handling virtual node creation requests.", e
             )
         }
     }

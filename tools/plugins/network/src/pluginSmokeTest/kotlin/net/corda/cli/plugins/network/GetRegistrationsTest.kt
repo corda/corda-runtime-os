@@ -24,8 +24,7 @@ class GetRegistrationsTest {
         private val mgmName = MemberX500Name.parse("O=MGM-${UUID.randomUUID()}, L=London, C=GB").toString()
         private fun memberName() = MemberX500Name.parse("O=Member-${UUID.randomUUID()}, L=London, C=GB")
         private val groupPolicyFile = File(
-            File(File(File(System.getProperty("user.home")), ".corda"), "gp"),
-            "groupPolicy.json",
+            File(File(File(System.getProperty("user.home")), ".corda"), "gp"), "groupPolicy.json"
         )
         private val cpbLocation = this::class.java.classLoader.getResource("test-cordapp.cpb")!!.path
 
@@ -33,11 +32,7 @@ class GetRegistrationsTest {
         @JvmStatic
         fun setup() {
             CommandLine(OnboardMgm()).execute(
-                mgmName,
-                targetUrl,
-                user,
-                password,
-                INSECURE,
+                mgmName, targetUrl, user, password, INSECURE
             )
         }
     }
@@ -51,25 +46,14 @@ class GetRegistrationsTest {
     fun `get registrations with holding identity returns correct result`() {
         val member = memberName().toString()
         CommandLine(OnboardMember()).execute(
-            member,
-            "--cpb-file=$cpbLocation",
-            targetUrl,
-            user,
-            password,
-            INSECURE,
+            member, "--cpb-file=$cpbLocation", targetUrl, user, password, INSECURE
         )
         val holdingIdentity = HoldingIdentityUtils.getHoldingIdentity(
-            null,
-            member,
-            null,
+            null, member, null
         )
 
         CommandLine(GetRegistrations(outputStub)).execute(
-            "-h=$holdingIdentity",
-            targetUrl,
-            user,
-            password,
-            INSECURE,
+            "-h=$holdingIdentity", targetUrl, user, password, INSECURE
         )
 
         assertThat(outputStub.getRegistrationIds().size).isEqualTo(1)
@@ -80,21 +64,11 @@ class GetRegistrationsTest {
         val groupId = ObjectMapper().readTree(groupPolicyFile.inputStream()).get("groupId").asText()
         val member = memberName().toString()
         CommandLine(OnboardMember()).execute(
-            member,
-            "--cpb-file=$cpbLocation",
-            targetUrl,
-            user,
-            password,
-            INSECURE,
+            member, "--cpb-file=$cpbLocation", targetUrl, user, password, INSECURE
         )
 
         CommandLine(GetRegistrations(outputStub)).execute(
-            "-n=$member",
-            "-g=$groupId",
-            targetUrl,
-            user,
-            password,
-            INSECURE,
+            "-n=$member", "-g=$groupId", targetUrl, user, password, INSECURE
         )
 
         assertThat(outputStub.getRegistrationIds().size).isEqualTo(1)
@@ -104,20 +78,11 @@ class GetRegistrationsTest {
     fun `get registrations with only name provided uses group ID of last created group`() {
         val member = memberName().toString()
         CommandLine(OnboardMember()).execute(
-            member,
-            "--cpb-file=$cpbLocation",
-            targetUrl,
-            user,
-            password,
-            INSECURE,
+            member, "--cpb-file=$cpbLocation", targetUrl, user, password, INSECURE
         )
 
         CommandLine(GetRegistrations(outputStub)).execute(
-            "-n=$member",
-            targetUrl,
-            user,
-            password,
-            INSECURE,
+            "-n=$member", targetUrl, user, password, INSECURE
         )
 
         assertThat(outputStub.getRegistrationIds().size).isEqualTo(1)
@@ -127,31 +92,17 @@ class GetRegistrationsTest {
     fun `get registrations with request ID provided returns correct registration request`() {
         val member = memberName().toString()
         CommandLine(OnboardMember()).execute(
-            member,
-            "--cpb-file=$cpbLocation",
-            targetUrl,
-            user,
-            password,
-            INSECURE,
+            member, "--cpb-file=$cpbLocation", targetUrl, user, password, INSECURE
         )
 
         CommandLine(GetRegistrations(outputStub)).execute(
-            "-n=$member",
-            targetUrl,
-            user,
-            password,
-            INSECURE,
+            "-n=$member", targetUrl, user, password, INSECURE
         )
 
         val requests = outputStub.getRegistrationIds()
         assertThat(requests.size).isEqualTo(1)
         CommandLine(GetRegistrations(outputStub)).execute(
-            "-n=$member",
-            "--request-id=${requests.first()}",
-            targetUrl,
-            user,
-            password,
-            INSECURE,
+            "-n=$member", "--request-id=${requests.first()}", targetUrl, user, password, INSECURE
         )
         assertThat(outputStub.getRegistrationIds()).containsOnly(requests.first())
     }

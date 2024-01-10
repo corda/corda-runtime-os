@@ -4,7 +4,6 @@ import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionImpl
 import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow
-import net.corda.sandbox.type.UsedByVerification
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.application.serialization.SerializationService
@@ -14,14 +13,14 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Component(
-    service = [ InternalCustomSerializer::class, UsedByFlow::class, UsedByVerification::class ],
+    service = [ InternalCustomSerializer::class, UsedByFlow::class ],
     property = [ CORDA_UNINJECTABLE_SERVICE ],
     scope = PROTOTYPE
 )
 class UtxoFilteredTransactionSerializer @Activate constructor(
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService
-) : BaseProxySerializer<UtxoFilteredTransactionImpl, UtxoFilteredTransactionProxy>(), UsedByFlow, UsedByVerification {
+) : BaseProxySerializer<UtxoFilteredTransactionImpl, UtxoFilteredTransactionProxy>(), UsedByFlow {
 
     override fun toProxy(obj: UtxoFilteredTransactionImpl): UtxoFilteredTransactionProxy {
         return UtxoFilteredTransactionProxy(obj.filteredTransaction)
@@ -40,6 +39,7 @@ class UtxoFilteredTransactionSerializer @Activate constructor(
     override val withInheritance
         get() = false
 }
+
 
 data class UtxoFilteredTransactionProxy(
     val filteredTransaction: FilteredTransaction

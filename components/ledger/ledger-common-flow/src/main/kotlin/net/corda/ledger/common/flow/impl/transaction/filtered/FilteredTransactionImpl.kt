@@ -79,6 +79,7 @@ class FilteredTransactionImpl(
         val componentGroupSizeProofProvider = createComponentGroupSizeProofProvider(componentGroupDigestAlgorithmName)
 
         for ((componentGroupIndex, filteredComponentGroup) in filteredComponentGroups) {
+
             val componentGroupFromTopLevelProofLeafData =
                 topLevelMerkleProof.leaves.single { it.index == componentGroupIndex }.leafData
 
@@ -91,7 +92,7 @@ class FilteredTransactionImpl(
             }
             validate(filteredComponentGroup.merkleProof.verify(componentLeafHash, providerToVerifyWith)) {
                 "Component group leaf [index = $componentGroupIndex] Merkle proof cannot be verified against the top level Merkle " +
-                    "tree's leaf with the same index"
+                        "tree's leaf with the same index"
             }
         }
     }

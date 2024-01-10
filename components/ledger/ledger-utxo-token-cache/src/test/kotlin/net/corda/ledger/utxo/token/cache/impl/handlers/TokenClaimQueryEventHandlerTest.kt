@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.token.cache.impl.handlers
 
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.ledger.utxo.token.selection.data.TokenClaim
 import net.corda.ledger.utxo.token.cache.entities.AvailTokenQueryResult
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.ClaimQuery
@@ -11,7 +10,6 @@ import net.corda.ledger.utxo.token.cache.factories.RecordFactory
 import net.corda.ledger.utxo.token.cache.handlers.TokenClaimQueryEventHandler
 import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
 import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
-import net.corda.ledger.utxo.token.cache.services.SimpleTokenFilterStrategy
 import net.corda.ledger.utxo.token.cache.services.TokenFilterStrategy
 import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
@@ -19,12 +17,14 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.math.BigDecimal
+import net.corda.data.ledger.utxo.token.selection.data.TokenClaim
+import net.corda.ledger.utxo.token.cache.services.SimpleTokenFilterStrategy
+import org.mockito.kotlin.eq
 
 class TokenClaimQueryEventHandlerTest {
 
@@ -71,7 +71,7 @@ class TokenClaimQueryEventHandlerTest {
         val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, mock())
         val claimQuery = createClaimQuery(100)
         whenever(recordFactory.getFailedClaimResponse(any(), any(), any())).thenReturn(claimQueryResult)
-        whenever(availableTokenService.findAvailTokens(any(), eq(null), eq(null), any()))
+        whenever(availableTokenService.findAvailTokens(any(), eq(null),  eq(null), any()))
             .thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
 
         val result = target.handle(tokenCache, poolCacheState, claimQuery)
@@ -85,7 +85,7 @@ class TokenClaimQueryEventHandlerTest {
         val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, mock())
         val claimQuery = createClaimQuery(100)
         whenever(recordFactory.getFailedClaimResponse(any(), any(), any())).thenReturn(claimQueryResult)
-        whenever(availableTokenService.findAvailTokens(any(), eq(null), eq(null), any()))
+        whenever(availableTokenService.findAvailTokens(any(), eq(null),  eq(null), any()))
             .thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
 
         val result = target.handle(tokenCache, poolCacheState, claimQuery)
@@ -114,7 +114,7 @@ class TokenClaimQueryEventHandlerTest {
         val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, mock())
         val claimQuery = createClaimQuery(100)
         whenever(recordFactory.getFailedClaimResponse(any(), any(), any())).thenReturn(claimQueryResult)
-        whenever(availableTokenService.findAvailTokens(any(), eq(null), eq(null), any()))
+        whenever(availableTokenService.findAvailTokens(any(), eq(null),  eq(null), any()))
             .thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
         cachedTokens += token99
 
@@ -161,7 +161,7 @@ class TokenClaimQueryEventHandlerTest {
         val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, mock())
         val claimQuery = createClaimQuery(100)
         whenever(recordFactory.getFailedClaimResponse(any(), any(), any())).thenReturn(claimQueryResult)
-        whenever(availableTokenService.findAvailTokens(any(), eq(null), eq(null), any()))
+        whenever(availableTokenService.findAvailTokens(any(), eq(null),  eq(null), any()))
             .thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
         whenever(poolCacheState.isTokenClaimed(token100Ref)).thenReturn(true)
         whenever(poolCacheState.isTokenClaimed(token101Ref)).thenReturn(true)
@@ -191,8 +191,7 @@ class TokenClaimQueryEventHandlerTest {
 
         assertThat(result).isSameAs(claimQueryResult)
         verify(recordFactory).getSuccessfulClaimResponse(
-            flowId,
-            claimId,
+            flowId, claimId,
             POOL_KEY,
             listOf(token99, token101)
         )
@@ -211,8 +210,7 @@ class TokenClaimQueryEventHandlerTest {
 
         assertThat(result).isSameAs(claimQueryResult)
         verify(recordFactory).getSuccessfulClaimResponseWithListTokens(
-            flowId,
-            claimId,
+            flowId, claimId,
             POOL_KEY,
             tokenClaim.claimedTokens
         )

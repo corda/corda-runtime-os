@@ -39,8 +39,7 @@ internal class VirtualNodeSenderFactoryImplTest {
         }
         val ret = senderFactory.createSender(duration, config, asyncPublisherConfig)
         verify(mockPublisherFactory).createRPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>(
-            any(),
-            eq(config)
+            any(), eq(config)
         )
         assertThat(ret.timeout).isEqualTo(duration)
     }

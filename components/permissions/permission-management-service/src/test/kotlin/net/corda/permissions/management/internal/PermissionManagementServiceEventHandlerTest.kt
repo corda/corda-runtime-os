@@ -39,8 +39,7 @@ internal class PermissionManagementServiceEventHandlerTest {
     private val permissionValidationCacheService = mock<PermissionValidationCacheService>()
     private val permissionValidationService = mock<PermissionValidationService>()
 
-    private val restConfig = mock<SmartConfig>()
-    private val rbacConfig = mock<SmartConfig>()
+    private val config = mock<SmartConfig>()
     private val rpcSender = mock<RPCSender<PermissionManagementRequest, PermissionManagementResponse>>()
     private val publisherFactory = mock<PublisherFactory>()
 
@@ -74,8 +73,7 @@ internal class PermissionManagementServiceEventHandlerTest {
 
         whenever(
             permissionManagerFactory.createPermissionManager(
-                restConfig,
-                rbacConfig,
+                config,
                 rpcSender,
                 permissionManagementCacheRef,
                 permissionValidationCacheRef
@@ -122,12 +120,10 @@ internal class PermissionManagementServiceEventHandlerTest {
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
 
         verify(configurationReadService).registerComponentForUpdates(
-            coordinator,
-            setOf(
+            coordinator, setOf(
                 ConfigKeys.BOOT_CONFIG,
                 ConfigKeys.MESSAGING_CONFIG,
-                ConfigKeys.REST_CONFIG,
-                ConfigKeys.RBAC_CONFIG
+                ConfigKeys.REST_CONFIG
             )
         )
     }
@@ -147,12 +143,10 @@ internal class PermissionManagementServiceEventHandlerTest {
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
 
         verify(configurationReadService).registerComponentForUpdates(
-            coordinator,
-            setOf(
+            coordinator, setOf(
                 ConfigKeys.BOOT_CONFIG,
                 ConfigKeys.MESSAGING_CONFIG,
-                ConfigKeys.REST_CONFIG,
-                ConfigKeys.RBAC_CONFIG
+                ConfigKeys.REST_CONFIG
             )
         )
     }

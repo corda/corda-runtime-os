@@ -49,15 +49,6 @@ class ClusterBuilder {
         val vaultDmlConnection: String?
     )
 
-    data class VNodeChangeConnectionStringsBody(
-        val cryptoDdlConnection: String?,
-        val cryptoDmlConnection: String?,
-        val uniquenessDdlConnection: String?,
-        val uniquenessDmlConnection: String?,
-        val vaultDdlConnection: String?,
-        val vaultDmlConnection: String?
-    )
-
     data class ExternalDBConnectionParams(
         val cryptoDdlConnection: String? = null,
         val cryptoDmlConnection: String? = null,
@@ -266,26 +257,6 @@ class ClusterBuilder {
         return jacksonObjectMapper().writeValueAsString(body)
     }
 
-    @Suppress("LongParameterList")
-    private fun vNodeChangeConnectionStringsBody(
-        cryptoDdlConnection: String?,
-        cryptoDmlConnection: String?,
-        uniquenessDdlConnection: String?,
-        uniquenessDmlConnection: String?,
-        vaultDdlConnection: String?,
-        vaultDmlConnection: String?
-    ): String {
-        val body = VNodeChangeConnectionStringsBody(
-            cryptoDdlConnection,
-            cryptoDmlConnection,
-            uniquenessDdlConnection,
-            uniquenessDmlConnection,
-            vaultDdlConnection,
-            vaultDmlConnection
-        )
-        return jacksonObjectMapper().writeValueAsString(body)
-    }
-
     private fun registerMemberBody(
         customMetadata: Map<String, String>,
     ): String {
@@ -298,16 +269,13 @@ class ClusterBuilder {
     private fun registerNotaryBody(
         notaryServiceName: String,
         customMetadata: Map<String, String>,
-        isBackchainRequiredNotary: Boolean = true,
-        notaryPlugin: String = "nonvalidating"
     ): String {
         val context = (mapOf(
             "corda.key.scheme" to "CORDA.ECDSA.SECP256R1",
             "corda.roles.0" to "notary",
             "corda.notary.service.name" to "$notaryServiceName",
-            "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.$notaryPlugin",
+            "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.nonvalidating",
             "corda.notary.service.flow.protocol.version.0" to "1",
-            "corda.notary.service.backchain.required" to "$isBackchainRequiredNotary"
         ) + customMetadata)
             .map { "\"${it.key}\" : \"${it.value}\"" }
             .joinToString()
@@ -341,14 +309,6 @@ class ClusterBuilder {
         }
         return body.joinToString(prefix = "{", postfix = "}")
     }
-
-    fun changeUserPasswordSelf(password: String) =
-        post("/api/$REST_API_VERSION_PATH/user/selfpassword",
-            """{"password": "$password"}""")
-
-    fun changeUserPasswordOther(username: String, password: String) =
-        post("/api/$REST_API_VERSION_PATH/user/otheruserpassword",
-            """{"username": "$username", "password": "$password"}""")
 
     private fun createPermissionBody(
         permissionString: String,
@@ -388,22 +348,6 @@ class ClusterBuilder {
         return "{$bodyStr1$bodyStr2}"
     }
 
-    /** Get schema SQL to create crypto DB */
-    fun getCryptoSchemaSql() =
-        get("/api/$REST_API_VERSION_PATH/virtualnode/create/db/crypto")
-
-    /** Get schema SQL to create uniqueness DB */
-    fun getUniquenessSchemaSql() =
-        get("/api/$REST_API_VERSION_PATH/virtualnode/create/db/uniqueness")
-
-    /** Get schema SQL to create vault and CPI DB */
-    fun getVaultSchemaSql(cpiChecksum: String) =
-        get("/api/$REST_API_VERSION_PATH/virtualnode/create/db/vault/$cpiChecksum")
-
-    /** Get schema SQL to update vault and CPI DB */
-    fun getUpdateSchemaSql(virtualNodeShortHash: String, newCpiChecksum: String) =
-        get("/api/$REST_API_VERSION_PATH/virtualnode/$virtualNodeShortHash/db/vault/$newCpiChecksum")
-
     /** Create a virtual node */
     @Suppress("LongParameterList")
     fun vNodeCreate(
@@ -424,24 +368,6 @@ class ClusterBuilder {
                 externalDBConnectionParams?.vaultDmlConnection
             )
         )
-
-    @Suppress("LongParameterList")
-    fun vNodeChangeConnectionStrings(
-        holdingIdShortHash: String,
-        externalDBConnectionParams: ExternalDBConnectionParams? = null
-    ) =
-        put(
-            "/api/$REST_API_VERSION_PATH/virtualnode/$holdingIdShortHash/db",
-            vNodeChangeConnectionStringsBody(
-                externalDBConnectionParams?.cryptoDdlConnection,
-                externalDBConnectionParams?.cryptoDmlConnection,
-                externalDBConnectionParams?.uniquenessDdlConnection,
-                externalDBConnectionParams?.uniquenessDmlConnection,
-                externalDBConnectionParams?.vaultDdlConnection,
-                externalDBConnectionParams?.vaultDmlConnection
-            )
-        )
-
 
     /** Trigger upgrade of a virtual node's CPI to the given  */
     fun vNodeUpgrade(virtualNodeShortHash: String, targetCpiFileChecksum: String) =
@@ -473,16 +399,9 @@ class ClusterBuilder {
         holdingIdShortHash: String,
         notaryServiceName: String? = null,
         customMetadata: Map<String, String> = emptyMap(),
-        isBackchainRequiredNotary: Boolean = true,
-        notaryPlugin: String = "nonvalidating"
     ) = register(
         holdingIdShortHash,
-        if (notaryServiceName != null) registerNotaryBody(
-            notaryServiceName,
-            customMetadata,
-            isBackchainRequiredNotary,
-            notaryPlugin
-        ) else registerMemberBody(
+        if (notaryServiceName != null) registerNotaryBody(notaryServiceName, customMetadata) else registerMemberBody(
             customMetadata
         )
     )
@@ -557,8 +476,8 @@ class ClusterBuilder {
         get("/api/$REST_API_VERSION_PATH/flow/$holdingIdentityShortHash/$clientRequestId")
 
     /** Get status of multiple flows */
-    fun multipleFlowStatus(holdingIdentityShortHash: String, status: String? = null) =
-        get("/api/$REST_API_VERSION_PATH/flow/$holdingIdentityShortHash/?status=$status")
+    fun multipleFlowStatus(holdingIdentityShortHash: String) =
+        get("/api/$REST_API_VERSION_PATH/flow/$holdingIdentityShortHash")
 
     /** Get result of a flow execution */
     fun flowResult(holdingIdentityShortHash: String, clientRequestId: String) =
@@ -729,17 +648,6 @@ class ClusterBuilder {
         return put(
             "/api/$REST_API_VERSION_PATH/network/setup/$holdingIdentityShortHash",
             body = body
-        )
-    }
-
-    fun doRotateCryptoUnmanagedWrappingKeys(
-        oldKeyAlias: String,
-        newKeyAlias: String
-    ): SimpleResponse {
-        return post("/api/$REST_API_VERSION_PATH/wrappingkey/unmanaged/rotation/${oldKeyAlias}",
-            body = """{
-                "newKeyAlias": "$newKeyAlias"
-            }""".trimMargin()
         )
     }
 

@@ -385,7 +385,7 @@ class FilteredTransactionImplTest {
             .isInstanceOf(FilteredTransactionVerificationException::class.java)
             .hasMessageContaining(
                 "Component group leaf [index = 1] Merkle proof cannot be verified against the top level Merkle tree's leaf with the same " +
-                    "index"
+                        "index"
             )
     }
 
@@ -414,7 +414,7 @@ class FilteredTransactionImplTest {
             .isInstanceOf(FilteredTransactionVerificationException::class.java)
             .hasMessageContaining(
                 "Component group leaf [index = 1] Merkle proof cannot be verified against the top level Merkle tree's leaf with the same " +
-                    "index"
+                        "index"
             )
         verify(filteredComponentGroup0Proof).verify(any(), any())
         verify(filteredComponentGroup1SizeProof).verify(any(), any())
@@ -446,7 +446,7 @@ class FilteredTransactionImplTest {
             .isInstanceOf(FilteredTransactionVerificationException::class.java)
             .hasMessageContaining(
                 "Component group leaf [index = 1] Merkle proof cannot be verified against the top level Merkle tree's leaf with the same " +
-                    "index"
+                        "index"
             )
         verify(filteredComponentGroup0Proof).verify(any(), any())
         verify(filteredComponentGroup1SizeProof).verify(any(), any())
@@ -478,7 +478,7 @@ class FilteredTransactionImplTest {
             .isInstanceOf(FilteredTransactionVerificationException::class.java)
             .hasMessageContaining(
                 "Component group leaf [index = 1] Merkle proof cannot be verified against the top level Merkle tree's leaf with the same " +
-                    "index"
+                        "index"
             )
         verify(filteredComponentGroup0Proof).verify(any(), any())
         verify(filteredComponentGroup1SizeProof).verify(any(), any())

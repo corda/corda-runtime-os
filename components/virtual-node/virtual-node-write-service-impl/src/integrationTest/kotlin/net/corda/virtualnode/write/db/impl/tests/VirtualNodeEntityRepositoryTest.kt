@@ -93,6 +93,7 @@ internal class VirtualNodeEntityRepositoryTest {
         override fun getMainBundle(): InputStream = nullInputStream()
     }
 
+
     companion object {
         private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/config/db.changelog-master.xml"
     }
@@ -136,11 +137,11 @@ internal class VirtualNodeEntityRepositoryTest {
         val signerSummaryHash = "TEST:121212121212"
         val expectedCpiMetadata = CpiMetadata(
             CpiIdentifier("Test CPI", "1.0", parseSecureHash(signerSummaryHash)),
-            parseSecureHash(fileChecksum),
-            setOf(exampleCpk.metadata.copy()),
-            "Test Group Policy",
-            0,
-            Instant.now()
+                parseSecureHash(fileChecksum),
+                setOf(exampleCpk.metadata.copy()),
+                "Test Group Policy",
+                0,
+                Instant.now()
         )
 
         entityManagerFactory.transaction { em ->
@@ -204,7 +205,7 @@ internal class VirtualNodeEntityRepositoryTest {
         val groupPolicy = "Test Group Policy 2"
         val expectedCpiMetadata = CpiMetadata(cpiId, parseSecureHash(fileChecksum), emptySet(), groupPolicy, 0, Instant.now())
 
-        entityManagerFactory.transaction { em ->
+        entityManagerFactory.transaction {em ->
             cpiMetadataRepository.put(
                 em,
                 expectedCpiMetadata.cpiId.copy(signerSummaryHash = parseSecureHash(signerSummaryHash)),
@@ -219,10 +220,8 @@ internal class VirtualNodeEntityRepositoryTest {
 
         Assertions.assertThat(repository.getCpiMetadataByChecksum("")).isNull()
         Assertions.assertThat(repository.getCpiMetadataByChecksum("123456")).isNull()
-        Assertions.assertThat(
-            repository.getCpiMetadataByChecksum(hexFileChecksum.substring(0, 12))
-                ?.copy(timestamp = expectedCpiMetadata.timestamp)
-        ) // Ignore the timestamp comparison
+        Assertions.assertThat(repository.getCpiMetadataByChecksum(hexFileChecksum.substring(0, 12))
+            ?.copy(timestamp = expectedCpiMetadata.timestamp))  // Ignore the timestamp comparison
             .isEqualTo(expectedCpiMetadata)
     }
 }

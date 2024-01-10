@@ -24,9 +24,7 @@ internal class TrustStoresMapIntegrationTests : TestBase() {
         private const val GROUP_ID = "Group-A"
         private const val ALICE_NAME = "O=Alice, L=LDN, C=GB"
     }
-    private val topicService = TopicServiceImpl().also {
-        keep(it)
-    }
+    private val topicService = TopicServiceImpl()
     private val rpcTopicService = RPCTopicServiceImpl()
     private val subscriptionFactory = InMemSubscriptionFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
     private val messagingConfig = SmartConfigImpl.empty()

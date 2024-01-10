@@ -6,6 +6,5 @@ data class MemberNotaryDetails(
     val serviceName: MemberX500Name,
     val serviceProtocol: String?,
     val serviceProtocolVersions: Collection<Int>,
-    val keys: Collection<MemberNotaryKey>,
-    val isBackchainRequired: Boolean
+    val keys: Collection<MemberNotaryKey>
 )

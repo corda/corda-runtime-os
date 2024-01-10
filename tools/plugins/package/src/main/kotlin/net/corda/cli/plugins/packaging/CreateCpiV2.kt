@@ -1,28 +1,27 @@
 package net.corda.cli.plugins.packaging
 
-import net.corda.cli.plugins.packaging.FileHelpers.requireFileDoesNotExist
-import net.corda.cli.plugins.packaging.FileHelpers.requireFileExists
-import net.corda.cli.plugins.packaging.signing.CertificateLoader.readCertificates
-import net.corda.cli.plugins.packaging.signing.SigningHelpers
-import net.corda.cli.plugins.packaging.signing.SigningOptions
-import net.corda.libs.packaging.verify.PackageType
-import net.corda.libs.packaging.verify.VerifierBuilder
-import net.corda.libs.packaging.verify.internal.VerifierFactory
-import picocli.CommandLine
 import picocli.CommandLine.Command
-import picocli.CommandLine.ExitCode
 import picocli.CommandLine.Option
 import java.io.File
 import java.io.FileInputStream
+import java.lang.IllegalArgumentException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption.READ
 import java.nio.file.StandardOpenOption.WRITE
-import java.util.concurrent.Callable
 import java.util.jar.Attributes
 import java.util.jar.JarEntry
 import java.util.jar.JarOutputStream
 import java.util.jar.Manifest
+import net.corda.cli.plugins.packaging.FileHelpers.requireFileDoesNotExist
+import net.corda.cli.plugins.packaging.FileHelpers.requireFileExists
+import net.corda.cli.plugins.packaging.signing.SigningHelpers
+import net.corda.cli.plugins.packaging.signing.SigningOptions
+import net.corda.cli.plugins.packaging.signing.CertificateLoader.readCertificates
+import net.corda.libs.packaging.verify.PackageType
+import net.corda.libs.packaging.verify.VerifierBuilder
+import net.corda.libs.packaging.verify.internal.VerifierFactory
+import picocli.CommandLine
 
 /**
  * Filename of group policy within jar file
@@ -53,7 +52,7 @@ private const val READ_FROM_STDIN = "-"
     description = ["Creates a CPI v2 from a CPB and GroupPolicy.json file."],
     mixinStandardHelpOptions = true
 )
-class CreateCpiV2 : Callable<Int> {
+class CreateCpiV2 : Runnable {
 
     @Option(names = ["--cpb", "-c"], required = false, description = ["CPB file to convert into CPI"])
     var cpbFileName: String? = null
@@ -87,7 +86,7 @@ class CreateCpiV2 : Callable<Int> {
     /**
      * Check user supplied options, then start the process of building and signing the CPI
      */
-    override fun call(): Int {
+    override fun run() {
         // Check input files exist
         requireFileExists(signingOptions.keyStoreFileName)
 
@@ -106,7 +105,7 @@ class CreateCpiV2 : Callable<Int> {
                 verifyIsValidCpbV2(it)
             } catch (e: Exception) {
                 System.err.println("Error verifying CPB: ${e.message}")
-                return ExitCode.SOFTWARE
+                return@run
             }
         }
 
@@ -116,7 +115,6 @@ class CreateCpiV2 : Callable<Int> {
         val outputFilePath = requireFileDoesNotExist(outputName)
 
         buildAndSignCpi(cpbPath, outputFilePath, groupPolicyString)
-        return ExitCode.OK
     }
 
     private fun determineOutputFileName(cpbPath: Path?) : String {

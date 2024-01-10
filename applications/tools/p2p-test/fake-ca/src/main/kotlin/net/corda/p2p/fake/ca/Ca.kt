@@ -27,7 +27,6 @@ class Ca {
     companion object {
         internal const val CA_NAME = "ca"
     }
-
     @Option(
         names = ["-m", "--home"],
         description = ["The CA home directory where certificates/keys will be generated"],
@@ -44,7 +43,7 @@ class Ca {
         names = ["-a", "--algorithm", "--alg"],
         description = [
             "The algorithm to be used for the generated keys",
-            "(one of: \${COMPLETION-CANDIDATES})",
+            "(one of: \${COMPLETION-CANDIDATES})"
         ],
     )
     private var algorithm: Algorithm = Algorithm.EC
@@ -53,7 +52,7 @@ class Ca {
         names = ["-s", "--key-size"],
         description = [
             "The key size in number of bits (one of 2048, 3072 or 4096).",
-            "Valid only for RSA algorithm.",
+            "Valid only for RSA algorithm."
         ],
     )
     private var keySize: Int = 2048
@@ -62,9 +61,9 @@ class Ca {
         names = ["-c", "--curve-name"],
         description = [
             "The curve name (one of: \${COMPLETION-CANDIDATES}).",
-            "Valid only for EC algorithms",
+            "Valid only for EC algorithms"
         ],
-        completionCandidates = ValidCurvedNames::class,
+        completionCandidates = ValidCurvedNames::class
     )
     private var curveName: String = "secp256r1"
 
@@ -94,7 +93,7 @@ class Ca {
                 KeysFactoryDefinitions(
                     algorithm,
                     keySize = keySize,
-                    spec = null,
+                    spec = null
                 )
             }
             Algorithm.EC -> {
@@ -105,14 +104,14 @@ class Ca {
                 KeysFactoryDefinitions(
                     algorithm,
                     keySize = null,
-                    spec = spec,
+                    spec = spec
                 )
             }
         }
         CertificateAuthorityFactory.createFileSystemLocalAuthority(
             definitions,
             File(home, "$CA_NAME/.ca"),
-            Duration.ofDays(certificatesDurationInDays.toLong()),
+            Duration.ofDays(certificatesDurationInDays.toLong())
         )
     }
 }

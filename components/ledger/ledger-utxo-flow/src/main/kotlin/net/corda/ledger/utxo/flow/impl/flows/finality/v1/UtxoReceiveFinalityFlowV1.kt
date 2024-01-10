@@ -1,21 +1,19 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality.v1
 
-import net.corda.flow.application.GroupParametersLookupInternal
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
-import net.corda.ledger.utxo.flow.impl.flows.backchain.InvalidBackchainException
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
-import net.corda.ledger.utxo.flow.impl.flows.finality.FilteredTransactionAndSignatures
 import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityPayload
 import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowContext
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.flows.finality.v1.FinalityNotarizationFailureType.Companion.toFinalityNotarizationFailureType
-import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
+import net.corda.flow.application.GroupParametersLookupInternal
+import net.corda.ledger.utxo.flow.impl.flows.backchain.InvalidBackchainException
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
-import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
+import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.utilities.trace
@@ -24,12 +22,8 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.ledger.common.NotaryLookup
-import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
-import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
-import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData.Audit
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -60,35 +54,21 @@ class UtxoReceiveFinalityFlowV1(
     @CordaInject
     lateinit var signedGroupParametersVerifier: SignedGroupParametersVerifier
 
-    @CordaInject
-    lateinit var notaryLookup: NotaryLookup
-
-    @CordaInject
-    lateinit var utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory
-
-    @CordaInject
-    lateinit var notarySignatureVerificationService: NotarySignatureVerificationService
-
     @Suspendable
     override fun call(): UtxoSignedTransaction {
-        val (
-            initialTransaction,
-            transferAdditionalSignatures,
-            inputStateAndRefs,
-            referenceStateAndRefs
-        ) = receiveTransactionAndBackchain()
+        val (initialTransaction, transferAdditionalSignatures) = receiveTransactionAndBackchain()
         val transactionId = initialTransaction.id
         addTransactionIdToFlowContext(flowEngine, transactionId)
         verifyExistingSignatures(initialTransaction, session)
-        verifyTransaction(initialTransaction, inputStateAndRefs, referenceStateAndRefs)
-        var transaction = if (validateTransaction(initialTransaction, inputStateAndRefs, referenceStateAndRefs)) {
+        verifyTransaction(initialTransaction)
+        var transaction = if (validateTransaction(initialTransaction)) {
             if (log.isTraceEnabled) {
-                log.trace("Successfully validated transaction: $transactionId")
+                log.trace( "Successfully validated transaction: $transactionId")
             }
             val (transaction, payload) = signTransaction(initialTransaction)
             persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
             if (log.isDebugEnabled) {
-                log.debug("Recorded transaction with the initial and our signatures: $transactionId")
+                log.debug( "Recorded transaction with the initial and our signatures: $transactionId")
             }
             session.send(payload)
             transaction
@@ -125,100 +105,32 @@ class UtxoReceiveFinalityFlowV1(
     }
 
     @Suspendable
-    private fun receiveTransactionAndBackchain(): InitialTransactionPayload {
+    private fun receiveTransactionAndBackchain(): Pair<UtxoSignedTransactionInternal, Boolean> {
         val payload = session.receive(FinalityPayload::class.java)
         val initialTransaction = payload.initialTransaction
         val transferAdditionalSignatures = payload.transferAdditionalSignatures
 
         if (log.isDebugEnabled) {
-            log.debug("Beginning receive finality for transaction: ${initialTransaction.id}")
+            log.debug( "Beginning receive finality for transaction: ${initialTransaction.id}")
         }
         val currentGroupParameters = verifyLatestGroupParametersAreUsed(initialTransaction)
         utxoLedgerGroupParametersPersistenceService.persistIfDoesNotExist(currentGroupParameters)
-        val notaryInfo = requireNotNull(notaryLookup.lookup(initialTransaction.notaryName)) {
-            "Notary ${initialTransaction.notaryName} does not exist in the network"
-        }
-        return if (notaryInfo.isBackchainRequired) {
-            val transactionDependencies = initialTransaction.dependencies
-            if (transactionDependencies.isNotEmpty()) {
-                try {
-                    flowEngine.subFlow(TransactionBackchainResolutionFlow(transactionDependencies, session))
-                } catch (e: InvalidBackchainException) {
-                    log.warn(
-                        "Invalid transaction found during back-chain resolution, marking transaction with ID " +
-                            "${initialTransaction.id} as invalid.",
-                        e
-                    )
-                    persistInvalidTransaction(initialTransaction)
-                    throw e
-                }
-            } else {
-                log.trace {
-                    "Transaction with id ${initialTransaction.id} has no dependencies so backchain resolution will not be performed."
-                }
+        val transactionDependencies = initialTransaction.dependencies
+        if (transactionDependencies.isNotEmpty()) {
+            try {
+                flowEngine.subFlow(TransactionBackchainResolutionFlow(transactionDependencies, session))
+            } catch (e: InvalidBackchainException) {
+                log.warn("Invalid transaction found during back-chain resolution, marking transaction with ID " +
+                        "${initialTransaction.id} as invalid.", e)
+                persistInvalidTransaction(initialTransaction)
+                throw e
             }
-            InitialTransactionPayload(initialTransaction, transferAdditionalSignatures, emptyList(), emptyList())
         } else {
-            receiveDependencyPayloadAndVerify(initialTransaction, transferAdditionalSignatures)
-        }
-    }
-
-    private data class InitialTransactionPayload(
-        val initialTransaction: UtxoSignedTransactionInternal,
-        val transferAdditionalSignatures: Boolean,
-        val inputStateAndRefs: List<StateAndRef<*>>,
-        val referenceStateAndRefs: List<StateAndRef<*>>
-    )
-
-    @Suspendable
-    private fun receiveDependencyPayloadAndVerify(
-        initialTransaction: UtxoSignedTransactionInternal,
-        transferAdditionalSignatures: Boolean
-    ): InitialTransactionPayload {
-        @Suppress("unchecked_cast")
-        val filteredTransactionsAndSignatures =
-            session.receive(List::class.java) as List<FilteredTransactionAndSignatures>
-
-        val groupParameters = groupParametersLookup.currentGroupParameters
-        val notary = requireNotNull(groupParameters.notaries.first { it.name == initialTransaction.notaryName }) {
-            "Notary from initial transaction \"${initialTransaction.notaryName}\" cannot be found in group parameter notaries."
-        }
-
-        val dependentStateAndRefs =
-            filteredTransactionsAndSignatures.flatMap { (filteredTransaction, signatures) ->
-                require(signatures.isNotEmpty()) { "No notary signatures were received" }
-                filteredTransaction.verify()
-
-                require(notary.name == filteredTransaction.notaryName) {
-                    "Notary name of filtered transaction \"${filteredTransaction.notaryName}\" doesn't match with " +
-                        "notary name of initial transaction \"${notary.name}\""
-                }
-
-                notarySignatureVerificationService.verifyNotarySignatures(
-                    filteredTransaction,
-                    notary.publicKey,
-                    signatures,
-                    mutableMapOf()
-                )
-
-                (filteredTransaction.outputStateAndRefs as Audit<StateAndRef<*>>).values.values
-            }.associateBy { stateRef -> stateRef.ref }
-        val inputStateAndRefs = initialTransaction.inputStateRefs.map { stateRef ->
-            requireNotNull(dependentStateAndRefs[stateRef]) {
-                "Missing input state and ref from the filtered transaction"
+            log.trace {
+                "Transaction with id ${initialTransaction.id} has no dependencies so backchain resolution will not be performed."
             }
         }
-        val referenceStateAndRefs = initialTransaction.referenceStateRefs.map { stateRef ->
-            requireNotNull(dependentStateAndRefs[stateRef]) {
-                "Missing reference state and ref from the filtered transaction"
-            }
-        }
-        return InitialTransactionPayload(
-            initialTransaction,
-            transferAdditionalSignatures,
-            inputStateAndRefs,
-            referenceStateAndRefs
-        )
+        return Pair(initialTransaction, transferAdditionalSignatures)
     }
 
     @Suspendable
@@ -229,7 +141,7 @@ class UtxoReceiveFinalityFlowV1(
         if (txGroupParametersHash != currentGroupParameters.hash.toString()) {
             val message =
                 "Transactions can be created only with the latest membership group parameters. " +
-                    "Current: ${currentGroupParameters.hash} Transaction's: $txGroupParametersHash"
+                        "Current: ${currentGroupParameters.hash} Transaction's: $txGroupParametersHash"
             log.warn(message)
             persistInvalidTransaction(initialTransaction)
             throw CordaRuntimeException(message)
@@ -239,52 +151,16 @@ class UtxoReceiveFinalityFlowV1(
     }
 
     @Suspendable
-    private fun verifyTransaction(
-        initialTransaction: UtxoSignedTransactionInternal,
-        inputStateAndRefs: List<StateAndRef<*>>,
-        referenceStateAndRefs: List<StateAndRef<*>>
-    ) {
-        val ledgerTransaction = if (inputStateAndRefs.isNotEmpty() || referenceStateAndRefs.isNotEmpty()) {
-            utxoLedgerTransactionFactory.createWithStateAndRefs(
-                initialTransaction.wireTransaction,
-                inputStateAndRefs,
-                referenceStateAndRefs
-            )
-        } else {
-            initialTransaction.toLedgerTransaction()
-        }
-        try {
-            transactionVerificationService.verify(ledgerTransaction)
-        } catch (e: Exception) {
-            persistInvalidTransaction(initialTransaction)
-            throw e
-        }
-    }
-
-    @Suspendable
-    private fun validateTransaction(
-        initialTransaction: UtxoSignedTransactionInternal,
-        inputStateAndRefs: List<StateAndRef<*>>,
-        referenceStateAndRefs: List<StateAndRef<*>>
-    ): Boolean {
-        val ledgerTransaction = if (inputStateAndRefs.isNotEmpty() || referenceStateAndRefs.isNotEmpty()) {
-            utxoLedgerTransactionFactory.createWithStateAndRefs(
-                initialTransaction.wireTransaction,
-                inputStateAndRefs,
-                referenceStateAndRefs
-            )
-        } else {
-            initialTransaction.toLedgerTransaction()
-        }
+    private fun validateTransaction(signedTransaction: UtxoSignedTransaction): Boolean {
         return try {
-            validator.checkTransaction(ledgerTransaction)
+            validator.checkTransaction(signedTransaction.toLedgerTransaction())
             true
         } catch (e: Exception) {
             // Should we only catch a specific exception type? Otherwise, some errors can be swallowed by this warning.
             // Means contracts can't use [check] or [require] unless we provide our own functions for this.
             if (e is IllegalStateException || e is IllegalArgumentException || e is CordaRuntimeException) {
                 if (log.isDebugEnabled) {
-                    log.debug("Transaction ${ledgerTransaction.id} failed verification. Message: ${e.message}")
+                    log.debug( "Transaction ${signedTransaction.id} failed verification. Message: ${e.message}")
                 }
                 false
             } else {
@@ -298,11 +174,11 @@ class UtxoReceiveFinalityFlowV1(
         initialTransaction: UtxoSignedTransactionInternal,
     ): Pair<UtxoSignedTransactionInternal, Payload<List<DigitalSignatureAndMetadata>>> {
         if (log.isDebugEnabled) {
-            log.debug("Signing transaction: ${initialTransaction.id} with our available required keys.")
+            log.debug( "Signing transaction: ${initialTransaction.id} with our available required keys.")
         }
         val (transaction, mySignatures) = initialTransaction.addMissingSignatures()
         if (log.isDebugEnabled) {
-            log.debug("Signing transaction: ${initialTransaction.id} resulted (${mySignatures.size}) signatures.")
+            log.debug( "Signing transaction: ${initialTransaction.id} resulted (${mySignatures.size}) signatures.")
         }
         return transaction to Payload.Success(mySignatures)
     }
@@ -345,11 +221,12 @@ class UtxoReceiveFinalityFlowV1(
         @Suppress("unchecked_cast")
         val notarySignaturesPayload = session.receive(Payload::class.java) as Payload<List<DigitalSignatureAndMetadata>>
 
-        val notarySignatures = when (notarySignaturesPayload) {
+        val notarySignatures = when (notarySignaturesPayload){
             is Payload.Success -> notarySignaturesPayload.getOrThrow()
-            is Payload.Failure -> {
+            is Payload.Failure ->
+            {
                 val message = "Notarization failed. Failure received from ${session.counterparty} for transaction " +
-                    "${transaction.id} with message: ${notarySignaturesPayload.message}"
+                        "${transaction.id} with message: ${notarySignaturesPayload.message}"
                 log.warn(message)
                 val reason = notarySignaturesPayload.reason
                 if (reason != null && reason.toFinalityNotarizationFailureType() == FinalityNotarizationFailureType.FATAL) {
@@ -364,6 +241,7 @@ class UtxoReceiveFinalityFlowV1(
             log.warn(message)
             persistInvalidTransaction(transaction)
             throw CordaRuntimeException(message)
+
         }
         if (log.isDebugEnabled) {
             log.debug("Verifying and adding notary signatures for transaction: ${transaction.id}")

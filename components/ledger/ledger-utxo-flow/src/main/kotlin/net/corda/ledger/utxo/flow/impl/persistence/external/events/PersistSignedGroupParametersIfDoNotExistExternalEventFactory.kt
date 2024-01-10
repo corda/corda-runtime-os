@@ -19,7 +19,7 @@ import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
 class PersistSignedGroupParametersIfDoNotExistExternalEventFactory constructor(
     private val keyEncodingService: KeyEncodingService,
     clock: Clock = Clock.systemUTC()
-) :
+):
     AbstractUtxoLedgerExternalEventFactory<PersistSignedGroupParametersIfDoNotExistParameters>(clock) {
     @Activate
     constructor(
@@ -50,8 +50,8 @@ data class PersistSignedGroupParametersIfDoNotExistParameters(
         if (other == null || other !is PersistSignedGroupParametersIfDoNotExistParameters) return false
         if (this === other) return true
         return bytes.contentEquals(other.bytes) &&
-            signature == other.signature &&
-            signatureSpec == other.signatureSpec
+                signature == other.signature &&
+                signatureSpec == other.signatureSpec
     }
 
     override fun hashCode(): Int = Objects.hash(bytes, signature, signatureSpec)

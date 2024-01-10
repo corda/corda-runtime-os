@@ -5,7 +5,6 @@ plugins {
 
 description 'Corda REST Test Common'
 
-ext.cordaEnableFormatting = true
 
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -17,7 +16,7 @@ dependencies {
     implementation "com.nimbusds:oauth2-oidc-sdk:$nimbusVersion"
     implementation "com.konghq:unirest-java:$unirestVersion"
 
-    implementation libs.mockito.kotlin
+    implementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     implementation project(":libs:rest:rest")
     implementation project(":libs:rest:rest-common")

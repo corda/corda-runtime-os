@@ -17,7 +17,6 @@ data class FinalityPayload @ConstructorForDeserialization constructor(val map: M
             TRANSFER_ADDITIONAL_SIGNATURES to transferAdditionalSignatures
         )
     )
-
     val initialTransaction get() = map[INITIAL_TRANSACTION] as UtxoSignedTransactionInternal
     val transferAdditionalSignatures get() = map[TRANSFER_ADDITIONAL_SIGNATURES] as Boolean
 }

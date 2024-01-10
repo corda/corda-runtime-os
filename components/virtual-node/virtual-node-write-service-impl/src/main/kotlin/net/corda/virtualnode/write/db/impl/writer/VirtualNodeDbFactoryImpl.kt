@@ -3,6 +3,7 @@ package net.corda.virtualnode.write.db.impl.writer
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.crypto.core.ShortHash
+import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
@@ -47,7 +48,7 @@ internal class VirtualNodeDbFactoryImpl(
      */
     override fun createVNodeDbs(
         holdingIdentityShortHash: ShortHash,
-        request: VirtualNodeConnectionStrings
+        request: VirtualNodeCreateRequest
     ): Map<VirtualNodeDbType, VirtualNodeDb> {
         with(request) {
             return mapOf(
@@ -96,12 +97,14 @@ internal class VirtualNodeDbFactoryImpl(
                     Pair(DDL, createClusterConnection(dbType, holdingIdentityShortHash, DDL)),
                     Pair(DML, createClusterConnection(dbType, holdingIdentityShortHash, DML))
                 )
-            } else if (noUniquenessDb) {
+            }
+            else if (noUniquenessDb) {
                 mapOf(
                     Pair(DDL, null),
                     Pair(DML, null)
                 )
-            } else {
+            }
+            else {
                 mapOf(
                     Pair(DDL, ddlConfig?.let { createConnection(dbType, holdingIdentityShortHash, DDL, ddlConfig) }),
                     Pair(DML, dmlConfig?.let { createConnection(dbType, holdingIdentityShortHash, DML, dmlConfig) })
@@ -231,9 +234,8 @@ private fun createVirtualNodeDbConfig(
         smartConfigFactory.makeSecret(password, key).atPath(DatabaseConfig.DB_PASS)
             .withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(username))
 
-    if (jdbcDriver != null) {
+    if (jdbcDriver != null)
         config = config.withValue(DatabaseConfig.JDBC_DRIVER, ConfigValueFactory.fromAnyRef(jdbcDriver))
-    }
     config = config.withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcUrl))
 
     val maxPoolSize = virtualNodePoolConfig.getInt(VirtualNodeDatasourceConfig.VNODE_POOL_MAX_SIZE)

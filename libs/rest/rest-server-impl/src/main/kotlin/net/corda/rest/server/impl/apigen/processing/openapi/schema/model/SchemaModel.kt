@@ -11,7 +11,6 @@ open class SchemaModel(
     var description: String? = null
     var example: Any? = null
     var required: Boolean = true
-
     // defaults to null so we can avoid setting in object schema
     var nullable: Boolean? = null
 }
@@ -58,8 +57,7 @@ open class SchemaRefObjectModel(
 }
 
 open class SchemaMultiRefObjectModel(
-    val properties: Map<String, SchemaModel> = emptyMap(),
-    ref: String
+    val properties: Map<String, SchemaModel> = emptyMap(), ref: String
 ) : SchemaRefObjectModel(ref) {
     override fun getRequiredFields() = this.properties.filter { it.value.isRequiredField() }.keys.toList().sorted()
 }

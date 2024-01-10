@@ -17,7 +17,7 @@ class NamedParameterizedQuery<R : Any>(
     private val externalEventExecutor: ExternalEventExecutor,
     private val resultSetFactory: ResultSetFactory,
     private val queryName: String,
-    private var parameters: MutableMap<String, Any?>,
+    private var parameters: MutableMap<String, Any>,
     private var limit: Int,
     private var offset: Int,
     private var expectedClass: Class<R>,
@@ -35,7 +35,7 @@ class NamedParameterizedQuery<R : Any>(
         return this
     }
 
-    override fun setParameter(name: String, value: Any?): ParameterizedQuery<R> {
+    override fun setParameter(name: String, value: Any): ParameterizedQuery<R> {
         parameters[name] = value
         return this
     }

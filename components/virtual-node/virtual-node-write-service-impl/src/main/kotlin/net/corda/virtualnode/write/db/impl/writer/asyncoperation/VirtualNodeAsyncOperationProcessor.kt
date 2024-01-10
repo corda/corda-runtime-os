@@ -25,6 +25,7 @@ internal class VirtualNodeAsyncOperationProcessor(
 
     @Suppress("unchecked_cast")
     private fun handleEvent(eventRecord: Record<String, VirtualNodeAsynchronousRequest>) {
+
         if (eventRecord.value == null) {
             logger.warn("Received a virtual node asynchronous operation record without a value: $eventRecord")
             return
@@ -52,7 +53,7 @@ internal class VirtualNodeAsyncOperationProcessor(
             handler.handle(operation.timestamp, operation.requestId, request)
         } catch (e: Exception) {
             logger.warn(
-                "Error while processing virtual node asynchronous operation record: $eventRecord",
+                "Error while processing virtual node asynchronous operation record: ${eventRecord}",
                 e
             )
         }

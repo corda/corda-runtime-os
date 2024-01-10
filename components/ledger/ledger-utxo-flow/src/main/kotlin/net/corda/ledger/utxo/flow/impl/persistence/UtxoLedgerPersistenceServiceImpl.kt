@@ -87,9 +87,8 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                 )
             }.firstOrNull()?.let {
                 val (transaction, status) = serializationService.deserialize<Pair<SignedTransactionContainer?, String?>>(it.array())
-                if (status == null) {
+                if (status == null)
                     return@let null
-                }
                 transaction?.toSignedTransaction() to status.toTransactionStatus()
             }
         }
@@ -130,9 +129,8 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                 )
             }.firstOrNull()?.let {
                 val (transaction, status) = serializationService.deserialize<Pair<SignedLedgerTransactionContainer?, String?>>(it.array())
-                if (status == null) {
+                if (status == null)
                     return@let null
-                }
 
                 val signedLedgerTransaction = transaction?.toSignedLedgerTransaction()
 
@@ -157,7 +155,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         transactionStatus: TransactionStatus,
         visibleStatesIndexes: List<Int>
     ): List<CordaPackageSummary> {
-        return recordSuspendable({ ledgerPersistenceFlowTimer(PersistTransaction) }) @Suspendable {
+        return recordSuspendable({ ledgerPersistenceFlowTimer(PersistTransaction)}) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     PersistTransactionExternalEventFactory::class.java,
@@ -169,7 +167,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun updateStatus(id: SecureHash, transactionStatus: TransactionStatus) {
-        recordSuspendable({ ledgerPersistenceFlowTimer(UpdateTransactionStatus) }) @Suspendable {
+        recordSuspendable({ ledgerPersistenceFlowTimer(UpdateTransactionStatus)}) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     UpdateTransactionStatusExternalEventFactory::class.java,
@@ -184,7 +182,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         transaction: UtxoSignedTransaction,
         transactionStatus: TransactionStatus
     ): Pair<TransactionExistenceStatus, List<CordaPackageSummary>> {
-        return recordSuspendable({ ledgerPersistenceFlowTimer(PersistTransactionIfDoesNotExist) }) @Suspendable {
+        return recordSuspendable({ ledgerPersistenceFlowTimer(PersistTransactionIfDoesNotExist)}) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     PersistTransactionIfDoesNotExistExternalEventFactory::class.java,

@@ -5,6 +5,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -24,6 +25,7 @@ class ConfigPublishServiceHandler(
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when(event) {
+            is StartEvent -> {}
             is StopEvent -> onStopEvent()
             is BootstrapConfigEvent -> onBootstrapConfigEvent(event, coordinator)
         }

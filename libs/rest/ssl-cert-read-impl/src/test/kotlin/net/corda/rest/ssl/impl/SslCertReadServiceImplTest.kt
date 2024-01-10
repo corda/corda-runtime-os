@@ -82,6 +82,7 @@ class SslCertReadServiceImplTest {
 
     @Test
     fun `can create Keystore from CRT files`() {
+
         copyResources()
 
         val configMock = mock<SmartConfig>()

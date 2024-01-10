@@ -47,6 +47,9 @@ dependencies {
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
     testImplementation 'org.osgi:osgi.core'
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(':libs:crypto:cipher-suite')
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:packaging-test-utilities")

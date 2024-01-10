@@ -39,15 +39,10 @@ class SchemaModelContextHolder {
         val existingClassNameInDifferentPackagesCount =
             pClass2Name.keys.count { it.clazz != parameterizedClass.clazz && it.clazz.simpleName == classSimpleName }
 
-        return (
-            if (existingClassNameInDifferentPackagesCount == 0) {
-                classSimpleName
-            } else {
-                "${classSimpleName}_$existingClassNameInDifferentPackagesCount"
-            }
-            ) +
-            parameterizedClass.parameterizedClassList.mapKey
-                .also { log.trace { """Generate name for class "$parameterizedClass".""" } }
+        return (if (existingClassNameInDifferentPackagesCount == 0) classSimpleName
+        else "${classSimpleName}_$existingClassNameInDifferentPackagesCount") +
+                parameterizedClass.parameterizedClassList.mapKey
+                    .also { log.trace { """Generate name for class "$parameterizedClass".""" } }
     }
 
     internal fun getName(parameterizedClass: ParameterizedClass): String? {
@@ -63,6 +58,7 @@ class SchemaModelContextHolder {
     }
 
     internal fun getAllSchemas(): Map<String, SchemaObjectModel> {
+
         log.trace { "Get all schemas." }
         return pClass2Model.map { pClass2Name[it.key]!! to it.value }.toMap().plus(propertyWrapperModels)
             .also { log.trace { """Get all schemas, size: "${it.size}", completed.""" } } as Map<String, SchemaObjectModel>
@@ -75,4 +71,5 @@ class SchemaModelContextHolder {
         }
         log.trace { """Mark class discovered "$parameterizedClass" completed.""" }
     }
+
 }

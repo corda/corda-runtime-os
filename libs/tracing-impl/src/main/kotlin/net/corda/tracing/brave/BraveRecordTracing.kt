@@ -2,27 +2,17 @@ package net.corda.tracing.brave
 
 import brave.Span
 import brave.Tracing
-import brave.propagation.TraceContextOrSamplingFlags
+import brave.propagation.Propagation
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 
-class BraveRecordTracing(private val tracing: Tracing) {
+class BraveRecordTracing(tracing: Tracing) {
     private val tracer = tracing.tracer()
-    private val recordExtractor = BraveRecordExtractor(tracing)
-
-    fun getTraceContext(headers: List<Pair<String, String>>): brave.propagation.TraceContext {
-        val extracted = recordExtractor.extract(headers)
-        return getTraceContext(extracted)
-    }
-
-    fun getTraceContext(headers: Map<String, Any>): brave.propagation.TraceContext {
-        val extracted = recordExtractor.extract(headers)
-        return getTraceContext(extracted)
-    }
-
-    private fun getTraceContext(extracted: TraceContextOrSamplingFlags?): brave.propagation.TraceContext {
-        return extracted?.context() ?: tracing.currentTraceContext().get()
-    }
+    private val recordHeaderGetter: Propagation.Getter<List<Pair<String, String>>, String> =
+        Propagation.Getter<List<Pair<String, String>>, String> { request, key ->
+            request.reversed().firstOrNull { it.first == key }?.second
+        }
+    private val tracingContextExtractor = tracing.propagation().extractor(recordHeaderGetter)
 
     fun nextSpan(record: Record<*, *>): Span {
         return nextSpan(record.headers)
@@ -33,25 +23,16 @@ class BraveRecordTracing(private val tracing: Tracing) {
     }
 
     fun nextSpan(headers: List<Pair<String, String>>): Span {
-        val extracted = recordExtractor.extract(headers)
-        return nextSpan(extracted)
-    }
-
-    fun nextSpan(headers: Map<String, Any>): Span {
-        val extracted = recordExtractor.extract(headers)
-        return nextSpan(extracted)
-    }
-
-    private fun nextSpan(extracted: TraceContextOrSamplingFlags?): Span {
-        if (extracted == null) {
-            return tracer.nextSpan()
+        val extracted = tracingContextExtractor.extract(headers)
+        return if (extracted == null) {
+            tracer.nextSpan()
+        } else {
+            tracer.nextSpan(extracted)
         }
-
-        return tracer.nextSpan(extracted)
     }
 
     fun createBatchPublishTracing(clientId: String): BraveBatchPublishTracing {
-        return BraveBatchPublishTracing(clientId, tracer, recordExtractor)
+        return BraveBatchPublishTracing(clientId, tracer, tracingContextExtractor)
     }
 }
 

@@ -28,7 +28,6 @@ import org.osgi.service.component.propertytypes.ServiceRanking
 import java.time.Instant
 import java.util.UUID
 
-@Suppress("TooManyFunctions")
 @ServiceRanking(Int.MAX_VALUE)
 @Component(service = [MembershipPersistenceClient::class])
 class TestMembershipPersistenceClientImpl @Activate constructor(
@@ -46,31 +45,26 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
         memberInfos: Collection<SelfSignedMemberInfo>,
-    ): MembershipPersistenceOperation<Unit> =
-        MembershipPersistenceOperationImpl(MembershipPersistenceResult.success())
+    ): MembershipPersistenceOperation<Unit> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.success())
 
     override fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
         groupPolicy: LayeredPropertyMap,
         version: Long,
-    ): MembershipPersistenceOperation<Unit> =
-        MembershipPersistenceOperationImpl(MembershipPersistenceResult.success())
+    ): MembershipPersistenceOperation<Unit> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.success())
 
     override fun persistGroupParametersInitialSnapshot(
         viewOwningIdentity: HoldingIdentity
-    ): MembershipPersistenceOperation<InternalGroupParameters> =
-        MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
+    ): MembershipPersistenceOperation<InternalGroupParameters> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
 
     override fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         groupParameters: InternalGroupParameters,
-    ): MembershipPersistenceOperation<InternalGroupParameters> =
-        MembershipPersistenceOperationImpl(MembershipPersistenceResult.Success(groupParameters))
+    ): MembershipPersistenceOperation<InternalGroupParameters> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.Success(groupParameters))
 
     override fun addNotaryToGroupParameters(
         notary: PersistentMemberInfo,
-    ): MembershipPersistenceOperation<InternalGroupParameters> =
-        MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
+    ): MembershipPersistenceOperation<InternalGroupParameters> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
 
     override fun persistRegistrationRequest(
         viewOwningIdentity: HoldingIdentity,
@@ -81,8 +75,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
         viewOwningIdentity: HoldingIdentity,
         approvedMember: HoldingIdentity,
         registrationRequestId: String,
-    ): MembershipPersistenceOperation<PersistentMemberInfo> =
-        MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
+    ): MembershipPersistenceOperation<PersistentMemberInfo> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
 
     override fun setRegistrationRequestStatus(
         viewOwningIdentity: HoldingIdentity,
@@ -119,14 +112,12 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
         mgmHoldingIdentity: HoldingIdentity,
         preAuthTokenId: UUID,
         remarks: String?,
-    ): MembershipPersistenceOperation<PreAuthToken> =
-        MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
+    ): MembershipPersistenceOperation<PreAuthToken> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
 
     override fun addApprovalRule(
         viewOwningIdentity: HoldingIdentity,
         ruleParams: ApprovalRuleParams,
-    ): MembershipPersistenceOperation<ApprovalRuleDetails> =
-        MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
+    ): MembershipPersistenceOperation<ApprovalRuleDetails> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
 
     override fun deleteApprovalRule(
         viewOwningIdentity: HoldingIdentity,
@@ -146,8 +137,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
 
     override fun updateStaticNetworkInfo(
         info: StaticNetworkInfo
-    ): MembershipPersistenceOperation<StaticNetworkInfo> =
-        MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
+    ): MembershipPersistenceOperation<StaticNetworkInfo> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
 
     override fun updateGroupParameters(
         viewOwningIdentity: HoldingIdentity, newGroupParameters: Map<String, String>

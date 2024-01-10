@@ -21,7 +21,7 @@ class NoopTracingService : TracingService {
         }
 
         override fun markInScope(): AutoCloseable {
-            return AutoCloseable { }
+            return AutoCloseable {  }
         }
 
         override fun errorAndFinish(e: Exception) {
@@ -58,27 +58,7 @@ class NoopTracingService : TracingService {
         }
     }
 
-    override fun addTraceHeaders(
-        headers: List<Pair<String, String>>,
-        traceHeadersToOverrideContext: List<Pair<String, String>>
-    ): List<Pair<String, String>> {
-        // Do nothing. Return the current headers
-        return headers
-    }
-
-    override fun addTraceHeaders(
-        headers: List<Pair<String, String>>,
-        traceHeadersToOverrideContext: Map<String, Any>
-    ): List<Pair<String, String>> {
-        // Do nothing. Return the current headers
-        return headers
-    }
-
-    override fun addTraceHeaders(
-        headers: Map<String, Any>,
-        traceHeadersToOverrideContext: Map<String, Any>
-    ): Map<String, Any> {
-        // Do nothing. Return the current headers
+    override fun addTraceHeaders(headers: List<Pair<String, String>>): List<Pair<String, String>> {
         return headers
     }
 
@@ -102,10 +82,6 @@ class NoopTracingService : TracingService {
         operationName: String,
         headers: List<Pair<String, String>>
     ): TraceContext {
-        return NoopTraceContext()
-    }
-
-    override fun nextSpan(operationName: String, headers: Map<String, Any>): TraceContext {
         return NoopTraceContext()
     }
 

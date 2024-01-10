@@ -45,5 +45,8 @@ dependencies {
 
     testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(':testing:test-utilities')
 }

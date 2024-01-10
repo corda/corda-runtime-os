@@ -1,25 +1,25 @@
 package net.corda.rest.server.impl.security
 
 import io.javalin.http.ForbiddenResponse
-import net.corda.rest.RestResource
 import net.corda.rest.security.AuthorizingSubject
-import net.corda.rest.server.impl.context.ContextUtils
 import net.corda.rest.server.impl.security.provider.AuthenticationProvider
 import net.corda.rest.server.impl.security.provider.credentials.tokens.BearerTokenAuthenticationCredentials
 import net.corda.rest.server.impl.security.provider.credentials.tokens.UsernamePasswordAuthenticationCredentials
 import net.corda.rest.server.impl.security.provider.scheme.AuthenticationSchemeProvider
+import net.corda.rest.RestResource
+import net.corda.rest.server.impl.context.ContextUtils
 import org.junit.jupiter.api.Assertions.assertArrayEquals
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.lang.reflect.Method
 import javax.security.auth.login.FailedLoginException
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.assertDoesNotThrow
+import java.lang.reflect.Method
 
 class RestAuthenticationProviderTest {
     private val authenticationProvider1: AuthenticationProvider = mock()

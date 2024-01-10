@@ -4,9 +4,7 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
-import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.isInitiatedIdentity
-import net.corda.session.manager.Constants.Companion.FLOW_SESSION_REQUIRE_CLOSE
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
@@ -87,11 +85,7 @@ class SessionCloseProcessorSend(
         nextSeqNum: Int,
     ) : SessionState {
         val sessionId = sessionState.sessionId
-        val requireClose = sessionState.sessionProperties?.let {
-            val sessionProperties = KeyValueStore(sessionState.sessionProperties)
-            sessionProperties[FLOW_SESSION_REQUIRE_CLOSE].toBoolean()
-        } ?: true
-
+        val requireClose = sessionState.requireClose
         return if (isInitiatedIdentity(sessionId) && sessionState.status !in listOf(SessionStateType.ERROR, SessionStateType.CLOSED)) {
             if (requireClose) {
                 sessionState.apply {

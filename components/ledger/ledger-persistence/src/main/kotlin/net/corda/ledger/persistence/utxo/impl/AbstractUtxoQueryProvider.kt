@@ -7,17 +7,7 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
     companion object {
         @JvmField
         val UNVERIFIED = TransactionStatus.UNVERIFIED.value
-
-        @JvmField
-        val DRAFT = TransactionStatus.DRAFT.value
     }
-
-    override val findTransactionIdsAndStatuses: String
-        get() = """
-            SELECT id, status 
-            FROM {h-schema}utxo_transaction 
-            WHERE id IN (:transactionIds)"""
-            .trimIndent()
 
     override val findTransactionPrivacySaltAndMetadata: String
         get() = """

@@ -36,7 +36,7 @@ class RequestsIdsRepositoryTest {
      * [entityManagerFactory].
      */
     init {
-        // System.setProperty("postgresPort", "5432")
+        //System.setProperty("postgresPort", "5432")
         dbConfig = DbUtils.getEntityManagerConfiguration(this::class.java.simpleName)
 
         val dbChange = ClassloaderChangeLog(
@@ -99,10 +99,8 @@ class RequestsIdsRepositoryTest {
         assertTrue(request1Time < request2Time)
     }
 
-    @Disabled(
-        "Disabling due to its time overhead of 2 seconds. " +
-            "The test, however, is valid to assert `requestsIdsRepository.deleteRequestsOlderThan` works"
-    )
+    @Disabled("Disabling due to its time overhead of 2 seconds. " +
+            "The test, however, is valid to assert `requestsIdsRepository.deleteRequestsOlderThan` works")
     @Test
     fun `deletes older requests`() {
         val requestId1 = UUID.randomUUID()

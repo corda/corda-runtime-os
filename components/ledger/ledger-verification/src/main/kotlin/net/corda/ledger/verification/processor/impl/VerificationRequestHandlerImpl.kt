@@ -71,9 +71,7 @@ class VerificationRequestHandlerImpl(private val responseFactory: ExternalEventR
                     errorType,
                     errorMessage ?: errorType
                 )
-            } else {
-                null
-            }
+            } else null
         )
 
     private fun TransactionVerificationStatus.toAvro() = when (this) {

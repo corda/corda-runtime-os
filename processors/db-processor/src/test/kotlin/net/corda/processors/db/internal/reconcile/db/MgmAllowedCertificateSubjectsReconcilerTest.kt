@@ -157,7 +157,7 @@ class MgmAllowedCertificateSubjectsReconcilerTest {
 
         mgmAllowedCertificateSubjectsReconciler.updateInterval(10)
 
-        val records = dbReader.firstValue.getAllVersionedRecords().toList()
+        val records = dbReader.firstValue.getAllVersionedRecords()?.toList()
 
         assertThat(records).hasSize(3)
             .anySatisfy {

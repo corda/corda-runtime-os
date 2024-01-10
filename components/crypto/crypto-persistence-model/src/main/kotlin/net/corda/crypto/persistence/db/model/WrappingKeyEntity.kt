@@ -28,7 +28,7 @@ class WrappingKeyEntity(
     @Column(name = "alias", nullable = false, updatable = false, length = 64)
     var alias: String,
 
-    @Column(name = "generation", nullable = false, updatable = true)
+    @Column(name = "generation", nullable = false, updatable = false)
     var generation: Int,
 
     /**
@@ -52,7 +52,7 @@ class WrappingKeyEntity(
     /**
      * Key material for the wrapping key. It's encrypted by another wrapping key.
      */
-    @Column(name = "key_material", nullable = false, updatable = true, columnDefinition = "BLOB")
+    @Column(name = "key_material", nullable = false, updatable = false, columnDefinition = "BLOB")
     var keyMaterial: ByteArray,
 
     /**
@@ -71,7 +71,7 @@ class WrappingKeyEntity(
     /**
      * The id of the key used to wrap this wrapping key, or a config path.
      */
-    @Column(name = "parent_key_reference", nullable = false, updatable = true)
+    @Column(name = "parent_key_reference", nullable = false, updatable = false)
     var parentKeyReference: String,
 ) {
     override fun hashCode() = alias.hashCode()

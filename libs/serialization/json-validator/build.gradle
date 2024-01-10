@@ -30,6 +30,8 @@ dependencies {
         }
     }
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 }
 
 def jar = tasks.named('jar', Jar) {

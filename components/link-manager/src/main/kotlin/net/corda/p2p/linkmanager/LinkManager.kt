@@ -4,7 +4,6 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
@@ -38,7 +37,6 @@ class LinkManager(
     membershipGroupReaderProvider: MembershipGroupReaderProvider,
     membershipQueryClient: MembershipQueryClient,
     groupParametersReaderService: GroupParametersReaderService,
-    stateManager: StateManager,
     linkManagerHostingMap: LinkManagerHostingMap =
         LinkManagerHostingMapImpl(
             lifecycleCoordinatorFactory,
@@ -68,8 +66,7 @@ class LinkManager(
         membershipQueryClient = membershipQueryClient,
         virtualNodeInfoReadService = virtualNodeInfoReadService,
         groupParametersReaderService = groupParametersReaderService,
-        clock = clock,
-        stateManager = stateManager,
+        clock = clock
     )
     private val outboundLinkManager = OutboundLinkManager(
         lifecycleCoordinatorFactory = lifecycleCoordinatorFactory,

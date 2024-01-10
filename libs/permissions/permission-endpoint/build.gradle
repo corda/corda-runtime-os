@@ -5,8 +5,6 @@ plugins {
 
 description 'Endpoint API for management of the role-based access control (RBAC) permission system.'
 
-ext.cordaEnableFormatting = true
-
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly "org.osgi:org.osgi.service.component.annotations"
@@ -19,4 +17,7 @@ dependencies {
     api project(":libs:rest:rest")
     implementation project(":libs:permissions:permission-manager")
     implementation project(":libs:lifecycle:lifecycle")
+
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

@@ -11,7 +11,6 @@ import net.corda.data.membership.command.registration.mgm.QueueRegistration
 import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.MembershipStatusFilter
-import net.corda.membership.impl.registration.RegistrationLogger
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.lib.MemberInfoExtension.Companion.KEYS_PEM_SUFFIX
@@ -72,22 +71,18 @@ internal class QueueRegistrationHandler(
 
     override fun invoke(state: RegistrationState?, key: String, command: QueueRegistration): RegistrationHandlerResult {
         val registrationId = command.memberRegistrationRequest.registrationId
-        val member = command.member.toCorda()
-        val mgm = command.mgm.toCorda()
-        val registrationLogger = RegistrationLogger(logger)
-            .setRegistrationId(registrationId)
-            .setMember(member)
-            .setMgm(mgm)
-
         val outputCommand = try {
             if (command.numberOfRetriesSoFar < MAX_RETRIES) {
-                queueRequest(key, command, registrationLogger)
+                queueRequest(key, command, registrationId)
             } else {
-                registrationLogger.warn("Max re-tries exceeded. Registration is discarded.")
+                logger.warn(
+                    "Max re-tries exceeded for registration with ID `$registrationId`." +
+                            " Registration is discarded."
+                )
                 emptyList()
             }
         } catch (ex: Exception) {
-            registrationLogger.warn("Exception happened while queueing the request. Will re-try again.")
+            logger.warn("Exception happened while queueing the request with ID `$registrationId`. Will re-try again.")
             increaseNumberOfRetries(key, command)
         }
         return RegistrationHandlerResult(state, outputCommand)
@@ -105,9 +100,7 @@ internal class QueueRegistrationHandler(
     }
 
     private fun queueRequest(
-        key: String,
-        command: QueueRegistration,
-        registrationLogger: RegistrationLogger
+        key: String, command: QueueRegistration, registrationId: String
     ): List<Record<*, *>> {
         val context = deserialize(command.memberRegistrationRequest.memberContext.data.array())
 
@@ -120,7 +113,8 @@ internal class QueueRegistrationHandler(
                 command.memberRegistrationRequest.memberContext.data.array(),
             )
         } catch (e: Exception) {
-            registrationLogger.warn("Signature verification failed. Discarding the registration. Reason: ${e.message}")
+            logger.warn("Signature verification failed. Discarding the registration with ID `$registrationId`. " +
+                    "Reason: ${e.message}")
             return emptyList()
         }
 
@@ -143,13 +137,17 @@ internal class QueueRegistrationHandler(
             )
         }
 
-        registrationLogger.info("MGM queueing registration request.")
+        logger.info(
+            "MGM queueing registration request for ${command.member.x500Name} from group `${command.member.groupId}` " +
+                    "with request ID `$registrationId`."
+        )
         membershipPersistenceClient.persistRegistrationRequest(
             command.mgm.toCorda(),
             command.toRegistrationRequest()
         ).getOrThrow()
-        registrationLogger.info(
-            "MGM successfully queued the registration request."
+        logger.info(
+            "MGM put registration request for ${command.member.x500Name} from group `${command.member.groupId}` " +
+                    "with request ID `$registrationId` into the queue."
         )
 
         return listOfNotNull(

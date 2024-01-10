@@ -32,7 +32,6 @@ import java.util.concurrent.ConcurrentHashMap
  */
 interface TestCryptoOpsClient : CryptoOpsClient
 
-@Suppress("TooManyFunctions")
 @ServiceRanking(Int.MAX_VALUE)
 @Component(service = [CryptoOpsClient::class, TestCryptoOpsClient::class])
 class TestCryptoOpsClientImpl @Activate constructor(
@@ -141,7 +140,6 @@ class TestCryptoOpsClientImpl @Activate constructor(
         }
     }
 
-    @Suppress("TooGenericExceptionThrown")
     override fun sign(
         tenantId: String,
         publicKey: PublicKey,

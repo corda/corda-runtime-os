@@ -1,28 +1,18 @@
 package net.corda.libs.permissions.endpoints.v1.user.impl
 
+import java.lang.IllegalArgumentException
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
-import net.corda.libs.permissions.manager.PermissionManager
-import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
-import net.corda.libs.permissions.manager.request.CreateUserRequestDto
-import net.corda.libs.permissions.manager.request.GetUserRequestDto
-import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
-import net.corda.libs.permissions.manager.response.RoleAssociationResponseDto
-import net.corda.libs.permissions.manager.response.RoleResponseDto
-import net.corda.libs.permissions.manager.response.UserResponseDto
-import net.corda.libs.platform.PlatformInfoProvider
-import net.corda.lifecycle.LifecycleCoordinator
-import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.permissions.management.PermissionManagementService
-import net.corda.rest.ResponseCode
-import net.corda.rest.exception.InternalServerException
-import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.rest.security.RestAuthContext
-import org.assertj.core.api.Assertions
+import net.corda.libs.permissions.manager.PermissionManager
+import net.corda.libs.permissions.manager.request.CreateUserRequestDto
+import net.corda.libs.permissions.manager.request.GetUserRequestDto
+import net.corda.libs.permissions.manager.response.UserResponseDto
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -30,9 +20,19 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.lang.IllegalArgumentException
 import java.time.Instant
+import net.corda.rest.ResponseCode
+import net.corda.rest.exception.InternalServerException
+import net.corda.rest.exception.InvalidInputDataException
+import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
+import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
+import net.corda.libs.permissions.manager.response.RoleAssociationResponseDto
+import net.corda.libs.permissions.manager.response.RoleResponseDto
+import net.corda.libs.platform.PlatformInfoProvider
+import org.junit.jupiter.api.Assertions.assertTrue
 import java.util.UUID
+import net.corda.permissions.management.PermissionManagementService
+import org.assertj.core.api.Assertions
 
 internal class UserEndpointImplTest {
 

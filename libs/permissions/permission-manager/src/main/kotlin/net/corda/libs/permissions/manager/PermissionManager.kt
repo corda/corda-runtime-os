@@ -8,9 +8,5 @@ import net.corda.lifecycle.Lifecycle
  *
  * Construct instances of this interface using [PermissionManagerFactory].
  */
-interface PermissionManager :
-    PermissionUserManager,
-    PermissionGroupManager,
-    PermissionRoleManager,
-    PermissionEntityManager,
-    Lifecycle
+interface PermissionManager : PermissionUserManager, PermissionGroupManager, PermissionRoleManager,
+    PermissionEntityManager, Lifecycle

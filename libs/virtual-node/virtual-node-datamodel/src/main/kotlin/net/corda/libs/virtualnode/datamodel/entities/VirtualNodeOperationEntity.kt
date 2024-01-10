@@ -1,7 +1,5 @@
 package net.corda.libs.virtualnode.datamodel.entities
 
-import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationStateDto
-import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 import java.io.Serializable
 import java.time.Instant
 import javax.persistence.Column
@@ -11,6 +9,8 @@ import javax.persistence.Enumerated
 import javax.persistence.Id
 import javax.persistence.Table
 import javax.persistence.Version
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationStateDto
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 
 @Entity
 @Table(name = "virtual_node_operation")
@@ -69,7 +69,7 @@ enum class VirtualNodeOperationState {
 
     companion object {
         fun fromDto(state: VirtualNodeOperationStateDto): VirtualNodeOperationState {
-            return when (state) {
+            return when(state) {
                 VirtualNodeOperationStateDto.IN_PROGRESS -> IN_PROGRESS
                 VirtualNodeOperationStateDto.COMPLETED -> COMPLETED
                 VirtualNodeOperationStateDto.ABORTED -> ABORTED
@@ -83,7 +83,7 @@ enum class VirtualNodeOperationState {
 }
 
 enum class OperationType {
-    CREATE, UPGRADE, CHANGE_DB;
+    CREATE, UPGRADE;
 
     companion object {
         fun from(operationType: VirtualNodeOperationType): OperationType {

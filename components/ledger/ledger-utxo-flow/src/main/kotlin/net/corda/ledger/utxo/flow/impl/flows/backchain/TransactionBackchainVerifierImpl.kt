@@ -51,21 +51,21 @@ class TransactionBackchainVerifierImpl @Activate constructor(
                 INVALID -> {
                     log.warn(
                         "Backchain resolution of $initialTransactionIds - Verification of transaction $transactionId failed. " +
-                            "The transaction is already invalid."
+                                "The transaction is already invalid."
                     )
                     return false
                 }
                 VERIFIED -> {
                     log.trace {
                         "Backchain resolution of $initialTransactionIds - transaction $transactionId is already verified, " +
-                            "skipping verification."
+                                "skipping verification."
                     }
                 }
                 UNVERIFIED -> {
                     if (transaction == null) {
                         log.warn(
                             "Backchain resolution of $initialTransactionIds - Verification of transaction $transactionId failed. " +
-                                "The transaction disappeared."
+                                    "The transaction disappeared."
                         )
                         return false
                     }
@@ -79,7 +79,7 @@ class TransactionBackchainVerifierImpl @Activate constructor(
                         // TODO revisit what exceptions get caught
                         log.warn(
                             "Backchain resolution of $initialTransactionIds - Verification of transaction $transactionId failed," +
-                                " message: ${e.message}"
+                                    " message: ${e.message}"
                         )
                         return false
                     }
@@ -91,7 +91,7 @@ class TransactionBackchainVerifierImpl @Activate constructor(
                 else -> {
                     log.warn(
                         "Backchain resolution of $initialTransactionIds - Verification of transaction $transactionId failed. " +
-                            "Unexpected status $status"
+                                "Unexpected status $status"
                     )
                     return false
                 }

@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
+
 class RestServerLifecycleTest : RestServerTestBase() {
     companion object {
 
@@ -38,10 +39,8 @@ class RestServerLifecycleTest : RestServerTestBase() {
                 true
             ).apply { start() }
             client =
-                TestHttpClientUnirestImpl(
-                    "http://${restServerSettings.address.host}:${server.port}/" +
-                        "${restServerSettings.context.basePath}/${apiVersion.versionPath}/"
-                )
+                TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:${server.port}/" +
+                        "${restServerSettings.context.basePath}/${apiVersion.versionPath}/")
         }
 
         @AfterAll
@@ -55,6 +54,7 @@ class RestServerLifecycleTest : RestServerTestBase() {
 
     @Test
     fun `GET hello name returns string greeting name`() {
+
         // Should report unavailable when REST implementation is not started
         with(client.call(GET, WebRequest<Any>("lifecycle/hello/world?id=1"), userName, password)) {
             println("### $responseStatus")

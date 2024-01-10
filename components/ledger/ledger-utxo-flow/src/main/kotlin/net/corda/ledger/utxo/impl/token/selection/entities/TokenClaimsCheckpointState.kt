@@ -8,3 +8,5 @@ data class TokenClaimsCheckpointState(
     @JsonProperty("claims")
     val claims: MutableList<TokenClaimCheckpointState>
 )
+
+

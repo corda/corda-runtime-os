@@ -22,10 +22,10 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.nio.file.Path
 import java.nio.file.Paths
+import org.mockito.kotlin.mock
 
 class RestServerTest {
 
@@ -42,8 +42,7 @@ class RestServerTest {
         doReturn(null).whenever(configProvider).getSSLKeyStorePassword()
         doReturn(false).whenever(configProvider).isDevModeEnabled()
         Assertions.assertThrows(
-            IllegalArgumentException::class.java,
-            {
+            IllegalArgumentException::class.java, {
                 RestServerInternal(
                     JavalinRouteProviderImpl(
                         "/",
@@ -60,7 +59,7 @@ class RestServerTest {
                     ),
                     multiPartDir,
                     mock()
-                ).start()
+                )
             },
             SSL_PASSWORD_MISSING
         )
@@ -75,8 +74,7 @@ class RestServerTest {
         doReturn(null).whenever(configProvider).getSSLKeyStorePassword()
         doReturn(false).whenever(configProvider).isDevModeEnabled()
         Assertions.assertThrows(
-            Exception::class.java,
-            {
+            Exception::class.java, {
                 RestServerInternal(
                     JavalinRouteProviderImpl(
                         "/",
@@ -93,7 +91,7 @@ class RestServerTest {
                     ),
                     multiPartDir,
                     mock()
-                ).start()
+                )
             },
             INSECURE_SERVER_DEV_MODE_WARNING
         )
@@ -150,7 +148,8 @@ class RestServerTest {
         }.isInstanceOf(IllegalArgumentException::class.java)
             .hasMessage(
                 "Errors when validate resource classes:\n" +
-                    "Parameter test.twoAnnotations can't have multiple types"
+                        "Parameter test.twoAnnotations can't have multiple types"
             )
     }
 }
+

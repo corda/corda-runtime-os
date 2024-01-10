@@ -1,10 +1,9 @@
 package net.corda.rest.server.impl.rest.resources.impl
 
-import net.corda.rest.PluggableRestResource
 import net.corda.rest.server.impl.rest.resources.TestDuplicateProtocolVersionAPI
+import net.corda.rest.PluggableRestResource
 
-internal class TestDuplicateProtocolVersionAPIImpl :
-    TestDuplicateProtocolVersionAPI,
+internal class TestDuplicateProtocolVersionAPIImpl : TestDuplicateProtocolVersionAPI,
     PluggableRestResource<TestDuplicateProtocolVersionAPI> {
 
     override val targetInterface: Class<TestDuplicateProtocolVersionAPI>

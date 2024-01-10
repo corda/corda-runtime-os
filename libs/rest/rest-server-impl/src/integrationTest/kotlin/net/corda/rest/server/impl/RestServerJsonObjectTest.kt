@@ -38,10 +38,8 @@ class RestServerJsonObjectTest : RestServerTestBase() {
                 multipartDir,
                 true
             ).apply { start() }
-            client = TestHttpClientUnirestImpl(
-                "http://${restServerSettings.address.host}:${server.port}/" +
-                    "${restServerSettings.context.basePath}/${apiVersion.versionPath}/"
-            )
+            client = TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:${server.port}/" +
+                    "${restServerSettings.context.basePath}/${apiVersion.versionPath}/")
         }
 
         @AfterAll
@@ -139,13 +137,11 @@ class RestServerJsonObjectTest : RestServerTestBase() {
     @Test
     fun `test escaped string serialization with api taking object`() {
         val response = client.call(
-            POST,
-            WebRequest<Any>(
+            POST, WebRequest<Any>(
                 "objects-in-json-endpoint/create-with-one-object",
                 stringEscapedObjectPayload
             ),
-            userName,
-            password
+            userName, password
         )
         assertEquals(HttpStatus.SC_OK, response.responseStatus)
         assertEquals(expectedObjectResponse, response.body)
@@ -154,13 +150,11 @@ class RestServerJsonObjectTest : RestServerTestBase() {
     @Test
     fun `test real json object serialization with api taking object`() {
         val response = client.call(
-            POST,
-            WebRequest<Any>(
+            POST, WebRequest<Any>(
                 "objects-in-json-endpoint/create-with-one-object",
                 realJsonObjectPayload
             ),
-            userName,
-            password
+            userName, password
         )
         assertEquals(HttpStatus.SC_OK, response.responseStatus)
         assertEquals(expectedObjectResponse, response.body)
@@ -169,13 +163,11 @@ class RestServerJsonObjectTest : RestServerTestBase() {
     @Test
     fun `test escaped string serialization with api taking individual parameters`() {
         val response = client.call(
-            POST,
-            WebRequest<Any>(
+            POST, WebRequest<Any>(
                 "objects-in-json-endpoint/create-with-individual-params",
                 stringEscapedObjectPayload
             ),
-            userName,
-            password
+            userName, password
         )
         assertEquals(HttpStatus.SC_OK, response.responseStatus)
         assertEquals(expectedObjectResponse, response.body)
@@ -184,13 +176,11 @@ class RestServerJsonObjectTest : RestServerTestBase() {
     @Test
     fun `test real json object serialization with api taking individual parameters`() {
         val response = client.call(
-            POST,
-            WebRequest<Any>(
+            POST, WebRequest<Any>(
                 "objects-in-json-endpoint/create-with-individual-params",
                 realJsonObjectPayload
             ),
-            userName,
-            password
+            userName, password
         )
         assertEquals(HttpStatus.SC_OK, response.responseStatus)
         assertEquals(expectedObjectResponse, response.body)
@@ -199,13 +189,11 @@ class RestServerJsonObjectTest : RestServerTestBase() {
     @Test
     fun `test real json map serialization with api taking object`() {
         val response = client.call(
-            POST,
-            WebRequest<Any>(
+            POST, WebRequest<Any>(
                 "objects-in-json-endpoint/create-with-one-object",
                 realJsonMap
             ),
-            userName,
-            password
+            userName, password
         )
         assertEquals(HttpStatus.SC_OK, response.responseStatus)
         assertEquals(expectedMapResponse, response.body)
@@ -214,13 +202,11 @@ class RestServerJsonObjectTest : RestServerTestBase() {
     @Test
     fun `test real json map serialization with api taking single parameters`() {
         val response = client.call(
-            POST,
-            WebRequest<Any>(
+            POST, WebRequest<Any>(
                 "objects-in-json-endpoint/create-with-individual-params",
                 realJsonMap
             ),
-            userName,
-            password
+            userName, password
         )
         assertEquals(HttpStatus.SC_OK, response.responseStatus)
         assertEquals(expectedMapResponse, response.body)
@@ -229,13 +215,11 @@ class RestServerJsonObjectTest : RestServerTestBase() {
     @Test
     fun `test string escaped map serialization with api taking object`() {
         val response = client.call(
-            POST,
-            WebRequest<Any>(
+            POST, WebRequest<Any>(
                 "objects-in-json-endpoint/create-with-one-object",
                 stringEscapedMapPayload
             ),
-            userName,
-            password
+            userName, password
         )
         assertEquals(HttpStatus.SC_OK, response.responseStatus)
         assertEquals(expectedMapResponse, response.body)
@@ -244,13 +228,11 @@ class RestServerJsonObjectTest : RestServerTestBase() {
     @Test
     fun `test string escaped map serialization with api taking single parameters`() {
         val response = client.call(
-            POST,
-            WebRequest<Any>(
+            POST, WebRequest<Any>(
                 "objects-in-json-endpoint/create-with-individual-params",
                 stringEscapedMapPayload
             ),
-            userName,
-            password
+            userName, password
         )
         assertEquals(HttpStatus.SC_OK, response.responseStatus)
         assertEquals(expectedMapResponse, response.body)
@@ -259,13 +241,11 @@ class RestServerJsonObjectTest : RestServerTestBase() {
     @Test
     fun `test string escaped array serialization with api taking object`() {
         val response = client.call(
-            POST,
-            WebRequest<Any>(
+            POST, WebRequest<Any>(
                 "objects-in-json-endpoint/create-with-one-object",
                 stringEscapedArrayPayload
             ),
-            userName,
-            password
+            userName, password
         )
         assertEquals(HttpStatus.SC_OK, response.responseStatus)
         assertEquals(expectedArrayResponse, response.body)
@@ -274,13 +254,11 @@ class RestServerJsonObjectTest : RestServerTestBase() {
     @Test
     fun `test string escaped array serialization with api taking single parameters`() {
         val response = client.call(
-            POST,
-            WebRequest<Any>(
+            POST, WebRequest<Any>(
                 "objects-in-json-endpoint/create-with-individual-params",
                 stringEscapedArrayPayload
             ),
-            userName,
-            password
+            userName, password
         )
         assertEquals(HttpStatus.SC_OK, response.responseStatus)
         assertEquals(expectedArrayResponse, response.body)
@@ -289,13 +267,11 @@ class RestServerJsonObjectTest : RestServerTestBase() {
     @Test
     fun `test real json array serialization with api taking object`() {
         val response = client.call(
-            POST,
-            WebRequest<Any>(
+            POST, WebRequest<Any>(
                 "objects-in-json-endpoint/create-with-one-object",
                 realJsonArrayPayload
             ),
-            userName,
-            password
+            userName, password
         )
         assertEquals(HttpStatus.SC_OK, response.responseStatus)
         assertEquals(expectedArrayResponse, response.body)
@@ -304,15 +280,14 @@ class RestServerJsonObjectTest : RestServerTestBase() {
     @Test
     fun `test real json array serialization with api taking single parameters`() {
         val response = client.call(
-            POST,
-            WebRequest<Any>(
+            POST, WebRequest<Any>(
                 "objects-in-json-endpoint/create-with-individual-params",
                 realJsonArrayPayload
             ),
-            userName,
-            password
+            userName, password
         )
         assertEquals(HttpStatus.SC_OK, response.responseStatus)
         assertEquals(expectedArrayResponse, response.body)
     }
+
 }

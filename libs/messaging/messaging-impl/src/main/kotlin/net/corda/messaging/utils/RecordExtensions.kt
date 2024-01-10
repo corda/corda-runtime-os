@@ -38,9 +38,7 @@ fun <K: Any, V: Any> EventLogRecord<K, V>.toRecord(): Record<K, V> {
 }
 
 fun Record<*, *>.toCordaProducerRecord(): CordaProducerRecord<*, *> {
-    val topic = this.topic
-    requireNotNull(topic) { "Topic is not allowed to be null for CordaProducerRecords" }
-    return CordaProducerRecord(topic, this.key, this.value, this.headers)
+    return CordaProducerRecord(this.topic, this.key, this.value, this.headers)
 }
 
 fun List<Record<*, *>>.toCordaProducerRecords(): List<CordaProducerRecord<*, *>> {

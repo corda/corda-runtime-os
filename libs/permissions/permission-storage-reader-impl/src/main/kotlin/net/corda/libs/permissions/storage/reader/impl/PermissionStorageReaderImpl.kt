@@ -172,7 +172,8 @@ class PermissionStorageReaderImpl(
     }
 
     private fun createPermissionSummaryRecords(summaries: Map<UserLogin, AvroUserPermissionSummary?>):
-        List<Record<String, AvroUserPermissionSummary>> {
+            List<Record<String, AvroUserPermissionSummary>> {
+
         return summaries.map {
             // summaries with null value are removal records for the user
             Record(PERMISSIONS_USER_SUMMARY_TOPIC, it.key, it.value)

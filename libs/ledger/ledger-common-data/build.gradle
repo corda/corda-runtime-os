@@ -5,10 +5,6 @@ plugins {
 
 description 'Corda ledger common data'
 
-ext.cordaEnableFormatting = true
-
-ext.cordaEnableFormatting = true
-
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
@@ -26,8 +22,13 @@ dependencies {
     implementation project(':libs:serialization:serialization-internal')
     implementation project(':libs:utilities')
 
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+
     testImplementation project(':testing:test-serialization')
     testImplementation project(':testing:kryo-serialization-testkit')
     testImplementation project(':testing:ledger:ledger-common-base-test')
 
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

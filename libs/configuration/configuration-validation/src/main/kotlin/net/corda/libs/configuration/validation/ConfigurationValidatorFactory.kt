@@ -11,12 +11,7 @@ interface ConfigurationValidatorFactory {
     fun createConfigValidator(): ConfigurationValidator
 
     /**
-     * Create a configuration validator for a cordapp.
+     * Create a configuration validator for the external messaging
      */
     fun createCordappConfigValidator(): ConfigurationValidator
-
-    /**
-     * Create a configuration validator for the external messaging.
-     */
-    fun createExternalChannelsConfigValidator(): ExternalChannelsConfigValidator
 }

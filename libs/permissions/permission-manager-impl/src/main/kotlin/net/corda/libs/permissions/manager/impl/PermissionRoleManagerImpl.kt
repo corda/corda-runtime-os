@@ -17,6 +17,7 @@ import net.corda.libs.permissions.manager.response.RoleResponseDto
 import net.corda.messaging.api.publisher.RPCSender
 import java.util.concurrent.atomic.AtomicReference
 
+
 class PermissionRoleManagerImpl(
     config: SmartConfig,
     private val rpcSender: RPCSender<PermissionManagementRequest, PermissionManagementResponse>,

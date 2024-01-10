@@ -6,7 +6,7 @@ fun interface WrappingRepositoryFactory {
      *
      * Caller must call close.
      *
-     * @param tenantId The tenant for the wrapping repository.
+     * @param The tenant for the wrapping repository.
      * @result The new [WrappingRepository] instance.
      */
     fun create(tenantId: String): WrappingRepository

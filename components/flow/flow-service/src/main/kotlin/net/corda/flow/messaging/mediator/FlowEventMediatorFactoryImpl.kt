@@ -13,6 +13,7 @@ import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.constants.WorkerRPCPaths.CRYPTO_PATH
@@ -23,7 +24,6 @@ import net.corda.messaging.api.constants.WorkerRPCPaths.UNIQUENESS_PATH
 import net.corda.messaging.api.constants.WorkerRPCPaths.VERIFICATION_PATH
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
-import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_TOPIC
 import net.corda.messaging.api.mediator.RoutingDestination.Companion.routeTo
 import net.corda.messaging.api.mediator.RoutingDestination.Type.ASYNCHRONOUS
 import net.corda.messaging.api.mediator.RoutingDestination.Type.SYNCHRONOUS
@@ -43,8 +43,8 @@ import net.corda.schema.configuration.BootConfig.PERSISTENCE_WORKER_REST_ENDPOIN
 import net.corda.schema.configuration.BootConfig.TOKEN_SELECTION_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.UNIQUENESS_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.VERIFICATION_WORKER_REST_ENDPOINT
-import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT
-import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_THREAD_POOL_SIZE
+import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.FlowConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -79,6 +79,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         stateManager: StateManager,
     ) = eventMediatorFactory.create(
         createEventMediatorConfig(
+            configs,
             messagingConfig,
             flowEventProcessorFactory.create(configs),
             stateManager,
@@ -86,6 +87,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
     )
 
     private fun createEventMediatorConfig(
+        configs: Map<String, SmartConfig>,
         messagingConfig: SmartConfig,
         messageProcessor: StateAndEventProcessor<String, Checkpoint, FlowEvent>,
         stateManager: StateManager,
@@ -113,10 +115,9 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         )
         .messageProcessor(messageProcessor)
         .messageRouterFactory(createMessageRouterFactory(messagingConfig))
-        .threads(messagingConfig.getInt(MEDIATOR_PROCESSING_THREAD_POOL_SIZE))
+        .threads(configs.getConfig(ConfigKeys.FLOW_CONFIG).getInt(FlowConfig.PROCESSING_THREAD_POOL_SIZE))
         .threadName("flow-event-mediator")
         .stateManager(stateManager)
-        .minGroupSize(messagingConfig.getInt(MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT))
         .build()
 
     private fun createMessageRouterFactory(messagingConfig: SmartConfig) = MessageRouterFactory { clientFinder ->
@@ -148,8 +149,6 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
                     rpcEndpoint(UNIQUENESS_WORKER_REST_ENDPOINT, UNIQUENESS_PATH), SYNCHRONOUS)
                 is FlowEvent -> routeTo(messageBusClient,
                     FLOW_EVENT_TOPIC, ASYNCHRONOUS)
-                is String -> routeTo(messageBusClient, // Handling external messaging
-                    message.properties[MSG_PROP_TOPIC] as String, ASYNCHRONOUS)
                 else -> {
                     val eventType = event?.let { it::class.java }
                     throw IllegalStateException("No route defined for event type [$eventType]")

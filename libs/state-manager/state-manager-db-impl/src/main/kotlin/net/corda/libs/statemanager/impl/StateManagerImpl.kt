@@ -38,12 +38,23 @@ class StateManagerImpl(
     private fun StateEntity.fromPersistentEntity() =
         State(key, value, version, objectMapper.convertToMetadata(metadata), modifiedTime)
 
-    override fun create(states: Collection<State>): Set<String> {
-        if (states.isEmpty()) return emptySet()
-        val successfulKeys = dataSource.connection.transaction { connection ->
-            stateRepository.create(connection, states.map { it.toPersistentEntity() })
+    override fun create(states: Collection<State>): Map<String, Exception> {
+        val failures = mutableMapOf<String, Exception>()
+
+        states.map {
+            it.toPersistentEntity()
+        }.forEach { state ->
+            try {
+                dataSource.connection.transaction {
+                    stateRepository.create(it, state)
+                }
+            } catch (e: Exception) {
+                logger.warn("Failed to create state with id ${state.key}", e)
+                failures[state.key] = e
+            }
         }
-        return states.map { it.key }.toSet() - successfulKeys.toSet()
+
+        return failures
     }
 
     override fun get(keys: Collection<String>): Map<String, State> {
@@ -60,7 +71,7 @@ class StateManagerImpl(
         }
     }
 
-    override fun update(states: Collection<State>): Map<String, State?> {
+    override fun update(states: Collection<State>): Map<String, State> {
         if (states.isEmpty()) return emptyMap()
 
         try {
@@ -71,32 +82,13 @@ class StateManagerImpl(
             return if (failedUpdates.isEmpty()) {
                 emptyMap()
             } else {
-                getFailedUpdates(failedUpdates)
+                logger.warn("Optimistic locking check failed while updating States ${failedUpdates.joinToString()}")
+                get(failedUpdates)
             }
         } catch (e: Exception) {
             logger.warn("Failed to updated batch of states - ${states.joinToString { it.key }}", e)
             throw e
         }
-    }
-
-    private fun getFailedUpdates(failedUpdates: List<String>): Map<String, State?> {
-        val failedByOptimisticLocking = get(failedUpdates)
-        val failedByNotExisting = (failedUpdates - failedByOptimisticLocking.keys)
-
-        var warning = ""
-        if (failedByOptimisticLocking.isNotEmpty()) {
-            warning += "Optimistic locking prevented updates to the following States: " +
-                failedByOptimisticLocking.keys.joinToString(postfix = ". ")
-        }
-
-        if (failedByNotExisting.isNotEmpty()) {
-            warning += "Failed to update the following States because they did not exist or were already deleted: " +
-                failedByNotExisting.joinToString(postfix = ".")
-        }
-
-        logger.warn(warning)
-
-        return failedByOptimisticLocking + (failedByNotExisting.associateWith { null })
     }
 
     override fun delete(states: Collection<State>): Map<String, State> {
@@ -110,14 +102,8 @@ class StateManagerImpl(
             return if (failedDeletes.isEmpty()) {
                 emptyMap()
             } else {
-                get(failedDeletes).also {
-                    if (it.isNotEmpty()) {
-                        logger.warn(
-                            "Optimistic locking check failed while deleting States" +
-                                " ${failedDeletes.joinToString()}"
-                        )
-                    }
-                }
+                logger.warn("Optimistic locking check failed while deleting States ${failedDeletes.joinToString()}")
+                get(failedDeletes)
             }
         } catch (e: Exception) {
             logger.warn("Failed to delete batch of states - ${states.joinToString { it.key }}", e)
@@ -161,25 +147,12 @@ class StateManagerImpl(
         }
     }
 
-    override fun findUpdatedBetweenWithMetadataMatchingAll(
+    override fun findUpdatedBetweenWithMetadataFilter(
         intervalFilter: IntervalFilter,
-        metadataFilters: Collection<MetadataFilter>
+        metadataFilter: MetadataFilter
     ): Map<String, State> {
         return dataSource.connection.transaction { connection ->
-            stateRepository.filterByUpdatedBetweenWithMetadataMatchingAll(connection, intervalFilter, metadataFilters)
-        }.map {
-            it.fromPersistentEntity()
-        }.associateBy {
-            it.key
-        }
-    }
-
-    override fun findUpdatedBetweenWithMetadataMatchingAny(
-        intervalFilter: IntervalFilter,
-        metadataFilters: Collection<MetadataFilter>
-    ): Map<String, State> {
-        return dataSource.connection.transaction { connection ->
-            stateRepository.filterByUpdatedBetweenWithMetadataMatchingAny(connection, intervalFilter, metadataFilters)
+            stateRepository.filterByUpdatedBetweenAndMetadata(connection, intervalFilter, metadataFilter)
         }.map {
             it.fromPersistentEntity()
         }.associateBy {

@@ -27,7 +27,6 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -72,7 +71,7 @@ class FlowMessagingImplTest {
     private val serializationService = mock<SerializationServiceInternal>()
 
     private val flowSessionFactory = mock<FlowSessionFactory>().apply {
-        whenever(createInitiatingFlowSession(any(), any(), anyOrNull(), eq(ALICE_X500_NAME), any())).thenReturn(flowSession)
+        whenever(createInitiatingFlowSession(any(), any(), eq(ALICE_X500_NAME), any())).thenReturn(flowSession)
     }
 
     private val normalSessionOne = mock<FlowSessionInternal>()
@@ -136,7 +135,7 @@ class FlowMessagingImplTest {
             )
         )
         flowMessaging.initiateFlow(ALICE_X500_NAME)
-        verify(flowSessionFactory).createInitiatingFlowSession(any(), any(), anyOrNull(),  eq(ALICE_X500_NAME), eq(null))
+        verify(flowSessionFactory).createInitiatingFlowSession(any(), any(), eq(ALICE_X500_NAME), eq(null))
     }
 
     @Test
@@ -156,7 +155,7 @@ class FlowMessagingImplTest {
         }
 
         flowMessaging.initiateFlow(ALICE_X500_NAME, false, builder)
-        verify(flowSessionFactory).createInitiatingFlowSession(any(), any(), anyOrNull(),  eq(ALICE_X500_NAME), eq(builder))
+        verify(flowSessionFactory).createInitiatingFlowSession(any(), any(), eq(ALICE_X500_NAME), eq(builder))
     }
 
     @Test

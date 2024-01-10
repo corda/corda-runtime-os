@@ -5,8 +5,8 @@ import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.common.InconsistentLedgerStateException
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
-import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.v5.crypto.SecureHash
+import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
@@ -50,7 +50,7 @@ interface UtxoPersistenceService {
      */
     fun findSignedLedgerTransaction(id: String, transactionStatus: TransactionStatus): Pair<SignedLedgerTransactionContainer?, String?>
 
-    fun <T : ContractState> findUnconsumedVisibleStatesByType(stateClass: Class<out T>): List<UtxoVisibleTransactionOutputDto>
+    fun <T: ContractState> findUnconsumedVisibleStatesByType(stateClass: Class<out T>): List<UtxoVisibleTransactionOutputDto>
 
     fun resolveStateRefs(stateRefs: List<StateRef>): List<UtxoVisibleTransactionOutputDto>
 

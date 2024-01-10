@@ -15,6 +15,7 @@ class UtxoExecuteNamedQueryHandler(
 ) : RequestHandler {
 
     override fun execute(): List<Record<*, *>> {
+
         val response = vaultNamedQueryExecutor.executeQuery(request)
         return listOf(
             externalEventResponseFactory.success(

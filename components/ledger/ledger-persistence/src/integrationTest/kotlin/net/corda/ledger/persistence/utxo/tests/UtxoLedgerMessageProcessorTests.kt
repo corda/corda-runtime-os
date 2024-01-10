@@ -1,11 +1,13 @@
 package net.corda.ledger.persistence.utxo.tests
 
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
+import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.ledger.persistence.FindTransaction
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
@@ -21,12 +23,12 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.testkit.createExample
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
-import net.corda.ledger.persistence.assertSuccessResponse
 import net.corda.ledger.persistence.consensual.tests.ConsensualLedgerMessageProcessorTests
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.processor.LedgerPersistenceRequestProcessor
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
+import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -61,15 +63,14 @@ import java.nio.file.Path
 import java.security.KeyPairGenerator
 import java.security.PublicKey
 import java.time.Instant
+import java.util.UUID
 
 /**
  * To use Postgres rather than in-memory (HSQL):
  *
  *     docker run --rm --name test-instance -e POSTGRES_PASSWORD=password -p 5432:5432 postgres
  *
- *     gradlew integrationTest -PdatabaseType=POSTGRES
- *
- *     See libs/db/readme.md for a full list of database options.
+ *     gradlew integrationTest -PpostgresPort=5432
  *
  * Rather than creating a new serializer in these tests from scratch,
  * we grab a reference to the one in the sandbox and use that to serialize and de-serialize.
@@ -79,11 +80,10 @@ import java.time.Instant
 @Suppress("FunctionName")
 class UtxoLedgerMessageProcessorTests {
     companion object {
+        const val TOPIC = "utxo-ledger-dummy-topic"
         const val TIMEOUT_MILLIS = 10000L
         val EXTERNAL_EVENT_CONTEXT = ExternalEventContext(
-            "request id",
-            "flow id",
-            KeyValuePairList(listOf(KeyValuePair("corda.account", "test account")))
+            "request id", "flow id", KeyValuePairList(listOf(KeyValuePair("corda.account", "test account")))
         )
         private val notaryX500Name = MemberX500Name.parse("O=ExampleNotaryService, L=London, C=GB")
         private val publicKeyExample: PublicKey = KeyPairGenerator.getInstance("RSA")
@@ -130,6 +130,7 @@ class UtxoLedgerMessageProcessorTests {
         val virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)
         val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
         val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
+
         val transaction = createTestTransaction(ctx)
 
         // Serialise tx into bytebuffer and add to PersistTransaction payload
@@ -143,10 +144,9 @@ class UtxoLedgerMessageProcessorTests {
             ConsensualLedgerMessageProcessorTests.EXTERNAL_EVENT_CONTEXT.apply {
                 this.contextProperties = keyValuePairListOf(
                     this.contextProperties.toMap() +
-                        cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM).toMap()
+                            cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM).toMap()
                 )
-            }
-        )
+            })
 
         // Send request to message processor
         val processor = LedgerPersistenceRequestProcessor(
@@ -156,23 +156,32 @@ class UtxoLedgerMessageProcessorTests {
             responseFactory
         )
 
+        val requestId = UUID.randomUUID().toString()
+        val records = listOf(Record(TOPIC, requestId, request))
+
         // Process the messages (this should persist transaction to the DB)
-        assertSuccessResponse(processor.process(request), logger)
+        var responses = assertSuccessResponses(processor.onNext(records))
+        assertThat(responses).hasSize(1)
 
         // Check that we wrote the expected things to the DB
         val findRequest = createRequest(
-            virtualNodeInfo.holdingIdentity,
-            FindTransaction(transaction.id.toString(), TransactionStatus.VERIFIED.value),
-            EXTERNAL_EVENT_CONTEXT.apply {
+                virtualNodeInfo.holdingIdentity,
+                FindTransaction(transaction.id.toString(), TransactionStatus.VERIFIED.value),
+                EXTERNAL_EVENT_CONTEXT.apply {
                 this.contextProperties = keyValuePairListOf(
                     this.contextProperties.toMap() +
-                        cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM).toMap()
+                            cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM).toMap()
                 )
-            }
-        )
+            })
 
-        val result = assertSuccessResponse(processor.process(findRequest), logger)
-        val entityResponse = deserializer.deserialize(result.payload.array())!!
+        responses =
+            assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), findRequest))))
+
+        assertThat(responses).hasSize(1)
+        val flowEvent = responses.first().value as FlowEvent
+        val response = flowEvent.payload as ExternalEventResponse
+        assertThat(response.error).isNull()
+        val entityResponse = deserializer.deserialize(response.payload.array())!!
         assertThat(entityResponse.results).hasSize(1)
         val retrievedTransaction = ctx.deserialize<Pair<SignedTransactionContainer, String>>(entityResponse.results.first())
         assertThat(retrievedTransaction).isEqualTo(transaction to "V")
@@ -184,12 +193,7 @@ class UtxoLedgerMessageProcessorTests {
         ).bytes
         val outputInfo = ctx.getSerializationService().serialize(
             UtxoOutputInfoComponent(
-                null,
-                null,
-                notaryX500Name,
-                publicKeyExample,
-                TestContractState::class.java.name,
-                "contract tag"
+                null, null, notaryX500Name, publicKeyExample, TestContractState::class.java.name, "contract tag"
             )
         ).bytes
         val wireTransactionFactory: WireTransactionFactory = ctx.getSandboxSingletonService()
@@ -230,6 +234,18 @@ class UtxoLedgerMessageProcessorTests {
             request,
             externalEventContext
         )
+    }
+
+    private fun assertSuccessResponses(records: List<Record<*, *>>): List<Record<*, *>> {
+        records.forEach {
+            val flowEvent = it.value as FlowEvent
+            val response = flowEvent.payload as ExternalEventResponse
+            if (response.error != null) {
+                logger.error("Incorrect error response: {}", response.error)
+            }
+            assertThat(response.error).isNull()
+        }
+        return records
     }
 
     class TestContractState : ContractState {

@@ -79,7 +79,6 @@ class TestFlowEventMediatorFactoryImpl @Activate constructor(
         .threads(1)
         .threadName("flow-event-mediator")
         .stateManager(stateManagerFactory.create(stateManagerConfig))
-        .minGroupSize(20)
         .build()
 
     private fun createMessageRouterFactory() = MessageRouterFactory { clientFinder ->

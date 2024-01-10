@@ -7,8 +7,8 @@ import org.osgi.service.component.annotations.Component
 import java.time.Clock
 
 @Component(service = [ExternalEventFactory::class])
-class FindTransactionIdsAndStatusesExternalEventFactory :
-    AbstractUtxoLedgerExternalEventFactory<FindTransactionIdsAndStatusesParameters> {
+class FindTransactionIdsAndStatusesExternalEventFactory
+    : AbstractUtxoLedgerExternalEventFactory<FindTransactionIdsAndStatusesParameters> {
     @Activate
     constructor() : super()
     constructor(clock: Clock) : super(clock)

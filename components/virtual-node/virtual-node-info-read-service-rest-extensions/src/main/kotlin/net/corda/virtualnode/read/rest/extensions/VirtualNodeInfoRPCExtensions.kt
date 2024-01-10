@@ -73,6 +73,7 @@ fun VirtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(holdingIdent
     return getByHoldingIdentityShortHash(shortHash) ?: throw ResourceNotFoundException("Virtual Node", shortHash.value)
 }
 
+
 /**
  * Returns the virtual node info by short-hash code, for a given holding identity without starting any bundles or
  * instantiating any classes.

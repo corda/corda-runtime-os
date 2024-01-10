@@ -1,5 +1,7 @@
 package net.corda.virtualnode.write.db.impl.tests.writer.asyncoperation.handlers
 
+import java.time.Instant
+import java.util.concurrent.CompletableFuture
 import net.corda.data.virtualnode.VirtualNodeOperationStatus
 import net.corda.db.connection.manager.VirtualNodeDbType.CRYPTO
 import net.corda.db.connection.manager.VirtualNodeDbType.UNIQUENESS
@@ -36,8 +38,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.time.Instant
-import java.util.concurrent.CompletableFuture
+
 
 class CreateVirtualNodeOperationHandlerTest {
     private val timestamp = Instant.now()
@@ -59,7 +60,7 @@ class CreateVirtualNodeOperationHandlerTest {
     }
 
     private val externalMessagingRouteConfigGenerator = mock<ExternalMessagingRouteConfigGenerator>().apply {
-        whenever(generateNewConfig(any(), any(), any())).thenReturn(externalMessagingRouteConfig)
+        whenever(generateNewConfig(any(),any(),any())).thenReturn(externalMessagingRouteConfig)
     }
 
     private val virtualNodeDbFactory = mock<VirtualNodeDbFactory>().apply {
@@ -258,17 +259,14 @@ class CreateVirtualNodeOperationHandlerTest {
         return true
     }
 
+
     @Test
     fun `Handler doesn't try to handle MGM info if CPI is for a static network`() {
         whenever(createVirtualNodeService.getCpiMetaData(CPI_CHECKSUM1.toString()))
             .thenReturn(
-                CpiMetadata(
-                    CPI_IDENTIFIER1,
-                    CPI_CHECKSUM1,
-                    emptySet(),
-                    """
+                CpiMetadata(CPI_IDENTIFIER1, CPI_CHECKSUM1, emptySet(), """
                 {"$PROTOCOL_PARAMETERS": { "$STATIC_NETWORK": {}}}
-                    """.trimIndent(),
+            """.trimIndent(),
                     -1,
                     Instant.now()
                 )

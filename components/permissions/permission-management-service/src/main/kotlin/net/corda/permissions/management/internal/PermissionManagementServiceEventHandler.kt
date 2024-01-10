@@ -28,7 +28,6 @@ import net.corda.permissions.validation.cache.PermissionValidationCacheService
 import net.corda.schema.Schemas.Rest.REST_PERM_MGMT_REQ_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.schema.configuration.ConfigKeys.RBAC_CONFIG
 import net.corda.schema.configuration.ConfigKeys.REST_CONFIG
 import net.corda.utilities.VisibleForTesting
 import org.slf4j.LoggerFactory
@@ -90,7 +89,7 @@ internal class PermissionManagementServiceEventHandler(
                         configSubscription?.close()
                         configSubscription = configurationReadService.registerComponentForUpdates(
                             coordinator,
-                            setOf(BOOT_CONFIG, MESSAGING_CONFIG, REST_CONFIG, RBAC_CONFIG)
+                            setOf(BOOT_CONFIG, MESSAGING_CONFIG, REST_CONFIG)
                         )
                     }
                     LifecycleStatus.DOWN -> {
@@ -111,9 +110,8 @@ internal class PermissionManagementServiceEventHandler(
                 coordinator.updateStatus(LifecycleStatus.DOWN)
                 val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
                 createAndStartRpcSender(messagingConfig)
-                val restConfig = event.config[REST_CONFIG] ?: throw IllegalStateException("REST config is missing")
-                val rbacConfig = event.config[RBAC_CONFIG] ?: throw IllegalStateException("RBAC config is missing")
-                createPermissionManager(restConfig, rbacConfig)
+                val rpcConfig = event.config[REST_CONFIG]!!
+                createPermissionManager(rpcConfig)
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
             is StopEvent -> {
@@ -132,7 +130,7 @@ internal class PermissionManagementServiceEventHandler(
         }
     }
 
-    private fun createPermissionManager(restConfig: SmartConfig, rbacConfig: SmartConfig) {
+    private fun createPermissionManager(config: SmartConfig) {
         val permissionManagementCacheRef = permissionManagementCacheService.permissionManagementCacheRef
 
         val permissionValidationCacheRef = permissionValidationCacheService.permissionValidationCacheRef
@@ -141,8 +139,7 @@ internal class PermissionManagementServiceEventHandler(
         log.info("Creating and starting permission manager.")
         permissionManager =
             permissionManagerFactory.createPermissionManager(
-                restConfig,
-                rbacConfig,
+                config,
                 rpcSender!!,
                 permissionManagementCacheRef,
                 permissionValidationCacheRef

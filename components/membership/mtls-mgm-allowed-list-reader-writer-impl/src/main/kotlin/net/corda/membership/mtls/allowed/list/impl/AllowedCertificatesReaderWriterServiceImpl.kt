@@ -149,7 +149,7 @@ class AllowedCertificatesReaderWriterServiceImpl @Activate constructor(
     }
 
     override fun getAllVersionedRecords():
-            Stream<VersionedRecord<MgmAllowedCertificateSubject, MgmAllowedCertificateSubject>> {
+            Stream<VersionedRecord<MgmAllowedCertificateSubject, MgmAllowedCertificateSubject>>? {
         return publishedSubjects.stream().map {
             object: VersionedRecord<MgmAllowedCertificateSubject, MgmAllowedCertificateSubject> {
                 override val version = 1

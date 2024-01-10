@@ -1,37 +1,17 @@
 package net.corda.p2p.crypto.protocol.api
 
 import net.corda.crypto.utils.PemCertificate
-import net.corda.data.p2p.crypto.protocol.RevocationCheckMode
-import net.corda.data.p2p.crypto.protocol.CheckCertificate as AvroCheckCertificate
+import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
+import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
 
 /**
  * How should the authentication protocol check the certificates sent as a part of authentication protocol.
  */
 sealed class CertificateCheckMode {
-    abstract fun toAvro(): AvroCheckCertificate?
-
-    companion object {
-        fun AvroCheckCertificate?.toCorda(
-            checkRevocation: CheckRevocation,
-        ): CertificateCheckMode {
-            return if (this == null) {
-                NoCertificate
-            } else {
-                CheckCertificate(
-                    truststore = this.truststore,
-                    revocationCheckMode = this.revocationCheckMode,
-                    checkRevocation,
-                )
-            }
-        }
-    }
-
     /**
      * [NoCertificate]: Assumes no certificate is sent as a part of the authentication protocol.
      */
-    object NoCertificate : CertificateCheckMode() {
-        override fun toAvro() = null
-    }
+    object NoCertificate: CertificateCheckMode()
 
     /**
      * [CheckCertificate]: Checks the certificate sent as a part of the authentication protocol. Validates that certificate is signed by
@@ -41,13 +21,10 @@ sealed class CertificateCheckMode {
     data class CheckCertificate(
         val truststore: List<PemCertificate>,
         val revocationCheckMode: RevocationCheckMode,
-        val revocationChecker: CheckRevocation,
-    ) : CertificateCheckMode() {
-        override fun toAvro(): AvroCheckCertificate {
-            return AvroCheckCertificate(
-                truststore,
-                revocationCheckMode,
-            )
-        }
-    }
+        val revocationChecker: (request: RevocationCheckRequest) -> RevocationCheckResponse
+    ): CertificateCheckMode()
+}
+
+enum class RevocationCheckMode {
+    OFF, SOFT_FAIL, HARD_FAIL
 }

@@ -40,8 +40,7 @@ object TestUtils {
                     holdingIdentity.x500Name,
                     "Notary Plugin A",
                     listOf(1, 2),
-                    listOf(mock()),
-                    true
+                    listOf(mock())
                 )
                 whenever(mock.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
             } else {

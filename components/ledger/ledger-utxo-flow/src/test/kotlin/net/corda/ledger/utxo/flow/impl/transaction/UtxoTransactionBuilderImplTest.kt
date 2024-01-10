@@ -33,6 +33,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
 
     @Test
     fun `can build a simple Transaction`() {
+
         val inputStateAndRef = getExampleStateAndRefImpl()
         val inputStateRef = inputStateAndRef.ref
         val referenceStateAndRef = getExampleStateAndRefImpl(2)
