@@ -13,35 +13,7 @@ package net.corda.crypto.merkle.impl
  */
 fun renderTree(leafLabels: List<String>, nodeLabels: Map<Pair<Int, Int>, String> = emptyMap()): String {
     val treeSize = leafLabels.size
-
-    // Work out the tree structure, using iteration.
-    // Loop variable is `values`: the leaf range values at the current level, starting at the bottom where each
-    // leaf range will be a single leaf. As we loop around the leafs get rolled up, until we have a single root node
-    // covering all the leaves.
-    var values: MutableList<Pair<Int, Int>> = (0 until treeSize).map { it to it }.toMutableList()
-    val levels: MutableList<List<Pair<Int, Int>>> = mutableListOf(values.toList())
-    while (values.size > 1) {
-        val newValues: MutableList<Pair<Int, Int>> = mutableListOf()
-        var index = 0 // index into node hashes, which starts off with an entry per leaf
-        while (index < values.size) {
-            if (index < values.size - 1) {
-                // pair the elements
-                newValues += Pair(values[index].first, values[index + 1].second)
-                index += 2
-            } else {
-                // promote the odd man out
-                newValues += values[index]
-                index++
-            }
-        }
-        levels += newValues.toList()
-        check(newValues.size < values.size)
-        values = newValues
-    }
-
-    // We are left with a single root node which covers all the leaves.
-    check(values.size == 1)
-    check(values[0] == 0 to treeSize-1)
+    val levels: MutableList<List<Pair<Int, Int>>> = makeLevels(treeSize)
 
     // Make a grid of box characters to show the tree structure.
     //
@@ -117,4 +89,36 @@ fun renderTree(leafLabels: List<String>, nodeLabels: Map<Pair<Int, Int>, String>
     }
 
     return lines.joinToString("\n")     // Return the whole tree as a single string.
+}
+
+fun makeLevels(treeSize: Int): MutableList<List<Pair<Int, Int>>> {
+    // Work out the tree structure, using iteration.
+    // Loop variable is `values`: the leaf range values at the current level, starting at the bottom where each
+    // leaf range will be a single leaf. As we loop around the leafs get rolled up, until we have a single root node
+    // covering all the leaves.
+    var values: MutableList<Pair<Int, Int>> = (0 until treeSize).map { it to it }.toMutableList()
+    val levels: MutableList<List<Pair<Int, Int>>> = mutableListOf(values.toList())
+    while (values.size > 1) {
+        val newValues: MutableList<Pair<Int, Int>> = mutableListOf()
+        var index = 0 // index into node hashes, which starts off with an entry per leaf
+        while (index < values.size) {
+            if (index < values.size - 1) {
+                // pair the elements
+                newValues += Pair(values[index].first, values[index + 1].second)
+                index += 2
+            } else {
+                // promote the odd man out
+                newValues += values[index]
+                index++
+            }
+        }
+        levels += newValues.toList()
+        check(newValues.size < values.size)
+        values = newValues
+    }
+
+    // We are left with a single root node which covers all the leaves.
+    check(values.size == 1)
+    check(values[0] == 0 to treeSize - 1)
+    return levels
 }

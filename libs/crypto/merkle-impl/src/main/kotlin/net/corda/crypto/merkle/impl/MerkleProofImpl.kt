@@ -274,25 +274,63 @@ class MerkleProofImpl(
     }
 
     @Suppress("UnusedParameters")
-    fun merge(other: MerkleProofImpl): MerkleProofImpl {
+    fun merge(other: MerkleProofImpl, digest: MerkleTreeHashDigestProvider): MerkleProofImpl {
         // First, work out the leaves for the output proof.
         val indexMapMe = leaves.map { it.index to it }.toMap()
         val indexMapOther = other.leaves.map { it.index to it }.toMap()
         val combinedIndexMap = indexMapMe + indexMapOther
         val outLeaves = combinedIndexMap.values.toList().sortedWith( compareBy { it.index })
+        val nodeMapMe: MutableMap< Pair<Int, Int>, MerkleNodeInfo> = mutableMapOf()
+        calculateRootInstrumented(digest) {
+            val k = it.level to it.node.indexWithinLevel
+            nodeMapMe[k] = it
+        }
+        val nodeMapOther: MutableMap< Pair<Int, Int>, MerkleNodeInfo> = mutableMapOf()
+        other.calculateRootInstrumented(digest) {
+            val k = it.level to it.node.indexWithinLevel
+            nodeMapOther[k] = it
+        }
 
-        // We can now work out hashes for the nodes known in either proof.
-        //val outHashMap: Map< Pair<Int, Int>, SecureHash> = mutableMapOf()
-        //calculateRootInstrumented(digest) { hash, level, index, _ -> }
-        //other.calculateRootInstrumented(digest) { hash, level, index, _ -> }
+        val outHashes = mutableListOf<SecureHash>()
 
-        // For each node, where X is me and Y is the other proof, and O is the output proof (so we're doing O = X∪Y)
-        // if X is calculated, it will be calculable in O, so no proof hash needed
-        //  or if Y is calculated, it will be calculable in O, so no proof hash needed
-        //    or if X uses a proof hash, add that proof hash for O
-        //      or if Y uses a proof hash, add that proof hash for O
-        //         else leave it unknown
-        return MerkleProofImpl(proofType, treeSize, outLeaves, emptyList())
+        // now walk the whole tree
+        val levels = makeLevels(treeSize)
+        levels.forEachIndexed { height, ranges ->
+            val level = levels.size - height - 1
+            for (indexWithinLevel in 0 until ranges.size ) {
+                val k = level to indexWithinLevel
+                val x = nodeMapMe.get(k)
+                val y = nodeMapOther.get(k)
+
+                // For each node, where x is me and y is the other proof, and o is the output proof
+                //    (so we're doing O = X∪Y)
+                // if x is calculated, it will be calculable in o, so no proof hash needed
+                //  or if y is calculated, it will be calculable in o, so no proof hash needed
+                //    or if x uses a proof hash, add that proof hash for o
+                //      or if y uses a proof hash, add that proof hash for o
+                //         else it is unknown in both, so leave it unknown
+
+                when {
+                    x != null && x.consumed == null -> {
+                        // X is calculated so it will be calcuable in O, no proof hash needed in O
+                    }
+                    y != null && y.consumed == null -> {
+                        // Y is calculated so it will be calcuble in O, no proof hash needed in O
+                    }
+                    x?.consumed != null -> {
+                        outHashes += x.node.hash
+                    }
+                    y?.consumed != null -> {
+                        outHashes += y.node.hash
+                    }
+                    else -> {
+                        check(x == null)
+                        check(y == null)
+                    }
+                }
+            }
+        }
+        return MerkleProofImpl(proofType, treeSize, outLeaves, outHashes)
     }
 
     override fun equals(other: Any?): Boolean {
