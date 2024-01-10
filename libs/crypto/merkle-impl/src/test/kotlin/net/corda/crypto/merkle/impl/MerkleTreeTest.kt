@@ -523,41 +523,6 @@ class MerkleTreeTest {
                         arrayListOf("00000000", "00000002", "00000004")
                     )
                     assertThat(hashes.map { it.level }).isEqualTo(arrayListOf(2, 2, 2))
-                    assertThat(proof.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
-                        """
-                        00000612 (calc)┳0000069F (calc)┳00000630 (calc)┳00000000 (input 0) filtered
-                                       ┃               ┃               ┗00000001 (calc)    known leaf
-                                       ┃               ┗00000634 (calc)┳00000002 (input 1) filtered
-                                       ┃                               ┗00000003 (calc)    known leaf
-                                       ┗00000638 (calc)━00000638 (calc)┳00000004 (input 2) filtered
-                                                                       ┗00000005 (calc)    known leaf
-                    """
-                    )
-                }
-
-                if (sourceProofLeafSet == 20 && treeSize == 6) {
-                    assertThat(proof.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
-                        """
-                        00000612 (calc)┳0000069F (calc)┳00000630 (input 2)┳unknown            filtered
-                                       ┃               ┃                  ┗unknown            filtered
-                                       ┃               ┗00000634 (calc)   ┳00000002 (calc)    known leaf
-                                       ┃                                  ┗00000003 (input 0) filtered
-                                       ┗00000638 (calc)━00000638 (calc)   ┳00000004 (calc)    known leaf
-                                                                          ┗00000005 (input 1) filtered
-                    """.trimIndent()
-                    )
-                }
-                if (sourceProofLeafSet == 16 && treeSize == 6) {
-                    assertThat(proof.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
-                        """
-                        00000612 (calc)┳0000069F (input 1)┳unknown        ┳unknown            filtered
-                                       ┃                  ┃               ┗unknown            filtered
-                                       ┃                  ┗unknown        ┳unknown            filtered
-                                       ┃                                  ┗unknown            filtered
-                                       ┗00000638 (calc)   ━00000638 (calc)┳00000004 (calc)    known leaf
-                                                                          ┗00000005 (input 0) filtered
-                    """.trimIndent()
-                    )
                 }
 
                 if (sourceProofLeafSet == 3 && treeSize == 3) {
@@ -804,9 +769,8 @@ class MerkleTreeTest {
         }
     }
 
-    private fun testProof(treeSize: Int, sourceProofLeafSet: Int, expected: String, digest: MerkleTreeHashDigestProvider = defaultHashDigestProvider) {
+    private fun testProof(treeSize: Int, leaves: List<Int>, expected: String, digest: MerkleTreeHashDigestProvider = defaultHashDigestProvider) {
         val tree = makeTestMerkleTree(treeSize, digest)
-        val leaves = (0 until treeSize).filter { (sourceProofLeafSet and (1 shl it)) != 0 }
         val proof = testLeafCombination(tree, leaves, tree.root, treeSize, digest)
         assertThat(proof.render(digest)).isEqualToIgnoringWhitespace(expected)
     }
@@ -814,27 +778,64 @@ class MerkleTreeTest {
     @Test
     fun `Merkle proof size 1 with double SHA256`() {
         testProof(
-            1, 1, """
+            1, listOf(0), """
              7901AF93 (calc) known leaf
         """)
     }
 
     @Test
     fun `Merkle proof size 2 with trivial hash`() {
-        testProof(2, 1, """
+        testProof(2, listOf(0), """
             00000630 (calc)┳00000000 (calc)    known leaf
                            ┗00000001 (input 0) filtered
         """, trivialHashDigestProvider)
     }
 
     @Test
-    fun `Merkle proof size 3`() {
-        testProof(3, 1, """
+    fun `Merkle proof size 3 and leaf set 0 using SHA256D hashes`() {
+        testProof(3, listOf(0), """
             A9D5543C (calc)┳BAB170B1 (calc)   ┳7901AF93 (calc)    known leaf
                            ┃                  ┗471864D3 (input 0) filtered
                            ┗66973B1A (input 1)━unknown            filtered
         """.trimIndent())
     }
+
+    @Test
+    fun `Merkle proof size 6 with leaf set 0, 1 using SHA256D hashes`() {
+        testProof(6, listOf(0, 1), """
+            8696C1F4 (calc)┳FF3C3992 (calc)   ┳BAB170B1 (calc)   ┳7901AF93 (calc) known leaf
+                           ┃                  ┃                  ┗471864D3 (calc) known leaf
+                           ┃                  ┗517A5DE6 (input 0)┳unknown         filtered
+                           ┃                                     ┗unknown         filtered
+                           ┗E0CC7E23 (input 1)━unknown           ┳unknown         filtered
+                                                                 ┗unknown         filtered        
+        """.trimIndent())
+    }
+
+    @Test
+    fun `Merkle proof size 6 with leaf set 1, 3, 5 using trivial hashes`() {
+        testProof(6, listOf(1,3,5), """
+            00000612 (calc)┳0000069F (calc)┳00000630 (calc)┳00000000 (input 0) filtered
+                           ┃               ┃               ┗00000001 (calc)    known leaf
+                           ┃               ┗00000634 (calc)┳00000002 (input 1) filtered
+                           ┃                               ┗00000003 (calc)    known leaf
+                           ┗00000638 (calc)━00000638 (calc)┳00000004 (input 2) filtered
+                                                           ┗00000005 (calc)    known leaf            
+        """.trimIndent(), trivialHashDigestProvider)
+    }
+
+    @Test
+    fun `Merkle proof size 6 with leaf set 3 using trivial hashes`() {
+        testProof(6, listOf(4), """
+                00000612 (calc)┳0000069F (input 1)┳unknown        ┳unknown            filtered
+                               ┃                  ┃               ┗unknown            filtered
+                               ┃                  ┗unknown        ┳unknown            filtered
+                               ┃                                  ┗unknown            filtered
+                               ┗00000638 (calc)   ━00000638 (calc)┳00000004 (calc)    known leaf
+                                                                  ┗00000005 (input 0) filtered            
+        """.trimIndent(), trivialHashDigestProvider)
+    }
+
 }
 
 fun SecureHash.hex() = bytes.joinToString(separator = "") { "%02x".format(it) }
