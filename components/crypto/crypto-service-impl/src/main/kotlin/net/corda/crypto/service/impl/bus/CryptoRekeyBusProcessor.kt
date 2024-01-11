@@ -54,31 +54,17 @@ class CryptoRekeyBusProcessor(
             logger.debug("processing $request")
             require(request != null)
 
-
             // TODO: first delete the data in state manager, so we can correctly report on the key rotation status
-            // TODO: do we need to delete key status here as well? Probably yes.
+            // TODO: BUT!! we have to check again if key rotation is in progress. Otherwise currently we can start two key rotations and the key rotation status is delete, created and deleted and nothing is then reported!
             // TODO: deal with optimistic locking, just in case. We should have checked in the rest worker if the key rotation is in progress and don't start a new one if one is
-            val toDelete = stateManager!!.findByMetadataMatchingAll(
-                listOf(
-                    MetadataFilter("rootKeyAlias", Operation.Equals, request.oldParentKeyAlias),
-                    MetadataFilter("type", Operation.Equals, "keyRotation")
-                )
-            )
-            println("XXX: deleting following records: ${toDelete.keys} for rootKeyAlias: ${request.oldParentKeyAlias}")
-            val failedToDelete = stateManager.delete(
-                toDelete.values
-            )
-
-            if (failedToDelete.isNotEmpty()) println("XXX: RekeyBusProcessor failed to delete following states from the state manager: ${failedToDelete.keys}")
-
 
             // Check first if there is a finished key rotation for oldParentKeyAlias
-//            if (hasPreviousKeyRotationFinished(request.oldParentKeyAlias)) {
-//                deleteStateManagerRecords(request.oldParentKeyAlias)
-//            } else {
-//                logger.error("There is already a key rotation of unmanaged wrapping key with alias ${request.oldParentKeyAlias} in progress.")
-//                return emptyList()
-//            }
+            // Same check is done on Rest worker side, but if user quickly issues to key rotation commands after each other,
+            // it will happen that we delete new records from the state manager and wouldn't be able to show user the status at all!
+            if (!hasPreviousRotationFinished(request.oldParentKeyAlias)) {
+                logger.error("There is already a key rotation of unmanaged wrapping key with alias ${request.oldParentKeyAlias} in progress.")
+                return emptyList()
+            }
 
             // root (unmanaged) keys can be used in clusterDB and vNodeDB
             // then for each key we will send a record on Kafka
@@ -109,29 +95,37 @@ class CryptoRekeyBusProcessor(
             // First update state manager, then publish rewrap messages, so the state manager db is already populated
             val records = mutableListOf<State>()
 
-            // First group by tenantId/vNode
+            // Group by tenantId/vNode
             targetWrappingKeys.groupBy { it.first }.forEach {
                 logger.info("XXX: Grouping wrapping keys by vNode/tenantId ${it.key}")
                 println("XXX: Grouping wrapping keys by vNode/tenantId ${it.key}")
                 val status = UnmanagedKeyStatus(request.oldParentKeyAlias, it.value.size, 0)
                 records.add(
                     State(
-                        UUID.randomUUID().toString(),  //"kr${it.key}",
+                        UUID.randomUUID().toString(),
                         serializer.serialize(status)!!,
                         1,
                         Metadata(
-                            mapOf("rootKeyAlias" to request.oldParentKeyAlias,
+                            mapOf(
+                                "rootKeyAlias" to request.oldParentKeyAlias,
                                 "tenantId" to it.key,
                                 "type" to "keyRotation", // maybe create an enum from type, so we can easily add more if needed
-                                STATE_TYPE to status::class.java.name)
+                                "status" to "inProgress",
+                                STATE_TYPE to status::class.java.name
+                            )
                         )
                     )
                 )
             }
 
-            logger.info("XXX: Storing wrapping keys grouped by tenantId into state manager db.")
-            println("XXX: Storing wrapping keys grouped by tenantId into state manager db.")
-            stateManager.create(records)
+            // Only delete previous key rotation status if we are actually going to rotate anything
+            if (records.isNotEmpty()) {
+                deleteStateManagerRecords(request.oldParentKeyAlias)
+                logger.info("XXX: Storing wrapping keys grouped by tenantId into state manager db.")
+                println("XXX: Storing wrapping keys grouped by tenantId into state manager db.")
+            }
+
+            stateManager!!.create(records)
 
             rekeyPublisher.publish(
                 targetWrappingKeys.map { (tenantId, wrappingKeyInfo) ->
@@ -150,9 +144,6 @@ class CryptoRekeyBusProcessor(
                     )
                 }.toList()
             )
-
-
-
 
 
             //val now = Instant.now()
@@ -177,13 +168,31 @@ class CryptoRekeyBusProcessor(
         return emptyList()
     }
 
-//    private fun hasPreviousKeyRotationFinished(oldParentKeyAlias: String): Boolean {
-//        // We need to expand this to check if the key rotation has finished!
-//        // That means to see if total number of expected keys to be rotated matches the actually rotated keys
-//        return stateManager!!.get(listOf(oldParentKeyAlias)).isNotEmpty()
-//    }
-//
-//    private fun deleteStateManagerRecords(oldParentKeyAlias: String) {
-//        stateManager!!.delete(stateManager.get(listOf(oldParentKeyAlias)).values)
-//    }
+    private fun hasPreviousRotationFinished(oldKeyAlias: String): Boolean {
+        stateManager!!.findByMetadataMatchingAll(
+            listOf(
+                MetadataFilter("rootKeyAlias", Operation.Equals, oldKeyAlias),
+                MetadataFilter("type", Operation.Equals, "keyRotation")
+            )
+        ).forEach {
+            // if we find one In Progress status, we know we are not done
+            if (it.value.metadata["status"] != "Done") return false
+        }
+        return true
+    }
+
+    private fun deleteStateManagerRecords(oldParentKeyAlias: String) {
+        val toDelete = stateManager!!.findByMetadataMatchingAll(
+            listOf(
+                MetadataFilter("rootKeyAlias", Operation.Equals, oldParentKeyAlias),
+                MetadataFilter("type", Operation.Equals, "keyRotation")
+            )
+        )
+        println("XXX: deleting following records: ${toDelete.keys} for rootKeyAlias: $oldParentKeyAlias")
+        val failedToDelete = stateManager.delete(
+            toDelete.values
+        )
+
+        // TODO should we throw the exception?
+        if (failedToDelete.isNotEmpty()) println("XXX: RekeyBusProcessor failed to delete following states from the state manager: ${failedToDelete.keys}")    }
 }
