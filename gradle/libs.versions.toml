@@ -8,6 +8,7 @@ javalinVersion = "4.6.8"
 # This version of Jetty must be the same major version as used by Javalin, please see above.
 # Once Javalin version is upgraded to the latest, this override may be removed.
 jettyVersion = "9.4.53.v20231009"
+liquibaseVersion = "4.24.0"
 
 # Testing
 assertjVersion = "3.25.1"
@@ -51,6 +52,7 @@ jetty-websocket-server = { group = "org.eclipse.jetty.websocket", name = "websoc
 jetty-websocket-client = { group = "org.eclipse.jetty.websocket", name = "websocket-client", version.ref = "jettyVersion" }
 jetty-http2-server = { group = "org.eclipse.jetty.http2", name = "http2-server", version.ref = "jettyVersion" }
 gradle-enterprise = { group = "com.gradle", name = "gradle-enterprise-gradle-plugin", version.ref = "gradleEnterpriseVersion" }
+liquibase = { group = "org.liquibase", name = "liquibase-core", version.ref = "liquibaseVersion"}
 
 [bundles]
 bouncycastle = ["bouncycastle-prov", "bouncycastle-pkix"]
