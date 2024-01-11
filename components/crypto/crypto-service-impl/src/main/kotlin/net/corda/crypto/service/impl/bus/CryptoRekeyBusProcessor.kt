@@ -98,7 +98,8 @@ class CryptoRekeyBusProcessor(
                 val status = UnmanagedKeyStatus(request.oldParentKeyAlias, it.value.size, 0)
                 records.add(
                     State(
-                        UUID.randomUUID().toString(),
+                        // key is set as a unique string to prevent table search in rewrap bus processor
+                        request.oldParentKeyAlias + it.key + "keyRotation",  // rootKeyAlias + tenantId + keyRotation
                         serializer.serialize(status)!!,
                         1,
                         Metadata(

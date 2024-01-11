@@ -5,8 +5,6 @@ import net.corda.crypto.core.CryptoService
 import net.corda.data.crypto.wire.ops.key.rotation.IndividualKeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.status.UnmanagedKeyStatus
 import net.corda.libs.statemanager.api.Metadata
-import net.corda.libs.statemanager.api.MetadataFilter
-import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.processor.DurableProcessor
@@ -38,28 +36,29 @@ class CryptoRewrapBusProcessor(
                 cryptoService.rewrapWrappingKey(request.tenantId, request.targetKeyAlias, request.newParentKeyAlias)
             }
 
+            val deserializer =
+                cordaAvroSerializationFactory.createAvroDeserializer({}, UnmanagedKeyStatus::class.java)
+            val serializer = cordaAvroSerializationFactory.createAvroSerializer<UnmanagedKeyStatus>()
+
+            // Once rewrap is done, we can update state manager db
             var statusUpdated = false
-
-            while(!statusUpdated) {
-                // Once rewrap is done, we can update state manager db
-
-                val tenantIdWrappingKeysRecords = stateManager!!.findByMetadataMatchingAll(
-                    listOf(
-                        MetadataFilter("rootKeyAlias", Operation.Equals, request.oldParentKeyAlias),
-                        MetadataFilter("tenantId", Operation.Equals, request.tenantId),
-                        MetadataFilter("type", Operation.Equals, "keyRotation")
-                    )
-                )
+            while (!statusUpdated) {
+                // rootKeyAlias + tenantId + keyRotation is the unique key, therefore we don't need to do the table search through state manager db
+                val tenantIdWrappingKeysRecords =
+                    stateManager!!.get(listOf(request.oldParentKeyAlias + request.tenantId + "keyRotation"))  // rootKeyAlias + tenantId + keyRotation
                 require(tenantIdWrappingKeysRecords.size == 1) { "Found more than 1 ${request.tenantId} records in the database for rootKeyAlias = ${request.oldParentKeyAlias}." }
 
-                val deserializer =
-                    cordaAvroSerializationFactory.createAvroDeserializer({}, UnmanagedKeyStatus::class.java)
-                val serializer = cordaAvroSerializationFactory.createAvroSerializer<UnmanagedKeyStatus>()
                 tenantIdWrappingKeysRecords.forEach { (key, state) ->
                     println("XXX: dealing with tenantId: $key, wrapping key: ${request.targetKeyAlias}")
                     val deserializedStatus = deserializer.deserialize(state.value)!!
                     val newValue =
-                        serializer.serialize(UnmanagedKeyStatus(deserializedStatus.rootKeyAlias, deserializedStatus.total, deserializedStatus.rotatedKeys + 1))
+                        serializer.serialize(
+                            UnmanagedKeyStatus(
+                                deserializedStatus.rootKeyAlias,
+                                deserializedStatus.total,
+                                deserializedStatus.rotatedKeys + 1
+                            )
+                        )
                     // we want to update status to Done if all keys for the tenant have been rotated
                     val newMetadata = if (deserializedStatus.total == deserializedStatus.rotatedKeys + 1) {
                         updateMetadata(state.metadata, "status", "Done")
