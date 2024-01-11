@@ -318,8 +318,8 @@ data class DBParams(val username: String, val password: String, val host: String
 }
 
 data class LoadGenerationParams(
-    val peers: List<HoldingIdentity>,
-    val senders: List<HoldingIdentity>,
+    val peers: Collection<HoldingIdentity>,
+    val senders: Collection<HoldingIdentity>,
     val loadGenerationType: LoadGenerationType,
     val totalNumberOfMessages: Int?,
     val batchSize: Int,

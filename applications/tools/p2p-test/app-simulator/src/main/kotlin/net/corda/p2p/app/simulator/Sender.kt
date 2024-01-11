@@ -81,10 +81,9 @@ class Sender(
                 val publisher = publisherFactory.createPublisher(PublisherConfig("app-simulator", false), messagingConfig)
                 publisher.use {
                     while (moreMessagesToSend(messagesSent, loadGenParams)) {
-                        val messagesWithIds = mutableListOf<Pair<MessageMetaData, AppMessage>>()
-                        loadGenParams.peers.forEach { destination ->
-                            senderIds.forEach { (senderId, senderHoldingId) ->
-                                val messagesPerSender = (1..loadGenParams.batchSize).map {
+                        val messagesWithIds = loadGenParams.peers.flatMap { destination ->
+                            senderIds.flatMap { (senderId, senderHoldingId) ->
+                                (1..loadGenParams.batchSize).map {
                                     createMessage(
                                         "$senderId:$client:${++messagesSent}",
                                         senderId,
@@ -93,7 +92,6 @@ class Sender(
                                         loadGenParams.messageSizeBytes
                                     )
                                 }
-                                messagesWithIds.addAll(messagesPerSender)
                             }
                         }
                         val records = messagesWithIds.map { (messageMetaData, message) ->

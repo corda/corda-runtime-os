@@ -16,7 +16,7 @@ fi
 # Uncomment to enable mutual TLS
 # MTLS="Y"
 
-RUN_MODE="TWO_WAY"
+RUN_MODE="ONE_WAY"
 
 # K8s namespaces
 if [ "$CLUSTER_MODE" == "SINGLE_CLUSTER" ]

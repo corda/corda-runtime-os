@@ -62,14 +62,12 @@ echo "Deploying clusters"
 "$SCRIPT_DIR"/deploy.sh
 echo "Onboarding clusters"
 "$SCRIPT_DIR"/onBoardCluster.sh
+echo "Deploying receiver in $RUN_MODE mode"
+"$SCRIPT_DIR"/runReceiver.sh "$RUN_MODE"
 if [ "$ONE_WAY_LOAD" == "true" ]
 then
-  echo "Running one-way receiver"
-  "$SCRIPT_DIR"/runReceiver.sh ONE_WAY
   dbPassword=$(kubectl get secret --namespace $APP_SIMULATOR_DB_NAMESPACE-db db-postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
 else
-  echo "Running two-way receiver"
-  "$SCRIPT_DIR"/runReceiver.sh TWO_WAY
   dbPasswordA=$(kubectl get secret --namespace $APP_SIMULATOR_DB_NAMESPACE_A db-postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
   dbPasswordB=$(kubectl get secret --namespace $APP_SIMULATOR_DB_NAMESPACE_B db-postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
 fi
@@ -121,13 +119,8 @@ run_sender() {
     | jq '.db.appSimulator.user="postgres"' \
     | jq '.appSimulators.sender.enabled=true' \
     > $senderDetailsFile
-  echo "Running sender..."
-  if [ "$ONE_WAY_LOAD" == "true" ]
-  then
-    SENDER_DETAILS_FILE=$senderDetailsFile "$SCRIPT_DIR"/runSender.sh ONE_WAY
-  else
-    SENDER_DETAILS_FILE=$senderDetailsFile "$SCRIPT_DIR"/runSender.sh TWO_WAY
-  fi
+  echo "Running sender in $RUN_MODE mode..."
+  SENDER_DETAILS_FILE=$senderDetailsFile "$SCRIPT_DIR"/runSender.sh "$RUN_MODE"
   rm "$senderDetailsFile"
   echo "Waiting for messages"
   stop="no"
@@ -179,17 +172,17 @@ batchSize=50
 echo "Warm up"
 run_sender
 
-#totalNumberOfMessages=60000
-#interBatchDelay="PT0.3S"
-#batchSize=40
-#stop="no"
-#latency="0.22"
-#until (( $(echo "$latency > 1.0" |bc -l) ));  do
-#  echo 'Waiting a minute before starting sender'
-#  sleep 60
-#  run_sender
-#  batchSize=$((batchSize + 10))
-#done
+totalNumberOfMessages=60000
+interBatchDelay="PT0.3S"
+batchSize=40
+stop="no"
+latency="0.22"
+until (( $(echo "$latency > 1.0" |bc -l) ));  do
+  echo 'Waiting a minute before starting sender'
+  sleep 60
+  run_sender
+  batchSize=$((batchSize + 10))
+done
 
 if [ "$ONE_WAY_LOAD" == "true" ]
 then

@@ -28,7 +28,7 @@ deploy_sender() {
     -n $1 \
     --set db.appSimulator.password=$2 \
     --set "imagePullSecrets={docker-registry-cred}" \
-    --set image.tag=5.2.0.0-alpha-1704810192792 \
+    --set image.tag=$DOCKER_IMAGE_VERSION \
     --set "appSimulators.sender.senderX500Names=$3" \
     --set "appSimulators.sender.peerX500Names=$4" \
     --set "appSimulators.sender.senderGroupId=$GROUP_ID" \

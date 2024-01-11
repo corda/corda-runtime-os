@@ -27,7 +27,7 @@ deploy_receiver() {
         $metrics_args \
        --set db.appSimulator.password=$2 \
        --set "imagePullSecrets={docker-registry-cred}" \
-       --set image.tag=5.2.0.0-alpha-1704810192792 \
+       --set image.tag=$DOCKER_IMAGE_VERSION \
        --set "db.appSimulator.namespace=$3"\
         --set appSimulators.receiver.topicCreation.replicationFactor=$KAFKA_REPLICATION_FACTOR \
         --set appSimulators.receiver.replicaCount=$WORKER_REPLICAS \
