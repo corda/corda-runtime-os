@@ -75,7 +75,7 @@ class StateManagerHelper<S : Any>(
      * Deserializes state value into the MediatorState.
      *
      * @param state State.
-     * @return Deserialized MediatorState value.
+     * @return Deserialized MediatorState.
      */
     fun deserializeMediatorState(state: State?) =
         state?.value?.let { mediatorStateDeserializer.deserialize(it) }
