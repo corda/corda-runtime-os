@@ -1886,7 +1886,7 @@ class SessionManagerTest {
         mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
         assertThat(messages.size).isEqualTo(2)
 
-        sessionHealthManagerConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
+        sessionHealthManagerConfigHandler.applyNewConfiguration(configWithHeartbeat, configWithHeartbeat, mock())
 
         mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
         mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))

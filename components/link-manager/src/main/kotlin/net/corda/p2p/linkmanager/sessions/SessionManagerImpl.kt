@@ -1043,18 +1043,21 @@ internal class SessionManagerImpl(
             ): CompletableFuture<Unit> {
                 val configUpdateResult = CompletableFuture<Unit>()
                 config.set(newConfiguration)
-                sessionHealthMonitor.set(
-                    when {
-                        newConfiguration.heartbeatEnabled -> {
-                            logger.info("Using session heartbeats to monitor session health.")
-                            HeartbeatSessionHealthMonitor()
+                if(newConfiguration.heartbeatEnabled != oldConfiguration?.heartbeatEnabled) {
+                    sessionHealthMonitor.set(
+                        when {
+                            newConfiguration.heartbeatEnabled -> {
+                                logger.info("Using session heartbeats to monitor session health.")
+                                HeartbeatSessionHealthMonitor()
+                            }
+                            else -> {
+                                logger.info("Using message acknowledgements to monitor session health.")
+                                MessageAckSessionHealthMonitor()
+                            }
                         }
-                        else -> {
-                            logger.info("Using message acknowledgements to monitor session health.")
-                            MessageAckSessionHealthMonitor()
-                        }
-                    }
-                )
+                    )
+                    trackedOutboundSessions.clear()
+                }
                 configUpdateResult.complete(Unit)
                 return configUpdateResult
             }
