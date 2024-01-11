@@ -1,7 +1,7 @@
 package net.corda.crypto.merkle.impl
 
 /**
- * Represents additional  information about a node
+ * Represents additional information about a node
  *
  * @param node The node itself
  * @param level The level within the Merkle tree, counting from the top with 0 being the top
