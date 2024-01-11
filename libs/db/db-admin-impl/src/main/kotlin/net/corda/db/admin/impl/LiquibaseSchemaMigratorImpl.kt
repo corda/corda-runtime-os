@@ -82,7 +82,7 @@ class LiquibaseSchemaMigratorImpl(
                 database
             )
 
-            return liquibase.listUnrunChangeSets(Contexts(), LabelExpression()).map { it.filePath }
+            return liquibase.listUnrunChangeSets(Contexts(), LabelExpression(), false).map { it.filePath }
         }
     }
 
