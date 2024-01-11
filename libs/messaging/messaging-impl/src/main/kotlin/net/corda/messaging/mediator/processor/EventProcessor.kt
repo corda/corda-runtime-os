@@ -1,6 +1,10 @@
 package net.corda.messaging.mediator.processor
 
+import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
+import net.corda.libs.statemanager.api.State.Companion.VERSION_INITIAL_VALUE
+import net.corda.messaging.api.constants.MessagingMetadataKeys.PROCESSING_FAILURE
+import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
@@ -44,18 +48,34 @@ class EventProcessor<K : Any, S : Any, E : Any>(
             }
             val asyncOutputs = mutableListOf<MediatorMessage<Any>>()
             val queue = ArrayDeque(groupEntry.value)
-            while (queue.isNotEmpty()) {
-                val event = queue.removeFirst()
-                val response = config.messageProcessor.onNext(processorState, event)
-                processorState = response.updatedState
-                val (syncEvents, asyncEvents) = response.responseEvents.map { convertToMessage(it) }.partition {
-                    messageRouter.getDestination(it).type == RoutingDestination.Type.SYNCHRONOUS
+            val processed = try {
+                while (queue.isNotEmpty()) {
+                    val event = queue.removeFirst()
+                    val response = config.messageProcessor.onNext(processorState, event)
+                    processorState = response.updatedState
+                    val (syncEvents, asyncEvents) = response.responseEvents.map { convertToMessage(it) }.partition {
+                        messageRouter.getDestination(it).type == RoutingDestination.Type.SYNCHRONOUS
+                    }
+                    asyncOutputs.addAll(asyncEvents)
+                    val returnedMessages = processSyncEvents(groupEntry.key, syncEvents)
+                    queue.addAll(returnedMessages)
                 }
-                asyncOutputs.addAll(asyncEvents)
-                val returnedMessages = processSyncEvents(groupEntry.key, syncEvents)
-                queue.addAll(returnedMessages)
+                stateManagerHelper.createOrUpdateState(groupKey, state, processorState)
+            } catch (e: CordaMessageAPIIntermittentException) {
+                // If an intermittent error occurs here, the RPC client has failed to deliver a message to another part
+                // of the system despite the retry loop implemented there. This should trigger individual processing to
+                // fail.
+                val newMetadata = (state?.metadata?.toMutableMap() ?: mutableMapOf()).also {
+                    it[PROCESSING_FAILURE] = true
+                }
+                asyncOutputs.clear()
+                State(
+                    groupKey,
+                    byteArrayOf(),
+                    version = state?.version ?: VERSION_INITIAL_VALUE,
+                    metadata = Metadata(newMetadata)
+                )
             }
-            val processed = stateManagerHelper.createOrUpdateState(groupKey, state, processorState)
             val stateChangeAndOperation = when {
                 state == null && processed != null -> StateChangeAndOperation.Create(processed)
                 state != null && processed != null -> StateChangeAndOperation.Update(processed)

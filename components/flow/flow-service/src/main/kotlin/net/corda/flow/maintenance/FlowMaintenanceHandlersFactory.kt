@@ -12,9 +12,10 @@ interface FlowMaintenanceHandlersFactory {
      * Create a handler for scheduled task triggers handling session timeout.
      *
      * @param stateManager The state manager the handler should use to retrieve states.
+     * @param config The flow configuration.
      * @return A session timeout task processor.
      */
-    fun createScheduledTaskHandler(stateManager: StateManager): SessionTimeoutTaskProcessor
+    fun createScheduledTaskHandler(stateManager: StateManager, config: SmartConfig): FlowTimeoutTaskProcessor
 
     /**
      * Create a handler for session timeout events.

@@ -9,15 +9,11 @@ import net.corda.e2etest.utilities.onboardMember
 import net.corda.e2etest.utilities.onboardMgm
 import net.corda.e2etest.utilities.onboardNotaryMember
 import net.corda.v5.base.types.MemberX500Name
-import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.parallel.Isolated
 import java.time.Duration
 import java.util.UUID
 
-@Isolated("As it onboards MGM")
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SingleClusterDynamicNetworkTest : ClusterReadiness by ClusterReadinessChecker() {
     private val testUniqueId = UUID.randomUUID()
 
@@ -26,7 +22,7 @@ class SingleClusterDynamicNetworkTest : ClusterReadiness by ClusterReadinessChec
     private val bobX500 = "CN=Bob-${testUniqueId}, OU=Application, O=R3, L=London, C=GB"
     private val notaryX500 = "CN=Notary-${testUniqueId}, OU=Application, O=R3, L=London, C=GB"
 
-    @BeforeAll
+    @BeforeEach
     fun setup() {
         // check cluster is ready
         assertIsReady(Duration.ofMinutes(1), Duration.ofMillis(100))
