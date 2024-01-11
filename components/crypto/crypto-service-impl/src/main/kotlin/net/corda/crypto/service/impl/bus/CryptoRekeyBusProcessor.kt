@@ -121,7 +121,7 @@ class CryptoRekeyBusProcessor(
                         1,
                         Metadata(
                             mapOf("rootKeyAlias" to request.oldParentKeyAlias,
-                                "tenantId" to request.tenantId,
+                                "tenantId" to it.key,
                                 "type" to "keyRotation", // maybe create an enum from type, so we can easily add more if needed
                                 STATE_TYPE to status::class.java.name)
                         )

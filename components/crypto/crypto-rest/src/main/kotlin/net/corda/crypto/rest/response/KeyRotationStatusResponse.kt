@@ -9,6 +9,7 @@ package net.corda.crypto.rest.response
 data class KeyRotationStatusResponse(
     val oldKeyAlias: String,
     val wrappingKeys: List<Pair<String, TenantIdWrappingKeysStatus>>,
+    val status: String,
 )
 
 data class TenantIdWrappingKeysStatus(

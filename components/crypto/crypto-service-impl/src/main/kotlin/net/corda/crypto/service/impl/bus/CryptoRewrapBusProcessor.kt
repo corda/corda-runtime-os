@@ -4,6 +4,7 @@ import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.core.CryptoService
 import net.corda.data.crypto.wire.ops.key.rotation.IndividualKeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.status.UnmanagedKeyStatus
+import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.State
@@ -37,9 +38,9 @@ class CryptoRewrapBusProcessor(
                 cryptoService.rewrapWrappingKey(request.tenantId, request.targetKeyAlias, request.newParentKeyAlias)
             }
 
-            var done = false
+            var statusUpdated = false
 
-            while(!done) {
+            while(!statusUpdated) {
                 // Once rewrap is done, we can update state manager db
 
                 val tenantIdWrappingKeysRecords = stateManager!!.findByMetadataMatchingAll(
@@ -56,24 +57,37 @@ class CryptoRewrapBusProcessor(
                 val serializer = cordaAvroSerializationFactory.createAvroSerializer<UnmanagedKeyStatus>()
                 tenantIdWrappingKeysRecords.forEach { (key, state) ->
                     println("XXX: dealing with tenantId: $key, wrapping key: ${request.targetKeyAlias}")
-                    val keyR = deserializer.deserialize(state.value)!!
+                    val deserializedStatus = deserializer.deserialize(state.value)!!
                     val newValue =
-                        serializer.serialize(UnmanagedKeyStatus(keyR.rootKeyAlias, keyR.total, keyR.rotatedKeys + 1))
+                        serializer.serialize(UnmanagedKeyStatus(deserializedStatus.rootKeyAlias, deserializedStatus.total, deserializedStatus.rotatedKeys + 1))
+                    // we want to update status to Done if all keys for the tenant have been rotated
+                    val newMetadata = if (deserializedStatus.total == deserializedStatus.rotatedKeys + 1) {
+                        updateMetadata(state.metadata, "status", "Done")
+                    } else {
+                        state.metadata
+                    }
                     val failedToUpdate =
-                        stateManager.update(listOf(State(key, newValue!!, state.version, state.metadata)))
+                        stateManager.update(listOf(State(key, newValue!!, state.version, newMetadata)))
                     if (failedToUpdate.isNotEmpty()) {
-                        println(
-                            "XXX: RewrapBusProcessor failed to update following states: ${failedToUpdate.keys}. " +
-                                "If we would be successfull, rotated keys would be ${keyR.rotatedKeys++}"
-                        )
+                        println("XXX: RewrapBusProcessor failed to update following states: ${failedToUpdate.keys}.")
                         Thread.sleep(Random.nextLong(0, 1000))
                     } else {
                         println("job done")
-                        done = true
+                        statusUpdated = true
                     }
                 }
             }
         }
         return emptyList()
+    }
+
+    private fun updateMetadata(metadata: Metadata, key: String, value: String): Metadata {
+        val newMetadata = mutableMapOf<String, String>()
+        metadata.keys.filter { it != key }
+            .forEach { metadataKey ->
+                newMetadata[metadataKey] = metadata[metadataKey].toString()
+            }
+        newMetadata[key] = value
+        return Metadata(newMetadata)
     }
 }

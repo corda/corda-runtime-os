@@ -176,16 +176,21 @@ class KeyRotationRestResourceImpl @Activate constructor(
         // if entries are empty, there is no rootKeyAlias data stored in the state manager, so no key rotation is in progress
         if (entries.isNullOrEmpty()) throw ResourceNotFoundException("No key rotation for $rootKeyAlias is in progress.")
 
+        var rotationStatus = "Done"
         val result = mutableListOf<Pair<String, TenantIdWrappingKeysStatus>>()
-        entries // TODO: we need to filter only those values where key starts with 'kr' (key rotation)
-            .forEach { (key, state) ->
-                val keyRotationStatus = deserializer1.deserialize(state.value)
-                println("XXX: key: $key, state.key: ${state.key}, state.value: $keyRotationStatus")
-                // key.drop(2) to remove first two chars from the key when printing it out?
-                result.add(state.metadata["rootKeyAlias"].toString() to TenantIdWrappingKeysStatus(keyRotationStatus!!.total, keyRotationStatus.rotatedKeys))
-            }
+        entries.forEach { (key, state) ->
+            val keyRotationStatus = deserializer1.deserialize(state.value)
+            println("XXX: key: $key, state.key: ${state.key}, state.value: $keyRotationStatus")
+            result.add(
+                state.metadata["rootKeyAlias"].toString() to TenantIdWrappingKeysStatus(
+                    keyRotationStatus!!.total,
+                    keyRotationStatus.rotatedKeys
+                )
+            )
+            if (state.metadata["status"] != "Done") rotationStatus = "In Progress"
+        }
 
-        return KeyRotationStatusResponse(rootKeyAlias, result)
+        return KeyRotationStatusResponse(rootKeyAlias, result, rotationStatus)
     }
 
     override fun startKeyRotation(oldKeyAlias: String, newKeyAlias: String): ResponseEntity<KeyRotationResponse> {
