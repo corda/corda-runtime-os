@@ -54,13 +54,9 @@ class CryptoRekeyBusProcessor(
             logger.debug("processing $request")
             require(request != null)
 
-            // TODO: first delete the data in state manager, so we can correctly report on the key rotation status
-            // TODO: BUT!! we have to check again if key rotation is in progress. Otherwise currently we can start two key rotations and the key rotation status is delete, created and deleted and nothing is then reported!
-            // TODO: deal with optimistic locking, just in case. We should have checked in the rest worker if the key rotation is in progress and don't start a new one if one is
-
-            // Check first if there is a finished key rotation for oldParentKeyAlias
-            // Same check is done on Rest worker side, but if user quickly issues to key rotation commands after each other,
-            // it will happen that we delete new records from the state manager and wouldn't be able to show user the status at all!
+            // Check first if there is a running key rotation for oldParentKeyAlias.
+            // Same check is done on the Rest worker side, but if user quickly issues two key rotation commands after each other,
+            // it will pass rest worker check as state manager was not yet populated.
             if (!hasPreviousRotationFinished(request.oldParentKeyAlias)) {
                 logger.error("There is already a key rotation of unmanaged wrapping key with alias ${request.oldParentKeyAlias} in progress.")
                 return emptyList()
@@ -118,7 +114,7 @@ class CryptoRekeyBusProcessor(
                 )
             }
 
-            // Only delete previous key rotation status if we are actually going to rotate anything
+            // Only delete previous key rotation status if we are actually going to rotate something
             if (records.isNotEmpty()) {
                 deleteStateManagerRecords(request.oldParentKeyAlias)
                 logger.info("XXX: Storing wrapping keys grouped by tenantId into state manager db.")
@@ -144,25 +140,6 @@ class CryptoRekeyBusProcessor(
                     )
                 }.toList()
             )
-
-
-            //val now = Instant.now()
-//            val status = KeyRotationStatus(
-//                request.requestId,
-//                request.managedKey,
-//                request.oldParentKeyAlias,
-//                request.newParentKeyAlias,
-//                request.oldGeneration,
-//                request.tenantId,
-//                0, // We don't know the new generation number at this stage
-//                0, // We don't know how many keys are yet rotated
-//                targetWrappingKeys.count(),
-//                Instant.ofEpochMilli(timestamp),
-//                now
-//            )
-//
-//            val flattend = checkNotNull(serializer.serialize(status))
-//            stateManager?.create(listOf(State(request.requestId, flattend, 1, Metadata(), now)))
         }
 
         return emptyList()
