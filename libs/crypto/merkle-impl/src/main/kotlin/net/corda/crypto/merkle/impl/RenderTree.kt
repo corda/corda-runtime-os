@@ -53,8 +53,11 @@ fun renderTree(leafLabels: List<String>, nodeLabels: Map<Pair<Int, Int>, String>
     // mostly get overwritten later to add the vertical elements.
     levels.forEachIndexed { level, ranges ->
         ranges.forEach { range ->
-            val x = levels.size - level - 1
-            grid.put(x to range.first, '━')
+            // we don't want ━ to the right of the leaves, since that looks like an extra node
+            if (level != 0) {
+                val x = levels.size - level - 1
+                grid.put(x to range.first, '━')
+            }
         }
     }
 
@@ -88,7 +91,7 @@ fun renderTree(leafLabels: List<String>, nodeLabels: Map<Pair<Int, Int>, String>
     }
 
     // Work out how much space to leave for node label columns.
-    val longestLabels = (0..values.size + 1).map { x ->
+    val longestLabels = (0 until levels.size).map { x ->
         (0 until treeSize).map { y ->
             (nodeLabels.get(x to y) ?: "").length
         }.max()
@@ -103,9 +106,9 @@ fun renderTree(leafLabels: List<String>, nodeLabels: Map<Pair<Int, Int>, String>
 
     // Work out the lines as strings, using the box characters, node and leaf labels.
     val lines: List<String> = (0 until treeSize).map { y ->
-        val line = (0..values.size + 1).map { x ->
+        val line = (0 until levels.size).map { x ->
             // x is the level of the tree, so x=0 is the top node
-            // work out how many nodes across at the current level of the tree we are at, or -1 if we aren't at a node
+            // work out this node's index at the current level of the tree we are at, or -1 if we aren't at a node
             val nodeIndex = nodeYCoordinates.get(x to y)?:-1
             "${nodeLabels[x to nodeIndex]?.padEnd(longestLabels[x], ' ')?:(" ".repeat(longestLabels[x]))}${grid.getOrDefault(x to y, ' ')}"
         }
