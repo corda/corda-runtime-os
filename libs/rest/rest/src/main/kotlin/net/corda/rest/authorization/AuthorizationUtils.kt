@@ -20,17 +20,10 @@ object AuthorizationUtils {
         val principal = authorizingSubject.principal
         log.trace("Authorize \"$principal\" for \"$resourceAccessString\".")
 
-        if (authorizationProvider != null) {
-            if (!authorizationProvider.isAuthorized(authorizingSubject, resourceAccessString)) {
-                val pathParts = resourceAccessString.split(METHOD_SEPARATOR, limit = 2)
-                withMDC(principal, pathParts.firstOrNull() ?: "no_method", pathParts.lastOrNull() ?: "no_path") {
-                    "User not authorized.".let {
-                        log.info(it)
-                        throw IllegalStateException(it)
-                    }
-                }
-            }
-        } else if (!authorizingSubject.isPermitted(resourceAccessString)) {
+        val isAuthorized = authorizationProvider?.isAuthorized(authorizingSubject, resourceAccessString)
+            ?: authorizingSubject.isPermitted(resourceAccessString)
+
+        if (!isAuthorized) {
             val pathParts = resourceAccessString.split(METHOD_SEPARATOR, limit = 2)
             withMDC(principal, pathParts.firstOrNull() ?: "no_method", pathParts.lastOrNull() ?: "no_path") {
                 "User not authorized.".let {
