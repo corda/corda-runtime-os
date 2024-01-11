@@ -3,12 +3,16 @@ package net.corda.flow.metrics.impl
 import net.corda.flow.metrics.FlowMetricsRecorder
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.metrics.CordaMetrics
+import org.slf4j.LoggerFactory
 import java.time.Duration
 
 @Suppress("TooManyFunctions")
 class FlowMetricsRecorderImpl(
     private val flowCheckpoint: FlowCheckpoint
 ) : FlowMetricsRecorder {
+    companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     override fun recordFlowEventLag(lagMilli: Long, flowEventType: String) {
         CordaMetrics.Metric.FlowEventLagTime.builder()
@@ -49,6 +53,13 @@ class FlowMetricsRecorderImpl(
             .withTag(CordaMetrics.Tag.FlowType, getFlowType(isSubFlow))
             .withTag(CordaMetrics.Tag.FlowEvent, flowEventType)
             .build().record(Duration.ofMillis(executionTimeMillis))
+//        logger.info(
+//            "reqId=${flowCheckpoint.flowStartContext.requestId}," +
+//            "flowName=$flowName," +
+//            "flowId=${flowCheckpoint.flowId}," +
+//            "eventType=$flowEventType," +
+//            "duration=$executionTimeMillis"
+//        )
     }
 
     override fun recordTotalPipelineExecutionTime(flowName: String, isSubFlow:Boolean, executionTimeMillis: Long) {

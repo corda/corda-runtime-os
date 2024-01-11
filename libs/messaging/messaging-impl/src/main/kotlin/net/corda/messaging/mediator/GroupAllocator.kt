@@ -2,8 +2,6 @@ package net.corda.messaging.mediator
 
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.records.Record
-import kotlin.math.ceil
-import kotlin.math.min
 
 /**
  * Helper class to use in the mediator to divide polled records into groups for processing.
@@ -24,7 +22,7 @@ class GroupAllocator {
         events: List<Record<K, E>>,
         config: EventMediatorConfig<K, S, E>
     ): List<Map<K, List<Record<K, E>>>> {
-        val groups = setUpGroups(config, events)
+        val groups = setUpGroups(config)
         val buckets = events
             .groupBy { it.key }.toList()
             .sortedByDescending { it.second.size }
@@ -39,13 +37,8 @@ class GroupAllocator {
 
     private fun <E : Any, S: Any, K : Any> setUpGroups(
         config: EventMediatorConfig<K, S, E>,
-        events: List<Record<K, E>>
     ): MutableList<MutableMap<K, List<Record<K, E>>>> {
-        val numGroups = min(
-            ceil(events.size.toDouble() / config.minGroupSize).toInt(),
-            config.threads
-        )
-        
+        val numGroups = config.threads
         return MutableList(numGroups) { mutableMapOf() }
     }
 }

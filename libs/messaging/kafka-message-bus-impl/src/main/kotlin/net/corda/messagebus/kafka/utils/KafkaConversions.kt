@@ -43,6 +43,8 @@ fun <K : Any, V : Any> ConsumerRecord<Any, Any>.toCordaConsumerRecord(
     key:K,
     value:V?
 ): CordaConsumerRecord<K, V> {
+    val polledTime = System.currentTimeMillis()
+    val headers = this.headers().map { it.key() to stringDeserializer.deserialize(null, it.value()) }
     return CordaConsumerRecord(
         this.topic().removePrefix(topicPrefix),
         this.partition(),
@@ -50,7 +52,7 @@ fun <K : Any, V : Any> ConsumerRecord<Any, Any>.toCordaConsumerRecord(
         key,
         value,
         this.timestamp(),
-        this.headers().map { it.key() to stringDeserializer.deserialize(null, it.value()) }
+        headers + Pair("polledTime", polledTime.toString())
     )
 }
 

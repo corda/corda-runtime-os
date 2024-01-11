@@ -18,7 +18,7 @@ class HTTPRetryExecutor {
                 val result = tryAttempt(i, config, block)
                 if (result != null) return result
 
-                log.trace { "Attempt #${i + 1} failed. Retrying in $currentDelay ms..." }
+                log.error("Attempt #${i + 1} failed. Retrying in $currentDelay ms...")
                 Thread.sleep(currentDelay)
                 currentDelay = (currentDelay * config.factor).toLong()
             }

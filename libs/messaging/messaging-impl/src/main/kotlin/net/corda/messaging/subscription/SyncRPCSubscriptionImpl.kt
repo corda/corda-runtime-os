@@ -9,6 +9,7 @@ import net.corda.messaging.api.exception.CordaHTTPServerTransientException
 import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
+import net.corda.metrics.CordaMetrics
 import net.corda.rest.ResponseCode
 import net.corda.web.api.Endpoint
 import net.corda.web.api.HTTPMethod
@@ -16,7 +17,8 @@ import net.corda.web.api.WebContext
 import net.corda.web.api.WebHandler
 import net.corda.web.api.WebServer
 import org.slf4j.LoggerFactory
-import java.util.*
+import java.time.Duration
+import java.util.UUID
 
 /**
  * HTTP-based implementation of a RPCSubscription that processes requests synchronously.
@@ -74,6 +76,7 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         val server = webServer
 
         val webHandler = WebHandler { context ->
+            val startTime = System.nanoTime()
             val payload = cordaAvroDeserializer.deserialize(context.bodyAsBytes())
 
             if (payload == null) {
@@ -103,6 +106,11 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                     context.status(ResponseCode.INTERNAL_SERVER_ERROR)
                 }
             }
+            val endTime = System.nanoTime()
+            CordaMetrics.Metric.Messaging.RpcServerResponseTime.builder()
+                .withTag(CordaMetrics.Tag.OperationStatus, rpcEndpoint)
+                .build()
+                .record(Duration.ofNanos(endTime - startTime))
             context
         }
 

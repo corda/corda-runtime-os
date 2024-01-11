@@ -11,6 +11,7 @@ import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.GroupAllocator
 import net.corda.messaging.mediator.MediatorState
+import net.corda.messaging.mediator.MessageBusConsumer
 import net.corda.messaging.mediator.MultiSourceEventMediatorImpl
 import net.corda.messaging.mediator.metrics.EventMediatorMetrics
 import net.corda.messaging.utils.toRecord
@@ -47,6 +48,8 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     private val pollTimeout = config.pollTimeout
 
     private val stateManager = config.stateManager
+
+    private var previousPollEmpty = true
 
     /**
      * Creates a message bus consumer and begins processing records from the subscribed topic.
@@ -95,15 +98,25 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      * @param consumer message bus consumer
      */
     private fun pollAndProcessEvents(consumer: MediatorConsumer<K, E>) {
-        val messages = consumer.poll(pollTimeout)
-        val startTimestamp = System.nanoTime()
-        val polledRecords = messages.map { it.toRecord() }
+//        if (!previousPollEmpty) {
+//            log.info("Polling")
+//        }
+        val messages = metrics.pollTimer.recordCallable {
+            consumer.poll(pollTimeout)
+        }!!
+        previousPollEmpty = messages.isEmpty()
         if (messages.isNotEmpty()) {
+            val startTimestamp = System.nanoTime()
+            val polledRecords = messages.map { it.toRecord() }
+//            logLag(messages)
+            metrics.recordPollSize((consumer as MessageBusConsumer).topic, messages.size)
             var groups = groupAllocator.allocateGroups(polledRecords, config)
             var statesToProcess = stateManager.get(messages.map { it.key.toString() }.distinct())
+            metrics.loadTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
 
             while (groups.isNotEmpty()) {
                 // Process each group on a thread
+                val groupStartTimestamp = System.nanoTime()
                 val outputs = groups.filter {
                     it.isNotEmpty()
                 }.map { group ->
@@ -117,18 +130,37 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 }.mapKeys {
                     it.toString()
                 }
+                metrics.groupTimer.record(System.nanoTime() - groupStartTimestamp, TimeUnit.NANOSECONDS)
 
                 // Persist state changes, send async outputs and setup to reprocess states that fail to persist
                 val failedStates = processOutputs(outputs)
                 statesToProcess = failedStates
                 groups = assignNewGroupsForFailedStates(failedStates, polledRecords)
             }
+            metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
             metrics.commitTimer.recordCallable {
                 consumer.syncCommitOffsets()
             }
         }
-        metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
     }
+
+//    private fun logLag(messages: List<CordaConsumerRecord<K, E>>) {
+//        val headers = messages.flatMap { it.headers }
+//        val polledTime = headers
+//            .firstOrNull { it.first == "polledTime" }
+//            ?.second?.toLong()
+//        val sentTimes = headers.filter { it.first == "sentTime" }.mapNotNull { it.second.toLong() }
+//        val maxLag = if (sentTimes.isNotEmpty()) {
+//            polledTime?.let { it - sentTimes.min() }
+//        } else null
+//        val minLag = if (sentTimes.isNotEmpty()) {
+//            polledTime?.let { it - sentTimes.max() }
+//        } else null
+//        log.info("polledCount=${messages.size}, maxLag=$maxLag, minLag=$minLag")
+//        if (maxLag != null) {
+//            metrics.lagTimer.record(maxLag, TimeUnit.MILLISECONDS)
+//        }
+//    }
 
     /**
      * Persist any states outputted by the [eventProcessor] to the [stateManager]
@@ -137,6 +169,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      * @return a map of all the states that failed to save by their keys.
      */
     private fun processOutputs(outputs: Map<String, EventProcessingOutput>): Map<String, State> {
+        val persistStartTimestamp = System.nanoTime()
         val statesToCreate = mutableListOf<State>()
         val statesToUpdate = mutableListOf<State>()
         val statesToDelete = mutableListOf<State>()
@@ -155,9 +188,12 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val failedToUpdateOptimisticLockFailure = failedToUpdate.mapNotNull { (key, value) ->
             value?.let { key to it }
         }.toMap()
+        metrics.persistTimer.record(System.nanoTime() - persistStartTimestamp, TimeUnit.NANOSECONDS)
         val failedKeys = failedToCreate.keys + failedToDelete.keys + failedToUpdate.keys
         val outputsToSend = (outputs - failedKeys).values.flatMap { it.asyncOutputs }
+        val sendStartTimestamp = System.nanoTime()
         sendAsynchronousEvents(outputsToSend)
+        metrics.sendAsyncTimer.record(System.nanoTime() - sendStartTimestamp, TimeUnit.NANOSECONDS)
 
         return failedToCreate + failedToDelete + failedToUpdateOptimisticLockFailure
     }

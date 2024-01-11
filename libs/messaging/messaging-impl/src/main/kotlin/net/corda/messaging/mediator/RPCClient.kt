@@ -142,14 +142,18 @@ class RPCClient(
     private fun sendWithRetry(request: HttpRequest): HttpResponse<ByteArray> {
         val startTime = System.nanoTime()
         return try {
-            val response = HTTPRetryExecutor.withConfig(retryConfig) {
-                httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
+            HTTPRetryExecutor.withConfig(retryConfig) {
+                try {
+                    val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
+                    buildMetricForResponse(startTime, SUCCESS, request, response)
+                    response
+                } catch (e: Exception) {
+                    buildMetricForResponse(startTime, FAILED, request)
+                    throw e
+                }
             }
-            buildMetricForResponse(startTime, SUCCESS, request, response)
-            response
         } catch (ex: Exception) {
             log.debug { "Catching exception in HttpClient sendWithRetry in order to log metrics, $ex" }
-            buildMetricForResponse(startTime, FAILED, request)
             throw ex
         }
     }

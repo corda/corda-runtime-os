@@ -31,6 +31,8 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         ::onSerializationError
     )
 
+    private var previousPollEmpty = false
+
     override fun start() {
         log.debug { "Starting multi-source event mediator with config: $config" }
         lifecycleCoordinator.start()

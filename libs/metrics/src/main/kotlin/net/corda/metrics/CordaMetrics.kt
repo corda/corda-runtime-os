@@ -631,14 +631,30 @@ object CordaMetrics {
         object Messaging {
 
             /**
+             * Time it took for message to be polled after it was sent
+             */
+            object MessageLagTime : Metric<Timer>("messaging.lag.time", CordaMetrics::timer)
+
+            /**
              * Time it took to execute a message pattern processor
              */
             object MessageProcessorTime : Metric<Timer>("messaging.processor.time", CordaMetrics::timer)
+
+            object MessageGroupTime : Metric<Timer>("messaging.group.time", CordaMetrics::timer)
+
+            object MessageLoadTime : Metric<Timer>("messaging.load.time", CordaMetrics::timer)
+
+            object MessagePersistTime : Metric<Timer>("messaging.persist.time", CordaMetrics::timer)
+
+            object MessageSendAsyncTime : Metric<Timer>("messaging.sendasync.time", CordaMetrics::timer)
 
             /**
              * The size of batches of messages received in polls from the message bus by consumers.
              */
             object ConsumerBatchSize : Metric<DistributionSummary>("consumer.batch.size", Metrics::summary)
+
+            object ConsumerPollSize :
+                Metric<DistributionSummary>("consumer.poll.size", Metrics::summary)
 
             /**
              * The time taken to commit a processed batch of messages back to the bus.
@@ -675,6 +691,11 @@ object CordaMetrics {
              * Record how long a HTTP RPC call from the messaging library takes to receive a response
              */
             object HTTPRPCResponseTime : Metric<Timer>("rpc.http.response.time", CordaMetrics::timer)
+
+            /**
+             * Record time needed to process a RPC request
+             */
+            object RpcServerResponseTime : Metric<Timer>("rpc.server.response.time", CordaMetrics::timer)
 
             /**
              * Record the size of HTTP RPC responses

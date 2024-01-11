@@ -62,11 +62,12 @@ class MessageBusClient(
  * Helper function to convert a [MediatorMessage] of a specific format to a [CordaProducerRecord]
  */
 private fun MediatorMessage<*>.toCordaProducerRecord(): CordaProducerRecord<*, *> {
+    val sentTime = System.currentTimeMillis()
     return CordaProducerRecord(
         topic = this.getProperty<String>(MSG_PROP_ENDPOINT),
         key = this.getProperty(MSG_PROP_KEY),
         value = this.payload,
-        headers = this.properties.toHeaders(),
+        headers = this.properties.toHeaders() + Pair("sentTime", sentTime.toString()),
     )
 }
 

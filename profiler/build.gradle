@@ -6,7 +6,7 @@ plugins {
 
 description 'Creates a ZIP artifact containing the YourKit Java Profiler agent for Linux x86_64'
 
-def downloadUrl = "${downloadBaseUrl}/${yourkitVersion}/YourKit-JavaProfiler-${yourkitVersion}-b103.zip"
+def downloadUrl = "${downloadBaseUrl}/${yourkitVersion}/YourKit-JavaProfiler-${yourkitVersion}-b103-x64.zip"
 def downloadDir = layout.buildDirectory.dir('download')
 def yourkitProfilerZip = objects.fileProperty().value(downloadDir.map { it.file('yourkit.zip') })
 def distributionDir = layout.buildDirectory.dir('distribution')
