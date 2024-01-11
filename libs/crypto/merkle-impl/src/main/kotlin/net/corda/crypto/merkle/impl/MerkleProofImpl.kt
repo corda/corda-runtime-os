@@ -182,7 +182,7 @@ class MerkleProofImpl(
                     // We pair the current element with a hash from the proof
                     val newNode = (if ((item.indexWithinLevel and 1) == 0) {      // Even index means, that the item is on the left
                         // Remember we consumed a proof hash for the right hand child
-                        onNewHash(MerkleNodeInfo(MerkleNode(item.indexWithinLevel+1, hashes[hashIndex]), treeDepth+1, hashIndex))
+                        onNewHash(MerkleNodeInfo(MerkleNode(item.indexWithinLevel + 1, hashes[hashIndex]), treeDepth + 1, hashIndex))
                         // Make new node with
                         //   - left being current element
                         //   - right being a consumed incoming hash from $hashes[$hashIndex]
