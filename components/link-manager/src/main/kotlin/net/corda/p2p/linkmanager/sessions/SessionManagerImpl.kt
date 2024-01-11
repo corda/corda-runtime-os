@@ -1056,7 +1056,6 @@ internal class SessionManagerImpl(
                             }
                         }
                     )
-                    trackedOutboundSessions.clear()
                 }
                 configUpdateResult.complete(Unit)
                 return configUpdateResult
@@ -1316,6 +1315,10 @@ internal class SessionManagerImpl(
                     return
                 }
                 val config = config.get()
+                if(!config.heartbeatEnabled) {
+                    logger.info("Heartbeats have been disabled. Stopping heartbeats for (${session.sessionId}).")
+                    return
+                }
 
                 val timeSinceLastSend = timeStamp() - sessionInfo.lastSendTimestamp
                 if (timeSinceLastSend >= config.heartbeatPeriod.toMillis()) {
