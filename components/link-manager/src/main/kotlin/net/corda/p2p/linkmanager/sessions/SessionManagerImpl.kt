@@ -1316,10 +1316,10 @@ internal class SessionManagerImpl(
 
                 val timeSinceLastSend = timeStamp() - sessionInfo.lastSendTimestamp
                 if (timeSinceLastSend >= config.heartbeatPeriod.toMillis()) {
-                    logger.trace {
+                    logger.info (
                         "Sending heartbeat message between ${counterparties.ourId} (our Identity) and " +
                                 "${counterparties.counterpartyId}."
-                    }
+                    )
                     sendHeartbeatMessage(
                         counterparties.ourId,
                         counterparties.counterpartyId,
