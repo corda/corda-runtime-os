@@ -60,7 +60,7 @@ class CryptoRewrapBusProcessor(
                     val newValue =
                         serializer.serialize(UnmanagedKeyStatus(keyR.rootKeyAlias, keyR.total, keyR.rotatedKeys + 1))
                     val failedToUpdate =
-                        stateManager.update(listOf(State(key, newValue!!, state.version + 1, state.metadata)))
+                        stateManager.update(listOf(State(key, newValue!!, state.version, state.metadata)))
                     if (failedToUpdate.isNotEmpty()) {
                         println(
                             "XXX: RewrapBusProcessor failed to update following states: ${failedToUpdate.keys}. " +
