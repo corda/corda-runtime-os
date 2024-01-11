@@ -10,8 +10,8 @@ import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.virtualnode.toCorda
 import javax.persistence.LockModeType
 
-internal class RevokePreAuthTokenHandler(persistenceHandlerServices: PersistenceHandlerServices)
-    : BasePersistenceHandler<RevokePreAuthToken, RevokePreAuthTokenResponse>(persistenceHandlerServices) {
+internal class RevokePreAuthTokenHandler(persistenceHandlerServices: PersistenceHandlerServices) :
+    BasePersistenceHandler<RevokePreAuthToken, RevokePreAuthTokenResponse>(persistenceHandlerServices) {
     override val operation = RevokePreAuthToken::class.java
     companion object {
         fun PreAuthTokenEntity.toAvro(): PreAuthToken {
@@ -32,8 +32,8 @@ internal class RevokePreAuthTokenHandler(persistenceHandlerServices: Persistence
                 PreAuthTokenEntity::class.java,
                 request.tokenId,
                 LockModeType.PESSIMISTIC_WRITE
-            ) ?:
-                throw MembershipPersistenceException("Pre Auth Token with ID '${request.tokenId}' does not exist.")
+            )
+                ?: throw MembershipPersistenceException("Pre Auth Token with ID '${request.tokenId}' does not exist.")
             if (token.status != PreAuthTokenStatus.AVAILABLE.toString()) {
                 throw MembershipPersistenceException(
                     "Pre Auth Token with ID '${request.tokenId}' cannot be revoked because it has status ${token.status}."

@@ -6,9 +6,8 @@ import net.corda.data.membership.db.response.query.RegistrationRequestQueryRespo
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.virtualnode.toCorda
 
-internal class QueryRegistrationRequestHandler(persistenceHandlerServices: PersistenceHandlerServices)
-    :BaseRequestStatusHandler<QueryRegistrationRequest, RegistrationRequestQueryResponse>(persistenceHandlerServices)
-{
+internal class QueryRegistrationRequestHandler(persistenceHandlerServices: PersistenceHandlerServices) :
+    BaseRequestStatusHandler<QueryRegistrationRequest, RegistrationRequestQueryResponse>(persistenceHandlerServices) {
     override val operation = QueryRegistrationRequest::class.java
     override fun invoke(
         context: MembershipRequestContext,
@@ -30,5 +29,4 @@ internal class QueryRegistrationRequestHandler(persistenceHandlerServices: Persi
             RegistrationRequestQueryResponse(details)
         }
     }
-
 }

@@ -86,7 +86,6 @@ class RegistrationLoggerTest {
 
         testObj.warn(logLine)
         verify(mockLogger).warn(getExpectedLogString(logLine, expected))
-
     }
 
     @Test
@@ -110,7 +109,6 @@ class RegistrationLoggerTest {
 
         testObj.warn(logLine, exception)
         verify(mockLogger).warn(getExpectedLogString(logLine, expected), exception)
-
     }
 
     @Test
@@ -133,7 +131,6 @@ class RegistrationLoggerTest {
 
         testObj.error(logLine)
         verify(mockLogger).error(getExpectedLogString(logLine, expected))
-
     }
 
     @Test
@@ -157,7 +154,6 @@ class RegistrationLoggerTest {
 
         testObj.error(logLine, exception)
         verify(mockLogger).error(getExpectedLogString(logLine, expected), exception)
-
     }
 
     private fun getExpectedLogString(logInput: String, expected: Map<String, String>): String {

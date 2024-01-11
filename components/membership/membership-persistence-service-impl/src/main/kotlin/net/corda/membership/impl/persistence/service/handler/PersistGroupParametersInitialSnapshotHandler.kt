@@ -1,6 +1,5 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import javax.persistence.LockModeType
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
@@ -14,6 +13,7 @@ import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
 import net.corda.virtualnode.toCorda
+import javax.persistence.LockModeType
 
 internal class PersistGroupParametersInitialSnapshotHandler(
     persistenceHandlerServices: PersistenceHandlerServices

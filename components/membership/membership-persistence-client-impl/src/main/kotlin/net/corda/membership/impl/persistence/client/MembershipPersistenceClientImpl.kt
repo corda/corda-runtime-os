@@ -139,14 +139,14 @@ class MembershipPersistenceClientImpl(
         viewOwningIdentity: net.corda.data.identity.HoldingIdentity,
         memberInfos: Collection<SelfSignedMemberInfo>
     ) = memberInfos.map {
-            memberInfoFactory.createPersistentMemberInfo(
-                viewOwningIdentity,
-                it.memberContextBytes,
-                it.mgmContextBytes,
-                it.memberSignature,
-                it.memberSignatureSpec,
-            )
-        }
+        memberInfoFactory.createPersistentMemberInfo(
+            viewOwningIdentity,
+            it.memberContextBytes,
+            it.mgmContextBytes,
+            it.memberSignature,
+            it.memberSignatureSpec,
+        )
+    }
 
     override fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
@@ -386,7 +386,10 @@ class MembershipPersistenceClientImpl(
     }
 
     override fun suspendMember(
-        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+        viewOwningIdentity: HoldingIdentity,
+        memberX500Name: MemberX500Name,
+        serialNumber: Long?,
+        reason: String?
     ): MembershipPersistenceOperation<Pair<PersistentMemberInfo, InternalGroupParameters?>> {
         val request = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
@@ -401,7 +404,10 @@ class MembershipPersistenceClientImpl(
     }
 
     override fun activateMember(
-        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+        viewOwningIdentity: HoldingIdentity,
+        memberX500Name: MemberX500Name,
+        serialNumber: Long?,
+        reason: String?
     ): MembershipPersistenceOperation<Pair<PersistentMemberInfo, InternalGroupParameters?>> {
         val request = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
@@ -431,7 +437,8 @@ class MembershipPersistenceClientImpl(
     }
 
     override fun updateGroupParameters(
-        viewOwningIdentity: HoldingIdentity, newGroupParameters: Map<String, String>
+        viewOwningIdentity: HoldingIdentity,
+        newGroupParameters: Map<String, String>
     ): MembershipPersistenceOperation<InternalGroupParameters> {
         logger.info("Updating group parameters for group '${viewOwningIdentity.groupId}'.")
         val request = MembershipPersistenceRequest(

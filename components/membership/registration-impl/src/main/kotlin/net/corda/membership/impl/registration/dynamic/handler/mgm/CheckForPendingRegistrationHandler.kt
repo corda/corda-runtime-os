@@ -32,11 +32,13 @@ class CheckForPendingRegistrationHandler(
             .setMember(command.member)
             .setMgm(command.mgm)
         val (outputState, outputCommand) = try {
-            if(command.numberOfRetriesSoFar < MAX_RETRIES) {
+            if (command.numberOfRetriesSoFar < MAX_RETRIES) {
                 state?.let {
                     registrationLogger.setRegistrationId(it.registrationId)
-                    registrationLogger.info("There is a registration in progress for member. " +
-                            "The service will wait until processing the previous request finishes.")
+                    registrationLogger.info(
+                        "There is a registration in progress for member. " +
+                            "The service will wait until processing the previous request finishes."
+                    )
                     Pair(state, null)
                 } ?: run {
                     getNextRequest(command, registrationLogger)
@@ -48,11 +50,14 @@ class CheckForPendingRegistrationHandler(
                 Pair(state, null)
             }
         } catch (ex: Exception) {
-            registrationLogger.warn("Exception happened while looking for the next request to process for member. " +
-                    "Will re-try again.", ex)
+            registrationLogger.warn(
+                "Exception happened while looking for the next request to process for member. " +
+                    "Will re-try again.",
+                ex
+            )
             Pair(state, increaseNumberOfRetries(command))
         }
-        return if(outputCommand != null) {
+        return if (outputCommand != null) {
             RegistrationHandlerResult(
                 outputState,
                 listOf(
@@ -76,7 +81,7 @@ class CheckForPendingRegistrationHandler(
             1
         ).getOrThrow().firstOrNull()
         // need to check if there were any results at all
-        return if(nextRequest != null) {
+        return if (nextRequest != null) {
             registrationLogger.setRegistrationId(nextRequest.registrationId)
             registrationLogger.info("Retrieved next request for member from the database. Proceeding with registration.")
             // create state to make sure we process one registration at the same time

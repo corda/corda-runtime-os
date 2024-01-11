@@ -203,7 +203,6 @@ class SynchronisationProxyImpl @Activate constructor(
                     it.start()
                     subRegistration = coordinator.followStatusChangesByName(setOf(it.subscriptionName))
                 }
-
             }
         }
     }
@@ -226,10 +225,9 @@ class SynchronisationProxyImpl @Activate constructor(
 
         override fun processSyncRequest(request: ProcessSyncRequest) =
             throw IllegalStateException(INACTIVE_SERVICE)
-
     }
 
-    private inner class ActiveImpl: InnerSynchronisationProxy {
+    private inner class ActiveImpl : InnerSynchronisationProxy {
         override fun processMembershipUpdates(updates: ProcessMembershipUpdates): List<Record<*, *>> {
             val service = getSynchronisationService(
                 updates.synchronisationMetaData.member.toCorda(),
@@ -262,7 +260,7 @@ class SynchronisationProxyImpl @Activate constructor(
             )
 
         @Suppress("unchecked_cast")
-        private fun <T: SynchronisationService> getSynchronisationService(viewOwningMember: HoldingIdentity, serviceType: Class<T>): T {
+        private fun <T : SynchronisationService> getSynchronisationService(viewOwningMember: HoldingIdentity, serviceType: Class<T>): T {
             val protocol = selectSynchronisationProtocol(viewOwningMember)
             logger.debug(String.format(LOADING_SERVICE_LOG, protocol))
             val service = synchronisationServices.find { it.javaClass.name == protocol }
@@ -271,7 +269,7 @@ class SynchronisationProxyImpl @Activate constructor(
                 logger.error(err)
                 throw SynchronisationProtocolSelectionException(err)
             }
-            if(!serviceType.isAssignableFrom(service::class.java)) {
+            if (!serviceType.isAssignableFrom(service::class.java)) {
                 throw SynchronisationProtocolTypeException("Wrong synchronisation service type was configured in group policy file.")
             }
             return service as T

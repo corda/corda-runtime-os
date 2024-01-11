@@ -68,7 +68,7 @@ class QueueRegistrationHandlerTest {
     private val serialisedMemberContext = byteArrayOf(0)
     private val memberContextList = KeyValuePairList(
         listOf(
-            KeyValuePair(PLATFORM_VERSION , "50100"),
+            KeyValuePair(PLATFORM_VERSION, "50100"),
             KeyValuePair(PARTY_SESSION_KEYS_PEM.format(0), encodedSessionKey1),
             KeyValuePair(PARTY_SESSION_KEYS_PEM.format(1), encodedSessionKey2),
         )
@@ -90,14 +90,16 @@ class QueueRegistrationHandlerTest {
         on {
             persistRegistrationRequest(
                 eq(mgm.toCorda()),
-                eq(RegistrationRequest(
-                    RegistrationStatus.RECEIVED_BY_MGM,
-                    registrationRequest.registrationId,
-                    member.toCorda(),
-                    registrationRequest.memberContext,
-                    registrationRequest.registrationContext,
-                    registrationRequest.serial,
-                ))
+                eq(
+                    RegistrationRequest(
+                        RegistrationStatus.RECEIVED_BY_MGM,
+                        registrationRequest.registrationId,
+                        member.toCorda(),
+                        registrationRequest.memberContext,
+                        registrationRequest.registrationContext,
+                        registrationRequest.serial,
+                    )
+                )
             )
         } doReturn mockPersistenceOperation
     }
@@ -232,12 +234,14 @@ class QueueRegistrationHandlerTest {
 
     @Test
     fun `discard if signature verification failed`() {
-        whenever(verifier.verify(
-            listOf(sessionKey1, sessionKey2),
-            memberContext.signature,
-            memberContext.signatureSpec,
-            memberContext.data.array(),
-        )).doThrow(CryptoSignatureException("Invalid signature."))
+        whenever(
+            verifier.verify(
+                listOf(sessionKey1, sessionKey2),
+                memberContext.signature,
+                memberContext.signatureSpec,
+                memberContext.data.array(),
+            )
+        ).doThrow(CryptoSignatureException("Invalid signature."))
         with(handler.invoke(null, Record(TOPIC, KEY, inputCommand))) {
             assertThat(updatedState).isNull()
             assertThat(outputStates).isEmpty()

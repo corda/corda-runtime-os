@@ -23,8 +23,10 @@ internal class ConsumePreAuthTokenHandler(persistenceHandlerServices: Persistenc
             ) ?: throw MembershipPersistenceException("Pre-auth token '${request.tokenId}' does not exist.")
 
             if (MemberX500Name.parse(token.ownerX500Name) != MemberX500Name.parse(request.ownerX500Name)) {
-                throw MembershipPersistenceException("Pre-auth token '${request.tokenId}' does not exist for " +
-                        "${request.ownerX500Name}.")
+                throw MembershipPersistenceException(
+                    "Pre-auth token '${request.tokenId}' does not exist for " +
+                        "${request.ownerX500Name}."
+                )
             }
 
             token.ttl?.run {
@@ -35,7 +37,7 @@ internal class ConsumePreAuthTokenHandler(persistenceHandlerServices: Persistenc
             if (token.status.lowercase() != PreAuthTokenStatus.AVAILABLE.toString().lowercase()) {
                 throw MembershipPersistenceException(
                     "Pre-auth token '${request.tokenId}' is not in " +
-                            "${PreAuthTokenStatus.AVAILABLE} status. Status is ${token.status}"
+                        "${PreAuthTokenStatus.AVAILABLE} status. Status is ${token.status}"
                 )
             }
 

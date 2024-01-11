@@ -7,8 +7,7 @@ package net.corda.membership.lib.approval
 interface RegistrationRulesEngine {
     val rules: Collection<RegistrationRule>
 
-    fun requiresManualApproval(proposedMemberContext: Map<String, String?>, activeMemberContext: Map<String, String?>?):
-            Boolean
+    fun requiresManualApproval(proposedMemberContext: Map<String, String?>, activeMemberContext: Map<String, String?>?): Boolean
 
     class Impl(override val rules: Collection<RegistrationRule>) : RegistrationRulesEngine {
 
