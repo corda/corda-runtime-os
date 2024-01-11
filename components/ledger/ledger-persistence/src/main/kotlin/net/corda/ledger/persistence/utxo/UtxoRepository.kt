@@ -163,7 +163,7 @@ interface UtxoRepository {
         timestamp: Instant
     )
 
-    /** Persists a merkle proof */
+    /** Persists a merkle proof and returns its ID */
     fun persistMerkleProof(
         entityManager: EntityManager,
         transactionId: String,
@@ -171,6 +171,13 @@ interface UtxoRepository {
         treeSize: Int,
         leaves: List<Int>,
         hashes: List<String>
+    ): String
+
+    /** Persist a leaf index that belongs to a given merkle proof with ID [merkleProofId] */
+    fun persistMerkleProofLeaf(
+        entityManager: EntityManager,
+        merkleProofId: String,
+        leafIndex: Int
     )
 
     /** Find all the merkle proofs for a given transaction ID and component group index */

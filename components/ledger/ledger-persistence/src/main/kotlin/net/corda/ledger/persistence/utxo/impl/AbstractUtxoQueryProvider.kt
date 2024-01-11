@@ -121,59 +121,67 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
             .trimIndent()
 
     /**
-     * This query will join the Merkle proof table and the component group table together to find the leaf data
-     * the Merkle proof has revealed.
+     * This query will join the Merkle proof table and the component group table together to find the leaf data the
+     * Merkle proof has revealed.
      *
-     * A Merkle proof can be identified by the combination of the following properties:
-     * - transaction ID
-     * - component group index
-     * - revealed leaves
+     * Each Merkle proof has an ID created by concatenating the following properties:
+     * - Transaction ID
+     * - Group Index
+     * - Revealed leaf indices joined to a string
      *
-     * Each row returned by this query will associate a Merkle proof with the leaf data it reveals.
-     * In case of multiple leaves revealed, a Merkle proof will have multiple rows associated with it.
+     * The indices that the Merkle proof reveals are stored in a join-table. That's the reason we need a sub-query
+     * to fetch the relevant indices from the other table.
      *
-     * For example:
+     * This query will return a result set with the following column structure:
      *
-     * Merkle proof table
-     * | transaction_id | group_idx | tree_size | leaves | hashes |
-     * |----------------|-----------|-----------|--------|--------|
-     * | SHA-256D:11111 | 8         | 2         | {0,1}  | {}     |
+     * | transaction_id | group_idx | tree_size | leaf_idx | data  | hashes |
      *
+     * A row will be returned for each revealed leaf containing the data from the component table.
      *
-     * Component table
-     * | transaction_id | group_idx | leaf_idx | data  |
-     * |----------------|-----------|----------|-------|
-     * | SHA-256D:11111 | 8         | 0        | bytes |
-     * | SHA-256D:11111 | 8         | 1        | bytes |
+     * For example if we have the following Merkle tree:
      *
-     * In this case the query will return the following results:
+     *              COMPONENT GROUP ROOT
+     *                     /    \
+     *                    /      \
+     *                   /        \
+     *                  /          \
+     *                 /            \
+     *               H01            H23
+     *              / \             / \
+     *             /   \           /   \
+     *            /     \         /     \
+     *           H0     H1       H2     H3
+     *           |      |        |      |
+     *          L0     L1       L2     L3
      *
-     * | transaction_id | group_idx | tree_size | leaves_string | leaf_idx | hashes_string | data  |
-     * |----------------|-----------|-----------|---------------|----------|---------------|-------|
-     * | SHA-256D:11111 | 8         | 2         | 0,1           | 0        |               | bytes |
-     * | SHA-256D:11111 | 8         | 2         | 0,1           | 1        |               | bytes |
+     * If we persist a Merkle proof that contains L1 and L3 data then retrieve it from the store, then we'll
+     * get the following result set:
      *
-     * As it is clear from the example we will have one row for each leaf data revealed associated with the Merkle proof.
-     *
-     * TODO `array_to_string` is required because Hibernate cannot handle Postgres arrays (JDBC type 2003)
-     *  by default. We need to investigate whether extending our dialect with this type is possible.
+     * | merkle_proof_id     | transaction_id | group_idx | tree_size | leaf_idx | data  | hashes |
+     * |---------------------|----------------|-----------|-----------|----------|-------|--------|
+     * | SHA-256D:11111-8-13 | SHA-256:11111  | 8         | 4         | 1        | bytes | H0,H23 |
+     * | SHA-256D:11111-8-13 | SHA-256:11111  | 8         | 4         | 3        | bytes | H2,H01 |
      */
     override val findMerkleProofs: String
         get() = """
-            SELECT 
+            SELECT
+                utmp.merkle_proof_id,
                 utc.transaction_id,
                 utc.group_idx,
-                ump.tree_size,
-                array_to_string(ump.leaves, ',') AS leaves_string,
-                utc.leaf_idx, 
-                array_to_string(ump.hashes, ',') AS hashes_string,
-                utc."data"
-            FROM {h-schema}utxo_transaction_merkle_proof ump 
-            JOIN {h-schema}utxo_transaction_component utc 
-                ON utc.transaction_id = ump.transaction_id 
-                AND utc.group_idx = ump.group_idx 
-                AND utc.leaf_idx = any(ump.leaves)
-                AND ump.group_idx = :groupId
-                AND ump.transaction_id = :transactionId"""
+                utmp.tree_size,
+                utmp.hashes,
+                utc.leaf_idx,
+                utc.data
+            FROM {h-schema}utxo_transaction_merkle_proof utmp
+            JOIN {h-schema}utxo_transaction_component utc
+                on utc.transaction_id = utmp.transaction_id
+                and utc.group_idx = utmp.group_idx
+            WHERE utmp.transaction_id = :transactionId
+                and utmp.group_idx = :groupIndex
+                and utc.leaf_idx in (
+                	SELECT utmpl.leaf_index
+                    FROM {h-schema}utxo_transaction_merkle_proof_leaves utmpl
+                    WHERE utmpl.merkle_proof_id = utmp.merkle_proof_id
+                )"""
             .trimIndent()
 }

@@ -343,7 +343,18 @@ class UtxoPersistenceServiceImpl(
         hashes: List<String>
     ) {
         return entityManagerFactory.transaction { em ->
-            repository.persistMerkleProof(em, transactionId, groupIndex, treeSize, leaves, hashes)
+            val persistedMerkleProofId = repository.persistMerkleProof(
+                em,
+                transactionId,
+                groupIndex,
+                treeSize,
+                leaves,
+                hashes
+            )
+
+            leaves.forEach { leafIndex ->
+                repository.persistMerkleProofLeaf(em, persistedMerkleProofId, leafIndex)
+            }
         }
     }
 

@@ -88,6 +88,11 @@ interface UtxoQueryProvider {
     val persistMerkleProof: String
 
     /**
+     * @property persistMerkleProofLeaf SQL text for [UtxoRepositoryImpl.persistMerkleProofLeaf]
+     */
+    val persistMerkleProofLeaf: String
+
+    /**
      * @property updateTransactionStatus SQL text for [UtxoRepositoryImpl.updateTransactionStatus].
      */
     val updateTransactionStatus: String

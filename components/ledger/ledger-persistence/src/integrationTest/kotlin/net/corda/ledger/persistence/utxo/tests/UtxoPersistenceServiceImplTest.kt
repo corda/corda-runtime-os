@@ -570,6 +570,55 @@ class UtxoPersistenceServiceImplTest {
             .isEqualTo(signedGroupParameters.mgmSignatureSpec.toString())
     }
 
+    @Test
+    fun `persist and fetch merkle proof`() {
+
+        // 1. Create and persist a simple signed transaction with 2 outputs
+        val signedTx = createSignedTransaction()
+        val signedTxReader = TestUtxoTransactionReader(
+            signedTx,
+            "account",
+            VERIFIED,
+            listOf(0, 1)
+        )
+
+        persistenceService.persistTransaction(signedTxReader)
+
+        // 2. Create a merkle proof from that transaction and persist it
+        persistenceService.persistMerkleProof(
+            signedTx.id.toString(),
+            UtxoComponentGroup.OUTPUTS.ordinal,
+            2,
+            listOf(0, 1),
+            emptyList()
+        )
+
+        // 3. Fetch the merkle proof from the DB
+        val persistedMerkleProofs = persistenceService.findMerkleProofs(
+            signedTx.id.toString(),
+            UtxoComponentGroup.OUTPUTS.ordinal
+        )
+
+        // 4. Make sure basic details (ID / Group index matches)
+        assertThat(persistedMerkleProofs).hasSize(1)
+
+        val persistedMerkleProof = persistedMerkleProofs.single()
+
+        assertThat(persistedMerkleProof.transactionId).isEqualTo(signedTx.id.toString())
+        assertThat(persistedMerkleProof.groupIndex).isEqualTo(UtxoComponentGroup.OUTPUTS.ordinal)
+
+        // 5. Make sure the revealed data is matching
+        assertThat(persistedMerkleProof.leavesWithData).hasSize(2)
+
+        // Leaf 0 of outputs component group
+        assertThat(persistedMerkleProof.leavesWithData[0])
+            .isEqualTo(signedTx.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][0])
+
+        // Leaf 1 of outputs component group
+        assertThat(persistedMerkleProof.leavesWithData[1])
+            .isEqualTo(signedTx.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][1])
+    }
+
     @Suppress("LongParameterList")
     private fun createUtxoTokenMap(
         transactionReader: TestUtxoTransactionReader,

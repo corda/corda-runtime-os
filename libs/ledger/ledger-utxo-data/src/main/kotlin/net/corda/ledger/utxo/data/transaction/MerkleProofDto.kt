@@ -16,8 +16,8 @@ import net.corda.v5.crypto.SecureHash
 @CordaSerializable
 data class MerkleProofDto(
     val transactionId: String,
-    val groupId: Int,
-    val leavesWithData: Map<Int, ByteArray>,
+    val groupIndex: Int,
     val treeSize: Int,
-    val hashes: List<SecureHash>
+    val hashes: List<SecureHash>,
+    val leavesWithData: Map<Int, ByteArray>
 )

@@ -177,7 +177,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                 serializationService.deserialize<List<MerkleProofDto>>(it.array()).map { merkleProofDto ->
                     merkleProofFactory.createAuditMerkleProof(
                         merkleProofDto.transactionId,
-                        merkleProofDto.groupId,
+                        merkleProofDto.groupIndex,
                         merkleProofDto.treeSize,
                         merkleProofDto.leavesWithData,
                         merkleProofDto.hashes

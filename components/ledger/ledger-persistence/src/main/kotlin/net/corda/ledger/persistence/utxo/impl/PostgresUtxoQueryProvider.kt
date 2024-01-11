@@ -84,9 +84,18 @@ class PostgresUtxoQueryProvider @Activate constructor(
     override val persistMerkleProof: String
         get() = """
             INSERT INTO {h-schema}utxo_transaction_merkle_proof(
-                transaction_id, group_idx, tree_size, leaves, hashes)
+                merkle_proof_id, transaction_id, group_idx, tree_size, hashes)
             VALUES (
-                :transactionId, :groupIndex, :treeSize, CAST(:leaves AS INTEGER[]), CAST(:hashes AS TEXT[]))
+                :merkleProofId, :transactionId, :groupIndex, :treeSize, :hashes)
+            ON CONFLICT DO NOTHING"""
+            .trimIndent()
+
+    override val persistMerkleProofLeaf: String
+        get() = """
+            INSERT INTO {h-schema}utxo_transaction_merkle_proof_leaves(
+                merkle_proof_id, leaf_index)
+            VALUES (
+                :merkleProofId, :leafIndex)
             ON CONFLICT DO NOTHING"""
             .trimIndent()
 }

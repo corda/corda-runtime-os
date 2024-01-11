@@ -20,7 +20,6 @@ import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.ledger.utxo.StateRef
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -359,18 +358,29 @@ class UtxoRepositoryImpl @Activate constructor(
         treeSize: Int,
         leaves: List<Int>,
         hashes: List<String>
-    ) {
+    ): String {
+
+        // Generate an ID by concatenating transaction ID - group index - leaves
+        val merkleProofId = "$transactionId-$groupIndex-${leaves.joinToString(separator = "")}"
+
         entityManager.createNativeQuery(queryProvider.persistMerkleProof)
+            .setParameter("merkleProofId", merkleProofId)
             .setParameter("transactionId", transactionId)
             .setParameter("groupIndex", groupIndex)
             .setParameter("treeSize", treeSize)
-            // TODO We store these columns as arrays in the database, so we need to cast and
-            //  the only way we can cast is a {X,Y,Z} format.
-            //  Investigate if there's a better way to do this.
-            .setParameter("leaves", "{${leaves.joinToString(",")}}")
-            .setParameter("hashes", "{${hashes.joinToString(",")}}")
+            .setParameter("hashes", hashes.joinToString(","))
             .executeUpdate()
             .logResult("merkle proof for transaction: $transactionId")
+
+        return merkleProofId
+    }
+
+    override fun persistMerkleProofLeaf(entityManager: EntityManager, merkleProofId: String, leafIndex: Int) {
+        entityManager.createNativeQuery(queryProvider.persistMerkleProofLeaf)
+            .setParameter("merkleProofId", merkleProofId)
+            .setParameter("leafIndex", leafIndex)
+            .executeUpdate()
+            .logResult("merkle proof leaf for merkle proof: $merkleProofId")
     }
 
     override fun findMerkleProofs(
@@ -383,39 +393,28 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("groupIndex", groupIndex)
             .resultListAsTuples()
             .groupBy { tuple ->
-                // If a Merkle proof revealed multiple leafs it will have multiple rows associated with it,
-                // each row containing the leaf data bytes. We first need to group these rows together
-                // to see which rows belong to the same Merkle proof. We do this based on the Merkle proof ID triple:
-                Triple(
-                    transactionId, // Transaction ID
-                    groupIndex, // component group index
-                    tuple.get(3) as String // revealed leaves list
-                )
-            }.map { (merkleProofId, merkleProofRows) ->
+                // We'll have multiple rows for the same Merkle proof if it revealed more than one leaf
+                // We group the rows by the Merkle proof ID to see which are the ones that belong together
+                tuple.get(0) as String
+            }.map { (_, rows) ->
+                // We can retrieve most of the properties from the first row because they will be the same for each row
+                val firstRow = rows.first()
+
                 MerkleProofDto(
-                    merkleProofId.first,
-                    merkleProofId.second,
+                    firstRow.get(1) as String, // Transaction ID
+                    firstRow.get(2) as Int, // Group index
+                    firstRow.get(3) as Int, // Tree size
 
-                    merkleProofRows.associate { merkleProofRow ->
-                        // Here we go through each row that belongs to the given Merkle proof
-                        // and create a map of the revealed leaf index and the data it represents
-                        (merkleProofRow.get(4) as Int) to (merkleProofRow.get(6) as ByteArray)
+                    // We store the hashes as a comma separated string, so we need to split it and parse into SecureHash
+                    // we filter out the blank ones just in case
+                    (firstRow.get(4) as String).split(",")
+                        .filter { it.isNotBlank() }.map { parseSecureHash(it) },
+
+                    // Each leaf will have its own row, so we need to go through each row that belongs to the Merkle proof
+                    rows.associate {
+                        // Map the leaf index to the data we fetched from the component table
+                        (it.get(5) as Int) to (it.get(6) as ByteArray)
                     },
-
-                    // tree size will be the same for each row in the same Merkle proof,
-                    // so we can just pick the first one and get the tree size from there
-                    merkleProofRows.first().get(2) as Int,
-
-                    // hashes will be the same for each row in the same Merkle proof,
-                    // so we can just pick the first one and get the tree size from there
-                    (merkleProofRows.first().get(5) as String)
-                        // TODO Due to the fact that Hibernate cannot handle JDBC type 2003 (array)
-                        //  we return a comma separated string here that we need to split and
-                        //  filter out if it's blank (i.e. array was empty)
-                        .split(",")
-                        .filter { it.isNotBlank() }
-                        .map { parseSecureHash(it) }
-
                 )
             }
     }
