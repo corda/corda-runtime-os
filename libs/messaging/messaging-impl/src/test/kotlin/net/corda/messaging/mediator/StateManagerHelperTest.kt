@@ -16,6 +16,7 @@ import org.mockito.Mockito.`when`
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import java.nio.ByteBuffer
 
 class StateManagerHelperTest {
 
@@ -85,14 +86,14 @@ class StateManagerHelperTest {
             stateDeserializer,
             wrapperDeserializer
         )
-
+        val mediatorState = MediatorState(ByteBuffer.wrap(serialized(persistedState)), emptyList())
         val state = stateManagerHelper.createOrUpdateState(
             TEST_KEY, persistedState, mediatorState, updatedState
         )
 
         assertNotNull(state)
         assertEquals(persistedState.key, state!!.key)
-        assertArrayEquals(serialized(updatedState.value!!), state.value)
+        assertArrayEquals(serialized(MediatorState(ByteBuffer.wrap(serialized(updatedState.value!!)), emptyList())), state.value)
         assertEquals(persistedState.version, state.version)
         assertEquals(updatedState.metadata, state.metadata)
     }
@@ -105,7 +106,7 @@ class StateManagerHelperTest {
             wrapperDeserializer
         )
         val serializedStateValue = "test".toByteArray()
-        val mediatorState = MediatorState()
+        val mediatorState = MediatorState(ByteBuffer.wrap(serializedStateValue), emptyList())
         val state = mock<State>()
         `when`(state.value).thenReturn(serializedStateValue)
 
