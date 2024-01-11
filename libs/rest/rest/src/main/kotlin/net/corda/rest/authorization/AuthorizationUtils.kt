@@ -1,5 +1,6 @@
 package net.corda.rest.authorization
 
+import net.corda.rest.exception.ForbiddenException
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import net.corda.utilities.withMDC
@@ -28,7 +29,7 @@ object AuthorizationUtils {
             withMDC(principal, pathParts.firstOrNull() ?: "no_method", pathParts.lastOrNull() ?: "no_path") {
                 "User not authorized.".let {
                     log.info(it)
-                    throw IllegalStateException(it)
+                    throw ForbiddenException(it)
                 }
             }
         }
