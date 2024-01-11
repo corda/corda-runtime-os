@@ -14,6 +14,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
@@ -106,6 +107,36 @@ class StateManagerImplTest {
         verify(stateRepository).get(connection, listOf(apiStateTwo.key))
         verify(stateRepository).update(connection, listOf(persistentStateOne, persistentStateTwo, persistentStateThree))
         verifyNoMoreInteractions(stateRepository)
+    }
+
+    @Test
+    fun `Commit transaction with creates updates and deletes`() {
+
+        whenever(stateRepository.create(any(), any())).thenReturn(setOf())
+        whenever(stateRepository.update(any(), any()))
+            .thenReturn(
+                StateRepository.StateUpdateSummary(
+                    listOf(),
+                    listOf(apiStateTwo.key)
+                )
+            )
+        whenever(stateRepository.delete(any(), any())).thenReturn(emptyList())
+
+        val create = listOf(apiStateOne)
+        val updates = listOf(apiStateTwo)
+        val deletes = listOf(apiStateThree)
+        val result = stateManager.commit(create, updates, deletes)
+        assertThat(result).isNotNull
+        assertThat(result.failedToCreate).contains(persistentStateOne.key)
+        assertThat(result.failedToUpdate.keys).contains(apiStateTwo.key)
+        assertThat(result.failedToDelete).isEmpty()
+
+        verify(stateRepository, times(1)).create(any(), any())
+        verify(stateRepository, times(1)).update(any(), any())
+        verify(stateRepository, times(1)).delete(any(), any())
+        //for failed update
+        verify(stateRepository, times(1)).get(any(), any())
+
     }
 
     @Test

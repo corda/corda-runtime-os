@@ -48,15 +48,6 @@ class StateManagerImpl(
         return getFailedCreates(states, successfulKeys.toSet())
     }
 
-    override fun createOrUpdate(states: Collection<State>): Map<String, State> {
-        if (states.isEmpty()) return emptyMap()
-        val results = dataSource.connection.transaction { connection ->
-            stateRepository.createOrUpdate(connection, states.map { it.toPersistentEntity() })
-        }
-
-        return getStatesByKey(results.toSet())
-    }
-
     private fun getFailedCreates(states: Collection<State>, successfulKeys: Set<String>) =
         states.map { it.key }.toSet() - successfulKeys
 
@@ -95,38 +86,31 @@ class StateManagerImpl(
      */
     private data class TransactionSummary(
         val successfulCreate: Set<String>,
-        val updatedNotCreated: Set<StateEntity>,
         val stateUpdateSummary: StateRepository.StateUpdateSummary,
         val failedToDelete: Set<String>,
     )
 
     override fun commit(
         statesToCreate: Collection<State>,
-        statesToCreateOrUpdate: Collection<State>,
         statesToUpdate: Collection<State>,
         statesToDelete: Collection<State>
     ): TransactionResult {
         if (statesToCreate.plus(statesToUpdate).plus(statesToDelete).isEmpty()) {
-            return TransactionResult(emptySet(), emptyMap(), emptyMap(), emptyMap())
+            return TransactionResult(emptySet(), emptyMap(), emptyMap())
         }
 
         try {
             val transactionSummary = dataSource.connection.transaction { conn ->
                 val creates = stateRepository.create(conn, statesToCreate.map { it.toPersistentEntity() })
-                val updatedRecordsPreviousValue = stateRepository.createOrUpdate(
-                    conn,
-                    statesToCreateOrUpdate.map { it.toPersistentEntity() }
-                )
                 val updates = stateRepository.update(conn, statesToUpdate.map { it.toPersistentEntity() })
                 val deletes = stateRepository.delete(conn, statesToDelete.map { it.toPersistentEntity() })
-                TransactionSummary(creates.toSet(), updatedRecordsPreviousValue.toSet(), updates, deletes.toSet())
+                TransactionSummary(creates.toSet(), updates, deletes.toSet())
             }
 
             val failedCreates = getFailedCreates(statesToCreate, transactionSummary.successfulCreate)
-            val updatedRecordsNotCreated = getStatesByKey(transactionSummary.updatedNotCreated)
             val failedUpdates = getFailedUpdates(transactionSummary.stateUpdateSummary.failedKeys)
             val failedDeletes = getFailedDeletes(transactionSummary.failedToDelete)
-            return TransactionResult(failedCreates, updatedRecordsNotCreated, failedUpdates, failedDeletes)
+            return TransactionResult(failedCreates, failedUpdates, failedDeletes)
         } catch (e: Exception) {
             val keys = (statesToCreate + statesToUpdate + statesToDelete).map { it.key }
             logger.warn("Failed to commit transaction for batch of states - $keys", e)

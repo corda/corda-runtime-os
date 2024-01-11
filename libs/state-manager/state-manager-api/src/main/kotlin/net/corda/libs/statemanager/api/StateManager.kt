@@ -31,21 +31,6 @@ interface StateManager : Lifecycle {
     fun create(states: Collection<State>): Set<String>
 
     /**
-     * Persist new [states], If states already exist then overwrite them and increment the state version.
-     *
-     * A single transactional context is used when interacting with the underlying persistent storage,
-     * so all these states will be persisted/updated or none will.
-     *
-     * Control is only returned to the caller once all [states] that were successfully created/updated have been fully
-     * persisted and replicas of the underlying persistent storage, if any, are synced.
-     *
-     * @param states Collection of states to be persisted.
-     * @return A map of the previous values associated for the keys that performed an update,
-     * or no entries in the map for keys successfully created.
-     */
-    fun createOrUpdate(states: Collection<State>): Map<String, State>
-
-    /**
      * Get all states referenced by [keys].
      * Only states that have been successfully persisted and distributed within the underlying persistent storage
      * are returned.
@@ -76,7 +61,7 @@ interface StateManager : Lifecycle {
     fun update(states: Collection<State>): Map<String, State?>
 
     /**
-     * Commit a transactions that creates, createOrUpdates, updates and deletes collections of states.
+     * Commit a transactions that creates, updates and deletes collections of states.
      *
      * For commits of [statesToUpdate] and [statesToDelete], optimistic locking is used to verify whether the persistent state has been
      * already modified/deleted by another thread or process, in which case the state will be considered not
@@ -85,7 +70,6 @@ interface StateManager : Lifecycle {
      */
     fun commit(
         statesToCreate: Collection<State>,
-        statesToCreateOrUpdate: Collection<State>,
         statesToUpdate: Collection<State>,
         statesToDelete: Collection<State>
     ): TransactionResult

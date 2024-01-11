@@ -14,9 +14,6 @@ class StateManagerFactoryStub : StateManagerFactory {
         return object : StateManager {
             override val name = LifecycleCoordinatorName.forComponent<StateManager>()
             override fun create(states: Collection<State>): Set<String> = throw UnsupportedOperationException()
-            override fun createOrUpdate(states: Collection<State>): Map<String, State> {
-                throw UnsupportedOperationException()
-            }
 
             override fun get(keys: Collection<String>): Map<String, State> = throw UnsupportedOperationException()
 

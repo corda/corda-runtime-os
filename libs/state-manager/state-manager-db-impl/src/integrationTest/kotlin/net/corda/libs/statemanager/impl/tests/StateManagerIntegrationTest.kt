@@ -273,39 +273,6 @@ class StateManagerIntegrationTest {
 
     @ValueSource(ints = [1, 5, 10, 20, 50])
     @ParameterizedTest(name = "can createOrUpdate existing states (batch size: {0})")
-    fun canCreateOrUpdateExistingStates(stateCount: Int) {
-        persistStateEntities(
-            (1..stateCount),
-            { _, _ -> State.VERSION_INITIAL_VALUE },
-            { i, _ -> "existingState_$i" },
-            { i, _ -> """{"originalK1": "v$i", "originalK2": $i}""" }
-        )
-        val statesToUpdate = mutableSetOf<State>()
-        for (i in 1..stateCount * 2) {
-            statesToUpdate.add(
-                State(buildStateKey(i), "state_$i$i".toByteArray(), 1, metadata("createOrupdatedK2" to "createOrupdatedK2"))
-            )
-        }
-
-        val failedUpdates = stateManager.createOrUpdate(statesToUpdate)
-
-        assertThat(failedUpdates).isEmpty()
-        softlyAssertPersistedStateEntities(
-            (1..stateCount),
-            { _, _ -> 2 },
-            { i, _ -> "state_$i$i" },
-            { _, _ -> metadata("createOrupdatedK2" to "createOrupdatedK2") }
-        )
-        softlyAssertPersistedStateEntities(
-            (stateCount + 1..stateCount * 2),
-            { _, _ -> 1 },
-            { i, _ -> "state_$i$i" },
-            { _, _ -> metadata("createOrupdatedK2" to "createOrupdatedK2") }
-        )
-    }
-
-    @ValueSource(ints = [1, 5, 10, 20, 50])
-    @ParameterizedTest(name = "can createOrUpdate existing states (batch size: {0})")
     fun commitTransaction(stateCount: Int) {
         // states to delete
         persistStateEntities(
@@ -341,17 +308,6 @@ class StateManagerIntegrationTest {
             statesToCreate.add(State(buildStateKey(i), "simpleState_$i".toByteArray()))
         }
 
-        val statesToCreateOrUpdate = mutableSetOf<State>()
-        for (i in (stateCount + 1..stateCount * 2)) {
-            statesToCreateOrUpdate.add(
-                State(
-                    buildStateKey(i),
-                    "state_$i$i".toByteArray(),
-                    State.VERSION_INITIAL_VALUE,
-                    metadata("createOrupdatedK2" to "createOrupdatedK2")
-                )
-            )
-        }
 
         val statesToUpdate = mutableSetOf<State>()
         for (i in (stateCount * 2) + 1..stateCount * 3) {
@@ -360,11 +316,10 @@ class StateManagerIntegrationTest {
             )
         }
 
-        val result = stateManager.commit(statesToCreate, statesToCreateOrUpdate.toSet(), statesToUpdate, statesToDelete)
+        val result = stateManager.commit(statesToCreate, statesToUpdate, statesToDelete)
         assertThat(result).isNotNull
         assertThat(result.failedToCreate).isEmpty()
         assertThat(result.failedToDelete).isEmpty()
-        assertThat(result.createOrUpdateRecordsPreviousValue.size).isEqualTo(stateCount)
         assertThat(result.failedToUpdate).isEmpty()
     }
 
