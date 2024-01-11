@@ -163,7 +163,7 @@ class Sender(
             return false
         }
         return when (loadGenerationParams.loadGenerationType) {
-            LoadGenerationType.ONE_OFF -> (messagesSent < (loadGenerationParams.totalNumberOfMessages!! * loadGenerationParams.peers.size))
+            LoadGenerationType.ONE_OFF -> (messagesSent < loadGenerationParams.totalNumberOfMessages!!)
             LoadGenerationType.CONTINUOUS -> true
         }
     }
