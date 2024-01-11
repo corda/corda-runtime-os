@@ -42,8 +42,8 @@ class MerkleTreeTest {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         // Since there are 2^(2*n) permutations of source leafs we don't want to test too many,
-        // so we do a few at random. In local testing I've taken this up to 1000 which takes 30 minutes
-        // on my laptop.
+        // so we do a few at random. In offline testing this has been successfully taken up to 5000
+        // which takes 30 minutes on a laptop.
         private const val NUMBER_OF_SUBSETS_TO_TEST = 10
 
         private lateinit var digestService: DigestService
