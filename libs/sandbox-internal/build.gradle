@@ -76,7 +76,15 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
 
+    //TODO: see if we can use testRuntimeOnly for all these dependencies
     stressTestImplementation project(':testing:sandboxes')
+    stressTestImplementation "net.corda:corda-application"
+    stressTestImplementation project(':libs:crypto:cipher-suite-impl')
+    stressTestImplementation project(':libs:lifecycle:lifecycle-impl')
+    stressTestImplementation project(':libs:messaging:messaging-impl')
+    stressTestImplementation project(':libs:messaging:db-message-bus-impl')
+    stressTestImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
+
 }
 
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
