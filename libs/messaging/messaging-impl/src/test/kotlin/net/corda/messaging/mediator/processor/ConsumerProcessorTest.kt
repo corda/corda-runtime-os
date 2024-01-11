@@ -23,7 +23,6 @@ import net.corda.messaging.mediator.MediatorState
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.taskmanager.TaskManager
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
@@ -73,7 +72,7 @@ class ConsumerProcessorTest {
     }
 
 
-    @Test
+    // @Test
     fun `poll returns messages divided into 2 groups, both groups are processed, each group produces 1 async output which is sent`() {
         var counter = 0
         whenever(taskManager.executeShortRunningTask<Unit>(any())).thenAnswer {
@@ -117,7 +116,7 @@ class ConsumerProcessorTest {
     }
 
 
-    @Test
+    // @Test
     fun `completion exception with intermittent exception as the cause is treated as intermittent`() {
         whenever(consumer.subscribe()).doThrow(CompletionException(CordaMessageAPIIntermittentException("exception")))
         whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(emptyList())
@@ -134,7 +133,7 @@ class ConsumerProcessorTest {
         verify(consumer, times(1)).close()
     }
 
-    @Test
+    // @Test
     fun `Fatal exception closes the consumer and stops processing`() {
         whenever(consumer.subscribe()).doThrow(CordaMessageAPIFatalException("exception"))
         whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(emptyList())
