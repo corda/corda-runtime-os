@@ -30,7 +30,7 @@ dependencies {
     kapt libs.pf4j
     kapt "info.picocli:picocli:$picocliVersion"
 
-    implementation "org.liquibase:liquibase-core:$liquibaseVersion"
+    implementation libs.liquibase
     constraints {
         implementation(libs.slf4j.v2.api)
         implementation(libs.snakeyaml)  {

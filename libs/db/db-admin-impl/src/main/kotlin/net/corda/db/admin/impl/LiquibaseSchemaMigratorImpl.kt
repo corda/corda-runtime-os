@@ -10,6 +10,7 @@ import liquibase.command.CommandScope
 import liquibase.command.core.StatusCommandStep
 import liquibase.command.core.TagCommandStep
 import liquibase.command.core.UpdateCommandStep
+import liquibase.command.core.UpdateSqlCommandStep
 import liquibase.command.core.helpers.ChangeExecListenerCommandStep
 import liquibase.command.core.helpers.DatabaseChangelogCommandStep
 import liquibase.command.core.helpers.DbUrlConnectionCommandStep
@@ -142,8 +143,19 @@ class LiquibaseSchemaMigratorImpl(
                     Scope.Attr.resourceAccessor.name to lb.resourceAccessor
                 )
                 Scope.child(scopeObjects) {
-                    val command = CommandScope(UpdateCommandStep.COMMAND_NAME[0])
-                        .addArgumentValue(DbUrlConnectionCommandStep.DATABASE_ARG, lb.database)
+                    val command: CommandScope
+                    if (sql != null) {
+                        command = CommandScope(UpdateSqlCommandStep.COMMAND_NAME[0])
+                        command.setOutput(
+                            WriterOutputStream(
+                                sql,
+                                GlobalConfiguration.OUTPUT_FILE_ENCODING.currentValue
+                            )
+                        )
+                    } else {
+                        command = CommandScope(UpdateCommandStep.COMMAND_NAME[0])
+                    }
+                    command.addArgumentValue(DbUrlConnectionCommandStep.DATABASE_ARG, lb.database)
                         .addArgumentValue(UpdateCommandStep.CHANGELOG_FILE_ARG, lb.changeLogFile)
                         .addArgumentValue(UpdateCommandStep.CONTEXTS_ARG, Contexts().toString())
                         .addArgumentValue(UpdateCommandStep.LABEL_FILTER_ARG, LabelExpression().originalString)
@@ -156,14 +168,6 @@ class LiquibaseSchemaMigratorImpl(
                             lb.changeLogParameters
                         )
                         .addArgumentValue(TagCommandStep.TAG_ARG, tag)
-                    if (sql != null) {
-                        command.setOutput(
-                            WriterOutputStream(
-                                sql,
-                                GlobalConfiguration.OUTPUT_FILE_ENCODING.currentValue
-                            )
-                        )
-                    }
                     if (runChanges) {
                         command.execute()
                     }
