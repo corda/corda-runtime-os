@@ -181,7 +181,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
             val keyRotationStatus = deserializer.deserialize(state.value)
             println("XXX: key: $key, state.key: ${state.key}, state.value: $keyRotationStatus")
             result.add(
-                state.metadata["rootKeyAlias"].toString() to TenantIdWrappingKeysStatus(
+                state.metadata["tenantId"].toString() to TenantIdWrappingKeysStatus(
                     keyRotationStatus!!.total,
                     keyRotationStatus.rotatedKeys
                 )
