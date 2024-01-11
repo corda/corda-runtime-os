@@ -386,6 +386,11 @@ class MerkleTreeTest {
                                ┗00000638 (input 2)━unknown           ┳unknown            filtered
                                                                      ┗unknown            filtered
         """)
+        val proofHash = proof.calculateRoot(trivialHashDigestProvider)
+        val proof2Hash = proof2.calculateRoot(trivialHashDigestProvider)
+        val proof3Hash = proof3.calculateRoot(trivialHashDigestProvider)
+        assertThat(proof2Hash).isEqualTo(proofHash)
+        assertThat(proof3Hash).isEqualTo(proofHash)
     }
 
     @Test
