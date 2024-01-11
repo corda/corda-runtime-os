@@ -22,5 +22,5 @@ class CordaHTTPServerErrorException(val statusCode: Int, message: String?, excep
  * @param requestId the identifier for the request.
  * @param cause the cause of the transient exception.
  */
-class CordaHTTPServerTransientException(val requestId: String, cause: Exception? = null) :
+class CordaHTTPServerTransientException(val requestId: String, cause: Throwable? = null) :
     CordaRuntimeException("Transient server exception while processing request '$requestId'. Cause: ${cause?.message}", cause)
