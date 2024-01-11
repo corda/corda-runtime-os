@@ -352,7 +352,7 @@ class MerkleTreeTest {
     }
 
     @Test
-    fun `merkle proof merge`() {
+    fun `merkle proof merge size 6`() {
         val treeSize = 6
         val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
 
@@ -385,6 +385,51 @@ class MerkleTreeTest {
                                                                   ┗00000005 (input 0) filtered      
         """.trimIndent())
         val proofMerged = proof2.merge(proof3, trivialHashDigestProvider)
+        assertThat(proofMerged.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
+                00000612 (calc)┳0000069F (calc)┳00000630 (input 2)┳unknown            filtered
+                               ┃               ┃                  ┗unknown            filtered
+                               ┃               ┗00000634 (calc)   ┳00000002 (calc)    known leaf
+                               ┃                                  ┗00000003 (input 0) filtered
+                               ┗00000638 (calc)━00000638 (calc)   ┳00000004 (calc)    known leaf
+                                                                  ┗00000005 (input 1) filtered
+        """.trimIndent())
+    }
+
+
+    @Test
+    fun `merkle proof merge size 4 0 left 2 right`() {
+        val treeSize = 6
+        val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
+
+        val proof1 = testLeafCombination(merkleTree, listOf(0, 2), merkleTree.root, treeSize).also {
+            assertThat(it.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
+                00000612 (calc)┳0000069F (calc)   ┳00000630 (calc)┳00000000 (calc)    known leaf
+                               ┃                  ┃               ┗00000001 (input 0) filtered
+                               ┃                  ┗00000634 (calc)┳00000002 (calc)    known leaf
+                               ┃                                  ┗00000003 (input 1) filtered
+                               ┗00000638 (input 2)━unknown        ┳unknown            filtered
+                                                                  ┗unknown            filtered
+            """)
+        }
+        val proofX = proof1.subset(trivialHashDigestProvider, listOf(0))
+        assertThat(proofX.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
+            00000612 (calc)┳0000069F (calc)   ┳00000630 (input 1)┳unknown            filtered
+                           ┃                  ┃                  ┗unknown            filtered
+                           ┃                  ┗00000634 (calc)   ┳00000002 (calc)    known leaf
+                           ┃                                     ┗00000003 (input 0) filtered
+                           ┗00000638 (input 2)━unknown           ┳unknown            filtered
+                                                                 ┗unknown            filtered         
+        """.trimIndent())
+        val proofY = proof1.subset(trivialHashDigestProvider, listOf(2))
+        assertThat(proofY.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
+                00000612 (calc)┳0000069F (input 1)┳unknown        ┳unknown            filtered
+                               ┃                  ┃               ┗unknown            filtered
+                               ┃                  ┗unknown        ┳unknown            filtered
+                               ┃                                  ┗unknown            filtered
+                               ┗00000638 (calc)   ━00000638 (calc)┳00000004 (calc)    known leaf
+                                                                  ┗00000005 (input 0) filtered      
+        """.trimIndent())
+        val proofMerged = proofX.merge(proofY, trivialHashDigestProvider)
         assertThat(proofMerged.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
                 00000612 (calc)┳0000069F (calc)┳00000630 (input 2)┳unknown            filtered
                                ┃               ┃                  ┗unknown            filtered
@@ -609,8 +654,8 @@ class MerkleTreeTest {
     private fun testAllMergeCombinations(proof: MerkleProofImpl, leaves: List<Int>, digest: MerkleTreeHashDigestProvider) {
         val proofText = proof.render(digest)
         for (i in 0 until (1 shl leaves.size)) {
-            val xSet = (0 until leaves.size).filter {j ->  i and (1 shl j) != 0 }
-            val ySet = (0 until leaves.size).filter {j ->  i and (1 shl j) == 0 }
+            val xSet = (0 until leaves.size).filter {j ->  i and (1 shl j) != 0 }.map { leaves[it] }
+            val ySet = (0 until leaves.size).filter {j ->  i and (1 shl j) == 0 }.map { leaves[it] }
             println(proofText)
             println("treeSize=${proof.treeSize} leaves=$leaves X=$xSet Y=$ySet")
             if (xSet.isNotEmpty() && ySet.isNotEmpty()) {
