@@ -90,7 +90,7 @@ internal class CommonComponents(
                 clock = clock,
             ),
             schemaRegistry,
-            sessionEncryptionOpsClient
+            sessionEncryptionOpsClient,
         )
     } else {
         SessionManagerImpl(

@@ -15,7 +15,6 @@ import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.SimpleDominoTile
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
-import net.corda.p2p.crypto.protocol.api.SerialisableSessionData
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.sessions.metadata.InboundSessionMetadata
 import net.corda.p2p.linkmanager.sessions.metadata.InboundSessionStatus
@@ -29,10 +28,10 @@ import net.corda.data.p2p.state.SessionState as AvroSessionState
 
 internal class StatefulSessionManagerImpl(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    val stateManager: StateManager,
-    val sessionManagerImpl: SessionManagerImpl,
-    val schemaRegistry: AvroSchemaRegistry,
-    val sessionEncryptionOpsClient: SessionEncryptionOpsClient,
+    private val stateManager: StateManager,
+    private val sessionManagerImpl: SessionManagerImpl,
+    private val schemaRegistry: AvroSchemaRegistry,
+    private val sessionEncryptionOpsClient: SessionEncryptionOpsClient,
 ): SessionManager {
 
     override fun <T> processOutboundMessages(
@@ -46,16 +45,24 @@ internal class StatefulSessionManagerImpl(
         uuids: Collection<T>,
         getSessionId: (T) -> String
     ): Collection<Pair<T, SessionManager.SessionDirection>> {
-        val sessionFromCache = uuids.map { it to sessionCache[getSessionId(it)] }
+        val traceable = uuids.associateBy { getSessionId(it) }
+        val sessionFromCache = uuids.map { it to cachedInboundSessions[getSessionId(it)] }
         val sessionsIdsNotInCache = sessionFromCache.filter { it.second == null }.map { getSessionId(it.first) }
-        val sessionsFromStateManager = stateManager.get(sessionsIdsNotInCache)
-        sessionsFromStateManager.entries.forEach { (sessionId, state) ->
-            sessionCache[sessionId] = AvroSessionState.fromByteBuffer(ByteBuffer.wrap(state.value))
-                .toCorda(schemaRegistry, sessionEncryptionOpsClient, checkRevocation).sessionData as Session
+        val inboundSessionsFromStateManager: List<Pair<T, SessionManager.SessionDirection>> = stateManager.get(sessionsIdsNotInCache).entries.mapNotNull { (sessionId, state) ->
+            val session = AvroSessionState.fromByteBuffer(ByteBuffer.wrap(state.value))
+                .toCorda(schemaRegistry, sessionEncryptionOpsClient, sessionManagerImpl.revocationCheckerClient::checkRevocation).sessionData as Session
+            traceable[sessionId]?.let{
+                it to SessionManager.SessionDirection.Inbound(InboundSessionMetadata(state.metadata).toCounterparties(), session)
+            }
         }
-        val outboundSessions = sessionFromCache.map { it.first to it.second }
+        // In CORE-18630 check cache/state manager for outbound sessions if not found for inbound sessions.
+        // We should avoid as unnecessary reads of the state manager, so first check the inbound and outbound session cache,
+        // then the state manager for an inbound session (query with session ID), then the state manager for an outbound session
+        // (query for sessionId in metadata).
 
-        return emptyList() //To be implemented in CORE-18630 (getting the outbound sessions) + CORE-18631 (getting the inbound sessions).
+        return sessionFromCache.mapNotNull { (traceable, sessionDirection) ->
+            sessionDirection?.let { traceable to it }
+        } + inboundSessionsFromStateManager
     }
 
     override fun <T> processSessionMessages(
@@ -110,11 +117,18 @@ internal class StatefulSessionManagerImpl(
     private data class TraceableResult<T>(
         val traceable: T,
         val message: LinkOutMessage,
-        val stateUpdate: State
+        val stateUpdate: State,
         val sessionToCache: Session?
     )
 
-    private val sessionCache = ConcurrentHashMap<String, Session>()
+    private val cachedInboundSessions = ConcurrentHashMap<String, SessionManager.SessionDirection>()
+
+    private fun InboundSessionMetadata.toCounterparties(): SessionManager.Counterparties {
+        return SessionManager.Counterparties(
+            ourId = this.destination,
+            counterpartyId = this.source
+        )
+    }
 
     private fun <T> processInboundSessionMessages(messages: List<Pair<T, LinkInMessage?>>): Collection<Pair<T, LinkOutMessage?>> {
         val messageContexts = messages.mapNotNull {
@@ -143,7 +157,13 @@ internal class StatefulSessionManagerImpl(
         }
         return result.map{
             it.sessionToCache?.let { sessionToCache ->
-                sessionCache.put(sessionToCache.sessionId, sessionToCache)
+                cachedInboundSessions.put(
+                    sessionToCache.sessionId,
+                    SessionManager.SessionDirection.Inbound(
+                        InboundSessionMetadata(it.stateUpdate.metadata).toCounterparties(),
+                        sessionToCache
+                    )
+                )
             }
             it.traceable to it.message
         }
@@ -186,7 +206,12 @@ internal class StatefulSessionManagerImpl(
                 if (metadata.lastSendExpired()) {
                     val timestamp = Instant.now()
                     val updatedMetadata = metadata.copy(lastSendTimestamp = timestamp)
-                    val responderHelloToResend = AvroSessionState.fromByteBuffer(ByteBuffer.wrap(state.value)).message
+                    val responderHelloToResend = AvroSessionState.fromByteBuffer(ByteBuffer.wrap(state.value))
+                        .toCorda(
+                            schemaRegistry,
+                            sessionEncryptionOpsClient,
+                            sessionManagerImpl.revocationCheckerClient::checkRevocation
+                        ).message
                     val newState = State(
                         key = state.key,
                         value = state.value,
@@ -220,12 +245,13 @@ internal class StatefulSessionManagerImpl(
                 null
             }
             InboundSessionStatus.SentResponderHello -> {
-                val session = schemaRegistry.deserialize(
-                    ByteBuffer.wrap(state.value),
-                    AvroSessionState::class.java,
-                    null
-                ).encryptedSessionData as AuthenticationProtocolResponder
-                sessionManagerImpl.processInitiatorHandshake(session, message.initiatorHandshakeMessage)?.let { responseMessage ->
+                val sessionData = AvroSessionState.fromByteBuffer(ByteBuffer.wrap(state.value))
+                    .toCorda(
+                        schemaRegistry,
+                        sessionEncryptionOpsClient,
+                        sessionManagerImpl.revocationCheckerClient::checkRevocation
+                    ).sessionData as AuthenticationProtocolResponder
+                sessionManagerImpl.processInitiatorHandshake(sessionData, message.initiatorHandshakeMessage)?.let { responseMessage ->
                     val timestamp = Instant.now()
                     val newMetadata = InboundSessionMetadata(
                         source = responseMessage.header.sourceIdentity.toCorda(),
@@ -236,7 +262,7 @@ internal class StatefulSessionManagerImpl(
                         status = InboundSessionStatus.SentResponderHandshake,
                         expiry = Instant.now() + Duration.ofDays(7)
                     )
-                    val session = session.getSession()
+                    val session = sessionData.getSession()
                     val newState = State(
                         message.initiatorHandshakeMessage.header.sessionId,
                         SessionState(responseMessage, session)
@@ -251,7 +277,11 @@ internal class StatefulSessionManagerImpl(
                     val timestamp = Instant.now()
                     val updatedMetadata = metadata.copy(lastSendTimestamp = timestamp)
                     val responderHandshakeToResend = AvroSessionState.fromByteBuffer(ByteBuffer.wrap(state.value))
-                        .toCorda(schemaRegistry, encryptionClient, checkRevocation).sessionData
+                        .toCorda(
+                            schemaRegistry,
+                            sessionEncryptionOpsClient,
+                            sessionManagerImpl.revocationCheckerClient::checkRevocation
+                        ).message
                     val newState = State(
                         key = state.key,
                         value = state.value,

@@ -172,7 +172,7 @@ internal class SessionManagerImpl(
         messagingConfiguration
     )
 
-    private val revocationCheckerClient = RevocationCheckerClient(publisherFactory, coordinatorFactory, messagingConfiguration)
+    internal val revocationCheckerClient = RevocationCheckerClient(publisherFactory, coordinatorFactory, messagingConfiguration)
     private val executorService = executorServiceFactory()
 
     // These metrics must be removed on shutdown as the MeterRegistry holds references to their lambdas.
@@ -519,7 +519,7 @@ internal class SessionManagerImpl(
         return messagesAndProtocol
     }
 
-    private fun pkiMode(
+    internal fun pkiMode(
         p2pParameters: GroupPolicy.P2PParameters,
         sessionManagerConfig: SessionManagerConfig
     ): CertificateCheckMode? {
