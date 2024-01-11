@@ -19,7 +19,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.getStringRecords
 import net.corda.messaging.mediator.GroupAllocator
-import net.corda.messaging.mediator.MediatorState
+import net.corda.messaging.mediator.MediatorSubscriptionState
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.taskmanager.TaskManager
 import org.junit.jupiter.api.BeforeEach
@@ -51,7 +51,7 @@ class ConsumerProcessorTest {
     private lateinit var groupAllocator: GroupAllocator
     private lateinit var taskManager: TaskManager
     private lateinit var messageRouter: MessageRouter
-    private lateinit var mediatorState: MediatorState
+    private lateinit var mediatorSubscriptionState: MediatorSubscriptionState
     private lateinit var eventProcessor: EventProcessor<String, String, String>
 
 
@@ -64,11 +64,11 @@ class ConsumerProcessorTest {
         consumerFactory = mock()
         groupAllocator = mock()
         messageRouter = mock()
-        mediatorState = MediatorState()
+        mediatorSubscriptionState = MediatorSubscriptionState()
         eventProcessor = mock()
         eventMediatorConfig = buildStringTestConfig()
         consumerProcessor = ConsumerProcessor(
-            eventMediatorConfig, groupAllocator, taskManager, messageRouter, mediatorState, eventProcessor
+            eventMediatorConfig, groupAllocator, taskManager, messageRouter, mediatorSubscriptionState, eventProcessor
         )
     }
 
@@ -170,7 +170,7 @@ class ConsumerProcessorTest {
     private fun getConsumerFactory(): MediatorConsumerFactory {
         consumer.apply {
             whenever(poll(any())).thenAnswer {
-                mediatorState.stop()
+                mediatorSubscriptionState.stop()
                 listOf(getConsumerRecord())
             }
         }

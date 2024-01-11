@@ -82,7 +82,7 @@ class EventProcessorTest {
         verify(stateAndEventProcessor, times(4)).onNext(anyOrNull(), any())
         verify(messageRouter, times(9)).getDestination(any())
         verify(client, times(3)).send(any())
-        verify(stateManagerHelper, times(1)).createOrUpdateState(any(), anyOrNull(), anyOrNull())
+        verify(stateManagerHelper, times(1)).createOrUpdateState(any(), anyOrNull(), any(), anyOrNull())
     }
 
     @Test

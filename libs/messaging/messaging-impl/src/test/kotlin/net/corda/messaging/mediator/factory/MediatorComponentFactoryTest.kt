@@ -15,7 +15,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.GroupAllocator
-import net.corda.messaging.mediator.MediatorState
+import net.corda.messaging.mediator.MediatorSubscriptionState
 import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.taskmanager.TaskManager
 import org.assertj.core.api.Assertions.assertThat
@@ -60,7 +60,7 @@ class MediatorComponentFactoryTest {
     private val stateManagerHelper = mock<StateManagerHelper<String>>()
     private val taskManager = mock<TaskManager>()
     private val messageRouter = mock<MessageRouter>()
-    private val mediatorState = MediatorState(AtomicBoolean(false), AtomicBoolean(false))
+    private val mediatorSubscriptionState = MediatorSubscriptionState(AtomicBoolean(false), AtomicBoolean(false))
     private val eventMediatorConfig = mock<EventMediatorConfig<String, String, String>>().apply {
         whenever(name).thenReturn("name")
         whenever(stateManager).thenReturn(mock())
@@ -195,7 +195,7 @@ class MediatorComponentFactoryTest {
     @Test
     fun `create a consumer processor`() {
         val consumerProcessor = mediatorComponentFactory.createConsumerProcessor(eventMediatorConfig, taskManager, messageRouter,
-        mediatorState)
+        mediatorSubscriptionState)
 
         assertThat(consumerProcessor).isNotNull()
     }

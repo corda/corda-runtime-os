@@ -2,6 +2,7 @@ package net.corda.messaging.mediator
 
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.data.messaging.mediator.MediatorState
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
@@ -25,9 +26,11 @@ class StateManagerHelperTest {
 
     private data class StateType(val id: Int)
 
+    private val mediatorState = mock<MediatorState>()
     private val stateManager = mock<StateManager>()
-    private val stateSerializer = mock<CordaAvroSerializer<StateType>>()
+    private val stateSerializer = mock<CordaAvroSerializer<Any>>()
     private val stateDeserializer = mock<CordaAvroDeserializer<StateType>>()
+    private val wrapperDeserializer = mock<CordaAvroDeserializer<MediatorState>>()
 
     @BeforeEach
     fun setup() {
@@ -48,18 +51,18 @@ class StateManagerHelperTest {
             Metadata(),
         )
         val stateManagerHelper = StateManagerHelper(
-            stateManager,
             stateSerializer,
             stateDeserializer,
+            wrapperDeserializer
         )
 
         val state = stateManagerHelper.createOrUpdateState(
-            TEST_KEY, persistedState, newState
+            TEST_KEY, persistedState, mediatorState, newState
         )
 
         assertNotNull(state)
         assertEquals(TEST_KEY, state!!.key)
-        assertArrayEquals(serialized(newState.value!!), state.value)
+        assertArrayEquals(serialized(mediatorState), state.value)
         assertEquals(State.VERSION_INITIAL_VALUE, state.version)
         assertEquals(newState.metadata, state.metadata)
     }
@@ -78,13 +81,13 @@ class StateManagerHelperTest {
             Metadata(),
         )
         val stateManagerHelper = StateManagerHelper(
-            stateManager,
             stateSerializer,
             stateDeserializer,
+            wrapperDeserializer
         )
 
         val state = stateManagerHelper.createOrUpdateState(
-            TEST_KEY, persistedState, updatedState
+            TEST_KEY, persistedState, mediatorState, updatedState
         )
 
         assertNotNull(state)
@@ -97,15 +100,16 @@ class StateManagerHelperTest {
     @Test
     fun `successfully deserializes state`() {
         val stateManagerHelper = StateManagerHelper(
-            stateManager,
             stateSerializer,
             stateDeserializer,
+            wrapperDeserializer
         )
         val serializedStateValue = "test".toByteArray()
+        val mediatorState = MediatorState()
         val state = mock<State>()
         `when`(state.value).thenReturn(serializedStateValue)
 
-        stateManagerHelper.deserializeValue(state)
+        stateManagerHelper.deserializeValue(mediatorState)
 
         verify(stateDeserializer).deserialize(serializedStateValue)
     }
