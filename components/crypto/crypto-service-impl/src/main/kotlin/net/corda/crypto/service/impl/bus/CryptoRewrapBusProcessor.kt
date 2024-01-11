@@ -11,6 +11,7 @@ import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
+import kotlin.random.Random
 
 private const val REWRAP_KEYS_OPERATION_NAME = "rewrapKeys"
 
@@ -36,30 +37,41 @@ class CryptoRewrapBusProcessor(
                 cryptoService.rewrapWrappingKey(request.tenantId, request.targetKeyAlias, request.newParentKeyAlias)
             }
 
-            // Once rewrap is done, we can update state manager db
+            var done = false
 
-            val tenantIdWrappingKeysRecord = stateManager!!.findByMetadataMatchingAll(
-                listOf(
-                    MetadataFilter("rootKeyAlias", Operation.Equals, request.oldParentKeyAlias),
-                    MetadataFilter("tenantId", Operation.Equals, request.tenantId),
-                    MetadataFilter("type", Operation.Equals, "keyRotation")
-                )
-            )
-            require(tenantIdWrappingKeysRecord.size == 1) { "Found more than 1 ${request.tenantId} records in the database for rootKeyAlias = ${request.oldParentKeyAlias}." }
+            while(!done) {
+                // Once rewrap is done, we can update state manager db
 
-            val deserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, UnmanagedKeyStatus::class.java)
-            val serializer = cordaAvroSerializationFactory.createAvroSerializer<UnmanagedKeyStatus>()
-            tenantIdWrappingKeysRecord.forEach { (key, state) ->
-                println("XXX: dealing with tenantId: $key, wrapping key: ${request.targetKeyAlias}")
-                val keyR = deserializer.deserialize(state.value)!!
-                val newValue =
-                    serializer.serialize(UnmanagedKeyStatus(keyR.rootKeyAlias, keyR.total, keyR.rotatedKeys + 1))
-                val failedToUpdate =
-                    stateManager.update(listOf(State(key, newValue!!, state.version + 1, state.metadata)))
-                if (failedToUpdate.isNotEmpty()) println(
-                    "XXX: RewrapBusProcessor failed to update following states: ${failedToUpdate.keys}. " +
-                            "If we would be successfull, rotated keys would be ${keyR.rotatedKeys++}"
+                val tenantIdWrappingKeysRecords = stateManager!!.findByMetadataMatchingAll(
+                    listOf(
+                        MetadataFilter("rootKeyAlias", Operation.Equals, request.oldParentKeyAlias),
+                        MetadataFilter("tenantId", Operation.Equals, request.tenantId),
+                        MetadataFilter("type", Operation.Equals, "keyRotation")
+                    )
                 )
+                require(tenantIdWrappingKeysRecords.size == 1) { "Found more than 1 ${request.tenantId} records in the database for rootKeyAlias = ${request.oldParentKeyAlias}." }
+
+                val deserializer =
+                    cordaAvroSerializationFactory.createAvroDeserializer({}, UnmanagedKeyStatus::class.java)
+                val serializer = cordaAvroSerializationFactory.createAvroSerializer<UnmanagedKeyStatus>()
+                tenantIdWrappingKeysRecords.forEach { (key, state) ->
+                    println("XXX: dealing with tenantId: $key, wrapping key: ${request.targetKeyAlias}")
+                    val keyR = deserializer.deserialize(state.value)!!
+                    val newValue =
+                        serializer.serialize(UnmanagedKeyStatus(keyR.rootKeyAlias, keyR.total, keyR.rotatedKeys + 1))
+                    val failedToUpdate =
+                        stateManager.update(listOf(State(key, newValue!!, state.version + 1, state.metadata)))
+                    if (failedToUpdate.isNotEmpty()) {
+                        println(
+                            "XXX: RewrapBusProcessor failed to update following states: ${failedToUpdate.keys}. " +
+                                "If we would be successfull, rotated keys would be ${keyR.rotatedKeys++}"
+                        )
+                        Thread.sleep(Random.nextLong(0, 1000))
+                    } else {
+                        println("job done")
+                        done = true
+                    }
+                }
             }
         }
         return emptyList()
