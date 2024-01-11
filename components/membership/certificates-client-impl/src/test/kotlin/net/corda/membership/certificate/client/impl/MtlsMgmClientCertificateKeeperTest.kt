@@ -60,11 +60,13 @@ class MtlsMgmClientCertificateKeeperTest {
         on { execute() } doReturn MembershipPersistenceResult.success()
     }
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
-        on { persistGroupPolicy(
-            eq(mgmHoldingIdentity),
-            eq(createdPropertyMap),
-            any(),
-        ) } doReturn operation
+        on {
+            persistGroupPolicy(
+                eq(mgmHoldingIdentity),
+                eq(createdPropertyMap),
+                any(),
+            )
+        } doReturn operation
     }
     private val savedGroupPolicy = mock<LayeredPropertyMap> {
         on { entries } doReturn mapOf("hello" to "world").entries
@@ -141,8 +143,9 @@ class MtlsMgmClientCertificateKeeperTest {
 
     @Test
     fun `addMgmCertificateSubjectToGroupPolicy will throw an exception if query fails`() {
-        whenever(membershipQueryClient
-            .queryGroupPolicy(mgmHoldingIdentity)
+        whenever(
+            membershipQueryClient
+                .queryGroupPolicy(mgmHoldingIdentity)
         )
             .doReturn(MembershipQueryResult.Failure("oops"))
 
@@ -157,8 +160,9 @@ class MtlsMgmClientCertificateKeeperTest {
 
     @Test
     fun `addMgmCertificateSubjectToGroupPolicy will throw an exception if the certificate is invalid`() {
-        whenever(certificateFactory
-            .generateCertificates(any())
+        whenever(
+            certificateFactory
+                .generateCertificates(any())
         )
             .doReturn(emptyList())
 
@@ -174,8 +178,9 @@ class MtlsMgmClientCertificateKeeperTest {
     @Test
     fun `addMgmCertificateSubjectToGroupPolicy will read the correct certificate`() {
         val certificateInputStream = argumentCaptor<InputStream>()
-        whenever(certificateFactory
-            .generateCertificates(certificateInputStream.capture())
+        whenever(
+            certificateFactory
+                .generateCertificates(certificateInputStream.capture())
         )
             .doReturn(listOf(certificate))
 

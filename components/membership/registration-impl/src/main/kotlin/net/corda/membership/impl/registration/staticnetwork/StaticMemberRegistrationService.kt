@@ -1,7 +1,5 @@
 package net.corda.membership.impl.registration.staticnetwork
 
-import java.nio.ByteBuffer
-import java.util.UUID
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.configuration.read.ConfigurationReadService
@@ -97,6 +95,8 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.util.UUID
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
@@ -265,8 +265,8 @@ class StaticMemberRegistrationService(
         if (latestStatuses.isNotEmpty()) {
             throw InvalidMembershipRegistrationException(
                 "The member ${member.x500Name} had been registered successfully in the group ${member.groupId}. " +
-                        "See registrations: ${latestStatuses.map { it.registrationId }}. " +
-                        "Can not re-register."
+                    "See registrations: ${latestStatuses.map { it.registrationId }}. " +
+                    "Can not re-register."
             )
         }
         try {
@@ -305,7 +305,7 @@ class StaticMemberRegistrationService(
         } catch (e: MembershipPersistenceResult.PersistenceRequestException) {
             registrationLogger.warn("Registration failed. Reason:", e)
             throw NotReadyMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
-        } catch(e: InvalidGroupParametersUpdateException) {
+        } catch (e: InvalidGroupParametersUpdateException) {
             registrationLogger.warn("Registration failed. Reason:", e)
             throw InvalidMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
         } catch (e: Exception) {
@@ -398,13 +398,13 @@ class StaticMemberRegistrationService(
             MemberX500Name.parse(it)
         }
 
-        //The notary service x500 name is different from the notary virtual node being registered.
+        // The notary service x500 name is different from the notary virtual node being registered.
         require(
             registeringMemberName != serviceName
         ) {
             "Notary service name invalid: Notary service name $serviceName and virtual node name cannot be the same."
         }
-        //The notary service x500 name is different from any existing virtual node x500 name (notary or otherwise).
+        // The notary service x500 name is different from any existing virtual node x500 name (notary or otherwise).
         require(
             staticMemberList.none { MemberX500Name.parse(it.name!!) == serviceName }
         ) {
@@ -444,7 +444,7 @@ class StaticMemberRegistrationService(
             MemberX500Name.parse(it.name!!) == memberName
         } ?: throw IllegalArgumentException(
             "Our membership $memberName is either not listed in the static member list or there is another member " +
-                    "with the same name."
+                "with the same name."
         )
 
         validateStaticMemberDeclaration(staticMemberInfo)
