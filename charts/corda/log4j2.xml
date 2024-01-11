@@ -24,12 +24,12 @@
                     }
                   }'/>
                 <EventTemplateAdditionalField
-                        key="instant"
+                        key="timestamp"
                         format="JSON"
                         value='{
                     "$resolver": "timestamp",
                     "pattern": {
-                        "format": "HH:mm:ss.SSS",
+                        "format": "yyyy-MM-dd HH:mm:ss.SSS",
                         "timeZone": "UTC"
                         }
                     }
@@ -37,7 +37,7 @@
             </JsonTemplateLayout>
         </Console>
         <Console name="text" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} %X - %msg%n"/>
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} %X - %msg%n"/>
         </Console>
     </Appenders>
     <Loggers>
