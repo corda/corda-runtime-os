@@ -8,7 +8,6 @@ import net.corda.crypto.rest.response.KeyRotationResponse
 import net.corda.crypto.rest.response.KeyRotationStatusResponse
 import net.corda.crypto.rest.response.TenantIdWrappingKeysStatus
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
-import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationStatus
 import net.corda.data.crypto.wire.ops.key.rotation.KeyType
 import net.corda.data.crypto.wire.ops.key.status.UnmanagedKeyStatus
 import net.corda.libs.configuration.SmartConfig
@@ -34,6 +33,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.ForbiddenException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.rest.response.ResponseEntity
@@ -77,9 +77,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
 
     private var publishToKafka: Publisher? = null
     private var stateManager: StateManager? = null
-    private val serializer = cordaAvroSerializationFactory.createAvroSerializer<KeyRotationStatus>()
-    private val deserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, KeyRotationStatus::class.java)
-    private val deserializer1 = cordaAvroSerializationFactory.createAvroDeserializer({}, UnmanagedKeyStatus::class.java)
+    private val deserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, UnmanagedKeyStatus::class.java)
 
     override val targetInterface: Class<KeyRotationRestResource> = KeyRotationRestResource::class.java
     override val protocolVersion: Int = platformInfoProvider.localWorkerPlatformVersion
@@ -176,10 +174,11 @@ class KeyRotationRestResourceImpl @Activate constructor(
         // if entries are empty, there is no rootKeyAlias data stored in the state manager, so no key rotation is in progress
         if (entries.isNullOrEmpty()) throw ResourceNotFoundException("No key rotation for $rootKeyAlias is in progress.")
 
+        var lastUpdatedTimestamp = Instant.MIN
         var rotationStatus = "Done"
         val result = mutableListOf<Pair<String, TenantIdWrappingKeysStatus>>()
         entries.forEach { (key, state) ->
-            val keyRotationStatus = deserializer1.deserialize(state.value)
+            val keyRotationStatus = deserializer.deserialize(state.value)
             println("XXX: key: $key, state.key: ${state.key}, state.value: $keyRotationStatus")
             result.add(
                 state.metadata["rootKeyAlias"].toString() to TenantIdWrappingKeysStatus(
@@ -187,13 +186,15 @@ class KeyRotationRestResourceImpl @Activate constructor(
                     keyRotationStatus.rotatedKeys
                 )
             )
+            if (state.modifiedTime > lastUpdatedTimestamp) lastUpdatedTimestamp = state.modifiedTime
             if (state.metadata["status"] != "Done") rotationStatus = "In Progress"
         }
-
-        return KeyRotationStatusResponse(rootKeyAlias, result, rotationStatus)
+        return KeyRotationStatusResponse(rootKeyAlias, result, rotationStatus, lastUpdatedTimestamp)
     }
 
     override fun startKeyRotation(oldKeyAlias: String, newKeyAlias: String): ResponseEntity<KeyRotationResponse> {
+        if (!hasPreviousRotationFinished(oldKeyAlias)) throw ForbiddenException("Previous key rotation for $oldKeyAlias is in progress.")
+
         tryWithExceptionHandling(logger, "start key rotation") {
             checkNotNull(publishToKafka)
         }
@@ -203,6 +204,19 @@ class KeyRotationRestResourceImpl @Activate constructor(
             newKeyAlias,
             publishRequests = { publishToKafka!!.publish(it) }
         )
+    }
+
+    private fun hasPreviousRotationFinished(oldKeyAlias: String): Boolean {
+        stateManager!!.findByMetadataMatchingAll(
+            listOf(
+                MetadataFilter("rootKeyAlias", Operation.Equals, oldKeyAlias),
+                MetadataFilter("type", Operation.Equals, "keyRotation")
+            )
+        ).forEach {
+            // if we find one In Progress status, we know we are not done
+            if (it.value.metadata["status"] != "Done") return false
+        }
+        return true
     }
 }
 
@@ -222,11 +236,6 @@ fun doKeyRotation(
 ): ResponseEntity<KeyRotationResponse> {
     // We cannot validate oldKeyAlias or newKeyAlias early here on the client side of the RPC since
     // those values are considered sensitive.
-
-
-    // TODO: we should now be able to check if another key rotation is in progress by checking the state manager db
-    // TODO: we can possibly add status in the key rotation metadata and if any rotation for tenantId hasn't yet finished,
-    // it can say so.
 
     val requestId = UUID.randomUUID().toString()
     val keyRotationRequest = KeyRotationRequest(

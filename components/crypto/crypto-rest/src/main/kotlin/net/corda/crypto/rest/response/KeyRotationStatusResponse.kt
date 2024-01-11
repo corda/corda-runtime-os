@@ -1,5 +1,7 @@
 package net.corda.crypto.rest.response
 
+import java.time.Instant
+
 /**
  * The result of a key rotation request.
  *
@@ -10,6 +12,7 @@ data class KeyRotationStatusResponse(
     val oldKeyAlias: String,
     val wrappingKeys: List<Pair<String, TenantIdWrappingKeysStatus>>,
     val status: String,
+    val lastUpdatedTimestamp: Instant
 )
 
 data class TenantIdWrappingKeysStatus(
