@@ -791,7 +791,8 @@ internal class SessionManagerImpl(
     }
 
     private fun processInitiatorHello(message: InitiatorHelloMessage): LinkOutMessage? {
-        return processInitiatorHello(message) { sessionId, maxMessageSize ->
+        return processInitiatorHello(message) { sessionId, maxMessageSize, peer ->
+             sessionMessageReceived(message.header.sessionId, peer, null)
              pendingInboundSessions.computeIfAbsent(sessionId) {
                 val session = protocolFactory.createResponder(it, maxMessageSize)
                 session.receiveInitiatorHello(message)
@@ -803,7 +804,7 @@ internal class SessionManagerImpl(
     //Only use by Stateful Session Manager
     internal fun processInitiatorHello(
         message: InitiatorHelloMessage,
-        createSession: (sessionId: String, mexMessageSize: Int) -> AuthenticationProtocolResponder = { sessionId, maxMessageSize ->
+        createSession: (sessionId: String, mexMessageSize: Int, peer: HoldingIdentity) -> AuthenticationProtocolResponder = { sessionId, maxMessageSize, _ ->
             val session = protocolFactory.createResponder(sessionId, maxMessageSize)
             session.receiveInitiatorHello(message)
             session
@@ -842,7 +843,6 @@ internal class SessionManagerImpl(
         }
 
         val (hostedIdentityInSameGroup, peerMemberInfo) = locallyHostedIdentityWithPeerMemberInfo
-        sessionMessageReceived(message.header.sessionId, peerMemberInfo.holdingIdentity, null)
         val p2pParams = try {
             groupPolicyProvider.getP2PParameters(hostedIdentityInSameGroup)
         } catch (except: BadGroupPolicyException) {
@@ -854,7 +854,7 @@ internal class SessionManagerImpl(
             return null
         }
 
-        val session = createSession(message.header.sessionId, sessionManagerConfig.maxMessageSize)
+        val session = createSession(message.header.sessionId, sessionManagerConfig.maxMessageSize, peerMemberInfo.holdingIdentity)
         val responderHello = session.generateResponderHello()
 
         logger.info("Remote identity ${peerMemberInfo.holdingIdentity} initiated new session ${message.header.sessionId}.")
