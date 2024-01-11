@@ -34,7 +34,8 @@ class StateManagerHelper<S : Any>(
         newState: StateAndEventProcessor.State<S>?,
     ) = serialize(newState?.value)?.let { serializedValue ->
         mediatorState.state = ByteBuffer.wrap(serializedValue)
-        val mediatorStateBytes = serializer.serialize(mediatorState) ?: throw IllegalStateException("Serialized mediator state was null. This should be impossible!")
+        val mediatorStateBytes = serializer.serialize(mediatorState)
+            ?: throw IllegalStateException("Serialized mediator state was null. This should be impossible!")
         State(
             key,
             mediatorStateBytes,
