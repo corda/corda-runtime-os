@@ -591,6 +591,35 @@ class MerkleTreeTest {
                     }
                 }
 
+                testAllMergeCombinations(proof, leafIndicesCombination, trivialHashDigestProvider)
+
+            }
+        }
+    }
+
+    /**
+     * Given a MerkleProof, work out what happens if we split the proof into two subsets then merge them together.
+     *
+     * Try every possible combination of splits
+     *
+     * @param proof the source proof
+     * @param leaves the indices of the leaves that are known in the proof
+     * @param digest an object that implements the hash algorithm for the Merkle proof
+     */
+    private fun testAllMergeCombinations(proof: MerkleProofImpl, leaves: List<Int>, digest: MerkleTreeHashDigestProvider) {
+        val proofText = proof.render(digest)
+        for (i in 0 until (1 shl leaves.size)) {
+            val xSet = (0 until leaves.size).filter {j ->  i and (1 shl j) != 0 }
+            val ySet = (0 until leaves.size).filter {j ->  i and (1 shl j) == 0 }
+            println(proofText)
+            println("treeSize=${proof.treeSize} leaves=$leaves X=$xSet Y=$ySet")
+            if (xSet.isNotEmpty() && ySet.isNotEmpty()) {
+                check(xSet.size + ySet.size == leaves.size)
+                val xProof = proof.subset(digest, xSet)
+                val yProof = proof.subset(digest, ySet)
+                val mergedProof = xProof.merge(yProof, digest)
+                val mergedProofText = mergedProof.render(digest)
+                assertThat(mergedProofText).isEqualTo(proofText)
             }
         }
     }
