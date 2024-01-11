@@ -190,7 +190,7 @@ class MerkleProofImpl(
                         MerkleNode(newIndex, newHash)
                     } else {
                         // Remember we consumed a proof hash for the left hand child
-                        onNewHash(MerkleNodeInfo(MerkleNode(item.indexWithinLevel-1, hashes[hashIndex]), treeDepth+1, hashIndex))
+                        onNewHash(MerkleNodeInfo(MerkleNode(item.indexWithinLevel - 1, hashes[hashIndex]), treeDepth + 1, hashIndex))
                         // Make new node with:
                         //   - left being proof of hash at $hashIndex
                         //   - right being current element, index $item.first, hash $item.second
