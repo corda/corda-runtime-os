@@ -4,7 +4,6 @@ import net.corda.e2etest.utilities.ClusterInfo
 import net.corda.e2etest.utilities.P2PEndpointInfo
 import net.corda.e2etest.utilities.RestEndpointInfo
 import net.corda.e2etest.utilities.SimpleResponse
-import net.corda.e2etest.utilities.exportGroupPolicy
 import net.corda.e2etest.utilities.lookup
 import net.corda.e2etest.utilities.onboardMember
 import net.corda.e2etest.utilities.onboardMgm
@@ -236,7 +235,7 @@ class LargeNetworkTest {
                     val holdingId = cluster.onboardMember(
                         null,
                         testName,
-                        groupPolicy,
+                        groupPolicyFactory,
                         memberX500Name.toString(),
                     ).holdingId
                     cluster.onboardedMembers.add(
@@ -293,13 +292,8 @@ class LargeNetworkTest {
                 MemberX500Name.parse(it)
             }
     }
-    private val groupPolicy by lazy {
-        println("Onboarding MGM")
-        val mgmInfo = mgmCluster.onboardMgm(mgmName.toString())
-        mgmCluster.exportGroupPolicy(mgmInfo.holdingId).also {
-            assertThat(it).isNotEmpty.isNotBlank
-            println("MGM was onboarded")
-        }
+    private val groupPolicyFactory by lazy {
+        mgmCluster.onboardMgm(mgmName.toString()).getGroupPolicyFactory()
     }
 
     private fun deployClusters() {

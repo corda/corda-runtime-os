@@ -1,6 +1,7 @@
 package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.e2etest.utilities.types.GroupPolicyFactory
 import net.corda.e2etest.utilities.types.NetworkOnboardingMetadata
 import net.corda.e2etest.utilities.types.jsonToMemberList
 import net.corda.rest.ResponseCode
@@ -44,7 +45,7 @@ const val DEFAULT_NOTARY_SERVICE = "O=NotaryService, L=London, C=GB"
  *
  * @param cpb The path to the CPB to use when creating the CPI.
  * @param cpiName The name to be used for the CPI.
- * @param groupPolicy The group policy file to be bundled with the CPB in the CPI.
+ * @param mgm The details of the MGM.
  * @param x500Name The X500 name of the onboarding member.
  * @param waitForApproval Boolean flag to indicate whether the function should wait and assert for approved status.
  *  Defaults to true.
@@ -57,16 +58,15 @@ const val DEFAULT_NOTARY_SERVICE = "O=NotaryService, L=London, C=GB"
 fun ClusterInfo.onboardMember(
     cpb: String?,
     cpiName: String,
-    groupPolicy: String,
+    groupPolicyFactory: GroupPolicyFactory,
     x500Name: String,
     waitForApproval: Boolean = true,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
-    tlsCertificateUploadedCallback: (String) -> Unit = {},
     useSessionCertificate: Boolean = false,
     useLedgerKey: Boolean = true,
 ): NetworkOnboardingMetadata {
     conditionallyUploadCpiSigningCertificate()
-    conditionallyUploadCordaPackage(cpiName, cpb, groupPolicy)
+    conditionallyUploadCordaPackage(cpiName, cpb, groupPolicyFactory.groupPolicy)
     val holdingId = getOrCreateVirtualNodeFor(x500Name, cpiName)
 
     addSoftHsmFor(holdingId, CAT_SESSION_INIT)
@@ -90,7 +90,7 @@ fun ClusterInfo.onboardMember(
         null
     }
 
-    if (!keyExists(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS)) {
+    whenNoKeyExists(TENANT_P2P, alias = "$TENANT_P2P$CAT_TLS", category = CAT_TLS) {
         disableCertificateRevocationChecks()
         val tlsKeyId = createKeyFor(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS, DEFAULT_KEY_SCHEME)
         val tlsCsr = generateCsr(x500Name, tlsKeyId)
@@ -100,7 +100,9 @@ fun ClusterInfo.onboardMember(
             it.writeBytes(tlsCert.toByteArray())
         }
         importCertificate(tlsCertFile, CERT_USAGE_P2P, CERT_ALIAS_P2P)
-        tlsCertificateUploadedCallback(tlsCert)
+        if (TlsType.type == TlsType.MUTUAL) {
+            groupPolicyFactory.clusterInfo.allowClientCertificates(tlsCert, groupPolicyFactory.holdingId)
+        }
     }
 
     val registrationContext = createRegistrationContext(
@@ -149,18 +151,17 @@ fun NetworkOnboardingMetadata.reregisterMember(
 fun ClusterInfo.onboardNotaryMember(
     resourceName: String,
     cpiName: String,
-    groupPolicy: String,
+    groupPolicyFactory: GroupPolicyFactory,
     x500Name: String,
     wait: Boolean = true,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
-    tlsCertificateUploadedCallback: (String) -> Unit = {},
     notaryServiceName: String = DEFAULT_NOTARY_SERVICE,
     isBackchainRequired: Boolean = true,
     notaryPlugin: String = "nonvalidating"
 ) = onboardMember(
     resourceName,
     cpiName,
-    groupPolicy,
+    groupPolicyFactory,
     x500Name,
     wait,
     getAdditionalContext = { holdingId ->
@@ -181,7 +182,6 @@ fun ClusterInfo.onboardNotaryMember(
                 else emptyMap()
         )
     },
-    tlsCertificateUploadedCallback = tlsCertificateUploadedCallback,
     useLedgerKey = false
 )
 
