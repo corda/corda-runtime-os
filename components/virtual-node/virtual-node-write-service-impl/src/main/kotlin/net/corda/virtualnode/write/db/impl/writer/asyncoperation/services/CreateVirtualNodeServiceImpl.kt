@@ -118,7 +118,7 @@ internal class CreateVirtualNodeServiceImpl(
         vaultDb: VirtualNodeDb,
         holdingIdentity: HoldingIdentity
     ): Boolean {
-        dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction { em ->
+        dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().use { em ->
 
             val changelogsPerCpk = cpkDbChangeLogRepository.findByCpiId(em, cpiMetadata.cpiId)
                 .groupBy { it.id.cpkFileChecksum }
