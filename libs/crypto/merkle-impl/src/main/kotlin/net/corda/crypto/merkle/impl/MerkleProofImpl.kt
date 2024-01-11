@@ -252,8 +252,9 @@ class MerkleProofImpl(
             val height = treeDepth - info.level // how many levels above the leaves, 0 for being at the leaf
             val leftmostLeaf = info.node.indexWithinLevel shl height
             val afterLeaf = min(leftmostLeaf + (1 shl height), treeSize)
-            val unknowns = (leftmostLeaf until afterLeaf).any { it !in availableLeaves }
-            val allUnknown = (leftmostLeaf until afterLeaf).all { it !in availableLeaves }
+            val numberOfUnknowns = (leftmostLeaf until afterLeaf).count { it !in availableLeaves }
+            val allUnknown = numberOfUnknowns == (afterLeaf-leftmostLeaf)
+            val unknowns = numberOfUnknowns > 0
             // work out the sibling node i.e. the node which shares a direct parent node with this one
             val siblingIndex = info.node.indexWithinLevel xor 1
             val siblingLeftmostLeaf = siblingIndex shl height
