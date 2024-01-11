@@ -56,8 +56,8 @@ class CryptoRekeyBusProcessor(
 
 
             // TODO: first delete the data in state manager, so we can correctly report on the key rotation status
-            // TODO: do we need to delete key status here as well? Probably yes, that means we don't need to filter, if key starts with 'kr' or 'ks'
-            // TODO: deal with optimistic locking, just in case. We should have checked in the rest worker if key rotation is in progress and don't start a new one if one is
+            // TODO: do we need to delete key status here as well? Probably yes.
+            // TODO: deal with optimistic locking, just in case. We should have checked in the rest worker if the key rotation is in progress and don't start a new one if one is
             val toDelete = stateManager!!.findByMetadataMatchingAll(
                 listOf(
                     MetadataFilter("rootKeyAlias", Operation.Equals, request.oldParentKeyAlias),
