@@ -98,12 +98,13 @@ class MerkleProofImpl(
             throw MerkleProofRebuildFailureException("MerkleProof leaves cannot have duplications.")
         }
         var hashIndex = 0
-        val sortedLeaves = leaves.sortedBy { it.index }
-        // work out nodeHashes, which is a list of node information for the current level we operate at
-        var nodeHashes: List<MerkleNode> =
-            sortedLeaves.map { MerkleNode(it.index, digest.leafHash(it.index, it.nonce, it.leafData)) }
         var treeDepth = MerkleTreeImpl.treeDepth(treeSize)         // initialised to the depth of tree we should
-        nodeHashes.forEach { item -> onNewHash(MerkleNodeInfo(item, treeDepth, null))  }
+        // work out nodeHashes, which is a list of node information for the current level we operate at
+        var nodeHashes: List<MerkleNode> = leaves.sortedBy { it.index }.map {
+                MerkleNode(it.index, digest.leafHash(it.index, it.nonce, it.leafData)).also {
+                    onNewHash(MerkleNodeInfo(it, treeDepth, null))
+                }
+            }
         // need for the number of elements
         var currentSize = treeSize                                 // outer loop variable; the number of
         // leaves left as we roll up the tree
@@ -180,7 +181,7 @@ class MerkleProofImpl(
 
                     // We pair the current element with a hash from the proof
                     val newNode = (if ((item.indexWithinLevel and 1) == 0) {      // Even index means, that the item is on the left
-                        // Remember we consumed a proof hash for the left hand child
+                        // Remember we consumed a proof hash for the right hand child
                         onNewHash(MerkleNodeInfo(MerkleNode(item.indexWithinLevel+1, hashes[hashIndex]), treeDepth+1, hashIndex))
                         // Make new node with
                         //   - left being current element
@@ -188,7 +189,7 @@ class MerkleProofImpl(
                         val newHash = digest.nodeHash(treeDepth, item.hash, hashes[hashIndex])
                         MerkleNode(newIndex, newHash)
                     } else {
-                        // Remember we consumed a proof hash for the right hand child
+                        // Remember we consumed a proof hash for the left hand child
                         onNewHash(MerkleNodeInfo(MerkleNode(item.indexWithinLevel-1, hashes[hashIndex]), treeDepth+1, hashIndex))
                         // Make new node with:
                         //   - left being proof of hash at $hashIndex
@@ -206,7 +207,7 @@ class MerkleProofImpl(
                     onNewHash(MerkleNodeInfo(newNode, treeDepth, null))
                     newItems += MerkleNode(newIndex, item.hash)
                 }
-                index++ // whatever of the last 3 cases we took, we consumed one element
+                index++ // whatever of the last 3 cases we took, we consumed one node
             }
             // now we move up a level, so the tree gets smaller...
             currentSize = (currentSize + 1) / 2
