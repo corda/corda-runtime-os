@@ -11,8 +11,6 @@ import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions
 import java.io.File
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 
 private val mapper = ObjectMapper()
 
@@ -307,7 +305,6 @@ fun registerStaticMember(
     notaryPlugin
 )
 
-val memberRegisterLock = ReentrantLock()
 fun ClusterInfo.registerStaticMember(
     holdingIdentityShortHash: String,
     notaryServiceName: String? = null,
@@ -316,38 +313,36 @@ fun ClusterInfo.registerStaticMember(
     notaryPlugin: String = "nonvalidating"
 ) {
     cluster {
-        memberRegisterLock.withLock {
-            assertWithRetry {
-                interval(1.seconds)
-                timeout(10.seconds)
-                command {
-                    registerStaticMember(
-                        holdingIdentityShortHash,
-                        notaryServiceName,
-                        customMetadata,
-                        isBackchainRequired,
-                        notaryPlugin
-                    )
-                }
-                condition {
-                    it.code == ResponseCode.OK.statusCode
-                            && it.toJson()["registrationStatus"].textValue() == REGISTRATION_SUBMITTED
-                }
-                failMessage("Failed to register the member to the network '$holdingIdentityShortHash'")
+        assertWithRetry {
+            interval(1.seconds)
+            timeout(10.seconds)
+            command {
+                registerStaticMember(
+                    holdingIdentityShortHash,
+                    notaryServiceName,
+                    customMetadata,
+                    isBackchainRequired,
+                    notaryPlugin
+                )
             }
+            condition {
+                it.code == ResponseCode.OK.statusCode
+                        && it.toJson()["registrationStatus"].textValue() == REGISTRATION_SUBMITTED
+            }
+            failMessage("Failed to register the member to the network '$holdingIdentityShortHash'")
+        }
 
-            assertWithRetry {
-                // Use a fairly long timeout here to give plenty of time for the other side to respond. Longer
-                // term this should be changed to not use the RPC message pattern and have the information available in a
-                // cache on the REST worker, but for now this will have to suffice.
-                timeout(60.seconds)
-                interval(2.seconds)
-                command { getRegistrationStatus(holdingIdentityShortHash) }
-                condition {
-                    it.toJson().firstOrNull()?.get("registrationStatus")?.textValue() == REGISTRATION_APPROVED
-                }
-                failMessage("Registration was not completed for $holdingIdentityShortHash")
+        assertWithRetry {
+            // Use a fairly long timeout here to give plenty of time for the other side to respond. Longer
+            // term this should be changed to not use the RPC message pattern and have the information available in a
+            // cache on the REST worker, but for now this will have to suffice.
+            timeout(60.seconds)
+            interval(2.seconds)
+            command { getRegistrationStatus(holdingIdentityShortHash) }
+            condition {
+                it.toJson().firstOrNull()?.get("registrationStatus")?.textValue() == REGISTRATION_APPROVED
             }
+            failMessage("Registration was not completed for $holdingIdentityShortHash")
         }
     }
 }
