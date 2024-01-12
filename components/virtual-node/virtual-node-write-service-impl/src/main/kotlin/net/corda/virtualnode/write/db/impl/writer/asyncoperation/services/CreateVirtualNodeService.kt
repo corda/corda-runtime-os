@@ -18,6 +18,7 @@ internal interface CreateVirtualNodeService {
     fun getCpiMetaData(cpiFileChecksum: String): CpiMetadata
 
     fun runCpiMigrations(cpiMetadata: CpiMetadata, vaultDb: VirtualNodeDb, holdingIdentity: HoldingIdentity)
+    fun checkCpiMigrations(cpiMetadata: CpiMetadata, vaultDb: VirtualNodeDb, holdingIdentity: HoldingIdentity): Boolean
 
     fun persistHoldingIdAndVirtualNode(
         holdingIdentity: HoldingIdentity,

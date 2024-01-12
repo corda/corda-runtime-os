@@ -99,7 +99,6 @@ internal class CertificatesServiceImplTest {
 
     @Test
     fun `imports cluster certificate`() {
-
         val usage = CertificateUsage.CODE_SIGNER
         val testAlias = "testAlias"
         val testRawCertificate = "testRawCertificate"
@@ -118,7 +117,6 @@ internal class CertificatesServiceImplTest {
 
     @Test
     fun `returns null when cluster certificate not found by alias`() {
-
         val testUsage = CertificateUsage.P2P_TLS
         val testAlias = "testAlias"
         entityManagerFactory.transaction {
@@ -126,14 +124,13 @@ internal class CertificatesServiceImplTest {
             it.persist(ClusterCertificate("otherTenant", testAlias, "otherCertificate"))
         }
 
-        val certificate = certificatesService.client.retrieveCertificates( null, testUsage, testAlias)
+        val certificate = certificatesService.client.retrieveCertificates(null, testUsage, testAlias)
 
         assertThat(certificate).isNull()
     }
 
     @Test
     fun `retrieves cluster certificate by alias`() {
-
         val testUsage = CertificateUsage.CODE_SIGNER
         val testAlias = "testAlias"
         val testRawCertificate = "testRawCertificate"
@@ -162,7 +159,6 @@ internal class CertificatesServiceImplTest {
 
     @Test
     fun `returns empty list when tenant's cluster certificates not found`() {
-
         val testUsage = CertificateUsage.P2P_TLS
         entityManagerFactory.transaction {
             it.createQuery("delete from ClusterCertificate").executeUpdate()
@@ -176,7 +172,6 @@ internal class CertificatesServiceImplTest {
 
     @Test
     fun `retrieves all tenant's cluster certificates`() {
-
         val testUsage = CertificateUsage.REST_TLS
         val testRawCertificate1 = "testRawCertificate1"
         val testRawCertificate2 = "testRawCertificate2"
@@ -197,7 +192,6 @@ internal class CertificatesServiceImplTest {
 
     @Test
     fun `imports virtual node certificate`() {
-
         val testTenant = ShortHash.of("012345678901")
         val testAlias = "testAlias"
         val testRawCertificate = "testRawCertificate"
@@ -222,7 +216,7 @@ internal class CertificatesServiceImplTest {
             it.persist(Certificate("otherAlias", CertificateUsage.P2P_TLS.publicName, "otherCertificate"))
         }
 
-        val certificate = certificatesService.client.retrieveCertificates( testTenant, CertificateUsage.P2P_TLS, testAlias)
+        val certificate = certificatesService.client.retrieveCertificates(testTenant, CertificateUsage.P2P_TLS, testAlias)
 
         assertThat(certificate).isNull()
     }

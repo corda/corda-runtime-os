@@ -33,6 +33,16 @@ import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
+/**
+ * RPC subscription implementation utilizing a message bus with producer and consumer to achieve asynchronous
+ * request/response processing.
+ *
+ * On first connection, the subscription goes to the latest message on the topic and not the last one consumed.
+ * This means that any requests sent when the response side is not yet operational will not be processed
+ * (similar to pub/sub pattern).
+ *
+ * RPC responses are unreliable so do not use this pattern if reliable response are required.
+ */
 @Suppress("LongParameterList")
 internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val config: ResolvedSubscriptionConfig,

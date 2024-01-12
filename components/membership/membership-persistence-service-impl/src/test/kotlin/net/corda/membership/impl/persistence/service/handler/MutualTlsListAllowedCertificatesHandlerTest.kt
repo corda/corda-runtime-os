@@ -85,12 +85,12 @@ class MutualTlsListAllowedCertificatesHandlerTest {
         val criteriaBuilder = mock<CriteriaBuilder> {
             on { createQuery(MutualTlsAllowedClientCertificateEntity::class.java) } doReturn criteriaQuery
             on { asc(path) } doReturn order
-            on { equal(isDeletedPath, false)} doReturn equalsPredicate
+            on { equal(isDeletedPath, false) } doReturn equalsPredicate
         }
         val query = mock<TypedQuery<MutualTlsAllowedClientCertificateEntity>> {
             on { resultList } doReturn
-                    listOf("subject 1", "subject 2")
-                        .map { MutualTlsAllowedClientCertificateEntity(it, false) }
+                listOf("subject 1", "subject 2")
+                    .map { MutualTlsAllowedClientCertificateEntity(it, false) }
         }
         whenever(entityManager.criteriaBuilder).doReturn(criteriaBuilder)
         whenever(entityManager.createQuery(criteriaQuery)).doReturn(query)
@@ -101,7 +101,8 @@ class MutualTlsListAllowedCertificatesHandlerTest {
         )
 
         assertThat(list.subjects).containsExactly(
-            "subject 1", "subject 2"
+            "subject 1",
+            "subject 2"
         )
     }
 }

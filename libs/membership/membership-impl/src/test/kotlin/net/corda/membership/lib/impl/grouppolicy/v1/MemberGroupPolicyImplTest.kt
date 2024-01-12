@@ -77,10 +77,12 @@ class MemberGroupPolicyImplTest {
                     .isNotNull
                     .isNotEmpty
                     .hasSize(2)
-                    .containsExactlyInAnyOrderEntriesOf(mapOf(
-                        MPV_KEY to MPV,
-                        CUSTOM_PARAMETER_KEY to CUSTOM_PARAMETER_VALUE
-                    ))
+                    .containsExactlyInAnyOrderEntriesOf(
+                        mapOf(
+                            MPV_KEY to MPV,
+                            CUSTOM_PARAMETER_KEY to CUSTOM_PARAMETER_VALUE
+                        )
+                    )
 
                 it.assertThat(groupPolicy.p2pParameters.sessionPki).isEqualTo(SessionPkiMode.STANDARD)
                 it.assertThat(groupPolicy.p2pParameters.sessionTrustRoots)

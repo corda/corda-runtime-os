@@ -58,7 +58,7 @@ fun ClusterInfo.onboardMgm(
         groupPolicyConfig
     )
 
-    if (!keyExists(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS)) {
+    whenNoKeyExists(TENANT_P2P, alias = "$TENANT_P2P$CAT_TLS", category = CAT_TLS) {
         disableCertificateRevocationChecks()
         val tlsKeyId = createKeyFor(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS, DEFAULT_KEY_SCHEME)
         val mgmTlsCsr = generateCsr(mgmName, tlsKeyId)
@@ -299,7 +299,6 @@ fun ClusterInfo.declineRegistration(
  */
 data class GroupPolicyConfig(
     val sessionPkiMode: String = "NoPKI",
-    val tlsType: String = "OneWay",
     val p2pMode: String = "Authenticated_Encryption",
     val sessionPolicy: String = "Distinct",
     val tlsPkiMode: String = "Standard",
@@ -323,7 +322,7 @@ private fun ClusterInfo.createMgmRegistrationContext(
             to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
     "corda.group.protocol.p2p.mode" to groupPolicyConfig.p2pMode,
     "corda.group.key.session.policy" to groupPolicyConfig.sessionPolicy,
-    "corda.group.tls.type" to groupPolicyConfig.tlsType,
+    "corda.group.tls.type" to TlsType.type.groupPolicyMame,
     "corda.group.pki.session" to groupPolicyConfig.sessionPkiMode,
     "corda.group.pki.tls" to groupPolicyConfig.tlsPkiMode,
     "corda.group.tls.version" to groupPolicyConfig.tlsVersion,

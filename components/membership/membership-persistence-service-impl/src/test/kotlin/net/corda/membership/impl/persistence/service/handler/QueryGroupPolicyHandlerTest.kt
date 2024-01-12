@@ -1,8 +1,8 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryGroupPolicy

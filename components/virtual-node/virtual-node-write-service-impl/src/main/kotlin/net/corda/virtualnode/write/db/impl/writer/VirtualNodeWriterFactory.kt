@@ -44,6 +44,7 @@ import net.corda.virtualnode.write.db.impl.writer.asyncoperation.factories.Recor
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.CreateVirtualNodeOperationHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.UpdateVirtualNodeDbOperationHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeOperationStatusHandler
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeSchemaHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeUpgradeOperationHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.services.CreateVirtualNodeServiceImpl
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.services.UpdateVirtualNodeServiceImpl
@@ -228,11 +229,18 @@ internal class VirtualNodeWriterFactory(
         val virtualNodeOperationStatusHandler =
             VirtualNodeOperationStatusHandler(dbConnectionManager, virtualNodeRepository)
 
+        val virtualNodeSchemaHandler = VirtualNodeSchemaHandler(
+            dbConnectionManager,
+            schemaMigrator,
+            virtualNodeRepository
+        )
+
         val processor = VirtualNodeWriterProcessor(
             vNodePublisher,
             dbConnectionManager,
             virtualNodeEntityRepository,
             virtualNodeOperationStatusHandler,
+            virtualNodeSchemaHandler,
             cpkDbChangeLogRepository,
             virtualNodeRepository = virtualNodeRepository,
             migrationUtility = MigrationUtilityImpl(dbConnectionManager, schemaMigrator),

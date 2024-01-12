@@ -24,7 +24,6 @@ fun GroupParametersEntity.toAvro() = if (!isSigned()) {
     )
 }
 
-
 fun CordaAvroDeserializer<KeyValuePairList>.deserializeKeyValuePairList(
     content: ByteArray
 ): KeyValuePairList {
@@ -36,5 +35,5 @@ fun CordaAvroDeserializer<KeyValuePairList>.deserializeKeyValuePairList(
 fun CordaAvroSerializer<KeyValuePairList>.serializeKeyValuePairList(
     context: KeyValuePairList
 ): ByteArray = wrapWithNullErrorHandling({
-        MembershipPersistenceException("Failed to serialize key value pair list.")
-    }) { serialize(context) }
+    MembershipPersistenceException("Failed to serialize key value pair list.")
+}) { serialize(context) }

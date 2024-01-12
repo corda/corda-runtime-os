@@ -8,14 +8,14 @@ import net.corda.data.membership.command.registration.member.ProcessMemberVerifi
 import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.p2p.VerificationResponse
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.impl.registration.VerificationResponseKeys
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.messaging.api.records.Record
-import net.corda.data.p2p.app.AppMessage
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
-import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.messaging.api.records.Record
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.virtualnode.toAvro

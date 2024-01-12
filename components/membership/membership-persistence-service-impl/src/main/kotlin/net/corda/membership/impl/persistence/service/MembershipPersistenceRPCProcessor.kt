@@ -2,11 +2,11 @@ package net.corda.membership.impl.persistence.service
 
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.MembershipRequestContext
-import net.corda.membership.impl.persistence.service.handler.HandlerFactories
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
 import net.corda.data.membership.db.response.query.ErrorKind
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
+import net.corda.membership.impl.persistence.service.handler.HandlerFactories
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.utilities.trace

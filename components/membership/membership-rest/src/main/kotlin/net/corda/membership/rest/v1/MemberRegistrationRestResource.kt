@@ -1,14 +1,14 @@
 package net.corda.membership.rest.v1
 
 import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
-import net.corda.rest.RestResource
-import net.corda.rest.annotations.HttpGET
-import net.corda.rest.annotations.HttpPOST
-import net.corda.rest.annotations.RestPathParameter
-import net.corda.rest.annotations.ClientRequestBodyParameter
-import net.corda.rest.annotations.HttpRestResource
 import net.corda.membership.rest.v1.types.response.RegistrationRequestProgress
 import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
+import net.corda.rest.RestResource
+import net.corda.rest.annotations.ClientRequestBodyParameter
+import net.corda.rest.annotations.HttpGET
+import net.corda.rest.annotations.HttpPOST
+import net.corda.rest.annotations.HttpRestResource
+import net.corda.rest.annotations.RestPathParameter
 
 /**
  * The Member Registration API consists of a number of endpoints which manage holding identities' participation in
@@ -19,10 +19,10 @@ import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 @HttpRestResource(
     name = "Member Registration API",
     description = "The Member Registration API consists of a number of endpoints which manage holding identities'" +
-            " participation in membership groups. To participate in a membership group, the holding identity is" +
-            " required to make a registration request that needs to be approved by the MGM for that group." +
-            " This API allows you to start the registration process for a holding identity, and check the status of" +
-            " a previously created registration request.",
+        " participation in membership groups. To participate in a membership group, the holding identity is" +
+        " required to make a registration request that needs to be approved by the MGM for that group." +
+        " This API allows you to start the registration process for a holding identity, and check the status of" +
+        " a previously created registration request.",
     path = "membership"
 )
 interface MemberRegistrationRestResource : RestResource {
