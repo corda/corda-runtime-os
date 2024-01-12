@@ -130,33 +130,17 @@ class LiquibaseSchemaMigratorImpl(
                     Scope.Attr.resourceAccessor.name to lb.resourceAccessor
                 )
                 Scope.child(scopeObjects) {
-                    val command: CommandScope
                     if (sql != null) {
-                        command = CommandScope(UpdateSqlCommandStep.COMMAND_NAME[0])
-                        command.setOutput(
-                            WriterOutputStream(
-                                sql,
-                                GlobalConfiguration.OUTPUT_FILE_ENCODING.currentValue
+                        CommandScope(UpdateSqlCommandStep.COMMAND_NAME[0]).configure(lb, tag).also {
+                            it.setOutput(
+                                WriterOutputStream(
+                                    sql,
+                                    GlobalConfiguration.OUTPUT_FILE_ENCODING.currentValue
+                                )
                             )
-                        )
+                        }
                     } else {
-                        command = CommandScope(UpdateCommandStep.COMMAND_NAME[0])
-                    }
-                    command.addArgumentValue(DbUrlConnectionCommandStep.DATABASE_ARG, lb.database)
-                        .addArgumentValue(UpdateCommandStep.CHANGELOG_FILE_ARG, lb.changeLogFile)
-                        .addArgumentValue(UpdateCommandStep.CONTEXTS_ARG, Contexts().toString())
-                        .addArgumentValue(UpdateCommandStep.LABEL_FILTER_ARG, LabelExpression().originalString)
-                        .addArgumentValue(
-                            ChangeExecListenerCommandStep.CHANGE_EXEC_LISTENER_ARG,
-                            lb.defaultChangeExecListener
-                        )
-                        .addArgumentValue(
-                            DatabaseChangelogCommandStep.CHANGELOG_PARAMETERS,
-                            lb.changeLogParameters
-                        )
-                        .addArgumentValue(TagCommandStep.TAG_ARG, tag)
-                    if (null == sql) {
-                        command.execute()
+                        CommandScope(UpdateCommandStep.COMMAND_NAME[0]).configure(lb, tag).also { it.execute() }
                     }
                 }
             } catch (e: Exception) {
@@ -197,4 +181,21 @@ class LiquibaseSchemaMigratorImpl(
             log.info("${database.connection.catalog} DB schema rollback complete")
         }
     }
+}
+
+private fun CommandScope.configure(lb: Liquibase, tag: String?): CommandScope {
+    this.addArgumentValue(DbUrlConnectionCommandStep.DATABASE_ARG, lb.database)
+        .addArgumentValue(UpdateCommandStep.CHANGELOG_FILE_ARG, lb.changeLogFile)
+        .addArgumentValue(UpdateCommandStep.CONTEXTS_ARG, Contexts().toString())
+        .addArgumentValue(UpdateCommandStep.LABEL_FILTER_ARG, LabelExpression().originalString)
+        .addArgumentValue(
+            ChangeExecListenerCommandStep.CHANGE_EXEC_LISTENER_ARG,
+            lb.defaultChangeExecListener
+        )
+        .addArgumentValue(
+            DatabaseChangelogCommandStep.CHANGELOG_PARAMETERS,
+            lb.changeLogParameters
+        )
+        .addArgumentValue(TagCommandStep.TAG_ARG, tag)
+    return this
 }
