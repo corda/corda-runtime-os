@@ -69,6 +69,13 @@ interface StateManager : Lifecycle {
      * already modified/deleted by another thread or process, in which case the state will be considered not
      * and the most recent version of it will be returned to the calling API.
      * It's the responsibility of calling API to decide whether the operation should be retried.
+     * For [statesToCreate] any states which could not be persisted on the underlying persistent storage are returned in the transaction
+     * result
+     *
+     * @param statesToCreate States to create in the state storage.
+     * @param statesToUpdate States to update in the state storage.
+     * @param statesToDelete States to delete in the state storage.
+     * @return Details about the success or failure of the create, update and delete operations
      */
     fun commit(
         statesToCreate: Collection<State>,
