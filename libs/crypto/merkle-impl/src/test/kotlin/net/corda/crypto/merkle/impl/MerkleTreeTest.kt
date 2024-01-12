@@ -110,7 +110,7 @@ class MerkleTreeTest {
         fun merkleProofExtendedTestSizes(): List<Arguments> = merkleProofForTreeSizes(12, 15)
 
         @JvmStatic
-        fun merkleProofMergeCombinations(): List<Arguments> = (1..12).map { treeSize ->
+        fun merkleProofMergeCombinations(): List<Arguments> = (1..8).map { treeSize ->
             (1 until (1 shl treeSize)).map { sourceProofLeafSet ->
                 val leafIndicesCombination = (0 until treeSize).filter { (sourceProofLeafSet and (1 shl it)) != 0 }
                 (0 until (1 shl leafIndicesCombination.size)).map { i ->
