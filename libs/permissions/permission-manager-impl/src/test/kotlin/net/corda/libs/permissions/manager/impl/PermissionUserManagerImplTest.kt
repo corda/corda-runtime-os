@@ -246,7 +246,6 @@ class PermissionUserManagerImplTest {
         whenever(permissionManagementCache.getUser("loginname123")).thenReturn(avroUser)
         whenever(passwordService.verifies(eq("mypassword"), any())).thenReturn(true)
 
-
         val exception = assertThrows<IllegalArgumentException> {
             manager.changeUserPasswordSelf(changeUserPasswordDto)
         }
@@ -260,7 +259,7 @@ class PermissionUserManagerImplTest {
         whenever(passwordService.verifies(eq("mypassword"), any())).thenReturn(true)
 
         val exception = assertThrows<IllegalArgumentException> {
-              manager.changeUserPasswordOther(changeUserPasswordDto)
+            manager.changeUserPasswordOther(changeUserPasswordDto)
         }
 
         assertEquals("New password must be different from current one.", exception.message)
