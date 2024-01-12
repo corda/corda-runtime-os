@@ -100,7 +100,7 @@ class ConsumerProcessorTest {
             )
         )
         whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(getGroups(2, 4))
-        whenever(stateManagerHelper.createOrUpdateState(any(), any(), any())).thenReturn(mock())
+        whenever(stateManagerHelper.createOrUpdateState(any(), any(), any(), any())).thenReturn(mock())
 
         consumerProcessor.processTopic(getConsumerFactory(), getConsumerConfig())
 
