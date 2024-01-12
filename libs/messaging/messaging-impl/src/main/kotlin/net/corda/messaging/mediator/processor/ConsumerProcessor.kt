@@ -148,10 +148,8 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 is StateChangeAndOperation.Noop -> {} // Do nothing.
             }
         }
-        val failedToCreateKeys = stateManager.create(statesToCreate)
+        val (failedToCreateKeys, failedToUpdate, failedToDelete) = stateManager.commit(statesToCreate, statesToUpdate, statesToDelete)
         val failedToCreate = stateManager.get(failedToCreateKeys)
-        val failedToDelete = stateManager.delete(statesToDelete)
-        val failedToUpdate = stateManager.update(statesToUpdate)
         val failedToUpdateOptimisticLockFailure = failedToUpdate.mapNotNull { (key, value) ->
             value?.let { key to it }
         }.toMap()

@@ -3,6 +3,7 @@ package net.corda.messaging.mediator.processor
 import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.libs.statemanager.api.TransactionResult
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -95,6 +96,7 @@ class ConsumerProcessorTest {
             )
         )
         whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(getGroups(2, 4))
+        whenever(stateManager.commit(any(), any(), any())).thenReturn(TransactionResult(emptySet(), emptyMap(), emptyMap()))
 
         consumerProcessor.processTopic(getConsumerFactory(), getConsumerConfig())
 
@@ -105,9 +107,7 @@ class ConsumerProcessorTest {
         verify(taskManager, times(2)).executeShortRunningTask<Unit>(any())
 
         verify(stateManager, times(2)).get(any())
-        verify(stateManager, times(1)).create(any())
-        verify(stateManager, times(1)).update(any())
-        verify(stateManager, times(1)).delete(any())
+        verify(stateManager, times(1)).commit(any(), any(), any())
         verify(consumer, times(1)).syncCommitOffsets()
 
         verify(messageRouter, times(2)).getDestination(any())
