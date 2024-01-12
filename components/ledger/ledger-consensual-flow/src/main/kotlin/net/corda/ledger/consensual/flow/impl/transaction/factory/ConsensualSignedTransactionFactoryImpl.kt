@@ -49,7 +49,8 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
     @Reference(service = JsonMarshallingService::class, scope = PROTOTYPE_REQUIRED)
     private val jsonMarshallingService: JsonMarshallingService,
     @Reference(service = JsonValidator::class, scope = PROTOTYPE_REQUIRED)
-    private val jsonValidator: JsonValidator,
+    private val jsonValidator: JsonValidator
+
 ) : ConsensualSignedTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
 
     /**
@@ -57,13 +58,14 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
      */
     @Suspendable
     override fun create(
-        consensualTransactionBuilder: ConsensualTransactionBuilder
+        consensualTransactionBuilder: ConsensualTransactionBuilder,
     ): ConsensualSignedTransaction {
         val metadata: TransactionMetadata = transactionMetadataFactory.create(consensualMetadata())
         verifyMetadata(metadata)
         val metadataBytes = serializeMetadata(metadata)
         val componentGroups = calculateComponentGroups(consensualTransactionBuilder, metadataBytes)
-        val wireTransaction = wireTransactionFactory.create(componentGroups)
+        val privacySalt
+        val wireTransaction = wireTransactionFactory.create(componentGroups, privacySalt)
 
         verifyTransaction(wireTransaction)
 

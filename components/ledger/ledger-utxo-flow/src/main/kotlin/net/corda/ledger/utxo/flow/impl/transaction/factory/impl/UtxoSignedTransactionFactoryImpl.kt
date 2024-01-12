@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.flow.impl.transaction.factory.impl
 
 import net.corda.common.json.validation.JsonValidator
 import net.corda.flow.application.GroupParametersLookupInternal
+import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
@@ -83,7 +84,9 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
 
         val metadataBytes = serializeMetadata(metadata)
         val componentGroups = calculateComponentGroups(utxoTransactionBuilder, metadataBytes)
-        val wireTransaction = wireTransactionFactory.create(componentGroups)
+
+        val privacySalt: PrivacySalt
+        val wireTransaction = wireTransactionFactory.create(componentGroups, privacySalt)
 
         utxoLedgerTransactionVerificationService.verify(utxoLedgerTransactionFactory.create(wireTransaction))
 

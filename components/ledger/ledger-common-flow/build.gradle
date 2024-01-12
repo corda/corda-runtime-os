@@ -22,6 +22,7 @@ dependencies {
 
     implementation 'net.corda:corda-ledger-common'
 
+    implementation project(':components:flow:flow-service')
     implementation project(':components:ledger:ledger-common-flow-api')
 
     implementation project(':libs:layered-property-map')
