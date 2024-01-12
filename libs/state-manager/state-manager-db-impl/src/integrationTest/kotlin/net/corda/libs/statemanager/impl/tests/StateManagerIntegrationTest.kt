@@ -308,7 +308,6 @@ class StateManagerIntegrationTest {
             statesToCreate.add(State(buildStateKey(i), "simpleState_$i".toByteArray()))
         }
 
-
         val statesToUpdate = mutableSetOf<State>()
         for (i in (stateCount * 2) + 1..stateCount * 3) {
             statesToUpdate.add(

@@ -111,7 +111,6 @@ class StateManagerImplTest {
 
     @Test
     fun `Commit transaction with creates updates and deletes`() {
-
         whenever(stateRepository.create(any(), any())).thenReturn(setOf())
         whenever(stateRepository.update(any(), any()))
             .thenReturn(
@@ -134,9 +133,8 @@ class StateManagerImplTest {
         verify(stateRepository, times(1)).create(any(), any())
         verify(stateRepository, times(1)).update(any(), any())
         verify(stateRepository, times(1)).delete(any(), any())
-        //for failed update
+        // for failed update
         verify(stateRepository, times(1)).get(any(), any())
-
     }
 
     @Test
