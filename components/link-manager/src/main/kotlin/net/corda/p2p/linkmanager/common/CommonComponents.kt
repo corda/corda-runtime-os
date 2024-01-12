@@ -21,6 +21,7 @@ import net.corda.p2p.linkmanager.forwarding.gateway.TlsCertificatesPublisher
 import net.corda.p2p.linkmanager.forwarding.gateway.TrustStoresPublisher
 import net.corda.p2p.linkmanager.forwarding.gateway.mtls.ClientCertificatePublisher
 import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
+import net.corda.p2p.linkmanager.sessions.CommonSessionManager
 import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueuesImpl
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl
@@ -72,39 +73,32 @@ internal class CommonComponents(
         messageConverter,
     )
 
+    private val commonSessionManager = CommonSessionManager(
+        groupPolicyProvider,
+        membershipGroupReaderProvider,
+        publisherFactory,
+        linkManagerHostingMap,
+        configurationReaderService,
+        cryptoOpsClient,
+        lifecycleCoordinatorFactory,
+        messagingConfiguration,
+    )
+
     internal val sessionManager = if(features.useStatefulSessionManager) {
         StatefulSessionManagerImpl(
             lifecycleCoordinatorFactory,
             stateManager,
-            SessionManagerImpl(
-                groupPolicyProvider,
-                membershipGroupReaderProvider,
-                cryptoOpsClient,
-                messagesPendingSession,
-                publisherFactory,
-                configurationReaderService,
-                lifecycleCoordinatorFactory,
-                messagingConfiguration,
-                inboundAssignmentListener,
-                linkManagerHostingMap,
-                clock = clock,
-            ),
+            commonSessionManager,
             schemaRegistry,
             sessionEncryptionOpsClient,
         )
     } else {
         SessionManagerImpl(
-            groupPolicyProvider,
-            membershipGroupReaderProvider,
-            cryptoOpsClient,
             messagesPendingSession,
-            publisherFactory,
-            configurationReaderService,
+            commonSessionManager,
             lifecycleCoordinatorFactory,
-            messagingConfiguration,
             inboundAssignmentListener,
-            linkManagerHostingMap,
-            clock = clock,
+            clock,
         )
     }
 

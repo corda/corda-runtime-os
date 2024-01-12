@@ -13,7 +13,7 @@ import net.corda.data.p2p.crypto.InitiatorHelloMessage
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.SimpleDominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.sessions.metadata.InboundSessionMetadata
@@ -29,7 +29,7 @@ import net.corda.data.p2p.state.SessionState as AvroSessionState
 internal class StatefulSessionManagerImpl(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val stateManager: StateManager,
-    private val sessionManagerImpl: SessionManagerImpl,
+    private val commonSessionManager: CommonSessionManager,
     private val schemaRegistry: AvroSchemaRegistry,
     private val sessionEncryptionOpsClient: SessionEncryptionOpsClient,
 ): SessionManager {
@@ -54,7 +54,7 @@ internal class StatefulSessionManagerImpl(
                 .toCorda(
                     schemaRegistry,
                     sessionEncryptionOpsClient,
-                    sessionManagerImpl.revocationCheckerClient::checkRevocation,
+                    commonSessionManager.revocationCheckerClient::checkRevocation,
                 ).sessionData as Session
             traceable[sessionId]?.let{
                 it to SessionManager.SessionDirection.Inbound(InboundSessionMetadata(state.metadata).toCounterparties(), session)
@@ -186,7 +186,7 @@ internal class StatefulSessionManagerImpl(
         val metadata = state?.metadata?.let { metadataMap -> InboundSessionMetadata(metadataMap) }
         return when (metadata?.status) {
             null -> {
-                sessionManagerImpl.processInitiatorHello(message.initiatorHelloMessage)?.let {
+                commonSessionManager.processInitiatorHello(message.initiatorHelloMessage)?.let {
                     (responseMessage, authenticationProtocol) ->
                     val timestamp = Instant.now()
                     val newMetadata = InboundSessionMetadata(
@@ -215,7 +215,7 @@ internal class StatefulSessionManagerImpl(
                         .toCorda(
                             schemaRegistry,
                             sessionEncryptionOpsClient,
-                            sessionManagerImpl.revocationCheckerClient::checkRevocation
+                            commonSessionManager.revocationCheckerClient::checkRevocation
                         ).message
                     val newState = State(
                         key = state.key,
@@ -254,9 +254,9 @@ internal class StatefulSessionManagerImpl(
                     .toCorda(
                         schemaRegistry,
                         sessionEncryptionOpsClient,
-                        sessionManagerImpl.revocationCheckerClient::checkRevocation
+                        commonSessionManager.revocationCheckerClient::checkRevocation
                     ).sessionData as AuthenticationProtocolResponder
-                sessionManagerImpl.processInitiatorHandshake(sessionData, message.initiatorHandshakeMessage)?.let { responseMessage ->
+                commonSessionManager.processInitiatorHandshake(sessionData, message.initiatorHandshakeMessage)?.let { responseMessage ->
                     val timestamp = Instant.now()
                     val newMetadata = InboundSessionMetadata(
                         source = responseMessage.header.sourceIdentity.toCorda(),
@@ -285,7 +285,7 @@ internal class StatefulSessionManagerImpl(
                         .toCorda(
                             schemaRegistry,
                             sessionEncryptionOpsClient,
-                            sessionManagerImpl.revocationCheckerClient::checkRevocation
+                            commonSessionManager.revocationCheckerClient::checkRevocation
                         ).message
                     val newState = State(
                         key = state.key,
@@ -321,5 +321,10 @@ internal class StatefulSessionManagerImpl(
         }
     }
 
-    override val dominoTile = SimpleDominoTile(this::class.java.simpleName, coordinatorFactory)
+    override val dominoTile = ComplexDominoTile(
+        this::class.java.simpleName,
+        coordinatorFactory,
+        dependentChildren = setOf(commonSessionManager.dominoTile.coordinatorName),
+        managedChildren = setOf(commonSessionManager.dominoTile.toNamedLifecycle())
+    )
 }

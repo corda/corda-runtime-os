@@ -25,7 +25,6 @@ import net.corda.data.p2p.crypto.protocol.RevocationCheckMode
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.DominoTile
-import net.corda.lifecycle.domino.logic.SimpleDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.membership.grouppolicy.GroupPolicyProvider
@@ -172,15 +171,15 @@ class SessionManagerTest {
         outboundSessionPool.close()
     }
 
-    private lateinit var configHandler: SessionManagerImpl.SessionManagerConfigChangeHandler
+    private lateinit var configHandler: SessionManagerConfig
     private lateinit var heartbeatConfigHandler: SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler
     private val dominoTile = Mockito.mockConstruction(ComplexDominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleWriteLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
-        if (context.arguments()[6] is SessionManagerImpl.SessionManagerConfigChangeHandler) {
-            configHandler = context.arguments()[6] as SessionManagerImpl.SessionManagerConfigChangeHandler
+        if (context.arguments()[6] is SessionManagerConfig) {
+            configHandler = context.arguments()[6] as SessionManagerConfig
         }
         if (context.arguments()[6] is SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler) {
             heartbeatConfigHandler = context.arguments()[6] as SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler
@@ -291,38 +290,33 @@ class SessionManagerTest {
 
     private val mockTimeFacilitiesProvider = MockTimeFacilitiesProvider()
     private val outboundSessionPool = Mockito.mockConstruction(OutboundSessionPool::class.java)
-    private val config = SessionManagerImpl.SessionManagerConfig(
+    private val config = SessionManagerConfig.Configuration(
         MAX_MESSAGE_SIZE,
         SESSIONS_PER_COUNTERPARTIES_FOR_MEMBERS,
         SESSIONS_PER_COUNTERPARTIES_FOR_MGM,
         RevocationCheckMode.OFF,
         SESSION_REFRESH_THRESHOLD_KEY,
     )
-    private val configWithOneSessionBetweenMembers = SessionManagerImpl.SessionManagerConfig(
+    private val configWithOneSessionBetweenMembers = SessionManagerConfig.Configuration(
         MAX_MESSAGE_SIZE,
         1,
         SESSIONS_PER_COUNTERPARTIES_FOR_MGM,
         RevocationCheckMode.OFF,
         SESSION_REFRESH_THRESHOLD_KEY,
     )
+    private val commonSessionManager = mock<CommonSessionManager> {
+        on { groupPolicyProvider } doReturn groupPolicyProvider
+        on { membershipGroupReaderProvider } doReturn membershipGroupReaderProvider
+        on { cryptoOpsClient } doReturn cryptoOpsClient
+        on { linkManagerHostingMap } doReturn linkManagerHostingMap
+        on { protocolFactory } doReturn protocolFactory
+    }
 
     private val sessionManager = SessionManagerImpl(
-        groupPolicyProvider,
-        membershipGroupReaderProvider,
-        cryptoOpsClient,
         pendingSessionMessageQueues,
+        commonSessionManager,
         mock(),
         mock(),
-        mock(),
-        mock(),
-        mock {
-            val dominoTile = mock<SimpleDominoTile> {
-                whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-            }
-            on { it.dominoTile } doReturn dominoTile
-        },
-        linkManagerHostingMap,
-        protocolFactory,
         mockTimeFacilitiesProvider.clock,
         sessionReplayer,
     ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
@@ -1637,22 +1631,10 @@ class SessionManagerTest {
     fun `when responder hello is received, the session is pending, if no response is received, the session times out`() {
         val resourceHolder = ResourcesHolder()
         val sessionManager = SessionManagerImpl(
-            groupPolicyProvider,
-            membershipGroupReaderProvider,
-            cryptoOpsClient,
             pendingSessionMessageQueues,
+            commonSessionManager,
             mock(),
             mock(),
-            mock(),
-            mock(),
-            mock {
-                val dominoTile = mock<SimpleDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-                }
-                on { it.dominoTile } doReturn dominoTile
-            },
-            linkManagerHostingMap,
-            protocolFactory,
             mockTimeFacilitiesProvider.clock,
             sessionReplayer,
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
@@ -1693,21 +1675,10 @@ class SessionManagerTest {
     fun `when responder handshake is received, the session is established, if no message is sent, the session times out`() {
         val resourceHolder = ResourcesHolder()
         val sessionManager = SessionManagerImpl(
-            groupPolicyProvider, membershipGroupReaderProvider,
-            cryptoOpsClient,
             pendingSessionMessageQueues,
+            commonSessionManager,
             mock(),
             mock(),
-            mock(),
-            mock(),
-            mock {
-                val dominoTile = mock<SimpleDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-                }
-                on { it.dominoTile } doReturn dominoTile
-            },
-            linkManagerHostingMap,
-            protocolFactory,
             mockTimeFacilitiesProvider.clock,
             sessionReplayer,
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
@@ -1774,21 +1745,10 @@ class SessionManagerTest {
 
         val resourcesHolder = ResourcesHolder()
         val sessionManager = SessionManagerImpl(
-            groupPolicyProvider, membershipGroupReaderProvider,
-            cryptoOpsClient,
             pendingSessionMessageQueues,
+            commonSessionManager,
             mock(),
             mock(),
-            mock(),
-            mock(),
-            mock {
-                val dominoTile = mock<SimpleDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-                }
-                on { it.dominoTile } doReturn dominoTile
-            },
-            linkManagerHostingMap,
-            protocolFactory,
             mockTimeFacilitiesProvider.clock,
             sessionReplayer,
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
@@ -1844,21 +1804,10 @@ class SessionManagerTest {
 
         val resourcesHolder = ResourcesHolder()
         val sessionManager = SessionManagerImpl(
-            groupPolicyProvider, membershipGroupReaderProvider,
-            cryptoOpsClient,
             pendingSessionMessageQueues,
+            commonSessionManager,
             mock(),
             mock(),
-            mock(),
-            mock(),
-            mock {
-                val dominoTile = mock<SimpleDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-                }
-                on { it.dominoTile } doReturn dominoTile
-            },
-            linkManagerHostingMap,
-            protocolFactory,
             mockTimeFacilitiesProvider.clock,
             sessionReplayer,
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
@@ -1907,21 +1856,10 @@ class SessionManagerTest {
         }
 
         val sessionManager = SessionManagerImpl(
-            groupPolicyProvider, membershipGroupReaderProvider,
-            cryptoOpsClient,
             pendingSessionMessageQueues,
+            commonSessionManager,
             mock(),
             mock(),
-            mock(),
-            mock(),
-            mock {
-                val dominoTile = mock<SimpleDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-                }
-                on { it.dominoTile } doReturn dominoTile
-            },
-            linkManagerHostingMap,
-            protocolFactory,
             mockTimeFacilitiesProvider.clock,
             sessionReplayer,
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
@@ -1950,7 +1888,7 @@ class SessionManagerTest {
 
         configHandler.applyNewConfiguration(
             configWithOneSessionBetweenMembers,
-            SessionManagerImpl.SessionManagerConfig(
+            SessionManagerConfig.Configuration(
                 2 * MAX_MESSAGE_SIZE,
                 1,
                 SESSIONS_PER_COUNTERPARTIES_FOR_MGM,
@@ -1983,21 +1921,10 @@ class SessionManagerTest {
         }
 
         val sessionManager = SessionManagerImpl(
-            groupPolicyProvider, membershipGroupReaderProvider,
-            cryptoOpsClient,
             pendingSessionMessageQueues,
+            commonSessionManager,
             mock(),
             mock(),
-            mock(),
-            mock(),
-            mock {
-                val dominoTile = mock<SimpleDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-                }
-                on { it.dominoTile } doReturn dominoTile
-            },
-            linkManagerHostingMap,
-            protocolFactory,
             mockTimeFacilitiesProvider.clock,
             sessionReplayer,
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
@@ -2054,21 +1981,10 @@ class SessionManagerTest {
 
         val resourcesHolder = ResourcesHolder()
         val sessionManager = SessionManagerImpl(
-            groupPolicyProvider, membershipGroupReaderProvider,
-            cryptoOpsClient,
             pendingSessionMessageQueues,
+            commonSessionManager,
             mock(),
             mock(),
-            mock(),
-            mock(),
-            mock {
-                val dominoTile = mock<SimpleDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-                }
-                on { it.dominoTile } doReturn dominoTile
-            },
-            linkManagerHostingMap,
-            protocolFactory,
             mockTimeFacilitiesProvider.clock,
             sessionReplayer,
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
@@ -2159,21 +2075,10 @@ class SessionManagerTest {
 
         val resourcesHolder = ResourcesHolder()
         val sessionManager = SessionManagerImpl(
-            groupPolicyProvider, membershipGroupReaderProvider,
-            cryptoOpsClient,
             pendingSessionMessageQueues,
+            commonSessionManager,
             mock(),
             mock(),
-            mock(),
-            mock(),
-            mock {
-                val dominoTile = mock<SimpleDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-                }
-                on { it.dominoTile } doReturn dominoTile
-            },
-            linkManagerHostingMap,
-            protocolFactory,
             mockTimeFacilitiesProvider.clock,
             sessionReplayer,
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
