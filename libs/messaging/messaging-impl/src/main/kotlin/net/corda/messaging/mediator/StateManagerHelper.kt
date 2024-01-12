@@ -53,12 +53,12 @@ class StateManagerHelper<S : Any>(
     }
 
     /**
-     * Serializes state value.
+     * Serializes value.
      *
      * @param value State value.
      * @return Serialized state value.
      */
-    private fun serialize(value: Any?) =
+    fun serialize(value: Any?) =
         value?.let { serializer.serialize(it) }
 
     /**
