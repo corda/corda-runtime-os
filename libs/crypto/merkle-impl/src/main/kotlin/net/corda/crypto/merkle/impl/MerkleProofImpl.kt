@@ -105,6 +105,7 @@ class MerkleProofImpl(
                     onNewHash(MerkleNodeInfo(it, treeDepth, null))
                 }
             }
+        val pendingNodes = mutableListOf<MerkleNodeInfo>()
         // need for the number of elements
         var currentSize = treeSize                                 // outer loop variable; the number of
         // leaves left as we roll up the tree
@@ -135,6 +136,9 @@ class MerkleProofImpl(
             // Now walk over the hashes at this tree level, striding over 1 or 2 at a time
             var index = 0
             while (index < nodeHashes.size) {
+                while ((pendingNodes.firstOrNull()?.node?.indexWithinLevel ?: Int.MIN_VALUE) >= index) {
+                    onNewHash(pendingNodes.removeFirst())
+                }
                 val item = nodeHashes[index]
                 // We are at level $treeDepth from the top of the tree (where 1 is the root of the tree),
                 //     and at $index nodes from the left (counting from 0)
@@ -156,7 +160,7 @@ class MerkleProofImpl(
                             // in the original tree, we create their parent.
                             val newHash = digest.nodeHash(treeDepth, item.hash, next.hash)
                             val newNode = MerkleNode(item.indexWithinLevel / 2, newHash)
-                            onNewHash( MerkleNodeInfo(newNode, treeDepth, null))
+                            pendingNodes.add(MerkleNodeInfo(newNode, treeDepth, null))
                             newItems.add(newNode)
                             // and record that we consumed two values from our working set, and skip on to the
                             // start of the next loop
@@ -198,13 +202,13 @@ class MerkleProofImpl(
                         MerkleNode(newIndex, newHash)
                     })
                     hashIndex++ // Remember we used an incoming hash
-                    onNewHash(MerkleNodeInfo(newNode, treeDepth, null))
+                    pendingNodes.add(MerkleNodeInfo(newNode, treeDepth, null))
                     newItems.add(newNode)
                 } else {
                     // The last odd element, just gets lifted.
                     val newIndex = (item.indexWithinLevel + 1) / 2
                     val newNode = MerkleNode(newIndex, item.hash)
-                    onNewHash(MerkleNodeInfo(newNode, treeDepth, null))
+                    pendingNodes.add(MerkleNodeInfo(newNode, treeDepth, null))
                     newItems += MerkleNode(newIndex, item.hash)
                 }
                 index++ // whatever of the last 3 cases we took, we consumed one node
@@ -224,6 +228,8 @@ class MerkleProofImpl(
                 "MerkleProof root hash calculation ended with ${nodeHashes.size} node hashes instead of one."
             )
         }
+        pendingNodes.map { onNewHash(it) }
+
         return nodeHashes.single().hash
     }
 
@@ -364,7 +370,7 @@ class MerkleProofImpl(
     fun render(digest: MerkleTreeHashDigest): String {
         val nodeLabels: MutableMap<Pair<Int,Int>, String> = mutableMapOf()
         for(x in 0..treeSize)
-            for (y in 0 until (1 shl x))
+            for (y in 0 until (1 shl x)) // should be 0 until x?
                 nodeLabels[x to y] = "unknown"
         calculateRootInstrumented(digest) { info ->
             nodeLabels[info.level to info.node.indexWithinLevel] = info.node.hash.toString().substringAfter(":")
