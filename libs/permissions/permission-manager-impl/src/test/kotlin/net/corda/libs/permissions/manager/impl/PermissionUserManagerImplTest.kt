@@ -244,7 +244,8 @@ class PermissionUserManagerImplTest {
     @Test
     fun `changeUserPasswordSelf fails if the new password is the same as the existing one`() {
         whenever(permissionManagementCache.getUser("loginname123")).thenReturn(avroUser)
-        whenever(passwordService.saltAndHash(eq("mypassword"))).thenReturn(PasswordHash("randomSalt", "temp-hashed-password"))
+        whenever(passwordService.verifies(eq("mypassword"), any())).thenReturn(true)
+
 
         val exception = assertThrows<IllegalArgumentException> {
             manager.changeUserPasswordSelf(changeUserPasswordDto)
@@ -256,10 +257,10 @@ class PermissionUserManagerImplTest {
     @Test
     fun `changeUserPasswordOther fails if the new password is the same as the existing one`() {
         whenever(permissionManagementCache.getUser("loginname123")).thenReturn(avroUser)
-        whenever(passwordService.saltAndHash(eq("mypassword"))).thenReturn(PasswordHash("randomSalt", "temp-hashed-password"))
+        whenever(passwordService.verifies(eq("mypassword"), any())).thenReturn(true)
 
         val exception = assertThrows<IllegalArgumentException> {
-            manager.changeUserPasswordOther(changeUserPasswordDto)
+              manager.changeUserPasswordOther(changeUserPasswordDto)
         }
 
         assertEquals("New password must be different from current one.", exception.message)
