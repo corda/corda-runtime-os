@@ -90,6 +90,7 @@ class LinkManager(
         membershipGroupReaderProvider = membershipGroupReaderProvider,
         subscriptionFactory = subscriptionFactory,
         messagingConfiguration = messagingConfiguration,
+        publisherFactory = publisherFactory,
         clock = clock,
     )
 

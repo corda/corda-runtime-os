@@ -39,6 +39,7 @@ import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
+import net.corda.p2p.crypto.protocol.api.EncryptionResult
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.PROTOCOL_VERSION
 import net.corda.p2p.linkmanager.common.MessageConverter.Companion.createLinkOutMessage
 import net.corda.p2p.linkmanager.sessions.SessionManager
@@ -52,6 +53,7 @@ import net.corda.v5.membership.MemberInfo
 import org.junit.jupiter.api.Nested
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import java.io.IOException
 
 class MessageConverterTest {
 
@@ -437,6 +439,71 @@ class MessageConverterTest {
             verify(sessionManager, never()).dataMessageSent(session)
         }
 
+    }
+
+    @Nested
+    inner class CreateLinkManagerResponseTest {
+        @Test
+        fun `failure to get message bytes will return null response`() {
+            val message = mock<MessageAck> {
+                on { toByteBuffer() } doThrow IOException("Nop")
+            }
+
+            val response = MessageConverter.createLinkManagerResponse(message, mock())
+
+            assertThat(response.payload).isNull()
+        }
+
+        @Test
+        fun `unexpected type of session will return null response`() {
+            val message = mock<MessageAck> {
+                on { toByteBuffer() } doReturn ByteBuffer.wrap(byteArrayOf(1))
+            }
+
+            val response = MessageConverter.createLinkManagerResponse(message, mock())
+
+            assertThat(response.payload).isNull()
+        }
+
+        @Test
+        fun `authenticated session will create the correct response`() {
+            val result = AuthenticationResult(mockHeader, byteArrayOf(5, 6))
+            val serializedPayload = ByteBuffer.wrap(byteArrayOf(1))
+            val session = mock<AuthenticatedSession> {
+                on { createMac(any()) } doReturn result
+            }
+            val message = mock<MessageAck> {
+                on { toByteBuffer() } doReturn serializedPayload
+            }
+
+            val response = MessageConverter.createLinkManagerResponse(message, session)
+
+            assertThat(response.payload).isEqualTo(
+                AuthenticatedDataMessage(mockHeader, serializedPayload, ByteBuffer.wrap(result.mac))
+            )
+        }
+
+        @Test
+        fun `authenticated encryption session will create the correct response`() {
+            val result = EncryptionResult(mockHeader, byteArrayOf(5, 6), byteArrayOf(8))
+            val serializedPayload = ByteBuffer.wrap(byteArrayOf(1))
+            val session = mock<AuthenticatedEncryptionSession> {
+                on { encryptData(any()) } doReturn result
+            }
+            val message = mock<MessageAck> {
+                on { toByteBuffer() } doReturn serializedPayload
+            }
+
+            val response = MessageConverter.createLinkManagerResponse(message, session)
+
+            assertThat(response.payload).isEqualTo(
+                AuthenticatedEncryptedDataMessage(
+                    mockHeader,
+                    ByteBuffer.wrap(result.encryptedPayload),
+                    ByteBuffer.wrap(result.authTag),
+                )
+            )
+        }
     }
 
     private fun authenticatedMessageAndKey(

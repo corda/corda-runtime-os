@@ -109,7 +109,7 @@ class InboundMessageProcessorTest {
     }
 
     private fun setupGetSessionsById(direction: SessionManager.SessionDirection) {
-        val captor = argumentCaptor<List<InboundMessageProcessor.SessionIdAndMessage>>()
+        val captor = argumentCaptor<List<InboundMessageProcessor.SessionIdAndMessage<*>>>()
         whenever(sessionManager.getSessionsById(captor.capture(), any())).thenAnswer {
             captor.firstValue.map { it to direction }
         }

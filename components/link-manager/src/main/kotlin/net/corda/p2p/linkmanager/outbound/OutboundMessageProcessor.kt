@@ -126,7 +126,7 @@ internal class OutboundMessageProcessor(
         } + processAuthenticatedMessages(authenticatedMessages)
 
         for (result in results) {
-            result.originalRecord?.let { originalRecord ->
+            result.source?.let { originalRecord ->
                 traceEventProcessing(originalRecord, tracingEventName) { result.item }
             }
         }
@@ -263,14 +263,14 @@ internal class OutboundMessageProcessor(
         }
         val messagesWithSession = validatedMessages.mapNotNull { (message, result) ->
             if (result is ValidateAuthenticatedMessageResult.SessionNeeded) {
-                TraceableItem(result, message.originalRecord)
+                TraceableItem(result, message.source)
             } else {
                 null
             }
         }
         val messageWithNoSession = validatedMessages.mapNotNull { (message, result) ->
             if (result is ValidateAuthenticatedMessageResult.NoSessionNeeded) {
-                TraceableItem(result.records, message.originalRecord)
+                TraceableItem(result.records, message.source)
             } else {
                 null
             }
@@ -386,7 +386,7 @@ internal class OutboundMessageProcessor(
                         "No existing session with ${message.item.messageWithKey.message.header.destination}. Initiating a new one.."
                     }
                     if (!isReplay) messagesPendingSession.queueMessage(message.item.messageWithKey, state.sessionCounterparties)
-                    TraceableItem(recordsForNewSessions(state) + message.item.markerRecords, message.originalRecord)
+                    TraceableItem(recordsForNewSessions(state) + message.item.markerRecords, message.source)
                 }
                 is SessionManager.SessionState.SessionEstablished -> {
                     logger.trace {
@@ -395,7 +395,7 @@ internal class OutboundMessageProcessor(
                     }
                     TraceableItem(
                         recordsForSessionEstablished(state, message.item.messageWithKey) + message.item.markerRecords,
-                        message.originalRecord
+                        message.source
                     )
                 }
                 is SessionManager.SessionState.SessionAlreadyPending -> {
@@ -404,10 +404,10 @@ internal class OutboundMessageProcessor(
                             "session is established."
                     }
                     if (!isReplay) messagesPendingSession.queueMessage(message.item.messageWithKey, state.sessionCounterparties)
-                    TraceableItem(message.item.markerRecords, message.originalRecord)
+                    TraceableItem(message.item.markerRecords, message.source)
                 }
                 is SessionManager.SessionState.CannotEstablishSession -> {
-                    TraceableItem(message.item.markerRecords, message.originalRecord)
+                    TraceableItem(message.item.markerRecords, message.source)
                 }
             }
         }
