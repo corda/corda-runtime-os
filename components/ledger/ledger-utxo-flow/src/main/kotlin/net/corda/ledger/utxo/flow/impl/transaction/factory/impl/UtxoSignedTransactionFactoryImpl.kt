@@ -2,10 +2,10 @@ package net.corda.ledger.utxo.flow.impl.transaction.factory.impl
 
 import net.corda.common.json.validation.JsonValidator
 import net.corda.flow.application.GroupParametersLookupInternal
-import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
+import net.corda.ledger.common.flow.transaction.PrivacySaltProviderService
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
@@ -69,7 +69,9 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     @Reference(service = SignedGroupParametersVerifier::class)
     private val signedGroupParametersVerifier: SignedGroupParametersVerifier,
     @Reference(service = NotarySignatureVerificationServiceInternal::class)
-    private val notarySignatureVerificationService: NotarySignatureVerificationServiceInternal
+    private val notarySignatureVerificationService: NotarySignatureVerificationServiceInternal,
+    @Reference(service = PrivacySaltProviderService::class)
+    private val privacySaltProviderService: PrivacySaltProviderService
 ) : UtxoSignedTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
@@ -85,7 +87,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         val metadataBytes = serializeMetadata(metadata)
         val componentGroups = calculateComponentGroups(utxoTransactionBuilder, metadataBytes)
 
-        val privacySalt: PrivacySalt
+        val privacySalt = privacySaltProviderService.generatePrivacySalt()
         val wireTransaction = wireTransactionFactory.create(componentGroups, privacySalt)
 
         utxoLedgerTransactionVerificationService.verify(utxoLedgerTransactionFactory.create(wireTransaction))
