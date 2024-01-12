@@ -73,7 +73,7 @@ class MultiSourceEventMediatorFactoryImpl(
             {}, eventMediatorConfig.messageProcessor.stateValueClass
         )
         return StateManagerHelper(
-            eventMediatorConfig.stateManager, stateSerializer, stateDeserializer
+            stateSerializer, stateDeserializer
         )
     }
 }

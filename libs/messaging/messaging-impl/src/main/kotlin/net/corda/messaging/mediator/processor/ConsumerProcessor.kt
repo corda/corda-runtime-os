@@ -12,13 +12,17 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.GroupAllocator
 import net.corda.messaging.mediator.MediatorState
 import net.corda.messaging.mediator.MultiSourceEventMediatorImpl
+import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.messaging.mediator.metrics.EventMediatorMetrics
 import net.corda.messaging.utils.toRecord
 import net.corda.taskmanager.TaskManager
+import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.time.Duration
 import java.util.concurrent.CompletionException
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 /**
  * Class to construct a message bus consumer and begin processing its subscribed topic(s).
@@ -38,8 +42,13 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     private val taskManager: TaskManager,
     private val messageRouter: MessageRouter,
     private val mediatorState: MediatorState,
-    private val eventProcessor: EventProcessor<K, S, E>
+    private val eventProcessor: EventProcessor<K, S, E>,
+    private val stateManagerHelper: StateManagerHelper<S>
 ) {
+    private companion object {
+        private const val EVENT_PROCESSING_TIMEOUT_MILLIS = 30000L // 30 seconds
+    }
+
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.name}")
 
     private val metrics = EventMediatorMetrics(config.name)
@@ -107,11 +116,25 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 val outputs = groups.filter {
                     it.isNotEmpty()
                 }.map { group ->
-                    taskManager.executeShortRunningTask {
+                    val future = taskManager.executeShortRunningTask {
                         eventProcessor.processEvents(group, statesToProcess)
                     }
-                }.map {
-                    it.join()
+                    Pair(future, group.keys)
+                }.map { (future, keys) ->
+                    try {
+                        future.getOrThrow(Duration.ofMillis(EVENT_PROCESSING_TIMEOUT_MILLIS))
+                    } catch (e: TimeoutException) {
+                        keys.associateWith {
+                            val oldState = statesToProcess[it.toString()]
+                            val state = stateManagerHelper.failStateProcessing(it.toString(), oldState)
+                            val stateChange = if (oldState != null) {
+                                StateChangeAndOperation.Update(state)
+                            } else {
+                                StateChangeAndOperation.Create(state)
+                            }
+                            EventProcessingOutput(listOf(), stateChange)
+                        }
+                    }
                 }.fold(mapOf<K, EventProcessingOutput>()) { acc, cur ->
                     acc + cur
                 }.mapKeys {
