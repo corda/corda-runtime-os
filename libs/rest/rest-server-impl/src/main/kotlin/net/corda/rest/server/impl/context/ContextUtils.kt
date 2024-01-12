@@ -186,29 +186,13 @@ internal object ContextUtils {
         }
     }
 
-    fun authorize(authorizingSubject: AuthorizingSubject, resourceAccessString: String, authorizationProvider: AuthorizationProvider? = null) {
-        val principal = authorizingSubject.principal
-        log.trace { "Authorize \"$principal\" for \"$resourceAccessString\"." }
-
-        if (authorizationProvider != null) {
-            if (!authorizationProvider.isAuthorized(authorizingSubject, resourceAccessString)) {
-                val pathParts = resourceAccessString.split(METHOD_SEPARATOR, limit = 2)
-                withMDC(principal, pathParts.firstOrNull() ?: "no_method", pathParts.lastOrNull() ?: "no_path") {
-                    "User not authorized.".let {
-                        log.info(it)
-                        throw ForbiddenResponse(it)
-                    }
-                }
-            }
-        } else if (!authorizingSubject.isPermitted(resourceAccessString)) {
-            val pathParts = resourceAccessString.split(METHOD_SEPARATOR, limit = 2)
-            withMDC(principal, pathParts.firstOrNull() ?: "no_method", pathParts.lastOrNull() ?: "no_path") {
-                "User not authorized.".let {
-                    log.info(it)
-                    throw ForbiddenResponse(it)
-                }
+    fun userNotAuthorized(user: String, resourceAccessString: String) {
+        val pathParts = resourceAccessString.split(METHOD_SEPARATOR, limit = 2)
+        withMDC(user, pathParts.firstOrNull() ?: "no_method", pathParts.lastOrNull() ?: "no_path") {
+            "User not authorized.".let {
+                log.info(it)
+                throw ForbiddenResponse(it)
             }
         }
-        log.trace { "Authorize \"$principal\" for \"$resourceAccessString\" completed." }
     }
 }

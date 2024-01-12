@@ -9,7 +9,6 @@ ext.cordaEnableFormatting = true
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     implementation "net.corda:corda-base"
-    implementation project(":libs:utilities")
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 }

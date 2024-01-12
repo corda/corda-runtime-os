@@ -14,6 +14,7 @@ import net.corda.rest.server.impl.apigen.processing.RouteInfo
 import net.corda.rest.server.impl.context.ClientWsRequestContext
 import net.corda.rest.server.impl.context.ContextUtils.authenticate
 import net.corda.rest.server.impl.context.ContextUtils.retrieveParameters
+import net.corda.rest.server.impl.context.ContextUtils.userNotAuthorized
 import net.corda.rest.server.impl.security.RestAuthenticationProvider
 import net.corda.rest.server.impl.security.provider.credentials.DefaultCredentialResolver
 import net.corda.rest.ws.DuplexChannel
@@ -64,7 +65,12 @@ internal class WebSocketRouteAdaptor(
 
                 try {
                     val authorizingSubject = authenticate(clientWsRequestContext, restAuthProvider, credentialResolver)
-                    authorize(authorizingSubject, clientWsRequestContext.getResourceAccessString())
+                    val resourceAccessString = clientWsRequestContext.getResourceAccessString()
+
+                    if (!authorize(authorizingSubject, resourceAccessString)) {
+                        userNotAuthorized(authorizingSubject.principal, resourceAccessString)
+                    }
+
 
                     val paramsFromRequest = routeInfo.retrieveParameters(clientWsRequestContext)
                     val fullListOfParams = listOf(newChannel) + paramsFromRequest

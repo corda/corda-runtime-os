@@ -20,6 +20,7 @@ import net.corda.rest.server.impl.context.ClientHttpRequestContext
 import net.corda.rest.server.impl.context.ContextUtils.authenticate
 import net.corda.rest.server.impl.context.ContextUtils.contentTypeApplicationJson
 import net.corda.rest.server.impl.context.ContextUtils.invokeHttpMethod
+import net.corda.rest.server.impl.context.ContextUtils.userNotAuthorized
 import net.corda.rest.server.impl.security.RestAuthenticationProvider
 import net.corda.rest.server.impl.security.provider.credentials.DefaultCredentialResolver
 import net.corda.rest.server.impl.websocket.WebSocketCloserService
@@ -196,8 +197,12 @@ internal class RestServerInternal(
                         val clientHttpRequestContext = ClientHttpRequestContext(it)
                         val authorizingSubject = authenticate(clientHttpRequestContext, restAuthProvider, credentialResolver)
                         val authorizationProvider = routeInfo.method.instance.getAuthorizationProvider()
+                        val resourceAccessString = clientHttpRequestContext.getResourceAccessString()
 
-                        authorize(authorizingSubject, clientHttpRequestContext.getResourceAccessString(), authorizationProvider)
+                        if (!authorize(authorizingSubject, resourceAccessString, authorizationProvider)) {
+                            userNotAuthorized(authorizingSubject.principal, resourceAccessString)
+                        }
+
                     } else {
                         log.debug { "Call to ${it.path()} for method ${it.method()} identified as an exempt from authorization check." }
                     }
@@ -252,8 +257,11 @@ internal class RestServerInternal(
                     val clientHttpRequestContext = ClientHttpRequestContext(it)
                     val authorizingSubject = authenticate(clientHttpRequestContext, restAuthProvider, credentialResolver)
                     val authorizationProvider = routeInfo.method.instance.getAuthorizationProvider()
+                    val resourceAccessString = clientHttpRequestContext.getResourceAccessString()
 
-                    authorize(authorizingSubject, clientHttpRequestContext.getResourceAccessString(), authorizationProvider)
+                    if (!authorize(authorizingSubject, resourceAccessString, authorizationProvider)) {
+                        userNotAuthorized(authorizingSubject.principal, resourceAccessString)
+                    }
                 }
             }
             registerHandlerForRoute(routeInfo, handlerType)
