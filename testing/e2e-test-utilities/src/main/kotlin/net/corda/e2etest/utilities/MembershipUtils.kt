@@ -38,35 +38,22 @@ const val DEFAULT_SIGNATURE_SPEC = "SHA256withECDSA"
 const val DEFAULT_NOTARY_SERVICE = "O=NotaryService, L=London, C=GB"
 
 /**
- * Onboard a member by uploading a CPI if it doesn't exist, creating a vnode if it doesn't exist, configuring the
- * member's keys, certificates and registration context, and starting registration.
- * By default, this function will wait until the registration is approved, but this can be disabled so that after
- * registration is submitted, the status is not verified.
- *
- * @param cpb The path to the CPB to use when creating the CPI.
- * @param cpiName The name to be used for the CPI.
- * @param mgm The details of the MGM.
- * @param x500Name The X500 name of the onboarding member.
- * @param waitForApproval Boolean flag to indicate whether the function should wait and assert for approved status.
- *  Defaults to true.
- * @param getAdditionalContext Optional function which can be passed in to add additional properties on top of the
- *  default to the registration context during registration. The function accepts the members holding ID which might be
- *  required if making API calls.
- * @param useLedgerKey whether the member should be onboarded with a ledger key or not.
+ * Deprecated
  */
 @Suppress("LongParameterList")
 fun ClusterInfo.onboardMember(
     cpb: String?,
     cpiName: String,
-    groupPolicyFactory: GroupPolicyFactory,
+    groupPolicy: String,
     x500Name: String,
     waitForApproval: Boolean = true,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
+    tlsCertificateUploadedCallback: (String) -> Unit = {},
     useSessionCertificate: Boolean = false,
     useLedgerKey: Boolean = true,
 ): NetworkOnboardingMetadata {
     conditionallyUploadCpiSigningCertificate()
-    conditionallyUploadCordaPackage(cpiName, cpb, groupPolicyFactory.groupPolicy)
+    conditionallyUploadCordaPackage(cpiName, cpb, groupPolicy)
     val holdingId = getOrCreateVirtualNodeFor(x500Name, cpiName)
 
     addSoftHsmFor(holdingId, CAT_SESSION_INIT)
@@ -100,9 +87,7 @@ fun ClusterInfo.onboardMember(
             it.writeBytes(tlsCert.toByteArray())
         }
         importCertificate(tlsCertFile, CERT_USAGE_P2P, CERT_ALIAS_P2P)
-        if (TlsType.type == TlsType.MUTUAL) {
-            groupPolicyFactory.clusterInfo.allowClientCertificates(tlsCert, groupPolicyFactory.holdingId)
-        }
+        tlsCertificateUploadedCallback(tlsCert)
     }
 
     val registrationContext = createRegistrationContext(
@@ -119,6 +104,51 @@ fun ClusterInfo.onboardMember(
     val registrationId = register(holdingId, registrationContext, waitForApproval)
 
     return NetworkOnboardingMetadata(holdingId, x500Name, registrationId, registrationContext, this)
+}
+
+/**
+ * Onboard a member by uploading a CPI if it doesn't exist, creating a vnode if it doesn't exist, configuring the
+ * member's keys, certificates and registration context, and starting registration.
+ * By default, this function will wait until the registration is approved, but this can be disabled so that after
+ * registration is submitted, the status is not verified.
+ *
+ * @param cpb The path to the CPB to use when creating the CPI.
+ * @param cpiName The name to be used for the CPI.
+ * @param mgm The details of the MGM.
+ * @param x500Name The X500 name of the onboarding member.
+ * @param waitForApproval Boolean flag to indicate whether the function should wait and assert for approved status.
+ *  Defaults to true.
+ * @param getAdditionalContext Optional function which can be passed in to add additional properties on top of the
+ *  default to the registration context during registration. The function accepts the members holding ID which might be
+ *  required if making API calls.
+ * @param useLedgerKey whether the member should be onboarded with a ledger key or not.
+ */
+@Suppress("LongParameterList")
+fun ClusterInfo.onboardMember(
+    cpb: String?,
+    cpiName: String,
+    groupPolicyFactory: GroupPolicyFactory,
+    x500Name: String,
+    waitForApproval: Boolean = true,
+    getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
+    useSessionCertificate: Boolean = false,
+    useLedgerKey: Boolean = true,
+): NetworkOnboardingMetadata {
+    return onboardMember(
+        cpb,
+        cpiName,
+        groupPolicyFactory.groupPolicy,
+        x500Name,
+        waitForApproval,
+        getAdditionalContext,
+        {
+            if (TlsType.type == TlsType.MUTUAL) {
+                groupPolicyFactory.clusterInfo.allowClientCertificates(it, groupPolicyFactory.holdingId)
+            }
+        },
+        useSessionCertificate,
+        useLedgerKey,
+    )
 }
 
 /**
