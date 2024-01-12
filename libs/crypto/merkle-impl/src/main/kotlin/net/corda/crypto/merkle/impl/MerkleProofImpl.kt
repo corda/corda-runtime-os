@@ -102,7 +102,7 @@ class MerkleProofImpl(
         // work out nodeHashes, which is a list of node information for the current level we operate at
         var nodeHashes: List<MerkleNode> = leaves.sortedBy { it.index }.map {
                 MerkleNode(it.index, digest.leafHash(it.index, it.nonce, it.leafData)).also {
-                    onNewHash(MerkleNodeInfo(it, treeDepth, null))
+                    merkleNode -> onNewHash(MerkleNodeInfo(merkleNode, treeDepth, null))
                 }
             }
         val pendingNodes = mutableListOf<MerkleNodeInfo>()
@@ -282,8 +282,8 @@ class MerkleProofImpl(
     @Suppress("UnusedParameters")
     fun merge(other: MerkleProofImpl, digest: MerkleTreeHashDigestProvider): MerkleProofImpl {
         // First, work out the leaves for the output proof.
-        val indexMapMe = leaves.map { it.index to it }.toMap()
-        val indexMapOther = other.leaves.map { it.index to it }.toMap()
+        val indexMapMe = leaves.associateBy { it.index }
+        val indexMapOther = other.leaves.associateBy { it.index }
         val combinedIndexMap = indexMapMe + indexMapOther
         val outLeaves = combinedIndexMap.values.toList().sortedWith( compareBy { it.index })
         val nodeMapMe: MutableMap< Pair<Int, Int>, MerkleNodeInfo> = mutableMapOf()
@@ -303,10 +303,10 @@ class MerkleProofImpl(
         val levels = makeLevels(treeSize)
         levels.forEachIndexed { height, ranges ->
             val level = levels.size - height - 1
-            for (indexWithinLevel in 0 until ranges.size ) {
+            for (indexWithinLevel in ranges.indices) {
                 val k = level to indexWithinLevel
-                val x = nodeMapMe.get(k)
-                val y = nodeMapOther.get(k)
+                val x = nodeMapMe[k]
+                val y = nodeMapOther[k]
 
                 // For each node, where x is me and y is the other proof, and o is the output proof
                 //    (so we're doing O = X∪Y)
@@ -318,10 +318,10 @@ class MerkleProofImpl(
 
                 when {
                     x != null && x.consumed == null -> {
-                        // x is calculated so it can be calculated in o, no proof hash needed in O
+                        // x is calculated, so it can be calculated in o, no proof hash needed in O
                     }
                     y != null && y.consumed == null -> {
-                        // y is calculated so it can be calculated in o, no proof hash needed in O
+                        // y is calculated, so it can be calculated in o, no proof hash needed in O
                     }
                     x?.consumed != null -> {
                         outHashes += x.node.hash
