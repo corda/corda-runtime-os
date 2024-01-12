@@ -47,25 +47,6 @@ class ExternalEventResponseFactoryImpl(
             payload)
     }
 
-    override fun transientError(
-        flowExternalEventContext: ExternalEventContext,
-        throwable: Throwable
-    ): Record<String, FlowEvent> {
-        return transientError(
-            flowExternalEventContext,
-            ExceptionEnvelope(
-                throwable::class.java.name, throwable.message ?: "No exception message provided"
-            )
-        )
-    }
-
-    override fun transientError(
-        flowExternalEventContext: ExternalEventContext,
-        exceptionEnvelope: ExceptionEnvelope
-    ): Record<String, FlowEvent> {
-        return error(flowExternalEventContext, exceptionEnvelope, ExternalEventResponseErrorType.TRANSIENT)
-    }
-
     override fun platformError(
         flowExternalEventContext: ExternalEventContext,
         throwable: Throwable

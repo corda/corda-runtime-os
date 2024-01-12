@@ -3,7 +3,6 @@ package net.corda.membership.lib.impl
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.membership.MGMContext
 
-
 class MGMContextImpl(
     private val map: LayeredPropertyMap
 ) : LayeredPropertyMap by map, MGMContext {

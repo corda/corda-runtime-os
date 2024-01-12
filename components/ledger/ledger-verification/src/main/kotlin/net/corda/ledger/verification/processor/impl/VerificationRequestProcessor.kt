@@ -9,7 +9,9 @@ import net.corda.flow.utils.toMap
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.verification.processor.VerificationRequestHandler
 import net.corda.ledger.verification.sandbox.VerificationSandboxService
+import net.corda.messaging.api.exception.CordaHTTPServerTransientException
 import net.corda.messaging.api.processor.SyncRPCProcessor
+import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.utilities.MDC_CLIENT_ID
@@ -36,8 +38,13 @@ class VerificationRequestProcessor(
     override val responseClass = FlowEvent::class.java
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
+
+    private val platformExceptions = setOf(
+        NotAllowedCpkException::class.java,
+        NotSerializableException::class.java
+    )
 
     override fun process(request: TransactionVerificationRequest): FlowEvent {
         val startTime = System.nanoTime()
@@ -55,7 +62,11 @@ class VerificationRequestProcessor(
                     currentSandboxGroupContext.set(sandbox)
                     requestHandler.handleRequest(sandbox, request)
                 } catch (e: Exception) {
-                    errorResponse(request.flowExternalEventContext, e)
+                    if (platformExceptions.contains(e::class.java)) {
+                        return@withMDC platformErrorResponse(request.flowExternalEventContext, e)
+                    }
+                    // all other exceptions are treated as transient...
+                    throw CordaHTTPServerTransientException(request.flowExternalEventContext.requestId, e)
                 } finally {
                     currentSandboxGroupContext.remove()
                 }.also {
@@ -69,16 +80,9 @@ class VerificationRequestProcessor(
         return result.value as FlowEvent
     }
 
-    private fun errorResponse(externalEventContext: ExternalEventContext, exception: Exception) = when (exception) {
-        is NotAllowedCpkException, is NotSerializableException -> {
-            log.error(errorMessage(externalEventContext, ExternalEventResponseErrorType.PLATFORM), exception)
-            responseFactory.platformError(externalEventContext, exception)
-        }
-
-        else -> {
-            log.warn(errorMessage(externalEventContext, ExternalEventResponseErrorType.TRANSIENT), exception)
-            responseFactory.transientError(externalEventContext, exception)
-        }
+    private fun platformErrorResponse(externalEventContext: ExternalEventContext, exception: Exception): Record<String, FlowEvent> {
+        log.error(errorMessage(externalEventContext, ExternalEventResponseErrorType.PLATFORM), exception)
+        return responseFactory.platformError(externalEventContext, exception)
     }
 
     private fun errorMessage(

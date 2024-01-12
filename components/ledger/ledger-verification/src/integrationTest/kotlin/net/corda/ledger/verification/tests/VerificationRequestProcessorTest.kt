@@ -12,7 +12,6 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponse
-import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
@@ -30,6 +29,7 @@ import net.corda.ledger.verification.processor.impl.VerificationRequestProcessor
 import net.corda.ledger.verification.tests.helpers.VirtualNodeService
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.membership.lib.GroupParametersFactory
+import net.corda.messaging.api.exception.CordaHTTPServerTransientException
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
 import net.corda.sandboxgroupcontext.SandboxGroupContext
@@ -56,6 +56,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
@@ -211,7 +212,7 @@ class VerificationRequestProcessorTest {
     }
 
     @Test
-    fun `returns error after when CPK not available`() {
+    fun `returns transient exception after CPK not available`() {
         val virtualNodeInfo = virtualNodeService.load(TEST_CPB)
         val holdingIdentity = virtualNodeInfo.holdingIdentity
         val cpksMetadata =
@@ -230,14 +231,12 @@ class VerificationRequestProcessorTest {
         )
 
         // Send request to message processor (there were max number of redeliveries)
-        val flowEvent = processor.process(request)
+        val e = assertThrows<CordaHTTPServerTransientException> {
+            processor.process(request)
+        }
 
-        val response = flowEvent.payload as ExternalEventResponse
-        assertThat(response.error).isNotNull
-        val error = response.error
-        assertThat(error.errorType).isEqualTo(ExternalEventResponseErrorType.TRANSIENT)
-        assertThat(error.exception.errorType).isEqualTo(CpkNotAvailableException::class.java.canonicalName)
-        assertThat(response.requestId).isEqualTo(REQUEST_ID)
+        assertThat(e.requestId).isEqualTo(request.flowExternalEventContext.requestId)
+        assertThat(e.cause!!.javaClass).isEqualTo(CpkNotAvailableException::class.java)
     }
 
     private fun createTestTransaction(ctx: SandboxGroupContext, isValid: Boolean): UtxoLedgerTransactionContainer {

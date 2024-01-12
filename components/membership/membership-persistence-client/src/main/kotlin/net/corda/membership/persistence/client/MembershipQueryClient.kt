@@ -1,12 +1,12 @@
 package net.corda.membership.persistence.client
 
 import net.corda.data.membership.StaticNetworkInfo
-import net.corda.data.membership.preauth.PreAuthTokenStatus
-import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.v2.RegistrationStatus
+import net.corda.data.membership.preauth.PreAuthToken
+import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.v5.base.types.LayeredPropertyMap
@@ -83,7 +83,6 @@ interface MembershipQueryClient : Lifecycle {
      */
     fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<Pair<LayeredPropertyMap, Long>>
 
-
     /**
      * Retrieve the list of the mutual TLS client certificate subject in the allowed list.
      *
@@ -134,4 +133,3 @@ interface MembershipQueryClient : Lifecycle {
         groupId: String
     ): MembershipQueryResult<StaticNetworkInfo>
 }
-

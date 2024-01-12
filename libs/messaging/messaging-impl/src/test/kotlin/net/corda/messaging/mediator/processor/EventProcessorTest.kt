@@ -2,7 +2,6 @@ package net.corda.messaging.mediator.processor
 
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.statemanager.api.State
-import net.corda.messaging.api.constants.MessagingMetadataKeys.PROCESSING_FAILURE
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
@@ -26,7 +25,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import kotlin.test.assertNotNull
 
 @Execution(ExecutionMode.SAME_THREAD)
 class EventProcessorTest {
@@ -97,12 +95,13 @@ class EventProcessorTest {
             ))
         }
         whenever(client.send(any())).thenThrow(CordaMessageAPIIntermittentException("baz"))
+        whenever(stateManagerHelper.failStateProcessing(any(), anyOrNull())).thenReturn(mock())
 
         val outputMap = eventProcessor.processEvents(mapOf("key" to getStringRecords(1, "key")), mapOf("key" to state))
 
         val output = outputMap["key"]
         assertEquals(emptyList<MediatorMessage<Any>>(), output?.asyncOutputs)
-        assertNotNull(output?.stateChangeAndOperation?.outputState?.metadata?.get(PROCESSING_FAILURE))
+        verify(stateManagerHelper).failStateProcessing(any(), anyOrNull())
     }
 
     private fun buildStringTestConfig() = EventMediatorConfig(

@@ -31,7 +31,7 @@ interface GroupPolicyParser {
                 return mapper.readTree(groupPolicyJson).get(FILE_FORMAT_VERSION)?.asInt()
                     ?: throw CordaRuntimeException(
                         "Failed to parse group policy file. " +
-                                "Could not find `$FILE_FORMAT_VERSION` in the JSON"
+                            "Could not find `$FILE_FORMAT_VERSION` in the JSON"
                     )
             } catch (e: JsonParseException) {
                 throw CordaRuntimeException("Failed to parse group policy file", e)

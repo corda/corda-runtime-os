@@ -10,7 +10,7 @@ import javax.persistence.Table
 @Entity
 @Table(name = DbSchema.VNODE_PRE_AUTH_TOKENS)
 @Suppress("LongParameterList")
-class PreAuthTokenEntity (
+class PreAuthTokenEntity(
     /**
      * A unique ID for the pre auth token.
      */
@@ -32,7 +32,7 @@ class PreAuthTokenEntity (
 
     @Column(name = "removal_remark")
     var removalRemark: String?
-)  {
+) {
 
     override fun equals(other: Any?): Boolean {
         if (other === this) return true

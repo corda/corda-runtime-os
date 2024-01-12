@@ -5,6 +5,8 @@ plugins {
 
 description 'Membership persistence service'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 

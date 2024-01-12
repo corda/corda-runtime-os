@@ -36,7 +36,7 @@ class MemberContextSerializer @Activate constructor(
     }
 
     override fun fromProxy(proxy: MemberContextProxy): MemberContextImpl {
-        return when(proxy.version) {
+        return when (proxy.version) {
             VERSION_1 ->
                 MemberContextImpl(layeredPropertyMapFactory.createMap(proxy.map))
             else ->
@@ -54,7 +54,6 @@ class MemberContextSerializer @Activate constructor(
         get() = false
 
     private fun LayeredPropertyMap.toMap() = this.entries.associate { it.key to it.value }
-
 }
 
 /**

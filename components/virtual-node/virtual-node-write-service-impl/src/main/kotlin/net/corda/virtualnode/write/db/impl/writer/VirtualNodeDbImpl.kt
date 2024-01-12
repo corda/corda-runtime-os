@@ -114,4 +114,30 @@ internal class VirtualNodeDbImpl(
             }
         }
     }
+
+    override fun checkDbMigrationsArePresent(): Boolean {
+        val dbConnection = dbConnections[DML]
+            ?: throw VirtualNodeDbException("No DML database connection when due to check system migrations")
+        return dbConnectionManager.getDataSource(dbConnection.config).use { dataSource ->
+            val dbChangeFiles = dbType.dbChangeFiles
+            val changeLogResourceFiles = setOf(DbSchema::class.java).mapTo(LinkedHashSet()) { klass ->
+                ClassloaderChangeLog.ChangeLogResourceFiles(klass.packageName, dbChangeFiles, klass.classLoader)
+            }
+            val dbChange = ClassloaderChangeLog(changeLogResourceFiles)
+
+            dataSource.connection.use { connection ->
+                schemaMigrator.listUnrunChangeSets(connection, dbChange).isEmpty()
+            }
+        }
+    }
+
+    override fun checkCpiMigrationsArePresent(dbChange: DbChange): Boolean {
+        val dbConnection = dbConnections[DML]
+            ?: throw VirtualNodeDbException("No DML database connection when due to check CPI migrations")
+        return dbConnectionManager.getDataSource(dbConnection.config).use { dataSource ->
+            dataSource.connection.use { connection ->
+                schemaMigrator.listUnrunChangeSets(connection, dbChange).isEmpty()
+            }
+        }
+    }
 }

@@ -1,8 +1,8 @@
 package net.corda.membership.p2p.helpers
 
-import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.TtlExpiredMarker
+import net.corda.messaging.api.records.Record
 import java.util.UUID
 
 class TtlIdsFactory {

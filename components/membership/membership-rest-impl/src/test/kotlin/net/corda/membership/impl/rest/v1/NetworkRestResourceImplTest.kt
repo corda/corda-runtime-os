@@ -1,9 +1,6 @@
 package net.corda.membership.impl.rest.v1
 
 import net.corda.crypto.core.ShortHash
-import net.corda.rest.exception.BadRequestException
-import net.corda.rest.exception.InternalServerException
-import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEventHandler
@@ -13,6 +10,9 @@ import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
 import net.corda.membership.rest.v1.types.request.HostedIdentitySessionKeyAndCertificate
 import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.InternalServerException
+import net.corda.rest.exception.ResourceNotFoundException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -79,6 +79,7 @@ class NetworkRestResourceImplTest {
             verify(coordinator).updateStatus(LifecycleStatus.DOWN, "Dependencies are DOWN")
         }
     }
+
     @Nested
     inner class PublishToLocallyHostedIdentitiesTests {
         @Test
