@@ -174,6 +174,47 @@ fun NetworkOnboardingMetadata.reregisterMember(
 }
 
 /**
+ * Deprecated
+ */
+@Suppress("LongParameterList")
+fun ClusterInfo.onboardNotaryMember(
+    resourceName: String,
+    cpiName: String,
+    groupPolicy: String,
+    x500Name: String,
+    wait: Boolean = true,
+    getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
+    notaryServiceName: String = DEFAULT_NOTARY_SERVICE,
+    isBackchainRequired: Boolean = true,
+    notaryPlugin: String = "nonvalidating"
+) = onboardMember(
+    resourceName,
+    cpiName,
+    groupPolicy,
+    x500Name,
+    wait,
+    getAdditionalContext = { holdingId ->
+        addSoftHsmFor(holdingId, CAT_NOTARY)
+        val notaryKeyId = createKeyFor(holdingId, "$holdingId$CAT_NOTARY", CAT_NOTARY, DEFAULT_KEY_SCHEME)
+
+        mapOf(
+            "corda.roles.0" to "notary",
+            "corda.notary.service.name" to MemberX500Name.parse(notaryServiceName).toString(),
+            "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.$notaryPlugin",
+            "corda.notary.service.flow.protocol.version.0" to "1",
+            "corda.notary.keys.0.id" to notaryKeyId,
+            "corda.notary.keys.0.signature.spec" to DEFAULT_SIGNATURE_SPEC
+        ) + (getAdditionalContext?.let { it(holdingId) } ?: emptyMap()) + (
+                // Add the optional backchain property if version is >= 5.2
+                if (restApiVersion != RestApiVersion.C5_0 && restApiVersion != RestApiVersion.C5_1)
+                    mapOf("corda.notary.service.backchain.required" to "$isBackchainRequired")
+                else emptyMap()
+                )
+    },
+    useLedgerKey = false
+)
+
+/**
  * Onboard a member to be a notary. This performs the same logic as when onboarding a standard member, but also creates
  * the additional notary specific context.
  */
