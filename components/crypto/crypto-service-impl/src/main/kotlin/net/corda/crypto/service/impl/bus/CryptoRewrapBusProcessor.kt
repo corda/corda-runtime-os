@@ -51,7 +51,7 @@ class CryptoRewrapBusProcessor(
                         "in the database for rootKeyAlias = ${request.oldParentKeyAlias}." }
 
                 tenantIdWrappingKeysRecords.forEach { (key, state) ->
-                    println("XXX: dealing with tenantId: $key, wrapping key: ${request.targetKeyAlias}")
+                    println("XXX: dealing with tenantId: ${state.metadata["tenantId"]}, wrapping key: ${request.targetKeyAlias}")
                     val deserializedStatus = deserializer.deserialize(state.value)!!
                     val newValue =
                         serializer.serialize(
