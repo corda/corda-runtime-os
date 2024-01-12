@@ -43,8 +43,19 @@ class StateManagerImpl(
         val successfulKeys = dataSource.connection.transaction { connection ->
             stateRepository.create(connection, states.map { it.toPersistentEntity() })
         }
-        return states.map { it.key }.toSet() - successfulKeys.toSet()
+        return getFailedCreates(states, successfulKeys.toSet())
     }
+
+    override fun createOrUpdate(states: Collection<State>): Set<String> {
+        if (states.isEmpty()) return emptySet()
+        val successfulKeys = dataSource.connection.transaction { connection ->
+            stateRepository.createOrUpdate(connection, states.map { it.toPersistentEntity() })
+        }
+        return getFailedCreates(states, successfulKeys.toSet())
+    }
+
+    private fun getFailedCreates(states: Collection<State>, successfulKeys: Set<String>) =
+        states.map { it.key }.toSet() - successfulKeys
 
     override fun get(keys: Collection<String>): Map<String, State> {
         return if (keys.isEmpty()) {
@@ -68,11 +79,7 @@ class StateManagerImpl(
                 stateRepository.update(conn, states.map { it.toPersistentEntity() })
             }
 
-            return if (failedUpdates.isEmpty()) {
-                emptyMap()
-            } else {
-                getFailedUpdates(failedUpdates)
-            }
+            return getFailedUpdates(failedUpdates)
         } catch (e: Exception) {
             logger.warn("Failed to updated batch of states - ${states.joinToString { it.key }}", e)
             throw e
@@ -80,6 +87,10 @@ class StateManagerImpl(
     }
 
     private fun getFailedUpdates(failedUpdates: List<String>): Map<String, State?> {
+        if (failedUpdates.isEmpty()) {
+            return emptyMap()
+        }
+
         val failedByOptimisticLocking = get(failedUpdates)
         val failedByNotExisting = (failedUpdates - failedByOptimisticLocking.keys)
 
@@ -107,21 +118,23 @@ class StateManagerImpl(
                 stateRepository.delete(connection, states.map { it.toPersistentEntity() })
             }
 
-            return if (failedDeletes.isEmpty()) {
-                emptyMap()
-            } else {
-                get(failedDeletes).also {
-                    if (it.isNotEmpty()) {
-                        logger.warn(
-                            "Optimistic locking check failed while deleting States" +
-                                " ${failedDeletes.joinToString()}"
-                        )
-                    }
-                }
-            }
+            return getFailedDeletes(failedDeletes)
         } catch (e: Exception) {
             logger.warn("Failed to delete batch of states - ${states.joinToString { it.key }}", e)
             throw e
+        }
+    }
+
+    private fun getFailedDeletes(failedDeletes: Collection<String>) = if (failedDeletes.isEmpty()) {
+        emptyMap()
+    } else {
+        get(failedDeletes).also {
+            if (it.isNotEmpty()) {
+                logger.warn(
+                    "Optimistic locking check failed while deleting States" +
+                        " ${failedDeletes.joinToString()}"
+                )
+            }
         }
     }
 

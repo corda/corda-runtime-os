@@ -37,6 +37,14 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
                 }.map { it.key }.toSet()
             }
 
+            override fun createOrUpdate(states: Collection<State>): Set<String> {
+                states.onEach {
+                    storage[it.key] = it
+                }
+
+                return emptySet()
+            }
+
             override fun get(keys: Collection<String>): Map<String, State> {
                 return keys.mapNotNull { storage[it] }.associateBy { it.key }
             }

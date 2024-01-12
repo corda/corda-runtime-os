@@ -12,6 +12,8 @@ interface QueryProvider {
 
     fun createStates(size: Int): String
 
+    fun createOrUpdateStates(size: Int): String
+
     val deleteStatesByKey: String
 
     val findStatesUpdatedBetween: String

@@ -34,6 +34,26 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
         }
     }
 
+    override fun createOrUpdate(connection: Connection, states: Collection<StateEntity>): Collection<String> {
+        if (states.isEmpty()) return emptySet()
+        return connection.prepareStatement(queryProvider.createOrUpdateStates(states.size)).use { statement ->
+            val indices = generateSequence(1) { it + 1 }.iterator()
+            states.forEach { state ->
+                statement.setString(indices.next(), state.key)
+                statement.setBytes(indices.next(), state.value)
+                statement.setInt(indices.next(), state.version)
+                statement.setString(indices.next(), state.metadata)
+            }
+            statement.execute()
+            val results = statement.resultSet
+            sequence<String> {
+                while (results.next()) {
+                    yield(results.getString(CREATE_RESULT_COLUMN_INDEX))
+                }
+            }.toList()
+        }
+    }
+
     override fun get(connection: Connection, keys: Collection<String>) =
         connection.prepareStatement(queryProvider.findStatesByKey(keys.size)).use {
             keys.forEachIndexed { index, key ->

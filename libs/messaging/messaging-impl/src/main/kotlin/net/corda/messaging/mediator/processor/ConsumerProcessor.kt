@@ -1,5 +1,6 @@
 package net.corda.messaging.mediator.processor
 
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.libs.statemanager.api.State
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorConsumer
