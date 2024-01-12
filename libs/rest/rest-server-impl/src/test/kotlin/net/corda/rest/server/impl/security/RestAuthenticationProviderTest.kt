@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -119,7 +120,7 @@ class RestAuthenticationProviderTest {
 
         val authenticatedBob = restAuthProvider.authenticate(UsernamePasswordAuthenticationCredentials(userBob.username, password))
 
-        assert(authorize(authenticatedBob, TestRestResource::class.java.getMethod("dummy")))
+        assertFalse(authorize(authenticatedBob, TestRestResource::class.java.getMethod("dummy")))
         assert(authorize(authenticatedBob, TestRestResource::class.java.getMethod("dummy2")))
     }
 
