@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.client.SessionEncryptionOpsClient
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.libs.statemanager.api.StateManager
@@ -37,7 +38,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.security.Security
-import net.corda.crypto.client.SessionEncryptionOpsClient
 
 @Suppress("LongParameterList", "Unused")
 @Component(service = [LinkManagerProcessor::class])

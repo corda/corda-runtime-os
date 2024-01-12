@@ -48,9 +48,14 @@ internal class StatefulSessionManagerImpl(
         val traceable = uuids.associateBy { getSessionId(it) }
         val sessionFromCache = uuids.map { it to cachedInboundSessions[getSessionId(it)] }
         val sessionsIdsNotInCache = sessionFromCache.filter { it.second == null }.map { getSessionId(it.first) }
-        val inboundSessionsFromStateManager: List<Pair<T, SessionManager.SessionDirection>> = stateManager.get(sessionsIdsNotInCache).entries.mapNotNull { (sessionId, state) ->
+        val inboundSessionsFromStateManager: List<Pair<T, SessionManager.SessionDirection>> =
+            stateManager.get(sessionsIdsNotInCache).entries.mapNotNull { (sessionId, state) ->
             val session = AvroSessionState.fromByteBuffer(ByteBuffer.wrap(state.value))
-                .toCorda(schemaRegistry, sessionEncryptionOpsClient, sessionManagerImpl.revocationCheckerClient::checkRevocation).sessionData as Session
+                .toCorda(
+                    schemaRegistry,
+                    sessionEncryptionOpsClient,
+                    sessionManagerImpl.revocationCheckerClient::checkRevocation,
+                ).sessionData as Session
             traceable[sessionId]?.let{
                 it to SessionManager.SessionDirection.Inbound(InboundSessionMetadata(state.metadata).toCounterparties(), session)
             }
@@ -298,8 +303,20 @@ internal class StatefulSessionManagerImpl(
 
     private fun <T> Any.getSessionIdIfInboundSessionMessage(trace: T): InboundSessionMessageContext<T>? {
         return when (this) {
-            is InitiatorHelloMessage -> InboundSessionMessageContext(this.header!!.sessionId, InboundSessionMessage.InitiatorHelloMessage(this), trace)
-            is InitiatorHandshakeMessage -> InboundSessionMessageContext(this.header!!.sessionId, InboundSessionMessage.InitiatorHandshakeMessage(this), trace)
+            is InitiatorHelloMessage -> InboundSessionMessageContext(
+                this.header!!.sessionId,
+                InboundSessionMessage.InitiatorHelloMessage(
+                    this,
+                ),
+                trace,
+            )
+            is InitiatorHandshakeMessage -> InboundSessionMessageContext(
+                this.header!!.sessionId,
+                InboundSessionMessage.InitiatorHandshakeMessage(
+                    this,
+                ),
+                trace,
+            )
             else -> null
         }
     }

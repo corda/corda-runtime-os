@@ -804,7 +804,11 @@ internal class SessionManagerImpl(
     //Only use by Stateful Session Manager
     internal fun processInitiatorHello(
         message: InitiatorHelloMessage,
-        createSession: (sessionId: String, mexMessageSize: Int, peer: HoldingIdentity) -> AuthenticationProtocolResponder = { sessionId, maxMessageSize, _ ->
+        createSession: (
+            sessionId: String,
+            mexMessageSize: Int,
+            peer: HoldingIdentity,
+        ) -> AuthenticationProtocolResponder = { sessionId, maxMessageSize, _ ->
             val session = protocolFactory.createResponder(sessionId, maxMessageSize)
             session.receiveInitiatorHello(message)
             session
@@ -890,8 +894,9 @@ internal class SessionManagerImpl(
                 "Inbound session ${message.header.sessionId} established (local=$ourIdentity, remote=$peerIdentity)."
             )
             /**
-            * We delay removing the session from pendingInboundSessions until we receive the first data message as before this point
-            * the other side (Initiator) might replay [InitiatorHandshakeMessage] in the case where the [ResponderHandshakeMessage] was lost.
+            * We delay removing the session from pendingInboundSessions until we receive the first data message
+             * as before this point the other side (Initiator) might replay [InitiatorHandshakeMessage] in the case
+             * where the [ResponderHandshakeMessage] was lost.
             * */
         }
         return responderHandshakeMessage
