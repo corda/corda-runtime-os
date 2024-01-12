@@ -861,7 +861,14 @@ internal class SessionManagerImpl(
         val responderHello = session.generateResponderHello()
 
         logger.info("Remote identity ${peerMemberInfo.holdingIdentity} initiated new session ${message.header.sessionId}.")
-        return createLinkOutMessage(responderHello, hostedIdentityInSameGroup, peerMemberInfo, p2pParams.networkType) to session
+        return createLinkOutMessage(
+            responderHello,
+            hostedIdentityInSameGroup,
+            peerMemberInfo,
+            p2pParams.networkType,
+        )?.let {
+            it to session
+        }
     }
 
     private fun processInitiatorHandshake(message: InitiatorHandshakeMessage): LinkOutMessage? {
