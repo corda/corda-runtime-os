@@ -3,7 +3,6 @@ package net.corda.db.admin.impl
 import liquibase.Liquibase
 import liquibase.command.CommandArgumentDefinition
 import liquibase.command.CommandScope
-import liquibase.command.core.UpdateCommandStep
 import liquibase.database.Database
 import liquibase.database.DatabaseConnection
 import liquibase.resource.ResourceAccessor
@@ -66,7 +65,7 @@ class LiquibaseSchemaMigratorTest {
     @Test
     fun `when updateDb call Liquibase API`() {
         migrator.updateDb(connection, dbChange)
-        verify(commandScopeFactory).invoke(UpdateCommandStep.COMMAND_NAME)
+        verify(commandScope).execute()
     }
 
     @Test
