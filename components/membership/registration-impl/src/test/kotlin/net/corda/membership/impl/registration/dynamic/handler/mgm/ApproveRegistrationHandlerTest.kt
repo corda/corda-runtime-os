@@ -24,11 +24,11 @@ import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.VersionedMessageBuilder
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
-import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC

@@ -5,6 +5,8 @@ plugins {
 
 description 'Membership data read service'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     api platform("net.corda:corda-api:$cordaApiVersion")

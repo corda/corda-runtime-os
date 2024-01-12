@@ -21,7 +21,6 @@ import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
 import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
-import net.corda.libs.virtualnode.common.exception.InvalidStateChangeRuntimeException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationBadRequestException
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
@@ -260,13 +259,26 @@ internal class VirtualNodeWriterProcessor(
                 val newState = OperationalStatus.fromAvro(stateChangeRequest.newState)
 
                 // Compare new state to current state
+                val successResponse = {
+                    VirtualNodeManagementResponse(
+                        instant,
+                        VirtualNodeStateChangeResponse(
+                            stateChangeRequest.holdingIdentityShortHash,
+                            nodeInfo.flowP2pOperationalStatus.toAvro(),
+                            nodeInfo.flowStartOperationalStatus.toAvro(),
+                            nodeInfo.flowOperationalStatus.toAvro(),
+                            nodeInfo.vaultDbOperationalStatus.toAvro()
+                        )
+                    )
+                }
                 when (inMaintenance) {
                     true -> if (newState == OperationalStatus.INACTIVE) {
-                        throw InvalidStateChangeRuntimeException("VirtualNode", newState.name, shortHash.value)
+                        respFuture.complete(successResponse())
+                        return
                     }
-
                     false -> if (newState == OperationalStatus.ACTIVE) {
-                        throw InvalidStateChangeRuntimeException("VirtualNode", newState.name, shortHash.value)
+                        respFuture.complete(successResponse())
+                        return
                     }
                 }
 

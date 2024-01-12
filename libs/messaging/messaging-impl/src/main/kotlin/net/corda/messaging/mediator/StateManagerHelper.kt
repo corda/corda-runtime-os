@@ -7,6 +7,7 @@ import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.metadata
+import net.corda.messaging.api.constants.MessagingMetadataKeys.PROCESSING_FAILURE
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import java.nio.ByteBuffer
 
@@ -41,6 +42,18 @@ class StateManagerHelper<S : Any>(
             mediatorStateBytes,
             persistedState?.version ?: State.VERSION_INITIAL_VALUE,
             mergeMetadata(persistedState?.metadata, newState?.metadata),
+        )
+    }
+
+    fun failStateProcessing(key: String, originalState: State?) : State {
+        val newMetadata = (originalState?.metadata?.toMutableMap() ?: mutableMapOf()).also {
+            it[PROCESSING_FAILURE] = true
+        }
+        return State(
+            key,
+            byteArrayOf(),
+            version = originalState?.version ?: State.VERSION_INITIAL_VALUE,
+            metadata = Metadata(newMetadata)
         )
     }
 

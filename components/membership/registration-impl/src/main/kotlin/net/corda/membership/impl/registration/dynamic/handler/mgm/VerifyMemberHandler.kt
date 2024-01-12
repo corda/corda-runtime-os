@@ -78,17 +78,17 @@ internal class VerifyMemberHandler(
                 RegistrationStatus.PENDING_MEMBER_VERIFICATION
             ).createAsyncCommands()
             setRegistrationRequestStatusCommand +
-                    p2pRecordsFactory.createAuthenticatedMessageRecord(
-                        mgm,
-                        member,
-                        VerificationRequest(
-                            registrationId,
-                            KeyValuePairList(emptyList<KeyValuePair>())
-                        ),
-                        membershipConfig.getTtlMinutes(VERIFY_MEMBER_REQUEST),
-                        id = ttlIdsFactory.createId(key),
-                        MembershipStatusFilter.PENDING,
-                    )
+                p2pRecordsFactory.createAuthenticatedMessageRecord(
+                    mgm,
+                    member,
+                    VerificationRequest(
+                        registrationId,
+                        KeyValuePairList(emptyList<KeyValuePair>())
+                    ),
+                    membershipConfig.getTtlMinutes(VERIFY_MEMBER_REQUEST),
+                    id = ttlIdsFactory.createId(key),
+                    MembershipStatusFilter.PENDING,
+                )
         } catch (e: Exception) {
             registrationLogger.warn("Member verification failed for registration request.", e)
             listOf(

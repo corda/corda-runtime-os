@@ -5,11 +5,13 @@ import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.messaging.mediator.MediatorState
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
-import net.corda.libs.statemanager.api.StateManager
+import net.corda.libs.statemanager.api.State.Companion.VERSION_INITIAL_VALUE
+import net.corda.messaging.api.constants.MessagingMetadataKeys.PROCESSING_FAILURE
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.`when`
@@ -28,7 +30,6 @@ class StateManagerHelperTest {
     private data class StateType(val id: Int)
 
     private val mediatorState = mock<MediatorState>()
-    private val stateManager = mock<StateManager>()
     private val stateSerializer = mock<CordaAvroSerializer<Any>>()
     private val stateDeserializer = mock<CordaAvroDeserializer<StateType>>()
     private val wrapperDeserializer = mock<CordaAvroDeserializer<MediatorState>>()
@@ -64,7 +65,7 @@ class StateManagerHelperTest {
         assertNotNull(state)
         assertEquals(TEST_KEY, state!!.key)
         assertArrayEquals(serialized(mediatorState), state.value)
-        assertEquals(State.VERSION_INITIAL_VALUE, state.version)
+        assertEquals(VERSION_INITIAL_VALUE, state.version)
         assertEquals(newState.metadata, state.metadata)
     }
 
@@ -113,5 +114,42 @@ class StateManagerHelperTest {
         stateManagerHelper.deserializeValue(mediatorState)
 
         verify(stateDeserializer).deserialize(serializedStateValue)
+    }
+
+    @Test
+    fun `marks state as failed when previous state exists`() {
+        val stateVersion = 5
+        val persistedState = State(
+            TEST_KEY,
+            serialized(TEST_STATE_VALUE),
+            stateVersion,
+            Metadata()
+        )
+        val stateManagerHelper = StateManagerHelper(
+            stateSerializer,
+            stateDeserializer,
+            wrapperDeserializer
+        )
+
+        val state = stateManagerHelper.failStateProcessing(TEST_KEY, persistedState)
+
+        assertEquals(persistedState.key, state.key)
+        assertEquals(persistedState.version, state.version)
+        assertTrue(state.metadata[PROCESSING_FAILURE] as Boolean)
+    }
+
+    @Test
+    fun `marks state as failed when previous state does not exist`() {
+        val stateManagerHelper = StateManagerHelper(
+            stateSerializer,
+            stateDeserializer,
+            wrapperDeserializer
+        )
+
+        val state = stateManagerHelper.failStateProcessing(TEST_KEY, null)
+
+        assertEquals(TEST_KEY, state.key)
+        assertEquals(VERSION_INITIAL_VALUE, state.version)
+        assertTrue(state.metadata[PROCESSING_FAILURE] as Boolean)
     }
 }

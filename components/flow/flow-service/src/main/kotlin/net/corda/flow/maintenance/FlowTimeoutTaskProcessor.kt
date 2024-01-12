@@ -59,7 +59,7 @@ class FlowTimeoutTaskProcessor(
                     // Flows that have not been updated in at least [maxIdleTime] seconds
                     stateManager.updatedBetween(
                         IntervalFilter(
-                            Instant.MIN,
+                            Instant.EPOCH,
                             now().minusMillis(maxIdleTimeMilliseconds)
                         )
                     )

@@ -6,12 +6,14 @@ import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplate
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.MEMBER_STATUS
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.PROTOCOL_MODE
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.SESSION_PKI
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_PKI
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_TRUST_ROOTS
-import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_VERSION
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_TYPE
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_VERSION
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.ProtocolParameters.SESSION_KEY_POLICY
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.ProtocolParameters.STATIC_NETWORK
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.ProtocolParameters.StaticNetwork.MEMBERS
@@ -25,11 +27,9 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.ProtocolMode.AUTH_ENCRYPT
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsPkiMode.STANDARD
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType.ONE_WAY
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsVersion.VERSION_1_3
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.ProtocolParameters.SessionKeyPolicy.COMBINED
-import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType.ONE_WAY
-import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.ProtocolParameters.SessionKeyPolicy.DISTINCT
 import net.corda.membership.lib.impl.grouppolicy.v1.MemberGroupPolicyImpl
 import net.corda.schema.configuration.ConfigKeys
@@ -61,11 +61,10 @@ class TestUtils {
         val daisyName = MemberX500Name("Daisy", "London", "GB")
         val ericName = MemberX500Name("Eric", "London", "GB")
 
-
         val r3comCert = StringEscapeUtils.escapeJson(
             TestUtils::class.java.getResource("/r3Com.pem")!!.readText()
-            .replace("\r", "")
-            .replace("\n", System.lineSeparator())
+                .replace("\r", "")
+                .replace("\n", System.lineSeparator())
         )
 
         private val staticMemberTemplate = """
@@ -118,7 +117,6 @@ class TestUtils {
             ]
         """.trimIndent()
 
-
         val groupPolicyWithStaticNetwork = MemberGroupPolicyImpl(
             ObjectMapper().readTree(
                 """
@@ -145,7 +143,7 @@ class TestUtils {
                     },
                     "$CIPHER_SUITE": {}
                 }
-            """.trimIndent()
+                """.trimIndent()
             )
         )
 
@@ -175,7 +173,7 @@ class TestUtils {
                     },
                     "$CIPHER_SUITE": {}
                 }
-            """.trimIndent()
+                """.trimIndent()
             )
         )
 
@@ -205,7 +203,7 @@ class TestUtils {
                     },
                     "$CIPHER_SUITE": {}
                 }
-            """.trimIndent()
+                """.trimIndent()
             )
         )
 
@@ -239,7 +237,7 @@ class TestUtils {
                     },
                     "$CIPHER_SUITE": {}
                 }
-            """.trimIndent()
+                """.trimIndent()
             )
         )
 
@@ -266,7 +264,7 @@ class TestUtils {
                     },
                     "$CIPHER_SUITE": {}
                 }
-            """.trimIndent()
+                """.trimIndent()
             )
         )
 
@@ -296,7 +294,7 @@ class TestUtils {
                     },
                     "$CIPHER_SUITE": {}
                 }
-            """.trimIndent()
+                """.trimIndent()
             )
         )
     }

@@ -50,7 +50,7 @@ class QueryStaticNetworkInfoHandlerTest {
     }
     private val handler = QueryStaticNetworkInfoHandler(services)
 
-    private val groupId = UUID(0,1).toString()
+    private val groupId = UUID(0, 1).toString()
     private val serializedPubKey = "bytes1".toByteArray()
     private val serializedPrivateKey = "bytes2".toByteArray()
 

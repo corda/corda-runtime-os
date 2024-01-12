@@ -5,6 +5,8 @@ plugins {
 
 description 'Membership Locally Hosted Identity Service'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
