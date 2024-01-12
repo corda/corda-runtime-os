@@ -20,6 +20,7 @@ Note that there is a large engineering team at R3 working on this codebase so if
 
 The best way to stay up-to-date with Corda is to monitor the following resources: 
 
+
  * Slack - [cordaledger.slack.com](https://cordaledger.slack.com)
  * Our Blog - [corda.net/blog/](https://www.corda.net/blog/)
  * Community Forum - [community.r3.com](https://community.r3.com)
