@@ -24,22 +24,6 @@ class PostgresQueryProvider : AbstractQueryProvider() {
         RETURNING $STATE_MANAGER_TABLE.$KEY_COLUMN;
     """.trimIndent()
 
-    override fun createOrUpdateStates(size: Int): String = """
-        WITH data ($KEY_COLUMN, $VALUE_COLUMN, $VERSION_COLUMN, $METADATA_COLUMN, $MODIFIED_TIME_COLUMN) as (
-            VALUES ${List(size) { "(?, ?, ?, CAST(? AS JSONB), CURRENT_TIMESTAMP AT TIME ZONE 'UTC')" }.joinToString(",")}
-        )
-        INSERT INTO $STATE_MANAGER_TABLE as s
-        SELECT * FROM data d
-        ON CONFLICT (key) DO UPDATE 
-        SET 
-             $KEY_COLUMN = EXCLUDED.key, 
-             $VALUE_COLUMN = EXCLUDED.value, 
-             $VERSION_COLUMN = s.$VERSION_COLUMN + 1, 
-             $METADATA_COLUMN = CAST(EXCLUDED.metadata as JSONB), 
-             $MODIFIED_TIME_COLUMN = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-        RETURNING s.$KEY_COLUMN;
-    """.trimIndent()
-
     override fun updateStates(size: Int): String = """
             UPDATE $STATE_MANAGER_TABLE AS s 
             SET 

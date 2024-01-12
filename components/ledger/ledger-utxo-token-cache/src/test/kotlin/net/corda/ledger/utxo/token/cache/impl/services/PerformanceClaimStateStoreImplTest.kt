@@ -181,14 +181,6 @@ class PerformanceClaimStateStoreImplTest {
             }
         }
 
-        override fun createOrUpdate(states: Collection<State>): Set<String> {
-            states.onEach {
-                store[it.key] = it
-            }
-
-            return emptySet()
-        }
-
         override fun get(keys: Collection<String>): Map<String, State> {
             return lock.withLock {
                 keys.mapNotNull { store[it] }.associateBy { it.key }

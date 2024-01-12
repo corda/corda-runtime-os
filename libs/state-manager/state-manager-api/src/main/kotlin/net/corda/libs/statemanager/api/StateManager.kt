@@ -31,20 +31,6 @@ interface StateManager : Lifecycle {
     fun create(states: Collection<State>): Set<String>
 
     /**
-     * Persist new [states], If states already exist then overwrite them and increment the state version.
-     *
-     * A single transactional context is used when interacting with the underlying persistent storage,
-     * so all these states will be persisted/updated or none will.
-     *
-     * Control is only returned to the caller once all [states] that were successfully created/updated have been fully
-     * persisted and replicas of the underlying persistent storage, if any, are synced.
-     *
-     * @param states Collection of states to be persisted.
-     * @return Collection of keys for all those states that could not be persisted on the underlying persistent storage.
-     */
-    fun createOrUpdate(states: Collection<State>): Set<String>
-
-    /**
      * Get all states referenced by [keys].
      * Only states that have been successfully persisted and distributed within the underlying persistent storage
      * are returned.
