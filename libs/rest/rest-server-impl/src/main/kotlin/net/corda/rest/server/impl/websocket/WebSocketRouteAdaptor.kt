@@ -70,8 +70,6 @@ internal class WebSocketRouteAdaptor(
                     if (!authorize(authorizingSubject, resourceAccessString)) {
                         userNotAuthorized(authorizingSubject.principal, resourceAccessString)
                     }
-
-
                     val paramsFromRequest = routeInfo.retrieveParameters(clientWsRequestContext)
                     val fullListOfParams = listOf(newChannel) + paramsFromRequest
 
