@@ -196,6 +196,10 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
         try {
 
             val dependentStateAndRefs = filteredTransactionsAndSignatures.flatMap { (filteredTransaction, _) ->
+                require(filteredTransaction.id != initialTransaction.id) {
+                    "Either filtered transaction \"${filteredTransaction.id}\" or " +
+                            "current transaction \"${initialTransaction.id}\" is invalid."
+                }
                 (filteredTransaction.outputStateAndRefs as UtxoFilteredData.Audit<StateAndRef<*>>).values.values
             }.associateBy { it.ref }
 
