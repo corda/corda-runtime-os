@@ -20,11 +20,10 @@ class StateManagerFactoryStub : StateManagerFactory {
             override fun update(states: Collection<State>): Map<String, State?> = throw UnsupportedOperationException()
             override fun commit(
                 statesToCreate: Collection<State>,
-                statesToCreateOrUpdate: Collection<State>,
                 statesToUpdate: Collection<State>,
                 statesToDelete: Collection<State>
             ): TransactionResult {
-                throw UnsupportedOperationException()
+                return TransactionResult(create(statesToCreate), update(statesToUpdate), delete(statesToDelete))
             }
 
             override fun delete(states: Collection<State>): Map<String, State> = throw UnsupportedOperationException()

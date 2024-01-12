@@ -59,11 +59,10 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
 
             override fun commit(
                 statesToCreate: Collection<State>,
-                statesToCreateOrUpdate: Collection<State>,
                 statesToUpdate: Collection<State>,
                 statesToDelete: Collection<State>
             ): TransactionResult {
-                TODO("Not yet implemented")
+                return TransactionResult(create(statesToCreate), update(statesToUpdate), delete(statesToDelete))
             }
 
             override fun delete(states: Collection<State>): Map<String, State> {
