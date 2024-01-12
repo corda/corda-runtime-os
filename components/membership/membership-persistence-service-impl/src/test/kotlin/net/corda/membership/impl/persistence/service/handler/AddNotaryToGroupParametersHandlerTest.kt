@@ -1,14 +1,14 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedData
@@ -270,13 +270,15 @@ class AddNotaryToGroupParametersHandlerTest {
         whenever(memberInfoFactory.createMemberInfo(any(), any<SortedMap<String, String?>>())).doReturn(otherNotary)
         whenever(membersQuery.resultList).doReturn(listOf(otherNotaryEntity))
         whenever(keyValuePairListDeserializer.deserialize(any())).doReturn(
-            KeyValuePairList(listOf(
-                KeyValuePair(EPOCH_KEY, EPOCH.toString()),
-                KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 5), KNOWN_NOTARY_SERVICE),
-                KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 5), KNOWN_NOTARY_PROTOCOL),
-                KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 0), "1"),
-                KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 5, 0), "existing-test-key"),
-            ).sorted())
+            KeyValuePairList(
+                listOf(
+                    KeyValuePair(EPOCH_KEY, EPOCH.toString()),
+                    KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 5), KNOWN_NOTARY_SERVICE),
+                    KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 5), KNOWN_NOTARY_PROTOCOL),
+                    KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 0), "1"),
+                    KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 5, 0), "existing-test-key"),
+                ).sorted()
+            )
         )
     }
 

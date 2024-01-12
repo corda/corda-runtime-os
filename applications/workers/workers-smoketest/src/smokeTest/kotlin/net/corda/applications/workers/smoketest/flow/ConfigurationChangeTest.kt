@@ -89,11 +89,9 @@ class ConfigurationChangeTest : ClusterReadiness by ClusterReadinessChecker() {
         val currentConfigValue = getConfig(MESSAGING_CONFIG).configWithDefaultsNode()[MAX_ALLOWED_MSG_SIZE].asInt()
         val newConfigurationValue = (currentConfigValue * 1.5).toInt()
 
-        managedConfig { configManager ->
-            logger.info("Set new config")
-            configManager
-                .load(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue)
-                .apply()
+        logger.info("Set new config")
+        managedConfig()
+            .load(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue).apply {
             // Wait for the rpc-worker to reload the configuration and come back up
             logger.info("Wait for the rest-worker to reload the configuration and come back up")
             waitForConfigurationChange(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue.toString(), false)

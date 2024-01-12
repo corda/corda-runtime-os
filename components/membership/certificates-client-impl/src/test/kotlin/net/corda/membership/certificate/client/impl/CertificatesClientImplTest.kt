@@ -9,6 +9,7 @@ import net.corda.data.certificates.rpc.request.CertificateRpcRequest
 import net.corda.data.certificates.rpc.request.ImportCertificateRpcRequest
 import net.corda.data.certificates.rpc.request.RetrieveCertificateRpcRequest
 import net.corda.data.certificates.rpc.response.CertificateRpcResponse
+import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -20,17 +21,16 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.RPCConfig
-import net.corda.data.p2p.HostedIdentityEntry
-import net.corda.membership.certificate.client.CertificatesClient
-import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.membership.persistence.client.MembershipQueryClient
-import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -393,7 +393,8 @@ class CertificatesClientImplTest {
 
                 handler.firstValue.processEvent(
                     RegistrationStatusChangeEvent(
-                        registrationHandle, LifecycleStatus.UP
+                        registrationHandle,
+                        LifecycleStatus.UP
                     ),
                     coordinator
                 )
@@ -413,14 +414,16 @@ class CertificatesClientImplTest {
                 handler.firstValue.processEvent(StartEvent(), coordinator)
                 handler.firstValue.processEvent(
                     RegistrationStatusChangeEvent(
-                        registrationHandle, LifecycleStatus.UP
+                        registrationHandle,
+                        LifecycleStatus.UP
                     ),
                     coordinator
                 )
 
                 handler.firstValue.processEvent(
                     RegistrationStatusChangeEvent(
-                        registrationHandle, LifecycleStatus.UP
+                        registrationHandle,
+                        LifecycleStatus.UP
                     ),
                     coordinator
                 )
@@ -436,7 +439,8 @@ class CertificatesClientImplTest {
 
                 handler.firstValue.processEvent(
                     RegistrationStatusChangeEvent(
-                        registrationHandle, LifecycleStatus.UP
+                        registrationHandle,
+                        LifecycleStatus.UP
                     ),
                     coordinator
                 )
@@ -453,14 +457,16 @@ class CertificatesClientImplTest {
                 handler.firstValue.processEvent(StartEvent(), coordinator)
                 handler.firstValue.processEvent(
                     RegistrationStatusChangeEvent(
-                        registrationHandle, LifecycleStatus.UP
+                        registrationHandle,
+                        LifecycleStatus.UP
                     ),
                     coordinator
                 )
 
                 handler.firstValue.processEvent(
                     RegistrationStatusChangeEvent(
-                        registrationHandle, LifecycleStatus.DOWN
+                        registrationHandle,
+                        LifecycleStatus.DOWN
                     ),
                     coordinator
                 )
@@ -477,7 +483,8 @@ class CertificatesClientImplTest {
 
                 handler.firstValue.processEvent(
                     RegistrationStatusChangeEvent(
-                        registrationHandle, LifecycleStatus.DOWN
+                        registrationHandle,
+                        LifecycleStatus.DOWN
                     ),
                     coordinator
                 )

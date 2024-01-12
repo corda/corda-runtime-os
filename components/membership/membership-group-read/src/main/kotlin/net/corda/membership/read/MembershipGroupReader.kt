@@ -1,8 +1,8 @@
 package net.corda.membership.read
 
-import net.corda.membership.lib.SignedGroupParameters
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.lib.InternalGroupParameters
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.MemberInfo

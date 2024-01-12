@@ -5,7 +5,7 @@ import net.corda.layeredpropertymap.CustomPropertyConverter
 import org.osgi.service.component.annotations.Component
 
 @Component(service = [CustomPropertyConverter::class])
-class IntegrationDummyEndpointInfoConverter: CustomPropertyConverter<IntegrationDummyEndpointInfo> {
+class IntegrationDummyEndpointInfoConverter : CustomPropertyConverter<IntegrationDummyEndpointInfo> {
     companion object {
         private const val URL_KEY = "url"
         private const val PROTOCOL_VERSION_KEY = "protocolVersion"

@@ -5,6 +5,8 @@ plugins {
 
 description 'Membership implementation'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     api project(':libs:layered-property-map')
 

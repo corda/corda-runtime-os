@@ -9,13 +9,13 @@ import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
 import net.corda.membership.certificate.client.CertificatesClient
-import net.corda.rest.exception.BadRequestException
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
 import net.corda.membership.certificates.CertificateUsageUtils.publicName
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI
 import net.corda.messaging.api.records.Record
+import net.corda.rest.exception.BadRequestException
 import net.corda.schema.Schemas
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.HoldingIdentity

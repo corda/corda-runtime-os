@@ -1,10 +1,10 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
@@ -194,14 +194,14 @@ class MGMRegistrationService @Activate constructor(
                         context
                     )
 
-                // Persist group parameters snapshot
-                val groupParametersPersistenceResult =
-                    membershipPersistenceClient.persistGroupParametersInitialSnapshot(member)
-                        .execute()
-                if (groupParametersPersistenceResult is MembershipPersistenceResult.Failure) {
-                    throw NotReadyMembershipRegistrationException(groupParametersPersistenceResult.errorMsg)
-                }
-                mgmRegistrationRequestHandler.persistRegistrationRequest(registrationId, member, context)
+                    // Persist group parameters snapshot
+                    val groupParametersPersistenceResult =
+                        membershipPersistenceClient.persistGroupParametersInitialSnapshot(member)
+                            .execute()
+                    if (groupParametersPersistenceResult is MembershipPersistenceResult.Failure) {
+                        throw NotReadyMembershipRegistrationException(groupParametersPersistenceResult.errorMsg)
+                    }
+                    mgmRegistrationRequestHandler.persistRegistrationRequest(registrationId, member, context)
 
                     // Publish group parameters to Kafka
                     val groupParameters = groupParametersPersistenceResult.getOrThrow()

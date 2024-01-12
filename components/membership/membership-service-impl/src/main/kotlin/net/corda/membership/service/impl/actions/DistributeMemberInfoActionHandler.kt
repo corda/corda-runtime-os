@@ -1,9 +1,9 @@
 package net.corda.membership.service.impl.actions
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.p2p.DistributionType
@@ -64,7 +64,7 @@ class DistributeMemberInfoActionHandler(
         DistributionType.STANDARD,
         merkleTreeGenerator,
     ) { UUID.randomUUID().toString() }
-)  {
+) {
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -83,12 +83,16 @@ class DistributeMemberInfoActionHandler(
         val updatedMemberInfo = when (updatedMemberQuery) {
             is MembershipQueryResult.Success -> updatedMemberQuery.payload
             is MembershipQueryResult.Failure -> return recordToRequeueDistribution(key, request) {
-                logger.warn("Failed to query for updated member's info: ${updatedMemberQuery.errorMsg}." +
-                        "Distributing the member info will be reattempted.")
+                logger.warn(
+                    "Failed to query for updated member's info: ${updatedMemberQuery.errorMsg}." +
+                        "Distributing the member info will be reattempted."
+                )
             }
         }.firstOrNull() ?: return recordToRequeueDistribution(key, request) {
-            logger.info("Could not retrieve MemberInfo from the database for ${updatedMember.x500Name}. " +
-                    "Republishing the distribute command to be processed later.")
+            logger.info(
+                "Could not retrieve MemberInfo from the database for ${updatedMember.x500Name}. " +
+                    "Republishing the distribute command to be processed later."
+            )
         }
 
         request.minimumUpdatedMemberSerial?.let {
@@ -107,15 +111,19 @@ class DistributeMemberInfoActionHandler(
         // is available.
         val groupParameters = groupReader.groupParameters?.apply {
         } ?: return recordToRequeueDistribution(key, request) {
-            logger.info("Retrieved group parameters are null. Republishing the distribute command to be processed later when set of " +
-               "group parameters with epoch ${request.minimumGroupParametersEpoch} is available.")
+            logger.info(
+                "Retrieved group parameters are null. Republishing the distribute command to be processed later when set of " +
+                    "group parameters with epoch ${request.minimumGroupParametersEpoch} is available."
+            )
         }
         request.minimumGroupParametersEpoch?.let {
             if (it > groupParameters.epoch) {
                 return recordToRequeueDistribution(key, request) {
-                    logger.info("Retrieved group parameters are outdated (current epoch ${groupParameters.epoch}). Republishing the " +
-                       "distribute command to be processed later when the set of group parameters with epoch " +
-                       "${request.minimumGroupParametersEpoch} is available.")
+                    logger.info(
+                        "Retrieved group parameters are outdated (current epoch ${groupParameters.epoch}). Republishing the " +
+                            "distribute command to be processed later when the set of group parameters with epoch " +
+                            "${request.minimumGroupParametersEpoch} is available."
+                    )
                 }
             }
         }
@@ -128,12 +136,14 @@ class DistributeMemberInfoActionHandler(
         val allNonPendingMemberInfo = when (allNonPendingMembersQuery) {
             is MembershipQueryResult.Success -> allNonPendingMembersQuery.payload
             is MembershipQueryResult.Failure -> return recordToRequeueDistribution(key, request) {
-                logger.warn("Failed to query for membership group's info: ${allNonPendingMembersQuery.errorMsg}." +
-                        "Distributing the member info will be reattempted.")
+                logger.warn(
+                    "Failed to query for membership group's info: ${allNonPendingMembersQuery.errorMsg}." +
+                        "Distributing the member info will be reattempted."
+                )
             }
         }
         val allNonPendingMembersExcludingMgm = allNonPendingMemberInfo.filterNot { it.isMgm }
-        //If the updated member is suspended then we only send its own member info to itself (so it can tell it has been suspended).
+        // If the updated member is suspended then we only send its own member info to itself (so it can tell it has been suspended).
         val membersToDistributeToUpdatedMember = if (updatedMemberInfo.status == MEMBER_STATUS_SUSPENDED) {
             listOf(updatedMemberInfo)
         } else {
@@ -148,8 +158,11 @@ class DistributeMemberInfoActionHandler(
             membershipPackageFactory(membersToDistributeToUpdatedMember, groupParameters)
         } catch (except: CordaRuntimeException) {
             return recordToRequeueDistribution(key, request) {
-                logger.warn("Failed to create membership package for distribution to $updatedMember. Distributing the member info will " +
-                        "be reattempted.", except)
+                logger.warn(
+                    "Failed to create membership package for distribution to $updatedMember. Distributing the member info will " +
+                        "be reattempted.",
+                    except
+                )
             }
         }
 
@@ -165,8 +178,11 @@ class DistributeMemberInfoActionHandler(
             membershipPackageFactory(listOf(updatedMemberInfo), groupParameters)
         } catch (except: CordaRuntimeException) {
             return recordToRequeueDistribution(key, request) {
-                logger.warn("Failed to create membership package for distribution of the $updatedMember to the rest of the group. " +
-                        "Distributing the member info will be reattempted.", except)
+                logger.warn(
+                    "Failed to create membership package for distribution of the $updatedMember to the rest of the group. " +
+                        "Distributing the member info will be reattempted.",
+                    except
+                )
             }
         }
 

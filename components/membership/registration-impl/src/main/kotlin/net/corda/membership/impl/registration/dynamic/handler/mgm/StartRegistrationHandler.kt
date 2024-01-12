@@ -43,8 +43,8 @@ import net.corda.membership.lib.registration.DECLINED_REASON_FOR_USER_INTERNAL_E
 import net.corda.membership.lib.registration.DECLINED_REASON_GROUP_ID_IN_REQUEST_NOT_MATCHING_TARGET
 import net.corda.membership.lib.registration.DECLINED_REASON_INVALID_NOTARY_SERVICE_PLUGIN_TYPE
 import net.corda.membership.lib.registration.DECLINED_REASON_NAME_IN_REQUEST_NOT_MATCHING_NAME_IN_P2P_MSG
-import net.corda.membership.lib.registration.DECLINED_REASON_NOTARY_MISSING_NOTARY_DETAILS
 import net.corda.membership.lib.registration.DECLINED_REASON_NOTARY_LEDGER_KEY
+import net.corda.membership.lib.registration.DECLINED_REASON_NOTARY_MISSING_NOTARY_DETAILS
 import net.corda.membership.lib.registration.DECLINED_REASON_NOT_MGM_IDENTITY
 import net.corda.membership.lib.registration.DECLINED_REASON_NO_ENDPOINTS_SPECIFIED
 import net.corda.membership.lib.registration.DECLINED_REASON_RESISTRANT_IS_MGM
@@ -111,7 +111,9 @@ internal class StartRegistrationHandler(
     override fun invoke(state: RegistrationState?, key: String, command: StartRegistration): RegistrationHandlerResult {
         if (state == null) throw MissingRegistrationStateException
         val (registrationId, mgmHoldingId, pendingMemberHoldingId) = Triple(
-            state.registrationId, state.mgm.toCorda(), state.registeringMember.toCorda()
+            state.registrationId,
+            state.mgm.toCorda(),
+            state.registeringMember.toCorda()
         )
 
         val registrationLogger = RegistrationLogger(logger)
@@ -150,7 +152,7 @@ internal class StartRegistrationHandler(
             val pendingMemberRecord = Record(
                 topic = Schemas.Membership.MEMBER_LIST_TOPIC,
                 key = "${mgmMemberInfo.holdingIdentity.shortHash}-${pendingMemberInfo.holdingIdentity.shortHash}" +
-                        "-${pendingMemberInfo.status}",
+                    "-${pendingMemberInfo.status}",
                 value = persistentMemberInfo,
             )
             // Persist pending member info so that we can notify the member of declined registration if failure occurs
@@ -159,7 +161,7 @@ internal class StartRegistrationHandler(
                 .execute().also {
                     require(it as? MembershipPersistenceResult.Failure == null) {
                         "Failed to persist pending member info. Reason: " +
-                                (it as MembershipPersistenceResult.Failure).errorMsg
+                            (it as MembershipPersistenceResult.Failure).errorMsg
                     }
                 }
             outputRecords.add(pendingMemberRecord)
@@ -172,7 +174,7 @@ internal class StartRegistrationHandler(
             ).execute().also {
                 require(it as? MembershipPersistenceResult.Failure == null) {
                     "Failed to update the status of the registration request. Reason: " +
-                            (it as MembershipPersistenceResult.Failure).errorMsg
+                        (it as MembershipPersistenceResult.Failure).errorMsg
                 }
             }
 
@@ -201,7 +203,7 @@ internal class StartRegistrationHandler(
             ).getOrThrow().lastOrNull {
                 it.status == MEMBER_STATUS_ACTIVE || it.status == MEMBER_STATUS_SUSPENDED
             }
-            if (registrationRequest.serial!! > 0) { //re-registration
+            if (registrationRequest.serial!! > 0) { // re-registration
                 val serialShouldBeZero =
                     "Member has not registered previously so serial number should be 0, but it was ${registrationRequest.serial}."
                 validateRegistrationRequest(
@@ -213,8 +215,9 @@ internal class StartRegistrationHandler(
 
                 val serialNotUpToDate =
                     "Registration request was submitted for an older version of member info. " +
-                    "The submitted serial was ${registrationRequest.serial}, but the latest serial is ${activeOrSuspendedInfo!!.serial}. " +
-                    "Please submit a new request with an up-to-date serial number."
+                        "The submitted serial was ${registrationRequest.serial}, but the latest serial " +
+                        "is ${activeOrSuspendedInfo!!.serial}. Please submit a new request with an " +
+                        "up-to-date serial number."
                 validateRegistrationRequest(
                     activeOrSuspendedInfo.serial <= registrationRequest.serial!!,
                     registrationLogger,
@@ -238,9 +241,9 @@ internal class StartRegistrationHandler(
                 val diff = ((pendingContext.entries - previousContext.entries) + (previousContext.entries - pendingContext.entries))
                     .filter {
                         it.key.startsWith(SESSION_KEYS) ||
-                        it.key.startsWith(LEDGER_KEYS) ||
-                        it.key.startsWith(ROLES_PREFIX) ||
-                        it.key.startsWith("corda.notary")
+                            it.key.startsWith(LEDGER_KEYS) ||
+                            it.key.startsWith(ROLES_PREFIX) ||
+                            it.key.startsWith("corda.notary")
                     }
                 val diffInvalidMsgFn = { "Fields ${diff.map { it.key }} cannot be added, removed or updated during re-registration." }
                 validateRegistrationRequest(
@@ -399,8 +402,10 @@ internal class StartRegistrationHandler(
                 )
             }
 
-            val differentNotaryServiceVnodeNameFn = { "The virtual node and the notary service `${notary.serviceName}`" +
-                    " name cannot be the same." }
+            val differentNotaryServiceVnodeNameFn = {
+                "The virtual node and the notary service `${notary.serviceName}`" +
+                    " name cannot be the same."
+            }
             // The notary service x500 name is different from the notary virtual node being registered.
             validateRegistrationRequest(
                 member.name != notary.serviceName,
@@ -433,7 +438,7 @@ internal class StartRegistrationHandler(
             )
 
             if (member.ledgerKeys.isNotEmpty()) {
-                  throw InvalidRegistrationRequestException(DECLINED_REASON_NOTARY_LEDGER_KEY, DECLINED_REASON_NOTARY_LEDGER_KEY)
+                throw InvalidRegistrationRequestException(DECLINED_REASON_NOTARY_LEDGER_KEY, DECLINED_REASON_NOTARY_LEDGER_KEY)
             }
         }
 

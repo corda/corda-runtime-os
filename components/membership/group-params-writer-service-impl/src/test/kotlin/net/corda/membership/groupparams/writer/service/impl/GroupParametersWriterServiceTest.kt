@@ -245,8 +245,6 @@ class GroupParametersWriterServiceTest {
             val ex2 = assertThrows<IllegalStateException> { writerService.remove(viewOwner) }
             assertThat(ex2.message).contains("inactive")
         }
-
-
     }
 
     @Nested

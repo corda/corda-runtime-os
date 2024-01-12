@@ -11,9 +11,8 @@ import net.corda.virtualnode.toCorda
 import java.time.Instant
 import javax.persistence.criteria.Predicate
 
-internal class QueryRegistrationRequestsHandler(persistenceHandlerServices: PersistenceHandlerServices)
-    :BaseRequestStatusHandler<QueryRegistrationRequests, RegistrationRequestsQueryResponse>(persistenceHandlerServices)
-{
+internal class QueryRegistrationRequestsHandler(persistenceHandlerServices: PersistenceHandlerServices) :
+    BaseRequestStatusHandler<QueryRegistrationRequests, RegistrationRequestsQueryResponse>(persistenceHandlerServices) {
     override val operation = QueryRegistrationRequests::class.java
     override fun invoke(
         context: MembershipRequestContext,
@@ -21,7 +20,7 @@ internal class QueryRegistrationRequestsHandler(persistenceHandlerServices: Pers
     ): RegistrationRequestsQueryResponse {
         logger.debug {
             "Retrieving registration requests. Request Subject X500 Name=${request.requestSubjectX500Name}, " +
-                    "statuses=${request.statuses}, limit=${request.limit}"
+                "statuses=${request.statuses}, limit=${request.limit}"
         }
         val requestSubject = request.requestSubjectX500Name?.let {
             HoldingIdentity(MemberX500Name.parse(it), context.holdingIdentity.groupId).shortHash
@@ -63,5 +62,4 @@ internal class QueryRegistrationRequestsHandler(persistenceHandlerServices: Pers
             RegistrationRequestsQueryResponse(details)
         }
     }
-
 }
