@@ -18,7 +18,7 @@ dependencies {
     implementation 'org.slf4j:slf4j-api'
     runtimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
 
-    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    testRuntimeOnly libs.slf4j.simple
 
     integrationTestImplementation "net.corda:corda-db-schema"
     integrationTestImplementation project(':components:db:db-connection-manager')

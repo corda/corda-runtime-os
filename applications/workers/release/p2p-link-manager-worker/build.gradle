@@ -33,7 +33,7 @@ dependencies {
     runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
     runtimeOnly project(':libs:tracing-impl')
 
-    runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    runtimeOnly libs.log4j.slf4j
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"

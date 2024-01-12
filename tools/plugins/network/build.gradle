@@ -16,11 +16,7 @@ ext.cordaEnableFormatting = true
 
 dependencies {
     constraints {
-        implementation('org.slf4j:slf4j-api') {
-            version {
-                strictly slf4jV2Version
-            }
-        }
+        implementation libs.slf4j.api
     }
 
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
