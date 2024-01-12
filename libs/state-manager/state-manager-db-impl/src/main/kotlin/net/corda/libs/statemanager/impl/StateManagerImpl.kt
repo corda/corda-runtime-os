@@ -10,6 +10,7 @@ import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.TransactionResult
 import net.corda.libs.statemanager.impl.lifecycle.CheckConnectionEventHandler
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorder
+import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.COMMIT
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.CREATE
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.DELETE
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.FIND
@@ -114,10 +115,11 @@ class StateManagerImpl(
                     stateRepository.update(conn, states.map { it.toPersistentEntity() })
                 }
 
-            getFailedUpdates(failedUpdates)
-        } catch (e: Exception) {
-            logger.warn("Failed to updated batch of states - ${states.joinToString { it.key }}", e)
-            throw e
+                getFailedUpdates(failedUpdates)
+            } catch (e: Exception) {
+                logger.warn("Failed to updated batch of states - ${states.joinToString { it.key }}", e)
+                throw e
+            }
         }
     }
 
@@ -143,44 +145,23 @@ class StateManagerImpl(
         }
 
         try {
-            val transactionSummary = dataSource.connection.transaction { conn ->
-                val creates = stateRepository.create(conn, statesToCreate.map { it.toPersistentEntity() })
-                val updates = stateRepository.update(conn, statesToUpdate.map { it.toPersistentEntity() })
-                val deletes = stateRepository.delete(conn, statesToDelete.map { it.toPersistentEntity() })
-                TransactionSummary(creates.toSet(), updates, deletes.toSet())
-            }
+            return metricsRecorder.recordProcessingTime(COMMIT) {
+                val transactionSummary = dataSource.connection.transaction { conn ->
+                    val creates = stateRepository.create(conn, statesToCreate.map { it.toPersistentEntity() })
+                    val updates = stateRepository.update(conn, statesToUpdate.map { it.toPersistentEntity() })
+                    val deletes = stateRepository.delete(conn, statesToDelete.map { it.toPersistentEntity() })
+                    TransactionSummary(creates.toSet(), updates, deletes.toSet())
+                }
 
-            val failedCreates = getFailedCreates(statesToCreate, transactionSummary.successfulCreate)
-            val failedUpdates = getFailedUpdates(transactionSummary.stateUpdateSummary.failedKeys)
-            val failedDeletes = getFailedDeletes(transactionSummary.failedToDelete)
-            return TransactionResult(failedCreates, failedUpdates, failedDeletes)
+                val failedCreates = getFailedCreates(statesToCreate, transactionSummary.successfulCreate)
+                val failedUpdates = getFailedUpdates(transactionSummary.stateUpdateSummary.failedKeys)
+                val failedDeletes = getFailedDeletes(transactionSummary.failedToDelete)
+                TransactionResult(failedCreates, failedUpdates, failedDeletes)
+            }
         } catch (e: Exception) {
             val keys = (statesToCreate + statesToUpdate + statesToDelete).map { it.key }
             logger.warn("Failed to commit transaction for batch of states - $keys", e)
             throw e
-        }
-    }
-
-    private fun getStatesByKey(states: Set<StateEntity>): Map<String, State> {
-        return states.map {
-            it.fromPersistentEntity()
-        }.associateBy {
-            it.key
-        }
-    }
-
-    private fun getFailedUpdates(failedUpdates: List<String>): Map<String, State?> {
-        if (failedUpdates.isEmpty()) {
-            return emptyMap()
-        }
-
-        val failedByOptimisticLocking = get(failedUpdates)
-        val failedByNotExisting = (failedUpdates - failedByOptimisticLocking.keys)
-
-        var warning = ""
-        if (failedByOptimisticLocking.isNotEmpty()) {
-            warning += "Optimistic locking prevented updates to the following States: " +
-                failedByOptimisticLocking.keys.joinToString(postfix = ". ")
         }
     }
 
