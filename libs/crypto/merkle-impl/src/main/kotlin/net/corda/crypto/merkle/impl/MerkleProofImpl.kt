@@ -104,6 +104,11 @@ class MerkleProofImpl(
             MerkleNode(it.index, digest.leafHash(it.index, it.nonce, it.leafData))
         }
         var pendingNodes = nodeHashes.map { MerkleNodeInfo(it, treeDepth, null) }.toMutableList()
+        fun publishBelow(index: Int) {
+            while (pendingNodes.isNotEmpty() && pendingNodes.first().node.indexWithinLevel < index) {
+                onNewHash(pendingNodes.removeFirst())
+            }
+        }
         var currentSize = treeSize                                 // outer loop variable; the number of
                                                                    // leaves left as we roll up the tree
 
@@ -133,10 +138,8 @@ class MerkleProofImpl(
 
             // Now walk over the hashes at this tree level, striding over 1 or 2 at a time
             var index = 0
+
             while (index < nodeHashes.size) {
-                while (pendingNodes.isNotEmpty() && pendingNodes.first().node.indexWithinLevel <= newItems.size) {
-                    onNewHash(pendingNodes.removeFirst())
-                }
                 val item = nodeHashes[index]
                 // We are at level $treeDepth from the top of the tree (where 1 is the root of the tree),
                 //     and at $index nodes from the left (counting from 0)
@@ -184,6 +187,7 @@ class MerkleProofImpl(
                     // We pair the current element with a hash from the proof
                     val newNode = (if ((item.indexWithinLevel and 1) == 0) {      // Even index means, that the item is on the left
                         // Remember we consumed a proof hash for the right hand child
+                        publishBelow(item.indexWithinLevel+1)
                         onNewHash(MerkleNodeInfo(MerkleNode(item.indexWithinLevel + 1, hashes[hashIndex]), treeDepth + 1, hashIndex))
                         // Make new node with
                         //   - left being current element
@@ -192,6 +196,7 @@ class MerkleProofImpl(
                         MerkleNode(newIndex, newHash)
                     } else {
                         // Remember we consumed a proof hash for the left hand child
+                        publishBelow(item.indexWithinLevel-1)
                         onNewHash(MerkleNodeInfo(MerkleNode(item.indexWithinLevel - 1, hashes[hashIndex]), treeDepth + 1, hashIndex))
                         // Make new node with:
                         //   - left being proof of hash at $hashIndex
@@ -215,7 +220,7 @@ class MerkleProofImpl(
             currentSize = (currentSize + 1) / 2
             // and we have a new set of known elements
             nodeHashes = newItems
-            pendingNodes.map { onNewHash(it) }
+            publishBelow(Int.MAX_VALUE)
             pendingNodes = newPendingNodes
         }
         if (hashIndex != hashes.size) {
@@ -228,7 +233,7 @@ class MerkleProofImpl(
                 "MerkleProof root hash calculation ended with ${nodeHashes.size} node hashes instead of one."
             )
         }
-        pendingNodes.map { onNewHash(it) } //dedup?
+        publishBelow(Int.MAX_VALUE)
 
         return nodeHashes.single().hash
     }
