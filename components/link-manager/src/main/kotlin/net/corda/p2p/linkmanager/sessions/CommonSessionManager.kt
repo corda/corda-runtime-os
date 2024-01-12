@@ -37,7 +37,6 @@ import net.corda.p2p.linkmanager.grouppolicy.networkType
 import net.corda.p2p.linkmanager.grouppolicy.protocolModes
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.membership.lookupByKey
-import net.corda.p2p.linkmanager.sessions.CommonSessionManager.Companion.toBase64
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.badGroupPolicy
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.couldNotFindGroupInfo
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.ourHashNotInMembersMapWarning
@@ -140,7 +139,9 @@ internal class CommonSessionManager(
             hostedIdentityInSameGroup,
             peerMemberInfo,
             p2pParams.networkType
-        ) to session
+        )?.let {
+            it to session
+        }
     }
     fun processInitiatorHandshake(session: AuthenticationProtocolResponder, message: InitiatorHandshakeMessage): LinkOutMessage? {
         val initiatorIdentityData = session.getInitiatorIdentity()
