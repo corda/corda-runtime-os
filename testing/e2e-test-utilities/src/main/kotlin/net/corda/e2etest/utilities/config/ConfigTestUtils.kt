@@ -14,6 +14,14 @@ import org.assertj.core.api.Assertions.fail
 import java.io.IOException
 import java.time.Duration
 
+fun managedConfig(vararg clusters: ClusterInfo, func: (DeprecatedTestConfigManager) -> Unit) {
+    val clusterDedup = clusters.toSet()
+    if(clusterDedup.size > 1) {
+        DeprecatedMultiClusterTestConfigManager(clusterDedup)
+    } else {
+        DeprecatedSingleClusterTestConfigManager(clusterDedup.firstOrNull() ?: DEFAULT_CLUSTER)
+    }.use(func)
+}
 /**
  * Return a config manager for a collection of clusters.
  */
