@@ -413,21 +413,21 @@ class MerkleTreeTest {
         }
         val proofX = proof1.subset(trivialHashDigestProvider, listOf(0))
         assertThat(proofX.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
-            00000612 (calc)┳0000069F (calc)   ┳00000630 (input 1)┳unknown            filtered
-                           ┃                  ┃                  ┗unknown            filtered
-                           ┃                  ┗00000634 (calc)   ┳00000002 (calc)    known leaf
-                           ┃                                     ┗00000003 (input 0) filtered
+            00000612 (calc)┳0000069F (calc)   ┳00000630 (calc)   ┳00000000 (calc)    known leaf
+                           ┃                  ┃                  ┗00000001 (input 0) filtered
+                           ┃                  ┗00000634 (input 1)┳unknown            filtered
+                           ┃                                     ┗unknown            filtered
                            ┗00000638 (input 2)━unknown           ┳unknown            filtered
-                                                                 ┗unknown            filtered         
+                                                                 ┗unknown            filtered   
         """.trimIndent())
         val proofY = proof1.subset(trivialHashDigestProvider, listOf(2))
         assertThat(proofY.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
-                00000612 (calc)┳0000069F (input 1)┳unknown        ┳unknown            filtered
-                               ┃                  ┃               ┗unknown            filtered
-                               ┃                  ┗unknown        ┳unknown            filtered
-                               ┃                                  ┗unknown            filtered
-                               ┗00000638 (calc)   ━00000638 (calc)┳00000004 (calc)    known leaf
-                                                                  ┗00000005 (input 0) filtered      
+                00000612 (calc)┳0000069F (calc)   ┳00000003 (input 1)┳unknown            filtered
+                               ┃                  ┃                  ┗unknown            filtered
+                               ┃                  ┗00000667 (calc)   ┳00000002 (calc)    known leaf
+                               ┃                                     ┗00000630 (input 0) filtered
+                               ┗00000638 (input 2)━unknown           ┳unknown            filtered
+                                                                     ┗unknown            filtered
         """.trimIndent())
         val proofMerged = proofX.merge(proofY, trivialHashDigestProvider)
         assertThat(proofMerged.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
