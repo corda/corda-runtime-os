@@ -120,7 +120,7 @@ class SessionManagerTest {
             Duration.ofMillis(100),
             Duration.ofMillis(500)
         )
-        private val configNoHeartbeat = SessionManagerImpl.SessionHealthManager.SessionHealthManagerConfig(
+        private val configWithHighHeartbeatPeriod = SessionManagerImpl.SessionHealthManager.SessionHealthManagerConfig(
             true,
             Duration.ofMillis(sixDaysInMillis),
             Duration.ofMillis(sixDaysInMillis)
@@ -300,6 +300,7 @@ class SessionManagerTest {
         SESSIONS_PER_COUNTERPARTIES_FOR_MGM,
         RevocationCheckMode.OFF,
         SESSION_REFRESH_THRESHOLD_KEY,
+        true
     )
     private val configWithOneSessionBetweenMembers = SessionManagerImpl.SessionManagerConfig(
         MAX_MESSAGE_SIZE,
@@ -307,6 +308,7 @@ class SessionManagerTest {
         SESSIONS_PER_COUNTERPARTIES_FOR_MGM,
         RevocationCheckMode.OFF,
         SESSION_REFRESH_THRESHOLD_KEY,
+        true
     )
 
     private val sessionManager = SessionManagerImpl(
@@ -335,7 +337,7 @@ class SessionManagerTest {
             null,
             mock(),
         )
-        sessionHealthManagerConfigHandler.applyNewConfiguration(configNoHeartbeat, null, mock())
+        sessionHealthManagerConfigHandler.applyNewConfiguration(configWithHighHeartbeatPeriod, null, mock())
     }
 
     private fun MessageDigest.hash(data: ByteArray): ByteArray {
@@ -1959,6 +1961,7 @@ class SessionManagerTest {
                 SESSIONS_PER_COUNTERPARTIES_FOR_MGM,
                 RevocationCheckMode.OFF,
                 SESSION_REFRESH_THRESHOLD_KEY,
+                true
             ),
             resourcesHolder,
         )

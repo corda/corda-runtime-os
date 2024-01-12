@@ -77,7 +77,6 @@ import net.corda.schema.Schemas.P2P.SESSION_OUT_PARTITIONS
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.VisibleForTesting
 import net.corda.utilities.time.Clock
-import net.corda.utilities.trace
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
@@ -148,7 +147,8 @@ internal class SessionManagerImpl(
             2,
             1,
             RevocationCheckMode.OFF,
-            432000
+            432000,
+            true
         )
     )
 
@@ -206,6 +206,7 @@ internal class SessionManagerImpl(
         val sessionsPerPeerForMgm: Int,
         val revocationConfigMode: RevocationCheckMode,
         val sessionRefreshThreshold: Int,
+        val heartbeatsEnabled: Boolean
     )
 
     internal inner class SessionManagerConfigChangeHandler : ConfigurationChangeHandler<SessionManagerConfig>(
@@ -255,6 +256,7 @@ internal class SessionManagerImpl(
             config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_FOR_MGM_KEY),
             config.getEnum(RevocationCheckMode::class.java, LinkManagerConfiguration.REVOCATION_CHECK_KEY),
             config.getInt(LinkManagerConfiguration.SESSION_REFRESH_THRESHOLD_KEY),
+            config.getBoolean(LinkManagerConfiguration.HEARTBEAT_ENABLED_KEY)
         )
     }
 
