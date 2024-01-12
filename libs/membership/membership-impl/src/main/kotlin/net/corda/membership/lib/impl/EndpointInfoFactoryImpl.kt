@@ -13,4 +13,4 @@ class EndpointInfoFactoryImpl : EndpointInfoFactory {
 }
 
 fun NetworkHostAndPort.toEndpointInfo(protocolVersion: Int = EndpointInfoFactory.DEFAULT_PROTOCOL_VERSION) =
-    EndpointInfoImpl("https://${host}:${port}", protocolVersion)
+    EndpointInfoImpl("https://$host:$port", protocolVersion)

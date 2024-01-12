@@ -92,6 +92,7 @@ internal class ExpirationProcessorImpl internal constructor(
     }
 
     private val coordinatorName = LifecycleCoordinatorName.forComponent<ExpirationProcessor>()
+
     // Component lifecycle coordinator
     private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, ::handleEvent)
 
@@ -259,22 +260,26 @@ internal class ExpirationProcessorImpl internal constructor(
 
     private fun handleDeclineExpiredRequestsEvent(mgm: HoldingIdentity, expirationDate: Long) {
         try {
-            if(!impl.cancelOrScheduleProcessingOfExpiredRequests(mgm)) return
-            logger.info("Process expired registration requests submitted for membership group '${mgm.groupId}' " +
-                    "managed by MGM '${mgm.x500Name}'.")
+            if (!impl.cancelOrScheduleProcessingOfExpiredRequests(mgm)) return
+            logger.info(
+                "Process expired registration requests submitted for membership group '${mgm.groupId}' " +
+                    "managed by MGM '${mgm.x500Name}'."
+            )
             val requests = membershipQueryClient.queryRegistrationRequests(
                 viewOwningIdentity = mgm,
                 statuses = listOf(PENDING_MEMBER_VERIFICATION)
             ).getOrThrow()
             val now = clock.instant()
             val records = requests.mapNotNull {
-                if(now.minusMillis(it.registrationLastModified.toEpochMilli()) > Instant.ofEpochMilli(expirationDate)) {
+                if (now.minusMillis(it.registrationLastModified.toEpochMilli()) > Instant.ofEpochMilli(expirationDate)) {
                     logger.info("Registration request with ID '${it.registrationId}' expired. Declining request.")
                     val id = virtualNodeInfoReadService
                         .getByHoldingIdentityShortHash(ShortHash.of(it.holdingIdentityId))
                         ?.holdingIdentity
-                        ?: throw IllegalArgumentException("Cannot find information for " +
-                                "holding identity with ID '${it.holdingIdentityId}'.")
+                        ?: throw IllegalArgumentException(
+                            "Cannot find information for " +
+                                "holding identity with ID '${it.holdingIdentityId}'."
+                        )
                     Record(
                         topic = REGISTRATION_COMMAND_TOPIC,
                         key = "${id.x500Name}-${id.groupId}",
@@ -290,11 +295,16 @@ internal class ExpirationProcessorImpl internal constructor(
                 }
             }
             publishRecords(records)
-            logger.info("Published decline registration command for expired registration requests for " +
-                    "membership group '${mgm.groupId}' managed by MGM '${mgm.x500Name}'.")
+            logger.info(
+                "Published decline registration command for expired registration requests for " +
+                    "membership group '${mgm.groupId}' managed by MGM '${mgm.x500Name}'."
+            )
         } catch (e: Exception) {
-            logger.warn("Could not process expired registration requests for membership group '${mgm.groupId}' " +
-                    "managed by MGM '${mgm.x500Name}'.", e)
+            logger.warn(
+                "Could not process expired registration requests for membership group '${mgm.groupId}' " +
+                    "managed by MGM '${mgm.x500Name}'.",
+                e
+            )
         }
     }
 

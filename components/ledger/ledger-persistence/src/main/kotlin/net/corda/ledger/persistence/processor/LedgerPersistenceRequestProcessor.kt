@@ -18,8 +18,6 @@ import net.corda.utilities.translateFlowContextToMDC
 import net.corda.utilities.withMDC
 import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
 import net.corda.virtualnode.toCorda
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.time.Duration
 
 /**
@@ -36,21 +34,18 @@ class LedgerPersistenceRequestProcessor(
     override val requestClass = LedgerPersistenceRequest::class.java
     override val responseClass = FlowEvent::class.java
 
-    private companion object {
-        val log: Logger = LoggerFactory.getLogger(LedgerPersistenceRequestProcessor::class.java)
-    }
-
     override fun process(request: LedgerPersistenceRequest): FlowEvent {
         val startTime = System.nanoTime()
         val clientRequestId =
             request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
         val holdingIdentity = request.holdingIdentity.toCorda()
+        val requestId = request.flowExternalEventContext.requestId
 
         val result =
             withMDC(
                 mapOf(
                     MDC_CLIENT_ID to clientRequestId,
-                    MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
+                    MDC_EXTERNAL_EVENT_ID to requestId
                 ) + translateFlowContextToMDC(request.flowExternalEventContext.contextProperties.toMap())
             ) {
                 try {

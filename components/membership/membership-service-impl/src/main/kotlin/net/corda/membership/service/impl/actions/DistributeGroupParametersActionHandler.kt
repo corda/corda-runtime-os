@@ -70,15 +70,19 @@ class DistributeGroupParametersActionHandler(
         // If not, republish the distribute command to be processed later when the updated set of group parameters
         // is available.
         val groupParameters = groupReader.groupParameters ?: return recordToRequeueDistribution(key, request) {
-            logger.info("Retrieved group parameters are null. Republishing the distribute command to be processed later when set of " +
-                    "group parameters with epoch ${request.minimumGroupParametersEpoch} is available.")
+            logger.info(
+                "Retrieved group parameters are null. Republishing the distribute command to be processed later when set of " +
+                    "group parameters with epoch ${request.minimumGroupParametersEpoch} is available."
+            )
         }
         request.minimumGroupParametersEpoch?.let {
             if (it > groupParameters.epoch) {
                 return recordToRequeueDistribution(key, request) {
-                    logger.info("Retrieved group parameters are outdated (current epoch ${groupParameters.epoch}). Republishing the " +
+                    logger.info(
+                        "Retrieved group parameters are outdated (current epoch ${groupParameters.epoch}). Republishing the " +
                             "distribute command to be processed later when the set of group parameters with epoch " +
-                            "${request.minimumGroupParametersEpoch} is available.")
+                            "${request.minimumGroupParametersEpoch} is available."
+                    )
                 }
             }
         }
@@ -92,8 +96,11 @@ class DistributeGroupParametersActionHandler(
             membershipPackageFactory(groupParameters)
         } catch (except: CordaRuntimeException) {
             return recordToRequeueDistribution(key, request) {
-                logger.warn("Failed to create membership package for distribution of group parameters to the rest of " +
-                        "the group. Distribution will be reattempted.", except)
+                logger.warn(
+                    "Failed to create membership package for distribution of group parameters to the rest of " +
+                        "the group. Distribution will be reattempted.",
+                    except
+                )
             }
         }
 

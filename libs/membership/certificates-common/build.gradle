@@ -5,6 +5,8 @@ plugins {
 
 description 'Certificate common classes'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
 

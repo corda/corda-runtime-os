@@ -23,7 +23,6 @@ import net.corda.crypto.service.impl.infra.ActResult
 import net.corda.crypto.service.impl.infra.ActResultTimestamps
 import net.corda.crypto.service.impl.infra.act
 import net.corda.crypto.service.impl.infra.assertClose
-import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -271,18 +270,6 @@ class CryptoFlowOpsProcessorTests {
                  externalEventResponseFactory.platformError(
                      eq(flowExternalEventContexts[it]),
                      any<Throwable>()
-                 )
-             ).thenReturn(
-                 Record(
-                     Schemas.Flow.FLOW_EVENT_TOPIC,
-                     flowExternalEventContexts[it].flowId,
-                     FlowEvent()
-                 )
-             )
-             whenever(
-                 externalEventResponseFactory.transientError(
-                     eq(flowExternalEventContexts[it]),
-                     any<ExceptionEnvelope>()
                  )
              ).thenReturn(
                  Record(

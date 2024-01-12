@@ -95,14 +95,16 @@ class MgmRegistrationRequestHandlerTest {
         )
         mgmRegistrationRequestHandler.throwIfRegistrationAlreadyApproved(holdingIdentity)
         verify(membershipQueryClient).queryRegistrationRequests(
-            eq(holdingIdentity), eq(null), eq(RegistrationStatus.values().toList()), eq(null)
+            eq(holdingIdentity),
+            eq(null),
+            eq(RegistrationStatus.values().toList()),
+            eq(null)
         )
     }
 
     @Test
     fun `expected exception thrown if registration request persistence fails`() {
-        whenever(operation.execute()).
-            doReturn(MembershipPersistenceResult.Failure(""))
+        whenever(operation.execute()).doReturn(MembershipPersistenceResult.Failure(""))
         val serialisedPayload = "test".toByteArray()
         whenever(cordaAvroSerializer.serialize(any())).thenReturn(serialisedPayload)
 
@@ -167,7 +169,10 @@ class MgmRegistrationRequestHandlerTest {
         }
         whenever(
             membershipQueryClient.queryRegistrationRequests(
-                eq(holdingIdentity), eq(holdingIdentity.x500Name), eq(listOf(RegistrationStatus.APPROVED)), isNull()
+                eq(holdingIdentity),
+                eq(holdingIdentity.x500Name),
+                eq(listOf(RegistrationStatus.APPROVED)),
+                isNull()
             )
         ).thenReturn(MembershipQueryResult.Success(listOf(oldRequest, newRequest)))
         assertThat(mgmRegistrationRequestHandler.getLastRegistrationRequest(holdingIdentity)).isEqualTo(newRequest)

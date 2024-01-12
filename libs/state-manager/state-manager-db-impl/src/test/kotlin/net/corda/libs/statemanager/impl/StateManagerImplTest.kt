@@ -3,6 +3,8 @@ package net.corda.libs.statemanager.impl
 import net.corda.db.core.CloseableDataSource
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.metadata
+import net.corda.libs.statemanager.impl.metrics.MetricsRecorder
+import net.corda.libs.statemanager.impl.metrics.MetricsRecorderImpl
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.repository.StateRepository
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -14,6 +16,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.spy
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
@@ -22,13 +25,15 @@ import java.sql.Connection
 import java.time.Instant
 
 class StateManagerImplTest {
-    private val connection: Connection = mock { }
+    private val connection: Connection = mock()
     private val stateRepository: StateRepository = mock()
+    private val metricsRecorder: MetricsRecorder = spy<MetricsRecorderImpl>()
     private val dataSource: CloseableDataSource = mock {
         on { connection } doReturn connection
     }
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock {}
-    private val stateManager = StateManagerImpl(lifecycleCoordinatorFactory, dataSource, stateRepository)
+    private val stateManager =
+        StateManagerImpl(lifecycleCoordinatorFactory, dataSource, stateRepository, metricsRecorder)
 
     private val persistentStateOne = StateEntity("key1", "state1".toByteArray(), "{}", 1, Instant.now())
     private val apiStateOne = persistentStateOne.toState()

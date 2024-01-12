@@ -76,7 +76,7 @@ class BaseRequestStatusHandlerTest {
     private val persistenceHandlerServices = mock<PersistenceHandlerServices> {
         on { cordaAvroSerializationFactory } doReturn serializationFactory
     }
-    private val handler = object: BaseRequestStatusHandler<String, String>(persistenceHandlerServices) {
+    private val handler = object : BaseRequestStatusHandler<String, String>(persistenceHandlerServices) {
         override val operation = String::class.java
         override fun invoke(context: MembershipRequestContext, request: String): String {
             // Do nothing...
@@ -90,7 +90,7 @@ class BaseRequestStatusHandlerTest {
             entity.toDetails()
         }
 
-        assertSoftly {softly ->
+        assertSoftly { softly ->
             softly.assertThat(details.registrationId).isEqualTo(REGISTRATION_ID)
             softly.assertThat(details.registrationSent).isEqualTo(sent)
             softly.assertThat(details.registrationLastModified).isEqualTo(modified)

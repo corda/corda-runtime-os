@@ -7,26 +7,35 @@
                         key="thrown"
                         format="JSON"
                         value='{
-    "message": {
-      "$resolver": "exception",
-      "field": "message"
-    },
-    "name": {
-      "$resolver": "exception",
-      "field": "className"
-    },
-    "extendedStackTrace": {
-      "$resolver": "exception",
-      "field": "stackTrace",
-      "stackTrace": {
-        "stringified": true
-      }
-    }
-  }'/>
+                    "message": {
+                      "$resolver": "exception",
+                      "field": "message"
+                    },
+                    "name": {
+                      "$resolver": "exception",
+                      "field": "className"
+                    },
+                    "extendedStackTrace": {
+                      "$resolver": "exception",
+                      "field": "stackTrace",
+                      "stackTrace": {
+                        "stringified": true
+                      }
+                    }
+                  }'/>
+                <EventTemplateAdditionalField key="timestamp" format="JSON">
+                    <value><![CDATA[{
+                    "$resolver": "timestamp",
+                    "pattern": {
+                        "format": "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+                        "timeZone": "UTC"
+                    }
+                }]]></value>
+                </EventTemplateAdditionalField>
             </JsonTemplateLayout>
         </Console>
         <Console name="text" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} %X - %msg%n"/>
+            <PatternLayout pattern="%d{yyyy-MM-dd'T'HH:mm:ss.SSS'Z'}{UTC} [%t] %-5level %logger{36} %X - %msg%n"/>
         </Console>
     </Appenders>
     <Loggers>

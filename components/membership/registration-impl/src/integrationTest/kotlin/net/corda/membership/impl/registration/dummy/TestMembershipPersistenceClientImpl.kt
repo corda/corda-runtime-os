@@ -135,12 +135,18 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     ): MembershipPersistenceOperation<Unit> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.success())
 
     override fun suspendMember(
-        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+        viewOwningIdentity: HoldingIdentity,
+        memberX500Name: MemberX500Name,
+        serialNumber: Long?,
+        reason: String?
     ): MembershipPersistenceOperation<Pair<PersistentMemberInfo, InternalGroupParameters?>> =
         MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
 
     override fun activateMember(
-        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+        viewOwningIdentity: HoldingIdentity,
+        memberX500Name: MemberX500Name,
+        serialNumber: Long?,
+        reason: String?
     ): MembershipPersistenceOperation<Pair<PersistentMemberInfo, InternalGroupParameters?>> =
         MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
 
@@ -150,7 +156,8 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
         MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
 
     override fun updateGroupParameters(
-        viewOwningIdentity: HoldingIdentity, newGroupParameters: Map<String, String>
+        viewOwningIdentity: HoldingIdentity,
+        newGroupParameters: Map<String, String>
     ): MembershipPersistenceOperation<InternalGroupParameters> =
         MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
 
@@ -159,7 +166,6 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun start() = coordinator.start()
 
     override fun stop() {}
-
 
     private class MembershipPersistenceOperationImpl<T>(
         private val results: MembershipPersistenceResult<T>

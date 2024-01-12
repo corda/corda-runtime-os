@@ -2,13 +2,13 @@ package net.corda.membership.rest.v1
 
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.rest.v1.types.RestGroupParameters
+import net.corda.membership.rest.v1.types.response.RestMemberInfoList
 import net.corda.rest.RestResource
 import net.corda.rest.annotations.HttpGET
+import net.corda.rest.annotations.HttpRestResource
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.annotations.RestQueryParameter
-import net.corda.rest.annotations.HttpRestResource
-import net.corda.membership.rest.v1.types.response.RestMemberInfoList
-import net.corda.rest.annotations.RestApiVersion
 
 /**
  * The Member Lookup API consists of endpoints used to look up information related to membership groups. The API allows
@@ -55,8 +55,10 @@ interface MemberLookupRestResource : RestResource {
     @Suppress("LongParameterList")
     @Deprecated("Deprecated in favour of lookupV51")
     fun lookup(
-        @RestPathParameter(description = "Holding identity ID of the requesting member. The result only contains" +
-                " members that are visible to this member")
+        @RestPathParameter(
+            description = "Holding identity ID of the requesting member. The result only contains" +
+                " members that are visible to this member"
+        )
         holdingIdentityShortHash: String,
         @RestQueryParameter(
             name = "cn",
@@ -96,9 +98,9 @@ interface MemberLookupRestResource : RestResource {
         country: String? = null,
         @RestQueryParameter(
             description = "List of statuses (\"ACTIVE\", \"SUSPENDED\") to filter members by. " +
-                    "By default, only ACTIVE members are filtered. Only an MGM can view suspended members. " +
-                    "The v5_1 version of the API allows members to view themselves regardless of their status " +
-                    "(e.g. even if they are suspended).",
+                "By default, only ACTIVE members are filtered. Only an MGM can view suspended members. " +
+                "The v5_1 version of the API allows members to view themselves regardless of their status " +
+                "(e.g. even if they are suspended).",
             required = false,
         )
         statuses: List<String> = listOf(MemberInfoExtension.MEMBER_STATUS_ACTIVE),
@@ -138,8 +140,10 @@ interface MemberLookupRestResource : RestResource {
     )
     @Suppress("LongParameterList")
     fun lookupV51(
-        @RestPathParameter(description = "Holding identity ID of the requesting member. The result only contains" +
-                " members that are visible to this member")
+        @RestPathParameter(
+            description = "Holding identity ID of the requesting member. The result only contains" +
+                " members that are visible to this member"
+        )
         holdingIdentityShortHash: String,
         @RestQueryParameter(
             name = "cn",
@@ -179,9 +183,9 @@ interface MemberLookupRestResource : RestResource {
         country: String? = null,
         @RestQueryParameter(
             description = "List of statuses (\"ACTIVE\", \"SUSPENDED\") to filter members by. " +
-                    "By default, only ACTIVE members are filtered. An MGM can view all suspended members. " +
-                    "A regular member cannot view other suspended members, but can view itself in any status " +
-                    "(e.g. even if it's suspended).",
+                "By default, only ACTIVE members are filtered. An MGM can view all suspended members. " +
+                "A regular member cannot view other suspended members, but can view itself in any status " +
+                "(e.g. even if it's suspended).",
             required = false,
         )
         statuses: List<String> = listOf(MemberInfoExtension.MEMBER_STATUS_ACTIVE),
@@ -207,8 +211,10 @@ interface MemberLookupRestResource : RestResource {
         responseDescription = "The group parameters of the membership group as a map"
     )
     fun viewGroupParameters(
-        @RestPathParameter(description = "Holding identity ID of the requesting member. The result contains group " +
-                "parameters visible to this member.")
+        @RestPathParameter(
+            description = "Holding identity ID of the requesting member. The result contains group " +
+                "parameters visible to this member."
+        )
         holdingIdentityShortHash: String
     ): RestGroupParameters
 }

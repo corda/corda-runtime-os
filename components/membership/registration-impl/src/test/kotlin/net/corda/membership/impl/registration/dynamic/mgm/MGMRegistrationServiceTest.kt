@@ -1,5 +1,7 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
@@ -7,11 +9,9 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.crypto.impl.converter.PublicKeyHashConverter
-import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.avro.serialization.CordaAvroSerializer
-import net.corda.crypto.core.fullIdHash
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -230,9 +230,11 @@ class MGMRegistrationServiceTest {
                 statusUpdate.capture()
             )
         } doReturn persistRegistrationRequestOperation
-        on { persistGroupParametersInitialSnapshot(any()) } doReturn Operation(MembershipPersistenceResult.Success(
-            mockSignedGroupParameters
-        ))
+        on { persistGroupParametersInitialSnapshot(any()) } doReturn Operation(
+            MembershipPersistenceResult.Success(
+                mockSignedGroupParameters
+            )
+        )
     }
     private val serializedMemberContext = byteArrayOf(1)
     private val serializedMgmContext = byteArrayOf(2)
@@ -316,19 +318,21 @@ class MGMRegistrationServiceTest {
     )
     private val signatureSpec = CryptoSignatureSpec("", null, null)
     private val memberInfoFactory: MemberInfoFactory = mock {
-        on { createSelfSignedMemberInfo(
+        on {
+            createSelfSignedMemberInfo(
                 eq(serializedMemberContext),
                 eq(serializedMgmContext),
                 eq(signature),
                 eq(signatureSpec),
             )
         } doReturn signedMemberInfo
-        on { createSelfSignedMemberInfo(
-            eq(serializedMemberContext),
-            eq(serializedMgmContextAfterReRegistration),
-            eq(signature),
-            eq(signatureSpec),
-        )
+        on {
+            createSelfSignedMemberInfo(
+                eq(serializedMemberContext),
+                eq(serializedMgmContextAfterReRegistration),
+                eq(signature),
+                eq(signatureSpec),
+            )
         } doReturn signedMemberInfoAfterReRegistration
         on {
             createPersistentMemberInfo(
@@ -382,9 +386,9 @@ class MGMRegistrationServiceTest {
         "corda.session.keys.0.id" to SESSION_KEY_ID,
         "corda.ecdh.key.id" to ECDH_KEY_ID,
         "corda.group.protocol.registration"
-                to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
+            to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
         "corda.group.protocol.synchronisation"
-                to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
+            to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
         "corda.group.protocol.p2p.mode" to "AUTHENTICATION_ENCRYPTION",
         "corda.group.key.session.policy" to "Combined",
         "corda.group.tls.type" to "OneWay",
@@ -398,7 +402,8 @@ class MGMRegistrationServiceTest {
 
     private val validCertificateDate = GregorianCalendar(2022, Calendar.JULY, 22)
     private val mockClock = Mockito.mockConstruction(UTCClock::class.java) {
-        mock, _ -> whenever(mock.instant()).thenReturn(validCertificateDate.toInstant())
+            mock, _ ->
+        whenever(mock.instant()).thenReturn(validCertificateDate.toInstant())
     }
 
     private fun postStartEvent() {
@@ -485,7 +490,10 @@ class MGMRegistrationServiceTest {
             verify(expirationProcessor).scheduleProcessingOfExpiredRequests(mgm)
             whenever(
                 membershipQueryClient.queryRegistrationRequests(
-                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), isNull()
+                    eq(mgm),
+                    eq(mgm.x500Name),
+                    eq(listOf(RegistrationStatus.APPROVED)),
+                    isNull()
                 )
             ).thenReturn(MembershipQueryResult.Success(listOf(mock())))
             whenever(membershipQueryClient.queryGroupPolicy(mgm))
@@ -540,9 +548,9 @@ class MGMRegistrationServiceTest {
                 .containsExactlyInAnyOrderElementsOf(
                     mapOf(
                         "protocol.registration"
-                                to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
+                            to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
                         "protocol.synchronisation"
-                                to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
+                            to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
                         "protocol.p2p.mode" to "AUTHENTICATION_ENCRYPTION",
                         "tls.type" to "OneWay",
                         "key.session.policy" to "Combined",
@@ -666,7 +674,7 @@ class MGMRegistrationServiceTest {
 
             assertThat(exception).hasMessage(
                 "Onboarding MGM failed. " +
-                        "Provided TLS trust stores are incorrectly numbered."
+                    "Provided TLS trust stores are incorrectly numbered."
             )
             registrationService.stop()
         }
@@ -728,7 +736,10 @@ class MGMRegistrationServiceTest {
             val errorMsg = "Persistence failure"
             whenever(
                 membershipQueryClient.queryRegistrationRequests(
-                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), isNull()
+                    eq(mgm),
+                    eq(mgm.x500Name),
+                    eq(listOf(RegistrationStatus.APPROVED)),
+                    isNull()
                 )
             ).thenReturn(MembershipQueryResult.Failure(errorMsg))
 
@@ -752,7 +763,10 @@ class MGMRegistrationServiceTest {
             val errorMsg = "Persistence failure"
             whenever(
                 membershipQueryClient.queryRegistrationRequests(
-                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), isNull()
+                    eq(mgm),
+                    eq(mgm.x500Name),
+                    eq(listOf(RegistrationStatus.APPROVED)),
+                    isNull()
                 )
             ).thenReturn(MembershipQueryResult.Success(listOf(mock())))
             whenever(
@@ -778,7 +792,10 @@ class MGMRegistrationServiceTest {
 
             whenever(
                 membershipQueryClient.queryRegistrationRequests(
-                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), isNull()
+                    eq(mgm),
+                    eq(mgm.x500Name),
+                    eq(listOf(RegistrationStatus.APPROVED)),
+                    isNull()
                 )
             ).thenReturn(MembershipQueryResult.Success(listOf(mock())))
             val oldMemberContext = mock<MemberContext> {
@@ -831,11 +848,13 @@ class MGMRegistrationServiceTest {
                 on { groupId } doReturn GROUP_ID
                 on { serial } doReturn 1
             }
-            whenever(memberInfoFactory.createSelfSignedMemberInfo(
-                eq(serializedMemberContext),
-                eq(serializedMgmContextAfterReRegistration),
-                eq(signature),
-                eq(signatureSpec),)
+            whenever(
+                memberInfoFactory.createSelfSignedMemberInfo(
+                    eq(serializedMemberContext),
+                    eq(serializedMgmContextAfterReRegistration),
+                    eq(signature),
+                    eq(signatureSpec),
+                )
             ).thenReturn(signedMemberInfoAfterReRegistration)
 
             // second registration
@@ -844,7 +863,7 @@ class MGMRegistrationServiceTest {
                     reRegistrationRequestId,
                     mgm,
                     properties.filterNot { it.key.startsWith(PARTY_SESSION_KEYS_PEM) } +
-                            mapOf(PARTY_SESSION_KEYS_PEM.format(0) to invalidKey)
+                        mapOf(PARTY_SESSION_KEYS_PEM.format(0) to invalidKey)
                 )
             }.message
             assertThat(message)
@@ -874,7 +893,10 @@ class MGMRegistrationServiceTest {
 
             whenever(
                 membershipQueryClient.queryRegistrationRequests(
-                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), isNull()
+                    eq(mgm),
+                    eq(mgm.x500Name),
+                    eq(listOf(RegistrationStatus.APPROVED)),
+                    isNull()
                 )
             ).thenReturn(MembershipQueryResult.Success(listOf(mock())))
             whenever(membershipQueryClient.queryGroupPolicy(mgm))
@@ -886,10 +908,10 @@ class MGMRegistrationServiceTest {
                     reRegistrationRequestId,
                     mgm,
                     properties.filterNot { it.key == "corda.group.protocol.registration" } +
-                            mapOf(
-                                "corda.group.protocol.registration" to
-                                        "net.corda.membership.impl.registration.static.member.StaticMemberRegistrationService"
-                            )
+                        mapOf(
+                            "corda.group.protocol.registration" to
+                                "net.corda.membership.impl.registration.static.member.StaticMemberRegistrationService"
+                        )
                 )
             }.message
             assertThat(message)
@@ -919,7 +941,10 @@ class MGMRegistrationServiceTest {
 
             whenever(
                 membershipQueryClient.queryRegistrationRequests(
-                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), isNull()
+                    eq(mgm),
+                    eq(mgm.x500Name),
+                    eq(listOf(RegistrationStatus.APPROVED)),
+                    isNull()
                 )
             ).thenReturn(MembershipQueryResult.Success(listOf(mock())))
             whenever(membershipQueryClient.queryGroupPolicy(mgm))
@@ -958,7 +983,10 @@ class MGMRegistrationServiceTest {
 
             whenever(
                 membershipQueryClient.queryRegistrationRequests(
-                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), isNull()
+                    eq(mgm),
+                    eq(mgm.x500Name),
+                    eq(listOf(RegistrationStatus.APPROVED)),
+                    isNull()
                 )
             ).thenReturn(MembershipQueryResult.Success(listOf(mock())))
             whenever(membershipQueryClient.queryGroupPolicy(mgm))

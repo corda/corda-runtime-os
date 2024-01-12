@@ -36,4 +36,3 @@ fun LayeredPropertyMap.toWire(): KeyValuePairList {
  * Transforms [MemberContext] into map.
  */
 fun MemberContext.toMap() = entries.associate { it.key to it.value }
-
