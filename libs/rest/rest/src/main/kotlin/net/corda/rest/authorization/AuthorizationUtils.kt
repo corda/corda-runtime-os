@@ -9,7 +9,11 @@ object AuthorizationUtils {
     const val METHOD_MDC = "http.method"
     const val PATH_MDC = "http.path"
 
-    fun authorize(authorizingSubject: AuthorizingSubject, resourceAccessString: String, authorizationProvider: AuthorizationProvider? = null) : Boolean {
+    fun authorize(
+        authorizingSubject: AuthorizingSubject,
+        resourceAccessString: String,
+        authorizationProvider: AuthorizationProvider? = null
+    ): Boolean {
         val principal = authorizingSubject.principal
         log.trace("Authorize \"$principal\" for \"$resourceAccessString\".")
 

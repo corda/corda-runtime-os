@@ -1,8 +1,8 @@
 package net.corda.rest.security.read
 
 import net.corda.lifecycle.Lifecycle
-import net.corda.rest.security.AuthServiceId
 import net.corda.rest.authorization.AuthorizingSubject
+import net.corda.rest.security.AuthServiceId
 import javax.security.auth.login.FailedLoginException
 
 /**

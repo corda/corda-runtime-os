@@ -104,6 +104,7 @@ class PermissionUserManagerImpl(
         return result.convertToResponseDto()
     }
 
+    @Suppress("ThrowsCount")
     private fun validatePasswordAndGetHash(username: String, newPassword: String): PasswordHash {
         if (newPassword.isBlank()) {
             throw IllegalArgumentException("The passphrase must not be blank string.")

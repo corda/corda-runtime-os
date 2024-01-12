@@ -202,7 +202,6 @@ internal class RestServerInternal(
                         if (!authorize(authorizingSubject, resourceAccessString, authorizationProvider)) {
                             userNotAuthorized(authorizingSubject.principal, resourceAccessString)
                         }
-
                     } else {
                         log.debug { "Call to ${it.path()} for method ${it.method()} identified as an exempt from authorization check." }
                     }

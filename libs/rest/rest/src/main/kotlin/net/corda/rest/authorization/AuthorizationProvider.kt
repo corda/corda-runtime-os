@@ -1,7 +1,5 @@
 package net.corda.rest.authorization
 
-import net.corda.rest.exception.ForbiddenException
-
 interface AuthorizationProvider {
     /**
      * Checks if the given subject is authorized to perform the specified action.

@@ -5,12 +5,11 @@ import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse
 import io.javalin.http.UnauthorizedResponse
 import net.corda.metrics.CordaMetrics
-import net.corda.rest.authorization.AuthorizationProvider
 import net.corda.rest.authorization.AuthorizationUtils
+import net.corda.rest.authorization.AuthorizingSubject
 import net.corda.rest.exception.HttpApiException
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.security.Actor
-import net.corda.rest.authorization.AuthorizingSubject
 import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.rest.security.InvocationContext
 import net.corda.rest.security.RestAuthContext
@@ -40,7 +39,14 @@ internal object ContextUtils {
     private const val CORDA_X500_NAME = "O=HTTP REST Server, L=New York, C=US"
 
     private fun <T> withMDC(user: String, method: String, path: String, block: () -> T): T {
-        return withMDC(listOf(AuthorizationUtils.USER_MDC to user, AuthorizationUtils.METHOD_MDC to method, AuthorizationUtils.PATH_MDC to path).toMap(), block)
+        return withMDC(
+            listOf(
+                AuthorizationUtils.USER_MDC to user,
+                AuthorizationUtils.METHOD_MDC to method,
+                AuthorizationUtils.PATH_MDC to path
+            ).toMap(),
+            block
+        )
     }
 
     private fun String.loggerFor(): Logger {

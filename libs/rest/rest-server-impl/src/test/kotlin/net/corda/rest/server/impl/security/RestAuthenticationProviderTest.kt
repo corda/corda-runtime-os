@@ -1,6 +1,5 @@
 package net.corda.rest.server.impl.security
 
-import io.javalin.http.ForbiddenResponse
 import net.corda.rest.RestResource
 import net.corda.rest.authorization.AuthorizationUtils
 import net.corda.rest.authorization.AuthorizingSubject
@@ -14,7 +13,6 @@ import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -32,7 +30,7 @@ class RestAuthenticationProviderTest {
 
     private companion object {
 
-        private fun authorize(authenticatedUser: AuthorizingSubject, method: Method) {
+        private fun authorize(authenticatedUser: AuthorizingSubject, method: Method): Boolean {
             return AuthorizationUtils.authorize(authenticatedUser, methodFullName(method))
         }
 
@@ -121,13 +119,8 @@ class RestAuthenticationProviderTest {
 
         val authenticatedBob = restAuthProvider.authenticate(UsernamePasswordAuthenticationCredentials(userBob.username, password))
 
-        assertThrows(ForbiddenResponse::class.java) {
-            authorize(authenticatedBob, TestRestResource::class.java.getMethod("dummy"))
-        }
-
-        assertDoesNotThrow {
-            authorize(authenticatedBob, TestRestResource::class.java.getMethod("dummy2"))
-        }
+        assert(authorize(authenticatedBob, TestRestResource::class.java.getMethod("dummy")))
+        assert(authorize(authenticatedBob, TestRestResource::class.java.getMethod("dummy2")))
     }
 
     @Test
@@ -137,12 +130,8 @@ class RestAuthenticationProviderTest {
 
         val authenticatedAlice = restAuthProvider.authenticate(UsernamePasswordAuthenticationCredentials(userAlice.username, password))
 
-        assertDoesNotThrow {
-            authorize(authenticatedAlice, TestRestResource::class.java.getMethod("dummy"))
-        }
-        assertDoesNotThrow {
-            authorize(authenticatedAlice, TestRestResource::class.java.getMethod("dummy2"))
-        }
+        assert(authorize(authenticatedAlice, TestRestResource::class.java.getMethod("dummy")))
+        assert(authorize(authenticatedAlice, TestRestResource::class.java.getMethod("dummy2")))
     }
 
     @Test
