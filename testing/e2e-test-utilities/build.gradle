@@ -6,7 +6,9 @@ plugins {
 description 'E2E test utilities'
 
 dependencies {
-    implementation libs.slf4j.api
+    constraints {
+        implementation(libs.slf4j.api)
+    }
 
     api libs.jetty.websocket.client
 
@@ -20,7 +22,6 @@ dependencies {
     implementation libs.assertj.core
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinCoroutinesVersion"
     implementation libs.junit.api
-    implementation libs.slf4j.api
 
     implementation project(':components:flow:flow-rest-resource-service')
     implementation project(':libs:crypto:certificate-generation')
