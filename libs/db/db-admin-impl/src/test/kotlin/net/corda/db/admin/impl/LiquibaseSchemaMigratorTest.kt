@@ -34,7 +34,7 @@ class LiquibaseSchemaMigratorTest {
     private val writer = mock<Writer>()
 
     private val migrator: LiquibaseSchemaMigrator =
-        LiquibaseSchemaMigratorImpl(lbFactory, dbFactory, runChanges = false)
+        LiquibaseSchemaMigratorImpl(lbFactory, dbFactory)
 
     @Test
     fun `when updateDb create LB object`() {

@@ -42,8 +42,7 @@ class LiquibaseSchemaMigratorImpl(
             DatabaseFactory
                 .getInstance()
                 .findCorrectDatabaseImplementation(JdbcConnection(connection))
-        },
-    private val runChanges: Boolean = true
+        }
 ) : LiquibaseSchemaMigrator {
     companion object {
         // default schema
@@ -156,7 +155,7 @@ class LiquibaseSchemaMigratorImpl(
                             lb.changeLogParameters
                         )
                         .addArgumentValue(TagCommandStep.TAG_ARG, tag)
-                    if (runChanges) {
+                    if (null == sql) {
                         command.execute()
                     }
                 }
