@@ -32,7 +32,11 @@ class RestAuthenticationProviderTest {
 
     private companion object {
 
-        private fun authorize(authenticatedUser: AuthorizingSubject, method: Method, authorizationProvider: AuthorizationProvider? = null): Boolean {
+        private fun authorize(
+            authenticatedUser: AuthorizingSubject,
+            method: Method,
+            authorizationProvider: AuthorizationProvider? = null
+        ): Boolean {
             return AuthorizationUtils.authorize(authenticatedUser, methodFullName(method), authorizationProvider)
         }
 
@@ -155,7 +159,7 @@ class RestAuthenticationProviderTest {
 
         val authenticatedAlice = restAuthProvider.authenticate(UsernamePasswordAuthenticationCredentials(userAlice.username, password))
 
-        assertFalse(authorize(authenticatedAlice, TestRestResource::class.java.getMethod("dummy") , authorizationProvider))
+        assertFalse(authorize(authenticatedAlice, TestRestResource::class.java.getMethod("dummy"), authorizationProvider))
         assert(authorize(authenticatedAlice, TestRestResource::class.java.getMethod("dummy2"), authorizationProvider))
     }
 
