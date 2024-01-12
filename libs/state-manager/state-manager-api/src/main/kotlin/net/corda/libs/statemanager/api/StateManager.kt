@@ -75,7 +75,7 @@ interface StateManager : Lifecycle {
      * @param statesToCreate States to create in the state storage.
      * @param statesToUpdate States to update in the state storage.
      * @param statesToDelete States to delete in the state storage.
-     * @return Details about the success or failure of the create, update and delete operations
+     * @return Details about the success or failure of create, update and delete operations.
      */
     fun commit(
         statesToCreate: Collection<State>,
