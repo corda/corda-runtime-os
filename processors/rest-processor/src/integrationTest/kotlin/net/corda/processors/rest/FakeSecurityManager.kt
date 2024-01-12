@@ -1,10 +1,10 @@
 package net.corda.processors.rest
 
-import javax.security.auth.login.FailedLoginException
 import net.corda.rest.authorization.AuthorizingSubject
 import net.corda.rest.security.AuthServiceId
 import net.corda.rest.security.read.Password
 import net.corda.rest.security.read.RestSecurityManager
+import javax.security.auth.login.FailedLoginException
 
 /**
  * Note: We cannot use `FakeSecurityManager` from "net.corda.rest.test.utils" as this is non-OSGi module.
