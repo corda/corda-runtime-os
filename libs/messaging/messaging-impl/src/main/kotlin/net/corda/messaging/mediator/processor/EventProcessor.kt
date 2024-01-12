@@ -1,7 +1,6 @@
 package net.corda.messaging.mediator.processor
 
 import net.corda.data.messaging.mediator.MediatorState
-import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorMessage
