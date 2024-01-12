@@ -9,6 +9,12 @@ import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.TransactionResult
 import net.corda.libs.statemanager.impl.lifecycle.CheckConnectionEventHandler
+import net.corda.libs.statemanager.impl.metrics.MetricsRecorder
+import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.CREATE
+import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.DELETE
+import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.FIND
+import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.GET
+import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.UPDATE
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.repository.StateRepository
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -21,6 +27,7 @@ class StateManagerImpl(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val dataSource: CloseableDataSource,
     private val stateRepository: StateRepository,
+    private val metricsRecorder: MetricsRecorder,
 ) : StateManager {
     override val name = LifecycleCoordinatorName(
         "StateManager",
@@ -40,38 +47,74 @@ class StateManagerImpl(
     private fun StateEntity.fromPersistentEntity() =
         State(key, value, version, objectMapper.convertToMetadata(metadata), modifiedTime)
 
+    /**
+     * Internal method to retrieve states by key without recording any metrics.
+     */
+    private fun getByKey(keys: Collection<String>): Map<String, State> {
+        if (keys.isEmpty()) return emptyMap()
+
+        return dataSource.connection.use { connection ->
+            stateRepository.get(connection, keys)
+        }.map {
+            it.fromPersistentEntity()
+        }.associateBy {
+            it.key
+        }
+    }
+
+    private fun getFailedUpdates(failedUpdates: List<String>): Map<String, State?> {
+        val failedByOptimisticLocking = getByKey(failedUpdates)
+        val failedByNotExisting = (failedUpdates - failedByOptimisticLocking.keys)
+
+        var warning = ""
+        if (failedByOptimisticLocking.isNotEmpty()) {
+            warning += "Optimistic locking prevented updates to the following States: " +
+                failedByOptimisticLocking.keys.joinToString(postfix = ". ")
+        }
+
+        if (failedByNotExisting.isNotEmpty()) {
+            warning += "Failed to update the following States because they did not exist or were already deleted: " +
+                failedByNotExisting.joinToString(postfix = ".")
+        }
+
+        logger.warn(warning)
+
+        return failedByOptimisticLocking + (failedByNotExisting.associateWith { null })
+    }
+
     override fun create(states: Collection<State>): Set<String> {
         if (states.isEmpty()) return emptySet()
-        val successfulKeys = dataSource.connection.transaction { connection ->
-            stateRepository.create(connection, states.map { it.toPersistentEntity() })
+
+        return metricsRecorder.recordProcessingTime(CREATE) {
+            val successfulKeys = dataSource.connection.transaction { connection ->
+                stateRepository.create(connection, states.map { it.toPersistentEntity() })
+            }
+
+            getFailedCreates(states, successfulKeys.toSet())
         }
-        return getFailedCreates(states, successfulKeys.toSet())
     }
 
     private fun getFailedCreates(states: Collection<State>, successfulKeys: Set<String>) =
         states.map { it.key }.toSet() - successfulKeys
 
     override fun get(keys: Collection<String>): Map<String, State> {
-        return if (keys.isEmpty()) {
-            emptyMap()
-        } else {
-            val results = dataSource.connection.use { connection ->
-                stateRepository.get(connection, keys)
-            }
+        if (keys.isEmpty()) return emptyMap()
 
-            return getStatesByKey(results.toSet())
+        return metricsRecorder.recordProcessingTime(GET) {
+            getByKey(keys)
         }
     }
 
     override fun update(states: Collection<State>): Map<String, State?> {
         if (states.isEmpty()) return emptyMap()
 
-        try {
-            val (_, failedUpdates) = dataSource.connection.transaction { conn ->
-                stateRepository.update(conn, states.map { it.toPersistentEntity() })
-            }
+        return metricsRecorder.recordProcessingTime(UPDATE) {
+            try {
+                val (_, failedUpdates) = dataSource.connection.transaction { conn ->
+                    stateRepository.update(conn, states.map { it.toPersistentEntity() })
+                }
 
-            return getFailedUpdates(failedUpdates)
+            getFailedUpdates(failedUpdates)
         } catch (e: Exception) {
             logger.warn("Failed to updated batch of states - ${states.joinToString { it.key }}", e)
             throw e
@@ -139,29 +182,22 @@ class StateManagerImpl(
             warning += "Optimistic locking prevented updates to the following States: " +
                 failedByOptimisticLocking.keys.joinToString(postfix = ". ")
         }
-
-        if (failedByNotExisting.isNotEmpty()) {
-            warning += "Failed to update the following States because they did not exist or were already deleted: " +
-                failedByNotExisting.joinToString(postfix = ".")
-        }
-
-        logger.warn(warning)
-
-        return failedByOptimisticLocking + (failedByNotExisting.associateWith { null })
     }
 
     override fun delete(states: Collection<State>): Map<String, State> {
         if (states.isEmpty()) return emptyMap()
 
-        try {
-            val failedDeletes = dataSource.connection.transaction { connection ->
-                stateRepository.delete(connection, states.map { it.toPersistentEntity() })
-            }
+        return metricsRecorder.recordProcessingTime(DELETE) {
+            try {
+                val failedDeletes = dataSource.connection.transaction { connection ->
+                    stateRepository.delete(connection, states.map { it.toPersistentEntity() })
+                }
 
-            return getFailedDeletes(failedDeletes)
-        } catch (e: Exception) {
-            logger.warn("Failed to delete batch of states - ${states.joinToString { it.key }}", e)
-            throw e
+                getFailedDeletes(failedDeletes)
+            } catch (e: Exception) {
+                logger.warn("Failed to delete batch of states - ${states.joinToString { it.key }}", e)
+                throw e
+            }
         }
     }
 
@@ -179,17 +215,21 @@ class StateManagerImpl(
     }
 
     override fun updatedBetween(interval: IntervalFilter): Map<String, State> {
-        return dataSource.connection.transaction { connection ->
-            stateRepository.updatedBetween(connection, interval)
+        return metricsRecorder.recordProcessingTime(FIND) {
+            dataSource.connection.use { connection ->
+                stateRepository.updatedBetween(connection, interval)
+            }.map {
+                it.fromPersistentEntity()
+            }.associateBy {
+                it.key
+            }
         }
-            .map { it.fromPersistentEntity() }
-            .associateBy { it.key }
     }
 
     override fun findByMetadataMatchingAll(filters: Collection<MetadataFilter>): Map<String, State> {
-        return if (filters.isEmpty()) {
-            emptyMap()
-        } else {
+        if (filters.isEmpty()) return emptyMap()
+
+        return metricsRecorder.recordProcessingTime(FIND) {
             dataSource.connection.use { connection ->
                 stateRepository.filterByAll(connection, filters)
             }.map {
@@ -201,9 +241,9 @@ class StateManagerImpl(
     }
 
     override fun findByMetadataMatchingAny(filters: Collection<MetadataFilter>): Map<String, State> {
-        return if (filters.isEmpty()) {
-            emptyMap()
-        } else {
+        if (filters.isEmpty()) return emptyMap()
+
+        return metricsRecorder.recordProcessingTime(FIND) {
             dataSource.connection.use { connection ->
                 stateRepository.filterByAny(connection, filters)
             }.map {
@@ -218,12 +258,18 @@ class StateManagerImpl(
         intervalFilter: IntervalFilter,
         metadataFilters: Collection<MetadataFilter>
     ): Map<String, State> {
-        return dataSource.connection.use { connection ->
-            stateRepository.filterByUpdatedBetweenWithMetadataMatchingAll(connection, intervalFilter, metadataFilters)
-        }.map {
-            it.fromPersistentEntity()
-        }.associateBy {
-            it.key
+        return metricsRecorder.recordProcessingTime(FIND) {
+            dataSource.connection.use { connection ->
+                stateRepository.filterByUpdatedBetweenWithMetadataMatchingAll(
+                    connection,
+                    intervalFilter,
+                    metadataFilters
+                )
+            }.map {
+                it.fromPersistentEntity()
+            }.associateBy {
+                it.key
+            }
         }
     }
 
@@ -231,12 +277,18 @@ class StateManagerImpl(
         intervalFilter: IntervalFilter,
         metadataFilters: Collection<MetadataFilter>
     ): Map<String, State> {
-        return dataSource.connection.use { connection ->
-            stateRepository.filterByUpdatedBetweenWithMetadataMatchingAny(connection, intervalFilter, metadataFilters)
-        }.map {
-            it.fromPersistentEntity()
-        }.associateBy {
-            it.key
+        return metricsRecorder.recordProcessingTime(FIND) {
+            dataSource.connection.use { connection ->
+                stateRepository.filterByUpdatedBetweenWithMetadataMatchingAny(
+                    connection,
+                    intervalFilter,
+                    metadataFilters
+                )
+            }.map {
+                it.fromPersistentEntity()
+            }.associateBy {
+                it.key
+            }
         }
     }
 

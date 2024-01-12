@@ -694,6 +694,15 @@ object CordaMetrics {
              */
             class LiveTasks(computation: Supplier<Number>) : ComputedValue<Nothing>("taskmanager.live.tasks", computation)
         }
+
+        object StateManger {
+            private const val PREFIX = "state.manager"
+
+            /**
+             * Time taken to execute a specific State Manager operation.
+             */
+            object ExecutionTime : Metric<Timer>("$PREFIX.execution.time", CordaMetrics::timer)
+        }
     }
 
     /**
