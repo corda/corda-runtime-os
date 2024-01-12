@@ -58,7 +58,8 @@ class CryptoRekeyBusProcessor(
             // Same check is done on the Rest worker side, but if user quickly issues two key rotation commands after each other,
             // it will pass rest worker check as state manager was not yet populated.
             if (!hasPreviousRotationFinished(request.oldParentKeyAlias)) {
-                logger.error("There is already a key rotation of unmanaged wrapping key with alias ${request.oldParentKeyAlias} in progress.")
+                logger.error("There is already a key rotation of unmanaged wrapping key " +
+                        "with alias ${request.oldParentKeyAlias} in progress.")
                 return emptyList()
             }
 
@@ -137,7 +138,8 @@ class CryptoRekeyBusProcessor(
                             wrappingKeyInfo.alias,
                             KeyType.UNMANAGED
                         ),
-                        timestamp // TODO: probably remove timestamp? not sure if we need this here. If we are keeping the track of start time, than yes, this is useful
+                        timestamp // TODO probably remove timestamp? not sure if we need this here.
+                            // If we are keeping the track of start time, than yes, this is useful
                     )
                 }.toList()
             )
@@ -172,5 +174,7 @@ class CryptoRekeyBusProcessor(
         )
 
         // TODO should we throw the exception?
-        if (failedToDelete.isNotEmpty()) println("XXX: RekeyBusProcessor failed to delete following states from the state manager: ${failedToDelete.keys}")    }
+        if (failedToDelete.isNotEmpty()) println("XXX: RekeyBusProcessor failed to delete following states " +
+                "from the state manager: ${failedToDelete.keys}")
+    }
 }

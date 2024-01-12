@@ -43,10 +43,12 @@ class CryptoRewrapBusProcessor(
             // Once rewrap is done, we can update state manager db
             var statusUpdated = false
             while (!statusUpdated) {
-                // rootKeyAlias + tenantId + keyRotation is the unique key, therefore we don't need to do the table search through state manager db
+                // rootKeyAlias + tenantId + keyRotation is the unique key, therefore we don't need to do the table
+                // search through state manager db
                 val tenantIdWrappingKeysRecords =
-                    stateManager!!.get(listOf(request.oldParentKeyAlias + request.tenantId + "keyRotation"))  // rootKeyAlias + tenantId + keyRotation
-                require(tenantIdWrappingKeysRecords.size == 1) { "Found more than 1 ${request.tenantId} records in the database for rootKeyAlias = ${request.oldParentKeyAlias}." }
+                    stateManager!!.get(listOf(request.oldParentKeyAlias + request.tenantId + "keyRotation"))
+                require(tenantIdWrappingKeysRecords.size == 1) { "Found more than 1 ${request.tenantId} record " +
+                        "in the database for rootKeyAlias = ${request.oldParentKeyAlias}." }
 
                 tenantIdWrappingKeysRecords.forEach { (key, state) ->
                     println("XXX: dealing with tenantId: $key, wrapping key: ${request.targetKeyAlias}")
