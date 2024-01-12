@@ -17,13 +17,14 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
+    implementation project(":libs:metrics")
     implementation project(':libs:utilities')
     implementation project(':libs:db:db-core')
     implementation project(":libs:configuration:configuration-core")
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
-
+    testImplementation project(':testing:test-utilities')
     integrationTestImplementation project(':libs:db:db-admin')
     integrationTestImplementation project(':testing:db-testkit')
     integrationTestImplementation project(':libs:db:db-admin-impl')
