@@ -189,7 +189,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
             if (state.modifiedTime > lastUpdatedTimestamp) lastUpdatedTimestamp = state.modifiedTime
             if (state.metadata["status"] != "Done") rotationStatus = "In Progress"
         }
-        return KeyRotationStatusResponse(rootKeyAlias, result, rotationStatus, lastUpdatedTimestamp)
+        return KeyRotationStatusResponse(rootKeyAlias, rotationStatus, lastUpdatedTimestamp, result)
     }
 
     override fun startKeyRotation(oldKeyAlias: String, newKeyAlias: String): ResponseEntity<KeyRotationResponse> {

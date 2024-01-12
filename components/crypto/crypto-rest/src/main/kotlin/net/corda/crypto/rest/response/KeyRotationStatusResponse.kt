@@ -10,9 +10,9 @@ import java.time.Instant
 
 data class KeyRotationStatusResponse(
     val oldKeyAlias: String,
-    val wrappingKeys: List<Pair<String, TenantIdWrappingKeysStatus>>,
     val status: String,
-    val lastUpdatedTimestamp: Instant
+    val lastUpdatedTimestamp: Instant,
+    val wrappingKeys: List<Pair<String, TenantIdWrappingKeysStatus>>,
 )
 
 data class TenantIdWrappingKeysStatus(
