@@ -19,8 +19,10 @@ interface StateManager : Lifecycle {
     /**
      * Persist new [states].
      *
-     * A single transactional context is used when interacting with the underlying persistent storage,
-     * so all these states will be persisted or none will.
+     * Every operation uses its own transactional context when interacting with the underlying persistent storage and,
+     * as a result, some states might have been successfully persisted and some might have not.
+     * It's the responsibility of calling API to decide whether the operation can be retried or not, based on the
+     * [Exception] returned for the relevant key.
      *
      * Control is only returned to the caller once all [states] that were successfully created have been fully
      * persisted and replicas of the underlying persistent storage, if any, are synced.
