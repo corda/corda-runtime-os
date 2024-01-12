@@ -1,6 +1,7 @@
 package net.corda.rest.server.impl.security
 
 import net.corda.rest.RestResource
+import net.corda.rest.authorization.AuthorizationProvider
 import net.corda.rest.authorization.AuthorizationUtils
 import net.corda.rest.authorization.AuthorizingSubject
 import net.corda.rest.server.impl.security.provider.AuthenticationProvider
@@ -9,9 +10,9 @@ import net.corda.rest.server.impl.security.provider.credentials.tokens.UsernameP
 import net.corda.rest.server.impl.security.provider.scheme.AuthenticationSchemeProvider
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertThrows
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -31,8 +32,8 @@ class RestAuthenticationProviderTest {
 
     private companion object {
 
-        private fun authorize(authenticatedUser: AuthorizingSubject, method: Method): Boolean {
-            return AuthorizationUtils.authorize(authenticatedUser, methodFullName(method))
+        private fun authorize(authenticatedUser: AuthorizingSubject, method: Method, authorizationProvider: AuthorizationProvider? = null): Boolean {
+            return AuthorizationUtils.authorize(authenticatedUser, methodFullName(method), authorizationProvider)
         }
 
         private fun methodFullName(method: Method): String = methodFullName(method.declaringClass, method.name)
@@ -133,6 +134,29 @@ class RestAuthenticationProviderTest {
 
         assert(authorize(authenticatedAlice, TestRestResource::class.java.getMethod("dummy")))
         assert(authorize(authenticatedAlice, TestRestResource::class.java.getMethod("dummy2")))
+    }
+
+    @Test
+    fun `authorize_providingAuthorizationProvider_overridesIsPermitted`() {
+        whenever(subject.isPermitted(methodFullName(TestRestResource::class.java.getMethod("dummy")))).thenReturn(false)
+        whenever(subject.isPermitted(methodFullName(TestRestResource::class.java.getMethod("dummy2")))).thenReturn(false)
+
+        val authorizationProvider = object : AuthorizationProvider {
+            override fun isAuthorized(subject: AuthorizingSubject, action: String): Boolean {
+                val requestedPath = action.split(":", limit = 2).last()
+
+                return if (requestedPath.contains("dummy2")) {
+                    true
+                } else {
+                    AuthorizationProvider.Default.isAuthorized(subject, action)
+                }
+            }
+        }
+
+        val authenticatedAlice = restAuthProvider.authenticate(UsernamePasswordAuthenticationCredentials(userAlice.username, password))
+
+        assertFalse(authorize(authenticatedAlice, TestRestResource::class.java.getMethod("dummy") , authorizationProvider))
+        assert(authorize(authenticatedAlice, TestRestResource::class.java.getMethod("dummy2"), authorizationProvider))
     }
 
     @Test
