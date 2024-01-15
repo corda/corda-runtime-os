@@ -4,6 +4,7 @@ import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.messaging.mediator.MediatorReplayOutputEvent
 import net.corda.data.messaging.mediator.MediatorReplayOutputEvents
+import net.corda.data.messaging.mediator.MediatorState
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_TOPIC
@@ -26,6 +27,9 @@ class MediatorReplayServiceTest {
     }
 
     private val mediatorReplayService = MediatorReplayService(cordaAvroSerializationFactory)
+
+    private val topic = "topic"
+    private val testState = ByteBuffer.wrap("state".toByteArray())
 
     @Test
     fun `Add new output events to empty mediator state`() {
@@ -69,6 +73,28 @@ class MediatorReplayServiceTest {
         }
     }
 
+    @Test
+    fun `input record is replay event`() {
+        /*val inputRecord = Record(topic, "key1", "value1")
+        val existingOutputs = mediatorReplayOutputEvents(2, 3).toMutableList().add(
+            MediatorReplayOutputEvents()
+        )
+        assert(mediatorReplayService.isReplayEvent(inputRecord, MediatorState(testState, existingOutputs)))*/
+    }
+
+    @Test
+    fun `input record is not a replay event, empty outputs`() {
+        val inputRecord = Record(topic, "key1", "value1")
+        assert(!mediatorReplayService.isReplayEvent(inputRecord, MediatorState(testState, mutableListOf())))
+    }
+
+    @Test
+    fun `input record is not a replay event, existing outputs`() {
+        val existingOutputs = mediatorReplayOutputEvents(2, 3)
+        val inputRecord = Record(topic, "key1", "value1")
+        assert(!mediatorReplayService.isReplayEvent(inputRecord, MediatorState(testState, existingOutputs)))
+    }
+
     private fun mediatorReplayOutputEvents(existingKeys: Int = 0, existingValuesPerKey: Int = 0): List<MediatorReplayOutputEvents> {
         if (existingKeys == 0)  return mutableListOf()
 
@@ -79,7 +105,7 @@ class MediatorReplayServiceTest {
             (0 until existingValuesPerKey).forEach { _ ->
                 outputsPerKey.add(
                     MediatorReplayOutputEvent(
-                        "topic",
+                        topic,
                         ByteBuffer.wrap(recordKey.toByteArray()),
                         ByteBuffer.wrap(recordKey.toByteArray())
                     )
@@ -102,7 +128,7 @@ class MediatorReplayServiceTest {
             (0 until numberOfRecordsPerKey).forEach {
                 outputsPerKey.add(MediatorMessage("$it", getProperties(recordKey, missingProperty)))
             }
-            newOutputs[Record("topic", recordKey, recordKey)] = outputsPerKey
+            newOutputs[Record(topic, recordKey, recordKey)] = outputsPerKey
         }
 
         return newOutputs
@@ -111,7 +137,7 @@ class MediatorReplayServiceTest {
     private fun getProperties(key: String, missingProperty: Boolean): MutableMap<String, Any> {
         val testProperties: MutableMap<String, Any> = mutableMapOf(MessagingClient.MSG_PROP_KEY to key)
         if (!missingProperty) {
-            testProperties[MSG_PROP_TOPIC] = "topic"
+            testProperties[MSG_PROP_TOPIC] = topic
         }
         return testProperties
     }

@@ -4,6 +4,7 @@ import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.data.messaging.mediator.MediatorReplayOutputEvent
 import net.corda.data.messaging.mediator.MediatorReplayOutputEvents
+import net.corda.data.messaging.mediator.MediatorState
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_KEY
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_TOPIC
@@ -47,6 +48,23 @@ class MediatorReplayService @Activate constructor(
         }
 
         return mediatorOutputs
+    }
+
+    /**
+     * Compare the [inputRecord] to the existing [mediatorState] to see if it is a replayed record or not.
+     * @param inputRecord Record to check whether it is a replay or not
+     * @param mediatorState The mediator state to check the [inputRecord] against
+     * @return True if the [inputRecord] has been processed by the [mediatorState] already. False otherwise.
+     */
+    fun <K: Any, V: Any> isReplayEvent(inputRecord: Record<K, V>, mediatorState: MediatorState): Boolean {
+        val savedOutputs = mediatorState.outputEvents
+        savedOutputs.forEach {
+            if (getInputHash(inputRecord).array().contentEquals(it.inputEventHash.array())) {
+                return true
+            }
+        }
+
+        return false
     }
 
     fun MutableMap<String, Any>.getProperty(key: String): String {
