@@ -17,4 +17,4 @@ interface RestResource {
      * By default, it returns the standard AuthorizationProvider.
      * Implementations can override this to provide a custom AuthorizationProvider.
      */
-    val authorizationProvider: AuthorizationProvider get() = AuthorizationProvider.Default}
+    val authorizationProvider: AuthorizationProvider get() = AuthorizationProvider.Default }
