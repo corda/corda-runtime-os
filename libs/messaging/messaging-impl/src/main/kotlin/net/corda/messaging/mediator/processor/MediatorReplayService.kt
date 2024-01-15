@@ -64,7 +64,7 @@ class MediatorReplayService @Activate constructor(
         val recordValueBytes = serialize(inputEvent.value)
         if (recordKeyBytes == null || recordValueBytes == null)
             throw IllegalStateException("Input record key and value bytes should not be null")
-        return ByteBuffer.wrap(recordKeyBytes + recordValueBytes.sha256Bytes())
+        return ByteBuffer.wrap((recordKeyBytes + recordValueBytes).sha256Bytes())
     }
 
     private fun serialize(value: Any?) = value?.let { serializer.serialize(it) }
