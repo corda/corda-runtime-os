@@ -226,6 +226,26 @@ fun ClusterInfo.rotateCryptoUnmanagedWrappingKeys(
     }
 }
 
+fun ClusterInfo.getrotateCryptoUnmanagedWrappingKeysId(
+    oldKeyAlias: String,
+    newKeyAlias: String
+): String = cluster {
+    var result = assertWithRetry {
+        command { doRotateCryptoUnmanagedWrappingKeys(oldKeyAlias, newKeyAlias) }
+        condition { it.code == ResponseCode.ACCEPTED.statusCode }
+    }
+    result.toJson().get("requestId").toString()
+}
+
+fun ClusterInfo.cryptoUnmanagedWrappingKeysRotationStatus(
+    requestid: String
+) = cluster {
+    assertWithRetry {
+        command {getCryptoUnmanagedWrappingKeysRotationStatus(requestid) }
+        condition { it.code == ResponseCode.ACCEPTED.statusCode }
+    }
+}
+
 private fun <T> Semaphore.runWith(block: () -> T): T {
     this.acquire()
     try {
