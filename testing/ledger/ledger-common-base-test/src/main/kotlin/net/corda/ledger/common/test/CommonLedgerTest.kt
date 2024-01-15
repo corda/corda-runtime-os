@@ -36,7 +36,7 @@ abstract class CommonLedgerTest {
         merkleTreeProvider, digestService, jsonMarshallingService, jsonValidator
     )
 
-    private val flowFiberService = TestFlowFiberServiceWithSerialization(currentSandboxGroupContext)
+    val flowFiberService = TestFlowFiberServiceWithSerialization(currentSandboxGroupContext)
 
     val privacySaltProviderService = PrivacySaltProviderServiceImpl(flowFiberService)
 

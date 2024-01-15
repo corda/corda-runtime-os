@@ -3,26 +3,40 @@ package net.corda.ledger.common.data.transaction.factory
 import com.fasterxml.jackson.databind.JsonMappingException
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.test.CommonLedgerTest
-import net.corda.ledger.common.testkit.getPrivacySalt
 import net.corda.ledger.common.testkit.transactionMetadataExample
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.whenever
 
 @Suppress("MaxLineLength")
 class WireTransactionFactoryImplTest : CommonLedgerTest() {
     private val metadata = transactionMetadataExample()
     private val metadataJson = jsonMarshallingService.format(metadata)
     private val canonicalJson = jsonValidator.canonicalize(metadataJson)
-    private val privacySalt = getPrivacySalt()
+    private val privacySalt = privacySaltProviderService.generatePrivacySalt()
 
     @Test
     fun `draft`() {
-        wireTransactionFactory.create(
+        whenever(flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.flowId).thenReturn("FLOW_ID")
+        whenever(flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.suspendCount).thenReturn(10)
+
+        val t1 = wireTransactionFactory.create(
             listOf(
                 listOf(canonicalJson.toByteArray()),
             ),
             privacySalt
         )
+
+        val t2 = wireTransactionFactory.create(
+            listOf(
+                listOf(canonicalJson.toByteArray()),
+            ),
+            privacySalt
+        )
+
+        assertThat(t1.id).isEqualTo(t2.id)
+        assertThat(t2.privacySalt).isEqualTo(t2.privacySalt)
     }
 
     @Test
