@@ -146,7 +146,8 @@ internal class CommonComponents(
         NamedLifecycle.of(virtualNodeInfoReadService),
         NamedLifecycle.of(cpiInfoReadService),
         NamedLifecycle.of(membershipQueryClient),
-        NamedLifecycle.of(groupParametersReaderService)
+        NamedLifecycle.of(groupParametersReaderService),
+        NamedLifecycle.of(sessionEncryptionOpsClient),
     ) + externalDependencies
 
     override val dominoTile = ComplexDominoTile(
