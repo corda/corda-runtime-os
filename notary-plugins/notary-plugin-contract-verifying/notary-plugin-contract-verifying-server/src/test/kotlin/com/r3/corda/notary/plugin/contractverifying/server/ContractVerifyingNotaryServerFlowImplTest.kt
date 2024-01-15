@@ -203,7 +203,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
         whenever(mockTransactionSignatureService.signBatch(any(), any())).thenThrow(
             TransactionNoAvailableKeysException("The publicKeys do not have any private counterparts available.", null)
         )
-        createAndCallServer(mockSuccessfulUniquenessClientService())
+        callServer(mockSuccessfulUniquenessClientService())
         assertThat(responseFromServer).hasSize(1)
 
         val responseError = responseFromServer.first().error
@@ -224,7 +224,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
             mockFilteredTransaction(mapOf("notaryKey" to invalidVnodeKey)),
             listOf(notarySignatureAlice)
         )
-        createAndCallServer(
+        callServer(
             mockSuccessfulUniquenessClientService(),
             filteredTransactionAndSigs = listOf(filteredTxAndSignature),
             signatureVerificationLogic = ::throwVerify
@@ -244,7 +244,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
     fun `Contract verifying notary plugin server should respond with error if the uniqueness check fails`() {
         val unknownStateRef = UniquenessCheckStateRefImpl(SecureHashUtils.randomSecureHash(), 0)
 
-        createAndCallServer(
+        callServer(
             mockErrorUniquenessClientService(
                 UniquenessCheckErrorReferenceStateUnknownImpl(listOf(unknownStateRef))
             )
@@ -263,7 +263,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
     @Test
     @Order(3)
     fun `Contract verifying notary plugin server should respond with error if an error encountered during uniqueness check`() {
-        createAndCallServer(mockThrowErrorUniquenessCheckClientService())
+        callServer(mockThrowErrorUniquenessCheckClientService())
         assertThat(responseFromServer).hasSize(1)
 
         val responseError = responseFromServer.first().error
@@ -281,7 +281,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
             listOf(listOf(notarySignatureAlice))
         )
 
-        createAndCallServer(
+        callServer(
             mockSuccessfulUniquenessClientService(),
         )
         assertThat(responseFromServer).hasSize(1)
@@ -299,7 +299,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
             listOf(listOf(notarySignatureBob))
         )
 
-        createAndCallServer(
+        callServer(
             mockSuccessfulUniquenessClientService(),
         )
         assertThat(responseFromServer).hasSize(1)
@@ -318,7 +318,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
             listOf(notarySignatureAlice)
         )
 
-        createAndCallServer(
+        callServer(
             mockSuccessfulUniquenessClientService(),
             filteredTransactionAndSigs = listOf(filteredTxAndSignature)
         )
@@ -340,7 +340,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
             mockFilteredTransaction(mapOf(NOTARY_NAME to null)),
             listOf(notarySignatureAlice)
         )
-        createAndCallServer(
+        callServer(
             mockSuccessfulUniquenessClientService(),
             filteredTransactionAndSigs = listOf(filteredTxAndSignature)
         )
@@ -362,7 +362,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
             mockFilteredTransaction(mapOf(NOTARY_KEY to null)),
             listOf(notarySignatureAlice)
         )
-        createAndCallServer(
+        callServer(
             mockSuccessfulUniquenessClientService(),
             filteredTransactionAndSigs = listOf(filteredTxAndSignature)
         )
@@ -386,7 +386,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
             listOf(notarySignatureAlice)
         )
 
-        createAndCallServer(
+        callServer(
             mockSuccessfulUniquenessClientService(),
             filteredTransactionAndSigs = listOf(filteredTxAndSignature)
         )
@@ -407,7 +407,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
             mockFilteredTransaction(txVerificationLogic = ::throwVerify),
             listOf(notarySignatureAlice)
         )
-        createAndCallServer(mockSuccessfulUniquenessClientService(), filteredTransactionAndSigs = listOf(filteredTxAndSignature))
+        callServer(mockSuccessfulUniquenessClientService(), filteredTransactionAndSigs = listOf(filteredTxAndSignature))
         assertThat(responseFromServer).hasSize(1)
 
         val responseError = responseFromServer.first().error
@@ -421,7 +421,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
     @Test
     @Order(11)
     fun `Contract verifying notary plugin server should throw general error when unhandled exception in uniqueness checker`() {
-        createAndCallServer(
+        callServer(
             mockErrorUniquenessClientService(
                 UniquenessCheckErrorUnhandledExceptionImpl(
                     IllegalArgumentException::class.java.name,
@@ -449,7 +449,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
             mockFilteredTransaction(mapOf(NOTARY_NAME to MemberX500Name.parse("C=GB,L=London,O=Bob"))),
             listOf(notarySignatureAlice)
         )
-        createAndCallServer(
+        callServer(
             mockSuccessfulUniquenessClientService(),
             filteredTransactionAndSigs = listOf(filteredTxAndSignature)
         )
@@ -475,7 +475,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
             listOf(notarySignatureAlice)
         )
 
-        createAndCallServer(
+        callServer(
             mockSuccessfulUniquenessClientService(),
             filteredTransactionAndSigs = listOf(filteredTxAndSignature)
         )
@@ -503,7 +503,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
             mockFilteredTransaction(mapOf(OUTPUT_STATE_AND_REFS to mockOutputStateRefUtxoFilteredData)),
             listOf(notarySignatureAlice)
         )
-        createAndCallServer(
+        callServer(
             mockSuccessfulUniquenessClientService(),
             filteredTransactionAndSigs = listOf(filteredTxAndSignature)
         )
@@ -532,7 +532,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
             listOf(notarySignatureAlice)
         )
 
-        createAndCallServer(
+        callServer(
             mockSuccessfulUniquenessClientService(),
             filteredTransactionAndSigs = listOf(filteredTxAndSignature)
         )
@@ -551,7 +551,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
             mockFilteredTransaction(mapOf(TXID to SIGNED_TX_ID)),
             listOf(notarySignatureAlice)
         )
-        createAndCallServer(
+        callServer(
             mockSuccessfulUniquenessClientService(),
             filteredTransactionAndSigs = listOf(filteredTxAndSignature)
         )
@@ -568,7 +568,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
     fun `Contract verifying notary should respond with error if a signed transaction failed to signatory signature verification`() {
         val signedTransaction = mockSignedTransaction(mapOf(VERIFY_SIGNATORY_SIGNATURES to MOCK_THROW))
 
-        createAndCallServer(
+        callServer(
             mockSuccessfulUniquenessClientService(),
             signedTx = signedTransaction
         )
@@ -594,7 +594,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
                 )
             )
         ).thenThrow(NotaryExceptionTransactionVerificationFailure("contract verification failed"))
-        createAndCallServer(
+        callServer(
             mockSuccessfulUniquenessClientService(),
             signedTx = signedTransaction
         )
@@ -617,7 +617,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
         whenever(signedTransaction.verifySignatorySignatures()).thenAnswer {  }
 
         signedTransaction.verifySignatorySignatures()
-        createAndCallServer(
+        callServer(
             mockSuccessfulUniquenessClientService(),
             signedTx = signedTransaction
         )
@@ -723,7 +723,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
      *  UtxoFilteredTransaction.verifyAttachedNotarySignature() call
      * */
     @Suppress("LongParameterList")
-    private fun createAndCallServer(
+    private fun callServer(
         clientService: LedgerUniquenessCheckerClientService,
         notarySignature: DigitalSignatureAndMetadata = notarySignatureAlice,
         signedTx: UtxoSignedTransaction = mockSignedTransaction(),
