@@ -103,7 +103,17 @@ class MerkleProofImpl(
         var nodeHashes: List<MerkleNode> = leaves.sortedBy { it.index }.map {
             MerkleNode(it.index, digest.leafHash(it.index, it.nonce, it.leafData))
         }
+
+        // We will discover some hashes at a given level and some at the level above.
+        // But we want to guarnatee to our uses that the get out hashes on the `onNewHash` callback
+        // in a left to right then bototm to top order, rather than mix up leaves from different levels.
+        // That way the user code is simpler. So, we need to efficiently sort the output order.
+
+        // Maintain the set of nodes from the current level, to be interspersed on the next level.
         var pendingNodes = nodeHashes.map { MerkleNodeInfo(it, treeDepth, null) }.toMutableList()
+
+        // A procedure to run the onNewHash callback on all nodes we should output before we output a specific
+        // node.
         fun publishBelow(index: Int) {
             while (pendingNodes.isNotEmpty() && pendingNodes.first().node.indexWithinLevel < index) {
                 onNewHash(pendingNodes.removeFirst())
