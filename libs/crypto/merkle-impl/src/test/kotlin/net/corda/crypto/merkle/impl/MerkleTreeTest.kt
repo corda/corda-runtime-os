@@ -334,8 +334,7 @@ class MerkleTreeTest {
                       ┗92e96986┳e0cc7e23┳1d3a2328 00:00:00:04
                                ┃        ┗cf5f6713 00:00:00:05
                                ┗46086473━46086473 00:00:00:06
-        """
-        )
+        """)
         assertEquals(manualRoot, root)
     }
 
@@ -370,8 +369,7 @@ class MerkleTreeTest {
                                    ┃        ┗cf5f6713 00:00:00:05
                                    ┗a1a26281┳46086473 00:00:00:06
                                             ┗b0d020da 00:00:00:07
-        """
-        )
+        """)
     }
 
     @Test
