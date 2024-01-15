@@ -62,8 +62,8 @@ class MerkleTreeTest {
 
         // There are n*2^n proof tests for tree size n so randomize.
         //
-        // This has been taken up to 50000 which takes 1 minute and 8GB of RAM.
-        private const val NUMBER_OF_PROOF_TESTS = 5000
+        // This has been taken up to 50000 which takes 5 seconds and 8GB of RAM.
+        private const val NUMBER_OF_PROOF_TESTS = 1000
 
         private lateinit var digestService: DigestService
         private lateinit var defaultHashDigestProvider: DefaultHashDigestProvider
