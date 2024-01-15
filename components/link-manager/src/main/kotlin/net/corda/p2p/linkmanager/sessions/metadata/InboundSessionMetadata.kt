@@ -1,55 +1,59 @@
 package net.corda.p2p.linkmanager.sessions.metadata
 
-import java.time.Duration
-import java.time.Instant
 import net.corda.libs.statemanager.api.Metadata
+import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
+import java.time.Duration
+import java.time.Instant
 
-enum class InboundSessionStatus{
-    SentResponderHello, SentResponderHandshake
+internal enum class InboundSessionStatus {
+    SentResponderHello,
+    SentResponderHandshake,
 }
 
-private fun String.statusFromString(): InboundSessionStatus {
-    return InboundSessionStatus.values().first { it.toString() == this }
-}
-
-data class InboundSessionMetadata(
+internal data class InboundSessionMetadata(
     val source: HoldingIdentity,
     val destination: HoldingIdentity,
     val lastSendTimestamp: Instant,
     val encryptionKeyId: String,
     val encryptionKeyTenant: String,
     val status: InboundSessionStatus,
-    val expiry: Instant
+    val expiry: Instant,
 ) {
-    private companion object {
-        const val SOURCE_VNODE = "sourceVnode"
-        const val DEST_VNODE = "destinationVnode"
-        const val GROUP_ID_KEY = "groupId"
-        const val LAST_SEND_TIMESTAMP = "lastSendTimestamp"
-        const val ENCRYPTION_KEY_ID = "encryptionKeyId"
-        const val ENCRYPTION_TENANT = "encryptionTenant"
-        const val STATUS = "status"
-        const val EXPIRY = "expiry"
-        val SESSION_EXPIRY_PERIOD: Duration = Duration.ofDays(7)
+    companion object {
+        private const val SOURCE_VNODE = "sourceVnode"
+        private const val DEST_VNODE = "destinationVnode"
+        private const val GROUP_ID_KEY = "groupId"
+        private const val LAST_SEND_TIMESTAMP = "lastSendTimestamp"
+        private const val ENCRYPTION_KEY_ID = "encryptionKeyId"
+        private const val ENCRYPTION_TENANT = "encryptionTenant"
+        private const val STATUS = "status"
+        private const val EXPIRY = "expiry"
+        private val SESSION_EXPIRY_PERIOD: Duration = Duration.ofDays(7)
+
+        private fun String.statusFromString(): InboundSessionStatus {
+            return InboundSessionStatus.values().first { it.toString() == this }
+        }
+
+        fun Metadata.from(): InboundSessionMetadata {
+            return InboundSessionMetadata(
+                HoldingIdentity(MemberX500Name.parse(this[SOURCE_VNODE].toString()), this[GROUP_ID_KEY].toString()),
+                HoldingIdentity(MemberX500Name.parse(this[DEST_VNODE].toString()), this[GROUP_ID_KEY].toString()),
+                Instant.ofEpochMilli(this[LAST_SEND_TIMESTAMP] as Long),
+                this[ENCRYPTION_KEY_ID].toString(),
+                this[ENCRYPTION_TENANT].toString(),
+                this[STATUS].toString().statusFromString(),
+                Instant.ofEpochMilli(this[EXPIRY] as Long),
+            )
+        }
     }
 
-    constructor(metadata: Metadata): this(
-        HoldingIdentity(MemberX500Name.parse(metadata[SOURCE_VNODE].toString()), metadata[GROUP_ID_KEY].toString()),
-        HoldingIdentity(MemberX500Name.parse(metadata[DEST_VNODE].toString()), metadata[GROUP_ID_KEY].toString()),
-        Instant.ofEpochMilli(metadata[LAST_SEND_TIMESTAMP] as Long),
-        metadata[ENCRYPTION_KEY_ID].toString(),
-        metadata[ENCRYPTION_TENANT].toString(),
-        metadata[STATUS].toString().statusFromString(),
-        Instant.ofEpochMilli(metadata[EXPIRY] as Long)
-    )
-
-    fun lastSendExpired(): Boolean {
-        return Instant.now() > lastSendTimestamp + SESSION_EXPIRY_PERIOD
+    fun lastSendExpired(clock: Clock): Boolean {
+        return clock.instant() > lastSendTimestamp + SESSION_EXPIRY_PERIOD
     }
 
-    fun toMetadata(): Metadata{
+    fun toMetadata(): Metadata {
         return Metadata(
             mapOf(
                 SOURCE_VNODE to this.source.x500Name.toString(),
@@ -58,9 +62,9 @@ data class InboundSessionMetadata(
                 LAST_SEND_TIMESTAMP to this.lastSendTimestamp.toEpochMilli(),
                 ENCRYPTION_KEY_ID to this.encryptionKeyId,
                 ENCRYPTION_TENANT to this.encryptionKeyTenant,
-                STATUS to this.status,
-                EXPIRY to this.expiry.toEpochMilli()
-            )
+                STATUS to this.status.toString(),
+                EXPIRY to this.expiry.toEpochMilli(),
+            ),
         )
     }
 }

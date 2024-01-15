@@ -10,7 +10,6 @@ class MultiClusterTestConfigManager(
     }
 
     override fun load(section: String, props: Map<String, Any?>): TestConfigManager {
-        configManagers.iterator().apply {  }
         configManagers.forEach { it.load(section, props) }
         return this
     }

@@ -878,18 +878,16 @@ internal class SessionManagerImpl(
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
         }
-        val responderHandshakeMessage = processInitiatorHandshake(session, message)
-
-        responderHandshakeMessage?.let {
+        return processInitiatorHandshake(session, message)?.also { responderHandshakeMessage ->
             val ourIdentity = responderHandshakeMessage.header.sourceIdentity.toCorda()
             val peerIdentity = responderHandshakeMessage.header.destinationIdentity.toCorda()
 
             activeInboundSessions[message.header.sessionId] = Pair(
                 SessionManager.Counterparties(
                     ourIdentity,
-                    peerIdentity
+                    peerIdentity,
                 ),
-                session.getSession()
+                session.getSession(),
             )
             sessionMessageReceived(
                 message.header.sessionId,
@@ -900,12 +898,11 @@ internal class SessionManagerImpl(
                 "Inbound session ${message.header.sessionId} established (local=$ourIdentity, remote=$peerIdentity)."
             )
             /**
-            * We delay removing the session from pendingInboundSessions until we receive the first data message
+             * We delay removing the session from pendingInboundSessions until we receive the first data message
              * as before this point the other side (Initiator) might replay [InitiatorHandshakeMessage] in the case
              * where the [ResponderHandshakeMessage] was lost.
-            * */
+             * */
         }
-        return responderHandshakeMessage
     }
 
     fun processInitiatorHandshake(session: AuthenticationProtocolResponder, message: InitiatorHandshakeMessage): LinkOutMessage? {
