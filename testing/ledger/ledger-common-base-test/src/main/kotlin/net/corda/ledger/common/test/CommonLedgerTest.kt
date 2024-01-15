@@ -18,7 +18,6 @@ import net.corda.ledger.common.flow.impl.transaction.factory.TransactionMetadata
 import net.corda.ledger.common.flow.impl.transaction.serializer.kryo.WireTransactionKryoSerializer
 import net.corda.ledger.common.flow.impl.transaction.TransactionSignatureServiceImpl
 import net.corda.ledger.common.flow.impl.transaction.TransactionSignatureVerificationServiceImpl
-import net.corda.ledger.common.flow.impl.transaction.factory.TransactionMetadataFactoryImpl
 import net.corda.ledger.common.testkit.FakePlatformInfoProvider
 import net.corda.ledger.common.testkit.fakePlatformInfoProvider
 import net.corda.ledger.common.testkit.getWireTransactionExample
