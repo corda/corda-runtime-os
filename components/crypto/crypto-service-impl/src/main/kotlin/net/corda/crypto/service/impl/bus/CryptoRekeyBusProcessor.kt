@@ -42,42 +42,37 @@ class CryptoRekeyBusProcessor(
 
     override val keyClass: Class<String> = String::class.java
     override val valueClass = KeyRotationRequest::class.java
+    private val serializer = cordaAvroSerializationFactory.createAvroSerializer<UnmanagedKeyStatus>()
 
     @Suppress("NestedBlockDepth")
     override fun onNext(events: List<Record<String, KeyRotationRequest>>): List<Record<*, *>> {
         logger.debug("received ${events.size} key rotation requests")
 
-        // should serializer be instantiated in the companion object as a static object for the whole class?
-        val serializer = cordaAvroSerializationFactory.createAvroSerializer<UnmanagedKeyStatus>()
-
         events.mapNotNull { it.timestamp to it.value }.forEach { (timestamp, request) ->
             logger.debug("processing $request")
             require(request != null)
 
-            // Check first if there is a running key rotation for oldParentKeyAlias.
+            // Check if there is a running key rotation for oldParentKeyAlias.
             // Same check is done on the Rest worker side, but if user quickly issues two key rotation commands after each other,
             // it will pass rest worker check as state manager was not yet populated.
             if (!hasPreviousRotationFinished(request.oldParentKeyAlias)) {
-                logger.error("There is already a key rotation of unmanaged wrapping key " +
-                        "with alias ${request.oldParentKeyAlias} in progress.")
+                logger.error(
+                    "There is already a key rotation of unmanaged wrapping key " +
+                            "with alias ${request.oldParentKeyAlias} in progress."
+                )
                 return emptyList()
             }
 
-            // root (unmanaged) keys can be used in clusterDB and vNodeDB
-            // then for each key we will send a record on Kafka
-            // We do not have a code that deals with rewrapping the root key in a cluster DB
+            // Root (unmanaged) keys can be used in clusterDB and vNodeDB. We need to go through all tenants and
+            // clusterDB, and check if the oldKeyAlias is used there. If yes, we will issue a new record for this key
+            // to be re-wrapped.
 
-            // tenantId in the request is useful ONLY for re-wrapping managed keys, which is not yet implemented,
-            // so we ignore it.
-            //
-            // For unmanaged (root) key we need to go through all tenants, i.e. all vNodes and some others,
-            // and check if the oldKeyAlias is used there  if yes, then we need to issue a new record for this key
-            // to be re-wrapped
+            // tenantId in the request is useful ONLY for re-wrapping managed keys, so we ignore it here.
 
             val virtualNodeInfo = virtualNodeInfoReadService.getAll() // Get all the virtual nodes
             val virtualNodeTenantIds = virtualNodeInfo.map { it.holdingIdentity.shortHash.toString() }
 
-            // we do not need to use separate wrapping repositories for the different cluster level tenants,
+            // We do not need to use separate wrapping repositories for the different cluster level tenants,
             // since they share the cluster crypto database. So we scan over the virtual node tenants and an arbitrary
             // choice of cluster level tenant. We pick CryptoTenants.CRYPTO as the arbitrary cluster level tenant,
             // and we should not also check CryptoTenants.P2P and CryptoTenants.REST since if we do we'll get duplicate.
@@ -89,17 +84,16 @@ class CryptoRekeyBusProcessor(
                 }
             }.flatten()
 
-            // First update state manager, then publish rewrap messages, so the state manager db is already populated
+            // First update state manager, then publish re-wrap messages, so the state manager db is already populated
             val records = mutableListOf<State>()
 
             // Group by tenantId/vNode
             targetWrappingKeys.groupBy { it.first }.forEach {
-                logger.info("XXX: Grouping wrapping keys by vNode/tenantId ${it.key}")
-                println("XXX: Grouping wrapping keys by vNode/tenantId ${it.key}")
+                logger.debug("Grouping wrapping keys by vNode/tenantId ${it.key}")
                 val status = UnmanagedKeyStatus(request.oldParentKeyAlias, it.value.size, 0)
                 records.add(
                     State(
-                        // key is set as a unique string to prevent table search in rewrap bus processor
+                        // key is set as a unique string to prevent table search in re-wrap bus processor
                         request.oldParentKeyAlias + it.key + "keyRotation",  // rootKeyAlias + tenantId + keyRotation
                         serializer.serialize(status)!!,
                         1,
@@ -117,12 +111,7 @@ class CryptoRekeyBusProcessor(
             }
 
             // Only delete previous key rotation status if we are actually going to rotate something
-            if (records.isNotEmpty()) {
-                deleteStateManagerRecords(request.oldParentKeyAlias)
-                logger.info("XXX: Storing wrapping keys grouped by tenantId into state manager db.")
-                println("XXX: Storing wrapping keys grouped by tenantId into state manager db.")
-            }
-
+            if (records.isNotEmpty()) deleteStateManagerRecords(request.oldParentKeyAlias)
             stateManager!!.create(records)
 
             rekeyPublisher.publish(
@@ -168,13 +157,13 @@ class CryptoRekeyBusProcessor(
                 MetadataFilter("type", Operation.Equals, "keyRotation")
             )
         )
-        println("XXX: deleting following records: ${toDelete.keys} for rootKeyAlias: $oldParentKeyAlias")
+        logger.info("Deleting following records ${toDelete.keys} for previous key rotation for rootKeyAlias $oldParentKeyAlias.")
         val failedToDelete = stateManager.delete(
             toDelete.values
         )
 
         // TODO should we throw the exception?
-        if (failedToDelete.isNotEmpty()) println("XXX: RekeyBusProcessor failed to delete following states " +
-                "from the state manager: ${failedToDelete.keys}")
+        if (failedToDelete.isNotEmpty()) logger.warn("Failed to delete following states " +
+                "${failedToDelete.keys} from the state manager for rootKeyAlias $oldParentKeyAlias.")
     }
 }

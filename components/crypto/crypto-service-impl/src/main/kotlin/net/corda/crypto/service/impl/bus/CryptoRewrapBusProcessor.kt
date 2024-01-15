@@ -10,6 +10,7 @@ import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
+import org.slf4j.LoggerFactory
 import kotlin.random.Random
 
 private const val REWRAP_KEYS_OPERATION_NAME = "rewrapKeys"
@@ -24,6 +25,11 @@ class CryptoRewrapBusProcessor(
     private val stateManager: StateManager?,
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) : DurableProcessor<String, IndividualKeyRotationRequest> {
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
     override val keyClass: Class<String> = String::class.java
     override val valueClass = IndividualKeyRotationRequest::class.java
     private val rewrapTimer = CordaMetrics.Metric.Crypto.RewrapKeysTimer.builder()
@@ -40,18 +46,19 @@ class CryptoRewrapBusProcessor(
                 cordaAvroSerializationFactory.createAvroDeserializer({}, UnmanagedKeyStatus::class.java)
             val serializer = cordaAvroSerializationFactory.createAvroSerializer<UnmanagedKeyStatus>()
 
-            // Once rewrap is done, we can update state manager db
+            // Once re-wrap is done, we can update the state manager
             var statusUpdated = false
             while (!statusUpdated) {
                 // rootKeyAlias + tenantId + keyRotation is the unique key, therefore we don't need to do the table
-                // search through state manager db
+                // search through state manager
                 val tenantIdWrappingKeysRecords =
                     stateManager!!.get(listOf(request.oldParentKeyAlias + request.tenantId + "keyRotation"))
                 require(tenantIdWrappingKeysRecords.size == 1) { "Found more than 1 ${request.tenantId} record " +
                         "in the database for rootKeyAlias = ${request.oldParentKeyAlias}." }
 
                 tenantIdWrappingKeysRecords.forEach { (key, state) ->
-                    println("XXX: dealing with tenantId: ${state.metadata["tenantId"]}, wrapping key: ${request.targetKeyAlias}")
+                    logger.debug("Updating state manager record for tenantId ${state.metadata["tenantId"]} " +
+                            "after re-wrapping ${request.targetKeyAlias}.")
                     val deserializedStatus = deserializer.deserialize(state.value)!!
                     val newValue =
                         serializer.serialize(
@@ -61,7 +68,7 @@ class CryptoRewrapBusProcessor(
                                 deserializedStatus.rotatedKeys + 1
                             )
                         )
-                    // we want to update status to Done if all keys for the tenant have been rotated
+                    // Update status to Done if all keys for the tenant have been rotated
                     val newMetadata = if (deserializedStatus.total == deserializedStatus.rotatedKeys + 1) {
                         updateMetadata(state.metadata, "status", "Done")
                     } else {
@@ -70,10 +77,9 @@ class CryptoRewrapBusProcessor(
                     val failedToUpdate =
                         stateManager.update(listOf(State(key, newValue!!, state.version, newMetadata)))
                     if (failedToUpdate.isNotEmpty()) {
-                        println("XXX: RewrapBusProcessor failed to update following states: ${failedToUpdate.keys}.")
+                        logger.debug("Failed to update following states ${failedToUpdate.keys}, retrying.")
                         Thread.sleep(Random.nextLong(0, 1000))
                     } else {
-                        println("job done")
                         statusUpdated = true
                     }
                 }

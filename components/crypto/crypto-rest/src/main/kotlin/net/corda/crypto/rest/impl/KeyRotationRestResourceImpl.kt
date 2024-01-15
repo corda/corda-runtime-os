@@ -170,23 +170,22 @@ class KeyRotationRestResourceImpl @Activate constructor(
                 MetadataFilter("type", Operation.Equals, "keyRotation")
             )
         )
-        println("XXX: all key rotation entries in the state manager db for rootKeyAlias $rootKeyAlias are: $entries")
-        // if entries are empty, there is no rootKeyAlias data stored in the state manager, so no key rotation is in progress
+        // if entries are empty, there is no rootKeyAlias data stored in the state manager, so no key rotation is/was in progress
         if (entries.isNullOrEmpty()) throw ResourceNotFoundException("No key rotation for $rootKeyAlias is in progress.")
 
         var lastUpdatedTimestamp = Instant.MIN
         var rotationStatus = "Done"
         val result = mutableListOf<Pair<String, TenantIdWrappingKeysStatus>>()
-        entries.forEach { (key, state) ->
-            val keyRotationStatus = deserializer.deserialize(state.value)
-            println("XXX: key: $key, state.key: ${state.key}, state.value: $keyRotationStatus")
+        entries.forEach {
+            val state = it.value
+            val keyRotationStatus = deserializer.deserialize(state.value)!!
             result.add(
                 state.metadata["tenantId"].toString() to TenantIdWrappingKeysStatus(
-                    keyRotationStatus!!.total,
+                    keyRotationStatus.total,
                     keyRotationStatus.rotatedKeys
                 )
             )
-            if (state.modifiedTime > lastUpdatedTimestamp) lastUpdatedTimestamp = state.modifiedTime
+            if (state.modifiedTime.isAfter(lastUpdatedTimestamp)) lastUpdatedTimestamp = state.modifiedTime
             if (state.metadata["status"] != "Done") rotationStatus = "In Progress"
         }
         return KeyRotationStatusResponse(rootKeyAlias, rotationStatus, lastUpdatedTimestamp, result)
@@ -221,7 +220,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
 }
 
 /*
- * do the start key rotation operation
+ * Do the start key rotation operation
  *
  * @param oldKeyAlias alias to replace
  * @param newKeyAlias alias to use
