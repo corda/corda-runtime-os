@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.params.ParameterizedTest
@@ -42,6 +41,9 @@ class MerkleTreeTest {
         val digestAlgorithm = DigestAlgorithmName.SHA2_256D
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
+
+        private const val MAXIMUM_TREE_SIZE_FOR_PROOF_TESTS = 12
+
         // Since there are 2^(2*n) permutations of source leafs we don't want to test too many,
         // so we do a few in a fixed shuffled order. Any new failures have specific tests to guard against regression,
         // in case the platform random number generator changes.
@@ -50,11 +52,18 @@ class MerkleTreeTest {
         private const val NUMBER_OF_SUBSETS_TO_TEST = 10
 
         private const val MAXIMUM_TREE_SIZE_FOR_EXHAUSTIVE_MERGE_TESTS = 16
+
         // Since there are 60129542144 (slightly less than n*2^(2*n)) permutation for lists tests when we go up to tree
         // size 16, so again we take a stable random approach.
         //
         // This has been taken up to 50000 which takes 1 minute and 8GB of RAM.
         private const val NUMBER_OF_MERGE_TESTS = 1000
+
+
+        // There are n*2^n proof tests for tree size n so randomize.
+        //
+        // This has been taken up to 50000 which takes 1 minute and 8GB of RAM.
+        private const val NUMBER_OF_PROOF_TESTS = 1000
 
         private lateinit var digestService: DigestService
         private lateinit var defaultHashDigestProvider: DefaultHashDigestProvider
@@ -106,18 +115,23 @@ class MerkleTreeTest {
         }
 
         @JvmStatic
-        fun merkleProofForTreeSizes(small: Int, last: Int) = (small..last).map { treeSize ->
-            (1 until (1 shl treeSize)).map { sourceProofLeafSet ->
-                val leafIndicesCombination = (0 until treeSize).filter { (sourceProofLeafSet and (1 shl it)) != 0 }
-                Arguments.of(treeSize, leafIndicesCombination)
-            }
-        }.flatten()
-
-        @JvmStatic
-        fun merkleProofTestSizes(): List<Arguments> = merkleProofForTreeSizes(1, 11)
-
-        @JvmStatic
-        fun merkleProofExtendedTestSizes(): List<Arguments> = merkleProofForTreeSizes(12, 15)
+        fun merkleProofCombinations(): List<Arguments> {
+            val rng = Random(0)
+            val combinations = MAXIMUM_TREE_SIZE_FOR_PROOF_TESTS.toULong() * (1UL shl MAXIMUM_TREE_SIZE_FOR_PROOF_TESTS)
+            return iterator {
+                while (true) {
+                    val t: ULong = rng.nextULong(0UL..combinations)
+                    val treeSize = t % MAXIMUM_TREE_SIZE_FOR_PROOF_TESTS.toULong()
+                    val t2 = t / MAXIMUM_TREE_SIZE_FOR_PROOF_TESTS.toULong()
+                    val sourceProofLeafSet = t2 % (1UL shl MAXIMUM_TREE_SIZE_FOR_PROOF_TESTS)
+                    val leafIndicesCombination =
+                        (0 until treeSize.toInt()).filter { (sourceProofLeafSet and (1UL shl it)) != 0UL }
+                    if (leafIndicesCombination.isNotEmpty())
+                        yield(Arguments.of(treeSize.toInt(), leafIndicesCombination))
+                }
+            }.asSequence().take(NUMBER_OF_PROOF_TESTS)
+                .toList() // Sadly, we don't know how to supply JUnit test parameters from lazy sequences.
+        }
 
         @JvmStatic
         fun merkleProofMergeCombinations(): List<Arguments> {
@@ -129,7 +143,7 @@ class MerkleTreeTest {
                 numberOfTreeSizes.toULong()
                     * (1UL shl MAXIMUM_TREE_SIZE_FOR_EXHAUSTIVE_MERGE_TESTS)
                     * (1UL shl MAXIMUM_TREE_SIZE_FOR_EXHAUSTIVE_MERGE_TESTS)
-            )
+                )
             return iterator {
                 while (true) {
                     val t: ULong = rng.nextULong(0UL..combinations)
@@ -149,7 +163,8 @@ class MerkleTreeTest {
                         yield(Arguments.of(treeSize.toInt(), xSet, ySet))
                     }
                 }
-            }.asSequence().take(NUMBER_OF_MERGE_TESTS).toList() // Sadly, we don't know how to have JUnit test parameters from  lazy sequences
+            }.asSequence().take(NUMBER_OF_MERGE_TESTS)
+                .toList() //  Sadly, we don't know how to supply JUnit test parameters from lazy sequences.
         }
 
         @JvmStatic
@@ -167,6 +182,7 @@ class MerkleTreeTest {
             }.flatten().shuffled(rng).take(NUMBER_OF_SUBSETS_TO_TEST)
         }.flatten()
     }
+
 
     @Test
     fun `Tweakable hash digest provider argument min length tests`() {
@@ -334,7 +350,8 @@ class MerkleTreeTest {
                       ┗92e96986┳e0cc7e23┳1d3a2328 00:00:00:04
                                ┃        ┗cf5f6713 00:00:00:05
                                ┗46086473━46086473 00:00:00:06
-        """)
+        """
+        )
         assertEquals(manualRoot, root)
     }
 
@@ -369,7 +386,8 @@ class MerkleTreeTest {
                                    ┃        ┗cf5f6713 00:00:00:05
                                    ┗a1a26281┳46086473 00:00:00:06
                                             ┗b0d020da 00:00:00:07
-        """)
+        """
+        )
     }
 
     @Test
@@ -383,18 +401,74 @@ class MerkleTreeTest {
     }
 
     @ParameterizedTest(name = "merkle proof tests for trees with sizes that run fast ({0} leaves, leaf set {1})")
-    @MethodSource("merkleProofTestSizes")
+    @MethodSource("merkleProofCombinations")
     fun `merkle proofs fast`(treeSize: Int, sourceProofLeafSet: List<Int>) {
-        runMerkleProofTest(treeSize, sourceProofLeafSet)
-    }
-
-    // This test should be run whenever the merkle tree implementation is changed. It is disabled on CI since
-    // it can take 30 seconds.
-    @Disabled
-    @ParameterizedTest(name = "merkle proof tests for trees with extended sizes that run slow ({0} leaves, leaf set {1))")
-    @MethodSource("merkleProofExtendedTestSizes")
-    fun `merkle proofs slow `(treeSize: Int, sourceProofLeafSet: List<Int>) {
-        runMerkleProofTest(treeSize, sourceProofLeafSet)
+        // we don't want to take the time to do an expensive hash so we'll just make a cheap one.
+        val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
+        assertThat(merkleTree.leaves).isNotEmpty()
+        // Should not build proof for empty list
+        // This is a special case check in the impl we don't really need but since it's there
+        // let's have test coverage for it.
+        assertThrows(IllegalArgumentException::class.java) {
+            merkleTree.createAuditProof(emptyList())
+        }
+        // Cannot build proof for non-existing index
+        assertThrows(IllegalArgumentException::class.java) {
+            merkleTree.createAuditProof(listOf(treeSize + 1))
+        }
+        // Cannot build proof if any of the indices do not exist in the tree
+        assertThrows(IllegalArgumentException::class.java) {
+            merkleTree.createAuditProof(listOf(0, treeSize + 1))
+        }
+        // Should not create proof if indices have been duplicated
+        assertThrows(IllegalArgumentException::class.java) {
+            merkleTree.createAuditProof(listOf(treeSize - 1, treeSize - 1))
+        }
+        if (merkleTree.leaves.size > 1) {
+            // Should not create proof if there are duplicated indices between the others
+            assertThrows(IllegalArgumentException::class.java) {
+                merkleTree.createAuditProof(listOf(0, 0, treeSize - 1))
+            }
+        }
+        // Test all the possible combinations of leaves for the proof, and a selection of subset proofs.
+        val proof = makeProof(merkleTree, sourceProofLeafSet)
+        // proof is a Merkle proof for a tree of size $treeSize with ${hashes.size}
+        // hashes supplied in the proof where we know $leafIndicesCombination
+        val hashes = calculateLeveledHashes(proof, trivialHashDigestProvider)
+        if (sourceProofLeafSet == listOf<Int>(0) && treeSize == 2) {
+            assertThat(hashes).hasSize(1)
+            assertHash(hashes[0].hash, "00000001")
+            assertThat(hashes[0].level).isEqualTo(0)
+        }
+        if (sourceProofLeafSet == listOf<Int>(0) && treeSize == 3) {
+            assertThat(hashes).hasSize(2)
+        }
+        if (sourceProofLeafSet == listOf<Int>(1, 3, 5) && treeSize == 6) {
+            assertThat(hashes).hasSize(3)
+            assertThat(hashes.map { it.hash.hex() }).isEqualTo(
+                arrayListOf("00000000", "00000002", "00000004")
+            )
+            assertThat(hashes.map { it.level }).isEqualTo(arrayListOf(2, 2, 2))
+        }
+        if (sourceProofLeafSet == listOf<Int>(1, 2) && treeSize == 3) {
+            proof.subset(trivialHashDigestProvider, listOf(1))
+        }
+        if (sourceProofLeafSet == listOf<Int>(1, 2) && treeSize == 2) {
+            // a case where all the leaves are defined, and we should not include the leaves in the output
+            val subproof = proof.subset(trivialHashDigestProvider, listOf(0, 1))
+            subproof.render(trivialHashDigestProvider)
+        }
+        if (sourceProofLeafSet == listOf<Int>(0, 2, 3) && treeSize == 3) {
+            logger.trace("source proof ${proof.render(trivialHashDigestProvider)}")
+            val subproof = proof.subset(trivialHashDigestProvider, listOf(0, 2))
+            val text = subproof.render(trivialHashDigestProvider)
+            logger.trace("subset proof $text")
+        }
+        if (sourceProofLeafSet == listOf<Int>(2) && treeSize == 3) {
+            logger.trace("source proof ${proof.render(trivialHashDigestProvider)}")
+            val subproof = proof.subset(trivialHashDigestProvider, listOf(2))
+            subproof.render(trivialHashDigestProvider)
+        }
     }
 
     @ParameterizedTest(name = "tree size {0}, merge {1} with {2}}")
@@ -403,10 +477,9 @@ class MerkleTreeTest {
         val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
         val leafIndicesCombination = xSubset + ySubset
         val proof = makeProof(merkleTree, leafIndicesCombination)
-        val leaves = leafIndicesCombination
         val digest = trivialHashDigestProvider
         val proofText = proof.render(digest)
-        check(xSubset.size + ySubset.size == leaves.size)
+        check(xSubset.size + ySubset.size == leafIndicesCombination.size)
         val xProof = proof.subset(digest, xSubset)
         val yProof = proof.subset(digest, ySubset)
         val mergedProof = xProof.merge(yProof, digest)
@@ -437,7 +510,7 @@ class MerkleTreeTest {
     @Test
     fun `merkle proof size 4 merge bug`() {
         val merkleTree = makeTestMerkleTree(4, trivialHashDigestProvider)
-        val proof = makeProof(merkleTree, listOf(0,2,3))
+        val proof = makeProof(merkleTree, listOf(0, 2, 3))
         val yProof = proof.subset(trivialHashDigestProvider, listOf(0, 3))
         assertThat(yProof.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
             """
@@ -473,22 +546,26 @@ class MerkleTreeTest {
     @Test
     fun `subset size 4 leaves 0,2,3 to 0,3 bug`() {
         val merkleTree = makeTestMerkleTree(4, defaultHashDigestProvider)
-        val proof = makeProof(merkleTree, listOf(0,2,3))
+        val proof = makeProof(merkleTree, listOf(0, 2, 3))
         val proofText = proof.render(defaultHashDigestProvider)
-        assertThat(proofText).isEqualTo("""
+        assertThat(proofText).isEqualTo(
+            """
               FF3C3992 (calc)┳BAB170B1 (calc)┳7901AF93 (calc)    known leaf
                              ┃               ┗471864D3 (input 0) filtered
                              ┗517A5DE6 (calc)┳66973B1A (calc)    known leaf
                                              ┗568F8D2A (calc)    known leaf
-        """.trimIndent())
-        val subset = proof.subset(defaultHashDigestProvider, listOf(0,3))
+        """.trimIndent()
+        )
+        val subset = proof.subset(defaultHashDigestProvider, listOf(0, 3))
         val subsetText = subset.render(defaultHashDigestProvider)
-        assertThat(subsetText).isEqualToIgnoringWhitespace("""
+        assertThat(subsetText).isEqualToIgnoringWhitespace(
+            """
             FF3C3992 (calc)┳BAB170B1 (calc)┳7901AF93 (calc)    known leaf
                            ┃               ┗471864D3 (input 0) filtered
                            ┗517A5DE6 (calc)┳66973B1A (input 1) filtered
                                            ┗568F8D2A (calc)    known leaf
-                                       """.trimIndent())
+                                       """.trimIndent()
+        )
     }
 
     @Test
@@ -745,97 +822,15 @@ class MerkleTreeTest {
     }
 
 
-    private fun runMerkleProofTest(treeSize: Int, leafIndicesCombination: List<Int>) {
-        // we don't want to take the time to do an expensive hash so we'll just make a cheap one
-        val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
-        assertThat(merkleTree.leaves).isNotEmpty()
-
-        // Should not build proof for empty list
-        // This is a special case check in the impl we don't really need but since it's there
-        // let's have test coverage for it.
-        assertThrows(IllegalArgumentException::class.java) {
-            merkleTree.createAuditProof(emptyList())
-        }
-
-        // Cannot build proof for non-existing index
-        assertThrows(IllegalArgumentException::class.java) {
-            merkleTree.createAuditProof(listOf(treeSize + 1))
-        }
-
-        // Cannot build proof if any of the indices do not exist in the tree
-        assertThrows(IllegalArgumentException::class.java) {
-            merkleTree.createAuditProof(listOf(0, treeSize + 1))
-        }
-
-        // Should not create proof if indices have been duplicated
-        assertThrows(IllegalArgumentException::class.java) {
-            merkleTree.createAuditProof(listOf(treeSize - 1, treeSize - 1))
-        }
-
-        if (merkleTree.leaves.size > 1) {
-            // Should not create proof if there are duplicated indices between the others
-            assertThrows(IllegalArgumentException::class.java) {
-                merkleTree.createAuditProof(listOf(0, 0, treeSize - 1))
-            }
-        }
-
-        // Test all the possible combinations of leaves for the proof, and a selection of subset proofs.
-        val proof = makeProof(merkleTree, leafIndicesCombination)
-        // proof is a Merkle proof for a tree of size $treeSize with ${hashes.size}
-        // hashes supplied in the proof where we know $leafIndicesCombination
-        val hashes = calculateLeveledHashes(proof, trivialHashDigestProvider)
-
-        if (leafIndicesCombination == listOf(0) && treeSize == 2) {
-            assertThat(hashes).hasSize(1)
-            assertHash(hashes[0].hash, "00000001")
-            assertThat(hashes[0].level).isEqualTo(0)
-        }
-        if (leafIndicesCombination == listOf(0) && treeSize == 3) {
-            assertThat(hashes).hasSize(2)
-        }
-
-        if (leafIndicesCombination == listOf(1, 3, 5) && treeSize == 6) {
-            assertThat(hashes).hasSize(3)
-            assertThat(hashes.map { it.hash.hex() }).isEqualTo(
-                arrayListOf("00000000", "00000002", "00000004")
-            )
-            assertThat(hashes.map { it.level }).isEqualTo(arrayListOf(2, 2, 2))
-        }
-
-        if (leafIndicesCombination == listOf(1, 2) && treeSize == 3) {
-            proof.subset(trivialHashDigestProvider, listOf(1))
-        }
-
-        if (leafIndicesCombination == listOf(1, 2) && treeSize == 2) {
-            // a case where all the leaves are defined, and we should not include the leaves in the output
-            val subproof = proof.subset(trivialHashDigestProvider, listOf(0, 1))
-            subproof.render(trivialHashDigestProvider)
-        }
-
-        if (leafIndicesCombination == listOf(0, 2, 3) && treeSize == 3) {
-            logger.trace("source proof ${proof.render(trivialHashDigestProvider)}")
-            val subproof = proof.subset(trivialHashDigestProvider, listOf(0, 2))
-            val text = subproof.render(trivialHashDigestProvider)
-            logger.trace("subset proof $text")
-        }
-
-
-        if (leafIndicesCombination == listOf(2) && treeSize == 3) {
-            logger.trace("source proof ${proof.render(trivialHashDigestProvider)}")
-            val subproof = proof.subset(trivialHashDigestProvider, listOf(2))
-            subproof.render(trivialHashDigestProvider)
-        }
-    }
-
-    @ParameterizedTest(name="subset of tree size {0} proof with leaves {1} subset to {2}")
+    @ParameterizedTest(name = "subset of tree size {0} proof with leaves {1} subset to {2}")
     @MethodSource("subsetTestCombinations")
-    fun `test subset`(treeSize: Int, leafIndicesCombination: List<Int>, subsetProofLeafSet:List<Int>) {
+    fun `test subset`(treeSize: Int, leafIndicesCombination: List<Int>, subsetProofLeafSet: List<Int>) {
 
         //val digest = trivialHashDigestProvider
         val digest = defaultHashDigestProvider
         val merkleTree = makeTestMerkleTree(treeSize, digest)
         val proof = makeProof(merkleTree, leafIndicesCombination)
-        val missingLeaves =subsetProofLeafSet.filter { leaf -> leaf !in leafIndicesCombination}
+        val missingLeaves = subsetProofLeafSet.filter { leaf -> leaf !in leafIndicesCombination }
         val missing = missingLeaves.isNotEmpty()
 
         logger.trace(
@@ -864,9 +859,11 @@ class MerkleTreeTest {
 
                     val text = it.render(digest)
                     logger.trace("subset proof $text")
-                    assertThat(it.calculateRoot(digest)).isEqualTo(proof.calculateRoot(
-                        digest
-                    ))
+                    assertThat(it.calculateRoot(digest)).isEqualTo(
+                        proof.calculateRoot(
+                            digest
+                        )
+                    )
                 }
         }
     }
@@ -1208,7 +1205,8 @@ class MerkleTreeTest {
     fun `subset 10 bug `() {
         val merkleTree = makeTestMerkleTree(10, defaultHashDigestProvider)
         val proof = makeProof(merkleTree, listOf(1, 2, 4, 5, 6, 7, 8))
-        assertThat(proof.render(defaultHashDigestProvider)).isEqualToIgnoringWhitespace("""
+        assertThat(proof.render(defaultHashDigestProvider)).isEqualToIgnoringWhitespace(
+            """
             B79D89FF (calc)┳A868A19C (calc)┳FF3C3992 (calc)┳BAB170B1 (calc)┳7901AF93 (input 0) filtered
                              ┃               ┃               ┃               ┗471864D3 (calc)    known leaf
                              ┃               ┃               ┗517A5DE6 (calc)┳66973B1A (calc)    known leaf
@@ -1219,10 +1217,12 @@ class MerkleTreeTest {
                              ┃                                               ┗B0D020DA (calc)    known leaf
                              ┗7954D9A4 (calc)━7954D9A4 (calc)━7954D9A4 (calc)┳A06E92D1 (calc)    known leaf
                                                                              ┗CB44AEFD (input 2) filtered            
-        """)
+        """
+        )
         proof.subset(defaultHashDigestProvider, listOf(1, 7, 8)).also {
             val text = it.render(defaultHashDigestProvider)
-            assertThat(text).isEqualToIgnoringWhitespace("""
+            assertThat(text).isEqualToIgnoringWhitespace(
+                """
                 B79D89FF (calc)┳A868A19C (calc)┳FF3C3992 (calc)┳BAB170B1 (calc)   ┳7901AF93 (input 0) filtered
                                ┃               ┃               ┃                  ┗471864D3 (calc)    known leaf
                                ┃               ┃               ┗517A5DE6 (input 3)┳unknown            filtered
@@ -1233,7 +1233,8 @@ class MerkleTreeTest {
                                ┃                                                  ┗B0D020DA (calc)    known leaf
                                ┗7954D9A4 (calc)━7954D9A4 (calc)━7954D9A4 (calc)   ┳A06E92D1 (calc)    known leaf
                                                                                   ┗CB44AEFD (input 2) filtered   
-            """)
+            """
+            )
             logger.trace("subset proof $text")
             assertThat(it.calculateRoot(defaultHashDigestProvider)).isEqualTo(
                 proof.calculateRoot(
@@ -1245,8 +1246,8 @@ class MerkleTreeTest {
 
     @Test
     fun `test merge 10 bug`() {
-        val xSubset = listOf(1,7,8)
-        val ySubset = listOf(2,4,5,6)
+        val xSubset = listOf(1, 7, 8)
+        val ySubset = listOf(2, 4, 5, 6)
         val leafIndicesCombination = xSubset + ySubset
         val merkleTree = makeTestMerkleTree(10, defaultHashDigestProvider)
         val proof = makeProof(merkleTree, leafIndicesCombination)
