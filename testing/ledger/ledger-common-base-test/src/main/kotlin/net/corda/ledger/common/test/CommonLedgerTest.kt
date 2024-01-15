@@ -19,6 +19,7 @@ import net.corda.ledger.common.flow.impl.transaction.serializer.kryo.WireTransac
 import net.corda.ledger.common.flow.impl.transaction.TransactionSignatureServiceImpl
 import net.corda.ledger.common.flow.impl.transaction.TransactionSignatureVerificationServiceImpl
 import net.corda.ledger.common.testkit.FakePlatformInfoProvider
+import net.corda.ledger.common.flow.impl.transaction.PrivacySaltProviderServiceImpl
 import net.corda.ledger.common.testkit.fakePlatformInfoProvider
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -44,6 +45,8 @@ abstract class CommonLedgerTest {
     )
 
     val flowFiberService = TestFlowFiberServiceWithSerialization(currentSandboxGroupContext)
+
+    val privacySaltProviderService = PrivacySaltProviderServiceImpl(flowFiberService)
 
     val privacySaltProviderService = PrivacySaltProviderServiceImpl(flowFiberService)
 

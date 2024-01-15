@@ -40,6 +40,16 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
     }
 
     @Test
+    fun `draft`() {
+        wireTransactionFactory.create(
+            listOf(
+                listOf(canonicalJson.toByteArray()),
+            ),
+            privacySalt
+        )
+    }
+
+    @Test
     fun `Creating a very simple WireTransaction`() {
         wireTransactionFactory.create(
             listOf(
