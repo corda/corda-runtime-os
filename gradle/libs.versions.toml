@@ -11,7 +11,7 @@ jettyVersion = "9.4.53.v20231009"
 
 log4jVersion = "2.20.0"
 # SLF4J cannot be ugraded to 2.x due to CorDapps requiring the 1.7 <= x < 2.0
-slf4jVersion = "1.7.36"
+slf4jVersion = { strictly = "1.7.36" }
 # The CLI plugins use SLF4J version 2 because PF4j requires it
 # Since slf4jVersion is "strictly" enforced from `corda-api`, in order to override version we need to specify
 # version strictly here as well
