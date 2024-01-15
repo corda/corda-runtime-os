@@ -18,7 +18,8 @@ abstract class ConsensualLedgerTest : CommonLedgerTest() {
         wireTransactionFactory,
         currentSandboxGroupContext,
         jsonMarshallingService,
-        jsonValidator
+        jsonValidator,
+        privacySaltProviderService
     )
     val consensualLedgerService = ConsensualLedgerServiceImpl(consensualSignedTransactionFactory, flowEngine, mock())
     val consensualSignedTransactionKryoSerializer = ConsensualSignedTransactionKryoSerializer(

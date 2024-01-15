@@ -13,8 +13,9 @@ import org.osgi.service.component.annotations.Reference
 class PrivacySaltProviderServiceImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService
-) {
-    private fun generatePrivacySalt(): PrivacySalt {
+) : PrivacySaltProviderService {
+
+    override fun generatePrivacySalt(): PrivacySalt {
         val flowID = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.flowId
         val suspendCount = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.suspendCount
         val input = flowID + suspendCount
