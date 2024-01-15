@@ -31,7 +31,7 @@ dependencies {
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:packaging-test-utilities")
 
-    testRuntimeOnly libs.log4j.slf4j
+    testRuntimeOnly libs.log4j.slf4j2
 }
 
 cliPlugin {

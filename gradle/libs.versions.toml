@@ -52,6 +52,7 @@ kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.re
 log4j-core = { group = "org.apache.logging.log4j", name = "log4j-core", version.ref = "log4jVersion" }
 log4j-layout-json = { group = "org.apache.logging.log4j", name = "log4j-layout-template-json", version.ref = "log4jVersion" }
 log4j-slf4j = { group = "org.apache.logging.log4j", name = "log4j-slf4j-impl", version.ref = "log4jVersion" }
+log4j-slf4j2 = { group = "org.apache.logging.log4j", name = "log4j-slf4j2-impl", version.ref = "log4jVersion" }
 mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockitoVersion" }
 mockito-kotlin = { group = "org.mockito.kotlin", name = "mockito-kotlin", version.ref = "mockitoKotlinVersion" }
 javalin = { group = "io.javalin", name = "javalin-osgi", version.ref = "javalinVersion" }
