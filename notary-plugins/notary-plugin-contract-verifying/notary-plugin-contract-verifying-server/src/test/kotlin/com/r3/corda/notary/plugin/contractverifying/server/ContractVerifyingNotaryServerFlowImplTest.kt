@@ -605,10 +605,9 @@ class ContractVerifyingNotaryServerFlowImplTest {
             .contains("Transaction failed to verify with error message", "contract verification failed")
     }
 
-    // to remove --------------------------------------------------
     @Test
     @Order(19)
-    fun `Contract verifying notary should successfully verify signatories if a signed tx has all required signatures`() {
+    fun `Contract verifying notary should successfully notarise if a signed tx verifies signatory signatures`() {
         whenever(mockTransactionSignatureService.signBatch(any(), any())).thenReturn(
             listOf(listOf(signatorySignatureCharlie))
         )
