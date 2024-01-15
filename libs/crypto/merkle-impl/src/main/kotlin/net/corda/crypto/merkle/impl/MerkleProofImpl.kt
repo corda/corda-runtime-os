@@ -304,7 +304,7 @@ class MerkleProofImpl(
 
         val outHashes = mutableListOf<SecureHash>()
 
-        // now walk the whole tree
+        // Second, walk the whole tree structure.
         val levels = makeLevels(treeSize)
         levels.forEachIndexed { height, ranges ->
             val level = levels.size - height - 1
@@ -319,7 +319,7 @@ class MerkleProofImpl(
                 //  or if y is calculated, it will be calculable in o, so no proof hash needed
                 //    or if x uses a proof hash, add that proof hash for o
                 //      or if y uses a proof hash, add that proof hash for o
-                //         else it is unknown in both, so leave it unknown
+                //         else it is unknown in both, so it is unknown
 
                 when {
                     x != null && x.consumed == null -> {
