@@ -96,6 +96,7 @@ import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.metrics.CordaMetrics.NOT_APPLICABLE_TAG_VALUE
 import net.corda.p2p.crypto.protocol.api.InvalidSelectedModeError
 import net.corda.p2p.crypto.protocol.api.NoCommonModeError
+import net.corda.p2p.crypto.protocol.api.SerialisableSessionData
 import net.corda.p2p.linkmanager.metrics.recordOutboundHeartbeatMessagesMetric
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.badGroupPolicy
 import kotlin.concurrent.read
@@ -257,7 +258,7 @@ internal class SessionManagerImpl(
         )
     }
 
-    private fun getSessionCounterpartiesFromMessage(message: AuthenticatedMessage): SessionCounterparties? {
+    internal fun getSessionCounterpartiesFromMessage(message: AuthenticatedMessage): SessionCounterparties? {
         val peer = message.header.destination
         val us = message.header.source
         val status = message.header.statusFilter
@@ -377,8 +378,8 @@ internal class SessionManagerImpl(
     private fun processSessionMessage(message: LinkInMessage): LinkOutMessage? {
         return dominoTile.withLifecycleLock {
             when (val payload = message.payload) {
-                is ResponderHelloMessage -> processResponderHello(payload)
-                is ResponderHandshakeMessage -> processResponderHandshake(payload)
+                is ResponderHelloMessage -> processResponderHello(payload)?.first
+                is ResponderHandshakeMessage -> processResponderHandshake(payload)?.first
                 is InitiatorHelloMessage -> processInitiatorHello(payload)
                 is InitiatorHandshakeMessage -> processInitiatorHandshake(payload)
                 else -> {
@@ -472,7 +473,7 @@ internal class SessionManagerImpl(
         return sessionId + "_" + InitiatorHandshakeMessage::class.java.simpleName
     }
 
-    private fun genSessionInitMessages(
+    internal fun genSessionInitMessages(
         counterparties: SessionCounterparties,
         multiplicity: Int
     ): List<Pair<AuthenticationProtocolInitiator, InitiatorHelloMessage>> {
@@ -545,7 +546,7 @@ internal class SessionManagerImpl(
         }
     }
 
-    private fun linkOutMessagesFromSessionInitMessages(
+    internal fun linkOutMessagesFromSessionInitMessages(
         sessionCounterparties: SessionCounterparties,
         messages: List<Pair<AuthenticationProtocolInitiator, InitiatorHelloMessage>>,
         filter: MembershipStatusFilter
@@ -632,8 +633,11 @@ internal class SessionManagerImpl(
         return Base64.getEncoder().encodeToString(this)
     }
 
+    internal fun getProtocolMode(holdingIdentity: HoldingIdentity) =
+        groupPolicyProvider.getP2PParameters(holdingIdentity)?.protocolMode
+
     @Suppress("ComplexMethod")
-    private fun processResponderHello(message: ResponderHelloMessage): LinkOutMessage? {
+    internal fun processResponderHello(message: ResponderHelloMessage): Pair<LinkOutMessage, AuthenticationProtocolInitiator>? {
         logger.info("Processing ${message::class.java.simpleName} for session ${message.header.sessionId}.")
 
         val sessionType = outboundSessionPool.getSession(message.header.sessionId) ?: run {
@@ -721,10 +725,10 @@ internal class SessionManagerImpl(
             message.header.sessionId,
         )
 
-        return createLinkOutMessage(payload, sessionInfo.ourId, responderMemberInfo, p2pParams.networkType)
+        return createLinkOutMessage(payload, sessionInfo.ourId, responderMemberInfo, p2pParams.networkType) to session
     }
 
-    private fun processResponderHandshake(message: ResponderHandshakeMessage): LinkOutMessage? {
+    internal fun processResponderHandshake(message: ResponderHandshakeMessage): Pair<LinkOutMessage?, SerialisableSessionData?>? {
         logger.info("Processing ${message::class.java.simpleName} for session ${message.header.sessionId}.")
         val sessionType = outboundSessionPool.getSession(message.header.sessionId) ?: run {
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
@@ -778,7 +782,7 @@ internal class SessionManagerImpl(
             sessionManagerConfig.sessionRefreshThreshold.toLong(),
             TimeUnit.SECONDS
         )
-        return null
+        return null to authenticatedSession
     }
 
     private fun refreshSessionAndLog(sessionCounterparties: SessionCounterparties, sessionId: String) {
