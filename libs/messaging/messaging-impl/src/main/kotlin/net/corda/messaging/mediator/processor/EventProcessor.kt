@@ -1,5 +1,6 @@
 package net.corda.messaging.mediator.processor
 
+import net.corda.data.messaging.mediator.MediatorState
 import net.corda.libs.statemanager.api.State
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorMessage
@@ -37,7 +38,8 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         return group.mapValues { groupEntry ->
             val groupKey = groupEntry.key.toString()
             val state = retrievedStates.getOrDefault(groupKey, null)
-            var processorState = stateManagerHelper.deserializeValue(state)?.let { stateValue ->
+            val mediatorState = stateManagerHelper.deserializeMediatorState(state) ?: createNewMediatorState()
+            var processorState = stateManagerHelper.deserializeValue(mediatorState)?.let { stateValue ->
                 StateAndEventProcessor.State(
                     stateValue,
                     state?.metadata
@@ -57,7 +59,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                     val returnedMessages = processSyncEvents(groupEntry.key, syncEvents)
                     queue.addAll(returnedMessages)
                 }
-                stateManagerHelper.createOrUpdateState(groupKey, state, processorState)
+                stateManagerHelper.createOrUpdateState(groupKey, state, mediatorState, processorState)
             } catch (e: CordaMessageAPIIntermittentException) {
                 // If an intermittent error occurs here, the RPC client has failed to deliver a message to another part
                 // of the system despite the retry loop implemented there. This should trigger individual processing to
@@ -74,6 +76,13 @@ class EventProcessor<K : Any, S : Any, E : Any>(
 
             EventProcessingOutput(asyncOutputs, stateChangeAndOperation)
         }
+    }
+
+    private fun createNewMediatorState(): MediatorState {
+        return MediatorState.newBuilder()
+            .setState(null)
+            .setOutputEvents(mutableListOf())
+            .build()
     }
 
     /**

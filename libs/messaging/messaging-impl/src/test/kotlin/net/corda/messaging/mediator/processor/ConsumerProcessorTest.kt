@@ -19,7 +19,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.getStringRecords
 import net.corda.messaging.mediator.GroupAllocator
-import net.corda.messaging.mediator.MediatorState
+import net.corda.messaging.mediator.MediatorSubscriptionState
 import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.taskmanager.TaskManager
@@ -54,7 +54,7 @@ class ConsumerProcessorTest {
     private lateinit var groupAllocator: GroupAllocator
     private lateinit var taskManager: TaskManager
     private lateinit var messageRouter: MessageRouter
-    private lateinit var mediatorState: MediatorState
+    private lateinit var mediatorSubscriptionState: MediatorSubscriptionState
     private lateinit var stateManagerHelper: StateManagerHelper<String>
     private lateinit var eventProcessor: EventProcessor<String, String, String>
 
@@ -68,12 +68,12 @@ class ConsumerProcessorTest {
         consumerFactory = mock()
         groupAllocator = mock()
         messageRouter = mock()
-        mediatorState = MediatorState()
+        mediatorSubscriptionState = MediatorSubscriptionState()
         eventProcessor = mock()
         eventMediatorConfig = buildStringTestConfig()
         stateManagerHelper = mock()
         consumerProcessor = ConsumerProcessor(
-            eventMediatorConfig, groupAllocator, taskManager, messageRouter, mediatorState, eventProcessor, stateManagerHelper
+            eventMediatorConfig, groupAllocator, taskManager, messageRouter, mediatorSubscriptionState, eventProcessor, stateManagerHelper
         )
     }
 
@@ -100,7 +100,7 @@ class ConsumerProcessorTest {
             )
         )
         whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(getGroups(2, 4))
-        whenever(stateManagerHelper.createOrUpdateState(any(), any(), any())).thenReturn(mock())
+        whenever(stateManagerHelper.createOrUpdateState(any(), any(), any(), any())).thenReturn(mock())
 
         consumerProcessor.processTopic(getConsumerFactory(), getConsumerConfig())
 
@@ -191,7 +191,7 @@ class ConsumerProcessorTest {
     private fun getConsumerFactory(): MediatorConsumerFactory {
         consumer.apply {
             whenever(poll(any())).thenAnswer {
-                mediatorState.stop()
+                mediatorSubscriptionState.stop()
                 listOf(getConsumerRecord())
             }
         }

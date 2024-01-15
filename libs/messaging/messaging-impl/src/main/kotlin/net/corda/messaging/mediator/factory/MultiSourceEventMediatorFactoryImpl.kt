@@ -1,6 +1,7 @@
 package net.corda.messaging.mediator.factory
 
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.data.messaging.mediator.MediatorState
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -68,12 +69,15 @@ class MultiSourceEventMediatorFactoryImpl(
     private fun <E : Any, K : Any, S : Any> createStateManagerHelper(
         eventMediatorConfig: EventMediatorConfig<K, S, E>
     ): StateManagerHelper<S> {
-        val stateSerializer = cordaAvroSerializationFactory.createAvroSerializer<S> { }
+        val stateSerializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
         val stateDeserializer = cordaAvroSerializationFactory.createAvroDeserializer(
             {}, eventMediatorConfig.messageProcessor.stateValueClass
         )
+        val mediatorWrapperDeserializer = cordaAvroSerializationFactory.createAvroDeserializer(
+            {}, MediatorState::class.java
+        )
         return StateManagerHelper(
-            stateSerializer, stateDeserializer
+            stateSerializer, stateDeserializer, mediatorWrapperDeserializer
         )
     }
 }
