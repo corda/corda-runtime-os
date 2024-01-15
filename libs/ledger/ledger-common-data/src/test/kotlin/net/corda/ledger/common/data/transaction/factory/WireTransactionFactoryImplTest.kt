@@ -17,26 +17,26 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
     private val privacySalt = privacySaltProviderService.generatePrivacySalt()
 
     @Test
-    fun `draft`() {
+    fun `transaction ids are deterministic`() {
         whenever(flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.flowId).thenReturn("FLOW_ID")
         whenever(flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.suspendCount).thenReturn(10)
 
-        val t1 = wireTransactionFactory.create(
+        val transaction1 = wireTransactionFactory.create(
             listOf(
                 listOf(canonicalJson.toByteArray()),
             ),
             privacySalt
         )
 
-        val t2 = wireTransactionFactory.create(
+        val transaction2 = wireTransactionFactory.create(
             listOf(
                 listOf(canonicalJson.toByteArray()),
             ),
             privacySalt
         )
 
-        assertThat(t1.id).isEqualTo(t2.id)
-        assertThat(t2.privacySalt).isEqualTo(t2.privacySalt)
+        assertThat(transaction1.id).isEqualTo(transaction2.id)
+        assertThat(transaction1.privacySalt).isEqualTo(transaction2.privacySalt)
     }
 
     @Test
