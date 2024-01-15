@@ -12,7 +12,7 @@ jettyVersion = "9.4.53.v20231009"
 # Testing
 assertjVersion = "3.25.1"
 junitVersion = "5.10.1"
-mockitoVersion = "5.8.0"
+mockitoVersion = "5.9.0"
 mockitoKotlinVersion = "5.2.1"
 
 # Plugins
