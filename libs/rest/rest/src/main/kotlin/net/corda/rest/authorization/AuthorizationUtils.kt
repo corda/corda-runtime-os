@@ -20,10 +20,7 @@ object AuthorizationUtils {
         val isAuthorized = authorizationProvider?.isAuthorized(authorizingSubject, resourceAccessString)
             ?: authorizingSubject.isPermitted(resourceAccessString)
 
-        if (!isAuthorized) {
-            return false
-        }
-        log.trace("Authorize \"$principal\" for \"$resourceAccessString\" completed.")
-        return true
+        log.trace("Authorize \"$principal\" for \"$resourceAccessString\" completed. Outcome: $isAuthorized")
+        return isAuthorized
     }
 }

@@ -192,7 +192,7 @@ internal object ContextUtils {
         }
     }
 
-    fun userNotAuthorized(user: String, resourceAccessString: String) {
+    internal fun userNotAuthorized(user: String, resourceAccessString: String) {
         val pathParts = resourceAccessString.split(METHOD_SEPARATOR, limit = 2)
         withMDC(user, pathParts.firstOrNull() ?: "no_method", pathParts.lastOrNull() ?: "no_path") {
             "User not authorized.".let {

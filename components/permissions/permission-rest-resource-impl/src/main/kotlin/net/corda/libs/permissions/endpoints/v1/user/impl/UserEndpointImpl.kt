@@ -53,6 +53,31 @@ class UserEndpointImpl @Activate constructor(
     private val platformInfoProvider: PlatformInfoProvider,
 ) : UserEndpoint, PluggableRestResource<UserEndpoint>, Lifecycle {
 
+    private val changeSelfPasswordMethodPath: String
+
+    init {
+        changeSelfPasswordMethodPath = this::class.memberFunctions
+            .firstOrNull { it.name == ::changeUserPasswordSelf.name }
+            ?.let { method ->
+                UserEndpoint::class.memberFunctions.find { it.name == method.name }?.findAnnotation<HttpPOST>()
+            }
+            ?.path ?: throw IllegalStateException("changeUserPasswordSelf method path not found")
+    }
+
+    override val authorizationProvider = object : AuthorizationProvider {
+        override fun isAuthorized(subject: AuthorizingSubject, action: String): Boolean {
+            val requestedPath = action.split(":", limit = 2).last()
+
+            // if requested Path is for /selfpassword we override the default authorization, as all users
+            // should be able to change their password
+            return if (requestedPath.endsWith(changeSelfPasswordMethodPath)) {
+                true
+            } else {
+                AuthorizationProvider.Default.isAuthorized(subject, action)
+            }
+        }
+    }
+
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
@@ -69,29 +94,6 @@ class UserEndpointImpl @Activate constructor(
                     "$DEFAULT_SYSTEM_ADMIN_ROLE cannot be removed from $DEFAULT_ADMIN_FULL_NAME",
                     mapOf("roleId" to roleId, "loginName" to loginName)
                 )
-            }
-        }
-    }
-
-    override fun getAuthorizationProvider(): AuthorizationProvider {
-        return object : AuthorizationProvider {
-            override fun isAuthorized(subject: AuthorizingSubject, action: String): Boolean {
-                val requestedPath = action.split(":", limit = 2).last()
-
-                val changeSelfPasswordMethodPath = this@UserEndpointImpl::class.memberFunctions
-                    .firstOrNull { it.name == ::changeUserPasswordSelf.name }
-                    ?.let { method ->
-                        UserEndpoint::class.memberFunctions.find { it.name == method.name }?.findAnnotation<HttpPOST>()
-                    }
-                    ?.path!!
-
-                // if requested Path is for /selfpassword we override the default authorization, as all users
-                // should be able to change their password
-                return if (requestedPath.endsWith(changeSelfPasswordMethodPath)) {
-                    true
-                } else {
-                    AuthorizationProvider.Default.isAuthorized(subject, action)
-                }
             }
         }
     }

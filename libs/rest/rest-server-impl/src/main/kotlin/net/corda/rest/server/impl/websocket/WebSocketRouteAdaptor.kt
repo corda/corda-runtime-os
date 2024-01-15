@@ -66,8 +66,9 @@ internal class WebSocketRouteAdaptor(
                 try {
                     val authorizingSubject = authenticate(clientWsRequestContext, restAuthProvider, credentialResolver)
                     val resourceAccessString = clientWsRequestContext.getResourceAccessString()
+                    val authorizationProvider = routeInfo.method.instance.authorizationProvider
 
-                    if (!authorize(authorizingSubject, resourceAccessString)) {
+                    if (!authorize(authorizingSubject, resourceAccessString, authorizationProvider)) {
                         userNotAuthorized(authorizingSubject.principal, resourceAccessString)
                     }
                     val paramsFromRequest = routeInfo.retrieveParameters(clientWsRequestContext)

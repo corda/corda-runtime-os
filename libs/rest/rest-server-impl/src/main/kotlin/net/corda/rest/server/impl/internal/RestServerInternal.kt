@@ -196,7 +196,7 @@ internal class RestServerInternal(
                     ) {
                         val clientHttpRequestContext = ClientHttpRequestContext(it)
                         val authorizingSubject = authenticate(clientHttpRequestContext, restAuthProvider, credentialResolver)
-                        val authorizationProvider = routeInfo.method.instance.getAuthorizationProvider()
+                        val authorizationProvider = routeInfo.method.instance.authorizationProvider
                         val resourceAccessString = clientHttpRequestContext.getResourceAccessString()
 
                         if (!authorize(authorizingSubject, resourceAccessString, authorizationProvider)) {
@@ -255,7 +255,7 @@ internal class RestServerInternal(
                     }
                     val clientHttpRequestContext = ClientHttpRequestContext(it)
                     val authorizingSubject = authenticate(clientHttpRequestContext, restAuthProvider, credentialResolver)
-                    val authorizationProvider = routeInfo.method.instance.getAuthorizationProvider()
+                    val authorizationProvider = routeInfo.method.instance.authorizationProvider
                     val resourceAccessString = clientHttpRequestContext.getResourceAccessString()
 
                     if (!authorize(authorizingSubject, resourceAccessString, authorizationProvider)) {
