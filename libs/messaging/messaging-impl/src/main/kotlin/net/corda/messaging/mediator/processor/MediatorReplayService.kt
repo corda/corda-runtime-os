@@ -30,9 +30,9 @@ class MediatorReplayService @Activate constructor(
      * @return Return a new [MediatorReplayOutputEvents] object containing all the existing outputs with the new outputs added to it.
      */
     fun <K : Any, E : Any> getOutputEvents(
-        existingOutputs: MutableList<MediatorReplayOutputEvents>,
-        newOutputs: MutableMap<Record<K, E>, MutableList<MediatorMessage<Any>>>
-    ): MutableList<MediatorReplayOutputEvents> {
+        existingOutputs: List<MediatorReplayOutputEvents>,
+        newOutputs: Map<Record<K, E>, MutableList<MediatorMessage<Any>>>
+    ): List<MediatorReplayOutputEvents> {
         val mediatorOutputs = existingOutputs.toMutableList()
 
         newOutputs.onEach { entry ->
@@ -67,5 +67,5 @@ class MediatorReplayService @Activate constructor(
         return ByteBuffer.wrap(recordKeyBytes + recordValueBytes.sha256Bytes())
     }
 
-    fun serialize(value: Any?) = value?.let { serializer.serialize(it) }
+    private fun serialize(value: Any?) = value?.let { serializer.serialize(it) }
 }
