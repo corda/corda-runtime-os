@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory
 import java.security.SecureRandom
 import kotlin.experimental.xor
 import kotlin.random.Random
+import kotlin.random.nextULong
 import kotlin.test.assertFailsWith
 
 class MerkleTreeTest {
@@ -46,7 +47,8 @@ class MerkleTreeTest {
         // which takes 30 minutes on a laptop.
         private const val NUMBER_OF_SUBSETS_TO_TEST = 10
 
-        private const val MAXIMUM_TREE_SIZE_FOR_EXHAUSTIVE_MERGE_TESTS = 8
+        private const val MAXIMUM_TREE_SIZE_FOR_EXHAUSTIVE_MERGE_TESTS = 16
+        private const val NUMBER_OF_MERGE_TESTS = 5000
 
         private lateinit var digestService: DigestService
         private lateinit var defaultHashDigestProvider: DefaultHashDigestProvider
@@ -112,17 +114,37 @@ class MerkleTreeTest {
         fun merkleProofExtendedTestSizes(): List<Arguments> = merkleProofForTreeSizes(12, 15)
 
         @JvmStatic
-        fun merkleProofMergeCombinations(): List<Arguments> = (1..MAXIMUM_TREE_SIZE_FOR_EXHAUSTIVE_MERGE_TESTS).map { treeSize ->
-            (1 until (1 shl treeSize)).map { sourceProofLeafSet ->
-                val leafIndicesCombination = (0 until treeSize).filter { (sourceProofLeafSet and (1 shl it)) != 0 }
-                (0 until (1 shl leafIndicesCombination.size)).map { i ->
-                    (0 until leafIndicesCombination.size).filter { j -> i and (1 shl j) != 0 }
-                        .map { leafIndicesCombination[it] }
+        fun merkleProofMergeCombinations(): List<Arguments> {
+            // We want to pick tests at random without realizing the entire list first, since
+            // it will be too big to hold in memory.
+            val rng = Random(0)
+            val numberOfTreeSizes = MAXIMUM_TREE_SIZE_FOR_EXHAUSTIVE_MERGE_TESTS - 2
+            val combinations: ULong = (
+                numberOfTreeSizes.toULong()
+                    * (1UL shl MAXIMUM_TREE_SIZE_FOR_EXHAUSTIVE_MERGE_TESTS)
+                    * (1UL shl MAXIMUM_TREE_SIZE_FOR_EXHAUSTIVE_MERGE_TESTS)
+            )
+            return iterator {
+                while (true) {
+                    val t: ULong = rng.nextULong(0UL..combinations)
+                    val treeSize: UInt = 2U + (((t % numberOfTreeSizes.toUInt())).toUInt())
+                    val t2: ULong = (t / MAXIMUM_TREE_SIZE_FOR_EXHAUSTIVE_MERGE_TESTS.toULong())
+                    val numberOfProofLeafSets: UInt = 1U shl (treeSize.toInt())
+                    val sourceProofLeafSet: UInt = (t2 % numberOfProofLeafSets).toUInt()
+                    val leafIndicesCombination: List<Int> =
+                        (0 until treeSize.toInt()).filter { ((sourceProofLeafSet.toULong()) and (1UL shl (it))) != 0UL }
+                    val numberOfSplits: UInt = (1U shl (leafIndicesCombination.size - 1))
+                    val t3: ULong = t2 / numberOfProofLeafSets
+                    val splitIndex = t3 % numberOfSplits.toULong()
+                    val xSet =
+                        leafIndicesCombination.filter { leafIndex -> (splitIndex and (1UL shl (leafIndex))) != 0UL }
+                    val ySet = leafIndicesCombination.filter { leafIndex -> leafIndex !in xSet }
+                    if (numberOfSplits > 0U && xSet.isNotEmpty() && ySet.isNotEmpty()) {
+                        yield(Arguments.of(treeSize.toInt(), xSet, ySet))
+                    }
                 }
-                    .filter { xSet -> xSet.isNotEmpty() && xSet.size != leafIndicesCombination.size }
-                    .map { xSet -> Arguments.of(treeSize, xSet, leafIndicesCombination.filter { it !in xSet }) }
-            }.flatten()
-        }.flatten()
+            }.asSequence().take(NUMBER_OF_MERGE_TESTS).toList() // Sadly, we don't know how to have JUnit test parameters from  lazy sequences
+        }
 
         @JvmStatic
         fun subsetTestCombinations(): List<Arguments> = (1..11).map { treeSize ->
@@ -1219,20 +1241,17 @@ class MerkleTreeTest {
 
     @Test
     fun `test merge 10 bug`() {
-        val treeSize = 10
         val xSubset = listOf(1,7,8)
         val ySubset = listOf(2,4,5,6)
-        val digest = defaultHashDigestProvider
         val leafIndicesCombination = xSubset + ySubset
-        val leaves = leafIndicesCombination
-        val merkleTree = makeTestMerkleTree(treeSize, digest)
+        val merkleTree = makeTestMerkleTree(10, defaultHashDigestProvider)
         val proof = makeProof(merkleTree, leafIndicesCombination)
-        val proofText = proof.render(digest)
-        check(xSubset.size + ySubset.size == leaves.size)
-        val xProof = proof.subset(digest, xSubset)
-        val yProof = proof.subset(digest, ySubset)
-        val mergedProof = xProof.merge(yProof, digest)
-        val mergedProofText = mergedProof.render(digest)
+        val proofText = proof.render(defaultHashDigestProvider)
+        check(xSubset.size + ySubset.size == leafIndicesCombination.size)
+        val xProof = proof.subset(defaultHashDigestProvider, xSubset)
+        val yProof = proof.subset(defaultHashDigestProvider, ySubset)
+        val mergedProof = xProof.merge(yProof, defaultHashDigestProvider)
+        val mergedProofText = mergedProof.render(defaultHashDigestProvider)
         assertThat(mergedProofText).isEqualTo(proofText)
     }
 
