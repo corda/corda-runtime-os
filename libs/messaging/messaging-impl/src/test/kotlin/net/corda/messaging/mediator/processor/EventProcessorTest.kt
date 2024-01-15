@@ -46,7 +46,9 @@ class EventProcessorTest {
         client = mock()
         stateAndEventProcessor = mock()
         stateManagerHelper = mock()
-        mediatorReplayService = mock()
+        mediatorReplayService = mock<MediatorReplayService>().apply {
+            whenever(getReplayEvents<String, String>(anyOrNull(), anyOrNull())).thenReturn(null)
+        }
         messageRouter = mock()
         whenever(messageRouter.getDestination(any())).thenAnswer {
             val msg = it.arguments[0] as MediatorMessage<String>
