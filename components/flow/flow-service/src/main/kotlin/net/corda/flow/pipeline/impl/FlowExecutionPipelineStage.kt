@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.impl
 
+import net.corda.data.flow.FlowKey
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.fiber.cache.FlowFiberCache
@@ -12,6 +13,7 @@ import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
+import java.lang.ref.WeakReference
 import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -55,8 +57,9 @@ internal class FlowExecutionPipelineStage(
         var continuation = flowReady(currentContext)
         while (continuation != FlowContinuation.Continue) {
             continuation = try {
-                val output = executeFlow(currentContext, continuation, timeout)
+                val (output, cacheToken) = executeFlow(currentContext, continuation, timeout)
                 currentContext = updateContext(output, currentContext)
+                currentContext.cacheToken = cacheToken
                 notifyContextUpdate(currentContext)
                 flowReady(currentContext)
             } catch (e: FlowPlatformException) {
@@ -68,6 +71,16 @@ internal class FlowExecutionPipelineStage(
             }
         }
         return currentContext
+    }
+
+    private class CacheTokenImpl(
+        private val fiberCache: WeakReference<FlowFiberCache>? = null,
+        private val flowKey: FlowKey? = null
+    ) :
+        FlowEventContext.CacheToken {
+        override fun clear() {
+            fiberCache?.get()?.remove(checkNotNull(flowKey))
+        }
     }
 
     private fun flowReady(context: FlowEventContext<Any>): FlowContinuation {
@@ -86,7 +99,7 @@ internal class FlowExecutionPipelineStage(
         context: FlowEventContext<Any>,
         continuation: FlowContinuation,
         timeout: Long
-    ): FlowIORequest<*> {
+    ): Pair<FlowIORequest<*>, FlowEventContext.CacheToken> {
         context.flowMetrics.flowFiberEntered()
         val future = flowRunner.runFlow(context, continuation)
 
@@ -108,27 +121,30 @@ internal class FlowExecutionPipelineStage(
 
         return when (fiberResult) {
             is FlowIORequest.FlowFinished -> {
-// @@@                fiberCache.remove(context.checkpoint.flowKey)
+                future.flowFiberCache.remove(context.checkpoint.flowKey)
                 context.checkpoint.serializedFiber = ByteBuffer.wrap(byteArrayOf())
                 context.flowMetrics.flowFiberExited()
-                fiberResult
+                Pair(fiberResult, CacheTokenImpl())
             }
 
             is FlowIORequest.FlowSuspended<*> -> {
                 context.checkpoint.serializedFiber = fiberResult.fiber
                 fiberResult.cacheableFiber?.let {
-// @@@                    fiberCache.put(context.checkpoint.flowKey, context.checkpoint.suspendCount, it)
+                    future.flowFiberCache.put(context.checkpoint.flowKey, context.checkpoint.suspendCount, it)
                 }
                 context.flowMetrics.flowFiberExitedWithSuspension(
                     flowIORequestTypeConverter.convertToActionName(fiberResult.output)
                 )
-                fiberResult.output
+                Pair(
+                    fiberResult.output,
+                    CacheTokenImpl(WeakReference(future.flowFiberCache), context.checkpoint.flowKey)
+                )
             }
 
             is FlowIORequest.FlowFailed -> {
-// @@@                fiberCache.remove(context.checkpoint.flowKey)
+                future.flowFiberCache.remove(context.checkpoint.flowKey)
                 context.flowMetrics.flowFiberExited()
-                fiberResult
+                Pair(fiberResult, CacheTokenImpl())
             }
 
             else -> throw FlowFatalException("Invalid ${FlowIORequest::class.java.simpleName} returned from flow fiber")

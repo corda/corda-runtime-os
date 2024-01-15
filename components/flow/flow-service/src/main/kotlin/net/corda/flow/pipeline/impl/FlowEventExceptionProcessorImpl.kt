@@ -66,7 +66,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         }
         log.warn(msg, exception)
 
-        removeCachedFlowFiber(checkpoint)
+        context.cacheToken?.clear()
         val cleanupRecords = checkpointCleanupHandler.cleanupCheckpoint(checkpoint, context.flowConfig, exception)
 
         context.copy(
@@ -98,7 +98,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
     ): FlowEventContext<*> = withEscalation(context) {
         log.warn("A non critical error was reported while processing the event: ${exception.message}")
 
-        removeCachedFlowFiber(context.checkpoint)
+        context.cacheToken?.clear()
 
         context
     }
@@ -113,7 +113,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             checkpoint.setPendingPlatformError(PLATFORM_ERROR, exception.message)
             checkpoint.waitingFor = WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
 
-            removeCachedFlowFiber(checkpoint)
+            context.cacheToken?.clear()
 
             context
         }
@@ -126,7 +126,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         return withEscalation(context) {
             val checkpoint = context.checkpoint
 
-            removeCachedFlowFiber(checkpoint)
+            context.cacheToken?.clear()
             val cleanupRecords = checkpointCleanupHandler.cleanupCheckpoint(checkpoint, context.flowConfig, exception)
 
             context.copy(
@@ -149,12 +149,5 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         return createStatusRecord(checkpoint.flowId) {
             flowMessageFactory.createFlowKilledStatusMessage(checkpoint, message)
         }
-    }
-
-    /**
-     * Remove cached flow fiber for this checkpoint, if it exists.
-     */
-    private fun removeCachedFlowFiber(checkpoint: FlowCheckpoint) {
-        if (checkpoint.doesExist) flowFiberCache.remove(checkpoint.flowKey)
     }
 }

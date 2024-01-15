@@ -46,7 +46,11 @@ class FlowFiberFactoryImpl @Activate constructor() : FlowFiberFactory {
         }
         try {
             val flowFiber = FlowFiberImpl(id, logic, currentThreadFiberExecutor)
-            return FiberFuture(flowFiber, flowFiber.startFlow(flowFiberExecutionContext))
+            return FiberFuture(
+                flowFiber,
+                flowFiberExecutionContext.sandboxGroupContext.fiberCache,
+                flowFiber.startFlow(flowFiberExecutionContext)
+            )
         } catch (e: Throwable) {
             throw FlowFatalException(
                 FiberExceptionConstants.UNABLE_TO_EXECUTE.format(
@@ -73,6 +77,7 @@ class FlowFiberFactoryImpl @Activate constructor() : FlowFiberFactory {
 
         return FiberFuture(
             fiber,
+            flowFiberExecutionContext.sandboxGroupContext.fiberCache,
             fiber.resume(flowFiberExecutionContext, suspensionOutcome, currentThreadFiberExecutor)
         )
     }

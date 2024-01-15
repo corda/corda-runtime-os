@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.events
 
+import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.flow.pipeline.metrics.FlowMetrics
 import net.corda.flow.state.FlowCheckpoint
@@ -7,6 +8,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.messaging.api.records.Record
 import net.corda.tracing.TraceContext
+import java.lang.ref.WeakReference
 
 /**
  * [FlowEventContext] contains information about a received [FlowEvent] and state that should be modified when passed through a
@@ -25,6 +27,7 @@ import net.corda.tracing.TraceContext
  * @param flowMetrics The [FlowMetrics] instance associated with the flow event
  * @param flowTraceContext The [TraceContext] instance associated with the flow event
  * @param metadata Metadata associated with the checkpoint in state storage
+ * @oaram cacheToken A token which represents any cached information the pipeline might have created
  */
 data class FlowEventContext<T>(
     val checkpoint: FlowCheckpoint,
@@ -38,5 +41,15 @@ data class FlowEventContext<T>(
     val mdcProperties: Map<String, String>,
     val flowMetrics: FlowMetrics,
     val flowTraceContext: TraceContext,
-    val metadata: Metadata?
-)
+    val metadata: Metadata?,
+    var cacheToken: CacheToken? = null
+) {
+    /**
+     * Pipelines can cache information for efficiency when flows are suspended. If something goes wrong this token
+     * can be used to ensure all cached information, which would no longer be needed, is cleared. Cache tokens are
+     * lightweight and should not own any cached data themselves, they only provide a means to clear it.
+     */
+    interface CacheToken {
+        fun clear()
+    }
+}
