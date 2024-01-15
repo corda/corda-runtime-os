@@ -59,7 +59,13 @@ fun conditionallyUploadCordaPackage(
     groupId: String,
     staticMemberNames: List<String>,
     customGroupParameters: Map<String, Any> = emptyMap(),
-) = DEFAULT_CLUSTER.conditionallyUploadCordaPackage(cpiName, cpbResourceName, groupId, staticMemberNames, customGroupParameters)
+) = DEFAULT_CLUSTER.conditionallyUploadCordaPackage(
+    cpiName,
+    cpbResourceName,
+    groupId,
+    staticMemberNames,
+    customGroupParameters
+)
 
 fun ClusterInfo.conditionallyUploadCordaPackage(
     cpiName: String,
@@ -75,7 +81,7 @@ private val uploading = ConcurrentHashMap<Pair<String, String>, Unit?>()
 fun ClusterInfo.conditionallyUploadCordaPackage(
     name: String,
     cpiUpload: ClusterBuilder.() -> SimpleResponse
-) = uploading.compute(Pair(this.id, name)) {_, _ ->
+) = uploading.compute(Pair(this.id, name)) { _, _ ->
     cluster {
         if (getExistingCpi(name) == null) {
             val responseStatusId = cpiUpload().run {
@@ -151,8 +157,8 @@ fun ClusterInfo.getExistingCpi(
         condition { it.code == ResponseCode.OK.statusCode }
         failMessage("Failed to list CPIs")
     }.toJson().apply {
-            assertThat(contains("cpis")).isTrue
-        }["cpis"]
+        assertThat(contains("cpis")).isTrue
+    }["cpis"]
         .toList()
         .firstOrNull {
             it["id"]["cpiName"].textValue() == cpiName
@@ -222,6 +228,15 @@ fun ClusterInfo.rotateCryptoUnmanagedWrappingKeys(
 ) = cluster {
     assertWithRetry {
         command { doRotateCryptoUnmanagedWrappingKeys(oldKeyAlias, newKeyAlias) }
+        condition { it.code == ResponseCode.ACCEPTED.statusCode }
+    }
+}
+
+fun ClusterInfo.cryptoUnmanagedWrappingKeysRotationStatus(
+    requestid: String
+) = cluster {
+    assertWithRetry {
+        command { getCryptoUnmanagedWrappingKeysRotationStatus(requestid) }
         condition { it.code == ResponseCode.ACCEPTED.statusCode }
     }
 }

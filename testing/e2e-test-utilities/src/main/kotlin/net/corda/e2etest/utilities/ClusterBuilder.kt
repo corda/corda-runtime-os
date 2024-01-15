@@ -343,12 +343,16 @@ class ClusterBuilder {
     }
 
     fun changeUserPasswordSelf(password: String) =
-        post("/api/$REST_API_VERSION_PATH/user/selfpassword",
-            """{"password": "$password"}""")
+        post(
+            "/api/$REST_API_VERSION_PATH/user/selfpassword",
+            """{"password": "$password"}"""
+        )
 
     fun changeUserPasswordOther(username: String, password: String) =
-        post("/api/$REST_API_VERSION_PATH/user/otheruserpassword",
-            """{"username": "$username", "password": "$password"}""")
+        post(
+            "/api/$REST_API_VERSION_PATH/user/otheruserpassword",
+            """{"username": "$username", "password": "$password"}"""
+        )
 
     private fun createPermissionBody(
         permissionString: String,
@@ -736,13 +740,19 @@ class ClusterBuilder {
         oldKeyAlias: String,
         newKeyAlias: String
     ): SimpleResponse {
-        return post("/api/$REST_API_VERSION_PATH/wrappingkey/unmanaged/rotation/${oldKeyAlias}",
+        return post(
+            "/api/$REST_API_VERSION_PATH/wrappingkey/unmanaged/rotation/${oldKeyAlias}",
             body = """{
                 "newKeyAlias": "$newKeyAlias"
             }""".trimMargin()
         )
     }
 
+    fun getCryptoUnmanagedWrappingKeysRotationStatus(requestid: String): SimpleResponse {
+        return get(
+            "/api/$REST_API_VERSION_PATH/wrappingkey/unmanaged/rotation/${requestid}",
+        )
+    }
 }
 
 fun <T> cluster(
