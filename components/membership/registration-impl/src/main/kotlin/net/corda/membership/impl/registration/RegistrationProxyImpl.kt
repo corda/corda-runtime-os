@@ -67,7 +67,7 @@ class RegistrationProxyImpl @Activate constructor(
 
     private var dependencyStatusChangeHandle: AutoCloseable? = null
     private val dependencies = setOf(LifecycleCoordinatorName.forComponent<GroupPolicyProvider>()) +
-            registrationServices.map { it.lifecycleCoordinatorName }
+        registrationServices.map { it.lifecycleCoordinatorName }
 
     private val coordinator = lifecycleCoordinatorFactory.createCoordinator<RegistrationProxy>(::handleEvent)
 
@@ -100,7 +100,6 @@ class RegistrationProxyImpl @Activate constructor(
                     LifecycleStatus.UP -> activate(UP_REASON_READY)
                     else -> deactivate(DOWN_REASON_NOT_READY)
                 }
-
             }
         }
     }
@@ -144,7 +143,7 @@ class RegistrationProxyImpl @Activate constructor(
             throw NotReadyMembershipRegistrationException("RegistrationProxy currently inactive.")
     }
 
-    private inner class ActiveImpl: InnerRegistrationProxy {
+    private inner class ActiveImpl : InnerRegistrationProxy {
         override fun register(
             registrationId: UUID,
             member: HoldingIdentity,

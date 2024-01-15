@@ -11,7 +11,7 @@ import java.time.Duration
  * minutes. Some examples: PT15M (15 minutes), P4D (4 days), P1DT2H2M (1 day 2 hours and 2 minutes).
  * @param remarks Some optional remarks.
  */
-data class PreAuthTokenRequest (
+data class PreAuthTokenRequest(
     val ownerX500Name: String,
     val ttl: Duration? = null,
     val remarks: String? = null

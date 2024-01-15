@@ -5,7 +5,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.ReconcilerWriter
 
-interface AllowedCertificatesReaderWriterService:
+interface AllowedCertificatesReaderWriterService :
     ReconcilerReader<MgmAllowedCertificateSubject, MgmAllowedCertificateSubject>,
     ReconcilerWriter<MgmAllowedCertificateSubject, MgmAllowedCertificateSubject>,
     Lifecycle

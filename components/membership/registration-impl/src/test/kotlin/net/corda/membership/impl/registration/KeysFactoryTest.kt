@@ -37,7 +37,7 @@ class KeysFactoryTest {
         on { decodePublicKey(encoded) } doReturn publicKey
         on { encodeAsString(publicKey) } doReturn "PEM"
     }
-    private val cryptoSigningKey = mock<CryptoSigningKey>() {
+    private val cryptoSigningKey = mock<CryptoSigningKey> {
         on { publicKey } doReturn ByteBuffer.wrap(encoded)
         on { schemeCodeName } doReturn ECDSA_SECP256R1_CODE_NAME
     }

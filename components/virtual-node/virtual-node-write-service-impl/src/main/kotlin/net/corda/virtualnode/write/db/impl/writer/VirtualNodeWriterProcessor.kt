@@ -9,6 +9,7 @@ import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.data.virtualnode.VirtualNodeOperationStatusRequest
 import net.corda.data.virtualnode.VirtualNodeOperationalState
+import net.corda.data.virtualnode.VirtualNodeSchemaRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
@@ -20,7 +21,6 @@ import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
 import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
-import net.corda.libs.virtualnode.common.exception.InvalidStateChangeRuntimeException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationBadRequestException
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
@@ -39,6 +39,7 @@ import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtility
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeOperationStatusHandler
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeSchemaHandler
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
@@ -61,6 +62,7 @@ internal class VirtualNodeWriterProcessor(
     private val dbConnectionManager: DbConnectionManager,
     private val oldVirtualNodeEntityRepository: VirtualNodeEntityRepository,
     private val virtualNodeOperationStatusHandler: VirtualNodeOperationStatusHandler,
+    private val virtualNodeSchemaHandler: VirtualNodeSchemaHandler,
     private val changeLogsRepository: CpkDbChangeLogRepository,
     private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl(),
     private val migrationUtility: MigrationUtility,
@@ -97,6 +99,10 @@ internal class VirtualNodeWriterProcessor(
             is VirtualNodeOperationStatusRequest -> {
                 logger.info("Handling virtual node operation status request with id ${typedRequest.requestId}")
                 virtualNodeOperationStatusHandler.handle(request.timestamp, typedRequest, respFuture)
+            }
+            is VirtualNodeSchemaRequest -> {
+                logger.info("Handling virtual node schema SQL request for ${typedRequest.dbType} DB")
+                virtualNodeSchemaHandler.handle(request.timestamp, typedRequest, respFuture)
             }
             else -> throw VirtualNodeWriteServiceException("Unknown management request of type: ${typedRequest::class.java.name}")
         }
@@ -253,13 +259,26 @@ internal class VirtualNodeWriterProcessor(
                 val newState = OperationalStatus.fromAvro(stateChangeRequest.newState)
 
                 // Compare new state to current state
+                val successResponse = {
+                    VirtualNodeManagementResponse(
+                        instant,
+                        VirtualNodeStateChangeResponse(
+                            stateChangeRequest.holdingIdentityShortHash,
+                            nodeInfo.flowP2pOperationalStatus.toAvro(),
+                            nodeInfo.flowStartOperationalStatus.toAvro(),
+                            nodeInfo.flowOperationalStatus.toAvro(),
+                            nodeInfo.vaultDbOperationalStatus.toAvro()
+                        )
+                    )
+                }
                 when (inMaintenance) {
                     true -> if (newState == OperationalStatus.INACTIVE) {
-                        throw InvalidStateChangeRuntimeException("VirtualNode", newState.name, shortHash.value)
+                        respFuture.complete(successResponse())
+                        return
                     }
-
                     false -> if (newState == OperationalStatus.ACTIVE) {
-                        throw InvalidStateChangeRuntimeException("VirtualNode", newState.name, shortHash.value)
+                        respFuture.complete(successResponse())
+                        return
                     }
                 }
 

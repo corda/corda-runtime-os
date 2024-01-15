@@ -31,7 +31,7 @@ dependencies {
     implementation "biz.aQute.bnd:biz.aQute.bndlib:$bndlibVersion"
 
     implementation "com.google.cloud.tools:jib-core:$jibCoreVersion"
-    implementation "com.gradle:gradle-enterprise-gradle-plugin:$gradleEnterpriseVersion"
+    implementation libs.gradle.enterprise
 
     implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
 

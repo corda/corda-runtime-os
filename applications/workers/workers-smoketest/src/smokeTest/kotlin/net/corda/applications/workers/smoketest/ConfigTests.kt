@@ -45,13 +45,13 @@ class ConfigTests : ClusterReadiness by ClusterReadinessChecker() {
         val initialValue = getReconConfigValue(defaults = true)
         val newValue = (initialValue * 2)
 
-        managedConfig { configManager ->
-            configManager.load(RECONCILIATION_CONFIG, RECONCILIATION_CONFIG_INTERVAL_MS, newValue).apply()
-            waitForConfigurationChange(RECONCILIATION_CONFIG, RECONCILIATION_CONFIG_INTERVAL_MS, newValue.toString(), false)
-
-            val updatedValue = getReconConfigValue(defaults = false)
-            assertThat(updatedValue).isEqualTo(newValue)
-        }
+        managedConfig()
+            .load(RECONCILIATION_CONFIG, RECONCILIATION_CONFIG_INTERVAL_MS, newValue)
+            .apply {
+                waitForConfigurationChange(RECONCILIATION_CONFIG, RECONCILIATION_CONFIG_INTERVAL_MS, newValue.toString(), false)
+                val updatedValue = getReconConfigValue(defaults = false)
+                assertThat(updatedValue).isEqualTo(newValue)
+            }
     }
 
     private fun getReconConfigValue(defaults: Boolean): Int {

@@ -1,4 +1,5 @@
 @file:Suppress("DEPRECATION")
+
 package net.corda.membership.impl.rest.v1.deprecated
 
 import net.corda.crypto.cipher.suite.KeyEncodingService

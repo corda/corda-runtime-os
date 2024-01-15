@@ -5,6 +5,8 @@ plugins {
 
 description 'Membership certificates client'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     api 'net.corda:corda-membership'

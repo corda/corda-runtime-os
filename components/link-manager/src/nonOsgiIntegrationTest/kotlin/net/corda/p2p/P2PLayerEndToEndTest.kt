@@ -676,6 +676,8 @@ class P2PLayerEndToEndTest {
                 mock(),
                 mock(),
                 stateManager,
+                mock(),
+                mock(),
             )
         private val platformInfoProvider = object : PlatformInfoProvider {
             override val activePlatformVersion = 1

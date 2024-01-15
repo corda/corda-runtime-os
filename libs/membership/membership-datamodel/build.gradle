@@ -5,6 +5,8 @@ plugins {
 
 description 'Membership persistent data model'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "org.osgi:osgi.core"

@@ -3931,7 +3931,7 @@
                 "schema" : {
                   "type" : "string",
                   "nullable" : false,
-                  "example" : "No example available for this type"
+                  "example" : "string"
                 }
               }
             }
@@ -3959,7 +3959,7 @@
                 "schema" : {
                   "type" : "string",
                   "nullable" : false,
-                  "example" : "No example available for this type"
+                  "example" : "string"
                 }
               }
             }
@@ -3998,7 +3998,7 @@
                 "schema" : {
                   "type" : "string",
                   "nullable" : false,
-                  "example" : "No example available for this type"
+                  "example" : "string"
                 }
               }
             }
@@ -4258,7 +4258,7 @@
                 "schema" : {
                   "type" : "string",
                   "nullable" : false,
-                  "example" : "No example available for this type"
+                  "example" : "string"
                 }
               }
             }

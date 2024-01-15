@@ -1,9 +1,6 @@
 package net.corda.membership.impl.rest.v1
 
 import net.corda.crypto.core.ShortHash
-import net.corda.rest.exception.BadRequestException
-import net.corda.rest.exception.ResourceNotFoundException
-import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.client.CouldNotFindEntityException
@@ -18,19 +15,22 @@ import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.client.dto.SubmittedRegistrationStatus
 import net.corda.membership.lib.ContextDeserializationException
 import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
+import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.InternalServerException
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.exception.ServiceUnavailableException
+import net.corda.test.util.time.TestClock
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
-import net.corda.test.util.time.TestClock
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.whenever
 import java.lang.Exception
 import java.time.Instant
@@ -134,6 +134,7 @@ class MemberRegistrationRestResourceTest {
         }
         assertThat(ex).hasMessage("MemberRegistrationRestResourceImpl is not running. Operation cannot be fulfilled.")
     }
+
     @Test
     fun `checkSpecificRegistrationProgress fails when service is not running`() {
         val ex = assertFailsWith<ServiceUnavailableException> {

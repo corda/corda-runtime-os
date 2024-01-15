@@ -68,8 +68,8 @@ class HostedIdentityEntryFactoryTest {
             .replace("\n", System.lineSeparator())
     private val wrongSignCertificatePem =
         HostedIdentityEntryFactoryTest::class.java.getResource("/certificates/wrong-sign-certificate.pem")!!.readText()
-        .replace("\r", "")
-        .replace("\n", System.lineSeparator())
+            .replace("\r", "")
+            .replace("\n", System.lineSeparator())
 
     private val rootPem = HostedIdentityEntryFactoryTest::class.java.getResource("/certificates/root.pem")!!.readText()
     private val certificatePublicKey = certificatePem.let {
@@ -568,7 +568,6 @@ class HostedIdentityEntryFactoryTest {
             )
         }
     }
-
 
     @Test
     fun `createIdentityRecord will throw an exception if the tlsTrustRoots certificate signature is wrong`() {

@@ -6,16 +6,16 @@ import net.corda.crypto.core.CryptoTenants.P2P
 import net.corda.crypto.core.CryptoTenants.REST
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.libs.platform.PlatformInfoProvider
-import net.corda.rest.PluggableRestResource
-import net.corda.rest.exception.ResourceNotFoundException
-import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
 import net.corda.membership.rest.v1.HsmRestResource
 import net.corda.membership.rest.v1.types.response.HsmAssociationInfo
-import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rest.extensions.getByHoldingIdentityShortHashOrThrow
 import org.osgi.service.component.annotations.Activate
@@ -62,7 +62,7 @@ class HsmRestResourceImpl @Activate constructor(
             untranslatedExceptions = setOf(ResourceNotFoundException::class.java)
         ) {
             hsmRegistrationClient.findHSM(tenantId, category.toCategory())?.expose() ?: throw ResourceNotFoundException(
-                "No association found for tenant ${tenantId} category ${category}"
+                "No association found for tenant $tenantId category $category"
             )
         }
     }
@@ -122,7 +122,7 @@ class HsmRestResourceImpl @Activate constructor(
     }
 
     private fun verifyTenantId(tenantId: String) {
-        if((tenantId == P2P) || (tenantId == REST)) {
+        if ((tenantId == P2P) || (tenantId == REST)) {
             return
         }
         virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(

@@ -194,7 +194,11 @@ internal class StatefulSessionManagerImpl(
         val inboundSessionsFromStateManager: List<Pair<T, SessionManager.SessionDirection>> =
             stateManager.get(sessionsNotInCache.map { it.second }).entries.mapNotNull { (sessionId, state) ->
             val session = AvroSessionState.fromByteBuffer(ByteBuffer.wrap(state.value))
-                .toCorda(schemaRegistry, sessionEncryptionOpsClient, sessionManagerImpl.revocationCheckerClient::checkRevocation).sessionData as Session
+                .toCorda(
+                    schemaRegistry,
+                    sessionEncryptionOpsClient,
+                    sessionManagerImpl.revocationCheckerClient::checkRevocation,
+                ).sessionData as Session
             traceable[sessionId]?.let{
                 it to SessionManager.SessionDirection.Inbound(SessionMetadata(state.metadata).toCounterparties(), session)
             }
@@ -617,8 +621,20 @@ internal class StatefulSessionManagerImpl(
 
     private fun <T> Any.getSessionIdIfInboundSessionMessage(trace: T): InboundSessionMessageContext<T>? {
         return when (this) {
-            is InitiatorHelloMessage -> InboundSessionMessageContext(this.header!!.sessionId, InboundSessionMessage.InitiatorHelloMessage(this), trace)
-            is InitiatorHandshakeMessage -> InboundSessionMessageContext(this.header!!.sessionId, InboundSessionMessage.InitiatorHandshakeMessage(this), trace)
+            is InitiatorHelloMessage -> InboundSessionMessageContext(
+                this.header!!.sessionId,
+                InboundSessionMessage.InitiatorHelloMessage(
+                    this,
+                ),
+                trace,
+            )
+            is InitiatorHandshakeMessage -> InboundSessionMessageContext(
+                this.header!!.sessionId,
+                InboundSessionMessage.InitiatorHandshakeMessage(
+                    this,
+                ),
+                trace,
+            )
             else -> null
         }
     }

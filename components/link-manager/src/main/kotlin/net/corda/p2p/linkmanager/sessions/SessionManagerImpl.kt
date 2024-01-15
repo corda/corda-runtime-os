@@ -615,18 +615,17 @@ internal class SessionManagerImpl(
             )
             return emptyList()
         }
-
-        val linkOutMessages = mutableListOf<Pair<String, LinkOutMessage>>()
-        for (message in messages) {
-            heartbeatManager.sessionMessageSent(sessionCounterparties, message.first.sessionId)
-            linkOutMessages.add(
-                Pair(
-                    message.first.sessionId,
-                    createLinkOutMessage(message.second, sessionCounterparties.ourId, responderMemberInfo, p2pParams.networkType)
-                )
-            )
+        return messages.mapNotNull { message ->
+            createLinkOutMessage(
+                message.second,
+                sessionCounterparties.ourId,
+                responderMemberInfo,
+                p2pParams.networkType
+            )?.let {
+                heartbeatManager.sessionMessageSent(sessionCounterparties, message.first.sessionId)
+                message.first.sessionId to it
+            }
         }
-        return linkOutMessages
     }
 
     private fun ByteArray.toBase64(): String {
@@ -808,7 +807,11 @@ internal class SessionManagerImpl(
     //Only use by Stateful Session Manager
     internal fun processInitiatorHello(
         message: InitiatorHelloMessage,
-        createSession: (sessionId: String, mexMessageSize: Int, peer: HoldingIdentity) -> AuthenticationProtocolResponder = { sessionId, maxMessageSize, _ ->
+        createSession: (
+            sessionId: String,
+            mexMessageSize: Int,
+            peer: HoldingIdentity,
+        ) -> AuthenticationProtocolResponder = { sessionId, maxMessageSize, _ ->
             val session = protocolFactory.createResponder(sessionId, maxMessageSize)
             session.receiveInitiatorHello(message)
             session
@@ -862,7 +865,14 @@ internal class SessionManagerImpl(
         val responderHello = session.generateResponderHello()
 
         logger.info("Remote identity ${peerMemberInfo.holdingIdentity} initiated new session ${message.header.sessionId}.")
-        return createLinkOutMessage(responderHello, hostedIdentityInSameGroup, peerMemberInfo, p2pParams.networkType) to session
+        return createLinkOutMessage(
+            responderHello,
+            hostedIdentityInSameGroup,
+            peerMemberInfo,
+            p2pParams.networkType,
+        )?.let {
+            it to session
+        }
     }
 
     private fun processInitiatorHandshake(message: InitiatorHandshakeMessage): LinkOutMessage? {
@@ -894,8 +904,9 @@ internal class SessionManagerImpl(
                 "Inbound session ${message.header.sessionId} established (local=$ourIdentity, remote=$peerIdentity)."
             )
             /**
-            * We delay removing the session from pendingInboundSessions until we receive the first data message as before this point
-            * the other side (Initiator) might replay [InitiatorHandshakeMessage] in the case where the [ResponderHandshakeMessage] was lost.
+            * We delay removing the session from pendingInboundSessions until we receive the first data message
+             * as before this point the other side (Initiator) might replay [InitiatorHandshakeMessage] in the case
+             * where the [ResponderHandshakeMessage] was lost.
             * */
         }
         return responderHandshakeMessage
