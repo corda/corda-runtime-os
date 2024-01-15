@@ -60,15 +60,11 @@ class MediatorReplayService @Activate constructor(
      * a list of mediator messages are returned associated with the [inputRecord].
      */
     fun <K : Any, V : Any> getReplayEvents(inputRecord: Record<K, V>, mediatorState: MediatorState): List<MediatorMessage<Any>>? {
-        val savedOutputs = mediatorState.outputEvents
         val inputHash = getInputHash(inputRecord).array()
-
         return mediatorState.outputEvents
             .findLast { inputHash.contentEquals(it.inputEventHash.array()) }
             ?.outputEvents
             ?.map { it.toMediatorMessage() }
-
-        return null
     }
 
     fun MutableMap<String, Any>.getProperty(key: String): String {
