@@ -4,6 +4,11 @@ plugins {
 }
 
 dependencies {
+
+    constraints {
+        implementation(libs.slf4j.api)
+    }
+    
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")

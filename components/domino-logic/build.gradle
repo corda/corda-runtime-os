@@ -5,6 +5,11 @@ plugins {
 description 'Domino logic'
 
 dependencies {
+
+    constraints {
+        implementation(libs.slf4j.api)
+    }
+    
     compileOnly 'org.osgi:osgi.annotation'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
