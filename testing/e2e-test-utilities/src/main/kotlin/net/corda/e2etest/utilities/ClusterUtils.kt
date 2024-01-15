@@ -237,7 +237,7 @@ fun ClusterInfo.cryptoUnmanagedWrappingKeysRotationStatus(
 ) = cluster {
     assertWithRetry {
         command { getCryptoUnmanagedWrappingKeysRotationStatus(requestid) }
-        condition { it.code == ResponseCode.ACCEPTED.statusCode }
+        condition { it.code == ResponseCode.OK.statusCode }
     }
 }
 
