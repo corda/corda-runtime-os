@@ -58,8 +58,9 @@ class MediatorReplayService @Activate constructor(
      */
     fun <K: Any, V: Any> isReplayEvent(inputRecord: Record<K, V>, mediatorState: MediatorState): Boolean {
         val savedOutputs = mediatorState.outputEvents
+        val inputHash = getInputHash(inputRecord).array()
         savedOutputs.forEach {
-            if (getInputHash(inputRecord).array().contentEquals(it.inputEventHash.array())) {
+            if (inputHash.contentEquals(it.inputEventHash.array())) {
                 return true
             }
         }
