@@ -103,7 +103,7 @@ class MediatorReplayServiceTest {
 
         val existingOutputs = mutableListOf<MediatorReplayOutputEvents>()
         for (i in 1 .. existingKeys) {
-            val recordKey = i.toString()
+            val recordKey = "test$i"
             val outputsPerKey = mutableListOf<MediatorReplayOutputEvent>()
             for (j in 1 .. existingValuesPerKey) {
                 outputsPerKey.add(
