@@ -63,13 +63,10 @@ class MediatorReplayService @Activate constructor(
         val savedOutputs = mediatorState.outputEvents
         val inputHash = getInputHash(inputRecord).array()
 
-        savedOutputs.forEach { mediatorReplayOutputEvents ->
-            if (inputHash.contentEquals(mediatorReplayOutputEvents.inputEventHash.array())) {
-                return mediatorReplayOutputEvents.outputEvents.map { outputEvent ->
-                    outputEvent.toMediatorMessage()
-                }
-            }
-        }
+        return mediatorState.outputEvents
+            .findLast { inputHash.contentEquals(it.inputEventHash.array()) }
+            ?.outputEvents
+            ?.map { it.toMediatorMessage() }
 
         return null
     }
