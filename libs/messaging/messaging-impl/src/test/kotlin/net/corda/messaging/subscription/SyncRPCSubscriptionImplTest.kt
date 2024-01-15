@@ -4,9 +4,11 @@ import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.messaging.api.exception.CordaHTTPServerTransientException
 import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
 import net.corda.rest.ResponseCode
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.web.api.Endpoint
 import net.corda.web.api.HTTPMethod
 import net.corda.web.api.WebContext
@@ -173,6 +175,42 @@ class SyncRPCSubscriptionImplTest {
 
         SyncRPCSubscriptionImpl(
             rpcSubscriptionConfig, processor, lifecycleCoordinatorFactory, webServer, incompleteSerialiser, deserializer
+        ).start()
+
+        assertThat(endpointCaptor.allValues.size).isEqualTo(1)
+        val handler = endpointCaptor.firstValue.webHandler
+
+        handler.handle(context)
+
+        verify(context).status(ResponseCode.INTERNAL_SERVER_ERROR)
+    }
+
+    @Test
+    fun `when transient exception is thrown set 503 status`() {
+        val endpointCaptor = argumentCaptor<Endpoint>()
+        doNothing().whenever(webServer).registerEndpoint(endpointCaptor.capture())
+        whenever(processor.process(any())).thenThrow(CordaHTTPServerTransientException("transient error"))
+
+        SyncRPCSubscriptionImpl(
+            rpcSubscriptionConfig, processor, lifecycleCoordinatorFactory, webServer, serializer, deserializer
+        ).start()
+
+        assertThat(endpointCaptor.allValues.size).isEqualTo(1)
+        val handler = endpointCaptor.firstValue.webHandler
+
+        handler.handle(context)
+
+        verify(context).status(ResponseCode.SERVICE_UNAVAILABLE)
+    }
+
+    @Test
+    fun `when runtime exception is thrown set 500 status`() {
+        val endpointCaptor = argumentCaptor<Endpoint>()
+        doNothing().whenever(webServer).registerEndpoint(endpointCaptor.capture())
+        whenever(processor.process(any())).thenThrow(CordaRuntimeException("runtime error"))
+
+        SyncRPCSubscriptionImpl(
+            rpcSubscriptionConfig, processor, lifecycleCoordinatorFactory, webServer, serializer, deserializer
         ).start()
 
         assertThat(endpointCaptor.allValues.size).isEqualTo(1)

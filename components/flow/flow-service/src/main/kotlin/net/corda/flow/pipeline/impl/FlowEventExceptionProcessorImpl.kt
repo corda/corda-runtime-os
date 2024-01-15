@@ -16,15 +16,11 @@ import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.getLongOrDefault
 import net.corda.messaging.api.records.Record
-import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_WINDOW_DURATION
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.time.Duration
-import java.time.Instant
 
 @Suppress("Unused", "TooManyFunctions")
 @Component(service = [FlowEventExceptionProcessor::class])
@@ -41,15 +37,9 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private const val DEFAULT_MAX_RETRY_WINDOW_DURATION_MS = 300000L // 5 minutes
     }
 
-    private var maxRetryWindowDuration = Duration.ZERO
-
     override fun configure(config: SmartConfig) {
-        maxRetryWindowDuration = Duration.ofMillis(
-            config.getLongOrDefault(PROCESSING_MAX_RETRY_WINDOW_DURATION, DEFAULT_MAX_RETRY_WINDOW_DURATION_MS)
-        )
     }
 
     override fun process(throwable: Throwable, context: FlowEventContext<*>): FlowEventContext<*> {
@@ -59,11 +49,6 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             outputRecords = listOf(),
             sendToDlq = true
         )
-    }
-
-    private fun retryWindowExpired(firstFailureTimestamp: Instant?): Boolean {
-        return firstFailureTimestamp != null &&
-            Duration.between(firstFailureTimestamp, Instant.now()) >= maxRetryWindowDuration
     }
 
     override fun process(

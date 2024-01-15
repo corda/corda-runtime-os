@@ -199,7 +199,7 @@ internal class MemberOpsAsyncProcessor(
                 val message = "Registration request was not acknowledged as received by the MGM after many attempts to send it."
                 logger.warn(
                     "Registration request ${state.request.requestId} was not acknowledged as received by the MGM " +
-                            "after many attempts to send it. No more retries will be attempted and the request will be marked as FAILED.",
+                        "after many attempts to send it. No more retries will be attempted and the request will be marked as FAILED.",
                 )
                 return persistAndCreateFailureWithoutRetryResponse(
                     holdingIdentity,

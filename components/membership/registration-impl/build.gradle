@@ -6,6 +6,8 @@ plugins {
 
 description 'Registration service implementations'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     compileOnly 'org.osgi:org.osgi.service.component.annotations'

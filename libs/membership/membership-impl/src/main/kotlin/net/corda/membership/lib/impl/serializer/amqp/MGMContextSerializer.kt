@@ -36,7 +36,7 @@ class MGMContextSerializer @Activate constructor(
     }
 
     override fun fromProxy(proxy: MGMContextProxy): MGMContextImpl {
-        return when(proxy.version) {
+        return when (proxy.version) {
             VERSION_1 ->
                 MGMContextImpl(layeredPropertyMapFactory.createMap(proxy.map))
             else ->
@@ -54,7 +54,6 @@ class MGMContextSerializer @Activate constructor(
         get() = false
 
     private fun LayeredPropertyMap.toMap() = this.entries.associate { it.key to it.value }
-
 }
 
 /**

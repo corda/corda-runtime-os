@@ -614,18 +614,17 @@ internal class SessionManagerImpl(
             )
             return emptyList()
         }
-
-        val linkOutMessages = mutableListOf<Pair<String, LinkOutMessage>>()
-        for (message in messages) {
-            heartbeatManager.sessionMessageSent(sessionCounterparties, message.first.sessionId)
-            linkOutMessages.add(
-                Pair(
-                    message.first.sessionId,
-                    createLinkOutMessage(message.second, sessionCounterparties.ourId, responderMemberInfo, p2pParams.networkType)
-                )
-            )
+        return messages.mapNotNull { message ->
+            createLinkOutMessage(
+                message.second,
+                sessionCounterparties.ourId,
+                responderMemberInfo,
+                p2pParams.networkType
+            )?.let {
+                heartbeatManager.sessionMessageSent(sessionCounterparties, message.first.sessionId)
+                message.first.sessionId to it
+            }
         }
-        return linkOutMessages
     }
 
     private fun ByteArray.toBase64(): String {

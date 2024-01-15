@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.ShortHash
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.virtualnode.DbTypes
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
@@ -13,6 +14,8 @@ import net.corda.data.virtualnode.VirtualNodeOperationStatus
 import net.corda.data.virtualnode.VirtualNodeOperationStatusRequest
 import net.corda.data.virtualnode.VirtualNodeOperationStatusResponse
 import net.corda.data.virtualnode.VirtualNodeOperationalState
+import net.corda.data.virtualnode.VirtualNodeSchemaRequest
+import net.corda.data.virtualnode.VirtualNodeSchemaResponse
 import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.data.virtualnode.VirtualNodeUpdateDbStatusResponse
@@ -21,7 +24,6 @@ import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.external.messaging.serialization.ExternalMessagingRouteConfigSerializerImpl
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.libs.virtualnode.common.constant.VirtualNodeStateTransitions
-import net.corda.libs.virtualnode.common.exception.InvalidStateChangeRuntimeException
 import net.corda.libs.virtualnode.common.exception.LiquibaseDiffCheckFailedException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationBadRequestException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationNotFoundException
@@ -367,20 +369,63 @@ internal class VirtualNodeRestResourceImpl(
         }
     }
 
-    override fun getCreateCryptoSchemaSQL(): ResponseEntity<String> {
-        TODO("To be implemented in CORE-15805")
+    override fun getCreateCryptoSchemaSQL(): String {
+        return getSchemaSql(DbTypes.CRYPTO, null, null)
     }
 
-    override fun getCreateUniquenessSchemaSQL(): ResponseEntity<String> {
-        TODO("To be implemented in CORE-15805")
+    override fun getCreateUniquenessSchemaSQL(): String {
+        return getSchemaSql(DbTypes.UNIQUENESS, null, null)
     }
 
-    override fun getCreateVaultSchemaSQL(cpiChecksum: String): ResponseEntity<String> {
-        TODO("To be implemented in CORE-15805")
+    override fun getCreateVaultSchemaSQL(cpiChecksum: String): String {
+        return getSchemaSql(DbTypes.VAULT, null, cpiChecksum)
     }
 
-    override fun getUpdateSchemaSQL(virtualNodeShortId: String, newCpiChecksum: String): ResponseEntity<String> {
-        TODO("To be implemented in CORE-15805")
+    override fun getUpdateSchemaSQL(virtualNodeShortId: String, newCpiChecksum: String): String {
+        return getSchemaSql(DbTypes.VAULT, virtualNodeShortId, newCpiChecksum)
+    }
+
+    private fun getSchemaSql(
+        dbType: DbTypes,
+        virtualNodeShortId: String?,
+        cpiChecksum: String?
+    ): String {
+        val instant = clock.instant()
+
+        val managementRequest = VirtualNodeManagementRequest(
+            instant,
+            VirtualNodeSchemaRequest(
+                dbType,
+                virtualNodeShortId,
+                cpiChecksum
+            )
+        )
+
+        val operationLog = when (dbType) {
+            DbTypes.CRYPTO -> "get Schema SQL to create Crypto DB"
+            DbTypes.UNIQUENESS -> "get Schema SQL to create Uniqueness DB"
+            DbTypes.VAULT -> {
+                if (virtualNodeShortId.isNullOrBlank()) {
+                    "get Schema SQL to create Vault DB and CPI"
+                } else {
+                    "get Schema SQL to update CPI"
+                }
+            }
+        }
+
+        // Send request and await response message on bus
+        val resp = tryWithExceptionHandling(logger, operationLog) {
+            sendAndReceive(managementRequest)
+        }
+
+        return when (val resolvedResponse = resp.responseType) {
+            is VirtualNodeSchemaResponse -> {
+                resolvedResponse.schemaSql
+            }
+
+            is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)
+            else -> throw UnknownResponseTypeException(resp.responseType::class.java.name)
+        }
     }
 
     private fun sendAsynchronousRequest(
@@ -559,7 +604,6 @@ internal class VirtualNodeRestResourceImpl(
             "Remote request failed with exception of type ${exception.errorType}: ${exception.errorMessage}"
         )
         return when (exception.errorType) {
-            InvalidStateChangeRuntimeException::class.java.name -> InvalidStateChangeException(exception.errorMessage)
             VirtualNodeOperationNotFoundException::class.java.name -> ResourceNotFoundException(exception.errorMessage)
             VirtualNodeOperationBadRequestException::class.java.name,
             LiquibaseDiffCheckFailedException::class.java.name,

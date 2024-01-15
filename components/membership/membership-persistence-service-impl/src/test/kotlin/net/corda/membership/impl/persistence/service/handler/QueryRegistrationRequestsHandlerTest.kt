@@ -178,7 +178,9 @@ class QueryRegistrationRequestsHandlerTest {
         handler.invoke(
             context,
             QueryRegistrationRequests(
-                holdingIdentity.x500Name, listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL), null
+                holdingIdentity.x500Name,
+                listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL),
+                null
             )
         )
 

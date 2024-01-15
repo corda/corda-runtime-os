@@ -72,15 +72,11 @@ interface OutputAssertions {
 
     fun noFlowEvents()
 
-    fun checkpointHasRetry(expectedCount: Int)
-
-    fun checkpointDoesNotHaveRetry()
-
     fun flowStatus(
         state: FlowStates,
         result: String? = null,
         errorType: String? = null,
-        errorMessage:String? = null,
+        errorMessage: String? = null,
         flowTerminatedReason: String? = null
     )
 
@@ -99,4 +95,4 @@ interface OutputAssertions {
     fun flowFiberCacheDoesNotContainKey(holdingId: HoldingIdentity, flowId: String)
 }
 
-inline fun <reified T: Throwable> OutputAssertions.flowResumedWithError() = flowResumedWithError(T::class.java)
+inline fun <reified T : Throwable> OutputAssertions.flowResumedWithError() = flowResumedWithError(T::class.java)

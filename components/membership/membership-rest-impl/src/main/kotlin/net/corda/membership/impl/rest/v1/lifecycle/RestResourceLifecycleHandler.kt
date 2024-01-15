@@ -18,7 +18,7 @@ class RestResourceLifecycleHandler(
     private var componentHandle: AutoCloseable? = null
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        when(event) {
+        when (event) {
             is StartEvent -> {
                 componentHandle?.close()
                 componentHandle = coordinator.followStatusChangesByName(dependencies)

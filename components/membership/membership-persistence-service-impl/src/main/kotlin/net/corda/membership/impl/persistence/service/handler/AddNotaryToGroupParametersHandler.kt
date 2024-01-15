@@ -1,7 +1,5 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import javax.persistence.EntityManager
-import javax.persistence.LockModeType
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
@@ -22,6 +20,8 @@ import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toSortedMap
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toCorda
+import javax.persistence.EntityManager
+import javax.persistence.LockModeType
 
 internal class AddNotaryToGroupParametersHandler(
     persistenceHandlerServices: PersistenceHandlerServices
@@ -52,7 +52,8 @@ internal class AddNotaryToGroupParametersHandler(
         val memberQueryBuilder = criteriaBuilder.createQuery(MemberInfoEntity::class.java)
         val root = memberQueryBuilder.from(MemberInfoEntity::class.java)
         val memberQuery = memberQueryBuilder.select(root)
-            .where(criteriaBuilder.equal(root.get<String>("status"), MEMBER_STATUS_ACTIVE),
+            .where(
+                criteriaBuilder.equal(root.get<String>("status"), MEMBER_STATUS_ACTIVE),
                 criteriaBuilder.notEqual(root.get<String>("memberX500Name"), notary.name.toString())
             )
         return entityManager.createQuery(memberQuery).setLockMode(LockModeType.PESSIMISTIC_WRITE).resultList.map {
@@ -72,7 +73,7 @@ internal class AddNotaryToGroupParametersHandler(
             }
         }
         require(members.none { it.name.toString() == notaryServiceName }) {
-            throw MembershipPersistenceException("There is a virtual node having the same name as the notary service ${notaryServiceName}.")
+            throw MembershipPersistenceException("There is a virtual node having the same name as the notary service $notaryServiceName.")
         }
     }
 
@@ -105,27 +106,27 @@ internal class AddNotaryToGroupParametersHandler(
             )
         }
 
-            val parametersMap = deserializer.deserializeKeyValuePairList(previous.singleResult.parameters).toMap()
-            val notaryInfo = memberInfoFactory.createMemberInfo(notaryMemberInfo)
-            val notary = notaryInfo.notaryDetails
-                ?: throw MembershipPersistenceException(
-                    "Cannot add notary to group parameters - notary details not found."
-                )
-            val notaryServiceName = notary.serviceName.toString()
-            val notaryServiceNumber = parametersMap.entries.firstOrNull { it.value == notaryServiceName }?.run {
-                notaryServiceRegex.find(key)?.groups?.get(1)?.value?.toIntOrNull()
-            }
-            val otherMembers = getLatestMemberList(em, notaryInfo)
-            checkAgainstLatestMemberList(notaryInfo, notaryServiceName, otherMembers)
-            val (epoch, groupParameters) = if (notaryServiceNumber != null) {
-                // Add notary to existing notary service, or update notary with rotated keys
-                val currentProtocolVersions = otherMembers.filter {
-                    it.notaryDetails?.serviceName.toString() == notaryServiceName &&
+        val parametersMap = deserializer.deserializeKeyValuePairList(previous.singleResult.parameters).toMap()
+        val notaryInfo = memberInfoFactory.createMemberInfo(notaryMemberInfo)
+        val notary = notaryInfo.notaryDetails
+            ?: throw MembershipPersistenceException(
+                "Cannot add notary to group parameters - notary details not found."
+            )
+        val notaryServiceName = notary.serviceName.toString()
+        val notaryServiceNumber = parametersMap.entries.firstOrNull { it.value == notaryServiceName }?.run {
+            notaryServiceRegex.find(key)?.groups?.get(1)?.value?.toIntOrNull()
+        }
+        val otherMembers = getLatestMemberList(em, notaryInfo)
+        checkAgainstLatestMemberList(notaryInfo, notaryServiceName, otherMembers)
+        val (epoch, groupParameters) = if (notaryServiceNumber != null) {
+            // Add notary to existing notary service, or update notary with rotated keys
+            val currentProtocolVersions = otherMembers.filter {
+                it.notaryDetails?.serviceName.toString() == notaryServiceName &&
                     it.name != notaryInfo.name &&
                     it.status == MEMBER_STATUS_ACTIVE
-                }.map {
-                    it.notaryDetails!!.serviceProtocolVersions.toHashSet()
-                }.reduceOrNull { acc, it -> acc.apply { retainAll(it) } } ?: emptySet()
+            }.map {
+                it.notaryDetails!!.serviceProtocolVersions.toHashSet()
+            }.reduceOrNull { acc, it -> acc.apply { retainAll(it) } } ?: emptySet()
 
             notaryUpdater.updateExistingNotaryService(
                 parametersMap,

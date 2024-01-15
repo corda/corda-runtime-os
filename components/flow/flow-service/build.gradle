@@ -82,6 +82,7 @@ dependencies {
     integrationTestImplementation project(':testing:cpi-info-read-service-fake')
     integrationTestImplementation project(':testing:group-policy-test-common')
 
+    integrationTestRuntimeOnly project(':libs:crypto:merkle-impl')
     integrationTestRuntimeOnly project(':libs:application:application-impl')
     integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')

@@ -1,11 +1,11 @@
 package net.corda.membership.rest.v1
 
+import net.corda.membership.rest.v1.types.response.HsmAssociationInfo
 import net.corda.rest.RestResource
 import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPOST
-import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.annotations.HttpRestResource
-import net.corda.membership.rest.v1.types.response.HsmAssociationInfo
+import net.corda.rest.annotations.RestPathParameter
 
 /**
  * The HSM API consists of endpoints used to work with Hardware Security Modules (HSM) for securely storing keys. The API
@@ -51,11 +51,15 @@ interface HsmRestResource : RestResource {
                 value of 0 means the association is active"""
     )
     fun assignedHsm(
-        @RestPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST")
+        @RestPathParameter(
+            description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
+                " tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST"
+        )
         tenantId: String,
-        @RestPathParameter(description = "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER'," +
-                " 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'")
+        @RestPathParameter(
+            description = "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER'," +
+                " 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'"
+        )
         category: String
     ): HsmAssociationInfo
 
@@ -91,11 +95,15 @@ interface HsmRestResource : RestResource {
                 value of 0 means the association is active"""
     )
     fun assignSoftHsm(
-        @RestPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST")
+        @RestPathParameter(
+            description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
+                " tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST"
+        )
         tenantId: String,
-        @RestPathParameter(description = "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER'," +
-                " 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'")
+        @RestPathParameter(
+            description = "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER'," +
+                " 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'"
+        )
         category: String
     ): HsmAssociationInfo
 }

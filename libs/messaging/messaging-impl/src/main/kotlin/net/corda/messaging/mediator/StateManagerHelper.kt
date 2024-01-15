@@ -5,13 +5,14 @@ import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.libs.statemanager.api.metadata
+import net.corda.messaging.api.constants.MessagingMetadataKeys.PROCESSING_FAILURE
 import net.corda.messaging.api.processor.StateAndEventProcessor
 
 /**
  * Helper for working with [StateManager], used by [MultiSourceEventMediatorImpl].
  */
-class StateManagerHelper<K : Any, S : Any, E : Any>(
-    private val stateManager: StateManager,
+class StateManagerHelper<S : Any>(
     private val stateSerializer: CordaAvroSerializer<S>,
     private val stateDeserializer: CordaAvroDeserializer<S>,
 ) {
@@ -32,37 +33,28 @@ class StateManagerHelper<K : Any, S : Any, E : Any>(
             key,
             serializedValue,
             persistedState?.version ?: State.VERSION_INITIAL_VALUE,
-            newState?.metadata ?: Metadata(),
+            mergeMetadata(persistedState?.metadata, newState?.metadata),
         )
     }
 
-    /**
-     * Persists states of [ProcessorTask] results.
-     *
-     * @param processorTaskResults [ProcessorTask] results with updated states.
-     * @return The latest states in case persistence failed due to conflict (state being updated by another process in
-     * the meantime).
-     */
-    fun persistStates(processorTaskResults: Collection<ProcessorTask.Result<K, S, E>>): Map<String, State?> {
-        val (newStateTasks, existingStateTasks) = processorTaskResults.partition { result ->
-            result.processorTask.persistedState == null
+    fun failStateProcessing(key: String, originalState: State?) : State {
+        val newMetadata = (originalState?.metadata?.toMutableMap() ?: mutableMapOf()).also {
+            it[PROCESSING_FAILURE] = true
         }
-        val latestValuesForFailedStates = mutableMapOf<String, State?>()
-        if (newStateTasks.isNotEmpty()) {
-            val newStates = newStateTasks.mapNotNull { it.updatedState }
-            val failedStatesKeys = stateManager.create(newStates)
-            if (failedStatesKeys.isNotEmpty()) {
-                val latestStatesValues = stateManager.get(failedStatesKeys)
-                latestValuesForFailedStates.putAll(failedStatesKeys.associateWith { key ->
-                    latestStatesValues[key]
-                })
-            }
+        return State(
+            key,
+            byteArrayOf(),
+            version = originalState?.version ?: State.VERSION_INITIAL_VALUE,
+            metadata = Metadata(newMetadata)
+        )
+    }
+
+    private fun mergeMetadata(existing: Metadata?, newMetadata: Metadata?): Metadata {
+        val map = (existing ?: metadata()).toMutableMap()
+        newMetadata?.forEach {
+            map[it.key] = it.value
         }
-        if (existingStateTasks.isNotEmpty()) {
-            val existingStates = existingStateTasks.mapNotNull { it.updatedState }
-            latestValuesForFailedStates.putAll(stateManager.update(existingStates))
-        }
-        return latestValuesForFailedStates
+        return Metadata(map)
     }
 
     /**

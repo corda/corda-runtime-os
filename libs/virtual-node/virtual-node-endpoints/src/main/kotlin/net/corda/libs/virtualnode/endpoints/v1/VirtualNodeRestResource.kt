@@ -133,7 +133,7 @@ interface VirtualNodeRestResource : RestResource {
         responseDescription = "SQL needed to create the Crypto DB",
         minVersion = RestApiVersion.C5_2
     )
-    fun getCreateCryptoSchemaSQL(): ResponseEntity<String>
+    fun getCreateCryptoSchemaSQL(): String
 
     @HttpGET(
         path = "create/db/uniqueness",
@@ -142,7 +142,7 @@ interface VirtualNodeRestResource : RestResource {
         responseDescription = "SQL needed to create the Uniqueness DB",
         minVersion = RestApiVersion.C5_2
     )
-    fun getCreateUniquenessSchemaSQL(): ResponseEntity<String>
+    fun getCreateUniquenessSchemaSQL(): String
 
     @HttpGET(
         path = "create/db/vault/{cpiChecksum}",
@@ -154,7 +154,7 @@ interface VirtualNodeRestResource : RestResource {
     fun getCreateVaultSchemaSQL(
         @RestPathParameter(description = "The file checksum of the CPI")
         cpiChecksum: String,
-    ): ResponseEntity<String>
+    ): String
 
     @HttpGET(
         path = "{virtualNodeShortId}/db/vault/{newCpiChecksum}",
@@ -168,7 +168,7 @@ interface VirtualNodeRestResource : RestResource {
         virtualNodeShortId: String,
         @RestPathParameter(description = "The file checksum of the CPI to be upgraded to")
         newCpiChecksum: String
-    ): ResponseEntity<String>
+    ): String
 
     /**
      * Asynchronous endpoint to upgrade a virtual node's CPI.
