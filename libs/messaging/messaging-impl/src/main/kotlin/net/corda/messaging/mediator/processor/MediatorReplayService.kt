@@ -23,6 +23,7 @@ class MediatorReplayService @Activate constructor(
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) {
     private val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
+    private val deSerializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
 
     /**
      * Generate the new [MediatorReplayOutputEvents] given the mediators [existingOutputs] when provided with the [newOutputs]
@@ -52,20 +53,25 @@ class MediatorReplayService @Activate constructor(
 
     /**
      * Compare the [inputRecord] to the existing [mediatorState] to see if it is a replayed record or not.
+     * If it is replay then return all the outputs from the [mediatorState] as [MediatorMessage]s.
      * @param inputRecord Record to check whether it is a replay or not
      * @param mediatorState The mediator state to check the [inputRecord] against
-     * @return True if the [inputRecord] has been processed by the [mediatorState] already. False otherwise.
+     * @return Null if it is not a replayed event, if it is a replay event,
+     * a list of mediator messages are returned associated with the [inputRecord].
      */
-    fun <K: Any, V: Any> isReplayEvent(inputRecord: Record<K, V>, mediatorState: MediatorState): Boolean {
+    fun <K : Any, V : Any> getReplayEvents(inputRecord: Record<K, V>, mediatorState: MediatorState): List<MediatorMessage<Any>>? {
         val savedOutputs = mediatorState.outputEvents
         val inputHash = getInputHash(inputRecord).array()
-        savedOutputs.forEach {
-            if (inputHash.contentEquals(it.inputEventHash.array())) {
-                return true
+
+        savedOutputs.forEach { mediatorReplayOutputEvents ->
+            if (inputHash.contentEquals(mediatorReplayOutputEvents.inputEventHash.array())) {
+                return mediatorReplayOutputEvents.outputEvents.map { outputEvent ->
+                    outputEvent.toMediatorMessage()
+                }
             }
         }
 
-        return false
+        return null
     }
 
     fun MutableMap<String, Any>.getProperty(key: String): String {
@@ -87,4 +93,16 @@ class MediatorReplayService @Activate constructor(
     }
 
     private fun serialize(value: Any?) = value?.let { serializer.serialize(it) }
+
+    private fun MediatorReplayOutputEvent.toMediatorMessage(): MediatorMessage<Any> {
+        val key = deSerializer.deserialize(key.array()) ?: throw IllegalStateException("Mediator message key is null after deserialization")
+        val payload = value.let { deSerializer.deserialize(it.array()) }
+        val properties = mutableMapOf<String, Any>(
+            MSG_PROP_TOPIC to topic,
+            MSG_PROP_KEY to key
+        )
+        return MediatorMessage(payload, properties)
+    }
+
 }
+

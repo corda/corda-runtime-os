@@ -1,5 +1,6 @@
 package net.corda.messaging.mediator.processor
 
+import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.crypto.cipher.suite.sha256Bytes
@@ -19,12 +20,15 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import kotlin.test.assertNull
 
 class MediatorReplayServiceTest {
 
     private val serializer: CordaAvroSerializer<Any> = mock<CordaAvroSerializer<Any>>()
+    private val deserializer: CordaAvroDeserializer<Any> = mock<CordaAvroDeserializer<Any>>()
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock<CordaAvroSerializationFactory>().apply {
         whenever(createAvroSerializer<Any>(anyOrNull())).thenReturn(serializer)
+        whenever(createAvroDeserializer<Any>(anyOrNull(), any())).thenReturn(deserializer)
     }
     private val mediatorReplayService = MediatorReplayService(cordaAvroSerializationFactory)
     private val topic = "topic"
@@ -33,6 +37,7 @@ class MediatorReplayServiceTest {
     @BeforeEach
     fun setup() {
         whenever(serializer.serialize(anyOrNull())).thenReturn("test1".toByteArray())
+        whenever(deserializer.deserialize(anyOrNull())).thenReturn("test1")
     }
 
     @Test
@@ -81,13 +86,14 @@ class MediatorReplayServiceTest {
     fun `input record is replay event`() {
         val inputRecord = Record(topic, "test1", "test1")
         val existingOutputs = mediatorReplayOutputEvents(2, 3)
-        assert(mediatorReplayService.isReplayEvent(inputRecord, MediatorState(testState, existingOutputs)))
+        val outputs  = mediatorReplayService.getReplayEvents(inputRecord, MediatorState(testState, existingOutputs))
+        assertEquals(3, outputs?.size)
     }
 
     @Test
     fun `input record is not a replay event, empty outputs`() {
         val inputRecord = Record(topic, "test1", "test1")
-        assert(!mediatorReplayService.isReplayEvent(inputRecord, MediatorState(testState, mutableListOf())))
+        assertNull(mediatorReplayService.getReplayEvents(inputRecord, MediatorState(testState, mutableListOf())))
     }
 
     @Test
@@ -95,7 +101,7 @@ class MediatorReplayServiceTest {
         val existingOutputs = mediatorReplayOutputEvents(2, 3)
         val inputRecord = Record(topic, "test3", "test3")
         whenever(serializer.serialize(any())).thenReturn("bytes".toByteArray())
-        assert(!mediatorReplayService.isReplayEvent(inputRecord, MediatorState(testState, existingOutputs)))
+        assertNull(mediatorReplayService.getReplayEvents(inputRecord, MediatorState(testState, existingOutputs)))
     }
 
     private fun mediatorReplayOutputEvents(existingKeys: Int = 0, existingValuesPerKey: Int = 0): List<MediatorReplayOutputEvents> {
