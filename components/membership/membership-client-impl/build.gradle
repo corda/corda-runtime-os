@@ -5,6 +5,8 @@ plugins {
 
 description 'Member Ops Client implementation'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 

@@ -7,6 +7,7 @@ import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import java.time.Duration
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Semaphore
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -70,11 +71,11 @@ fun ClusterInfo.conditionallyUploadCordaPackage(
     cpiUpload(cpbResourceName, groupId, staticMemberNames, cpiName, customGroupParameters = customGroupParameters)
 }
 
-val packageUploadSemaphore = Semaphore(2)
+private val uploading = ConcurrentHashMap<Pair<String, String>, Unit?>()
 fun ClusterInfo.conditionallyUploadCordaPackage(
     name: String,
     cpiUpload: ClusterBuilder.() -> SimpleResponse
-) = packageUploadSemaphore.runWith {
+) = uploading.compute(Pair(this.id, name)) {_, _ ->
     cluster {
         if (getExistingCpi(name) == null) {
             val responseStatusId = cpiUpload().run {
@@ -194,19 +195,25 @@ fun ClusterInfo.createKeyFor(
     keyId["id"].textValue()
 }
 
-fun ClusterInfo.keyExists(
+private val keyExistsLock = ReentrantLock()
+fun ClusterInfo.whenNoKeyExists(
     tenantId: String,
     alias: String? = null,
     category: String? = null,
-    ids: List<String>? = null
-): Boolean = cluster {
-    val result = assertWithRetryIgnoringExceptions {
-        command { getKey(tenantId, category, alias, ids) }
-        condition { it.code == ResponseCode.OK.statusCode }
-        failMessage("Failed to get keys for tenant id '$tenantId', category '$category', alias '$alias' and IDs: $ids")
-    }
+    ids: List<String>? = null,
+    block: () -> Unit
+) = keyExistsLock.withLock {
+    cluster {
+        val result = assertWithRetryIgnoringExceptions {
+            command { getKey(tenantId, category, alias, ids) }
+            condition { it.code == ResponseCode.OK.statusCode }
+            failMessage("Failed to get keys for tenant id '$tenantId', category '$category', alias '$alias' and IDs: $ids")
+        }
 
-    result.code == ResponseCode.OK.statusCode && result.toJson().fieldNames().hasNext()
+        if (result.code != ResponseCode.OK.statusCode || !result.toJson().fieldNames().hasNext()) {
+            block()
+        }
+    }
 }
 
 fun ClusterInfo.rotateCryptoUnmanagedWrappingKeys(

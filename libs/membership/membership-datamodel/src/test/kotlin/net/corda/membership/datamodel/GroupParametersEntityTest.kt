@@ -88,7 +88,6 @@ class GroupParametersEntityTest {
             verify(root).get<String>(eq("epoch"))
             verify(typedQuery).maxResults = eq(1)
             verify(typedQuery).resultList
-
         }
     }
 
@@ -102,46 +101,54 @@ class GroupParametersEntityTest {
 
         @Test
         fun `can detect not signed`() {
-            assertThat(GroupParametersEntity(
-                epoch = epoch,
-                parameters = parameters,
-                signaturePublicKey = null,
-                signatureContent = null,
-                signatureSpec = null
-            ).isSigned()).isFalse
+            assertThat(
+                GroupParametersEntity(
+                    epoch = epoch,
+                    parameters = parameters,
+                    signaturePublicKey = null,
+                    signatureContent = null,
+                    signatureSpec = null
+                ).isSigned()
+            ).isFalse
         }
 
         @Test
         fun `can detect not signed is partial data available (no public key)`() {
-            assertThat(GroupParametersEntity(
-                epoch = epoch,
-                parameters = parameters,
-                signaturePublicKey = null,
-                signatureContent = byteArrayOf(1),
-                signatureSpec = "sig-spec"
-            ).isSigned()).isFalse
+            assertThat(
+                GroupParametersEntity(
+                    epoch = epoch,
+                    parameters = parameters,
+                    signaturePublicKey = null,
+                    signatureContent = byteArrayOf(1),
+                    signatureSpec = "sig-spec"
+                ).isSigned()
+            ).isFalse
         }
 
         @Test
         fun `can detect not signed is partial data available (no signature content)`() {
-            assertThat(GroupParametersEntity(
-                epoch = epoch,
-                parameters = parameters,
-                signaturePublicKey = byteArrayOf(0),
-                signatureContent = null,
-                signatureSpec = "sig-spec"
-            ).isSigned()).isFalse
+            assertThat(
+                GroupParametersEntity(
+                    epoch = epoch,
+                    parameters = parameters,
+                    signaturePublicKey = byteArrayOf(0),
+                    signatureContent = null,
+                    signatureSpec = "sig-spec"
+                ).isSigned()
+            ).isFalse
         }
 
         @Test
         fun `can detect not signed is partial data available (no signature spec)`() {
-            assertThat(GroupParametersEntity(
-                epoch = epoch,
-                parameters = parameters,
-                signaturePublicKey = byteArrayOf(0),
-                signatureContent = byteArrayOf(1),
-                signatureSpec = null
-            ).isSigned()).isFalse
+            assertThat(
+                GroupParametersEntity(
+                    epoch = epoch,
+                    parameters = parameters,
+                    signaturePublicKey = byteArrayOf(0),
+                    signatureContent = byteArrayOf(1),
+                    signatureSpec = null
+                ).isSigned()
+            ).isFalse
         }
     }
 }

@@ -85,7 +85,7 @@ class SuspensionActivationEntityOperationsTest {
             on { status } doReturn memberStatus
             on { memberSignatureKey } doReturn signatureKey
             on { memberSignatureContent } doReturn signatureContent
-            on { memberSignatureSpec} doReturn SIGNATURE_SPEC
+            on { memberSignatureSpec } doReturn SIGNATURE_SPEC
         }
         whenever(
             em.find(eq(MemberInfoEntity::class.java), eq(primaryKey), eq(LockModeType.PESSIMISTIC_WRITE))
@@ -157,6 +157,7 @@ class SuspensionActivationEntityOperationsTest {
             assertThat(this.message).contains("cannot be performed")
         }
     }
+
     @Test
     fun `findMember throws InvalidEntityUpdateException if PessimisticLockException is thrown`() {
         val currentStatus = "Status"
@@ -180,7 +181,7 @@ class SuspensionActivationEntityOperationsTest {
             on { status } doReturn "status"
             on { memberSignatureKey } doReturn signatureKey
             on { memberSignatureContent } doReturn signatureContent
-            on { memberSignatureSpec} doReturn SIGNATURE_SPEC
+            on { memberSignatureSpec } doReturn SIGNATURE_SPEC
         }
         val memberContext = KeyValuePairList(
             listOf(
@@ -205,13 +206,15 @@ class SuspensionActivationEntityOperationsTest {
         val mgmHoldingIdentity = AvroHoldingIdentity("MGM", knownGroupId)
         val newStatus = "newStatus"
         val persistentMemberInfoMock = mock<PersistentMemberInfo>()
-        whenever(memberInfoFactory.createPersistentMemberInfo(
-            eq(mgmHoldingIdentity),
-            eq(contextBytes),
-            eq(serializedMGMContext),
-            eq(signatureKey),
-            eq(signatureContent),
-            eq(SIGNATURE_SPEC))
+        whenever(
+            memberInfoFactory.createPersistentMemberInfo(
+                eq(mgmHoldingIdentity),
+                eq(contextBytes),
+                eq(serializedMGMContext),
+                eq(signatureKey),
+                eq(signatureContent),
+                eq(SIGNATURE_SPEC)
+            )
         ).doReturn(persistentMemberInfoMock)
 
         val persistentMemberInfo = handler.updateStatus(

@@ -71,7 +71,7 @@ class CertificateRestResourceImplTest {
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), handler.capture()) } doReturn coordinator
     }
-    private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>() {
+    private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
         val nodeHoldingIdentity = mock<HoldingIdentity> {
             on { x500Name } doReturn MemberX500Name.parse("O=Alice, L=LDN, C=GB")
         }
@@ -1005,7 +1005,6 @@ class CertificateRestResourceImplTest {
                 )
             }
         }
-
 
         @Test
         fun `it throws an exception if repartition event occurs while waiting for response`() {

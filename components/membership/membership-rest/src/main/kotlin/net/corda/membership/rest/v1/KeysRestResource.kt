@@ -1,14 +1,14 @@
 package net.corda.membership.rest.v1
 
+import net.corda.membership.rest.v1.types.response.KeyMetaData
+import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 import net.corda.rest.RestResource
 import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPOST
+import net.corda.rest.annotations.HttpRestResource
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.annotations.RestQueryParameter
-import net.corda.rest.annotations.HttpRestResource
-import net.corda.membership.rest.v1.types.response.KeyMetaData
-import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
-import net.corda.rest.annotations.RestApiVersion
 
 /**
  *  Deprecated:
@@ -23,9 +23,9 @@ import net.corda.rest.annotations.RestApiVersion
 @HttpRestResource(
     name = "Keys Management API",
     description = "The Keys Management API consists of endpoints used to manage public and private key pairs. The API" +
-            " allows you to list scheme codes which are supported by the associated HSM integration, retrieve" +
-            " information about key pairs owned by a tenant, generate a key pair for a tenant, and retrieve a tenant's" +
-            " public key in PEM format.",
+        " allows you to list scheme codes which are supported by the associated HSM integration, retrieve" +
+        " information about key pairs owned by a tenant, generate a key pair for a tenant, and retrieve a tenant's" +
+        " public key in PEM format.",
     path = "keys",
     minVersion = RestApiVersion.C5_0,
     maxVersion = RestApiVersion.C5_0
@@ -55,11 +55,15 @@ interface KeysRestResource : RestResource {
         responseDescription = "The list of scheme codes which are supported by the associated HSM integration"
     )
     fun listSchemes(
-        @RestPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST")
+        @RestPathParameter(
+            description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
+                " tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST"
+        )
         tenantId: String,
-        @RestPathParameter(description = "The category of the HSM. Can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY'," +
-                " 'SESSION_INIT', 'TLS', or 'JWT_KEY'")
+        @RestPathParameter(
+            description = "The category of the HSM. Can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY'," +
+                " 'SESSION_INIT', 'TLS', or 'JWT_KEY'"
+        )
         hsmCategory: String,
     ): Collection<String>
 
@@ -115,8 +119,10 @@ interface KeysRestResource : RestResource {
     )
     @Suppress("LongParameterList")
     fun listKeys(
-        @RestPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST")
+        @RestPathParameter(
+            description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
+                " tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST"
+        )
         tenantId: String,
         @RestQueryParameter(
             description = "The response paging information, number of records to skip",
@@ -126,29 +132,29 @@ interface KeysRestResource : RestResource {
         skip: Int,
         @RestQueryParameter(
             description = "The response paging information, that is, the number of records to return. The actual number" +
-                    " returned may be less than requested.",
+                " returned may be less than requested.",
             default = "20",
             required = false,
         )
         take: Int,
         @RestQueryParameter(
             description = "Specifies how to order the results. Can be one of 'NONE', 'TIMESTAMP', 'CATEGORY'," +
-                    " 'SCHEME_CODE_NAME', 'ALIAS', 'MASTER_KEY_ALIAS', 'EXTERNAL_ID', 'ID', 'TIMESTAMP_DESC'," +
-                    " 'CATEGORY_DESC', 'SCHEME_CODE_NAME_DESC', 'ALIAS_DESC', 'MASTER_KEY_ALIAS_DESC', 'EXTERNAL_ID_DESC'," +
-                    " 'ID_DESC'.",
+                " 'SCHEME_CODE_NAME', 'ALIAS', 'MASTER_KEY_ALIAS', 'EXTERNAL_ID', 'ID', 'TIMESTAMP_DESC'," +
+                " 'CATEGORY_DESC', 'SCHEME_CODE_NAME_DESC', 'ALIAS_DESC', 'MASTER_KEY_ALIAS_DESC', 'EXTERNAL_ID_DESC'," +
+                " 'ID_DESC'.",
             default = "none",
             required = false,
         )
         orderBy: String,
         @RestQueryParameter(
             description = "Category of the HSM which handles the key pairs. Can be one of 'ACCOUNTS', 'CI', 'LEDGER'," +
-                    " 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY'.",
+                " 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY'.",
             required = false,
         )
         category: String?,
         @RestQueryParameter(
             description = "The key pairs' signature scheme name. For example, 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1'," +
-                    " 'CORDA.ECDSA.SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.",
+                " 'CORDA.ECDSA.SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.",
             required = false,
         )
         schemeCodeName: String?,
@@ -164,19 +170,19 @@ interface KeysRestResource : RestResource {
         masterKeyAlias: String?,
         @RestQueryParameter(
             description = "Only include key pairs which were created on or after the specified time. Must be a valid instant" +
-                    " in UTC, such as 2022-12-03T10:15:30.00Z.",
+                " in UTC, such as 2022-12-03T10:15:30.00Z.",
             required = false,
         )
         createdAfter: String?,
         @RestQueryParameter(
             description = "Only include key pairs which were created on or before the specified time. Must be a valid instant" +
-                    " in UTC, such as 2022-12-03T10:15:30.00Z.",
+                " in UTC, such as 2022-12-03T10:15:30.00Z.",
             required = false,
         )
         createdBefore: String?,
         @RestQueryParameter(
             description = "Only include key pairs associated with the specified list of key IDs. If specified, other filter" +
-                    " parameters will be ignored.",
+                " parameters will be ignored.",
             required = false,
             name = "id",
         )
@@ -210,8 +216,10 @@ interface KeysRestResource : RestResource {
         responseDescription = "The ID of the newly generated key pair"
     )
     fun generateKeyPair(
-        @RestPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST")
+        @RestPathParameter(
+            description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
+                " tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST"
+        )
         tenantId: String,
         @RestPathParameter(
             description = "The alias under which the new key pair will be stored"
@@ -219,12 +227,12 @@ interface KeysRestResource : RestResource {
         alias: String,
         @RestPathParameter(
             description = "Category of the HSM which handles the key pairs. Can be one of 'ACCOUNTS', 'CI', 'LEDGER'," +
-                    " 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY'."
+                " 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY'."
         )
         hsmCategory: String,
         @RestPathParameter(
             description = "The key's scheme describing which type of the key pair to generate. For example, 'CORDA.RSA'," +
-                    " 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA.SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'."
+                " 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA.SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'."
         )
         scheme: String
     ): KeyPairIdentifier
@@ -252,8 +260,10 @@ interface KeysRestResource : RestResource {
         responseDescription = "The public key in PEM format"
     )
     fun generateKeyPem(
-        @RestPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST")
+        @RestPathParameter(
+            description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
+                " tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST"
+        )
         tenantId: String,
         @RestPathParameter(description = "Identifier of the public key to be retrieved")
         keyId: String,

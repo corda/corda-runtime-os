@@ -318,7 +318,9 @@ class DynamicMemberRegistrationServiceTest {
     }
     private val serializationFactory: CordaAvroSerializationFactory = mock {
         on { createAvroSerializer<Any>(any()) }.thenReturn(
-            registrationRequestSerializer, keyValuePairListSerializer, unauthenticatedRegistrationRequestSerializer
+            registrationRequestSerializer,
+            keyValuePairListSerializer,
+            unauthenticatedRegistrationRequestSerializer
         )
     }
     private val groupReader: MembershipGroupReader = mock {
@@ -370,8 +372,10 @@ class DynamicMemberRegistrationServiceTest {
     }
     private val locallyHostedIdentitiesService = mock<LocallyHostedIdentitiesService>()
     private val registrationContextCustomFieldsVerifier = Mockito.mockConstruction(
-        RegistrationContextCustomFieldsVerifier::class.java) {
-        mock, _ -> whenever(mock.verify(context)).doReturn(RegistrationContextCustomFieldsVerifier.Result.Success)
+        RegistrationContextCustomFieldsVerifier::class.java
+    ) {
+            mock, _ ->
+        whenever(mock.verify(context)).doReturn(RegistrationContextCustomFieldsVerifier.Result.Success)
     }
     private val registrationService = DynamicMemberRegistrationService(
         publisherFactory,
@@ -469,7 +473,8 @@ class DynamicMemberRegistrationServiceTest {
                     ConfigKeys.BOOT_CONFIG to testConfig,
                     ConfigKeys.MESSAGING_CONFIG to testConfig
                 )
-            ), coordinator
+            ),
+            coordinator
         )
     }
 
@@ -574,8 +579,10 @@ class DynamicMemberRegistrationServiceTest {
         @Test
         fun `registration request contains the context submitted by member - without any additional information or key mapping`() {
             val contextBytes = byteArrayOf(1, 2, 3, 4, 5, 6)
-            whenever(keyValuePairListSerializer.serialize(
-                context.filterNot { it.key == SERIAL || it.key == PRE_AUTH_TOKEN }.toWire())
+            whenever(
+                keyValuePairListSerializer.serialize(
+                    context.filterNot { it.key == SERIAL || it.key == PRE_AUTH_TOKEN }.toWire()
+                )
             ).thenReturn(contextBytes)
             val capturedRequest = argumentCaptor<RegistrationRequest>()
             registrationService.register(registrationResultId, member, context)
@@ -650,7 +657,8 @@ class DynamicMemberRegistrationServiceTest {
 
             assertThat(memberContext.items).contains(
                 KeyValuePair(
-                    TLS_CERTIFICATE_SUBJECT, mgm.x500Name.toString()
+                    TLS_CERTIFICATE_SUBJECT,
+                    mgm.x500Name.toString()
                 )
             )
         }
@@ -962,8 +970,6 @@ class DynamicMemberRegistrationServiceTest {
             assertThat(exception).hasMessageContaining("Hex string has length of 1 but should be 12 characters")
         }
 
-
-
         @Test
         fun `registration fails if custom field validation fails`() {
             whenever(registrationContextCustomFieldsVerifier.constructed().first().verify(context)).thenReturn(
@@ -1244,9 +1250,12 @@ class DynamicMemberRegistrationServiceTest {
             val newContext = mock<MemberContext> {
                 on { entries } doReturn newContextEntries
             }
-            whenever(cryptoOpsClient.lookupKeysByIds(
-                memberId.value, listOf(ShortHash.of(LEDGER_KEY_ID), ShortHash.of(TEST_KEY_ID))
-            )).doReturn(listOf(ledgerCryptoSigningKey, newLedgerKey))
+            whenever(
+                cryptoOpsClient.lookupKeysByIds(
+                    memberId.value,
+                    listOf(ShortHash.of(LEDGER_KEY_ID), ShortHash.of(TEST_KEY_ID))
+                )
+            ).doReturn(listOf(ledgerCryptoSigningKey, newLedgerKey))
             whenever(memberInfo.memberProvidedContext).doReturn(previous)
             whenever(groupReader.lookup(eq(memberName), any())).doReturn(memberInfo)
 
@@ -1309,7 +1318,7 @@ class DynamicMemberRegistrationServiceTest {
         @Test
         fun `registration fails when invalid session key spec is used`() {
             val context = context.filterNot { it.key == SESSION_KEYS_SIGNATURE_SPEC.format(0) } +
-                    mapOf(SESSION_KEYS_SIGNATURE_SPEC.format(0) to SignatureSpecs.EDDSA_ED25519.signatureName)
+                mapOf(SESSION_KEYS_SIGNATURE_SPEC.format(0) to SignatureSpecs.EDDSA_ED25519.signatureName)
 
             postConfigChangedEvent()
             registrationService.start()
@@ -1568,7 +1577,7 @@ class DynamicMemberRegistrationServiceTest {
             )
 
             val previousNotaryRegistrationContextWithBackchainFlag = previousNotaryRegistrationContext +
-                    mapOf(NOTARY_SERVICE_BACKCHAIN_REQUIRED to "true")
+                mapOf(NOTARY_SERVICE_BACKCHAIN_REQUIRED to "true")
 
             val previous = mock<MemberContext> {
                 on { entries } doReturn (previousNotaryRegistrationContextWithBackchainFlag + notaryKeyConvertedFields).entries
@@ -1626,11 +1635,11 @@ class DynamicMemberRegistrationServiceTest {
         @Test
         fun `registration fails when ledger keys are specified for a notary vnode`() {
             val testProperties = context + mapOf(
-                    String.format(ROLES_PREFIX, 0) to "notary",
-                    NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
-                    NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
-                    NOTARY_KEY_ID_KEY to NOTARY_KEY_ID,
-                )
+                String.format(ROLES_PREFIX, 0) to "notary",
+                NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
+                NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                NOTARY_KEY_ID_KEY to NOTARY_KEY_ID,
+            )
 
             assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, testProperties)

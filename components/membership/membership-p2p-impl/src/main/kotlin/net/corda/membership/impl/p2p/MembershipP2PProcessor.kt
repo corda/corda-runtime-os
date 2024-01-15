@@ -95,7 +95,7 @@ class MembershipP2PProcessor(
         val factory = messageProcessorFactories[requestClass]
             ?: throw MembershipP2PException(
                 "No handler has been registered to handle the p2p request received. " +
-                        "Request received: [$requestClass]"
+                    "Request received: [$requestClass]"
             )
         return factory.invoke()
     }
@@ -103,8 +103,8 @@ class MembershipP2PProcessor(
     class MembershipP2PException(msg: String) : CordaRuntimeException(msg)
 
     private fun Any.isMembershipSubsystem(): Boolean {
-        return (this as? AuthenticatedMessage)?.isMembershipSubsystem() ?: false
-                || (this as? InboundUnauthenticatedMessage)?.isMembershipSubsystem() ?: false
+        return (this as? AuthenticatedMessage)?.isMembershipSubsystem() ?: false ||
+            (this as? InboundUnauthenticatedMessage)?.isMembershipSubsystem() ?: false
     }
 
     private fun AuthenticatedMessage.isMembershipSubsystem() = header.subsystem == MEMBERSHIP_P2P_SUBSYSTEM

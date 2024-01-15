@@ -38,7 +38,8 @@ class GroupParametersNotaryUpdater(
         val notaryBackchainRequired = notaryDetails.isBackchainRequired
         logger.info("Adding notary to group parameters under new notary service '$notaryServiceName'.")
         requireNotNull(notaryDetails.serviceProtocol) {
-            throw InvalidGroupParametersUpdateException("Cannot add notary to group parameters - notary protocol must be" +
+            throw InvalidGroupParametersUpdateException(
+                "Cannot add notary to group parameters - notary protocol must be" +
                     " specified to create new notary service '$notaryServiceName'."
             )
         }
@@ -87,12 +88,16 @@ class GroupParametersNotaryUpdater(
         logger.info("Adding notary to group parameters under existing notary service '$notaryServiceName'.")
         notaryDetails.serviceProtocol?.let {
             require(currentParameters[String.format(NOTARY_SERVICE_PROTOCOL_KEY, notaryServiceNumber)].toString() == it) {
-                throw InvalidGroupParametersUpdateException("Cannot add notary to notary service " +
-                        "'$notaryServiceName' - protocols do not match.")
+                throw InvalidGroupParametersUpdateException(
+                    "Cannot add notary to notary service " +
+                        "'$notaryServiceName' - protocols do not match."
+                )
             }
             require(notaryDetails.serviceProtocolVersions.isNotEmpty()) {
-                throw InvalidGroupParametersUpdateException("Cannot add notary to notary service '$notaryServiceName' - protocol" +
-                        "  versions are missing.")
+                throw InvalidGroupParametersUpdateException(
+                    "Cannot add notary to notary service '$notaryServiceName' - protocol" +
+                        "  versions are missing."
+                )
             }
         }
         val updatedVersions = notaryDetails.serviceProtocolVersions.let {
@@ -119,7 +124,7 @@ class GroupParametersNotaryUpdater(
                 if (isEmpty()) {
                     logger.warn(
                         "Group parameters not updated. Notary has no notary keys or " +
-                                "its notary keys are already listed under notary service '$notaryServiceName'."
+                            "its notary keys are already listed under notary service '$notaryServiceName'."
                     )
                     return null to null
                 }
@@ -135,8 +140,10 @@ class GroupParametersNotaryUpdater(
             }
         val newEpoch = currentParameters[EPOCH_KEY]!!.toInt() + 1
         val versionsRegex = NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY.format(notaryServiceNumber, "([0-9]+)").toRegex()
-        return newEpoch to KeyValuePairList(currentParameters.filterNot { it.key.matches(versionsRegex) }
-            .updateEpochAndModifiedTime(newEpoch) + newKeys + updatedVersions)
+        return newEpoch to KeyValuePairList(
+            currentParameters.filterNot { it.key.matches(versionsRegex) }
+                .updateEpochAndModifiedTime(newEpoch) + newKeys + updatedVersions
+        )
     }
 
     fun removeNotaryFromExistingNotaryService(
@@ -149,23 +156,27 @@ class GroupParametersNotaryUpdater(
         logger.info("Removing notary from group parameters under notary service '$notaryServiceName'.")
         notaryDetails.serviceProtocol?.let {
             require(currentParameters[String.format(NOTARY_SERVICE_PROTOCOL_KEY, notaryServiceNumber)].toString() == it) {
-                throw InvalidGroupParametersUpdateException("Cannot remove notary from notary service " +
-                        "'$notaryServiceName' - protocols do not match.")
+                throw InvalidGroupParametersUpdateException(
+                    "Cannot remove notary from notary service " +
+                        "'$notaryServiceName' - protocols do not match."
+                )
             }
             require(notaryDetails.serviceProtocolVersions.isNotEmpty()) {
-                throw InvalidGroupParametersUpdateException("Cannot remove notary from notary service '$notaryServiceName' - protocol" +
-                        "  versions are missing.")
+                throw InvalidGroupParametersUpdateException(
+                    "Cannot remove notary from notary service '$notaryServiceName' - protocol" +
+                        "  versions are missing."
+                )
             }
         }
         val versionIntersection = otherNotaryDetails.map { it.serviceProtocolVersions }.reduce { acc, it -> acc.intersect(it.toSet()) }
             .toSortedSet()
 
         val updatedVersions = versionIntersection.mapIndexed { index, version ->
-                KeyValuePair(
-                    String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, notaryServiceNumber, index),
-                    version.toString()
-                )
-            }
+            KeyValuePair(
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, notaryServiceNumber, index),
+                version.toString()
+            )
+        }
         val updatedKeys = otherNotaryDetails.flatMap { otherNotary ->
             otherNotary.keys.map { keyEncodingService.encodeAsString(it.publicKey) }
         }.toSet().mapIndexed { index, key ->
@@ -200,7 +211,7 @@ class GroupParametersNotaryUpdater(
         val numberOfNotaryServices = this.filter { notaryServiceRegex.matches(it.key) }.size
         val keyPrefix = NOTARY_SERVICE_KEY_PREFIX.format(notaryServiceNumber)
         val listWithNotaryServiceRemoved = this.filterNot { it.key.contains(keyPrefix) }.toMutableMap()
-        //Make the Notary services numbers contiguous
+        // Make the Notary services numbers contiguous
         for (i in notaryServiceNumber + 1 until numberOfNotaryServices) {
             val currentKeyPrefix = NOTARY_SERVICE_KEY_PREFIX.format(i)
             val newKeyPrefix = NOTARY_SERVICE_KEY_PREFIX.format(i - 1)
@@ -213,5 +224,4 @@ class GroupParametersNotaryUpdater(
         }
         return listWithNotaryServiceRemoved
     }
-
 }
