@@ -159,19 +159,19 @@ class KeyRotationRestResourceImpl @Activate constructor(
                 .also { it.start() }
     }
 
-    override fun getKeyRotationStatus(rootKeyAlias: String): KeyRotationStatusResponse {
+    override fun getKeyRotationStatus(keyAlias: String): KeyRotationStatusResponse {
         tryWithExceptionHandling(logger, "retrieve key rotation status") {
             checkNotNull(stateManager)
         }
 
         val entries = stateManager!!.findByMetadataMatchingAll(
             listOf(
-                MetadataFilter("rootKeyAlias", Operation.Equals, rootKeyAlias),
+                MetadataFilter("rootKeyAlias", Operation.Equals, keyAlias),
                 MetadataFilter("type", Operation.Equals, "keyRotation")
             )
         )
         // if entries are empty, there is no rootKeyAlias data stored in the state manager, so no key rotation is/was in progress
-        if (entries.isNullOrEmpty()) throw ResourceNotFoundException("No key rotation for $rootKeyAlias is in progress.")
+        if (entries.isNullOrEmpty()) throw ResourceNotFoundException("No key rotation for $keyAlias is in progress.")
 
         var lastUpdatedTimestamp = Instant.MIN
         var rotationStatus = "Done"
@@ -188,7 +188,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
             if (state.modifiedTime.isAfter(lastUpdatedTimestamp)) lastUpdatedTimestamp = state.modifiedTime
             if (state.metadata["status"] != "Done") rotationStatus = "In Progress"
         }
-        return KeyRotationStatusResponse(rootKeyAlias, rotationStatus, lastUpdatedTimestamp, result)
+        return KeyRotationStatusResponse(keyAlias, rotationStatus, lastUpdatedTimestamp, result)
     }
 
     override fun startKeyRotation(oldKeyAlias: String, newKeyAlias: String): ResponseEntity<KeyRotationResponse> {
