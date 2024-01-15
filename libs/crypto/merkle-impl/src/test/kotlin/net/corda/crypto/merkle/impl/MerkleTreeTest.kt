@@ -46,6 +46,8 @@ class MerkleTreeTest {
         // which takes 30 minutes on a laptop.
         private const val NUMBER_OF_SUBSETS_TO_TEST = 10
 
+        private const val MAXIMUM_TREE_SIZE_FOR_EXHAUSTIVE_MERGE_TESTS = 8
+
         private lateinit var digestService: DigestService
         private lateinit var defaultHashDigestProvider: DefaultHashDigestProvider
         private lateinit var nonceHashDigestProvider: NonceHashDigestProvider
@@ -110,7 +112,7 @@ class MerkleTreeTest {
         fun merkleProofExtendedTestSizes(): List<Arguments> = merkleProofForTreeSizes(12, 15)
 
         @JvmStatic
-        fun merkleProofMergeCombinations(): List<Arguments> = (1..8).map { treeSize ->
+        fun merkleProofMergeCombinations(): List<Arguments> = (1..MAXIMUM_TREE_SIZE_FOR_EXHAUSTIVE_MERGE_TESTS).map { treeSize ->
             (1 until (1 shl treeSize)).map { sourceProofLeafSet ->
                 val leafIndicesCombination = (0 until treeSize).filter { (sourceProofLeafSet and (1 shl it)) != 0 }
                 (0 until (1 shl leafIndicesCombination.size)).map { i ->
