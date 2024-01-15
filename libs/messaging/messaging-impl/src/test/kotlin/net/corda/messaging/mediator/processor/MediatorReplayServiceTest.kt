@@ -102,10 +102,10 @@ class MediatorReplayServiceTest {
         if (existingKeys == 0)  return mutableListOf()
 
         val existingOutputs = mutableListOf<MediatorReplayOutputEvents>()
-        (0 until existingKeys).forEach { key ->
-            val recordKey = "test$key"
+        for (i in 1 .. existingKeys) {
+            val recordKey = i.toString()
             val outputsPerKey = mutableListOf<MediatorReplayOutputEvent>()
-            (0 until existingValuesPerKey).forEach { _ ->
+            for (j in 1 .. existingValuesPerKey) {
                 outputsPerKey.add(
                     MediatorReplayOutputEvent(
                         topic,
@@ -126,11 +126,11 @@ class MediatorReplayServiceTest {
         missingProperty: Boolean = false
     ): Map<Record<String, String>, MutableList<MediatorMessage<Any>>> {
         val newOutputs = mutableMapOf<Record<String, String>, MutableList<MediatorMessage<Any>>>()
-        (0 until numberOfKeys).forEach { key ->
-            val recordKey = key.toString()
+        for (i in 1 .. numberOfKeys) {
+            val recordKey = i.toString()
             val outputsPerKey = mutableListOf<MediatorMessage<Any>>()
-            (0 until numberOfRecordsPerKey).forEach {
-                outputsPerKey.add(MediatorMessage("$it", getProperties(recordKey, missingProperty)))
+            for (j in 1 .. numberOfRecordsPerKey) {
+                outputsPerKey.add(MediatorMessage("$j", getProperties(recordKey, missingProperty)))
             }
             newOutputs[Record(topic, recordKey, recordKey)] = outputsPerKey
         }
