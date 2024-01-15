@@ -51,7 +51,7 @@ class MerkleTreeTest {
 
         private const val MAXIMUM_TREE_SIZE_FOR_EXHAUSTIVE_MERGE_TESTS = 16
         // Since there are 60129542144 (slightly less than n*2^(2*n)) permutation for lists tests when we go up to tree
-        // size 16, again we take a stable random approach.
+        // size 16, so again we take a stable random approach.
         //
         // This has been taken up to 50000 which takes 1 minute and 8GB of RAM.
         private const val NUMBER_OF_MERGE_TESTS = 1000
