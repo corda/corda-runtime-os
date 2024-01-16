@@ -35,7 +35,7 @@ class MediatorReplayService @Activate constructor(
     ): List<MediatorReplayOutputEvents> {
         val mediatorOutputs = existingOutputs.toMutableList()
 
-        newOutputs.onEach { entry ->
+        newOutputs.forEach { entry ->
             val hash = getInputHash(entry.key)
             val mediatorOutputList = entry.value.map {
                 val topic = it.properties.getProperty(MSG_PROP_TOPIC)
