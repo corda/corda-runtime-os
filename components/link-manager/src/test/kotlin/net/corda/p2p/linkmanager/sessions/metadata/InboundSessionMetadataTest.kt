@@ -22,8 +22,6 @@ class InboundSessionMetadataTest {
                 "destinationVnode" to "O=Bob, L=London, C=GB",
                 "groupId" to "group ID",
                 "lastSendTimestamp" to 50L,
-                "encryptionKeyId" to "encryptionKeyId",
-                "encryptionTenant" to "encryptionTenant",
                 "status" to "SentResponderHello",
                 "expiry" to 1000L,
             ),
@@ -67,24 +65,6 @@ class InboundSessionMetadataTest {
         }
 
         @Test
-        fun `it return the correct encryptionKeyId`() {
-            val inboundSessionMetadata = metadata.from()
-
-            assertThat(inboundSessionMetadata.encryptionKeyId).isEqualTo(
-                "encryptionKeyId",
-            )
-        }
-
-        @Test
-        fun `it return the correct encryptionKeyTenant`() {
-            val inboundSessionMetadata = metadata.from()
-
-            assertThat(inboundSessionMetadata.encryptionKeyTenant).isEqualTo(
-                "encryptionTenant",
-            )
-        }
-
-        @Test
         fun `it return the correct status`() {
             val inboundSessionMetadata = metadata.from()
 
@@ -109,8 +89,6 @@ class InboundSessionMetadataTest {
             mock(),
             mock(),
             Instant.ofEpochMilli(10000L),
-            "key",
-            "key",
             mock(),
             mock(),
         )
@@ -150,8 +128,6 @@ class InboundSessionMetadataTest {
                 "group ID",
             ),
             Instant.ofEpochMilli(1000),
-            "key1",
-            "key2",
             InboundSessionStatus.SentResponderHandshake,
             Instant.ofEpochMilli(2000),
         )
@@ -172,12 +148,6 @@ class InboundSessionMetadataTest {
             ).containsEntry(
                 "lastSendTimestamp",
                 1000L,
-            ).containsEntry(
-                "encryptionKeyId",
-                "key1",
-            ).containsEntry(
-                "encryptionTenant",
-                "key2",
             ).containsEntry(
                 "status",
                 "SentResponderHandshake",

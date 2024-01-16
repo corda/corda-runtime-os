@@ -16,8 +16,6 @@ internal data class InboundSessionMetadata(
     val source: HoldingIdentity,
     val destination: HoldingIdentity,
     val lastSendTimestamp: Instant,
-    val encryptionKeyId: String,
-    val encryptionKeyTenant: String,
     val status: InboundSessionStatus,
     val expiry: Instant,
 ) {
@@ -26,8 +24,6 @@ internal data class InboundSessionMetadata(
         private const val DEST_VNODE = "destinationVnode"
         private const val GROUP_ID_KEY = "groupId"
         private const val LAST_SEND_TIMESTAMP = "lastSendTimestamp"
-        private const val ENCRYPTION_KEY_ID = "encryptionKeyId"
-        private const val ENCRYPTION_TENANT = "encryptionTenant"
         private const val STATUS = "status"
         private const val EXPIRY = "expiry"
         private val SESSION_EXPIRY_PERIOD: Duration = Duration.ofDays(7)
@@ -41,8 +37,6 @@ internal data class InboundSessionMetadata(
                 HoldingIdentity(MemberX500Name.parse(this[SOURCE_VNODE].toString()), this[GROUP_ID_KEY].toString()),
                 HoldingIdentity(MemberX500Name.parse(this[DEST_VNODE].toString()), this[GROUP_ID_KEY].toString()),
                 Instant.ofEpochMilli(this[LAST_SEND_TIMESTAMP] as Long),
-                this[ENCRYPTION_KEY_ID].toString(),
-                this[ENCRYPTION_TENANT].toString(),
                 this[STATUS].toString().statusFromString(),
                 Instant.ofEpochMilli(this[EXPIRY] as Long),
             )
@@ -60,8 +54,6 @@ internal data class InboundSessionMetadata(
                 DEST_VNODE to this.destination.x500Name.toString(),
                 GROUP_ID_KEY to this.source.groupId,
                 LAST_SEND_TIMESTAMP to this.lastSendTimestamp.toEpochMilli(),
-                ENCRYPTION_KEY_ID to this.encryptionKeyId,
-                ENCRYPTION_TENANT to this.encryptionKeyTenant,
                 STATUS to this.status.toString(),
                 EXPIRY to this.expiry.toEpochMilli(),
             ),

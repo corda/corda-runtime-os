@@ -18,7 +18,6 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.time.Duration
-import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import net.corda.data.p2p.crypto.InitiatorHandshakeMessage as AvroInitiatorHandshakeMessage
 import net.corda.data.p2p.crypto.InitiatorHelloMessage as AvroInitiatorHelloMessage
@@ -134,7 +133,7 @@ internal class StatefulSessionManagerImpl(
             it.second?.payload?.getSessionIdIfInboundSessionMessage(it.first)
         }
         val states = stateManager.get(messageContexts.map { it.sessionId })
-        val result = messageContexts.mapNotNull {
+        val results = messageContexts.mapNotNull {
             val state = states[it.sessionId]
             when (it.inboundSessionMessage) {
                 is InboundSessionMessage.InitiatorHelloMessage -> {
@@ -151,26 +150,26 @@ internal class StatefulSessionManagerImpl(
                 it.sessionId to result
             }
         }.toMap()
-        val failedUpdate = stateManager.update(result.values.map { it.stateUpdate })
+        val failedUpdate = stateManager.update(results.values.map { it.stateUpdate })
             .keys.onEach {
                 logger.warn("Failed to update the state of session $it")
             }
 
-        return result.mapNotNull { (sessionId, result) ->
+        return results.mapNotNull { (sessionId, result) ->
             if (failedUpdate.contains(sessionId)) {
                 null
             } else {
-                result.sessionToCache?.let { sessionToCache ->
-                    cachedInboundSessions.put(
-                        sessionToCache.sessionId,
-                        SessionManager.SessionDirection.Inbound(
-                            result.stateUpdate.metadata.from().toCounterparties(),
-                            sessionToCache,
-                        ),
-                    )
-                }
-                result.traceable to result.message
+                result
             }
+        }.onEach { result ->
+            result.sessionToCache?.let { sessionToCache ->
+                cachedInboundSessions[sessionToCache.sessionId] = SessionManager.SessionDirection.Inbound(
+                    result.stateUpdate.metadata.from().toCounterparties(),
+                    sessionToCache,
+                )
+            }
+        }.map { result ->
+            result.traceable to result.message
         }
     }
 
@@ -188,15 +187,13 @@ internal class StatefulSessionManagerImpl(
             null -> {
                 sessionManagerImpl.processInitiatorHello(message.initiatorHelloMessage)?.let {
                         (responseMessage, authenticationProtocol) ->
-                    val timestamp = Instant.now()
+                    val timestamp = clock.instant()
                     val newMetadata = InboundSessionMetadata(
                         source = responseMessage.header.destinationIdentity.toCorda(),
                         destination = responseMessage.header.sourceIdentity.toCorda(),
                         lastSendTimestamp = timestamp,
-                        encryptionKeyId = "",
-                        encryptionKeyTenant = "",
                         status = InboundSessionStatus.SentResponderHello,
-                        expiry = Instant.now() + SESSION_VALIDITY_PERIOD,
+                        expiry = timestamp + SESSION_VALIDITY_PERIOD,
                     )
                     val newState = State(
                         message.initiatorHelloMessage.header.sessionId,
@@ -208,7 +205,7 @@ internal class StatefulSessionManagerImpl(
             }
             InboundSessionStatus.SentResponderHello -> {
                 if (metadata.lastSendExpired(clock)) {
-                    val timestamp = Instant.now()
+                    val timestamp = clock.instant()
                     val updatedMetadata = metadata.copy(lastSendTimestamp = timestamp)
                     val responderHelloToResend = stateConvertor.toCordaSessionState(
                         state,
@@ -253,15 +250,13 @@ internal class StatefulSessionManagerImpl(
                     sessionManagerImpl.revocationCheckerClient::checkRevocation,
                 ).sessionData as AuthenticationProtocolResponder
                 sessionManagerImpl.processInitiatorHandshake(sessionData, message.initiatorHandshakeMessage)?.let { responseMessage ->
-                    val timestamp = Instant.now()
+                    val timestamp = clock.instant()
                     val newMetadata = InboundSessionMetadata(
                         source = responseMessage.header.sourceIdentity.toCorda(),
                         destination = responseMessage.header.destinationIdentity.toCorda(),
                         lastSendTimestamp = timestamp,
-                        encryptionKeyId = "",
-                        encryptionKeyTenant = "",
                         status = InboundSessionStatus.SentResponderHandshake,
-                        expiry = Instant.now() + SESSION_VALIDITY_PERIOD,
+                        expiry = timestamp + SESSION_VALIDITY_PERIOD,
                     )
                     val session = sessionData.getSession()
                     val newState = State(
@@ -274,7 +269,7 @@ internal class StatefulSessionManagerImpl(
             }
             InboundSessionStatus.SentResponderHandshake -> {
                 if (metadata.lastSendExpired(clock)) {
-                    val timestamp = Instant.now()
+                    val timestamp = clock.instant()
                     val updatedMetadata = metadata.copy(lastSendTimestamp = timestamp)
                     val responderHandshakeToResend = stateConvertor.toCordaSessionState(
                         state,
