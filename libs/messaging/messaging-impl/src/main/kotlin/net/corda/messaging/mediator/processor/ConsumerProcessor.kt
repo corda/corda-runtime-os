@@ -101,18 +101,20 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
 //        if (!previousPollEmpty) {
 //            log.info("Polling")
 //        }
-        val messages = metrics.pollTimer.recordCallable {
-            consumer.poll(pollTimeout)
-        }!!
+        val startTimestamp = System.nanoTime()
+        val messages = consumer.poll(pollTimeout)
+        metrics.pollTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
+
         previousPollEmpty = messages.isEmpty()
         if (messages.isNotEmpty()) {
-            val startTimestamp = System.nanoTime()
             val polledRecords = messages.map { it.toRecord() }
 //            logLag(messages)
             metrics.recordPollSize((consumer as MessageBusConsumer).topic, messages.size)
             var groups = groupAllocator.allocateGroups(polledRecords, config)
+
+            val loadStartTimestamp = System.nanoTime()
             var statesToProcess = stateManager.get(messages.map { it.key.toString() }.distinct())
-            metrics.loadTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
+            metrics.loadTimer.record(System.nanoTime() - loadStartTimestamp, TimeUnit.NANOSECONDS)
 
             while (groups.isNotEmpty()) {
                 // Process each group on a thread
@@ -137,10 +139,10 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 statesToProcess = failedStates
                 groups = assignNewGroupsForFailedStates(failedStates, polledRecords)
             }
-            metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
             metrics.commitTimer.recordCallable {
                 consumer.syncCommitOffsets()
             }
+            metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
         }
     }
 

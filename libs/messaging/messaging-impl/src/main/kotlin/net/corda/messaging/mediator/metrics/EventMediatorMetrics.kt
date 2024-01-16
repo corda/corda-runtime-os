@@ -13,22 +13,22 @@ class EventMediatorMetrics(
         .build()
 
     val groupTimer = CordaMetrics.Metric.Messaging.MessageGroupTime.builder()
-        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.EVENT_MEDIATOR_TYPE)
+        //.withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.EVENT_MEDIATOR_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, mediatorName)
         .build()
 
     val loadTimer = CordaMetrics.Metric.Messaging.MessageLoadTime.builder()
-        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.EVENT_MEDIATOR_TYPE)
+        //.withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.EVENT_MEDIATOR_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, mediatorName)
         .build()
 
     val persistTimer = CordaMetrics.Metric.Messaging.MessagePersistTime.builder()
-        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.EVENT_MEDIATOR_TYPE)
+        //.withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.EVENT_MEDIATOR_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, mediatorName)
         .build()
 
     val sendAsyncTimer = CordaMetrics.Metric.Messaging.MessageSendAsyncTime.builder()
-        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.EVENT_MEDIATOR_TYPE)
+        //.withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.EVENT_MEDIATOR_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, mediatorName)
         .build()
 
