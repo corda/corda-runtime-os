@@ -17,6 +17,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.GroupAllocator
 import net.corda.messaging.mediator.MediatorSubscriptionState
 import net.corda.messaging.mediator.StateManagerHelper
+import net.corda.messaging.mediator.processor.MediatorReplayService
 import net.corda.taskmanager.TaskManager
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -60,6 +61,7 @@ class MediatorComponentFactoryTest {
     private val stateManagerHelper = mock<StateManagerHelper<String>>()
     private val taskManager = mock<TaskManager>()
     private val messageRouter = mock<MessageRouter>()
+    private val mediatorReplayService = mock<MediatorReplayService>()
     private val mediatorSubscriptionState = MediatorSubscriptionState(AtomicBoolean(false), AtomicBoolean(false))
     private val eventMediatorConfig = mock<EventMediatorConfig<String, String, String>>().apply {
         whenever(name).thenReturn("name")
@@ -90,7 +92,8 @@ class MediatorComponentFactoryTest {
             clientFactories,
             messageRouterFactory,
             groupAllocator,
-            stateManagerHelper
+            stateManagerHelper,
+            mediatorReplayService
         )
     }
 
@@ -123,7 +126,8 @@ class MediatorComponentFactoryTest {
             clientFactories,
             messageRouterFactory,
             groupAllocator,
-            stateManagerHelper
+            stateManagerHelper,
+            mediatorReplayService
         )
 
         assertThrows<IllegalStateException> {
@@ -158,7 +162,8 @@ class MediatorComponentFactoryTest {
             emptyList(),
             messageRouterFactory,
             groupAllocator,
-            stateManagerHelper
+            stateManagerHelper,
+            mediatorReplayService
         )
 
         assertThrows<IllegalStateException> {

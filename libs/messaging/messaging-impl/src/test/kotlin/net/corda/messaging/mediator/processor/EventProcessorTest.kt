@@ -32,6 +32,7 @@ class EventProcessorTest {
     private lateinit var stateManagerHelper: StateManagerHelper<String>
     private lateinit var client: MessagingClient
     private lateinit var messageRouter: MessageRouter
+    private lateinit var mediatorReplayService: MediatorReplayService
     private lateinit var stateAndEventProcessor: StateAndEventProcessor<String, String, String>
     private lateinit var eventProcessor: EventProcessor<String, String, String>
 
@@ -45,6 +46,7 @@ class EventProcessorTest {
         client = mock()
         stateAndEventProcessor = mock()
         stateManagerHelper = mock()
+        mediatorReplayService = mock()
         messageRouter = mock()
         whenever(messageRouter.getDestination(any())).thenAnswer {
             val msg = it.arguments[0] as MediatorMessage<String>
@@ -54,7 +56,7 @@ class EventProcessorTest {
         }
         eventMediatorConfig = buildStringTestConfig()
 
-        eventProcessor = EventProcessor(eventMediatorConfig, stateManagerHelper, messageRouter)
+        eventProcessor = EventProcessor(eventMediatorConfig, stateManagerHelper, messageRouter, mediatorReplayService)
     }
 
     @Test
