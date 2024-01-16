@@ -126,7 +126,7 @@ class CryptoRekeyBusProcessorTests {
      * Other tenants return null, therefore no rewrapWrappingKey function is called.
      */
     @Test
-    fun `key rotation re-wraps only those keys where oldKeyAlias alias in the wrapping repo for the tenant`() {
+    fun `key rotation re-wraps only those keys where oldKeyAlias alias is in the wrapping repo for the tenant`() {
         val oldKeyAlias = "Eris"
         val newId = UUID.randomUUID()
         val wrappingKeyInfo = WrappingKeyInfo(
