@@ -14,12 +14,11 @@ import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactoryImpl
 import net.corda.ledger.common.data.transaction.serializer.amqp.WireTransactionSerializer
 import net.corda.ledger.common.flow.impl.transaction.PrivacySaltProviderServiceImpl
-import net.corda.ledger.common.flow.impl.transaction.factory.TransactionMetadataFactoryImpl
-import net.corda.ledger.common.flow.impl.transaction.serializer.kryo.WireTransactionKryoSerializer
 import net.corda.ledger.common.flow.impl.transaction.TransactionSignatureServiceImpl
 import net.corda.ledger.common.flow.impl.transaction.TransactionSignatureVerificationServiceImpl
+import net.corda.ledger.common.flow.impl.transaction.factory.TransactionMetadataFactoryImpl
+import net.corda.ledger.common.flow.impl.transaction.serializer.kryo.WireTransactionKryoSerializer
 import net.corda.ledger.common.testkit.FakePlatformInfoProvider
-import net.corda.ledger.common.flow.impl.transaction.PrivacySaltProviderServiceImpl
 import net.corda.ledger.common.testkit.fakePlatformInfoProvider
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -45,8 +44,6 @@ abstract class CommonLedgerTest {
     )
 
     val flowFiberService = TestFlowFiberServiceWithSerialization(currentSandboxGroupContext)
-
-    val privacySaltProviderService = PrivacySaltProviderServiceImpl(flowFiberService)
 
     val privacySaltProviderService = PrivacySaltProviderServiceImpl(flowFiberService)
 
