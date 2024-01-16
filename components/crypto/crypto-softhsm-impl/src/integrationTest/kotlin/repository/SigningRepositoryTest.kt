@@ -15,7 +15,8 @@ import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
-import net.corda.crypto.persistence.WrappingKeyInfo
+import net.corda.crypto.persistence.db.model.SigningKeyEntity
+import net.corda.crypto.persistence.db.model.SigningKeyMaterialEntity
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
 import net.corda.crypto.softhsm.impl.SigningRepositoryImpl
 import net.corda.crypto.softhsm.impl.toDto
@@ -89,7 +90,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             algorithmOIDs = listOf(mock<AlgorithmIdentifier>()),
             providerName = "foo",
             algorithmName = "bar",
-            algSpec = mock< AlgorithmParameterSpec>(),
+            algSpec = mock<AlgorithmParameterSpec>(),
             keySize = 456,
             capabilities = setOf(KeySchemeCapability.SIGN)
         )
@@ -103,33 +104,36 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
         }
     }
 
-    private val wrappingKeys = mutableMapOf<EntityManagerFactory, WrappingKeyInfo>()
-    private fun saveWrappingKey(emf: EntityManagerFactory, alias: String): WrappingKeyInfo {
-        return wrappingKeys.computeIfAbsent(emf) {
-            emf.createEntityManager().use { em ->
-                em.transaction {
-                    it.merge(
-                        WrappingKeyEntity(
-                            id = UUID.randomUUID(),
-                            generation = 1,
-                            alias = alias,
-                            created = Instant.now(),
-                            rotationDate = LocalDate.parse("9999-12-31").atStartOfDay().toInstant(ZoneOffset.UTC),
-                            encodingVersion = 1,
-                            algorithmName = "foo",
-                            keyMaterial = SecureHashUtils.randomBytes(),
-                            isParentKeyManaged = false,
-                            parentKeyReference = "root",
-                        )
+    private fun saveWrappingKey(
+        emf: EntityManagerFactory,
+        alias: String,
+        generation: Int = 1
+    ): UUID {
+        val uuid = UUID.randomUUID()
+        emf.createEntityManager().use { em ->
+            em.transaction {
+                it.merge(
+                    WrappingKeyEntity(
+                        id = uuid,
+                        generation = generation,
+                        alias = alias,
+                        created = Instant.now(),
+                        rotationDate = LocalDate.parse("9999-12-31").atStartOfDay().toInstant(ZoneOffset.UTC),
+                        encodingVersion = 1,
+                        algorithmName = "foo",
+                        keyMaterial = SecureHashUtils.randomBytes(),
+                        isParentKeyManaged = false,
+                        parentKeyReference = "root",
                     )
-                }
-            }.toDto()
-        }
+                )
+            }
+        }.toDto()
+        return uuid
     }
 
     private val createdKeys = mutableMapOf<EntityManagerFactory, List<SigningKeyInfo>>()
 
-    private fun createKeys(emf: EntityManagerFactory) : List<SigningKeyInfo> {
+    private fun createKeys(emf: EntityManagerFactory): List<SigningKeyInfo> {
         val repo = SigningRepositoryImpl(
             emf,
             defaultTenantId,
@@ -149,7 +153,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
         return privateKeys
     }
 
-    fun createSigningWrappedKeySaveContext(info: SigningKeyInfo) : SigningWrappedKeySaveContext {
+    fun createSigningWrappedKeySaveContext(info: SigningKeyInfo): SigningWrappedKeySaveContext {
         val privKey = createGeneratedWrappedKey(info)
         return SigningWrappedKeySaveContext(
             key = privKey,
@@ -185,6 +189,47 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
         assertThat(found)
             .usingRecursiveComparison().ignoringFields("timestamp")
             .isEqualTo(info)
+    }
+
+    @ParameterizedTest
+    @MethodSource("emfs")
+    fun `savePrivateKey uses latest generation of wrapping key`(emf: EntityManagerFactory) {
+        val info = createSigningKeyInfo()
+        saveWrappingKey(emf, info.wrappingKeyAlias, generation = 1)
+        saveWrappingKey(emf, info.wrappingKeyAlias, generation = 2)
+        val expectedUuid = saveWrappingKey(emf, info.wrappingKeyAlias, generation = 3)
+
+        val ctx = createSigningWrappedKeySaveContext(info)
+
+        val repo = SigningRepositoryImpl(
+            emf,
+            info.tenantId,
+            cipherSchemeMetadata,
+            digestService,
+            createLayeredPropertyMapFactory(),
+        )
+
+        repo.savePrivateKey(ctx)
+
+        emf.createEntityManager().use { em ->
+            val signingKeyResult = em.createQuery(
+                "FROM ${SigningKeyEntity::class.java.simpleName} WHERE tenantId=:tenantId AND alias=:alias",
+                SigningKeyEntity::class.java
+            ).setParameter("tenantId", info.tenantId)
+                .setParameter("alias", info.alias)
+                .resultList
+
+            assertThat(signingKeyResult.size).isEqualTo(1)
+
+            val signingKeyMaterialResult = em.createQuery(
+                "FROM ${SigningKeyMaterialEntity::class.java.simpleName} WHERE signing_key_id=:signing_key_id",
+                SigningKeyMaterialEntity::class.java
+            ).setParameter("signing_key_id", signingKeyResult.first().id)
+                .resultList
+
+            assertThat(signingKeyMaterialResult.size).isEqualTo(1)
+            assertThat(signingKeyMaterialResult.first().wrappingKeyId).isEqualTo(expectedUuid)
+        }
     }
 
     @ParameterizedTest
@@ -248,11 +293,12 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             createdKeys[emf] = createKeys(emf)
             createdKeys[emf]!!
         }
-        val found = query(emf,0, 2, SigningKeyOrderBy.ALIAS, mapOf("tenantId" to defaultTenantId))
+        val found = query(emf, 0, 2, SigningKeyOrderBy.ALIAS, mapOf("tenantId" to defaultTenantId))
         assertThat(found)
             .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
             .containsExactlyElementsOf(
-                allKeys.filter { it.tenantId == defaultTenantId }.sortedBy { it.alias }.take(2))
+                allKeys.filter { it.tenantId == defaultTenantId }.sortedBy { it.alias }.take(2)
+            )
     }
 
     @ParameterizedTest
@@ -262,11 +308,12 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             createdKeys[emf] = createKeys(emf)
             createdKeys[emf]!!
         }
-        val found = query(emf,2, 2, SigningKeyOrderBy.ALIAS, mapOf("tenantId" to defaultTenantId))
+        val found = query(emf, 2, 2, SigningKeyOrderBy.ALIAS, mapOf("tenantId" to defaultTenantId))
         assertThat(found)
             .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
             .containsExactlyElementsOf(
-                allKeys.filter { it.tenantId == defaultTenantId }.sortedBy { it.alias }.drop(2).take(2))
+                allKeys.filter { it.tenantId == defaultTenantId }.sortedBy { it.alias }.drop(2).take(2)
+            )
     }
 
     @ParameterizedTest
@@ -277,11 +324,13 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             createdKeys[emf]!!
         }
         val found = query(
-            emf,0, 2, SigningKeyOrderBy.CATEGORY_DESC, mapOf("category" to allKeys.first().category))
+            emf, 0, 2, SigningKeyOrderBy.CATEGORY_DESC, mapOf("category" to allKeys.first().category)
+        )
         assertThat(found)
             .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
             .containsExactlyElementsOf(
-                allKeys.filter { it.category == allKeys.first().category }.sortedByDescending { it.category }.take(2))
+                allKeys.filter { it.category == allKeys.first().category }.sortedByDescending { it.category }.take(2)
+            )
     }
 
     @ParameterizedTest
@@ -292,8 +341,9 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             createdKeys[emf]!!
         }
         val found = query(
-            emf,0, 2,
-            SigningKeyOrderBy.ALIAS, mapOf("schemeCodeName" to allKeys.first().schemeCodeName))
+            emf, 0, 2,
+            SigningKeyOrderBy.ALIAS, mapOf("schemeCodeName" to allKeys.first().schemeCodeName)
+        )
         assertThat(found)
             .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
             .containsExactlyElementsOf(
@@ -311,9 +361,10 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             createdKeys[emf]!!
         }
         val found = query(
-            emf,0, 2,
+            emf, 0, 2,
             SigningKeyOrderBy.ALIAS,
-            mapOf("alias" to allKeys.first{ null != it.externalId }.alias!!))
+            mapOf("alias" to allKeys.first { null != it.externalId }.alias!!)
+        )
         assertThat(found)
             .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
             .containsExactlyElementsOf(
@@ -331,9 +382,10 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             createdKeys[emf]!!
         }
         val found = query(
-            emf,0, 2,
+            emf, 0, 2,
             SigningKeyOrderBy.ALIAS,
-            mapOf("externalId" to allKeys.first { null != it.externalId }.externalId!!))
+            mapOf("externalId" to allKeys.first { null != it.externalId }.externalId!!)
+        )
         assertThat(found)
             .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
             .containsExactlyElementsOf(
