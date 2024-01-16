@@ -19,7 +19,7 @@ import kotlin.math.min
  * @param hashes - the input hashes needed to rebuild the parts of the tree where data is not given
  *
  * The number of elements in hashes will depend on the tree size and where in the tree the unknown
- * data is. There will need to be at least one, to cover the gap left by missing data. There never
+ * data is. There will need to be at least one to cover the gap left by missing data. There never
  * needs to be more than the tree size minus the number of leaves specified.
  */
 
@@ -59,7 +59,7 @@ class MerkleProofImpl(
      *
      * @param digest the digest service to use, which must generate hashes compatible with the [hashes] constructor parameter.
      * @param onNewHash called with information about a node taken from incoming hashes or calculated during the proof.
-     *                  This will be called left to right then bottom to top. i.e. the same order as input hashes are consumed.
+     *                  This will be called left to right then bottom to top, i.e., the same order as input hashes are consumed.
      * @return the secure hash of the root of the Merkle proof
      */
     @Suppress("NestedBlockDepth", "ThrowsCount")
@@ -122,10 +122,10 @@ class MerkleProofImpl(
         var currentSize = treeSize                                 // outer loop variable; the number of
                                                                    // leaves left as we roll up the tree
 
-        // loop over each level of the tree, starting at the deepest level (i.e. furthest from root)
+        // loop over each level of the tree, starting at the deepest level (i.e., furthest from root)
         while (currentSize > 1) {
             val newPendingNodes = mutableListOf<MerkleNodeInfo>()
-            // Process a level of the tree which means generating the hashes for the level above (i.e. closer
+            // Process a level of the tree which means generating the hashes for the level above (i.e., closer
             // to the root).
 
             // There is nothing to do if the tree size $currentSize is 1, hence the loop condition
@@ -164,7 +164,7 @@ class MerkleProofImpl(
                         // Decide if we can consume the next two elements since they are adjacent in the Merkle tree
                         if (item.indexWithinLevel xor next.indexWithinLevel == 1) {       // ... and they are a pair with the current
                             // We now know that the indices ${item.first} and ${next.first} only differ on the bottom bit,
-                            // i.e. they are adjacent. Therefore, we can combine them.
+                            // i.e., they are adjacent. Therefore, we can combine them.
 
                             // So, make a single new item, computing a new hash
                             // (Pair is the Kotlin type, nothing to do with pairing nodes)
