@@ -49,7 +49,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
             val asyncOutputs = mutableMapOf<Record<K, E>, MutableList<MediatorMessage<Any>>>()
             val allConsumerInputs = groupEntry.value
             val processed = try {
-                allConsumerInputs.onEach { consumerInputEvent ->
+                allConsumerInputs.forEach { consumerInputEvent ->
                     val queue = ArrayDeque(listOf(consumerInputEvent))
                     while (queue.isNotEmpty()) {
                         val event = queue.removeFirst()
