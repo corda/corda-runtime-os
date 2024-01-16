@@ -411,8 +411,15 @@ RBAC user environment variable
       key: "username"
       {{- end }}
 - name: RBAC_DB_USER_PASSWORD
-  value: "rbac_user"
-
+  valueFrom:
+    secretKeyRef:
+      {{- if .Values.bootstrap.db.rbac.password.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.bootstrap.db.rbac.password.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify bootstrap.db.rbac.password.valueFrom.secretKeyRef.key" .Values.bootstrap.db.rbac.password.valueFrom.secretKeyRef.key | quote }}
+      {{- else }}
+      name: {{ include "corda.rbacDbDefaultSecretName" . | quote }}
+      key: "password"
+      {{- end }}
 {{- end -}}
 
 {{/*
@@ -439,7 +446,15 @@ Crypto worker environment variable
 {{- end }}
 {{- define "corda.cryptoDbPasswordEnv" -}}
 - name: CRYPTO_DB_USER_PASSWORD
-  value: "crypto_user"
+  valueFrom:
+    secretKeyRef:
+      {{- if .Values.bootstrap.db.crypto.password.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.bootstrap.db.crypto.password.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify bootstrap.db.crypto.password.valueFrom.secretKeyRef.key" .Values.bootstrap.db.crypto.password.valueFrom.secretKeyRef.key | quote }}
+      {{- else }}
+      name: {{ include "corda.cryptoDbDefaultSecretName" . | quote }}
+      key: "password"
+      {{- end }}
 {{- end -}}
 
 {{/*
