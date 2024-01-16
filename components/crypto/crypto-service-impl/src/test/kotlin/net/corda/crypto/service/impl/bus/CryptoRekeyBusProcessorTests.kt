@@ -17,8 +17,8 @@ import net.corda.crypto.softhsm.WrappingRepositoryFactory
 import net.corda.crypto.softhsm.impl.WrappingRepositoryImpl
 import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
-import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationStatus
 import net.corda.data.crypto.wire.ops.key.rotation.KeyType
+import net.corda.data.crypto.wire.ops.key.status.UnmanagedKeyStatus
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -92,11 +92,11 @@ class CryptoRekeyBusProcessorTests {
             on { publish(rewrapPublishCapture.capture()) } doReturn emptyList()
         }
 
-        val serializer = mock<CordaAvroSerializer<KeyRotationStatus>> {
+        val serializer = mock<CordaAvroSerializer<UnmanagedKeyStatus>> {
             on { serialize(any()) } doReturn byteArrayOf(42)
         }
         cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
-            on { createAvroSerializer<KeyRotationStatus>() } doReturn serializer
+            on { createAvroSerializer<UnmanagedKeyStatus>() } doReturn serializer
         }
 
         cryptoRekeyBusProcessor = CryptoRekeyBusProcessor(
