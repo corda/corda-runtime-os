@@ -10,6 +10,7 @@ import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationStatus
 import net.corda.data.crypto.wire.ops.key.rotation.KeyType
 import net.corda.libs.statemanager.api.Metadata
+import net.corda.libs.statemanager.api.STATE_TYPE
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.processor.DurableProcessor
@@ -107,8 +108,16 @@ class CryptoRekeyBusProcessor(
                 now
             )
 
-            val flattend = checkNotNull(serializer.serialize(status))
-            stateManager?.create(listOf(State(request.requestId, flattend, 1, Metadata(), now)))
+            val flattened = checkNotNull(serializer.serialize(status))
+            stateManager?.create(
+                listOf(
+                    State(
+                        request.requestId,
+                        flattened, 1,
+                        Metadata(mapOf(STATE_TYPE to status::class.java.name))
+                    )
+                )
+            )
         }
 
         return emptyList()

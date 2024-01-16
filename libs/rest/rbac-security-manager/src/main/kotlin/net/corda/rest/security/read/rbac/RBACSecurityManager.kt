@@ -2,8 +2,8 @@ package net.corda.rest.security.read.rbac
 
 import net.corda.libs.permission.PermissionValidator
 import net.corda.libs.permissions.manager.BasicAuthenticationService
+import net.corda.rest.authorization.AuthorizingSubject
 import net.corda.rest.security.AuthServiceId
-import net.corda.rest.security.AuthorizingSubject
 import net.corda.rest.security.read.Password
 import net.corda.rest.security.read.RestSecurityManager
 import java.util.function.Supplier
