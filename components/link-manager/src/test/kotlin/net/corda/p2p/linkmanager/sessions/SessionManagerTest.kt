@@ -1673,6 +1673,7 @@ class SessionManagerTest {
     }
 
     @Test
+    @Suppress("MaxLineLength")
     fun `when responder hello is received, the session is pending, if no response is received, the session times out if heartbeats are enabled`() {
         val resourceHolder = ResourcesHolder()
         val sessionManager = createSessionManager(resourceHolder, configWithOneSessionBetweenMembers, configWithHeartbeat)
@@ -1702,6 +1703,7 @@ class SessionManagerTest {
     }
 
     @Test
+    @Suppress("MaxLineLength")
     fun `when responder hello is received, the session is pending, if no response is received, the session does not time out if heartbeats are disabled`() {
         val resourceHolder = ResourcesHolder()
         val sessionManager = createSessionManager(resourceHolder, configWithOneSessionBetweenMembersAndNoHeartbeats, configWithNoHeartbeat)
@@ -1731,6 +1733,7 @@ class SessionManagerTest {
     }
 
     @Test
+    @Suppress("MaxLineLength")
     fun `when responder handshake is received, the session is established, if no message is sent, the session times out if heartbeats are enabled`() {
         val resourceHolder = ResourcesHolder()
         val sessionManager = createSessionManager(resourceHolder, configWithOneSessionBetweenMembers, configWithHeartbeat)
@@ -1778,6 +1781,7 @@ class SessionManagerTest {
     }
 
     @Test
+    @Suppress("MaxLineLength")
     fun `when responder handshake is received, the session is established, if no message is sent, the session doesn't time out if heartbeats are disabled`() {
         val resourceHolder = ResourcesHolder()
         val sessionManager = createSessionManager(resourceHolder, configWithOneSessionBetweenMembersAndNoHeartbeats, configWithNoHeartbeat)
@@ -1852,6 +1856,7 @@ class SessionManagerTest {
     }
 
     @Test
+    @Suppress("MaxLineLength")
     fun `when a responder handshake message is received, heartbeats are not sent, and sessions don't time out if heartbeats are disabled`() {
         val messages = mutableListOf<AuthenticatedDataMessage>()
         val resourcesHolder = ResourcesHolder()
@@ -1882,6 +1887,7 @@ class SessionManagerTest {
     }
 
     @Test
+    @Suppress("MaxLineLength")
     fun `when a responder handshake message is received, heartbeats are sent if enabled, this continues if the heartbeat manager gets a new config with heartbeats enabled`() {
         val messages = Collections.synchronizedList(mutableListOf<AuthenticatedDataMessage>())
 
@@ -1911,6 +1917,7 @@ class SessionManagerTest {
     }
 
     @Test
+    @Suppress("MaxLineLength")
     fun `when a responder handshake message is received, heartbeats are sent if enabled, this stops if the heartbeat manager gets a new config with heartbeats disabled`() {
         val messages = Collections.synchronizedList(mutableListOf<AuthenticatedDataMessage>())
 
@@ -1941,6 +1948,7 @@ class SessionManagerTest {
     }
 
     @Test
+    @Suppress("MaxLineLength")
     fun `when a responder handshake message is received, heartbeats are not sent if disabled, this continues if the heartbeat manager gets a new config with heartbeats disabled`() {
         val messages = Collections.synchronizedList(mutableListOf<AuthenticatedDataMessage>())
 
@@ -1970,6 +1978,7 @@ class SessionManagerTest {
     }
 
     @Test
+    @Suppress("MaxLineLength")
     fun `when a responder handshake message is received, heartbeats are not sent if disabled, they start if the heartbeat manager gets a new config with heartbeats enabled`() {
         val messages = Collections.synchronizedList(mutableListOf<AuthenticatedDataMessage>())
 
@@ -2491,6 +2500,7 @@ class SessionManagerTest {
     }
 
     @Test
+    @Suppress("MaxLineLength")
     fun `when heartbeats are disabled and a message is sent and not acknowledged, the session will timeout only after the session timeout duration has passed`() {
         val messages = mutableListOf<AuthenticatedDataMessage>()
         val resourcesHolder = ResourcesHolder()
