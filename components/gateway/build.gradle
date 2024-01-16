@@ -36,8 +36,8 @@ dependencies {
     implementation project(':libs:platform-info')
 
     testImplementation project(":testing:test-utilities")
-    integrationTestRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
-    integrationTestImplementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+    integrationTestRuntimeOnly libs.log4j.slf4j
+    integrationTestImplementation libs.log4j.core
     integrationTestImplementation project(":libs:schema-registry:schema-registry-impl")
     integrationTestImplementation "net.corda:corda-avro-schema"
 

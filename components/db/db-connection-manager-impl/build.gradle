@@ -24,7 +24,7 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation libs.slf4j.api
 
     testRuntimeOnly "org.osgi:osgi.core"
 
