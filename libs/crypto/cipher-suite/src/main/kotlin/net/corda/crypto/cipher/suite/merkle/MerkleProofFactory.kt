@@ -19,6 +19,8 @@ interface MerkleProofFactory {
      * @param treeSize Size of the original Merkle tree
      * @param leavesIndexAndData Visible leaf indices and their data
      * @param hashes List of the visible hashes in the Merkle proof
+     *
+     * @return The constructed Merkle proof
      */
     @Suspendable
     fun createAuditMerkleProof(
