@@ -107,7 +107,7 @@ class MerkleProofImpl(
         // We will discover some hashes at a given level and some at the level above.
         // But we want to guarantee to our uses that they get out hashes on the `onNewHash` callback
         // in a left to right then bottom to top order, rather than mix up leaves from different levels.
-        // That way the user code is simpler. So, we need to efficiently sort the output order.
+        // That way, the user code is simpler. So, we need to efficiently sort the output order.
 
         // Maintain the set of nodes from the current level, to be interspersed on the next level.
         var pendingNodes = nodeHashes.map { MerkleNodeInfo(it, treeDepth, null) }.toMutableList()
@@ -135,7 +135,7 @@ class MerkleProofImpl(
                 )
             }
             --treeDepth
-            // We could check here that size of nodeHashes is as expected for treeDepth; there should be a closed form.
+            // We could check here that the size of nodeHashes is as expected for treeDepth; there should be a closed form.
 
             // ... so that's 4 variables that get updated as we work:
             // - $hashIndex is the position we are at in the supplied proof hashes
@@ -255,6 +255,7 @@ class MerkleProofImpl(
      * Throws IllegalArgumentException if some requested leaf indices are not available in the source proof,
      * or if no leaf indices are requested.
      *
+     * @param digest the digest algorithm of this Merkle proof.
      * @param leafIndices indices  of the known leaves to include in the output proof
      * @return A new Merkle proof covering the specified leaves.
      */
@@ -294,6 +295,14 @@ class MerkleProofImpl(
         return MerkleProofImpl(proofType, treeSize, outLeaves, outHashes)
     }
 
+    /**
+     *
+     * Derive a proof that merges this proof with another.
+     *
+     * @param other Another proof to consider, which must be for the same Merkle tree.
+     * @param digest A hash digest provider, which must be compatible with this and the `other` proof.
+     * @return A MerkelProofImpl which has the union of the leaves and the required proof hashes to be verifiable.
+     */
     @Suppress("UnusedParameters")
     fun merge(other: MerkleProofImpl, digest: MerkleTreeHashDigestProvider): MerkleProofImpl {
         // First, work out the leaves for the output proof.
@@ -341,6 +350,11 @@ class MerkleProofImpl(
                         // y is calculated, so it can be calculated in o, no proof hash needed in O
                     }
                     x?.consumed != null -> {
+                        // even if y consumed a proof it doesn't matter whether we take x.node.hash or y.node.hash
+                        // since they are identical
+
+                        if (y?.consumed != null)
+                            check(x.node.hash == y.node.hash)
                         outHashes += x.node.hash
                     }
                     y?.consumed != null -> {
