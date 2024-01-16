@@ -74,12 +74,13 @@ abstract class DbAdmin {
             CREATE USER $user WITH PASSWORD '$password';
             GRANT $user TO current_user;
             GRANT USAGE ON SCHEMA $schemaName to $user;
+            ALTER ROLE "$user" SET search_path TO $schemaName;
             $permissions TO $user;
             """.trimIndent()
 
         withDbConnection { connection ->
             connection.createStatement().execute(sql)
-            connection.commit()
+//            connection.commit()
         }
     }
 
@@ -95,7 +96,7 @@ abstract class DbAdmin {
         val sql = "DROP SCHEMA $schemaName CASCADE;"
         withDbConnection { connection ->
             connection.createStatement().execute(sql)
-            connection.commit()
+//            connection.commit()
         }
     }
 
@@ -136,7 +137,7 @@ abstract class DbAdmin {
         val sql = "DROP USER $user;"
         withDbConnection { connection ->
             connection.createStatement().execute(sql)
-            connection.commit()
+//            connection.commit()
         }
     }
 
@@ -148,4 +149,6 @@ abstract class DbAdmin {
      * @return JDBC URL configured to use given DB schema
      */
     fun createJdbcUrl(schemaName: String) = "$jdbcRootUrl?currentSchema=$schemaName"
+
+    fun getPlainJdbcUrl() = jdbcRootUrl
 }

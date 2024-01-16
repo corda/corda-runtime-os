@@ -24,10 +24,7 @@ bootstrap:
   db:
     cluster:
       password:
-        valueFrom:
-          secretKeyRef:
-            name: "prereqs-postgres"
-            key: "postgres-password"
+        value: "postgres"
       username:
         value: "postgres"
   kafka:
@@ -35,14 +32,11 @@ bootstrap:
 
 db:
   cluster:
-    host: "prereqs-postgres"
+    host: "pgbouncer-example"
     username:
       value: "corda"
     password:
-      valueFrom:
-        secretKeyRef:
-          name: "prereqs-postgres"
-          key: "corda-password"
+      value: "corda"
 
 kafka:
   bootstrapServers: "prereqs-kafka:9092"

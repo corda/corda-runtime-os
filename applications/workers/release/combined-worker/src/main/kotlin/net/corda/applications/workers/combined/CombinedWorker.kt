@@ -239,7 +239,7 @@ class CombinedWorker @Activate constructor(
         // add the state manager schema to the JDBC URL.
         return stateManagerConfigWithFallback.withValue(
             BOOT_STATE_MANAGER_JDBC_URL,
-            fromAnyRef("${stateManagerConfig.getString(BOOT_STATE_MANAGER_JDBC_URL)}?currentSchema=$STATE_MANAGER_SCHEMA_NAME")
+            fromAnyRef(stateManagerConfig.getString(BOOT_STATE_MANAGER_JDBC_URL))
         )
     }
 
@@ -267,10 +267,10 @@ class CombinedWorker @Activate constructor(
     private fun prepareDbConfig(dbConfig: Config): Config {
         val tempJdbcUrl = dbConfig.getString(BOOT_JDBC_URL)
         return dbConfig
-            .withValue(BOOT_JDBC_URL, fromAnyRef("$tempJdbcUrl?currentSchema=$CONFIG_SCHEMA_NAME"))
+            .withValue(BOOT_JDBC_URL, fromAnyRef(tempJdbcUrl))
             .withValue(
                 BOOT_JDBC_URL + MESSAGE_BUS_CONFIG_PATH_SUFFIX,
-                fromAnyRef("$tempJdbcUrl?currentSchema=$MESSAGEBUS_SCHEMA_NAME")
+                fromAnyRef(tempJdbcUrl)
             )
     }
 

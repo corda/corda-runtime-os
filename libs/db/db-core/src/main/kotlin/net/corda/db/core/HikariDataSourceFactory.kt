@@ -44,43 +44,47 @@ class HikariDataSourceFactory(
         keepaliveTime: Duration,
         validationTimeout: Duration
     ): CloseableDataSource {
-        val conf = HikariConfig()
+//        val conf = HikariConfig()
 
-        try {
+//        try {
             // Create and *wrap* an existing data source.
-            conf.dataSource = OSGiDataSourceFactory.create(
-                driverClass,
-                jdbcUrl,
-                username,
-                password
-            )
-        } catch (_: UnsupportedOperationException) {
-            // Defer to Hikari, and hence java.sql.DriverManager, which we don't want in production
-            // code. This part should only be hit in unit tests that don't use an OSGi framework.
-            conf.driverClassName = driverClass
-            conf.jdbcUrl = jdbcUrl
-            conf.username = username
-            conf.password = password
+        val ds = OSGiDataSourceFactory.create(
+            driverClass,
+            jdbcUrl,
+            username,
+            password
+        )
+        return object : CloseableDataSource, DataSource  by ds {
+            override fun close() {
+            }
         }
-
-        conf.isAutoCommit = isAutoCommit
-        conf.isReadOnly = isReadOnly
-        conf.maximumPoolSize = maximumPoolSize
-        if (minimumPoolSize != null) {
-            conf.minimumIdle = minimumPoolSize
-        } else {
-            conf.minimumIdle = maximumPoolSize
-        }
-        if (conf.minimumIdle != conf.maximumPoolSize) {
-            conf.idleTimeout = idleTimeout.toMillis()
-        } else {
-            conf.idleTimeout = 0
-        }
-        conf.maxLifetime = maxLifetime.toMillis()
-        if(Duration.ZERO != keepaliveTime)
-            conf.keepaliveTime = keepaliveTime.toMillis()
-        conf.validationTimeout = validationTimeout.toMillis()
-
-        return hikariDataSourceFactory(conf)
+//        } catch (_: UnsupportedOperationException) {
+//            // Defer to Hikari, and hence java.sql.DriverManager, which we don't want in production
+//            // code. This part should only be hit in unit tests that don't use an OSGi framework.
+//            conf.driverClassName = driverClass
+//            conf.jdbcUrl = jdbcUrl
+//            conf.username = username
+//            conf.password = password
+//        }
+//
+//        conf.isAutoCommit = isAutoCommit
+//        conf.isReadOnly = isReadOnly
+//        conf.maximumPoolSize = maximumPoolSize
+//        if (minimumPoolSize != null) {
+//            conf.minimumIdle = minimumPoolSize
+//        } else {
+//            conf.minimumIdle = maximumPoolSize
+//        }
+//        if (conf.minimumIdle != conf.maximumPoolSize) {
+//            conf.idleTimeout = idleTimeout.toMillis()
+//        } else {
+//            conf.idleTimeout = 0
+//        }
+//        conf.maxLifetime = maxLifetime.toMillis()
+//        if(Duration.ZERO != keepaliveTime)
+//            conf.keepaliveTime = keepaliveTime.toMillis()
+//        conf.validationTimeout = validationTimeout.toMillis()
+//
+//        return hikariDataSourceFactory(conf)
     }
 }
