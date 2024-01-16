@@ -1153,7 +1153,7 @@ internal class SessionManagerImpl(
                         initialTrackedSession.lastSendTimestamp = timestamp
                         initialTrackedSession
                     } else {
-                        scheduleOutboundSessionTimeout(counterparties, sessionId, config.get().sessionTimeout.toMillis())
+                        scheduleOutboundSessionTimeout(counterparties, sessionId, config.get().sessionTimeout)
                         TrackedOutboundSession(counterparties, timestamp, timestamp)
                     }
                 }
@@ -1216,18 +1216,27 @@ internal class SessionManagerImpl(
             recordOutboundSessionTimeoutMetric(counterparties.ourId, counterparties.counterpartyId)
         }
 
-        private fun scheduleOutboundSessionTimeout(counterparties: SessionCounterparties, sessionId: String, delay: Long) {
+        private fun scheduleOutboundSessionTimeout(
+            counterparties: SessionCounterparties,
+            sessionId: String,
+            delay: Duration
+        ) {
             executorService.schedule(
-                { sessionHealthMonitor.get().outboundSessionTimeout(counterparties, sessionId) },
-                delay,
+                { sessionHealthMonitor.get().checkIfOutboundSessionTimeout(counterparties, sessionId) },
+                delay.toMillis(),
                 TimeUnit.MILLISECONDS
             )
         }
 
-        private fun scheduleInboundSessionTimeout(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity?, delay: Long) {
+        private fun scheduleInboundSessionTimeout(
+            sessionId: String,
+            source: HoldingIdentity,
+            destination: HoldingIdentity?,
+            delay: Duration
+        ) {
             executorService.schedule(
                 { inboundSessionTimeout(sessionId, source, destination) },
-                delay,
+                delay.toMillis(),
                 TimeUnit.MILLISECONDS
             )
         }
@@ -1245,7 +1254,7 @@ internal class SessionManagerImpl(
                 trackedInboundSessions.remove(sessionId)
                 recordInboundSessionTimeoutMetric(source, destination)
             } else {
-                scheduleInboundSessionTimeout(sessionId, source, destination, sessionTimeoutMs - timeSinceLastReceived)
+                scheduleInboundSessionTimeout(sessionId, source, destination, Duration.ofMillis(sessionTimeoutMs - timeSinceLastReceived))
             }
         }
 
@@ -1257,12 +1266,12 @@ internal class SessionManagerImpl(
          * Implementations of [SessionHealthMonitor] provide different methods of determining when a session has become
          * unhealthy and handling of unhealthy sessions.
          */
-        private interface SessionHealthMonitor {
+        sealed interface SessionHealthMonitor {
             fun sessionEstablished(session: Session)
 
             fun messageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity?)
 
-            fun outboundSessionTimeout(counterparties: SessionCounterparties, sessionId: String)
+            fun checkIfOutboundSessionTimeout(counterparties: SessionCounterparties, sessionId: String)
         }
 
         /**
@@ -1289,13 +1298,13 @@ internal class SessionManagerImpl(
                         initialTrackedSession.lastReceivedTimestamp = timeStamp()
                         initialTrackedSession
                     } else {
-                        scheduleInboundSessionTimeout(sessionId, source, destination, config.get().sessionTimeout.toMillis())
+                        scheduleInboundSessionTimeout(sessionId, source, destination, config.get().sessionTimeout)
                         TrackedInboundSession(timeStamp())
                     }
                 }
             }
 
-            override fun outboundSessionTimeout(counterparties: SessionCounterparties, sessionId: String) {
+            override fun checkIfOutboundSessionTimeout(counterparties: SessionCounterparties, sessionId: String) {
                 val sessionInfo = trackedOutboundSessions[sessionId] ?: return
                 val timeSinceLastAck = timeStamp() - sessionInfo.lastAckTimestamp
                 val sessionTimeoutMs = config.get().sessionTimeout.toMillis()
@@ -1307,7 +1316,7 @@ internal class SessionManagerImpl(
                     )
                     tearDownOutboundSession(counterparties, sessionId)
                 } else {
-                    scheduleOutboundSessionTimeout(counterparties, sessionId, sessionTimeoutMs - timeSinceLastAck)
+                    scheduleOutboundSessionTimeout(counterparties, sessionId, Duration.ofMillis(sessionTimeoutMs - timeSinceLastAck))
                 }
             }
 
@@ -1412,7 +1421,7 @@ internal class SessionManagerImpl(
                 )
             }
 
-            override fun outboundSessionTimeout(counterparties: SessionCounterparties, sessionId: String) {
+            override fun checkIfOutboundSessionTimeout(counterparties: SessionCounterparties, sessionId: String) {
                 val sessionInfo = trackedOutboundSessions[sessionId] ?: return
                 val now = timeStamp()
                 val timeSinceLastAck = now - sessionInfo.lastAckTimestamp
@@ -1434,7 +1443,7 @@ internal class SessionManagerImpl(
                     } else {
                         maxWaitForAck
                     }
-                    scheduleOutboundSessionTimeout(counterparties, sessionId, delay)
+                    scheduleOutboundSessionTimeout(counterparties, sessionId, Duration.ofMillis(delay))
                 }
             }
         }

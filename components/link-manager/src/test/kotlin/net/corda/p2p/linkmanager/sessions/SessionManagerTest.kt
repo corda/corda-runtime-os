@@ -69,7 +69,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -1692,9 +1691,8 @@ class SessionManagerTest {
         val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded))
         sessionManager.processSessionMessages(listOf(LinkInMessage(responderHello))) {it}.single().second
-        assertTrue(sessionManager.processOutboundMessages(listOf(message)) { it }.single().second
-            is SessionManager.SessionState.SessionAlreadyPending
-        )
+        assertThat(sessionManager.processOutboundMessages(listOf(message)) { it }.single().second)
+            .isInstanceOf(SessionManager.SessionState.SessionAlreadyPending::class.java)
         mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.sessionTimeout.plus(5.millis))
         verify(outboundSessionPool.constructed().last()).replaceSession(counterparties, sessionId, protocolInitiator)
 
@@ -1722,9 +1720,8 @@ class SessionManagerTest {
         val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded))
         sessionManager.processSessionMessages(listOf(LinkInMessage(responderHello))) {it}.single().second
-        assertTrue(sessionManager.processOutboundMessages(listOf(message)) { it }.single().second
-                is SessionManager.SessionState.SessionAlreadyPending
-        )
+        assertThat(sessionManager.processOutboundMessages(listOf(message)) { it }.single().second)
+            .isInstanceOf(SessionManager.SessionState.SessionAlreadyPending::class.java)
         mockTimeFacilitiesProvider.advanceTime(configWithNoHeartbeat.sessionTimeout.plus(5.millis))
         verify(outboundSessionPool.constructed().last(), never()).replaceSession(any(), any(), any())
 
