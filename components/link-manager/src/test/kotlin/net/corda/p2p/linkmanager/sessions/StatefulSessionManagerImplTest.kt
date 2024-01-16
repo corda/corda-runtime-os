@@ -170,7 +170,7 @@ class StatefulSessionManagerImplTest {
                     }.hasSize(1)
                 assertThat(statesUpdates.firstValue.firstOrNull()?.value).isEqualTo(rawData)
                 assertThat(statesUpdates.firstValue.firstOrNull()?.key).isEqualTo(sessionIdentity)
-                assertThat(statesUpdates.firstValue.firstOrNull()?.version).isEqualTo(0)
+                assertThat(statesUpdates.firstValue.firstOrNull()?.version).isEqualTo(1)
                 assertThat(statesUpdates.firstValue.firstOrNull()?.metadata).containsEntry(
                     "destinationVnode",
                     "O=Bob, L=London, C=GB",
