@@ -52,7 +52,6 @@ internal class TestVirtualNodeInfoReadServiceImpl @Activate constructor(
             it.holdingIdentity.shortHash == holdingIdentityShortHash
         }
 
-
     override fun registerCallback(listener: VirtualNodeInfoListener) = AutoCloseable { return@AutoCloseable }
 
     override val isRunning = true
@@ -69,5 +68,4 @@ internal class TestVirtualNodeInfoReadServiceImpl @Activate constructor(
     override fun start() {
         coordinator.start()
     }
-
 }

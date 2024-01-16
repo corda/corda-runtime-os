@@ -74,7 +74,7 @@ class MGMRegistrationGroupPolicyHandlerTest {
     fun `non group parameters are properly are filtered out of the context and the group policy prefix was removed`() {
         assertThat(testContext).hasSize(2).withFailMessage(
             "Test map is not as expected before testing. " +
-                    "Expected size 2 in order to verify results correctly."
+                "Expected size 2 in order to verify results correctly."
         )
 
         mgmRegistrationGroupPolicyHandler.buildAndPersist(testHoldingIdentity, testContext)
@@ -98,7 +98,7 @@ class MGMRegistrationGroupPolicyHandlerTest {
 
     @Test
     fun `Failed group policy persistence is rethrown as group policy handling exception`() {
-        whenever (
+        whenever(
             membershipPersistenceClient.persistGroupPolicy(any(), any(), anyLong())
         ) doReturn Operation(MembershipPersistenceResult.Failure(""))
 

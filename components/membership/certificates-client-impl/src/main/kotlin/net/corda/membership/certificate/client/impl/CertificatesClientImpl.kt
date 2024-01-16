@@ -64,9 +64,9 @@ class CertificatesClientImpl @Activate constructor(
     @Reference(service = MembershipGroupReaderProvider::class)
     membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = MembershipPersistenceClient::class)
-    membershipPersistenceClient : MembershipPersistenceClient,
+    membershipPersistenceClient: MembershipPersistenceClient,
     @Reference(service = MembershipQueryClient::class)
-    membershipQueryClient : MembershipQueryClient,
+    membershipQueryClient: MembershipQueryClient,
     @Reference(service = LayeredPropertyMapFactory::class)
     layeredPropertyMapFactory: LayeredPropertyMapFactory,
 ) : CertificatesClient {

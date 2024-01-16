@@ -136,7 +136,7 @@ class MGMResourceClientTest {
         fun String.uuid(): UUID = UUID.fromString(this)
     }
 
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService= mock {
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { getByHoldingIdentityShortHash(shortHash) } doReturn VirtualNodeInfo(
             holdingIdentity,
             CpiIdentifier("test", "test", SecureHashImpl("algorithm", "1234".toByteArray())),
@@ -207,7 +207,6 @@ class MGMResourceClientTest {
         override fun execute() = result
 
         override fun createAsyncCommands() = emptyList<Record<*, *>>()
-
     }
 
     private val alice = createMemberInfo(mgmX500Name.toString())
@@ -335,7 +334,7 @@ class MGMResourceClientTest {
     )
 
     private val messagingConfig: SmartConfig = mock()
-    private val bootConfig: SmartConfig = mock ()
+    private val bootConfig: SmartConfig = mock()
 
     private val configs = mapOf(
         ConfigKeys.BOOT_CONFIG to bootConfig,
@@ -345,7 +344,8 @@ class MGMResourceClientTest {
     private fun startComponent() = lifecycleHandler?.processEvent(StartEvent(), coordinator)
     private fun stopComponent() = lifecycleHandler?.processEvent(StopEvent(), coordinator)
     private fun changeRegistrationStatus(status: LifecycleStatus) = lifecycleHandler?.processEvent(
-        RegistrationStatusChangeEvent(mock(), status), coordinator
+        RegistrationStatusChangeEvent(mock(), status),
+        coordinator
     )
 
     private fun changeConfig() = lifecycleHandler?.processEvent(
@@ -602,7 +602,8 @@ class MGMResourceClientTest {
 
             assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.addApprovalRule(
-                    shortHash, ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
+                    shortHash,
+                    ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
                 )
             }
             mgmResourceClient.stop()
@@ -620,7 +621,8 @@ class MGMResourceClientTest {
 
             assertThrows<MemberNotAnMgmException> {
                 mgmResourceClient.addApprovalRule(
-                    shortHash, ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
+                    shortHash,
+                    ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
                 )
             }
             mgmResourceClient.stop()
@@ -664,7 +666,9 @@ class MGMResourceClientTest {
 
             assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.deleteApprovalRule(
-                    ShortHash.of("000000000000"), RULE_ID, RULE_TYPE
+                    ShortHash.of("000000000000"),
+                    RULE_ID,
+                    RULE_TYPE
                 )
             }
             mgmResourceClient.stop()
@@ -678,7 +682,9 @@ class MGMResourceClientTest {
 
             assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.deleteApprovalRule(
-                    shortHash, RULE_ID, RULE_TYPE
+                    shortHash,
+                    RULE_ID,
+                    RULE_TYPE
                 )
             }
             mgmResourceClient.stop()
@@ -696,7 +702,9 @@ class MGMResourceClientTest {
 
             assertThrows<MemberNotAnMgmException> {
                 mgmResourceClient.deleteApprovalRule(
-                    shortHash, RULE_ID, RULE_TYPE
+                    shortHash,
+                    RULE_ID,
+                    RULE_TYPE
                 )
             }
             mgmResourceClient.stop()
@@ -737,7 +745,8 @@ class MGMResourceClientTest {
 
             assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.getApprovalRules(
-                    ShortHash.of("000000000000"), ApprovalRuleType.STANDARD
+                    ShortHash.of("000000000000"),
+                    ApprovalRuleType.STANDARD
                 )
             }
             mgmResourceClient.stop()
@@ -751,7 +760,8 @@ class MGMResourceClientTest {
 
             assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.getApprovalRules(
-                    shortHash, ApprovalRuleType.STANDARD
+                    shortHash,
+                    ApprovalRuleType.STANDARD
                 )
             }
             mgmResourceClient.stop()
@@ -769,7 +779,8 @@ class MGMResourceClientTest {
 
             assertThrows<MemberNotAnMgmException> {
                 mgmResourceClient.getApprovalRules(
-                    shortHash, ApprovalRuleType.STANDARD
+                    shortHash,
+                    ApprovalRuleType.STANDARD
                 )
             }
             mgmResourceClient.stop()
@@ -813,7 +824,9 @@ class MGMResourceClientTest {
 
             assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.viewRegistrationRequests(
-                    ShortHash.of("000000000000"), memberName, true
+                    ShortHash.of("000000000000"),
+                    memberName,
+                    true
                 )
             }
             mgmResourceClient.stop()
@@ -827,7 +840,9 @@ class MGMResourceClientTest {
 
             assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.viewRegistrationRequests(
-                    shortHash, memberName, true
+                    shortHash,
+                    memberName,
+                    true
                 )
             }
             mgmResourceClient.stop()
@@ -845,7 +860,9 @@ class MGMResourceClientTest {
 
             assertThrows<MemberNotAnMgmException> {
                 mgmResourceClient.viewRegistrationRequests(
-                    shortHash, memberName, true
+                    shortHash,
+                    memberName,
+                    true
                 )
             }
             mgmResourceClient.stop()
@@ -1263,9 +1280,11 @@ class MGMResourceClientTest {
         fun `stop event will close managed resources and set status to down`() {
             stopComponent()
 
-            verify(coordinator).closeManagedResources(argThat {
-                size == 3
-            })
+            verify(coordinator).closeManagedResources(
+                argThat {
+                    size == 3
+                }
+            )
             verify(coordinator).updateStatus(LifecycleStatus.DOWN, "Handling the stop event for component.")
         }
 
@@ -1302,7 +1321,8 @@ class MGMResourceClientTest {
             changeRegistrationStatus(LifecycleStatus.UP)
 
             verify(configurationReadService).registerComponentForUpdates(
-                any(), any()
+                any(),
+                any()
             )
             verify(coordinator, never()).updateStatus(eq(LifecycleStatus.UP), any())
         }
@@ -1332,7 +1352,8 @@ class MGMResourceClientTest {
             changeRegistrationStatus(LifecycleStatus.UP)
 
             verify(configurationReadService).registerComponentForUpdates(
-                any(), any()
+                any(),
+                any()
             )
 
             changeRegistrationStatus(LifecycleStatus.DOWN)
@@ -1554,7 +1575,11 @@ class MGMResourceClientTest {
             val uuidCaptor = argumentCaptor<UUID>()
             whenever(
                 membershipPersistenceClient.generatePreAuthToken(
-                    eq(holdingIdentity), uuidCaptor.capture(), eq(ownerX500Name), eq(ttl), eq(remark)
+                    eq(holdingIdentity),
+                    uuidCaptor.capture(),
+                    eq(ownerX500Name),
+                    eq(ttl),
+                    eq(remark)
                 )
             ).doReturn(
                 unitOperation
@@ -1723,7 +1748,7 @@ class MGMResourceClientTest {
                     ),
                     Record(
                         topic = Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC,
-                        key = "${memberName}-${DEFAULT_MEMBER_GROUP_ID}",
+                        key = "$memberName-${DEFAULT_MEMBER_GROUP_ID}",
                         value = MembershipActionsRequest(
                             DistributeMemberInfo(
                                 HoldingIdentity(mgmX500Name, DEFAULT_MEMBER_GROUP_ID).toAvro(),
@@ -1758,11 +1783,11 @@ class MGMResourceClientTest {
             mgmResourceClient.suspendMember(shortHash, memberName, SERIAL, REASON)
 
             val publishedParams = publisherCaptor.allValues.single().single { it.topic == Schemas.Membership.GROUP_PARAMETERS_TOPIC }.value
-                    as PersistentGroupParameters
+                as PersistentGroupParameters
             assertThat(publishedParams.viewOwner).isEqualTo(holdingIdentity.toAvro())
 
             assertThat(publishedParams.groupParameters.groupParameters)
-              .isEqualTo(ByteBuffer.wrap(serializedGroupParameters))
+                .isEqualTo(ByteBuffer.wrap(serializedGroupParameters))
 
             assertThat(publishedParams.groupParameters.mgmSignature).isNull()
             assertThat(publishedParams.groupParameters.mgmSignatureSpec).isNull()
@@ -1777,7 +1802,7 @@ class MGMResourceClientTest {
                     ),
                     Record(
                         topic = Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC,
-                        key = "${memberName}-${DEFAULT_MEMBER_GROUP_ID}",
+                        key = "$memberName-${DEFAULT_MEMBER_GROUP_ID}",
                         value = MembershipActionsRequest(
                             DistributeMemberInfo(
                                 HoldingIdentity(mgmX500Name, DEFAULT_MEMBER_GROUP_ID).toAvro(),
@@ -1925,13 +1950,13 @@ class MGMResourceClientTest {
                     ),
                     Record(
                         topic = Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC,
-                        key = "${memberName}-${DEFAULT_MEMBER_GROUP_ID}",
+                        key = "$memberName-${DEFAULT_MEMBER_GROUP_ID}",
                         value = MembershipActionsRequest(
                             DistributeMemberInfo(
-                            HoldingIdentity(mgmX500Name, DEFAULT_MEMBER_GROUP_ID).toAvro(),
-                            HoldingIdentity(memberName, DEFAULT_MEMBER_GROUP_ID).toAvro(),
-                            null,
-                            0
+                                HoldingIdentity(mgmX500Name, DEFAULT_MEMBER_GROUP_ID).toAvro(),
+                                HoldingIdentity(memberName, DEFAULT_MEMBER_GROUP_ID).toAvro(),
+                                null,
+                                0
                             )
                         )
                     )
@@ -1960,7 +1985,7 @@ class MGMResourceClientTest {
             mgmResourceClient.activateMember(shortHash, memberName, SERIAL, REASON)
 
             val publishedParams = publisherCaptor.allValues.single().single { it.topic == Schemas.Membership.GROUP_PARAMETERS_TOPIC }.value
-                    as PersistentGroupParameters
+                as PersistentGroupParameters
             assertThat(publishedParams.viewOwner).isEqualTo(holdingIdentity.toAvro())
 
             assertThat(publishedParams.groupParameters.groupParameters)
@@ -1979,7 +2004,7 @@ class MGMResourceClientTest {
                     ),
                     Record(
                         topic = Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC,
-                        key = "${memberName}-${DEFAULT_MEMBER_GROUP_ID}",
+                        key = "$memberName-${DEFAULT_MEMBER_GROUP_ID}",
                         value = MembershipActionsRequest(
                             DistributeMemberInfo(
                                 HoldingIdentity(mgmX500Name, DEFAULT_MEMBER_GROUP_ID).toAvro(),
@@ -2121,7 +2146,7 @@ class MGMResourceClientTest {
                 listOf(
                     Record(
                         topic = Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC,
-                        key = "${mgmX500Name}-${DEFAULT_MEMBER_GROUP_ID}",
+                        key = "$mgmX500Name-${DEFAULT_MEMBER_GROUP_ID}",
                         value = MembershipActionsRequest(
                             DistributeGroupParameters(
                                 HoldingIdentity(mgmX500Name, DEFAULT_MEMBER_GROUP_ID).toAvro(),

@@ -2,8 +2,6 @@ package net.corda.membership.impl.network.writer.staticnetwork
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
-import java.security.KeyPairGenerator
-import javax.persistence.EntityManager
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.fullId
@@ -40,6 +38,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.security.KeyPairGenerator
+import javax.persistence.EntityManager
 
 @Component(service = [NetworkInfoWriter::class])
 class NetworkInfoDBWriterImpl(
@@ -100,7 +100,7 @@ class NetworkInfoDBWriterImpl(
             if (existingInfo != null) {
                 logger.warn(
                     "Found existing configuration for static network [$groupId]. Skipping persistence of " +
-                            "new configuration"
+                        "new configuration"
                 )
                 return@let existingInfo
             }
@@ -118,9 +118,9 @@ class NetworkInfoDBWriterImpl(
                     KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
                 )
                 val combinedParams = parsedGroupPolicy.protocolParameters.staticNetworkGroupParameters
-                ?.let { groupPolicyParams ->
-                    groupPolicyParams.map { KeyValuePair(it.key, it.value) } + snapshot
-                } ?: snapshot
+                    ?.let { groupPolicyParams ->
+                        groupPolicyParams.map { KeyValuePair(it.key, it.value) } + snapshot
+                    } ?: snapshot
                 serializer.serialize(
                     KeyValuePairList(combinedParams)
                 )

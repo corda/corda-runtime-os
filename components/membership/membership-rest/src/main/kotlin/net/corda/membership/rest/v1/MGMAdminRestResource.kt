@@ -15,10 +15,10 @@ import net.corda.rest.annotations.RestPathParameter
 @HttpRestResource(
     name = "MGM Admin API",
     description = "The MGM Admin API consists of endpoints used to carry out administrative tasks on membership " +
-            "groups. A membership group is a logical grouping of a number of Corda Identities to communicate and " +
-            "transact with one another with a specific set of CorDapps. The API allows the MGM to perform actions " +
-            "such as force decline registration requests which may be displaying unexpected behaviour. This API " +
-            "should only be used by the MGM under exceptional circumstances.",
+        "groups. A membership group is a logical grouping of a number of Corda Identities to communicate and " +
+        "transact with one another with a specific set of CorDapps. The API allows the MGM to perform actions " +
+        "such as force decline registration requests which may be displaying unexpected behaviour. This API " +
+        "should only be used by the MGM under exceptional circumstances.",
     path = "mgmadmin"
 )
 interface MGMAdminRestResource : RestResource {
@@ -39,7 +39,7 @@ interface MGMAdminRestResource : RestResource {
         path = "{holdingIdentityShortHash}/force-decline/{requestId}",
         minVersion = RestApiVersion.C5_1,
         description = "This method enables you to force decline an in-progress registration request that may be stuck" +
-                " or displaying some other unexpected behaviour."
+            " or displaying some other unexpected behaviour."
     )
     fun forceDeclineRegistrationRequest(
         @RestPathParameter(

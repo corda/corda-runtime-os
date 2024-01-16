@@ -50,7 +50,6 @@ fun JsonNode.getOptionalJsonNode(
     key: String
 ): JsonNode? = get(key)
 
-
 fun JsonNode.getMandatoryJsonNode(
     key: String
 ) = getOptionalJsonNode(key) ?: throw BadGroupPolicyException(getMissingKeyError(key))

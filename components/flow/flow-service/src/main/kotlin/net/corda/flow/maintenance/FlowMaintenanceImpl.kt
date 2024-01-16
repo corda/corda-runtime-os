@@ -65,7 +65,7 @@ class FlowMaintenanceImpl @Activate constructor(
                         "flow.maintenance.tasks",
                         Schemas.ScheduledTask.SCHEDULED_TASK_TOPIC_FLOW_PROCESSOR
                     ),
-                    flowMaintenanceHandlersFactory.createScheduledTaskHandler(stateManager!!),
+                    flowMaintenanceHandlersFactory.createScheduledTaskHandler(stateManager!!, flowConfig),
                     messagingConfig,
                     null
                 )
@@ -94,8 +94,8 @@ class FlowMaintenanceImpl @Activate constructor(
         config: Map<String, SmartConfig>,
         messagingConfig: SmartConfig
     ) = config.getConfig(ConfigKeys.FLOW_CONFIG)
-        .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(MAX_ALLOWED_MSG_SIZE)))
         .withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(PROCESSOR_TIMEOUT)))
+        .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(MAX_ALLOWED_MSG_SIZE)))
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
