@@ -19,7 +19,8 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.getStringRecords
 import net.corda.messaging.mediator.GroupAllocator
-import net.corda.messaging.mediator.MediatorState
+import net.corda.messaging.mediator.MediatorSubscriptionState
+import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.taskmanager.TaskManager
 import org.junit.jupiter.api.BeforeEach
@@ -27,6 +28,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
@@ -35,6 +37,7 @@ import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
+import java.util.concurrent.TimeoutException
 
 @Execution(ExecutionMode.SAME_THREAD)
 class ConsumerProcessorTest {
@@ -50,7 +53,8 @@ class ConsumerProcessorTest {
     private lateinit var groupAllocator: GroupAllocator
     private lateinit var taskManager: TaskManager
     private lateinit var messageRouter: MessageRouter
-    private lateinit var mediatorState: MediatorState
+    private lateinit var mediatorSubscriptionState: MediatorSubscriptionState
+    private lateinit var stateManagerHelper: StateManagerHelper<String>
     private lateinit var eventProcessor: EventProcessor<String, String, String>
 
 
@@ -63,11 +67,12 @@ class ConsumerProcessorTest {
         consumerFactory = mock()
         groupAllocator = mock()
         messageRouter = mock()
-        mediatorState = MediatorState()
+        mediatorSubscriptionState = MediatorSubscriptionState()
         eventProcessor = mock()
         eventMediatorConfig = buildStringTestConfig()
+        stateManagerHelper = mock()
         consumerProcessor = ConsumerProcessor(
-            eventMediatorConfig, groupAllocator, taskManager, messageRouter, mediatorState, eventProcessor
+            eventMediatorConfig, groupAllocator, taskManager, messageRouter, mediatorSubscriptionState, eventProcessor, stateManagerHelper
         )
     }
 
@@ -94,6 +99,7 @@ class ConsumerProcessorTest {
             )
         )
         whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(getGroups(2, 4))
+        whenever(stateManagerHelper.createOrUpdateState(any(), any(), any(), any())).thenReturn(mock())
 
         consumerProcessor.processTopic(getConsumerFactory(), getConsumerConfig())
 
@@ -153,6 +159,21 @@ class ConsumerProcessorTest {
         verify(consumer, times(1)).close()
     }
 
+    @Test
+    fun `when event processing times out, mark all states in the group as failed`() {
+        whenever(taskManager.executeShortRunningTask<Unit>(any())).thenAnswer {
+            val future = CompletableFuture<Map<String, EventProcessingOutput>>()
+            future.completeExceptionally(TimeoutException())
+            future
+        }
+        whenever(stateManagerHelper.failStateProcessing(any(), anyOrNull())).thenReturn(mock())
+        whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(getGroups(2, 4))
+
+        consumerProcessor.processTopic(getConsumerFactory(), getConsumerConfig())
+
+        verify(stateManagerHelper, times(2)).failStateProcessing(any(), anyOrNull())
+    }
+
 
     private fun getGroups(groupCount: Int, recordCountPerGroup: Int): List<Map<String, List<Record<String, String>>>> {
         val groups = mutableListOf<Map<String, List<Record<String, String>>>>()
@@ -169,7 +190,7 @@ class ConsumerProcessorTest {
     private fun getConsumerFactory(): MediatorConsumerFactory {
         consumer.apply {
             whenever(poll(any())).thenAnswer {
-                mediatorState.stop()
+                mediatorSubscriptionState.stop()
                 listOf(getConsumerRecord())
             }
         }

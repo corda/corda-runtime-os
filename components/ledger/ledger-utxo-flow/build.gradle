@@ -58,6 +58,11 @@ dependencies {
     testImplementation project(':libs:serialization:serialization-kryo')
     testImplementation project(':testing:ledger:ledger-utxo-base-test')
 
+    // Dependencies for ProofOfActionSerializationTests:
+    testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    testImplementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    testImplementation project(':libs:crypto:merkle-impl')
+
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project(':testing:sandboxes-testkit')
     integrationTestImplementation project(':libs:messaging:messaging')
@@ -65,7 +70,7 @@ dependencies {
     integrationTestImplementation project(':testing:group-policy-test-common')
     integrationTestCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
 
-    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    testRuntimeOnly libs.slf4j.simple
 
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')

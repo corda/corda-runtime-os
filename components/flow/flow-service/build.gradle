@@ -59,7 +59,7 @@ dependencies {
     implementation project(':libs:packaging:packaging')
     implementation 'net.corda:corda-topic-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation libs.slf4j.api
 
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     implementation "com.esotericsoftware:kryo:$kryoVersion"
@@ -75,13 +75,14 @@ dependencies {
     testImplementation project(':testing:flow:flow-utilities')
     testImplementation project(':testing:test-utilities')
 
-    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    testRuntimeOnly libs.slf4j.simple
 
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project(':testing:virtual-node-info-read-service-fake')
     integrationTestImplementation project(':testing:cpi-info-read-service-fake')
     integrationTestImplementation project(':testing:group-policy-test-common')
 
+    integrationTestRuntimeOnly project(':libs:crypto:merkle-impl')
     integrationTestRuntimeOnly project(':libs:application:application-impl')
     integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')

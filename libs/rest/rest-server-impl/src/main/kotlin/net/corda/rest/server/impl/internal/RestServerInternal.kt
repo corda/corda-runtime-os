@@ -11,15 +11,16 @@ import io.javalin.http.util.JsonEscapeUtil
 import io.javalin.http.util.MultipartUtil
 import io.javalin.http.util.RedirectToLowercasePathPlugin
 import io.javalin.plugin.json.JavalinJackson
+import net.corda.rest.authorization.AuthorizationUtils.authorize
 import net.corda.rest.server.config.RestServerSettingsProvider
 import net.corda.rest.server.impl.apigen.processing.RouteInfo
 import net.corda.rest.server.impl.apigen.processing.RouteProvider
 import net.corda.rest.server.impl.apigen.processing.openapi.OpenApiInfoProvider
 import net.corda.rest.server.impl.context.ClientHttpRequestContext
 import net.corda.rest.server.impl.context.ContextUtils.authenticate
-import net.corda.rest.server.impl.context.ContextUtils.authorize
 import net.corda.rest.server.impl.context.ContextUtils.contentTypeApplicationJson
 import net.corda.rest.server.impl.context.ContextUtils.invokeHttpMethod
+import net.corda.rest.server.impl.context.ContextUtils.userNotAuthorized
 import net.corda.rest.server.impl.security.RestAuthenticationProvider
 import net.corda.rest.server.impl.security.provider.credentials.DefaultCredentialResolver
 import net.corda.rest.server.impl.websocket.WebSocketCloserService
@@ -195,7 +196,12 @@ internal class RestServerInternal(
                     ) {
                         val clientHttpRequestContext = ClientHttpRequestContext(it)
                         val authorizingSubject = authenticate(clientHttpRequestContext, restAuthProvider, credentialResolver)
-                        authorize(authorizingSubject, clientHttpRequestContext.getResourceAccessString())
+                        val authorizationProvider = routeInfo.method.instance.authorizationProvider
+                        val resourceAccessString = clientHttpRequestContext.getResourceAccessString()
+
+                        if (!authorize(authorizingSubject, resourceAccessString, authorizationProvider)) {
+                            userNotAuthorized(authorizingSubject.principal, resourceAccessString)
+                        }
                     } else {
                         log.debug { "Call to ${it.path()} for method ${it.method()} identified as an exempt from authorization check." }
                     }
@@ -249,7 +255,12 @@ internal class RestServerInternal(
                     }
                     val clientHttpRequestContext = ClientHttpRequestContext(it)
                     val authorizingSubject = authenticate(clientHttpRequestContext, restAuthProvider, credentialResolver)
-                    authorize(authorizingSubject, clientHttpRequestContext.getResourceAccessString())
+                    val authorizationProvider = routeInfo.method.instance.authorizationProvider
+                    val resourceAccessString = clientHttpRequestContext.getResourceAccessString()
+
+                    if (!authorize(authorizingSubject, resourceAccessString, authorizationProvider)) {
+                        userNotAuthorized(authorizingSubject.principal, resourceAccessString)
+                    }
                 }
             }
             registerHandlerForRoute(routeInfo, handlerType)
