@@ -102,14 +102,16 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                 val serializedResponse = cordaAvroSerializer.serialize(response)
                 if (serializedResponse != null) {
                     context.result(serializedResponse)
+                    recordMetric(rpcEndpoint, SUCCESS, startTime)
                 } else {
                     val errorMsg = "Response Payload cannot be serialised: ${response.javaClass.name}"
                     log.warn(errorMsg)
                     context.result(errorMsg)
                     context.status(ResponseCode.INTERNAL_SERVER_ERROR)
+                    recordMetric(rpcEndpoint, FAILED, startTime)
                 }
             }
-            recordMetric(rpcEndpoint, FAILED, startTime)
+            
             context
         }
 
