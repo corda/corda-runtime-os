@@ -19,10 +19,13 @@ import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.same
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 
@@ -81,7 +84,7 @@ class StatefulSessionManagerImplTest {
                 whenever(stateConvertor.toCordaSessionState(same(state), any())).doReturn(sessionState)
                 state
             }
-            whenever(stateManager.get(sessionIds)).doReturn(savedStates)
+            whenever(stateManager.get(argThat { containsAll(sessionIds) })).doReturn(savedStates)
 
             val sessions = manager.getSessionsById(sessionIdsContainers) {
                 it.value
@@ -90,6 +93,87 @@ class StatefulSessionManagerImplTest {
                 assertThat(sessions.map { it.first.value }).containsExactlyInAnyOrderElementsOf(sessionIds)
                 assertThat(sessions.mapNotNull { it.second as? SessionManager.SessionDirection.Inbound }).hasSize(4)
             }
+        }
+
+        @Test
+        fun `it will avoid going to the state manager if the state is cached`() {
+            val state = mock<State> {
+                on { metadata } doReturn Metadata(
+                    mapOf(
+                        "sourceVnode" to "O=Alice, L=London, C=GB",
+                        "destinationVnode" to "O=Bob, L=London, C=GB",
+                        "groupId" to "group ID",
+                        "lastSendTimestamp" to 50L,
+                        "status" to "SentResponderHello",
+                        "expiry" to 1000L,
+                    ),
+                )
+            }
+            val sessionIdentity = "id"
+            whenever(stateManager.get(listOf(sessionIdentity))).doReturn(
+                mapOf(
+                    sessionIdentity to state,
+                ),
+            )
+            val handshakeMessageHeader = mock<CommonHeader> {
+                on { sessionId } doReturn sessionIdentity
+            }
+            val handshakeMessage = mock<InitiatorHandshakeMessage> {
+                on { header } doReturn handshakeMessageHeader
+            }
+            val message = mock<LinkInMessage> {
+                on { payload } doReturn handshakeMessage
+            }
+            val messages = listOf(Wrapper(message))
+            val session = mock<AuthenticatedSession> {
+                on { sessionId } doReturn sessionIdentity
+            }
+            val responder = mock<AuthenticationProtocolResponder> {
+                on { getSession() } doReturn session
+            }
+            val sessionState = mock<SessionState> {
+                on { sessionData } doReturn responder
+            }
+            whenever(stateConvertor.toCordaSessionState(same(state), any())).doReturn(sessionState)
+            val responseHeaders = mock<LinkOutHeader> {
+                on { sourceIdentity } doReturn HoldingIdentity(
+                    "O=Alice, L=London, C=GB",
+                    "Group",
+                )
+                on { destinationIdentity } doReturn HoldingIdentity(
+                    "O=Bob, L=London, C=GB",
+                    "Group",
+                )
+            }
+            val responseMessage = mock<LinkOutMessage> {
+                on { header } doReturn responseHeaders
+            }
+            val rawData = byteArrayOf(3, 4, 5)
+            whenever(
+                sessionManagerImpl.processInitiatorHandshake(
+                    responder,
+                    handshakeMessage,
+                ),
+            ).doReturn(responseMessage)
+            whenever(stateConvertor.toStateByteArray(SessionState(responseMessage, session))).doReturn(rawData)
+            val statesUpdates = argumentCaptor<Collection<State>>()
+            whenever(stateManager.update(statesUpdates.capture())).doReturn(emptyMap())
+            manager.processSessionMessages(messages) {
+                it.value
+            }
+            val sessionIdsContainers = listOf(
+                Wrapper(
+                    sessionIdentity,
+                ),
+            )
+
+            manager.getSessionsById(
+                sessionIdsContainers,
+            ) {
+                it.value
+            }
+
+            verify(stateManager, times(1)).get(listOf(sessionIdentity))
         }
     }
 

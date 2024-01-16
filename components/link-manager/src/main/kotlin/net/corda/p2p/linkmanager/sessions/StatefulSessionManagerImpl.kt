@@ -51,16 +51,20 @@ internal class StatefulSessionManagerImpl(
     ): Collection<Pair<T, SessionManager.SessionDirection>> {
         val traceable = uuids.associateBy { getSessionId(it) }
         val sessionFromCache = cachedInboundSessions.getAllPresent(traceable.keys)
-        val sessionsIdsNotInCache = traceable.keys.filter { !sessionFromCache.containsKey(it) }
+        val sessionsIdsNotInCache = traceable - sessionFromCache.keys
         val inboundSessionsFromStateManager: List<Pair<T, SessionManager.SessionDirection>> =
-            stateManager.get(sessionsIdsNotInCache).entries.mapNotNull { (sessionId, state) ->
-                val session = stateConvertor.toCordaSessionState(
-                    state,
-                    sessionManagerImpl.revocationCheckerClient::checkRevocation,
-                ).sessionData as? Session
-                session?.let {
-                    traceable[sessionId]?.let {
-                        it to SessionManager.SessionDirection.Inbound(state.metadata.from().toCounterparties(), session)
+            if (sessionsIdsNotInCache.isEmpty()) {
+                emptyList()
+            } else {
+                stateManager.get(sessionsIdsNotInCache.keys).entries.mapNotNull { (sessionId, state) ->
+                    val session = stateConvertor.toCordaSessionState(
+                        state,
+                        sessionManagerImpl.revocationCheckerClient::checkRevocation,
+                    ).sessionData as? Session
+                    session?.let {
+                        sessionsIdsNotInCache[sessionId]?.let {
+                            it to SessionManager.SessionDirection.Inbound(state.metadata.from().toCounterparties(), session)
+                        }
                     }
                 }
             }
