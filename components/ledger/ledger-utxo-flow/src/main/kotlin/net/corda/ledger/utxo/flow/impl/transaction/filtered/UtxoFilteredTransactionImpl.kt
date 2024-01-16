@@ -11,7 +11,6 @@ import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.Command
@@ -21,13 +20,14 @@ import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.transaction.filtered.FilteredDataInconsistencyException
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import java.security.PublicKey
 
 @Suppress("TooManyFunctions")
 class UtxoFilteredTransactionImpl(
     private val serializationService: SerializationService,
     val filteredTransaction: FilteredTransaction
-) : UtxoFilteredTransactionInternal {
+) : UtxoFilteredTransaction {
 
     override fun getId(): SecureHash {
         return filteredTransaction.id
@@ -80,10 +80,6 @@ class UtxoFilteredTransactionImpl(
                 else -> throw FilteredDataInconsistencyException("Unknown filtered data type.")
             }
         }
-    }
-
-    override fun getComponentGroupMerkleProof(componentGroupIndex: Int): MerkleProof? {
-        return filteredTransaction.filteredComponentGroups[componentGroupIndex]?.merkleProof
     }
 
     private fun extractOutputStateAndRefs(
