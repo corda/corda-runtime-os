@@ -148,7 +148,6 @@ class MGMRegistrationContextValidatorTest {
         verify(membershipSchemaValidator).validateRegistrationContext(any(), any(), any())
     }
 
-
     @ParameterizedTest(name = "context validation fails if {0} is missing and exception is caught and rethrown")
     @MethodSource("contextKeys")
     fun `context validation fails if {0} is missing and exception is caught and rethrown`(

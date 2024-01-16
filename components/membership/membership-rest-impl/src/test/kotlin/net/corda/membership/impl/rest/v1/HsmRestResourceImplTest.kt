@@ -42,8 +42,12 @@ class HsmRestResourceImplTest {
         on { getByHoldingIdentityShortHash(tenantIdShortHash) } doReturn mock()
     }
 
-    private val ops = HsmRestResourceImpl(hsmRegistrationClient, lifecycleCoordinatorFactory,
-        virtualNodeInfoReadService, mock())
+    private val ops = HsmRestResourceImpl(
+        hsmRegistrationClient,
+        lifecycleCoordinatorFactory,
+        virtualNodeInfoReadService,
+        mock()
+    )
 
     @Nested
     inner class ApiTests {
@@ -62,7 +66,6 @@ class HsmRestResourceImplTest {
             val e = assertThrows<ResourceNotFoundException> { ops.assignedHsm(tenantId, "Bob") }
             assertThat(e.message).contains("Invalid category: BOB")
         }
-
 
         @Test
         fun `assignedHsm calls the client with upper case`() {

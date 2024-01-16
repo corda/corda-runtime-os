@@ -299,8 +299,10 @@ class StartRegistrationHandlerTest {
         }
         membershipPersistenceClient = mock {
             on {
-                setRegistrationRequestStatus(any(), any(), eq(RegistrationStatus.STARTED_PROCESSING_BY_MGM),
-                    anyOrNull())
+                setRegistrationRequestStatus(
+                    any(), any(), eq(RegistrationStatus.STARTED_PROCESSING_BY_MGM),
+                    anyOrNull()
+                )
             } doReturn persistRegistrationRequestOperation
             on { persistMemberInfo(any(), any()) } doReturn mock()
         }
@@ -856,11 +858,13 @@ class StartRegistrationHandlerTest {
     fun `declined if notary related properties are added during re-registration`() {
         val contextWithUpdates = mock<MemberContext> {
             on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
-            on { entries } doReturn (memberContextEntries + mapOf(
-                "$ROLES_PREFIX.1" to "added",
-                NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
-                NOTARY_KEYS_ID.format(1) to TEST_KEY_ID
-            )).entries
+            on { entries } doReturn (
+                memberContextEntries + mapOf(
+                    "$ROLES_PREFIX.1" to "added",
+                    NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                    NOTARY_KEYS_ID.format(1) to TEST_KEY_ID
+                )
+                ).entries
         }
         whenever(notaryPendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
         whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
@@ -876,9 +880,11 @@ class StartRegistrationHandlerTest {
     fun `declined if ledger key related properties are added during re-registration`() {
         val contextWithUpdates = mock<MemberContext> {
             on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
-            on { entries } doReturn (memberContextEntries + mapOf(
-                LEDGER_KEYS_ID.format(1) to TEST_KEY_ID
-            )).entries
+            on { entries } doReturn (
+                memberContextEntries + mapOf(
+                    LEDGER_KEYS_ID.format(1) to TEST_KEY_ID
+                )
+                ).entries
         }
         whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
         whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
@@ -893,9 +899,11 @@ class StartRegistrationHandlerTest {
     fun `declined if session key related properties are added during re-registration`() {
         val contextWithUpdates = mock<MemberContext> {
             on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
-            on { entries } doReturn (memberContextEntries + mapOf(
-                PARTY_SESSION_KEYS_ID.format(1) to TEST_KEY_ID
-            )).entries
+            on { entries } doReturn (
+                memberContextEntries + mapOf(
+                    PARTY_SESSION_KEYS_ID.format(1) to TEST_KEY_ID
+                )
+                ).entries
         }
         whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
         whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
@@ -996,8 +1004,13 @@ class StartRegistrationHandlerTest {
             on { entries } doReturn newContextEntries
         }
         whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
-        whenever(membershipQueryClient.queryMemberInfo(
-            eq(mgmHoldingIdentity.toCorda()), any(), anyOrNull())).doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
+        whenever(
+            membershipQueryClient.queryMemberInfo(
+                eq(mgmHoldingIdentity.toCorda()),
+                any(),
+                anyOrNull()
+            )
+        ).doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
         whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
             .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
         val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
@@ -1283,7 +1296,10 @@ class StartRegistrationHandlerTest {
 
         verify(membershipPersistenceClient, getVerificationMode(updateRegistrationRequest))
             .setRegistrationRequestStatus(
-                eq(mgmHoldingIdentity.toCorda()), any(), eq(RegistrationStatus.STARTED_PROCESSING_BY_MGM), anyOrNull()
+                eq(mgmHoldingIdentity.toCorda()),
+                any(),
+                eq(RegistrationStatus.STARTED_PROCESSING_BY_MGM),
+                anyOrNull()
             )
 
         verify(membershipQueryClient, getVerificationMode(queryMemberInfo))

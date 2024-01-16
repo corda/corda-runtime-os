@@ -1,5 +1,6 @@
 package net.corda.membership.impl.synchronisation
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
@@ -8,7 +9,6 @@ import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.core.bytes
 import net.corda.crypto.core.toAvro
 import net.corda.crypto.core.toCorda
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.data.membership.p2p.DistributionMetaData
 import net.corda.data.membership.p2p.MembershipPackage
@@ -101,31 +101,31 @@ class MemberSynchronisationServiceImpl internal constructor(
         @Reference(service = GroupParametersFactory::class)
         groupParametersFactory: GroupParametersFactory,
     ) : this(
-            Services(
-                publisherFactory,
-                configurationReadService,
-                memberInfoFactory,
-                membershipGroupReaderProvider,
-                Verifier(
-                    signatureVerificationService,
-                    keyEncodingService,
-                ),
-                LocallyHostedMembersReader(
-                    virtualNodeInfoReadService,
-                    membershipGroupReaderProvider,
-                ),
-                P2pRecordsFactory(
-                    cordaAvroSerializationFactory,
-                    UTCClock(),
-                ),
-                MerkleTreeGenerator(
-                    merkleTreeProvider,
-                    cordaAvroSerializationFactory,
-                ),
-                UTCClock(),
-                membershipPersistenceClient,
-                groupParametersFactory,
+        Services(
+            publisherFactory,
+            configurationReadService,
+            memberInfoFactory,
+            membershipGroupReaderProvider,
+            Verifier(
+                signatureVerificationService,
+                keyEncodingService,
             ),
+            LocallyHostedMembersReader(
+                virtualNodeInfoReadService,
+                membershipGroupReaderProvider,
+            ),
+            P2pRecordsFactory(
+                cordaAvroSerializationFactory,
+                UTCClock(),
+            ),
+            MerkleTreeGenerator(
+                merkleTreeProvider,
+                cordaAvroSerializationFactory,
+            ),
+            UTCClock(),
+            membershipPersistenceClient,
+            groupParametersFactory,
+        ),
         coordinatorFactory,
     )
 
@@ -245,7 +245,7 @@ class MemberSynchronisationServiceImpl internal constructor(
         private fun delayToNextRequestInMilliSeconds(): Long {
             // Add noise to prevent all the members to ask for sync in the same time
             return maxDelayBetweenRequestsInMillis -
-                    (random.nextDouble() * 0.1 * maxDelayBetweenRequestsInMillis).toLong()
+                (random.nextDouble() * 0.1 * maxDelayBetweenRequestsInMillis).toLong()
         }
 
         private fun parseGroupParameters(
@@ -375,7 +375,7 @@ class MemberSynchronisationServiceImpl internal constructor(
             } catch (e: Exception) {
                 logger.warn(
                     "Failed to process membership updates received by ${viewOwningMember.x500Name}. " +
-                            "Will trigger a fresh sync with MGM.",
+                        "Will trigger a fresh sync with MGM.",
                     e,
                 )
                 createSynchroniseNowRequest(
@@ -461,7 +461,7 @@ class MemberSynchronisationServiceImpl internal constructor(
         }
         logger.info(
             "Member ${request.member} had not received membership package for a while now, " +
-                    "asking MGM to send sync package"
+                "asking MGM to send sync package"
         )
         try {
             val groupReader = services.membershipGroupReaderProvider.getGroupReader(request.member)

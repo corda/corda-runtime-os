@@ -2,11 +2,16 @@ package net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers
 
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.db.connection.manager.VirtualNodeDbType
+import net.corda.db.core.DbPrivilege.DML
 import net.corda.libs.external.messaging.ExternalMessagingRouteConfigGenerator
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.messaging.api.publisher.Publisher
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
+import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeConnectionStrings
+import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDb
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbFactory
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterProcessor
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationHandler
@@ -95,6 +100,8 @@ internal class CreateVirtualNodeOperationHandler(
                 }
             }
 
+            checkSchemasArePresentOnExternalDbs(vNodeDbs.values, cpiMetadata, holdingId)
+
             val externalMessagingRouteConfig = externalMessagingRouteConfigGenerator.generateNewConfig(
                 holdingId,
                 cpiMetadata.cpiId,
@@ -144,5 +151,33 @@ internal class CreateVirtualNodeOperationHandler(
         }
 
         publishProcessingCompletedStatus(requestId)
+    }
+
+    private fun checkSchemasArePresentOnExternalDbs(
+        vNodeDbs: Collection<VirtualNodeDb>,
+        cpiMetadata: CpiMetadata,
+        holdingId: HoldingIdentity
+    ) {
+        // Select externally managed VNode DBs
+        val dbaManagedDbs = vNodeDbs.filterNot {
+            it.isPlatformManagedDb || it.ddlConnectionProvided || it.dbConnections[DML] == null
+        }
+
+        // Are any platform schemas missing?
+        val missingPlatformSchemas = dbaManagedDbs.filterNot { it.checkDbMigrationsArePresent() }
+            .map { it.dbType.toString() }
+
+        // Are any CPI schemas missing?
+        val missingCpiSchemas = dbaManagedDbs.filter { it.dbType == VirtualNodeDbType.VAULT }
+            .filterNot { createVirtualNodeService.checkCpiMigrations(cpiMetadata, it, holdingId) }
+            .map { cpiMetadata.cpiId.name }
+
+        // If any schemas are missing, throw exception listing them
+        val allMissingSchemas = missingPlatformSchemas + missingCpiSchemas
+        if (allMissingSchemas.any()) {
+            throw VirtualNodeWriteServiceException(
+                "DB schemas missing from external DB: ${allMissingSchemas.joinToString(",")}"
+            )
+        }
     }
 }

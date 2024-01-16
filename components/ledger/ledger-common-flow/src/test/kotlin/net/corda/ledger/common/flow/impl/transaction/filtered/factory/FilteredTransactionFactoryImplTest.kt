@@ -38,7 +38,7 @@ class FilteredTransactionFactoryImplTest {
 
     private val digestService =
         DigestServiceImpl(PlatformDigestServiceImpl(CipherSchemeMetadataImpl()), null)
-    private val jsonMarshallingService = JsonMarshallingServiceImpl()
+    private val jsonMarshallingService = JsonMarshallingServiceImpl(mock {})
     private val jsonValidator = JsonValidatorImpl()
     private val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
     private val serializationService = mock<SerializationService>()

@@ -30,11 +30,13 @@ class FlowFiberCacheImpl @Activate constructor(
     private companion object {
         private val logger = LoggerFactory.getLogger(FlowFiberCacheImpl::class.java)
         private const val FLOW_FIBER_CACHE_MAX_SIZE_PROPERTY_NAME = "net.corda.flow.fiber.cache.maximumSize"
-        private const val FLOW_FIBER_CACHE_EXPIRE_AFTER_WRITE_SECONDS_PROPERTY_NAME = "net.corda.flow.fiber.cache.expireAfterWriteSeconds"
+        private const val FLOW_FIBER_CACHE_EXPIRE_AFTER_WRITE_SECONDS_PROPERTY_NAME =
+            "net.corda.flow.fiber.cache.expireAfterWriteSeconds"
     }
 
     private val maximumSize = java.lang.Long.getLong(FLOW_FIBER_CACHE_MAX_SIZE_PROPERTY_NAME, 10000)
-    private val expireAfterWriteSeconds = java.lang.Long.getLong(FLOW_FIBER_CACHE_EXPIRE_AFTER_WRITE_SECONDS_PROPERTY_NAME, 600)
+    private val expireAfterWriteSeconds =
+        java.lang.Long.getLong(FLOW_FIBER_CACHE_EXPIRE_AFTER_WRITE_SECONDS_PROPERTY_NAME, 600)
 
     private data class FiberCacheValue(val fiber: FlowFiber, val suspendCount: Int)
 
@@ -62,7 +64,7 @@ class FlowFiberCacheImpl @Activate constructor(
     private fun onEviction(vnc: VirtualNodeContext) {
         logger.debug {
             "Evicting cached items from ${cache::class.java} with holding identity: ${vnc.holdingIdentity}, " +
-                    "cpkFileChecksums: ${vnc.cpkFileChecksums} and sandbox type: ${SandboxGroupType.FLOW}"
+                "cpkFileChecksums: ${vnc.cpkFileChecksums} and sandbox type: ${SandboxGroupType.FLOW}"
         }
         remove(vnc)
     }
@@ -73,7 +75,7 @@ class FlowFiberCacheImpl @Activate constructor(
 
     override fun get(key: FlowKey, suspendCount: Int): FlowFiber? {
         val fiber = cache.getIfPresent(key)
-        return if(null == fiber) {
+        return if (null == fiber) {
             logger.info("Fiber not found in cache: ${key.id}")
             null
         } else if (fiber.suspendCount == suspendCount) {
@@ -90,10 +92,11 @@ class FlowFiberCacheImpl @Activate constructor(
     }
 
     override fun remove(virtualNodeContext: VirtualNodeContext) {
-        logger.debug {
-            "Flow fiber cache removing holdingIdentity ${virtualNodeContext.holdingIdentity}" }
         val holdingIdentityToRemove = virtualNodeContext.holdingIdentity.toAvro()
         val keysToInvalidate = cache.asMap().keys.filter { holdingIdentityToRemove == it.identity }
+        logger.info(
+            "Flow fiber cache removing ${keysToInvalidate.size} entries for holdingIdentity ${virtualNodeContext.holdingIdentity.shortHash}"
+        )
         cache.invalidateAll(keysToInvalidate)
         cache.cleanUp()
     }

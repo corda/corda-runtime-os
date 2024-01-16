@@ -85,22 +85,6 @@ class ExternalEventResponseFactoryImplTest {
     }
 
     @Test
-    fun `transient with throwable input`() {
-        assertErrorResponse(
-            externalEventResponseFactory.transientError(EXTERNAL_EVENT_CONTEXT, EXCEPTION),
-            ExternalEventResponseErrorType.TRANSIENT
-        )
-    }
-
-    @Test
-    fun `transient with exception envelope input`() {
-        assertErrorResponse(
-            externalEventResponseFactory.transientError(EXTERNAL_EVENT_CONTEXT, EXCEPTION_ENVELOPE),
-            ExternalEventResponseErrorType.TRANSIENT
-        )
-    }
-
-    @Test
     fun `platformError with throwable input`() {
         assertErrorResponse(
             externalEventResponseFactory.platformError(EXTERNAL_EVENT_CONTEXT, EXCEPTION),

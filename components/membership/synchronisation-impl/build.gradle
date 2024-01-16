@@ -6,6 +6,8 @@ plugins {
 
 description 'Membership data distribution and synchronisation implementation'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "org.osgi:org.osgi.service.component.annotations"

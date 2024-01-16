@@ -1,11 +1,11 @@
 package net.corda.membership.rest.v1
 
-import net.corda.rest.RestResource
-import net.corda.rest.annotations.HttpPUT
-import net.corda.rest.annotations.RestPathParameter
-import net.corda.rest.annotations.ClientRequestBodyParameter
-import net.corda.rest.annotations.HttpRestResource
 import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
+import net.corda.rest.RestResource
+import net.corda.rest.annotations.ClientRequestBodyParameter
+import net.corda.rest.annotations.HttpPUT
+import net.corda.rest.annotations.HttpRestResource
+import net.corda.rest.annotations.RestPathParameter
 
 /**
  * The Network API consists of endpoints which manage the setup of holding identities in P2P networks. The API allows

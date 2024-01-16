@@ -165,7 +165,7 @@ internal class QueueRegistrationHandler(
     private fun KeyValuePairList.getSessionKeys() =
         this.items.filter { items ->
             items.key.startsWith(SESSION_KEYS) && items.key.endsWith(KEYS_PEM_SUFFIX)
-        }.map {  sessionKeys ->
+        }.map { sessionKeys ->
             keyEncodingService.decodePublicKey(sessionKeys.value)
         }
 
