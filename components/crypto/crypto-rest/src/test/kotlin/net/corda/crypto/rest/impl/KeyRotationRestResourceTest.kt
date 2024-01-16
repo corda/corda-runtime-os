@@ -96,21 +96,18 @@ class KeyRotationRestResourceTest {
             )
         }
 
-        deserializer = mock<CordaAvroDeserializer<UnmanagedKeyStatus>>().also {
-            whenever(it.deserialize(any())).thenReturn(
-                UnmanagedKeyStatus("keyAlias", 10, 5)
-            )
+        deserializer = mock<CordaAvroDeserializer<UnmanagedKeyStatus>> {
+            on {deserialize(any()) } doReturn UnmanagedKeyStatus("keyAlias", 10, 5)
         }
 
-        cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory>().also {
-            whenever(it.createAvroDeserializer({}, UnmanagedKeyStatus::class.java)).thenReturn(
-                deserializer
-            )
+        cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
+            on {createAvroDeserializer({}, UnmanagedKeyStatus::class.java) } doReturn deserializer
         }
 
-        stateManagerFactory = mock<StateManagerFactory>().also {
-            whenever(it.create(any())).thenReturn(stateManager)
+        stateManagerFactory = mock<StateManagerFactory> {
+            on {create(any()) } doReturn stateManager
         }
+
         stateManagerPublicationCount = 0
     }
 
