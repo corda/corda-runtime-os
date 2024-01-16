@@ -43,7 +43,13 @@ class MediatorReplayService @Activate constructor(
                 val payload = ByteBuffer.wrap(serialize(it.payload))
                 MediatorReplayOutputEvent(topic, key, payload)
             }
-            mediatorOutputs.add(MediatorReplayOutputEvents(hash, mediatorOutputList))
+            mediatorOutputs.find { it.inputEventHash == hash }.let {
+                if (it != null) {
+                    it.outputEvents.addAll(mediatorOutputList)
+                } else {
+                    mediatorOutputs.add(MediatorReplayOutputEvents(hash, mediatorOutputList))
+                }
+            }
         }
 
         return mediatorOutputs
@@ -60,12 +66,11 @@ class MediatorReplayService @Activate constructor(
      * @return A hash of the input event as bytes
      */
     private fun <K : Any, E : Any> getInputHash(inputEvent: Record<K, E>): ByteBuffer {
-        val recordKeyBytes = serialize(inputEvent.key)
         val recordValueBytes = serialize(inputEvent.value)
-        check (recordKeyBytes != null && recordValueBytes != null) {
+        check (recordValueBytes != null) {
             "Input record key and value bytes should not be null"
         }
-        return ByteBuffer.wrap((recordKeyBytes + recordValueBytes).sha256Bytes())
+        return ByteBuffer.wrap((recordValueBytes).sha256Bytes())
     }
 
     private fun serialize(value: Any?) = value?.let { serializer.serialize(it) }
