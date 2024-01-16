@@ -632,11 +632,8 @@ internal class SessionManagerImpl(
         return Base64.getEncoder().encodeToString(this)
     }
 
-    internal fun getProtocolMode(holdingIdentity: HoldingIdentity) =
-        groupPolicyProvider.getP2PParameters(holdingIdentity)?.protocolMode
-
     @Suppress("ComplexMethod")
-    internal fun processResponderHello(message: ResponderHelloMessage): Pair<LinkOutMessage, AuthenticationProtocolInitiator>? {
+    internal fun processResponderHello(message: ResponderHelloMessage): Pair<LinkOutMessage?, AuthenticationProtocolInitiator>? {
         logger.info("Processing ${message::class.java.simpleName} for session ${message.header.sessionId}.")
 
         val sessionType = outboundSessionPool.getSession(message.header.sessionId) ?: run {
