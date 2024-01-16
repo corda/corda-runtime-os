@@ -232,7 +232,7 @@ fun ClusterInfo.rotateCryptoUnmanagedWrappingKeys(
     }
 }
 
-fun ClusterInfo.cryptoUnmanagedWrappingKeysRotationStatus(
+fun ClusterInfo.waitForCryptoUnmanagedWrappingKeysRotation(
     requestid: String
 ) = cluster {
     assertWithRetry {
