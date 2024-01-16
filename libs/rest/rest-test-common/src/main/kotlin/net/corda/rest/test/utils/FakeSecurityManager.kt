@@ -1,7 +1,7 @@
 package net.corda.rest.test.utils
 
+import net.corda.rest.authorization.AuthorizingSubject
 import net.corda.rest.security.AuthServiceId
-import net.corda.rest.security.AuthorizingSubject
 import net.corda.rest.security.read.Password
 import net.corda.rest.security.read.RestSecurityManager
 import javax.security.auth.login.FailedLoginException

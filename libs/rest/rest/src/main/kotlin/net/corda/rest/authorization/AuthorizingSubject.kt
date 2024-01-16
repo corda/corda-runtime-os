@@ -1,4 +1,4 @@
-package net.corda.rest.security
+package net.corda.rest.authorization
 
 /**
  * Provides permission checking for the subject identified by the given [principal].
