@@ -91,13 +91,7 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             val response = try {
                 processor.process(payload)
             } catch (ex: Exception) {
-                val errorMsg = "Failed to process RPC request for $rpcEndpoint"
-                log.warn(errorMsg, ex)
-                context.result(errorMsg)
-                context.status(ResponseCode.INTERNAL_SERVER_ERROR)
-
                 recordMetric(rpcEndpoint, FAILED, startTime)
-
                 return@WebHandler handleProcessorException(endpoint, ex, context)
             }
 
