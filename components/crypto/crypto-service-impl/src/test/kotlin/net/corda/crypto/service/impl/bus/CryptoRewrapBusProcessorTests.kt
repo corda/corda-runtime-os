@@ -1,13 +1,16 @@
 package net.corda.crypto.service.impl.bus
 
+import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.crypto.core.CryptoService
 import net.corda.data.crypto.wire.ops.key.rotation.IndividualKeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyType
 import net.corda.data.crypto.wire.ops.key.status.UnmanagedKeyStatus
+import net.corda.libs.statemanager.api.Metadata
+import net.corda.libs.statemanager.api.State
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.records.Record
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
@@ -17,29 +20,39 @@ import org.mockito.kotlin.verify
 import java.util.UUID
 
 class CryptoRewrapBusProcessorTests {
-    private lateinit var cryptoRewrapBusProcessor: CryptoRewrapBusProcessor
-    private lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
-
     companion object {
-        private val cryptoService: CryptoService = mock<CryptoService> { }
         private val tenantId = UUID.randomUUID().toString()
+        private const val OLD_PARENT_KEY_ALIAS = "alias1"
     }
 
-    @BeforeEach
-    fun setup() {
-        val serializer = mock<CordaAvroSerializer<UnmanagedKeyStatus>> {
-            on { serialize(any()) } doReturn byteArrayOf(42)
-        }
-        cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
-            on { createAvroSerializer<UnmanagedKeyStatus>() } doReturn serializer
-        }
+    private val serializer = mock<CordaAvroSerializer<UnmanagedKeyStatus>> {
+        on { serialize(any()) } doReturn byteArrayOf(42)
+    }
+    private val deserializer = mock<CordaAvroDeserializer<UnmanagedKeyStatus>> {
+        on { deserialize(any()) } doReturn  UnmanagedKeyStatus(OLD_PARENT_KEY_ALIAS, 10, 5)
+    }
+    private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
+        on { createAvroSerializer<UnmanagedKeyStatus>() } doReturn serializer
+        on { createAvroDeserializer<UnmanagedKeyStatus>(any(), any()) } doReturn deserializer
+    }
 
-        cryptoRewrapBusProcessor = CryptoRewrapBusProcessor(
-            cryptoService,
-            mock(),
-            cordaAvroSerializationFactory
+    private val cryptoService: CryptoService = mock<CryptoService> { }
+    private val stateManager = mock<StateManager> {
+        on { get(any()) } doReturn mapOf(
+            OLD_PARENT_KEY_ALIAS + tenantId + "keyRotation" to State(
+                OLD_PARENT_KEY_ALIAS + tenantId + "keyRotation",
+                "random".toByteArray(),
+                0,
+                Metadata(mapOf("status" to "In Progress"))
+            )
         )
     }
+
+    private val cryptoRewrapBusProcessor = CryptoRewrapBusProcessor(
+        cryptoService,
+        stateManager,
+        cordaAvroSerializationFactory
+    )
 
     @Test
     fun `do a mocked rewrap`() {
@@ -51,7 +64,7 @@ class CryptoRewrapBusProcessorTests {
                     IndividualKeyRotationRequest(
                         UUID.randomUUID().toString(),
                         tenantId,
-                        "alias1",
+                        OLD_PARENT_KEY_ALIAS,
                         "root2",
                         "alias1",
                         KeyType.UNMANAGED
@@ -60,5 +73,6 @@ class CryptoRewrapBusProcessorTests {
             )
         )
         verify(cryptoService, times(1)).rewrapWrappingKey(any(), any(), any())
+        verify(stateManager, times(1)).update(any())
     }
 }
