@@ -297,14 +297,16 @@ class MerkleProofImpl(
     @Suppress("UnusedParameters")
     fun merge(other: MerkleProofImpl, digest: MerkleTreeHashDigestProvider): MerkleProofImpl {
         // First, work out the leaves for the output proof.
-        val indexMapMe = leaves.associateBy { it.index }
+        val indexMapThis = leaves.associateBy { it.index }
         val indexMapOther = other.leaves.associateBy { it.index }
-        val combinedIndexMap = indexMapMe + indexMapOther
+        val combinedIndexMap = indexMapThis + indexMapOther
         val outLeaves = combinedIndexMap.values.toList().sortedWith( compareBy { it.index })
-        val nodeMapMe: MutableMap< Pair<Int, Int>, MerkleNodeInfo> = mutableMapOf()
+
+        // Second, walk the whole proof structure, for both this and other.
+        val nodeMapThis: MutableMap< Pair<Int, Int>, MerkleNodeInfo> = mutableMapOf()
         calculateRootInstrumented(digest) {
             val k = it.level to it.node.indexWithinLevel
-            nodeMapMe[k] = it
+            nodeMapThis[k] = it
         }
         val nodeMapOther: MutableMap< Pair<Int, Int>, MerkleNodeInfo> = mutableMapOf()
         other.calculateRootInstrumented(digest) {
@@ -312,22 +314,22 @@ class MerkleProofImpl(
             nodeMapOther[k] = it
         }
 
-        val outHashes = mutableListOf<SecureHash>()
-
-        // Second, walk the whole tree structure.
+        // Third, walk the whole tree and figure out what to do based on what we know.
+        val outHashes = mutableListOf<SecureHash>() // the goal is to fill this in
         val levels = makeLevels(treeSize)
         levels.forEachIndexed { height, ranges ->
             val level = levels.size - height - 1
             for (indexWithinLevel in ranges.indices) {
                 val k = level to indexWithinLevel
-                val x = nodeMapMe[k]
+                val x = nodeMapThis[k]
                 val y = nodeMapOther[k]
 
                 // For each node, where x is me and y is the other proof, and o is the output proof
                 //    (so we're doing O = X∪Y)
                 // if x is calculated, it will be calculable in o, so no proof hash needed
                 //  or if y is calculated, it will be calculable in o, so no proof hash needed
-                //    or if x uses a proof hash, add that proof hash for o
+                //    or else, we now know that we will need a proof hash since neither X or Y has that value.
+                //    if x uses a proof hash, add that proof hash for o
                 //      or if y uses a proof hash, add that proof hash for o
                 //         else it is unknown in both, so it is unknown
 
