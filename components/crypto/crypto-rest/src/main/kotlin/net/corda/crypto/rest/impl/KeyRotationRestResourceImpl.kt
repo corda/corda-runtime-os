@@ -121,13 +121,8 @@ class KeyRotationRestResourceImpl @Activate constructor(
             }
 
             is ConfigChangedEvent -> {
-                initialise(event.config)
-
-                val stateManagerConfig = event.config.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)
-
-                stateManager?.stop()
-                stateManager = stateManagerFactory.create(stateManagerConfig).also { it.start() }
-                logger.debug("State manager created and started ${stateManager!!.name}")
+                initialiseKafkaPublisher(event.config)
+                initialiseStateManager(event.config)
             }
 
             is StopEvent -> {
@@ -149,7 +144,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
     }
 
     @VisibleForTesting
-    fun initialise(config: Map<String, SmartConfig>) {
+    fun initialiseKafkaPublisher(config: Map<String, SmartConfig>) {
         val messagingConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
 
         // Initialise publisher with messaging config
@@ -157,6 +152,15 @@ class KeyRotationRestResourceImpl @Activate constructor(
         publishToKafka =
             publisherFactory.createPublisher(PublisherConfig("KeyRotationRestResource", false), messagingConfig)
                 .also { it.start() }
+    }
+
+    @VisibleForTesting
+    fun initialiseStateManager(config: Map<String, SmartConfig>) {
+        val stateManagerConfig = config.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)
+
+        stateManager?.stop()
+        stateManager = stateManagerFactory.create(stateManagerConfig).also { it.start() }
+        logger.debug("State manager created and started ${stateManager!!.name}")
     }
 
     override fun getKeyRotationStatus(keyAlias: String): KeyRotationStatusResponse {
@@ -192,11 +196,12 @@ class KeyRotationRestResourceImpl @Activate constructor(
     }
 
     override fun startKeyRotation(oldKeyAlias: String, newKeyAlias: String): ResponseEntity<KeyRotationResponse> {
-        if (!hasPreviousRotationFinished(oldKeyAlias)) throw ForbiddenException("Previous key rotation for $oldKeyAlias is in progress.")
-
         tryWithExceptionHandling(logger, "start key rotation") {
             checkNotNull(publishToKafka)
+            checkNotNull(stateManager)
         }
+
+        if (!hasPreviousRotationFinished(oldKeyAlias)) throw ForbiddenException("Previous key rotation for $oldKeyAlias is in progress.")
 
         return doKeyRotation(
             oldKeyAlias,
