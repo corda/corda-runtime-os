@@ -27,13 +27,12 @@ class ExternalEventExecutorImpl @Activate constructor(
         // `requestId` is a deterministic ID per event which allows us to achieve idempotency by de-duplicating events processing;
         //  A deterministic ID is required so that events replayed from the flow engine won't be reprocessed on the consumer-side.
         val uuid = deterministicUUID(parameters)
-        val requestId = generateRequestId(uuid)
 
         @Suppress("unchecked_cast")
         return with(flowFiberService.getExecutingFiber()) {
             suspend(
                 FlowIORequest.ExternalEvent(
-                    requestId,
+                    generateRequestId(uuid, this),
                     factoryClass,
                     parameters,
                     externalContext(this)
@@ -58,9 +57,8 @@ class ExternalEventExecutorImpl @Activate constructor(
         return UUID.nameUUIDFromBytes(byteBuffer.array())
     }
 
-    private fun generateRequestId(uuid: UUID): String {
-        val flowCheckpoint = flowFiberService
-            .getExecutingFiber()
+    private fun generateRequestId(uuid: UUID, flowFiber: FlowFiber): String {
+        val flowCheckpoint = flowFiber
             .getExecutionContext()
             .flowCheckpoint
 

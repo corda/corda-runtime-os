@@ -20,7 +20,7 @@ import org.mockito.kotlin.whenever
 class MockFlowFiberService : FlowFiberService {
     val flowFiber = mock<FlowFiber>()
     private val sandboxDependencyInjector = mock<FlowSandboxDependencyInjectorImpl>()
-    val flowCheckpoint = mock<FlowCheckpoint>()
+    var flowCheckpoint = mock<FlowCheckpoint>()
     val flowStack = mock<FlowStack>()
     private val checkpointSerializer = mock<CheckpointSerializer>()
     private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()

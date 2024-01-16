@@ -115,6 +115,10 @@ class FlowEventExceptionProcessorImplTest {
         val key = FlowKey()
 
         whenever(flowCheckpoint.flowId).thenReturn(flowId)
+
+        val test = flowCheckpoint.flowId
+        print(test)
+
         whenever(flowCheckpoint.doesExist).thenReturn(true)
         whenever(flowCheckpoint.flowKey).thenReturn(key)
         whenever(flowCheckpoint.suspendCount).thenReturn(123)
