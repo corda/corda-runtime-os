@@ -9,9 +9,10 @@ import net.corda.v5.crypto.SecureHash
  * Contains the following fields:
  * - The transaction ID the Merkle proof was created from
  * - The component group index the Merkle proof belongs to
- * - Revealed leaf indices and the data associated with them
  * - Size of the original Merkle tree the proof was created from
  * - List of the revealed hashes
+ * - Revealed leaf indices and the data associated with them
+ * - An optional privacy salt from the transaction, used to calculate nonce
  */
 @CordaSerializable
 data class MerkleProofDto(
@@ -19,5 +20,6 @@ data class MerkleProofDto(
     val groupIndex: Int,
     val treeSize: Int,
     val hashes: List<SecureHash>,
-    val leavesWithData: Map<Int, ByteArray>
+    val leavesWithData: Map<Int, ByteArray>,
+    val privacySalt: ByteArray?
 )

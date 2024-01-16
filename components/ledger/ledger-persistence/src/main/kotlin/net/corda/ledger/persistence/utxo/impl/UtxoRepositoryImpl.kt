@@ -361,7 +361,7 @@ class UtxoRepositoryImpl @Activate constructor(
     ): String {
 
         // Generate an ID by concatenating transaction ID - group index - leaves
-        val merkleProofId = "$transactionId-$groupIndex-${leaves.joinToString(separator = "")}"
+        val merkleProofId = "$transactionId-$groupIndex-${leaves.joinToString(separator = ",")}"
 
         entityManager.createNativeQuery(queryProvider.persistMerkleProof)
             .setParameter("merkleProofId", merkleProofId)
@@ -415,6 +415,7 @@ class UtxoRepositoryImpl @Activate constructor(
                         // Map the leaf index to the data we fetched from the component table
                         (it.get(5) as Int) to (it.get(6) as ByteArray)
                     },
+                    firstRow.get(7) as ByteArray
                 )
             }
     }

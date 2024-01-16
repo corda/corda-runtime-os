@@ -29,7 +29,14 @@ class MerkleProofFactoryImpl @Activate constructor()
         return MerkleProofImpl(
             MerkleProofType.AUDIT,
             treeSize,
-            leavesIndexAndData.map { (leafIndex, data) -> IndexedMerkleLeafImpl(leafIndex, null, data) },
+            leavesIndexAndData.map { (leafIndex, data) ->
+                IndexedMerkleLeafImpl(
+                    leafIndex,
+                    // TODO CORE-18698 For now this is null as we don't have access to the transaction's metadata to calculate
+                    null,
+                    data
+                )
+            },
             hashes
         )
     }

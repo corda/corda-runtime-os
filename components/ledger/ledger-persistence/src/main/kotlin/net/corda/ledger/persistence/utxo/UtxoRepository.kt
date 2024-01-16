@@ -164,6 +164,7 @@ interface UtxoRepository {
     )
 
     /** Persists a merkle proof and returns its ID */
+    @Suppress("LongParameterList")
     fun persistMerkleProof(
         entityManager: EntityManager,
         transactionId: String,

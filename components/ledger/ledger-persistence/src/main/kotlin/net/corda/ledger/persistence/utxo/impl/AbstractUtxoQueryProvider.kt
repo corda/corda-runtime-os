@@ -159,8 +159,8 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
      *
      * | merkle_proof_id     | transaction_id | group_idx | tree_size | leaf_idx | data  | hashes |
      * |---------------------|----------------|-----------|-----------|----------|-------|--------|
-     * | SHA-256D:11111-8-13 | SHA-256:11111  | 8         | 4         | 1        | bytes | H0,H23 |
-     * | SHA-256D:11111-8-13 | SHA-256:11111  | 8         | 4         | 3        | bytes | H2,H01 |
+     * | SHA-256D:11111-8-13 | SHA-256:11111  | 8         | 4         | 1        | bytes | H0,H2  |
+     * | SHA-256D:11111-8-13 | SHA-256:11111  | 8         | 4         | 3        | bytes | H0,H2  |
      */
     override val findMerkleProofs: String
         get() = """
@@ -171,17 +171,17 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
                 utmp.tree_size,
                 utmp.hashes,
                 utc.leaf_idx,
-                utc.data
+                utc.data,
+                utt.privacy_salt
             FROM {h-schema}utxo_transaction_merkle_proof utmp
             JOIN {h-schema}utxo_transaction_component utc
-                on utc.transaction_id = utmp.transaction_id
-                and utc.group_idx = utmp.group_idx
+                ON utc.transaction_id = utmp.transaction_id
+                AND utc.group_idx = utmp.group_idx
+            JOIN {h-schema}utxo_transaction_merkle_proof_leaves utmpl
+                ON utmpl.merkle_proof_id = utmp.merkle_proof_id
+            JOIN {h-schema}utxo_transaction utt
+                ON utt.transaction_id = utmp.transaction_id
             WHERE utmp.transaction_id = :transactionId
-                and utmp.group_idx = :groupIndex
-                and utc.leaf_idx in (
-                	SELECT utmpl.leaf_index
-                    FROM {h-schema}utxo_transaction_merkle_proof_leaves utmpl
-                    WHERE utmpl.merkle_proof_id = utmp.merkle_proof_id
-                )"""
+                AND utmp.group_idx = :groupIndex"""
             .trimIndent()
 }

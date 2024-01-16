@@ -21,14 +21,13 @@ import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.transaction.filtered.FilteredDataInconsistencyException
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
-import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import java.security.PublicKey
 
 @Suppress("TooManyFunctions")
 class UtxoFilteredTransactionImpl(
     private val serializationService: SerializationService,
     val filteredTransaction: FilteredTransaction
-) : UtxoFilteredTransaction {
+) : UtxoFilteredTransactionInternal {
 
     override fun getId(): SecureHash {
         return filteredTransaction.id
@@ -83,8 +82,8 @@ class UtxoFilteredTransactionImpl(
         }
     }
 
-    override fun getMerkleProofs(): Map<Int, MerkleProof> {
-        return filteredTransaction.filteredComponentGroups.mapValues { it.value.merkleProof }
+    override fun getComponentGroupMerkleProof(componentGroupIndex: Int): MerkleProof? {
+        return filteredTransaction.filteredComponentGroups[componentGroupIndex]?.merkleProof
     }
 
     private fun extractOutputStateAndRefs(

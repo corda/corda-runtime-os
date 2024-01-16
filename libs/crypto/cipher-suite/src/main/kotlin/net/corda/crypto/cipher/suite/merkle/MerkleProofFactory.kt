@@ -13,6 +13,12 @@ interface MerkleProofFactory {
 
     /**
      * Create a new [MerkleProof] instance using the given data.
+     *
+     * @param transactionId Transaction ID the Merkle proof belongs to
+     * @param groupId Component group index the Merkle proof belongs to
+     * @param treeSize Size of the original Merkle tree
+     * @param leavesIndexAndData Visible leaf indices and their data
+     * @param hashes List of the visible hashes in the Merkle proof
      */
     @Suspendable
     fun createAuditMerkleProof(
