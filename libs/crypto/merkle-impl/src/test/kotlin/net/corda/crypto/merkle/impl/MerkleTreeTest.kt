@@ -540,15 +540,6 @@ class MerkleTreeTest {
     fun `merkle proof size 4 merge bug`() {
         val merkleTree = makeTestMerkleTree(4, trivialHashDigestProvider)
         val proof = makeProof(merkleTree, listOf(0, 2, 3))
-        val yProof = proof.subset(trivialHashDigestProvider, listOf(0, 3))
-        assertThat(yProof.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
-            """
-            0000069F (calc)┳00000630 (calc)┳00000000 (calc)    known leaf
-                           ┃               ┗00000001 (input 0) filtered
-                           ┗00000634 (calc)┳00000002 (input 1) filtered
-                                           ┗00000003 (calc)    known leaf
-        """.trimIndent()
-        )
         val proofText = proof.render(trivialHashDigestProvider)
         assertThat(proofText).isEqualToIgnoringWhitespace(
             """
@@ -565,6 +556,15 @@ class MerkleTreeTest {
                            ┃                  ┗unknown            filtered
                            ┗00000634 (calc)   ┳00000002 (calc)    known leaf
                                               ┗00000003 (input 0) filtered            
+        """.trimIndent()
+        )
+        val yProof = proof.subset(trivialHashDigestProvider, listOf(0, 3))
+        assertThat(yProof.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
+            """
+            0000069F (calc)┳00000630 (calc)┳00000000 (calc)    known leaf
+                           ┃               ┗00000001 (input 0) filtered
+                           ┗00000634 (calc)┳00000002 (input 1) filtered
+                                           ┗00000003 (calc)    known leaf
         """.trimIndent()
         )
         val mergedProof = xProof.merge(yProof, trivialHashDigestProvider)
@@ -594,6 +594,38 @@ class MerkleTreeTest {
                            ┗517A5DE6 (calc)┳66973B1A (input 1) filtered
                                            ┗568F8D2A (calc)    known leaf
                                        """.trimIndent()
+        )
+    }
+
+
+    @Test
+    fun `merkle proof subset bug`() {
+        val treeSize = 6
+        val merkleTree = makeTestMerkleTree(treeSize, defaultHashDigestProvider)
+
+        val proof1 = makeProof(merkleTree, listOf(0, 2))
+        val proof2 = makeProof(merkleTree, listOf(2))
+        assertThat(proof2.render(defaultHashDigestProvider)).isEqualToIgnoringWhitespace(
+            """
+            8696C1F4 (calc)┳FF3C3992 (calc)   ┳BAB170B1 (input 1)┳unknown            filtered
+                           ┃                  ┃                  ┗unknown            filtered
+                           ┃                  ┗517A5DE6 (calc)   ┳66973B1A (calc)    known leaf
+                           ┃                                     ┗568F8D2A (input 0) filtered
+                           ┗E0CC7E23 (input 2)━unknown           ┳unknown            filtered
+                                                                 ┗unknown            filtered
+        """.trimIndent()
+        )
+
+        val proofY = proof1.subset(defaultHashDigestProvider, listOf(2))
+        assertThat(proofY.render(defaultHashDigestProvider)).isEqualToIgnoringWhitespace(
+            """
+            8696C1F4 (calc)┳FF3C3992 (calc)   ┳BAB170B1 (input 1)┳unknown            filtered
+                           ┃                  ┃                  ┗unknown            filtered
+                           ┃                  ┗517A5DE6 (calc)   ┳66973B1A (calc)    known leaf
+                           ┃                                     ┗568F8D2A (input 0) filtered
+                           ┗E0CC7E23 (input 2)━unknown           ┳unknown            filtered
+                                                                 ┗unknown            filtered
+         """.trimIndent()
         )
     }
 
@@ -646,38 +678,6 @@ class MerkleTreeTest {
                                ┗00000638 (calc)━00000638 (calc)   ┳00000004 (calc)    known leaf
                                                                   ┗00000005 (input 1) filtered
         """.trimIndent()
-        )
-    }
-
-
-    @Test
-    fun `merkle proof subset bug`() {
-        val treeSize = 6
-        val merkleTree = makeTestMerkleTree(treeSize, defaultHashDigestProvider)
-
-        val proof1 = makeProof(merkleTree, listOf(0, 2))
-        val proof2 = makeProof(merkleTree, listOf(2))
-        assertThat(proof2.render(defaultHashDigestProvider)).isEqualToIgnoringWhitespace(
-            """
-            8696C1F4 (calc)┳FF3C3992 (calc)   ┳BAB170B1 (input 1)┳unknown            filtered
-                           ┃                  ┃                  ┗unknown            filtered
-                           ┃                  ┗517A5DE6 (calc)   ┳66973B1A (calc)    known leaf
-                           ┃                                     ┗568F8D2A (input 0) filtered
-                           ┗E0CC7E23 (input 2)━unknown           ┳unknown            filtered
-                                                                 ┗unknown            filtered
-        """.trimIndent()
-        )
-
-        val proofY = proof1.subset(defaultHashDigestProvider, listOf(2))
-        assertThat(proofY.render(defaultHashDigestProvider)).isEqualToIgnoringWhitespace(
-            """
-            8696C1F4 (calc)┳FF3C3992 (calc)   ┳BAB170B1 (input 1)┳unknown            filtered
-                           ┃                  ┃                  ┗unknown            filtered
-                           ┃                  ┗517A5DE6 (calc)   ┳66973B1A (calc)    known leaf
-                           ┃                                     ┗568F8D2A (input 0) filtered
-                           ┗E0CC7E23 (input 2)━unknown           ┳unknown            filtered
-                                                                 ┗unknown            filtered
-         """.trimIndent()
         )
     }
 
