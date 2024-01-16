@@ -62,8 +62,9 @@ class MediatorReplayService @Activate constructor(
     private fun <K : Any, E : Any> getInputHash(inputEvent: Record<K, E>): ByteBuffer {
         val recordKeyBytes = serialize(inputEvent.key)
         val recordValueBytes = serialize(inputEvent.value)
-        if (recordKeyBytes == null || recordValueBytes == null)
-            throw IllegalStateException("Input record key and value bytes should not be null")
+        check (recordKeyBytes != null && recordValueBytes != null) {
+            "Input record key and value bytes should not be null"
+        }
         return ByteBuffer.wrap((recordKeyBytes + recordValueBytes).sha256Bytes())
     }
 
