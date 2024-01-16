@@ -127,10 +127,8 @@ internal class InboundMessageProcessor(
 
     private fun processSessionMessages(messages: List<TraceableItem<LinkInMessage, LinkInMessage>>):
             List<TraceableItem<List<Record<String, *>>, LinkInMessage>> {
-        val responses = sessionManager.processSessionMessages(messages) { message ->
-            recordInboundSessionMessagesMetric()
-            message.item
-        }
+        recordInboundSessionMessagesMetric()
+        val responses = sessionManager.processSessionMessages(messages) {message -> message.item}
         return responses.map { (traceableMessage, response) ->
             if (response != null) {
                 when (val payload = response.payload) {
