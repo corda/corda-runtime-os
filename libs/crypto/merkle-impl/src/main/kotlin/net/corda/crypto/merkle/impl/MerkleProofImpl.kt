@@ -313,15 +313,16 @@ class MerkleProofImpl(
 
         // Second, walk the whole proof structure, for both this and other.
         val nodeMapThis: MutableMap< Pair<Int, Int>, MerkleNodeInfo> = mutableMapOf()
-        calculateRootInstrumented(digest) {
+        val thisRoot = calculateRootInstrumented(digest) {
             val k = it.level to it.node.indexWithinLevel
             nodeMapThis[k] = it
         }
         val nodeMapOther: MutableMap< Pair<Int, Int>, MerkleNodeInfo> = mutableMapOf()
-        other.calculateRootInstrumented(digest) {
+        val otherRoot = other.calculateRootInstrumented(digest) {
             val k = it.level to it.node.indexWithinLevel
             nodeMapOther[k] = it
         }
+        require(thisRoot == otherRoot)
 
         // Third, walk the whole tree and figure out what to do based on what we know.
         val outHashes = mutableListOf<SecureHash>() // the goal is to fill this in
