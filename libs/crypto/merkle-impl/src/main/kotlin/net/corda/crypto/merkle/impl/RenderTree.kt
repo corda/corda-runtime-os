@@ -91,6 +91,16 @@ fun renderTree(leafLabels: List<String>, nodeLabels: Map<Pair<Int, Int>, String>
     return lines.joinToString("\n")     // Return the whole tree as a single string.
 }
 
+/**
+ * Produce a list of the ranges covered by each node.
+ *
+ * The first entry will have a list with one element per leaf, e.g. listOf( 0 to 0, 1 to 1, 2 to 2 ...)
+ * The second entry will have the first level of nodes, e.g. listOf(0 to 1, 2 to 3, 4 to 5,... )
+ * The last entry entry will be a single item list of the root, with the first element of the pair being 0 and the last being the tree size.
+ *
+ * @param treeSize The number of leaves in the tree.
+ * @return list of ranges at a given level
+ */
 fun makeLevels(treeSize: Int): MutableList<List<Pair<Int, Int>>> {
     // Work out the tree structure, using iteration.
     // Loop variable is `values`: the leaf range values at the current level, starting at the bottom where each
