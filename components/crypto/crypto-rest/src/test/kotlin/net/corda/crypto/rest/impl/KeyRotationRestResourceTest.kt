@@ -28,7 +28,6 @@ import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.schema.configuration.ConfigKeys
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.never
@@ -97,32 +96,29 @@ class KeyRotationRestResourceTest {
         }
 
         deserializer = mock<CordaAvroDeserializer<UnmanagedKeyStatus>> {
-            on {deserialize(any()) } doReturn UnmanagedKeyStatus("keyAlias", 10, 5)
+            on { deserialize(any()) } doReturn UnmanagedKeyStatus(oldKeyAlias, 10, 5)
         }
 
         cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
-            on {createAvroDeserializer({}, UnmanagedKeyStatus::class.java) } doReturn deserializer
+            on { createAvroDeserializer<UnmanagedKeyStatus>(any(), any()) } doReturn deserializer
         }
 
         stateManagerFactory = mock<StateManagerFactory> {
-            on {create(any()) } doReturn stateManager
+            on { create(any()) } doReturn stateManager
         }
 
         stateManagerPublicationCount = 0
     }
 
-    @Disabled
     @Test
     fun `get key rotation status triggers successfully`() {
-
-        //populate state manager with some data and then run command and see if correct data are retrieved.
         val keyRotationRestResource = createKeyRotationRestResource()
-        val response = keyRotationRestResource.getKeyRotationStatus("keyAlias")
+        val response = keyRotationRestResource.getKeyRotationStatus(oldKeyAlias)
 
         verify(stateManager, times(1)).findByMetadataMatchingAll(any())
 
-        assertThat(response.status).isEqualTo("Done")
-        assertThat(response.rootKeyAlias).isEqualTo("keyAlias")
+        assertThat(response.status).isEqualTo("In Progress")
+        assertThat(response.rootKeyAlias).isEqualTo(oldKeyAlias)
     }
 
     @Test
