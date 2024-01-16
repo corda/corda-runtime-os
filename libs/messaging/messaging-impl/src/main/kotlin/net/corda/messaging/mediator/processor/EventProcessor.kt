@@ -49,7 +49,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
             val asyncOutputs = mutableMapOf<Record<K, E>, MutableList<MediatorMessage<Any>>>()
             val allConsumerInputs = groupEntry.value
             val processed = try {
-                allConsumerInputs.onEach { consumerInputEvent ->
+                allConsumerInputs.forEach { consumerInputEvent ->
                     val queue = ArrayDeque(listOf(consumerInputEvent))
                     while (queue.isNotEmpty()) {
                         val event = queue.removeFirst()
@@ -58,9 +58,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                         val (syncEvents, asyncEvents) = response.responseEvents.map { convertToMessage(it) }.partition {
                             messageRouter.getDestination(it).type == RoutingDestination.Type.SYNCHRONOUS
                         }
-                        asyncOutputs.compute(consumerInputEvent) { _, oldValue ->
-                            (oldValue?.plus(asyncEvents) ?: asyncEvents).toMutableList()
-                        }
+                        asyncOutputs.computeIfAbsent(consumerInputEvent) { mutableListOf() }.addAll(asyncEvents)
                         val returnedMessages = processSyncEvents(groupEntry.key, syncEvents)
                         queue.addAll(returnedMessages)
                     }

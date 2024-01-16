@@ -17,27 +17,34 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.util.UUID
 import kotlin.test.assertNull
 
 class MediatorReplayServiceTest {
-
-    private val serializer: CordaAvroSerializer<Any> = mock<CordaAvroSerializer<Any>>()
-    private val deserializer: CordaAvroDeserializer<Any> = mock<CordaAvroDeserializer<Any>>()
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock<CordaAvroSerializationFactory>().apply {
-        whenever(createAvroSerializer<Any>(anyOrNull())).thenReturn(serializer)
-        whenever(createAvroDeserializer<Any>(anyOrNull(), any())).thenReturn(deserializer)
-    }
-    private val mediatorReplayService = MediatorReplayService(cordaAvroSerializationFactory)
     private val topic = "topic"
     private val testState = ByteBuffer.wrap("state".toByteArray())
 
+    private lateinit var serializer: CordaAvroSerializer<Any>
+    private val deserializer: CordaAvroDeserializer<Any> = mock<CordaAvroDeserializer<Any>>()
+    private lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
+    private lateinit var mediatorReplayService: MediatorReplayService
+
     @BeforeEach
     fun setup() {
-        whenever(serializer.serialize(anyOrNull())).thenReturn("test1".toByteArray())
+        serializer = mock<CordaAvroSerializer<Any>>().apply {
+            whenever(serialize(anyOrNull())).doAnswer{ UUID.randomUUID().toString().toByteArray() }
+        }
         whenever(deserializer.deserialize(anyOrNull())).thenReturn("test1")
+
+        cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory>().apply {
+            whenever(createAvroSerializer<Any>(anyOrNull())).thenReturn(serializer)
+            whenever(createAvroDeserializer<Any>(anyOrNull(), any())).thenReturn(deserializer)
+        }
+        mediatorReplayService = MediatorReplayService(cordaAvroSerializationFactory)
     }
 
     @Test
@@ -54,6 +61,20 @@ class MediatorReplayServiceTest {
         outputs.onEach {
             assertEquals(4, it.outputEvents.size)
         }
+    }
+
+    @Test
+    fun `Add new output events to mediator state with existing outputs with the same key`() {
+        whenever(serializer.serialize(any())).thenReturn("1".toByteArray())
+        val mediatorReplayOutputEvents = mediatorReplayOutputEvents(3, 3)
+        val numberOfKeys = 1
+        val numberOfValues = 4
+        val outputs = mediatorReplayService.getOutputEvents(
+            mediatorReplayOutputEvents,
+            getNewOutputs(numberOfKeys, numberOfValues)
+        )
+        assertEquals(4, outputs.size)
+        assertEquals(13, outputs.sumOf { it.outputEvents.size })
     }
 
     @Test
@@ -120,7 +141,8 @@ class MediatorReplayServiceTest {
                     )
                 )
             }
-            val hash = ByteBuffer.wrap((recordKey.toByteArray() + recordKey.toByteArray()).sha256Bytes())
+            existingOutputs.add(MediatorReplayOutputEvents(ByteBuffer.wrap("$i".toByteArray()), outputsPerKey))
+            val hash = ByteBuffer.wrap("$i".toByteArray().sha256Bytes())
             existingOutputs.add(MediatorReplayOutputEvents(hash, outputsPerKey))
         }
         return existingOutputs

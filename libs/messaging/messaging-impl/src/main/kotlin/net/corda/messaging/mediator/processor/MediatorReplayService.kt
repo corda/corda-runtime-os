@@ -37,7 +37,7 @@ class MediatorReplayService @Activate constructor(
     ): List<MediatorReplayOutputEvents> {
         val mediatorOutputs = existingOutputs.toMutableList()
 
-        newOutputs.onEach { entry ->
+        newOutputs.forEach { entry ->
             val hash = getInputHash(entry.key)
             val mediatorOutputList = entry.value.map {
                 val topic = it.properties.getProperty(MSG_PROP_TOPIC)
@@ -45,7 +45,13 @@ class MediatorReplayService @Activate constructor(
                 val payload = ByteBuffer.wrap(serialize(it.payload))
                 MediatorReplayOutputEvent(topic, key, payload)
             }
-            mediatorOutputs.add(MediatorReplayOutputEvents(hash, mediatorOutputList))
+            mediatorOutputs.find { it.inputEventHash == hash }.let {
+                if (it != null) {
+                    it.outputEvents.addAll(mediatorOutputList)
+                } else {
+                    mediatorOutputs.add(MediatorReplayOutputEvents(hash, mediatorOutputList))
+                }
+            }
         }
 
         return mediatorOutputs
@@ -78,11 +84,11 @@ class MediatorReplayService @Activate constructor(
      * @return A hash of the input event as bytes
      */
     private fun <K : Any, E : Any> getInputHash(inputEvent: Record<K, E>): ByteBuffer {
-        val recordKeyBytes = serialize(inputEvent.key)
         val recordValueBytes = serialize(inputEvent.value)
-        if (recordKeyBytes == null || recordValueBytes == null)
-            throw IllegalStateException("Input record key and value bytes should not be null")
-        return ByteBuffer.wrap((recordKeyBytes + recordValueBytes).sha256Bytes())
+        check (recordValueBytes != null) {
+            "Input record key and value bytes should not be null"
+        }
+        return ByteBuffer.wrap((recordValueBytes).sha256Bytes())
     }
 
     private fun serialize(value: Any?) = value?.let { serializer.serialize(it) }
