@@ -105,7 +105,7 @@ class MerkleProofImpl(
         }
 
         // We will discover some hashes at a given level and some at the level above.
-        // But we want to guarnatee to our uses that the get out hashes on the `onNewHash` callback
+        // But we want to guarantee to our uses that they get out hashes on the `onNewHash` callback
         // in a left to right then bototm to top order, rather than mix up leaves from different levels.
         // That way the user code is simpler. So, we need to efficiently sort the output order.
 
