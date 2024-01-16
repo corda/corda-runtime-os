@@ -98,6 +98,7 @@ import net.corda.p2p.linkmanager.metrics.recordInboundSessionTimeoutMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundHeartbeatMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundSessionTimeoutMetric
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.badGroupPolicy
+import net.corda.utilities.trace
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
@@ -1324,10 +1325,10 @@ internal class SessionManagerImpl(
 
                 val timeSinceLastSend = timeStamp() - sessionInfo.lastSendTimestamp
                 if (timeSinceLastSend >= config.heartbeatPeriod.toMillis()) {
-                    logger.info (
+                    logger.trace {
                         "Sending heartbeat message between ${counterparties.ourId} (our Identity) and " +
                                 "${counterparties.counterpartyId}."
-                    )
+                    }
                     sendHeartbeatMessage(
                         counterparties.ourId,
                         counterparties.counterpartyId,
