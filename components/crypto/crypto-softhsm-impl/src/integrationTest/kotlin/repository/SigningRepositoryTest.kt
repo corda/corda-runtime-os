@@ -104,30 +104,44 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
         }
     }
 
+    data class UniqueAliasAndGeneration(
+        val emf: EntityManagerFactory,
+        val alias: String,
+        val generation: Int
+    )
+
+    private val uniqueWrappingKeys = mutableSetOf<UniqueAliasAndGeneration>()
+
     private fun saveWrappingKey(
         emf: EntityManagerFactory,
         alias: String,
         generation: Int = 1
     ): UUID {
         val uuid = UUID.randomUUID()
-        emf.createEntityManager().use { em ->
-            em.transaction {
-                it.merge(
-                    WrappingKeyEntity(
-                        id = uuid,
-                        generation = generation,
-                        alias = alias,
-                        created = Instant.now(),
-                        rotationDate = LocalDate.parse("9999-12-31").atStartOfDay().toInstant(ZoneOffset.UTC),
-                        encodingVersion = 1,
-                        algorithmName = "foo",
-                        keyMaterial = SecureHashUtils.randomBytes(),
-                        isParentKeyManaged = false,
-                        parentKeyReference = "root",
+        // Need to ensure we only create wrapping keys for a unique combination of alias and generation to fulfil the
+        // db constraint for each EMF. Tests can reuse existing wrapping keys with the same combination if they already exist.
+        val uniqueAliasAndGeneration = UniqueAliasAndGeneration(emf, alias, generation)
+        if (!uniqueWrappingKeys.contains(uniqueAliasAndGeneration)) {
+            uniqueWrappingKeys.add(uniqueAliasAndGeneration)
+            emf.createEntityManager().use { em ->
+                em.transaction {
+                    it.merge(
+                        WrappingKeyEntity(
+                            id = uuid,
+                            generation = generation,
+                            alias = alias,
+                            created = Instant.now(),
+                            rotationDate = LocalDate.parse("9999-12-31").atStartOfDay().toInstant(ZoneOffset.UTC),
+                            encodingVersion = 1,
+                            algorithmName = "foo",
+                            keyMaterial = SecureHashUtils.randomBytes(),
+                            isParentKeyManaged = false,
+                            parentKeyReference = "root",
+                        )
                     )
-                )
-            }
-        }.toDto()
+                }
+            }.toDto()
+        }
         return uuid
     }
 
