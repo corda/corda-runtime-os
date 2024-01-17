@@ -56,8 +56,7 @@ private fun <T> trackRetryAttempts(block: ((Attempt) -> Unit) -> T): T {
     try {
         return block { attempts.add(it) }
     } catch (t: Throwable) {
-        println("\nAttempts:\n${attempts.prettyPrint()}")
-        throw t
+        fail("${t.message}\n\nAttempts:\n${attempts.prettyPrint()}", t)
     }
 }
 
