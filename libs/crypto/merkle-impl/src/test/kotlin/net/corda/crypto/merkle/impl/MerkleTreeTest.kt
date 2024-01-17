@@ -1,5 +1,6 @@
 package net.corda.crypto.merkle.impl
 
+import net.bytebuddy.asm.Advice.OffsetMapping.Factory.Illegal
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
@@ -910,14 +911,16 @@ class MerkleTreeTest {
      *
      * @param treeSize the number of elements
      * @param hashProvider the functions used to hash the tree
+     * @param contentBuilder an optional callback to generate each node in the tree
      * @return a MerkleTree object
      */
     private fun makeTestMerkleTree(
         treeSize: Int,
-        hashProvider: MerkleTreeHashDigestProvider
+        hashProvider: MerkleTreeHashDigestProvider,
+        contentBuilder: (index: Int) -> ByteArray = { it.toByteArray() }
     ): MerkleTree {
         // 1. make some leaf data, which will just be successive integers starting at zero
-        val leafData = (0 until treeSize).map { it.toByteArray() }
+        val leafData = (0 until treeSize).map { contentBuilder(it) }
         // 2. make the tree from the leaf data
         return MerkleTreeImpl.createMerkleTree(leafData, hashProvider)
     }
@@ -1290,6 +1293,26 @@ class MerkleTreeTest {
     }
 
     @Test
+    fun `test rejection of merge when leaves differ`() {
+        val tree1 = makeTestMerkleTree(3, trivialHashDigestProvider) { it.toByteArray() } as MerkleTreeImpl
+        assertThat(tree1.render()).isEqualToIgnoringWhitespace("""
+            00000667┳00000630┳00000000 00:00:00:00
+                    ┃        ┗00000001 00:00:00:01
+                    ┗00000002━00000002 00:00:00:02
+        """.trimIndent())
+        val tree2 = makeTestMerkleTree(3, trivialHashDigestProvider) { (256 * 0x42 + it).toByteArray() } as MerkleTreeImpl
+        assertThat(tree2.render()).isEqualToIgnoringWhitespace("""
+            0000062d┳000006b4┳00000042 00:00:42:00
+                    ┃        ┗00000043 00:00:42:01
+                    ┗00000044━00000044 00:00:42:02
+        """.trimIndent())
+        val xProof = makeProof(tree1, listOf(0,1))
+        val yProof = makeProof(tree1, listOf(1,2))
+        val ex = assertFailsWith<IllegalArgumentException> { xProof.merge(yProof, trivialHashDigestProvider) }
+        assertThat(ex.message).contains("Leaves in both proofs are not identical")
+    }
+
+    @Test
     fun `test merge tree size 2 with 3 fails`() {
         val merkleTree2 = makeTestMerkleTree(2, defaultHashDigestProvider)
         val merkleTree3 = makeTestMerkleTree(3, defaultHashDigestProvider)
@@ -1300,7 +1323,6 @@ class MerkleTreeTest {
         assertThat(ex.message).contains("left hand side has underlying tree size 2")
         assertThat(ex.message).contains("right hand side has underlying tree size 3")
     }
-
 }
 
 fun SecureHash.hex() = bytes.joinToString(separator = "") { "%02x".format(it) }
