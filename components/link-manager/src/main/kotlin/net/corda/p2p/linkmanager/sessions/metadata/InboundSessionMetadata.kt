@@ -12,6 +12,13 @@ internal enum class InboundSessionStatus {
     SentResponderHandshake,
 }
 
+/**
+ * [InboundSessionMetadata] represents the metadata stored in the State Manager for a session.
+ *
+ * @param lastSendTimestamp The last time a session negotiation message was sent.
+ * @param expiry When the Session Expires and should be rotated.
+ * @param status Where we are in the Session negotiation process.
+ */
 internal data class InboundSessionMetadata(
     val source: HoldingIdentity,
     val destination: HoldingIdentity,
@@ -27,6 +34,7 @@ internal data class InboundSessionMetadata(
         private const val STATUS = "status"
         private const val EXPIRY = "expiry"
         private val SESSION_EXPIRY_PERIOD: Duration = Duration.ofDays(7)
+        private val MESSAGE_EXPIRY_PERIOD: Duration = Duration.ofSeconds(2L)
 
         private fun String.statusFromString(): InboundSessionStatus {
             return InboundSessionStatus.values().first { it.toString() == this }
@@ -44,7 +52,11 @@ internal data class InboundSessionMetadata(
     }
 
     fun lastSendExpired(clock: Clock): Boolean {
-        return clock.instant() > lastSendTimestamp + SESSION_EXPIRY_PERIOD
+        return clock.instant() > lastSendTimestamp + MESSAGE_EXPIRY_PERIOD
+    }
+
+    fun sessionExpired(): Boolean {
+        return expiry > lastSendTimestamp + SESSION_EXPIRY_PERIOD
     }
 
     fun toMetadata(): Metadata {
