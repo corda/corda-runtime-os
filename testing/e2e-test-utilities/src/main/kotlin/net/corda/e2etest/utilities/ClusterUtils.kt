@@ -241,7 +241,7 @@ fun ClusterInfo.getStatusForUnmanagedWrappingKeysRotation(
     }
 }
 
-fun ClusterInfo.getProtocolVersionForWrappingKeys(
+fun ClusterInfo.getProtocolVersionForUnmanagedKeyRotation(
 ) = cluster {
     assertWithRetry {
         command { getWrappingKeysProtocolVersion() }
