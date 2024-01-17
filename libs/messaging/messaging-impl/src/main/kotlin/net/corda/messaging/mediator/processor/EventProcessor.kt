@@ -29,8 +29,8 @@ class EventProcessor<K : Any, S : Any, E : Any>(
 
     /**
      * Process a group of events.
-     * If an record is one which the mediator has processed before then the asynchronous outputs from the previous invocation
-     * of the processor from the [MediatorState]. The message processor is not executed and the retrieved outputs are returned to be resent.
+     * If the mediator has previously processed a record, then the asynchronous outputs from the previous invocation of the processor will be retrieved from the [MediatorState].
+     * In this case, the message processor is not executed again, and the previously retrieved outputs are returned for resending.
      * Otherwise, the message processor is executed and any synchronous calls are processed and responses handled.
      * Finally, any asynchronous outputs are returned, as well as the [State] object to update.
      * @param group Group of consumer records of various keys
