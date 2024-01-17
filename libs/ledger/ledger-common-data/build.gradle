@@ -21,9 +21,11 @@ dependencies {
 
     api project(':libs:base-internal')
     implementation project(':libs:crypto:crypto-core')
+    implementation project(':libs:flows:flow-api')
     implementation project(':libs:sandbox-types')
     implementation project(':libs:serialization:json-validator')
     implementation project(':libs:serialization:serialization-internal')
+    implementation project(':libs:serialization:serialization-checkpoint-api')
     implementation project(':libs:utilities')
 
     testImplementation project(':testing:test-serialization')

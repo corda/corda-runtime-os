@@ -3,17 +3,51 @@ package net.corda.ledger.common.data.transaction.factory
 import com.fasterxml.jackson.databind.JsonMappingException
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.test.CommonLedgerTest
-import net.corda.ledger.common.testkit.getPrivacySalt
 import net.corda.ledger.common.testkit.transactionMetadataExample
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.whenever
 
 @Suppress("MaxLineLength")
 class WireTransactionFactoryImplTest : CommonLedgerTest() {
     private val metadata = transactionMetadataExample()
     private val metadataJson = jsonMarshallingService.format(metadata)
     private val canonicalJson = jsonValidator.canonicalize(metadataJson)
-    private val privacySalt = getPrivacySalt()
+    private val privacySalt = privacySaltProviderService.generatePrivacySalt()
+
+    @Test
+    fun `transaction ids are deterministic`() {
+        whenever(flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.flowId).thenReturn("FLOW_ID")
+        whenever(flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.suspendCount).thenReturn(10)
+
+        val transaction1 = wireTransactionFactory.create(
+            listOf(
+                listOf(canonicalJson.toByteArray()),
+            ),
+            privacySalt
+        )
+
+        val transaction2 = wireTransactionFactory.create(
+            listOf(
+                listOf(canonicalJson.toByteArray()),
+            ),
+            privacySalt
+        )
+
+        assertThat(transaction1.id).isEqualTo(transaction2.id)
+        assertThat(transaction1.privacySalt).isEqualTo(transaction2.privacySalt)
+    }
+
+    @Test
+    fun `draft`() {
+        wireTransactionFactory.create(
+            listOf(
+                listOf(canonicalJson.toByteArray()),
+            ),
+            privacySalt
+        )
+    }
 
     @Test
     fun `Creating a very simple WireTransaction`() {

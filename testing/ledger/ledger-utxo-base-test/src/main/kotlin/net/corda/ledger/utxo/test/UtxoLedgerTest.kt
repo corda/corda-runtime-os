@@ -18,11 +18,11 @@ import net.corda.ledger.utxo.flow.impl.transaction.factory.impl.UtxoSignedTransa
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactoryImpl
 import net.corda.ledger.utxo.flow.impl.transaction.serializer.amqp.UtxoSignedTransactionSerializer
 import net.corda.ledger.utxo.flow.impl.transaction.serializer.kryo.UtxoSignedTransactionKryoSerializer
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.NotarySignatureVerificationServiceInternal
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.ledger.utxo.testkit.anotherNotaryX500Name
 import net.corda.ledger.utxo.testkit.getUtxoSignedTransactionExample
 import net.corda.ledger.utxo.testkit.notaryX500Name
-import net.corda.ledger.utxo.flow.impl.transaction.verifier.NotarySignatureVerificationServiceInternal
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.membership.NotaryInfo
@@ -84,7 +84,8 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         mockUtxoLedgerGroupParametersPersistenceService,
         mockGroupParametersLookup,
         mockSignedGroupParametersVerifier,
-        mockNotarySignatureVerificationService
+        mockNotarySignatureVerificationService,
+        privacySaltProviderService
     )
     val utxoLedgerService = UtxoLedgerServiceImpl(
         utxoFilteredTransactionFactory,

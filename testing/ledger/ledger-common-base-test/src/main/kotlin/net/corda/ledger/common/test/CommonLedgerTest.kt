@@ -13,6 +13,7 @@ import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSeri
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactoryImpl
 import net.corda.ledger.common.data.transaction.serializer.amqp.WireTransactionSerializer
+import net.corda.ledger.common.flow.impl.transaction.PrivacySaltProviderServiceImpl
 import net.corda.ledger.common.flow.impl.transaction.TransactionSignatureServiceImpl
 import net.corda.ledger.common.flow.impl.transaction.TransactionSignatureVerificationServiceImpl
 import net.corda.ledger.common.flow.impl.transaction.factory.TransactionMetadataFactoryImpl
@@ -39,10 +40,12 @@ abstract class CommonLedgerTest {
     val jsonValidator = JsonValidatorImpl()
 
     val wireTransactionFactory = WireTransactionFactoryImpl(
-        merkleTreeProvider, digestService, jsonMarshallingService, jsonValidator, cipherSchemeMetadata
+        merkleTreeProvider, digestService, jsonMarshallingService, jsonValidator
     )
 
-    private val flowFiberService = TestFlowFiberServiceWithSerialization(currentSandboxGroupContext)
+    val flowFiberService = TestFlowFiberServiceWithSerialization(currentSandboxGroupContext)
+
+    val privacySaltProviderService = PrivacySaltProviderServiceImpl(flowFiberService)
 
     val flowEngine = FlowEngineImpl(flowFiberService)
 
