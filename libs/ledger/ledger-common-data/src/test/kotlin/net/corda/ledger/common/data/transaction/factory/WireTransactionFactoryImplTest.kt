@@ -6,6 +6,7 @@ import net.corda.ledger.common.test.CommonLedgerTest
 import net.corda.ledger.common.testkit.transactionMetadataExample
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.whenever
 
@@ -14,25 +15,32 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
     private val metadata = transactionMetadataExample()
     private val metadataJson = jsonMarshallingService.format(metadata)
     private val canonicalJson = jsonValidator.canonicalize(metadataJson)
-    private val privacySalt = privacySaltProviderService.generatePrivacySalt()
+
+    @BeforeEach
+    fun setup() {
+        val flowId = "fc321a0c-62c6-41a1-85e6-e61870ab93aa"
+        val suspendCount = 10
+
+        val checkpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
+
+        whenever(checkpoint.flowId).thenReturn(flowId)
+        whenever(checkpoint.suspendCount).thenReturn(suspendCount)
+    }
 
     @Test
     fun `transaction ids are deterministic`() {
-        whenever(flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.flowId).thenReturn("FLOW_ID")
-        whenever(flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.suspendCount).thenReturn(10)
-
         val transaction1 = wireTransactionFactory.create(
             listOf(
                 listOf(canonicalJson.toByteArray()),
             ),
-            privacySalt
+            privacySaltProviderService.generatePrivacySalt()
         )
 
         val transaction2 = wireTransactionFactory.create(
             listOf(
                 listOf(canonicalJson.toByteArray()),
             ),
-            privacySalt
+            privacySaltProviderService.generatePrivacySalt()
         )
 
         assertThat(transaction1.id).isEqualTo(transaction2.id)
@@ -45,7 +53,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             listOf(
                 listOf(canonicalJson.toByteArray()),
             ),
-            privacySalt
+            privacySaltProviderService.generatePrivacySalt()
         )
     }
 
@@ -56,7 +64,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
                 listOf(
                     listOf(metadataJson.toByteArray()),
                 ),
-                privacySalt
+                privacySaltProviderService.generatePrivacySalt()
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
@@ -79,7 +87,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
                 listOf(
                     listOf("".toByteArray()),
                 ),
-                privacySalt
+                privacySaltProviderService.generatePrivacySalt()
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
@@ -93,7 +101,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
                 listOf(
                     listOf("{}".toByteArray()),
                 ),
-                privacySalt
+                privacySaltProviderService.generatePrivacySalt()
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
@@ -109,7 +117,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
                 listOf(
                     listOf(mangledJson.toByteArray()),
                 ),
-                privacySalt
+                privacySaltProviderService.generatePrivacySalt()
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
@@ -125,7 +133,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
                 listOf(
                     listOf(mangledJson.toByteArray()),
                 ),
-                privacySalt
+                privacySaltProviderService.generatePrivacySalt()
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
@@ -141,7 +149,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
                 listOf(
                     listOf(metadataJson.toByteArray()),
                 ),
-                privacySalt
+                privacySaltProviderService.generatePrivacySalt()
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
@@ -160,7 +168,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             listOf(
                 listOf(canonicalJson.toByteArray()),
             ),
-            privacySalt
+            privacySaltProviderService.generatePrivacySalt()
         )
     }
 
@@ -177,7 +185,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
                 listOf(
                     listOf(canonicalJson.toByteArray()),
                 ),
-                privacySalt
+                privacySaltProviderService.generatePrivacySalt()
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
@@ -197,7 +205,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             listOf(
                 listOf(canonicalJson.toByteArray()),
             ),
-            privacySalt
+            privacySaltProviderService.generatePrivacySalt()
         )
     }
 
@@ -215,7 +223,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
                 listOf(
                     listOf(canonicalJson.toByteArray()),
                 ),
-                privacySalt
+                privacySaltProviderService.generatePrivacySalt()
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
@@ -237,7 +245,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
                 listOf(
                     listOf(canonicalJson.toByteArray()),
                 ),
-                privacySalt
+                privacySaltProviderService.generatePrivacySalt()
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
@@ -258,7 +266,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
                 listOf(
                     listOf(canonicalJson.toByteArray()),
                 ),
-                privacySalt
+                privacySaltProviderService.generatePrivacySalt()
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
@@ -277,7 +285,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
                 listOf(
                     listOf(canonicalJson.toByteArray()),
                 ),
-                privacySalt
+                privacySaltProviderService.generatePrivacySalt()
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
