@@ -42,9 +42,7 @@ class MerkleTreeTest {
         val digestAlgorithm = DigestAlgorithmName.SHA2_256D
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
-
-        private const val MAXIMUM_TREE_SIZE_FOR_PROOF_TESTS = 12
-
+        private const val MAXIMUM_TREE_SIZE_FOR_PROOF_TESTS = 32
         // Since there are 2^(2*n) permutations of source leafs we don't want to test too many,
         // so we do a few in a fixed shuffled order. Any new failures have specific tests to guard against regression,
         // in case the platform random number generator changes.
@@ -52,7 +50,7 @@ class MerkleTreeTest {
         // In offline testing this has been successfully taken up to 5000 which takes 30 minutes on a laptop.
         private const val NUMBER_OF_SUBSETS_TO_TEST = 1000
 
-        private const val MAXIMUM_TREE_SIZE_FOR_EXHAUSTIVE_MERGE_TESTS = 16
+        private const val MAXIMUM_TREE_SIZE_FOR_EXHAUSTIVE_MERGE_TESTS = 32
 
         // Since there are 60129542144 (slightly less than n*2^(2*n)) permutation for lists tests when we go up to tree
         // size 16, so again we take a stable random approach.
@@ -1307,9 +1305,9 @@ class MerkleTreeTest {
                     ┗00000044━00000044 00:00:42:02
         """.trimIndent())
         val xProof = makeProof(tree1, listOf(0,1))
-        val yProof = makeProof(tree1, listOf(1,2))
+        val yProof = makeProof(tree2, listOf(1,2))
         val ex = assertFailsWith<IllegalArgumentException> { xProof.merge(yProof, trivialHashDigestProvider) }
-        assertThat(ex.message).contains("Leaves in both proofs are not identical")
+        assertThat(ex.message).contains("common leaves in a proof merge must match")
     }
 
     @Test

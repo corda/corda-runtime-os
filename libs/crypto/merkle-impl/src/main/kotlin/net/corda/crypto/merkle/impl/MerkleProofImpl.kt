@@ -313,6 +313,12 @@ class MerkleProofImpl(
         // First, work out the leaves for the output proof.
         val indexMapThis = leaves.associateBy { it.index }
         val indexMapOther = other.leaves.associateBy { it.index }
+        // We should fail early, at this point, if any leaves in both mismatch.
+        indexMapThis.forEach { (index, leaf) ->
+            require(indexMapOther.getOrDefault(index, leaf) == leaf) {
+                "common leaves in a proof merge must match"
+            }
+        }
         val combinedIndexMap = indexMapThis + indexMapOther
         val outLeaves = combinedIndexMap.values.toList().sortedWith( compareBy { it.index })
 
@@ -327,7 +333,7 @@ class MerkleProofImpl(
             val k = it.level to it.node.indexWithinLevel
             nodeMapOther[k] = it
         }
-        require(thisRoot == otherRoot)
+        require(thisRoot == otherRoot) { "left hand and right hand size proof root hashes do not match"}
 
         // Third, walk the whole tree and figure out what to do based on what we know.
         val outHashes = mutableListOf<SecureHash>() // the goal is to fill this in
