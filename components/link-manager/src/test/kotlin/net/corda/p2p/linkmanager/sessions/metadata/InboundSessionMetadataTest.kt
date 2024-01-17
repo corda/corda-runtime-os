@@ -96,7 +96,7 @@ class InboundSessionMetadataTest {
         @Test
         fun `it return true if the last sent was expired`() {
             val clock = mock<Clock> {
-                on { instant() } doReturn Instant.ofEpochMilli(10000L + Duration.ofDays(8).toMillis())
+                on { instant() } doReturn Instant.ofEpochMilli(10000L + Duration.ofSeconds(8).toMillis())
             }
 
             assertThat(metadata.lastSendExpired(clock)).isTrue()
@@ -105,10 +105,39 @@ class InboundSessionMetadataTest {
         @Test
         fun `it return false if the last sent was not expired`() {
             val clock = mock<Clock> {
-                on { instant() } doReturn Instant.ofEpochMilli(10000L + Duration.ofDays(6).toMillis())
+                on { instant() } doReturn Instant.ofEpochMilli(10000L + Duration.ofSeconds(1).toMillis())
             }
 
             assertThat(metadata.lastSendExpired(clock)).isFalse()
+        }
+    }
+
+    @Nested
+    inner class SessionExpiredTest {
+        private val metadata = InboundSessionMetadata(
+            mock(),
+            mock(),
+            mock(),
+            mock(),
+            Instant.ofEpochMilli(10000L),
+        )
+
+        @Test
+        fun `it return true if the session expiration passed`() {
+            val clock = mock<Clock> {
+                on { instant() } doReturn Instant.ofEpochMilli(10000L + Duration.ofDays(8).toMillis())
+            }
+
+            assertThat(metadata.sessionExpired(clock)).isTrue()
+        }
+
+        @Test
+        fun `it return false if the session had not expired`() {
+            val clock = mock<Clock> {
+                on { instant() } doReturn Instant.ofEpochMilli(10000L + Duration.ofDays(6).toMillis())
+            }
+
+            assertThat(metadata.sessionExpired(clock)).isFalse()
         }
     }
 

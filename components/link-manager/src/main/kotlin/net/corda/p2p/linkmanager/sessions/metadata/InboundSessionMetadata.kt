@@ -55,8 +55,8 @@ internal data class InboundSessionMetadata(
         return clock.instant() > lastSendTimestamp + MESSAGE_EXPIRY_PERIOD
     }
 
-    fun sessionExpired(): Boolean {
-        return expiry > lastSendTimestamp + SESSION_EXPIRY_PERIOD
+    fun sessionExpired(clock: Clock): Boolean {
+        return clock.instant() > expiry + SESSION_EXPIRY_PERIOD
     }
 
     fun toMetadata(): Metadata {

@@ -9,7 +9,10 @@ import net.corda.data.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.createCoordinator
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.linkmanager.state.SessionState
@@ -30,9 +33,17 @@ import org.mockito.kotlin.whenever
 import java.time.Instant
 
 class StatefulSessionManagerImplTest {
-    private val coordinatorFactory = mock<LifecycleCoordinatorFactory>()
+    private val cordinator = mock<LifecycleCoordinator>()
+    private val coordinatorFactory = mock<LifecycleCoordinatorFactory> {
+        on { createCoordinator(any(), any()) } doReturn cordinator
+    }
     private val stateManager = mock<StateManager>()
-    private val sessionManagerImpl = mock<SessionManagerImpl>()
+    private val sessionManagerImplDominoTile = mock<ComplexDominoTile> {
+        on { coordinatorName } doReturn mock()
+    }
+    private val sessionManagerImpl = mock<SessionManagerImpl> {
+        on { dominoTile } doReturn sessionManagerImplDominoTile
+    }
     private val stateConvertor = mock<StateConvertor>()
     private val now = Instant.ofEpochMilli(333L)
     private val clock = mock<Clock> {
