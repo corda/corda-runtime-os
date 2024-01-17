@@ -38,10 +38,7 @@ import net.corda.crypto.impl.getSigningData
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.WrappingKeyInfo
-import net.corda.crypto.softhsm.SigningRepositoryFactory
-import net.corda.crypto.softhsm.TenantInfoService
-import net.corda.crypto.softhsm.WrappingRepositoryFactory
-import net.corda.crypto.softhsm.deriveSupportedSchemes
+import net.corda.crypto.softhsm.*
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import net.corda.utilities.trace
@@ -644,5 +641,36 @@ open class SoftCryptoService(
     override fun close() {
     }
 
+    /**
+     * Create a wrapping key from an existing key
+     *
+     * @param oldWrappingKey The original wrapping key
+     * @param wrappingRepository The WrappingRepository object to save the new key with
+     * @return The new wrapping key based on the existing one
+     */
+    private fun createWrappingKeyFrom(oldWrappingKey: WrappingKeyInfo, wrappingRepository: WrappingRepository){
+        logger.trace {
+            "createWrappingKeyFrom(alias=${oldWrappingKey.alias})"
+        }
+        val wrappingKey = recoverable("createWrappingKey generate wrapping key") { wrappingKeyFactory(schemeMetadata) }
+        val parentKeyName = oldWrappingKey.parentKeyAlias
+        val parentKey = unmanagedWrappingKeys[parentKeyName]
+            ?: throw IllegalStateException("No wrapping key $parentKeyName found")
+        val wrappingKeyEncrypted = recoverable("wrap") { parentKey.wrap(wrappingKey) }
+        val wrappingKeyInfo =
+            WrappingKeyInfo(
+                oldWrappingKey.encodingVersion,
+                wrappingKey.algorithm,
+                wrappingKeyEncrypted,
+                oldWrappingKey.generation + 1,
+                parentKeyName,
+                oldWrappingKey.alias
+            )
+        recoverable("createWrappingKey save key") {
+            wrappingRepository.saveKey(wrappingKeyInfo)
+        }
+        logger.trace("Regenerated wrapping key alias ${oldWrappingKey.alias}")
+        wrappingKeyCache?.put(oldWrappingKey.alias, wrappingKey)
+    }
 }
 
