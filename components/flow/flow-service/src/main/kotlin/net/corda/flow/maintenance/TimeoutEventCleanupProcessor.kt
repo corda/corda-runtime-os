@@ -13,6 +13,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
+@Suppress("LongParameterList")
 class TimeoutEventCleanupProcessor(
     private val checkpointCleanupHandler: CheckpointCleanupHandler,
     private val stateManager: StateManager,
