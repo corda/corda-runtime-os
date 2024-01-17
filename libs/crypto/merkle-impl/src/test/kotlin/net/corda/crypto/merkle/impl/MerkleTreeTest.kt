@@ -162,8 +162,11 @@ class MerkleTreeTest {
         @JvmStatic
         fun subsetTestCombinations(): List<Arguments> {
             val rng = Random(0)
-            val combinations:ULong =
-                MAXIMUM_TREE_SIZE_FOR_PROOF_TESTS.toULong() * (1UL shl MAXIMUM_TREE_SIZE_FOR_PROOF_TESTS) * (1UL shl MAXIMUM_TREE_SIZE_FOR_PROOF_TESTS)
+            val combinations: ULong = (
+                MAXIMUM_TREE_SIZE_FOR_PROOF_TESTS.toULong()
+                    * (1UL shl MAXIMUM_TREE_SIZE_FOR_PROOF_TESTS)
+                    * (1UL shl MAXIMUM_TREE_SIZE_FOR_PROOF_TESTS))
+
             return iterator {
                 while (true) {
                     val t: ULong = rng.nextULong(0UL..combinations)
