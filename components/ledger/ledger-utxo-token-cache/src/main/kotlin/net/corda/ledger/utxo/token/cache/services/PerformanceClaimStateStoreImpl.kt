@@ -2,6 +2,8 @@ package net.corda.ledger.utxo.token.cache.services
 
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
+import net.corda.libs.statemanager.api.Metadata
+import net.corda.libs.statemanager.api.STATE_TYPE
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.tracing.wrapWithTracingExecutor
@@ -156,6 +158,7 @@ class PerformanceClaimStateStoreImpl(
         val newStoredState = State(
             key = tokenPoolKey.toString(),
             value = stateBytes,
+            metadata = Metadata(mapOf(STATE_TYPE to tokenPoolCacheState::class.java.name)),
             modifiedTime = clock.instant()
         )
 

@@ -24,7 +24,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         get() = lifecycleCoordinator.name
 
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.name}")
-    private val mediatorState = MediatorState()
+    private val mediatorSubscriptionState = MediatorSubscriptionState()
     private val consumerConfig = MediatorConsumerConfig(
         config.messageProcessor.keyClass,
         config.messageProcessor.eventValueClass,
@@ -38,7 +38,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun runMediator() {
-        mediatorState.running.set(true)
+        mediatorSubscriptionState.running.set(true)
         val clients = mediatorComponentFactory.createClients(::onSerializationError)
         val messageRouter = mediatorComponentFactory.createRouter(clients)
 
@@ -46,7 +46,8 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
         config.consumerFactories.map { consumerFactory ->
             taskManager.executeLongRunningTask {
-                val consumerProcessor = mediatorComponentFactory.createConsumerProcessor(config, taskManager, messageRouter, mediatorState)
+                val consumerProcessor =
+                    mediatorComponentFactory.createConsumerProcessor(config, taskManager, messageRouter, mediatorSubscriptionState)
                 consumerProcessor.processTopic(consumerFactory, consumerConfig)
             }.exceptionally { exception ->
                 handleTaskException(exception)
@@ -56,20 +57,20 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         }
 
         clients.forEach { it.close() }
-        mediatorState.running.set(false)
+        mediatorSubscriptionState.running.set(false)
     }
 
     override fun close() {
         log.debug("Closing multi-source event mediator")
-        mediatorState.stop()
-        while (mediatorState.running()) {
+        mediatorSubscriptionState.stop()
+        while (mediatorSubscriptionState.running()) {
             sleep(100)
         }
         lifecycleCoordinator.close()
     }
 
     private fun handleTaskException(exception: Throwable): Unit {
-        mediatorState.stop()
+        mediatorSubscriptionState.stop()
         lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, "Error: ${exception.message}")
         log.error("${exception.message}. Closing Multi-Source Event Mediator.", exception)
     }

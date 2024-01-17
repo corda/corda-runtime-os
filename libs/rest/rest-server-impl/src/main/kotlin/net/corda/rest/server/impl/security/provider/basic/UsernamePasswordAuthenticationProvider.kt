@@ -1,6 +1,6 @@
 package net.corda.rest.server.impl.security.provider.basic
 
-import net.corda.rest.security.AuthorizingSubject
+import net.corda.rest.authorization.AuthorizingSubject
 import net.corda.rest.security.read.Password
 import net.corda.rest.security.read.RestSecurityManager
 import net.corda.rest.server.impl.security.provider.AuthenticationProvider

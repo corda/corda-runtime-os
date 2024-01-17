@@ -48,7 +48,7 @@ dependencies {
     testImplementation project(":libs:rest:rest-test-common")
 
     testRuntimeOnly 'org.osgi:osgi.core'
-    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    testRuntimeOnly libs.slf4j.simple
 
     runtimeOnly "org.webjars:swagger-ui:$swaggeruiVersion"
     runtimeOnly "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"

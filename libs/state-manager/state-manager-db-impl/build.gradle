@@ -30,6 +30,6 @@ dependencies {
     integrationTestImplementation project(':libs:db:db-admin-impl')
 
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    integrationTestRuntimeOnly libs.slf4j.simple
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 }
