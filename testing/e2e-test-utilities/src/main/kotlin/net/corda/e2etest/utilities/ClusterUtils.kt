@@ -241,6 +241,14 @@ fun ClusterInfo.getStatusForUnmanagedWrappingKeysRotation(
     }
 }
 
+fun ClusterInfo.getProtocolVersionForWrappingKeys(
+) = cluster {
+    assertWithRetry {
+        command { getWrappingKeysProtocolVersion() }
+        condition { it.code == ResponseCode.OK.statusCode }
+    }
+}
+
 private fun <T> Semaphore.runWith(block: () -> T): T {
     this.acquire()
     try {

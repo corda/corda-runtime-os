@@ -753,6 +753,12 @@ class ClusterBuilder {
             "/api/$REST_API_VERSION_PATH/wrappingkey/unmanaged/rotation/${requestid}",
         )
     }
+
+    fun getWrappingKeysProtocolVersion(): SimpleResponse {
+        return get(
+            "/api/$REST_API_VERSION_PATH//wrappingkey/getprotocolversion",
+        )
+    }
 }
 
 fun <T> cluster(
