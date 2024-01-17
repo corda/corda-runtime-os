@@ -150,6 +150,7 @@ internal class StatefulSessionManagerImpl(
             counterParties,
             listOf(initMessage),
             filter,
+            false
         )?.firstOrNull() ?: return null
 
         val newMetadata = SessionMetadata(
@@ -463,7 +464,13 @@ internal class StatefulSessionManagerImpl(
         val metadata = state?.metadata?.let { metadataMap -> SessionMetadata(metadataMap) }
         return when (metadata?.status) {
             SessionStatus.SentInitiatorHello -> {
-                sessionManagerImpl.processResponderHello(message.responderHelloMessage)?.let {
+                val sessionState = AvroSessionState.fromByteBuffer(ByteBuffer.wrap(state.value))
+                    .toCorda(
+                        schemaRegistry,
+                        sessionEncryptionOpsClient,
+                        sessionManagerImpl.revocationCheckerClient::checkRevocation
+                    )
+                sessionManagerImpl.processResponderHello(metadata.toCounterparties(), sessionState.sessionData, message.responderHelloMessage)?.let {
                         (responseMessage, authenticationProtocol) ->
                     val timestamp = Instant.now()
                     val newMetadata = SessionMetadata(
@@ -601,22 +608,19 @@ internal class StatefulSessionManagerImpl(
         val metadata = state?.metadata?.let { metadataMap -> SessionMetadata(metadataMap) }
         return when (metadata?.status) {
             SessionStatus.SentResponderHandshake -> {
-                sessionManagerImpl.processResponderHandshake(message.responderHandshakeMessage)?.let { (_, session) ->
-                    if (session == null) {
-                        null
-                    } else {
-                        val timestamp = Instant.now()
-                        val updatedMetadata = metadata.copy(
-                            status = SessionStatus.SessionReady, lastSendTimestamp = timestamp
-                        )
-                        val newState = State(
-                            calculateOutboundSessionKey(metadata.source, metadata.destination),
-                            SessionState(null, session).toAvro(schemaRegistry, sessionEncryptionOpsClient)
+                sessionManagerImpl.processResponderHandshake(
+                    message.responderHandshakeMessage)?.let { session ->
+                    val timestamp = Instant.now()
+                    val updatedMetadata = metadata.copy(
+                        status = SessionStatus.SessionReady, lastSendTimestamp = timestamp
+                    )
+                    val newState = State(
+                        calculateOutboundSessionKey(metadata.source, metadata.destination),
+                        SessionState(null, session).toAvro(schemaRegistry, sessionEncryptionOpsClient)
                                 .toByteBuffer().array(),
-                            metadata = updatedMetadata.toMetadata()
-                        )
-                        ProcessHandshakeResult(null, newState, session as Session)
-                    }
+                        metadata = updatedMetadata.toMetadata()
+                    )
+                    ProcessHandshakeResult(null, newState, session as Session)
                 }
             }
             SessionStatus.SentInitiatorHello, SessionStatus.SentInitiatorHandshake, SessionStatus.SentResponderHello -> {
