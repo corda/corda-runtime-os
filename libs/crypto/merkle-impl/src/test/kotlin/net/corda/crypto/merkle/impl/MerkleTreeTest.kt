@@ -1289,6 +1289,18 @@ class MerkleTreeTest {
         assertThat(mergedProofText).isEqualTo(proofText)
     }
 
+    @Test
+    fun `test merge tree size 2 with 3 fails`() {
+        val merkleTree2 = makeTestMerkleTree(2, defaultHashDigestProvider)
+        val merkleTree3 = makeTestMerkleTree(3, defaultHashDigestProvider)
+        val xProof = makeProof(merkleTree2, listOf(0))
+        val yProof = makeProof(merkleTree3, listOf(1))
+        val ex = assertFailsWith<IllegalArgumentException> {  xProof.merge(yProof, defaultHashDigestProvider) }
+        assertThat(ex.message).contains("underlying tree sizes must match")
+        assertThat(ex.message).contains("left hand side has underlying tree size 2")
+        assertThat(ex.message).contains("right hand side has underlying tree size 3")
+    }
+
 }
 
 fun SecureHash.hex() = bytes.joinToString(separator = "") { "%02x".format(it) }

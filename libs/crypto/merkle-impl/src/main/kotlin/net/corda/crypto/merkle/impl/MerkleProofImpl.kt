@@ -305,6 +305,11 @@ class MerkleProofImpl(
      */
     @Suppress("UnusedParameters")
     fun merge(other: MerkleProofImpl, digest: MerkleTreeHashDigestProvider): MerkleProofImpl {
+        require(this.treeSize == other.treeSize) {
+            "underlying tree sizes must match; left hand side has underlying tree "+
+                "size ${this.treeSize} and right hand side has underlying tree size ${other.treeSize}"
+        }
+
         // First, work out the leaves for the output proof.
         val indexMapThis = leaves.associateBy { it.index }
         val indexMapOther = other.leaves.associateBy { it.index }
