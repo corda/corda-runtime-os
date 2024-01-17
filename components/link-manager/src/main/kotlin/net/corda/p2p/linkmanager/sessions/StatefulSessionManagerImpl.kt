@@ -220,7 +220,7 @@ internal class StatefulSessionManagerImpl(
                     val newState = State(
                         key = state.key,
                         value = state.value,
-                        version = state.version,
+                        version = state.version + 1,
                         metadata = updatedMetadata.toMetadata()
                     )
                     responderHelloToResend to newState
@@ -272,7 +272,8 @@ internal class StatefulSessionManagerImpl(
                         message.initiatorHandshakeMessage.header.sessionId,
                         SessionState(responseMessage, session)
                             .toAvro(schemaRegistry, sessionEncryptionOpsClient).toByteBuffer().array(),
-                        metadata = newMetadata.toMetadata()
+                        metadata = newMetadata.toMetadata(),
+                        version = state.version + 1
                     )
                     ProcessInitiatorHandshakeResult(responseMessage, newState, session)
                 }
@@ -290,8 +291,8 @@ internal class StatefulSessionManagerImpl(
                     val newState = State(
                         key = state.key,
                         value = state.value,
-                        version = state.version,
-                        metadata = updatedMetadata.toMetadata()
+                        version = state.version + 1,
+                        metadata = updatedMetadata.toMetadata(),
                     )
                     ProcessInitiatorHandshakeResult(responderHandshakeToResend, newState, null)
                 } else {
