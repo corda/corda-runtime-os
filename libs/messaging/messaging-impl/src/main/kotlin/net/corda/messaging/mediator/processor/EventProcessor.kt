@@ -101,13 +101,10 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         mediatorState: MediatorState,
         asyncOutputs: MutableMap<Record<K, E>, MutableList<MediatorMessage<Any>>>
     ) = allConsumerInputs.filter { inputEvent ->
-        val replayEvents = mediatorReplayService.getReplayEvents(inputEvent, mediatorState)
-        if (replayEvents == null) {
-            true
-        } else {
-            asyncOutputs.addOutputs(inputEvent, replayEvents)
-            false
+        val replayEvents = mediatorReplayService.getReplayEvents(inputEvent, mediatorState)?.let {
+            asyncOutputs.addOutputs(inputEvent, it)
         }
+        replayEvents == null
     }
 
     private fun MutableMap<Record<K, E>, MutableList<MediatorMessage<Any>>>.addOutputs(
