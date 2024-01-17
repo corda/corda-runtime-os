@@ -1,3 +1,4 @@
+@file:Suppress("TooManyFunctions")
 package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.module.kotlin.contains
