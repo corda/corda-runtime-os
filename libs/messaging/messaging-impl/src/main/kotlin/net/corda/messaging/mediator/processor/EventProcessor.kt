@@ -29,11 +29,12 @@ class EventProcessor<K : Any, S : Any, E : Any>(
 
     /**
      * Process a group of events.
-     * If the event is one which the mediator has been processed with before then the asynchronous outputs from the previous invocation
-     * of the processor for this input are returned and the message processor is not executed.
-     * Otherwise, the message processor is executed and any synchronous calls are processed.
-     * @param group Group of records of various keys
-     * @param retrievedStates states for a group
+     * If an record is one which the mediator has processed before then the asynchronous outputs from the previous invocation
+     * of the processor from the [MediatorState]. The message processor is not executed and the retrieved outputs are returned to be resent.
+     * Otherwise, the message processor is executed and any synchronous calls are processed and responses handled.
+     * Finally, any asynchronous outputs are returned, as well as the [State] object to update.
+     * @param group Group of consumer records of various keys
+     * @param retrievedStates states for each key
      * @return The asynchronous outputs and state updates grouped by record key
      */
     fun processEvents(
@@ -52,18 +53,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                 )
             }
             val asyncOutputs = mutableMapOf<Record<K, E>, MutableList<MediatorMessage<Any>>>()
-
-            val nonReplayConsumerInputs = allConsumerInputs.filter { inputEvent ->
-                val replayEvents = mediatorReplayService.getReplayEvents(inputEvent, mediatorState)
-                if (replayEvents == null) {
-                    true
-                } else {
-                    asyncOutputs.compute(inputEvent) { _, oldValue ->
-                        (oldValue?.plus(replayEvents) ?: replayEvents).toMutableList()
-                    }
-                    false
-                }
-            }
+            val nonReplayConsumerInputs = filterReplayEvents(allConsumerInputs, mediatorState, asyncOutputs)
             if (nonReplayConsumerInputs.isEmpty()) {
                 EventProcessingOutput(asyncOutputs.values.flatten(), StateChangeAndOperation.Noop)
             } else {
@@ -71,15 +61,13 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                     nonReplayConsumerInputs.onEach { consumerInputEvent ->
                         val queue = ArrayDeque(listOf(consumerInputEvent))
                         while (queue.isNotEmpty()) {
-                            val event = queue.removeFirst()
-                            val response = config.messageProcessor.onNext(processorState, event)
+                            val response = config.messageProcessor.onNext(processorState, queue.removeFirst())
                             processorState = response.updatedState
                             val (syncEvents, asyncEvents) = response.responseEvents.map { convertToMessage(it) }.partition {
                                 messageRouter.getDestination(it).type == RoutingDestination.Type.SYNCHRONOUS
                             }
-                            asyncOutputs.computeIfAbsent(consumerInputEvent) { mutableListOf() }.addAll(asyncEvents)
-                            val returnedMessages = processSyncEvents(groupEntry.key, syncEvents)
-                            queue.addAll(returnedMessages)
+                            asyncOutputs.addOutputs(consumerInputEvent, asyncEvents)
+                            queue.addAll(processSyncEvents(groupEntry.key, syncEvents))
                         }
                     }
                     mediatorState.outputEvents = mediatorReplayService.getOutputEvents(mediatorState.outputEvents, asyncOutputs)
@@ -92,16 +80,41 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                     stateManagerHelper.failStateProcessing(groupKey, state)
                 }
 
-                val stateChangeAndOperation = when {
-                    state == null && processed != null -> StateChangeAndOperation.Create(processed)
-                    state != null && processed != null -> StateChangeAndOperation.Update(processed)
-                    state != null && processed == null -> StateChangeAndOperation.Delete(state)
-                    else -> StateChangeAndOperation.Noop
-                }
+                val stateChangeAndOperation = stateChangeAndOperation(state, processed)
                 EventProcessingOutput(asyncOutputs.values.flatten(), stateChangeAndOperation)
             }
         }
     }
+
+    private fun stateChangeAndOperation(
+        state: State?,
+        processed: State?
+    ) = when {
+        state == null && processed != null -> StateChangeAndOperation.Create(processed)
+        state != null && processed != null -> StateChangeAndOperation.Update(processed)
+        state != null && processed == null -> StateChangeAndOperation.Delete(state)
+        else -> StateChangeAndOperation.Noop
+    }
+
+    private fun filterReplayEvents(
+        allConsumerInputs: List<Record<K, E>>,
+        mediatorState: MediatorState,
+        asyncOutputs: MutableMap<Record<K, E>, MutableList<MediatorMessage<Any>>>
+    ) = allConsumerInputs.filter { inputEvent ->
+        val replayEvents = mediatorReplayService.getReplayEvents(inputEvent, mediatorState)
+        if (replayEvents == null) {
+            true
+        } else {
+            asyncOutputs.addOutputs(inputEvent, replayEvents)
+            false
+        }
+    }
+
+    private fun MutableMap<Record<K, E>, MutableList<MediatorMessage<Any>>>.addOutputs(
+        inputEvent: Record<K, E>,
+        asyncEvents: List<MediatorMessage<Any>>
+    ) =  computeIfAbsent(inputEvent) { mutableListOf() }.addAll(asyncEvents)
+
 
     private fun createNewMediatorState(): MediatorState {
         return MediatorState.newBuilder()
