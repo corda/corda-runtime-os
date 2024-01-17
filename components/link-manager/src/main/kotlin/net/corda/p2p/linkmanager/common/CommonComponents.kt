@@ -91,6 +91,7 @@ internal class CommonComponents(
             ),
             schemaRegistry,
             sessionEncryptionOpsClient,
+            membershipGroupReaderProvider,
         )
     } else {
         SessionManagerImpl(
