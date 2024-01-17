@@ -10,7 +10,7 @@ import net.corda.messaging.api.mediator.config.MediatorConsumerConfig
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.GroupAllocator
-import net.corda.messaging.mediator.MediatorState
+import net.corda.messaging.mediator.MediatorSubscriptionState
 import net.corda.messaging.mediator.MultiSourceEventMediatorImpl
 import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.messaging.mediator.metrics.EventMediatorMetrics
@@ -41,7 +41,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     private val groupAllocator: GroupAllocator,
     private val taskManager: TaskManager,
     private val messageRouter: MessageRouter,
-    private val mediatorState: MediatorState,
+    private val mediatorSubscriptionState: MediatorSubscriptionState,
     private val eventProcessor: EventProcessor<K, S, E>,
     private val stateManagerHelper: StateManagerHelper<S>
 ) {
@@ -65,7 +65,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     fun processTopic(consumerFactory: MediatorConsumerFactory, consumerConfig: MediatorConsumerConfig<K, E>) {
         var attempts = 0
         var consumer: MediatorConsumer<K, E>? = null
-        while (!mediatorState.stopped()) {
+        while (!mediatorSubscriptionState.stopped()) {
             attempts++
             try {
                 if (consumer == null) {

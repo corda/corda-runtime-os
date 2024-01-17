@@ -104,9 +104,10 @@ internal class SandboxGroupContextCacheImpl private constructor(
                 }
 
                 logger.info(
-                    "Evicting {} sandbox for {} [{}]",
+                    "Evicting {} sandbox for {} holdingId {} [{}]",
                     key.sandboxGroupType,
                     key.holdingIdentity.x500Name,
+                    key.holdingIdentity.shortHash,
                     cause.name
                 )
             }

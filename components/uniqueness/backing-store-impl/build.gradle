@@ -74,7 +74,7 @@ dependencies {
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 
-    backingStoreBenchmarkRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    backingStoreBenchmarkRuntimeOnly libs.log4j.slf4j
 
     // For JSON serialization to DB
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"

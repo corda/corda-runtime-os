@@ -32,5 +32,5 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation libs.slf4j.api
 }

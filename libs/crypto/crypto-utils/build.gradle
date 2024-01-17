@@ -13,6 +13,6 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
 
-    api "org.slf4j:slf4j-api:$slf4jVersion"
+    api libs.slf4j.api
     api libs.bundles.bouncycastle
 }

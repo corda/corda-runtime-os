@@ -26,7 +26,7 @@ interface StateRepository {
      * Transaction should be controlled by the caller.
      *
      * @param connection The JDBC connection used to interact with the database.
-     * @param state State entity to persist.
+     * @param states State entity to persist.
      * @return The collection of keys that were successfully created.
      */
     fun create(connection: Connection, states: Collection<StateEntity>): Collection<String>

@@ -194,7 +194,6 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
         filteredTransactionsAndSignatures: List<FilteredTransactionAndSignatures>
     ) {
         try {
-
             val dependentStateAndRefs = filteredTransactionsAndSignatures.flatMap { (filteredTransaction, _) ->
                 (filteredTransaction.outputStateAndRefs as UtxoFilteredData.Audit<StateAndRef<*>>).values.values
             }.associateBy { it.ref }
