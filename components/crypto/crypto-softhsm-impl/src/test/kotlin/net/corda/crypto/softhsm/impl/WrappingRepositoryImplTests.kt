@@ -164,6 +164,37 @@ class WrappingRepositoryImplTests {
         assertThat(keys.first()).isEqualTo(wrappingKeyInfo)
     }
 
+    @Test
+    fun `find a wrapping key using its UUID`() {
+        val wrappingKeyInfo = WrappingKeyInfo(
+            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch", "alias1")
+        val newId  = UUID.randomUUID()
+        val savedWrappingKey = makeWrappingKeyEntity(newId, wrappingKeyInfo)
+        val em = mock<EntityManager> {
+            on { createQuery(any(), eq(WrappingKeyEntity::class.java)) } doAnswer {
+                mock {
+                    on { setParameter(any<String>(), any()) } doReturn it
+                    on { setMaxResults(any()) } doReturn it
+                    on { resultStream } doReturn listOf(savedWrappingKey).stream()
+
+                }
+            }
+        }
+
+        val repo = WrappingRepositoryImpl(
+            mock {
+                on { createEntityManager() } doReturn em
+            },
+            "test"
+        )
+
+        // Alias here doesn't matter, mock<EntityManager> returns savedWrappingKey regardless the alias.
+        // There is an integration test dealing with the database where it checks for the alias.
+        val foundKey = repo.getKeyById(newId)
+
+        assertThat(foundKey).isEqualTo(wrappingKeyInfo)
+    }
+
 
     private fun makeWrappingKeyEntity(
         newId: UUID,
