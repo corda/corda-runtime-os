@@ -1,5 +1,6 @@
 package net.corda.messaging.mediator.processor
 
+import net.corda.data.messaging.mediator.MediatorState
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.statemanager.api.State
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -21,10 +22,13 @@ import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import kotlin.test.assertContains
+import kotlin.test.assertNotNull
 
 @Execution(ExecutionMode.SAME_THREAD)
 class EventProcessorTest {
@@ -36,7 +40,8 @@ class EventProcessorTest {
     private lateinit var stateAndEventProcessor: StateAndEventProcessor<String, String, String>
     private lateinit var eventProcessor: EventProcessor<String, String, String>
 
-    private val state: State = mock()
+    private val state1: State = mock()
+    private val state2: State = mock()
     private val asyncMessage: String = "ASYNC_PAYLOAD"
     private val syncMessage: String = "SYNC_PAYLOAD"
 
@@ -58,12 +63,19 @@ class EventProcessorTest {
         }
         eventMediatorConfig = buildStringTestConfig()
 
+        whenever(stateAndEventProcessor.onNext(anyOrNull(), any())).thenAnswer {
+            Response(
+                StateAndEventProcessor.State("bar", null), listOf(
+                    Record("", "key", asyncMessage),
+                    Record("", "key", syncMessage)
+                ))
+        }
+
         eventProcessor = EventProcessor(eventMediatorConfig, stateManagerHelper, messageRouter, mediatorReplayService)
     }
 
     @Test
     fun `processed record triggers 2 successive synchronous calls which are processed immediately, each input produces 1 async output`() {
-
         var counter = 0
         whenever(stateAndEventProcessor.onNext(anyOrNull(), any())).thenAnswer {
             if (counter == 3) {
@@ -78,7 +90,7 @@ class EventProcessorTest {
         }
         whenever(client.send(any())).thenReturn(MediatorMessage(syncMessage))
 
-        eventProcessor.processEvents(mapOf("key" to getStringRecords(1, "key")), mapOf("key" to state))
+        eventProcessor.processEvents(mapOf("key" to getStringRecords(1, "key")), mapOf("key" to state1))
 
         verify(stateManagerHelper, times(1)).deserializeValue(any())
         verify(stateAndEventProcessor, times(4)).onNext(anyOrNull(), any())
@@ -89,21 +101,118 @@ class EventProcessorTest {
 
     @Test
     fun `when the rpc client fails to send a message, a state is output with the correct metadata key filled in`() {
-        whenever(stateAndEventProcessor.onNext(anyOrNull(), any())).thenAnswer {
-            Response(
-                StateAndEventProcessor.State("bar", null), listOf(
-                Record("", "key", asyncMessage),
-                Record("", "key", syncMessage)
-            ))
-        }
+
         whenever(client.send(any())).thenThrow(CordaMessageAPIIntermittentException("baz"))
         whenever(stateManagerHelper.failStateProcessing(any(), anyOrNull())).thenReturn(mock())
 
-        val outputMap = eventProcessor.processEvents(mapOf("key" to getStringRecords(1, "key")), mapOf("key" to state))
+        val outputMap = eventProcessor.processEvents(mapOf("key" to getStringRecords(1, "key")), mapOf("key" to state1))
 
         val output = outputMap["key"]
         assertEquals(emptyList<MediatorMessage<Any>>(), output?.asyncOutputs)
         verify(stateManagerHelper).failStateProcessing(any(), anyOrNull())
+    }
+
+    @Test
+    fun `When all inputs are replays, processor is not executed and replayed outputs are returned`() {
+        val expectedOutputPerInput = MediatorMessage<Any>("payload")
+        val recordCount = 2
+        whenever(mediatorReplayService.getReplayEvents<String, String>(anyOrNull(), anyOrNull())).thenReturn(listOf(expectedOutputPerInput))
+
+        val group = mapOf(
+            "key1" to getStringRecords(recordCount, "key1"),
+            "key2" to getStringRecords(recordCount, "key2")
+        )
+        val states = mapOf(
+            "key1" to state1,
+            "key2" to state2
+        )
+        val result = eventProcessor.processEvents(group, states)
+        assertNotNull(result)
+        assertEquals(group.keys.size, result.size)
+        result.values.forEach {
+            assertEquals(StateChangeAndOperation.Noop, it.stateChangeAndOperation)
+            assertEquals(recordCount, it.asyncOutputs.size)
+            assertContains(it.asyncOutputs, expectedOutputPerInput)
+        }
+        verify(stateManagerHelper, times(2)).deserializeValue(any())
+        verify(stateAndEventProcessor, times(0)).onNext(anyOrNull(), any())
+        verify(messageRouter, times(0)).getDestination(any())
+        verify(client, times(0)).send(any())
+        verify(stateManagerHelper, times(0)).createOrUpdateState(any(), anyOrNull(), any(), anyOrNull())
+    }
+
+    @Test
+    fun `When some keys are replays, processor is executed for non replays and replayed outputs are returned for replayed inputs`() {
+        val expectedOutputPerInput = MediatorMessage<Any>("payload")
+        val recordCount = 2
+        val mediatorState2 = mock<MediatorState>()
+        whenever(stateManagerHelper.deserializeMediatorState(state2)).thenReturn(mediatorState2)
+        whenever(mediatorReplayService.getReplayEvents<String, String>(anyOrNull(), eq(mediatorState2))).thenReturn(listOf(expectedOutputPerInput))
+
+        val group = mapOf(
+            "key1" to getStringRecords(recordCount, "key1"),
+            "key2" to getStringRecords(recordCount, "key2")
+        )
+        val states = mapOf(
+            "key1" to state1,
+            "key2" to state2
+        )
+        val result = eventProcessor.processEvents(group, states)
+        assertNotNull(result)
+        assertEquals(group.keys.size, result.size)
+
+        result["key1"].let {
+            assertNotNull(it)
+            assertEquals(StateChangeAndOperation.Delete::class.java, it.stateChangeAndOperation::class.java)
+            assertEquals(recordCount, it.asyncOutputs.size)
+            assertEquals(it.asyncOutputs.first().payload, asyncMessage)
+        }
+        result["key2"].let {
+            assertNotNull(it)
+            assertEquals(StateChangeAndOperation.Noop, it.stateChangeAndOperation)
+            assertEquals(recordCount, it.asyncOutputs.size)
+            assertContains(it.asyncOutputs, expectedOutputPerInput)
+        }
+        verify(stateManagerHelper, times(2)).deserializeValue(any())
+        verify(stateAndEventProcessor, times(2)).onNext(anyOrNull(), any())
+        verify(messageRouter, times(6)).getDestination(any())
+        verify(client, times(2)).send(any())
+        verify(stateManagerHelper, times(1)).createOrUpdateState(any(), anyOrNull(), any(), anyOrNull())
+    }
+
+    @Test
+    fun `When some records in same key are replays, processor is executed for non replays and replayed outputs are returned`() {
+        val expectedOutputPerInput = MediatorMessage<Any>("payload")
+        val mediatorState1 = mock<MediatorState>()
+        val recordCount = 2
+        val records = getStringRecords(recordCount, "key1")
+
+        whenever(stateManagerHelper.deserializeMediatorState(state1)).thenReturn(mediatorState1)
+        whenever(mediatorReplayService.getReplayEvents(eq(records.first()), eq(mediatorState1))).thenReturn(listOf(expectedOutputPerInput))
+
+        val group = mapOf(
+            "key1" to records,
+        )
+        val states = mapOf(
+            "key1" to state1
+        )
+        val result = eventProcessor.processEvents(group, states)
+        assertNotNull(result)
+        assertEquals(group.keys.size, 1)
+
+        result["key1"].let { eventProcessingOutput ->
+            assertNotNull(eventProcessingOutput)
+            assertEquals(StateChangeAndOperation.Delete::class.java, eventProcessingOutput.stateChangeAndOperation::class.java)
+            assertEquals(2, eventProcessingOutput.asyncOutputs.size)
+            assertContains(eventProcessingOutput.asyncOutputs, expectedOutputPerInput)
+            assert(eventProcessingOutput.asyncOutputs.any { it.payload ==  asyncMessage} )
+
+        }
+        verify(stateManagerHelper, times(1)).deserializeValue(any())
+        verify(stateAndEventProcessor, times(1)).onNext(anyOrNull(), any())
+        verify(messageRouter, times(3)).getDestination(any())
+        verify(client, times(1)).send(any())
+        verify(stateManagerHelper, times(1)).createOrUpdateState(any(), anyOrNull(), any(), anyOrNull())
     }
 
     private fun buildStringTestConfig() = EventMediatorConfig(
