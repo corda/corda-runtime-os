@@ -52,11 +52,11 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                     state?.metadata
                 )
             }
-            val asyncOutputs = mutableMapOf<Record<K, E>, MutableList<MediatorMessage<Any>>>()
-            val nonReplayConsumerInputs = filterReplayEvents(allConsumerInputs, mediatorState, asyncOutputs)
+            val (nonReplayConsumerInputs, replayOutputs) = getReplayOutputsAndNonReplayInputs(allConsumerInputs, mediatorState)
             if (nonReplayConsumerInputs.isEmpty()) {
-                EventProcessingOutput(asyncOutputs.values.flatten(), StateChangeAndOperation.Noop)
+                EventProcessingOutput(replayOutputs, StateChangeAndOperation.Noop)
             } else {
+                val asyncOutputs = mutableMapOf<Record<K, E>, MutableList<MediatorMessage<Any>>>()
                 val processed = try {
                     nonReplayConsumerInputs.onEach { consumerInputEvent ->
                         val queue = ArrayDeque(listOf(consumerInputEvent))
@@ -81,7 +81,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                 }
 
                 val stateChangeAndOperation = stateChangeAndOperation(state, processed)
-                EventProcessingOutput(asyncOutputs.values.flatten(), stateChangeAndOperation)
+                EventProcessingOutput(replayOutputs + asyncOutputs.values.flatten(), stateChangeAndOperation)
             }
         }
     }
@@ -96,15 +96,17 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         else -> StateChangeAndOperation.Noop
     }
 
-    private fun filterReplayEvents(
+    private fun getReplayOutputsAndNonReplayInputs(
         allConsumerInputs: List<Record<K, E>>,
-        mediatorState: MediatorState,
-        asyncOutputs: MutableMap<Record<K, E>, MutableList<MediatorMessage<Any>>>
-    ) = allConsumerInputs.filter { inputEvent ->
-        val replayEvents = mediatorReplayService.getReplayEvents(inputEvent, mediatorState)?.let {
-            asyncOutputs.addOutputs(inputEvent, it)
+        mediatorState: MediatorState
+    ): Pair<List<Record<K, E>>, List<MediatorMessage<Any>>>  {
+        val cachedOutputs = mutableListOf<MediatorMessage<Any>>()
+        val nonReplayOutputs = allConsumerInputs.filter { inputEvent ->
+            mediatorReplayService.getReplayEvents(inputEvent, mediatorState)?.let {
+                cachedOutputs.addAll(it)
+            } == null
         }
-        replayEvents == null
+        return Pair(nonReplayOutputs, cachedOutputs)
     }
 
     private fun MutableMap<Record<K, E>, MutableList<MediatorMessage<Any>>>.addOutputs(
