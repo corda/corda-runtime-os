@@ -52,9 +52,11 @@ dependencies {
     implementation 'net.corda:corda-topic-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'org.slf4j:slf4j-api'
+    implementation "io.micrometer:micrometer-registry-prometheus:$micrometerVersion"
 
     testImplementation project(':testing:db-testkit')
     testImplementation project(':testing:persistence-testkit')
+    testImplementation project(':testing:sandboxes-testkit')
 
     testImplementation project(':libs:flows:session-manager-impl')
     testImplementation project(':libs:lifecycle:lifecycle-test-impl')

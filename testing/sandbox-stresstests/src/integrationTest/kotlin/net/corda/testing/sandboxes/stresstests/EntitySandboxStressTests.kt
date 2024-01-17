@@ -7,6 +7,8 @@ import net.corda.persistence.common.EntitySandboxServiceFactory
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
+import net.corda.testing.sandboxes.stresstests.utils.StressTestType
+import net.corda.testing.sandboxes.stresstests.utils.TestBase
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -23,7 +25,7 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Path
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
@@ -47,7 +49,7 @@ class EntitySandboxStressTests : TestBase() {
         this.bundleContext = bundleContext
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            virtualNode = setup.fetchService(TIMEOUT_MILLIS)
+            virtualNodeService = setup.fetchService(TIMEOUT_MILLIS)
             cpiInfoReadService = setup.fetchService(TIMEOUT_MILLIS)
             cpkReadService = setup.fetchService(TIMEOUT_MILLIS)
             virtualNodeInfoReadService = setup.fetchService(TIMEOUT_MILLIS)
@@ -65,7 +67,7 @@ class EntitySandboxStressTests : TestBase() {
         // create db connection manager and sandbox service
         dbConnectionManager = FakeDbConnectionManager(connections, schemaName)
         entitySandboxService = EntitySandboxServiceFactory().create(
-            virtualNode.sandboxGroupContextComponent,
+            virtualNodeService.sandboxGroupContextComponent,
             cpkReadService,
             virtualNodeInfoReadService,
             dbConnectionManager
@@ -81,16 +83,22 @@ class EntitySandboxStressTests : TestBase() {
     @EnumSource(StressTestType::class)
     @Timeout(value = 1, unit = TimeUnit.MINUTES)
     fun `create entity sandboxes - no caching`(testType: StressTestType) {
-        // set cache size to 0
-        virtualNode.sandboxGroupContextComponent.resizeCache(SandboxGroupType.PERSISTENCE, 0)
-
         prepareTest(testType)
+
+        // track evictions
+        var evictions = 0
+        virtualNodeService.sandboxGroupContextComponent.addEvictionListener(SandboxGroupType.PERSISTENCE) {
+            evictions++
+            println("Flow sandbox for virtual node ${it.holdingIdentity.shortHash} has been evicted")
+        }
 
         vNodes.forEach {
             // create the sandbox
             val sandbox = getOrCreateSandbox(entitySandboxService::get, it)
             println("Create sandbox for vNode ${it.holdingIdentity.shortHash}\n${sandbox.sandboxGroup.id}")
         }
+
+        assertThat(evictions).isEqualTo(testType.numSandboxes)
     }
 
     @ParameterizedTest
@@ -104,18 +112,18 @@ class EntitySandboxStressTests : TestBase() {
     @EnumSource(value = StressTestType::class, names = ["ONE_HUNDRED_SANDBOXES", "TWO_HUNDRED_FIFTY_SANDBOXES"])
     @Timeout(value = 1, unit = TimeUnit.MINUTES)
     fun `retrieve sandboxes from cache - size 10`(testType: StressTestType) {
-        retrieveSandboxes(testType, 10, 90)
+        retrieveSandboxes(testType, 10, testType.numSandboxes - 10)
     }
 
     private fun retrieveSandboxes(testType: StressTestType, cacheSize: Long, numberOfEvictions: Int) {
         // set cache size
-        virtualNode.sandboxGroupContextComponent.resizeCache(SandboxGroupType.PERSISTENCE, cacheSize)
+        virtualNodeService.sandboxGroupContextComponent.resizeCache(SandboxGroupType.PERSISTENCE, cacheSize)
 
         prepareTest(testType)
 
         // track evictions
         var evictions = 0
-        virtualNode.sandboxGroupContextComponent.addEvictionListener(SandboxGroupType.PERSISTENCE) {
+        virtualNodeService.sandboxGroupContextComponent.addEvictionListener(SandboxGroupType.PERSISTENCE) {
             evictions++
             println("Virtual node ${it.holdingIdentity.shortHash} has been evicted")
         }
@@ -126,17 +134,18 @@ class EntitySandboxStressTests : TestBase() {
             println("Create sandbox for vNode ${it.holdingIdentity.shortHash}\n${sandbox.sandboxGroup.id}")
         }
 
-        assertThat(evictions==numberOfEvictions)
+        assertThat(evictions).isEqualTo(numberOfEvictions)
 
         // retrieve all sandboxes from the cache
+        val sandboxes = mutableSetOf<UUID>()
         vNodes.forEach {
             val sandbox = getOrCreateSandbox(entitySandboxService::get, it)
+            sandboxes.add(sandbox.sandboxGroup.id)
             println("Retrieving sandbox for vNode ${it.holdingIdentity.shortHash}\n${sandbox.sandboxGroup.id}")
 
             // TODO: should probably exercise the sandbox somehow
         }
 
-        // no evictions should have happened when retrieving the sandboxes
-        assertThat(evictions==numberOfEvictions * 2)
+        assertThat(sandboxes.size).isEqualTo(testType.numSandboxes)
     }
 }

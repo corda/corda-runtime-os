@@ -1,7 +1,10 @@
-package net.corda.testing.sandboxes.stresstests
+package net.corda.testing.sandboxes.stresstests.utils
 
+import io.micrometer.core.instrument.Metrics
+import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics
+import io.micrometer.prometheus.PrometheusConfig
+import io.micrometer.prometheus.PrometheusMeterRegistry
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
@@ -10,6 +13,9 @@ import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
+import org.assertj.core.api.Assertions
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.osgi.framework.BundleContext
 
@@ -21,7 +27,7 @@ open class TestBase {
     @RegisterExtension
     val lifecycle = EachTestLifecycle()
 
-    lateinit var virtualNode: VirtualNodeService
+    lateinit var virtualNodeService: VirtualNodeService
     lateinit var cpiInfoReadService: CpiInfoReadService
     lateinit var flowSandboxService: FlowSandboxService
 
@@ -29,10 +35,37 @@ open class TestBase {
     
     lateinit var vNodes: MutableList<VirtualNodeInfo>
 
+    lateinit var prometheusMeterRegistry: PrometheusMeterRegistry
+
+    @BeforeEach
+    fun setUpMetrics() {
+        prometheusMeterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
+        JvmMemoryMetrics().bindTo(prometheusMeterRegistry)
+        Metrics.globalRegistry.add(prometheusMeterRegistry)
+    }
+
+    @AfterEach
+    fun cleanUpMetrics() {
+//        println(prometheusMeterRegistry.scrape())
+
+        prometheusMeterRegistry.forEachMeter {
+            prometheusMeterRegistry.remove(it)
+        }
+
+        // Remove every meter created by the Corda code, so it doesn't pollute the data from the following test
+        Metrics.globalRegistry.meters.forEach {
+            Metrics.globalRegistry.remove(it)
+        }
+
+        Metrics.removeRegistry(prometheusMeterRegistry)
+
+        Assertions.assertThat(Metrics.globalRegistry.registries.size == 0)
+    }
+
     fun createVnodes(quantity: Int) {
         vNodes = mutableListOf()
         repeat(quantity) {
-            vNodes.add(virtualNode.load(Resources.EXTENDABLE_CPB))
+            vNodes.add(virtualNodeService.load(Resources.EXTENDABLE_CPB))
         }
     }
 
