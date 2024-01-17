@@ -33,13 +33,13 @@ import javax.persistence.EntityManager
 import javax.persistence.Query
 import javax.persistence.Tuple
 
-@Suppress("TooManyFunctions")
 /**
  * Reads and writes ledger transaction data to and from the virtual node vault database.
  * The component only exists to be created inside a PERSISTENCE sandbox. We denote it
  * as "corda.marker.only" to force the sandbox to create it, despite it implementing
  * only the [UsedByPersistence] marker interface.
  */
+@Suppress("TooManyFunctions")
 @Component(
     service = [ UtxoRepository::class, UsedByPersistence::class ],
     property = [ CORDA_MARKER_ONLY_SERVICE ],
@@ -359,7 +359,6 @@ class UtxoRepositoryImpl @Activate constructor(
         leaves: List<Int>,
         hashes: List<String>
     ): String {
-
         // Generate an ID by concatenating transaction ID - group index - leaves
         val merkleProofId = "$transactionId-$groupIndex-${leaves.joinToString(separator = ",")}"
 

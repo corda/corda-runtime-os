@@ -572,7 +572,6 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `persist and fetch merkle proof`() {
-
         // 1. Create and persist a simple signed transaction with 2 outputs
         val signedTx = createSignedTransaction()
         val signedTxReader = TestUtxoTransactionReader(

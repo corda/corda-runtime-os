@@ -96,7 +96,6 @@ interface UtxoLedgerPersistenceService {
         groupIndex: Int
     ): List<MerkleProof>
 
-
     /**
      * Persist a [UtxoSignedTransaction] to the store.
      *

@@ -21,7 +21,6 @@ class UtxoFindMerkleProofsRequestHandler(
 ) : RequestHandler {
 
     override fun execute(): List<Record<String, FlowEvent>> {
-
         val resultList = persistenceService.findMerkleProofs(
             findMerkleProofs.transactionId,
             findMerkleProofs.groupIndex

@@ -17,7 +17,6 @@ class UtxoPersistMerkleProofIfDoesNotExistRequestHandler(
 ) : RequestHandler {
 
     override fun execute(): List<Record<*, *>> {
-
         persistenceService.persistMerkleProof(
             persistSignedGroupParametersIfDoNotExist.transactionId,
             persistSignedGroupParametersIfDoNotExist.groupIndex,
