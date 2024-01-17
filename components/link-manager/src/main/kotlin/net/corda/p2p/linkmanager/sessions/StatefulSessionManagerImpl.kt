@@ -3,13 +3,15 @@ package net.corda.p2p.linkmanager.sessions
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cache.caffeine.CacheFactoryImpl
+import net.corda.crypto.client.SessionEncryptionOpsClient
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.SimpleDominoTile
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.sessions.metadata.InboundSessionMetadata
@@ -146,6 +148,9 @@ internal class StatefulSessionManagerImpl(
     private fun <T> processInboundSessionMessages(messages: List<Pair<T, LinkInMessage?>>): Collection<Pair<T, LinkOutMessage?>> {
         val messageContexts = messages.mapNotNull {
             it.second?.payload?.getSessionIdIfInboundSessionMessage(it.first)
+        }
+        if (messageContexts.isEmpty()) {
+            return emptyList()
         }
         val states = stateManager.get(messageContexts.map { it.sessionId })
         val results = messageContexts.map {
@@ -335,5 +340,16 @@ internal class StatefulSessionManagerImpl(
         }
     }
 
-    override val dominoTile = SimpleDominoTile(this::class.java.simpleName, coordinatorFactory)
+    override val dominoTile = ComplexDominoTile(
+        this::class.java.simpleName,
+        coordinatorFactory,
+        dependentChildren = setOf(
+            stateManager.name,
+            sessionManagerImpl.dominoTile.coordinatorName,
+            LifecycleCoordinatorName.forComponent<SessionEncryptionOpsClient>(),
+        ),
+        managedChildren = setOf(
+            sessionManagerImpl.dominoTile.toNamedLifecycle(),
+        ),
+    )
 }
