@@ -45,10 +45,10 @@ import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 /**
- * Tests for the Crypto RPC service
+ * Tests for the Crypto REST service
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class CryptoRPCSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
+class CryptoRestSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
     private val httpClient: HttpClient = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(30))
         .build()
@@ -123,7 +123,7 @@ class CryptoRPCSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
     }
 
     @Test
-    fun `RPC endpoint accepts a request and returns back a response`() {
+    fun `REST endpoint accepts a request and returns back a response`() {
         val url = "${System.getProperty("cryptoWorkerUrl")}api/$PLATFORM_VERSION/crypto"
 
         logger.info("crypto url: $url")
@@ -152,7 +152,7 @@ class CryptoRPCSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
     }
 
     @Test
-    fun `RPC endpoint accepts a request and returns back an error response with 200 status`() {
+    fun `REST endpoint accepts a request and returns back an error response with 200 status`() {
         val url = "${System.getProperty("cryptoWorkerUrl")}api/$PLATFORM_VERSION/crypto"
 
         logger.info("crypto url: $url")
@@ -178,7 +178,7 @@ class CryptoRPCSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
     }
 
     @Test
-    fun `RPC endpoint does not accept request and returns back a 500 error`() {
+    fun `REST endpoint does not accept request and returns back a 500 error`() {
         val url = "${System.getProperty("cryptoWorkerUrl")}api/$PLATFORM_VERSION/crypto"
 
         logger.info("crypto url: $url")

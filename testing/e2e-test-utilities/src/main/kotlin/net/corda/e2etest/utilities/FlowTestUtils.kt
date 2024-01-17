@@ -12,16 +12,16 @@ import org.junit.jupiter.api.TestInfo
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
-const val SMOKE_TEST_CLASS_NAME = "com.r3.corda.testing.smoketests.flow.RpcSmokeTestFlow"
+const val SMOKE_TEST_CLASS_NAME = "com.r3.corda.testing.smoketests.flow.RestSmokeTestFlow"
 
-const val RPC_FLOW_STATUS_SUCCESS = "COMPLETED"
-const val RPC_FLOW_STATUS_FAILED = "FAILED"
+const val REST_FLOW_STATUS_SUCCESS = "COMPLETED"
+const val REST_FLOW_STATUS_FAILED = "FAILED"
 
 private val RETRY_TIMEOUT = 6.minutes
 
-fun startRpcFlow(
+fun startRestFlow(
     holdingId: String,
-    args: RpcSmokeTestInput,
+    args: RestSmokeTestInput,
     expectedCode: Int = 202,
     requestId: String = UUID.randomUUID().toString()
 ): String {
@@ -44,15 +44,15 @@ fun startRpcFlow(
     }
 }
 
-fun startRpcFlow(
+fun startRestFlow(
     holdingId: String,
     args: Map<String, Any>,
     flowName: String,
     expectedCode: Int = 202,
     requestId: String = UUID.randomUUID().toString()
-) = DEFAULT_CLUSTER.startRpcFlow(holdingId, args, flowName, expectedCode, requestId)
+) = DEFAULT_CLUSTER.startRestFlow(holdingId, args, flowName, expectedCode, requestId)
 
-fun ClusterInfo.startRpcFlow(
+fun ClusterInfo.startRestFlow(
     holdingId: String,
     args: Map<String, Any>,
     flowName: String,
@@ -78,12 +78,12 @@ fun ClusterInfo.startRpcFlow(
     }
 }
 
-fun awaitRpcFlowFinished(
+fun awaitRestFlowFinished(
     holdingId: String,
     requestId: String
-) = DEFAULT_CLUSTER.awaitRpcFlowFinished(holdingId, requestId)
+) = DEFAULT_CLUSTER.awaitRestFlowFinished(holdingId, requestId)
 
-fun ClusterInfo.awaitRpcFlowFinished(holdingId: String, requestId: String): FlowStatus {
+fun ClusterInfo.awaitRestFlowFinished(holdingId: String, requestId: String): FlowStatus {
     return cluster {
         ObjectMapper().readValue(
             assertWithRetryIgnoringExceptions {
@@ -91,8 +91,8 @@ fun ClusterInfo.awaitRpcFlowFinished(holdingId: String, requestId: String): Flow
                 timeout(RETRY_TIMEOUT)
                 condition {
                     it.code == 200 &&
-                            (it.toJson()["flowStatus"].textValue() == RPC_FLOW_STATUS_SUCCESS ||
-                                    it.toJson()["flowStatus"].textValue() == RPC_FLOW_STATUS_FAILED)
+                            (it.toJson()["flowStatus"].textValue() == REST_FLOW_STATUS_SUCCESS ||
+                                    it.toJson()["flowStatus"].textValue() == REST_FLOW_STATUS_FAILED)
                 }
             }.body, FlowStatus::class.java
         )
@@ -112,8 +112,8 @@ fun ClusterInfo.awaitRestFlowResult(holdingId: String, requestId: String): FlowR
                 timeout(RETRY_TIMEOUT)
                 condition {
                     it.code == 200 &&
-                            (it.toJson()["flowStatus"].textValue() == RPC_FLOW_STATUS_SUCCESS ||
-                                    it.toJson()["flowStatus"].textValue() == RPC_FLOW_STATUS_FAILED)
+                            (it.toJson()["flowStatus"].textValue() == REST_FLOW_STATUS_SUCCESS ||
+                                    it.toJson()["flowStatus"].textValue() == REST_FLOW_STATUS_FAILED)
                 }
             }.body
         )
@@ -133,6 +133,7 @@ private fun JsonNode.handlingNulls(): JsonNode? {
     }
 }
 
+@Suppress("unused")
 fun getFlowStatus(
     holdingId: String,
     requestId: String,
@@ -160,7 +161,8 @@ private fun JsonNode.asFlowError(): FlowError {
     return flowError
 }
 
-fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
+@Suppress("unused")
+fun awaitMultipleRestFlowFinished(holdingId: String, expectedFlowCount: Int) {
     return DEFAULT_CLUSTER.cluster {
         assertWithRetryIgnoringExceptions {
             command { multipleFlowStatus(holdingId) }
@@ -169,8 +171,8 @@ fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
                 val json = it.toJson()
                 val flowStatuses = json["flowStatusResponses"]
                 val allStatusComplete = flowStatuses.map { flowStatus ->
-                    flowStatus["flowStatus"].textValue() == RPC_FLOW_STATUS_SUCCESS ||
-                            flowStatus["flowStatus"].textValue() == RPC_FLOW_STATUS_FAILED
+                    flowStatus["flowStatus"].textValue() == REST_FLOW_STATUS_SUCCESS ||
+                            flowStatus["flowStatus"].textValue() == REST_FLOW_STATUS_FAILED
                 }.all { true }
                 it.code == 200 && flowStatuses.size() == expectedFlowCount && allStatusComplete
             }
@@ -178,6 +180,7 @@ fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
     }
 }
 
+@Suppress("unused")
 fun assertStatusFilter(
     holdingId: String,
     expectedCode: Int,
@@ -185,7 +188,7 @@ fun assertStatusFilter(
 ) = DEFAULT_CLUSTER.assertStatusFilter(holdingId, expectedCode, status)
 
 fun ClusterInfo.assertStatusFilter(holdingId: String, expectedCode: Int, status: String?) {
-    return DEFAULT_CLUSTER.cluster {
+    return cluster {
         assertWithRetryIgnoringExceptions {
             command { multipleFlowStatus(holdingId, status) }
             timeout(RETRY_TIMEOUT)
@@ -196,6 +199,7 @@ fun ClusterInfo.assertStatusFilter(holdingId: String, expectedCode: Int, status:
     }
 }
 
+@Suppress("unused")
 fun getFlowClasses(
     holdingId: String
 ) = DEFAULT_CLUSTER.getFlowClasses(holdingId)
@@ -213,7 +217,7 @@ fun ClusterInfo.getFlowClasses(holdingId: String): List<String> {
     }
 }
 
-class RpcSmokeTestInput {
+class RestSmokeTestInput {
     var command: String? = null
     var data: Map<String, String>? = null
 }
