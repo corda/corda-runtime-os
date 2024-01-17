@@ -94,7 +94,9 @@ class Sender(
                                 }
                             }
                         }
+                        logger.info("Topic name is ${commonConfig.parameters.sendTopic}")
                         val records = messagesWithIds.map { (messageMetaData, message) ->
+                            logger.info("Going to publish message with ID ${messageMetaData.messageId}")
                             Record(commonConfig.parameters.sendTopic, messageMetaData.messageId, message)
                         }
                         stopLock.read {
