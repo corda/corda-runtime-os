@@ -48,6 +48,54 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
     }
 
     @Test
+    fun `different privacy salts are created from different flow ids`() {
+        val transaction1 = wireTransactionFactory.create(
+            listOf(
+                listOf(canonicalJson.toByteArray()),
+            ),
+            privacySaltProviderService.generatePrivacySalt()
+        )
+
+        val newFlowId = "5e3fb677-6b03-4a0b-8ff4-e2a2465143a7"
+        val checkpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
+        whenever(checkpoint.flowId).thenReturn(newFlowId)
+
+        val transaction2 = wireTransactionFactory.create(
+            listOf(
+                listOf(canonicalJson.toByteArray()),
+            ),
+            privacySaltProviderService.generatePrivacySalt()
+        )
+
+        assertThat(transaction1.id).isNotEqualTo(transaction2.id)
+        assertThat(transaction1.privacySalt).isNotEqualTo(transaction2.privacySalt)
+    }
+
+    @Test
+    fun `different privacy salts are created from different suspendCounts`() {
+        val transaction1 = wireTransactionFactory.create(
+            listOf(
+                listOf(canonicalJson.toByteArray()),
+            ),
+            privacySaltProviderService.generatePrivacySalt()
+        )
+
+        val newSuspendCount = 50
+        val checkpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
+        whenever(checkpoint.suspendCount).thenReturn(newSuspendCount)
+
+        val transaction2 = wireTransactionFactory.create(
+            listOf(
+                listOf(canonicalJson.toByteArray()),
+            ),
+            privacySaltProviderService.generatePrivacySalt()
+        )
+
+        assertThat(transaction1.id).isNotEqualTo(transaction2.id)
+        assertThat(transaction1.privacySalt).isNotEqualTo(transaction2.privacySalt)
+    }
+
+    @Test
     fun `Creating a very simple WireTransaction`() {
         wireTransactionFactory.create(
             listOf(
