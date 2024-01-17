@@ -11,6 +11,7 @@ import net.corda.messaging.api.mediator.factory.MultiSourceEventMediatorFactory
 import net.corda.messaging.mediator.GroupAllocator
 import net.corda.messaging.mediator.MultiSourceEventMediatorImpl
 import net.corda.messaging.mediator.StateManagerHelper
+import net.corda.messaging.mediator.processor.MediatorReplayService
 import net.corda.taskmanager.TaskManagerFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -21,15 +22,17 @@ import java.util.UUID
 class MultiSourceEventMediatorFactoryImpl(
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    private val taskManagerFactory: TaskManagerFactory
+    private val taskManagerFactory: TaskManagerFactory,
+    private val mediatorReplayService: MediatorReplayService
 ) : MultiSourceEventMediatorFactory {
 
     @Activate
     constructor(
         @Reference(service = CordaAvroSerializationFactory::class) cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-        @Reference(service = LifecycleCoordinatorFactory::class) lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+        @Reference(service = LifecycleCoordinatorFactory::class) lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+        @Reference(service = MediatorReplayService::class) mediatorReplayService: MediatorReplayService
     ) : this(
-        cordaAvroSerializationFactory, lifecycleCoordinatorFactory, TaskManagerFactory.INSTANCE
+        cordaAvroSerializationFactory, lifecycleCoordinatorFactory, TaskManagerFactory.INSTANCE, mediatorReplayService
     )
 
     override fun <K : Any, S : Any, E : Any> create(
@@ -53,7 +56,8 @@ class MultiSourceEventMediatorFactoryImpl(
         eventMediatorConfig.clientFactories,
         eventMediatorConfig.messageRouterFactory,
         GroupAllocator(),
-        stateManagerHelper
+        stateManagerHelper,
+        mediatorReplayService
     )
 
     private fun <E : Any, K : Any, S : Any> createLifecycleCoordinator(
