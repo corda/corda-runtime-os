@@ -37,7 +37,10 @@ internal class VirtualNodeSchemaHandler(
             val sql = when (virtualNodeSchemaRequest.dbType) {
                 DbTypes.CRYPTO, DbTypes.UNIQUENESS -> {
                     val changelog = getChangelog(virtualNodeSchemaRequest.dbType)
-                    buildSqlWithStringWriter(connection, changelog)
+                    StringWriter().use { writer ->
+                        schemaMigrator.createUpdateSqlOffline(changelog, writer)
+                        writer.toString()
+                    }
                 }
 
                 DbTypes.VAULT -> {

@@ -69,6 +69,23 @@ interface LiquibaseSchemaMigrator {
     fun createUpdateSql(datasource: Connection, dbChange: DbChange, controlTablesSchema: String, sql: Writer)
 
     /**
+     * Create update [sql] for an offline connection based on [dbChange]
+     *
+     * @param dbChange
+     * @param sql output
+     */
+    fun createUpdateSqlOffline(dbChange: DbChange, sql: Writer)
+
+    /**
+     * Create update [sql] for an offline connection based on [dbChange]
+     *
+     * @param dbChange
+     * @param controlTablesSchema schema for the databasechangelog tables
+     * @param sql output
+     */
+    fun createUpdateSqlOffline(dbChange: DbChange, controlTablesSchema: String, sql: Writer)
+
+    /**
      * Given the list of dbChange changesets, return a list of these changesets that are not applied in the given datasource.
      *
      * @param datasource the connection of the datasource to compare
