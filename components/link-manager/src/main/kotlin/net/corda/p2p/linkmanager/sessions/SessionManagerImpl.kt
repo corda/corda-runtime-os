@@ -1395,6 +1395,7 @@ internal class SessionManagerImpl(
                     if (error != null) {
                         logger.warn("An exception was thrown when sending a heartbeat message.\nException:", error)
                     } else {
+                        logger.info("Processing heartbeat message to session ${session.sessionId}")
                         recordOutboundHeartbeatMessagesMetric(source, dest)
                     }
                 }
