@@ -6,10 +6,13 @@ import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
 import net.corda.metrics.CordaMetrics
 import net.corda.metrics.CordaMetrics.NOT_APPLICABLE_TAG_VALUE
 import net.corda.virtualnode.HoldingIdentity
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 const val P2P_SUBSYSTEM = "p2p"
 const val SESSION_MESSAGE_TYPE = "SessionMessage"
 const val HEARTBEAT_MESSAGE = "HeartbeatMessage"
+val logger: Logger = LoggerFactory.getLogger("MetricHelper")
 
 fun recordOutboundMessagesMetric(message: AuthenticatedMessage) {
     message.header.let {
@@ -31,8 +34,10 @@ fun recordOutboundSessionMessagesMetric(sourceVnode: HoldingIdentity, destinatio
 }
 
 fun recordOutboundHeartbeatMessagesMetric(sourceVnode: HoldingIdentity, destinationVnode: HoldingIdentity) {
+    logger.info("Recording outbound heartbeat from ${sourceVnode.x500Name} to ${destinationVnode.x500Name}")
     recordOutboundMessagesMetric(sourceVnode.x500Name.toString(), destinationVnode.x500Name.toString(), sourceVnode.groupId,
         P2P_SUBSYSTEM, HEARTBEAT_MESSAGE)
+    logger.info("Recorded outbound heartbeat from ${sourceVnode.x500Name} to ${destinationVnode.x500Name}")
 }
 
 fun recordOutboundSessionMessagesMetric(sourceVnode: net.corda.data.identity.HoldingIdentity,
@@ -42,6 +47,9 @@ fun recordOutboundSessionMessagesMetric(sourceVnode: net.corda.data.identity.Hol
 }
 
 fun recordOutboundMessagesMetric(source: String, dest: String, group: String, subsystem: String, messageType: String) {
+    if (messageType == HEARTBEAT_MESSAGE) {
+        logger.info("Going to record heartbeat message metric to outbound messages from $source to $dest in group $group under $subsystem")
+    }
     CordaMetrics.Metric.OutboundMessageCount.builder()
         .withTag(CordaMetrics.Tag.SourceVirtualNode, source)
         .withTag(CordaMetrics.Tag.DestinationVirtualNode, dest)
@@ -69,11 +77,16 @@ fun recordInboundSessionMessagesMetric() {
 
 fun recordInboundHeartbeatMessagesMetric(sourceVnode: HoldingIdentity,
                                          destinationVnode: HoldingIdentity) {
+    logger.info("Recording inbound heartbeat from ${sourceVnode.x500Name} to ${destinationVnode.x500Name}")
     recordInboundMessagesMetric(sourceVnode.x500Name.toString(), destinationVnode.x500Name.toString(),
         destinationVnode.groupId, P2P_SUBSYSTEM, HEARTBEAT_MESSAGE)
+    logger.info("Recorded inbound heartbeat from ${sourceVnode.x500Name} to ${destinationVnode.x500Name}")
 }
 
 private fun recordInboundMessagesMetric(source: String?, dest: String?, group: String?, subsystem: String, messageType: String) {
+    if (messageType == HEARTBEAT_MESSAGE) {
+        logger.info("Going to record heartbeat message metric to inbound messages from $source to $dest in group $group under $subsystem")
+    }
     val builder = CordaMetrics.Metric.InboundMessageCount.builder()
     listOf(
         CordaMetrics.Tag.SourceVirtualNode to source,
