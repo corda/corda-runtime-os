@@ -22,5 +22,5 @@ dependencies {
     implementation project(':libs:utilities')
 
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
-    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    testRuntimeOnly libs.slf4j.simple
 }

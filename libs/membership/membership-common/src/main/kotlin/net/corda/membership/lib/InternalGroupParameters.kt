@@ -8,7 +8,7 @@ import net.corda.v5.membership.GroupParameters
  * Internal representation of the group parameters which exposes additional metadata about the group parameters to
  * internal corda services.
  */
-interface InternalGroupParameters: GroupParameters {
+interface InternalGroupParameters : GroupParameters {
     /**
      * The AVRO serialized group parameters.
      * This byte array can be deserialized as a [KeyValuePairList].

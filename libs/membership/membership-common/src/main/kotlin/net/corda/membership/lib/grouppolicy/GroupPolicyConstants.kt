@@ -200,12 +200,12 @@ class GroupPolicyConstants {
                 MUTUAL("Mutual");
 
                 companion object {
-                    fun getClusterType(configurationGetter: (String)-> SmartConfig?) : TlsType {
+                    fun getClusterType(configurationGetter: (String) -> SmartConfig?): TlsType {
                         val gatewayConfiguration =
-                            configurationGetter.invoke(ConfigKeys.P2P_GATEWAY_CONFIG) ?:
-                            throw FailToReadClusterTlsTypeException(
-                                "Could not get the Gateway configuration"
-                            )
+                            configurationGetter.invoke(ConfigKeys.P2P_GATEWAY_CONFIG)
+                                ?: throw FailToReadClusterTlsTypeException(
+                                    "Could not get the Gateway configuration"
+                                )
                         val tlsType = gatewayConfiguration
                             .getConfig("sslConfig")
                             .getString(PolicyKeys.P2PParameters.TLS_TYPE)
@@ -213,12 +213,12 @@ class GroupPolicyConstants {
                     }
                     fun fromString(str: String?): TlsType? = values()
                         .firstOrNull {
-                        it.groupPolicyName.equals(str, ignoreCase = true) ||
+                            it.groupPolicyName.equals(str, ignoreCase = true) ||
                                 it.name.equals(str, ignoreCase = true)
-                    }
+                        }
                 }
 
-                class FailToReadClusterTlsTypeException(message: String)  : CordaRuntimeException(message)
+                class FailToReadClusterTlsTypeException(message: String) : CordaRuntimeException(message)
             }
         }
     }

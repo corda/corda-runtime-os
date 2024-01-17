@@ -1,9 +1,9 @@
 package net.corda.membership.impl.registration.staticnetwork
 
-import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.data.KeyValuePairList
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.Lifecycle

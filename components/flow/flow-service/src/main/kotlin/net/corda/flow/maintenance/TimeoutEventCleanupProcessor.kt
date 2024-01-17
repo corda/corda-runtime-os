@@ -35,13 +35,13 @@ class TimeoutEventCleanupProcessor(
         }.toMap()
         if (statesToRecords.size < events.size) {
             logger.info(
-                "Could not process ${events.size - statesToRecords.size} events for flow session timeout cleanup as the " +
-                        "checkpoint did not deserialize cleanly."
+                "Could not process ${events.size - statesToRecords.size} events for flow timeout cleanup as the " +
+                    "checkpoint did not deserialize cleanly."
             )
         }
         val undeletedStates = stateManager.delete(statesToRecords.keys)
         if (undeletedStates.isNotEmpty()) {
-            logger.info("Failed to delete ${undeletedStates.size} checkpoints when handling flow session timeout.")
+            logger.info("Failed to delete ${undeletedStates.size} checkpoints when handling flow timeout.")
         }
         val records = statesToRecords.filterKeys { !undeletedStates.containsKey(it.key) }.map {
             it.value

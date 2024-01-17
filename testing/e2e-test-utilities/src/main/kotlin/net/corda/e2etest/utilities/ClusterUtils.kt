@@ -1,3 +1,4 @@
+@file:Suppress("TooManyFunctions")
 package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.module.kotlin.contains
@@ -7,6 +8,7 @@ import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import java.time.Duration
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Semaphore
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -58,7 +60,13 @@ fun conditionallyUploadCordaPackage(
     groupId: String,
     staticMemberNames: List<String>,
     customGroupParameters: Map<String, Any> = emptyMap(),
-) = DEFAULT_CLUSTER.conditionallyUploadCordaPackage(cpiName, cpbResourceName, groupId, staticMemberNames, customGroupParameters)
+) = DEFAULT_CLUSTER.conditionallyUploadCordaPackage(
+    cpiName,
+    cpbResourceName,
+    groupId,
+    staticMemberNames,
+    customGroupParameters
+)
 
 fun ClusterInfo.conditionallyUploadCordaPackage(
     cpiName: String,
@@ -70,11 +78,11 @@ fun ClusterInfo.conditionallyUploadCordaPackage(
     cpiUpload(cpbResourceName, groupId, staticMemberNames, cpiName, customGroupParameters = customGroupParameters)
 }
 
-val packageUploadSemaphore = Semaphore(2)
+private val uploading = ConcurrentHashMap<Pair<String, String>, Unit?>()
 fun ClusterInfo.conditionallyUploadCordaPackage(
     name: String,
     cpiUpload: ClusterBuilder.() -> SimpleResponse
-) = packageUploadSemaphore.runWith {
+) = uploading.compute(Pair(this.id, name)) { _, _ ->
     cluster {
         if (getExistingCpi(name) == null) {
             val responseStatusId = cpiUpload().run {
@@ -150,8 +158,8 @@ fun ClusterInfo.getExistingCpi(
         condition { it.code == ResponseCode.OK.statusCode }
         failMessage("Failed to list CPIs")
     }.toJson().apply {
-            assertThat(contains("cpis")).isTrue
-        }["cpis"]
+        assertThat(contains("cpis")).isTrue
+    }["cpis"]
         .toList()
         .firstOrNull {
             it["id"]["cpiName"].textValue() == cpiName
@@ -194,19 +202,25 @@ fun ClusterInfo.createKeyFor(
     keyId["id"].textValue()
 }
 
-fun ClusterInfo.keyExists(
+private val keyExistsLock = ReentrantLock()
+fun ClusterInfo.whenNoKeyExists(
     tenantId: String,
     alias: String? = null,
     category: String? = null,
-    ids: List<String>? = null
-): Boolean = cluster {
-    val result = assertWithRetryIgnoringExceptions {
-        command { getKey(tenantId, category, alias, ids) }
-        condition { it.code == ResponseCode.OK.statusCode }
-        failMessage("Failed to get keys for tenant id '$tenantId', category '$category', alias '$alias' and IDs: $ids")
-    }
+    ids: List<String>? = null,
+    block: () -> Unit
+) = keyExistsLock.withLock {
+    cluster {
+        val result = assertWithRetryIgnoringExceptions {
+            command { getKey(tenantId, category, alias, ids) }
+            condition { it.code == ResponseCode.OK.statusCode }
+            failMessage("Failed to get keys for tenant id '$tenantId', category '$category', alias '$alias' and IDs: $ids")
+        }
 
-    result.code == ResponseCode.OK.statusCode && result.toJson().fieldNames().hasNext()
+        if (result.code != ResponseCode.OK.statusCode || !result.toJson().fieldNames().hasNext()) {
+            block()
+        }
+    }
 }
 
 fun ClusterInfo.rotateCryptoUnmanagedWrappingKeys(
@@ -216,6 +230,23 @@ fun ClusterInfo.rotateCryptoUnmanagedWrappingKeys(
     assertWithRetry {
         command { doRotateCryptoUnmanagedWrappingKeys(oldKeyAlias, newKeyAlias) }
         condition { it.code == ResponseCode.ACCEPTED.statusCode }
+    }
+}
+
+fun ClusterInfo.getStatusForUnmanagedWrappingKeysRotation(
+    requestid: String
+) = cluster {
+    assertWithRetry {
+        command { getCryptoUnmanagedWrappingKeysRotationStatus(requestid) }
+        condition { it.code == ResponseCode.OK.statusCode }
+    }
+}
+
+fun ClusterInfo.getProtocolVersionForUnmanagedKeyRotation(
+) = cluster {
+    assertWithRetry {
+        command { getWrappingKeysProtocolVersion() }
+        condition { it.code == ResponseCode.OK.statusCode }
     }
 }
 

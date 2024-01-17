@@ -12,6 +12,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.write.db.impl.writer.DbConnection
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDb
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
@@ -67,6 +68,8 @@ internal fun getVNodeDb(
                 DbPrivilege.DML to dmlConnection,
             )
         )
+        whenever(this.checkDbMigrationsArePresent()).thenReturn(true)
+        whenever(this.checkCpiMigrationsArePresent(any())).thenReturn(true)
     }
 }
 

@@ -97,7 +97,7 @@ abstract class AbstractPersistenceClient(
                 rpcSender = null
             }
             is RegistrationStatusChangeEvent -> {
-                when(event.status) {
+                when (event.status) {
                     LifecycleStatus.UP -> {
                         configHandle?.close()
                         configHandle = configurationReadService.registerComponentForUpdates(

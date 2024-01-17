@@ -92,7 +92,7 @@ dependencies {
     integrationTestRuntimeOnly project(":components:crypto:crypto-client-hsm-impl")
     integrationTestRuntimeOnly project(":components:crypto:crypto-hes-core-impl")
     integrationTestRuntimeOnly project(":components:crypto:crypto-hes-impl")
-    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    integrationTestRuntimeOnly libs.slf4j.simple
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
 
     integrationTestRuntimeOnly "org.hibernate:hibernate-core:$hibernateVersion"

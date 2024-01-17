@@ -1,8 +1,5 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import javax.persistence.EntityManager
-import javax.persistence.LockModeType
-import javax.persistence.PessimisticLockException
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
@@ -28,19 +25,22 @@ import net.corda.utilities.mapNotNull
 import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.toCorda
+import javax.persistence.EntityManager
+import javax.persistence.LockModeType
+import javax.persistence.PessimisticLockException
 import kotlin.streams.toList
 
 internal class SuspendMemberHandler(
     persistenceHandlerServices: PersistenceHandlerServices,
-    private val notaryUpdater: GroupParametersNotaryUpdater
-    = GroupParametersNotaryUpdater(persistenceHandlerServices.keyEncodingService, persistenceHandlerServices.clock),
+    private val notaryUpdater: GroupParametersNotaryUpdater =
+        GroupParametersNotaryUpdater(persistenceHandlerServices.keyEncodingService, persistenceHandlerServices.clock),
     suspensionActivationEntityOperationsFactory:
-        (clock: Clock, serializer: CordaAvroSerializer<KeyValuePairList>)
-    -> SuspensionActivationEntityOperations
-    = { clock: Clock, serializer: CordaAvroSerializer<KeyValuePairList>
-        ->
-        SuspensionActivationEntityOperations(clock, serializer, persistenceHandlerServices.memberInfoFactory)
-    }
+    (clock: Clock, serializer: CordaAvroSerializer<KeyValuePairList>)
+    -> SuspensionActivationEntityOperations =
+        { clock: Clock, serializer: CordaAvroSerializer<KeyValuePairList>
+            ->
+            SuspensionActivationEntityOperations(clock, serializer, persistenceHandlerServices.memberInfoFactory)
+        }
 ) : BasePersistenceHandler<SuspendMember, SuspendMemberResponse>(persistenceHandlerServices) {
     override val operation = SuspendMember::class.java
     private companion object {

@@ -63,6 +63,7 @@ class CryptoRPCSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
     companion object {
         const val TEST_CPI_NAME = "ledger-utxo-demo-app"
         const val TEST_CPB_LOCATION = "/META-INF/ledger-utxo-demo-app.cpb"
+        private const val POD_CLOCK_DIFF_TOLLERENCE_SECONDS = 10L
 
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -234,10 +235,10 @@ class CryptoRPCSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
         assertEquals(expected.requestingComponent, actual.requestingComponent)
         assertEquals(expected.requestTimestamp, actual.requestTimestamp)
         assertThat(actual.responseTimestamp.toEpochMilli())
-            .isGreaterThanOrEqualTo(expected.requestTimestamp.toEpochMilli())
-            .isLessThanOrEqualTo(now.toEpochMilli())
+            .isGreaterThanOrEqualTo(expected.requestTimestamp.minusSeconds(POD_CLOCK_DIFF_TOLLERENCE_SECONDS).toEpochMilli())
+            .isLessThanOrEqualTo(now.plusSeconds(POD_CLOCK_DIFF_TOLLERENCE_SECONDS).toEpochMilli())
         assertSoftly { softly ->
-            softly.assertThat(actual.other.items.size == expected.other.items.size)
+            softly.assertThat(actual.other.items.size).isEqualTo(expected.other.items.size)
             softly.assertThat(actual.other.items.containsAll(expected.other.items))
             softly.assertThat(expected.other.items.containsAll(actual.other.items))
         }
@@ -251,7 +252,6 @@ class CryptoRPCSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
 
     private inline fun <reified T> getResultOfType(response: FlowOpsResponse): T {
         Assertions.assertInstanceOf(T::class.java, response)
-        @Suppress("UNCHECKED_CAST")
         return response as T
     }
 

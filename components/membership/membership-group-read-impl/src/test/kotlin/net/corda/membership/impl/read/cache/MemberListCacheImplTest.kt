@@ -2,7 +2,6 @@ package net.corda.membership.impl.read.cache
 
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.Meter
-import io.micrometer.core.instrument.Tag as micrometerTag
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_2
 import net.corda.membership.impl.read.TestProperties.Companion.aliceName
@@ -28,6 +27,7 @@ import org.junit.jupiter.api.parallel.ResourceLock
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import kotlin.math.roundToLong
+import io.micrometer.core.instrument.Tag as micrometerTag
 
 @ResourceLock(CORDA_METRICS_LOCK)
 class MemberListCacheImplTest {
@@ -173,7 +173,6 @@ class MemberListCacheImplTest {
         val originalInfo = mock<MemberInfo> {
             on { mgmProvidedContext } doReturn activeContext
             on { name } doReturn charlie
-
         }
         val updatedInfo = mock<MemberInfo> {
             on { mgmProvidedContext } doReturn activeContext

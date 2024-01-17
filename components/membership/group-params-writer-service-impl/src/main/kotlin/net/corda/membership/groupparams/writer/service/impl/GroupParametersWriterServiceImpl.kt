@@ -95,7 +95,6 @@ class GroupParametersWriterServiceImpl @Activate constructor(
             throw IllegalStateException("$SERVICE is currently inactive.")
 
         override fun close() = Unit
-
     }
 
     private inner class ActiveImpl(

@@ -52,7 +52,8 @@ class MemberOpsServiceTest {
         on { subscriptionName } doReturn actionsSubName
     }
     private val subscriptionFactory: SubscriptionFactory = mock {
-        on { createRPCSubscription(
+        on {
+            createRPCSubscription(
                 any(), any(), any<RPCResponderProcessor<MembershipRpcRequest, MembershipRpcResponse>>()
             )
         } doReturn rpcSubscription
