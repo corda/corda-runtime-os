@@ -88,7 +88,6 @@ fun ClusterInfo.awaitRestFlowFinished(holdingId: String, requestId: String): Flo
         ObjectMapper().readValue(
             assertWithRetryIgnoringExceptions {
                 command { flowStatus(holdingId, requestId) }
-                //CORE-6118 - tmp increase this timeout to a large number to allow tests to pass while slow flow sessions are investigated
                 timeout(RETRY_TIMEOUT)
                 condition {
                     it.code == 200 &&
