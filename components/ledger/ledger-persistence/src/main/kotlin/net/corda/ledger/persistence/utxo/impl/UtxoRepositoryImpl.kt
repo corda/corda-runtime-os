@@ -14,7 +14,6 @@ import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByPersistence
-import net.corda.utilities.debug
 import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
@@ -352,9 +351,9 @@ class UtxoRepositoryImpl @Activate constructor(
 
     private fun Int.logResult(entity: String): Int {
         if (this == 0) {
-            logger.debug {
+            logger.info (
                 "UTXO ledger entity not persisted due to existing row in database. Entity: $entity"
-            }
+            )
         }
         return this
     }
