@@ -68,7 +68,8 @@ class EventProcessorTest {
                 StateAndEventProcessor.State("bar", null), listOf(
                     Record("", "key", asyncMessage),
                     Record("", "key", syncMessage)
-                ))
+                )
+            )
         }
 
         eventProcessor = EventProcessor(eventMediatorConfig, stateManagerHelper, messageRouter, mediatorReplayService)
@@ -82,10 +83,12 @@ class EventProcessorTest {
                 Response<String>(null, emptyList())
             } else {
                 counter++
-                Response(null, listOf(
-                    Record("", "key", asyncMessage),
-                    Record("", "key", syncMessage)
-                ))
+                Response(
+                    null, listOf(
+                        Record("", "key", asyncMessage),
+                        Record("", "key", syncMessage)
+                    )
+                )
             }
         }
         whenever(client.send(any())).thenReturn(MediatorMessage(syncMessage))
@@ -147,7 +150,11 @@ class EventProcessorTest {
         val recordCount = 2
         val mediatorState2 = mock<MediatorState>()
         whenever(stateManagerHelper.deserializeMediatorState(state2)).thenReturn(mediatorState2)
-        whenever(mediatorReplayService.getReplayEvents<String, String>(anyOrNull(), eq(mediatorState2))).thenReturn(listOf(expectedOutputPerInput))
+        whenever(mediatorReplayService.getReplayEvents<String, String>(anyOrNull(), eq(mediatorState2))).thenReturn(
+            listOf(
+                expectedOutputPerInput
+            )
+        )
 
         val group = mapOf(
             "key1" to getStringRecords(recordCount, "key1"),
@@ -205,7 +212,7 @@ class EventProcessorTest {
             assertEquals(StateChangeAndOperation.Delete::class.java, eventProcessingOutput.stateChangeAndOperation::class.java)
             assertEquals(2, eventProcessingOutput.asyncOutputs.size)
             assertContains(eventProcessingOutput.asyncOutputs, expectedOutputPerInput)
-            assert(eventProcessingOutput.asyncOutputs.any { it.payload ==  asyncMessage} )
+            assert(eventProcessingOutput.asyncOutputs.any { it.payload == asyncMessage })
 
         }
         verify(stateManagerHelper, times(1)).deserializeValue(any())
