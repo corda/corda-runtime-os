@@ -133,6 +133,7 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
+    @Suppress("LongMethod")
     private fun persistTransaction(
         em: EntityManager,
         transaction: UtxoTransactionReader,
