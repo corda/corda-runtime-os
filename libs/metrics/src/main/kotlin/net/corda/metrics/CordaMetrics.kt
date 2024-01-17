@@ -494,6 +494,8 @@ object CordaMetrics {
              */
             object PersistenceExecutionTime: Metric<Timer>("ledger.persistence.time", CordaMetrics::timer)
 
+            object PersistenceTxExecutionTime: Metric<Timer>("ledger.persistence.tx.time", CordaMetrics::timer)
+
             /**
              * The length of resolved backchains when performing backchain resolution.
              *
@@ -696,6 +698,9 @@ object CordaMetrics {
              * Record time needed to process a RPC request
              */
             object RpcServerResponseTime : Metric<Timer>("rpc.server.response.time", CordaMetrics::timer)
+            object RpcServerDeserializeTime : Metric<Timer>("rpc.server.deserialize.time", CordaMetrics::timer)
+            object RpcServerSerializeTime : Metric<Timer>("rpc.server.serialize.time", CordaMetrics::timer)
+            object RpcServerProcessTime : Metric<Timer>("rpc.server.process.time", CordaMetrics::timer)
 
             /**
              * Record the size of HTTP RPC responses

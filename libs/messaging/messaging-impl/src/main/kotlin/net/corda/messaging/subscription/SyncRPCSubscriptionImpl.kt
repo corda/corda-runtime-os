@@ -78,6 +78,10 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         val webHandler = WebHandler { context ->
             val startTime = System.nanoTime()
             val payload = cordaAvroDeserializer.deserialize(context.bodyAsBytes())
+            CordaMetrics.Metric.Messaging.RpcServerDeserializeTime.builder()
+                .withTag(CordaMetrics.Tag.OperationStatus, rpcEndpoint)
+                .build()
+                .record(Duration.ofNanos(System.nanoTime() - startTime))
 
             if (payload == null) {
                 log.warn("Request Payload was invalid")
@@ -86,12 +90,18 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                 return@WebHandler context
             }
 
+            val processStartTime = System.nanoTime()
             val response = try {
                 processor.process(payload)
             } catch (ex: Exception) {
                 return@WebHandler handleProcessorException(endpoint, ex, context)
             }
+            CordaMetrics.Metric.Messaging.RpcServerProcessTime.builder()
+                .withTag(CordaMetrics.Tag.OperationStatus, rpcEndpoint)
+                .build()
+                .record(Duration.ofNanos(System.nanoTime() - processStartTime))
 
+            val serializeStartTime = System.nanoTime()
             // assume a null response is no response and return a zero length byte array
             if (response == null) {
                 context.result(ByteArray(0))
@@ -106,11 +116,16 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                     context.status(ResponseCode.INTERNAL_SERVER_ERROR)
                 }
             }
-            val endTime = System.nanoTime()
+            CordaMetrics.Metric.Messaging.RpcServerSerializeTime.builder()
+                .withTag(CordaMetrics.Tag.OperationStatus, rpcEndpoint)
+                .build()
+                .record(Duration.ofNanos(System.nanoTime() - serializeStartTime))
+
+
             CordaMetrics.Metric.Messaging.RpcServerResponseTime.builder()
                 .withTag(CordaMetrics.Tag.OperationStatus, rpcEndpoint)
                 .build()
-                .record(Duration.ofNanos(endTime - startTime))
+                .record(Duration.ofNanos(System.nanoTime() - startTime))
             context
         }
 
