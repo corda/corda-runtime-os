@@ -27,11 +27,10 @@ import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.CompositeKey
-import net.corda.v5.crypto.CompositeKeyNodeAndWeight
-import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.*
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import org.slf4j.LoggerFactory
+import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
 
@@ -252,9 +251,15 @@ class RestSmokeTestFlow : ClientStartableFlow {
         return outputs.joinToString("; ")
     }
 
-    @Suspendable
-    private fun signAndVerify(input: RestSmokeTestInput): String {
-        val x500Name = input.getValue("memberX500")
+    private class SigningResult(
+        val publicKey: PublicKey,
+        val bytesToSign: ByteArray,
+        val signature: DigitalSignature,
+        val signatureSpec: SignatureSpec
+    )
+
+    private fun RestSmokeTestInput.performSigning() : SigningResult {
+        val x500Name = getValue("memberX500")
         val member = memberLookup.lookup(MemberX500Name.parse(x500Name))
         checkNotNull(member) { "Member $x500Name could not be looked up" }
         val publicKey = member.ledgerKeys[0]
@@ -263,60 +268,62 @@ class RestSmokeTestFlow : ClientStartableFlow {
         val signatureSpec =
             signatureSpecService.defaultSignatureSpec(publicKey)
                 ?: throw IllegalStateException("Default signature spec not found for key")
-        val signedBytes = signingService.sign(bytesToSign, publicKey, signatureSpec)
-        log.info("Crypto - Signature $signedBytes received")
+        val signature = signingService.sign(bytesToSign, publicKey, signatureSpec)
+        log.info("Crypto - Signature $signature received")
+        return SigningResult(publicKey, bytesToSign, signature, signatureSpec)
+    }
+
+    @Suspendable
+    private fun signAndVerify(input: RestSmokeTestInput): String {
+        val signingResult = input.performSigning()
         digitalSignatureVerificationService.verify(
-            bytesToSign,
-            signedBytes.bytes,
-            publicKey,
-            signatureSpec
+            signingResult.bytesToSign,
+            signingResult.signature.bytes,
+            signingResult.publicKey,
+            signingResult.signatureSpec
         )
-        log.info("Crypto - Verified $signedBytes as the signature of $bytesToSign")
+        log.info("Crypto - Verified ${signingResult.signature} as the signature of ${signingResult.bytesToSign}")
         return true.toString()
     }
 
     @Suspendable
     private fun verifyInvalidSignature(input: RestSmokeTestInput): String {
-        val x500Name = input.getValue("memberX500")
-        val member = memberLookup.lookup(MemberX500Name.parse(x500Name))
-        checkNotNull(member) { "Member $x500Name could not be looked up" }
-        val publicKey = member.ledgerKeys[0]
-        val bytesToSign = byteArrayOf(1, 2, 3, 4, 5)
-        log.info("Crypto - Signing bytes $bytesToSign with public key '$publicKey'")
-        val signatureSpec =
-            signatureSpecService.defaultSignatureSpec(publicKey)
-                ?: throw IllegalStateException("Default signature spec not found for key")
-        val signedBytes = signingService.sign(bytesToSign, publicKey, signatureSpec)
-        log.info("Crypto - Signature $signedBytes received")
+        val signingResult = input.performSigning()
         return try {
             val invalidSignatureSpec =
-                signatureSpecService.defaultSignatureSpec(publicKey, DigestAlgorithmName.SHA2_512)
+                signatureSpecService.defaultSignatureSpec(signingResult.publicKey, DigestAlgorithmName.SHA2_512)
                     ?: throw IllegalStateException("Default signature spec not found for key")
             digitalSignatureVerificationService.verify(
-                bytesToSign,
-                signedBytes.bytes,
-                publicKey,
+                signingResult.bytesToSign,
+                signingResult.signature.bytes,
+                signingResult.publicKey,
                 invalidSignatureSpec
             )
             false
         } catch (e: CryptoSignatureException) {
-            log.info("Crypto - Failed to verify $signedBytes as the signature of $bytesToSign when using wrong signature spec")
+            log.info("Crypto - Failed to verify ${signingResult.signature} as the signature of " +
+                    "${signingResult.bytesToSign} when using wrong signature spec")
             true
         }.toString()
     }
 
-    @Suspendable
-    private fun getDefaultSignatureSpec(input: RestSmokeTestInput): String {
-        val x500Name = input.getValue("memberX500")
+    private fun RestSmokeTestInput.retrievePublicKeyAndDigest(): Pair<PublicKey, String?> {
+        val x500Name = getValue("memberX500")
         val member = memberLookup.lookup(MemberX500Name.parse(x500Name))
         checkNotNull(member) { "Member $x500Name could not be looked up" }
         val publicKey = member.ledgerKeys[0]
         val digestName = try {
-            input.getValue("digestName")
+            getValue("digestName")
         } catch (e: IllegalStateException) {
             null
         }
         log.info("Crypto - Calling default signature spec with public key: $publicKey and digestName: $digestName ")
+        return publicKey to digestName
+    }
+
+    @Suspendable
+    private fun getDefaultSignatureSpec(input: RestSmokeTestInput): String {
+        val (publicKey, digestName) = input.retrievePublicKeyAndDigest()
 
         val defaultSignatureSpec = if (digestName != null) {
             signatureSpecService.defaultSignatureSpec(publicKey, DigestAlgorithmName(digestName))
@@ -328,16 +335,7 @@ class RestSmokeTestFlow : ClientStartableFlow {
 
     @Suspendable
     private fun getCompatibleSignatureSpecs(input: RestSmokeTestInput): String {
-        val x500Name = input.getValue("memberX500")
-        val member = memberLookup.lookup(MemberX500Name.parse(x500Name))
-        checkNotNull(member) { "Member $x500Name could not be looked up" }
-        val publicKey = member.ledgerKeys[0]
-        val digestName = try {
-            input.getValue("digestName")
-        } catch (e: IllegalStateException) {
-            null
-        }
-        log.info("Crypto - Calling compatible signature specs with public key: $publicKey and digestName: $digestName ")
+        val (publicKey, digestName) = input.retrievePublicKeyAndDigest()
 
         val compatibleSignatureSpecs = if (digestName != null) {
             signatureSpecService.compatibleSignatureSpecs(publicKey, DigestAlgorithmName(digestName))
