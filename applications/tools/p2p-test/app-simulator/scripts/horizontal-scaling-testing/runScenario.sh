@@ -164,23 +164,31 @@ run_sender() {
     latency_b=$(calculate_latency $APP_SIMULATOR_DB_NAMESPACE_B $dbPasswordB "$start" "$end")
     echo "Latency on cluster B was $latency_b" >> "$reportFile"
   fi
+  if [ $1 == true ]
+  then
+    echo "This run was a warm up"
+    # we don't want to stop the performance testing in case the warm up's latency was more than 1 sec
+    latency=0
+    latency_a=0
+    latency_b=0
+  fi
 }
 
 totalNumberOfMessages=200
 interBatchDelay="PT1S"
 batchSize=50
 echo "Warm up"
-run_sender
+run_sender true
 
 totalNumberOfMessages=60000
 interBatchDelay="PT0.3S"
 batchSize=40
 stop="no"
 latency="0.22"
-until (( $(echo "$latency > 1.0" |bc -l) ));  do
+until (( $(echo "$latency > 1.0" |bc -l) || ($(echo "$latency_a > 1.0" |bc -l) || $(echo "$latency_b > 1.0" |bc -l)) ));  do
   echo 'Waiting a minute before starting sender'
   sleep 60
-  run_sender
+  run_sender false
   batchSize=$((batchSize + 10))
 done
 
@@ -197,6 +205,6 @@ fi
 
 
 echo "Tearing down previous clusters"
-"$SCRIPT_DIR"/tearDown.sh
+#"$SCRIPT_DIR"/tearDown.sh
 
 echo "Report was saved into $reportFile"

@@ -36,7 +36,7 @@ deploy_sender() {
     --set "db.appSimulator.namespace=$5"  \
     --set appSimulators.sender.replicaCount=$WORKER_REPLICAS \
     --timeout 30m00s \
-    --wait
+    --wait &
 }
 
 echo "Starting Sender in $1 mode"
@@ -62,6 +62,7 @@ then
   DESTINATIONS=$(calculate_peers $NUM_OF_MEMBERS_PER_CLUSTER_B $HELM_B_X500_NAME)
   get_db_password $APP_SIMULATOR_DB_NAMESPACE_A
   deploy_sender $A_CLUSTER_NAMESPACE $POSTGRES_ADMIN_PASSWORD $SENDERS $DESTINATIONS $APP_SIMULATOR_DB_NAMESPACE
+  wait
 else
   echo "Deploying two-way sender."
   SENDERS=$(calculate_peers $NUM_OF_MEMBERS_PER_CLUSTER_A $HELM_A_X500_NAME)
@@ -73,4 +74,5 @@ else
   DESTINATIONS=$(calculate_peers $NUM_OF_MEMBERS_PER_CLUSTER_A $HELM_A_X500_NAME)
   get_db_password $APP_SIMULATOR_DB_NAMESPACE_B
   deploy_sender $B_CLUSTER_NAMESPACE $POSTGRES_ADMIN_PASSWORD $SENDERS $DESTINATIONS $APP_SIMULATOR_DB_NAMESPACE_B
+  wait
 fi
