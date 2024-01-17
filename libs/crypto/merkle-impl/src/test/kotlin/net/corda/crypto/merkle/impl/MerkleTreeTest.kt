@@ -1,6 +1,5 @@
 package net.corda.crypto.merkle.impl
 
-import net.bytebuddy.asm.Advice.OffsetMapping.Factory.Illegal
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
@@ -42,26 +41,22 @@ class MerkleTreeTest {
         val digestAlgorithm = DigestAlgorithmName.SHA2_256D
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
-        private const val MAXIMUM_TREE_SIZE_FOR_PROOF_TESTS = 32
-        // Since there are 2^(2*n) permutations of source leafs we don't want to test too many,
+        private const val MAXIMUM_TREE_SIZE_FOR_PROOF_TESTS = 30
+        private const val MAXIMUM_TREE_SIZE_FOR_EXHAUSTIVE_MERGE_TESTS = 30
+
+        // Since for subset tests there are 2^(2*n) permutations of source leafs we don't want to test too many,
         // so we do a few in a fixed shuffled order. Any new failures have specific tests to guard against regression,
         // in case the platform random number generator changes.
         //
-        // In offline testing this has been successfully taken up to 5000 which takes 30 minutes on a laptop.
-        private const val NUMBER_OF_SUBSETS_TO_TEST = 1000
+        // This and the following 2 NUMBER_OF_*_TESTS have all been taken up to 20000 tests without error.
+        // Beyond that nothing breaks but the memory requirements of the test framework get unmanageable.
+        private const val NUMBER_OF_SUBSET_TESTS = 1000
 
-        private const val MAXIMUM_TREE_SIZE_FOR_EXHAUSTIVE_MERGE_TESTS = 32
-
-        // Since there are 60129542144 (slightly less than n*2^(2*n)) permutation for lists tests when we go up to tree
+        // Since there are 60129542144 (slightly less than n*2^(2*n)) permutation for list tests when we go up to tree
         // size 16, so again we take a stable random approach.
-        //
-        // This has been taken up to 50000 which takes 1 minute and 8GB of RAM.
         private const val NUMBER_OF_MERGE_TESTS = 1000
 
-
-        // There are n*2^n proof tests for tree size n so randomize.
-        //
-        // This has been taken up to 50000 which takes 5 seconds and 8GB of RAM.
+        // There are n*2^n proof tests for tree size so again use random testing.
         private const val NUMBER_OF_PROOF_TESTS = 1000
 
         private lateinit var digestService: DigestService
@@ -117,7 +112,7 @@ class MerkleTreeTest {
         fun merkleProofCombinations(): List<Arguments> {
             val rng = Random(0)
             val combinations = MAXIMUM_TREE_SIZE_FOR_PROOF_TESTS.toULong() * (1UL shl MAXIMUM_TREE_SIZE_FOR_PROOF_TESTS)
-            val l = iterator {
+            return iterator {
                 while (true) {
                     val t: ULong = rng.nextULong(0UL..combinations)
                     val treeSize = t % MAXIMUM_TREE_SIZE_FOR_PROOF_TESTS.toULong()
@@ -129,7 +124,6 @@ class MerkleTreeTest {
                 }
             }.asSequence().take(NUMBER_OF_PROOF_TESTS)
                 .toList() // Sadly, we don't know how to supply JUnit test parameters from lazy sequences.
-            return l
         }
 
         @JvmStatic
@@ -162,24 +156,32 @@ class MerkleTreeTest {
                         yield(Arguments.of(treeSize.toInt(), xSet, ySet))
                     }
                 }
-            }.asSequence().take(NUMBER_OF_MERGE_TESTS)
-                .toList() //  Sadly, we don't know how to supply JUnit test parameters from lazy sequences.
+            }.asSequence().take(NUMBER_OF_MERGE_TESTS).toList()
         }
 
         @JvmStatic
-        fun subsetTestCombinations(): List<Arguments> = (1..11).map { treeSize ->
+        fun subsetTestCombinations(): List<Arguments> {
             val rng = Random(0)
-            (1 until (1 shl treeSize)).map { sourceProofLeafSet ->
-                val leafIndicesCombination = (0 until treeSize).filter {
-                    (sourceProofLeafSet and (1 shl it)) != 0
+            val combinations:ULong =
+                MAXIMUM_TREE_SIZE_FOR_PROOF_TESTS.toULong() * (1UL shl MAXIMUM_TREE_SIZE_FOR_PROOF_TESTS) * (1UL shl MAXIMUM_TREE_SIZE_FOR_PROOF_TESTS)
+            return iterator {
+                while (true) {
+                    val t: ULong = rng.nextULong(0UL..combinations)
+                    val treeSize = (t % MAXIMUM_TREE_SIZE_FOR_PROOF_TESTS.toULong()).toInt()
+                    val t2: ULong = t / MAXIMUM_TREE_SIZE_FOR_PROOF_TESTS.toULong()
+                    val sourceProofLeafSet = t2 % (1UL shl MAXIMUM_TREE_SIZE_FOR_PROOF_TESTS)
+                    val subsetProofLeafSet = t2 / (1UL shl MAXIMUM_TREE_SIZE_FOR_PROOF_TESTS)
+
+                    val leafIndicesCombination = (0 until treeSize).filter {
+                        (sourceProofLeafSet and (1UL shl it)) != 0UL
+                    }
+                    val subsetLeafIndicesCombination =
+                        (0 until treeSize).filter { leaf -> (subsetProofLeafSet and (1UL shl leaf)) != 0UL }
+                    if (leafIndicesCombination.isNotEmpty() && subsetLeafIndicesCombination.isNotEmpty())
+                    yield(Arguments.of(treeSize, leafIndicesCombination, subsetLeafIndicesCombination))
                 }
-                (0 until treeSize).map { subsetProofLeafSet ->
-                    val subLeafIndicesCombination =
-                        (0 until treeSize).filter { leaf -> (subsetProofLeafSet and (1 shl leaf)) != 0 }
-                    Arguments.of(treeSize, leafIndicesCombination, subLeafIndicesCombination)
-                }
-            }.flatten().shuffled(rng).take(NUMBER_OF_SUBSETS_TO_TEST)
-        }.flatten()
+            }.asSequence().take(NUMBER_OF_SUBSET_TESTS).toList()
+        }
     }
 
 
@@ -436,8 +438,7 @@ class MerkleTreeTest {
                 merkleTree.createAuditProof(listOf(0, 0, treeSize - 1))
             }
         }
-        val proof = makeProof(merkleTree, sourceProofLeafSet)
-        return proof
+        return makeProof(merkleTree, sourceProofLeafSet)
     }
 
     @Test
