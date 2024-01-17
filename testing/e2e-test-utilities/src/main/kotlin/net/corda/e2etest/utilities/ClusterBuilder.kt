@@ -756,7 +756,7 @@ class ClusterBuilder {
 
     fun getWrappingKeysProtocolVersion(): SimpleResponse {
         return get(
-            "/api/$REST_API_VERSION_PATH//wrappingkey/getprotocolversion",
+            "/api/$REST_API_VERSION_PATH/wrappingkey/getprotocolversion",
         )
     }
 }
