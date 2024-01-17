@@ -188,8 +188,8 @@ class WrappingRepositoryImplTests {
             "test"
         )
 
-        // Alias here doesn't matter, mock<EntityManager> returns savedWrappingKey regardless the alias.
-        // There is an integration test dealing with the database where it checks for the alias.
+        // ID here doesn't matter, mock<EntityManager> returns savedWrappingKey regardless the id.
+        // There is an integration test dealing with the database where it checks for the id.
         val foundKey = repo.getKeyById(newId)
 
         assertThat(foundKey).isEqualTo(wrappingKeyInfo)
