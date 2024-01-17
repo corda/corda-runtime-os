@@ -412,7 +412,8 @@ class MerkleProofImpl(
 
     fun render(digest: MerkleTreeHashDigest): String {
         val nodeLabels: MutableMap<Pair<Int,Int>, String> = mutableMapOf()
-        for(x in 0..treeSize)
+        val treeDepth = MerkleTreeImpl.treeDepth(treeSize)         // initialised to the depth of tree we should
+        for(x in 0..treeDepth)
             for (y in 0 until (1 shl x)) // should be 0 until x?
                 nodeLabels[x to y] = "unknown"
         calculateRootInstrumented(digest) { info ->

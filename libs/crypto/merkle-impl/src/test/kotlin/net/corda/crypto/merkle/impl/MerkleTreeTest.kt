@@ -727,6 +727,107 @@ class MerkleTreeTest {
     }
 
     @Test
+    fun `merkle proof merge size 26 left 6 right 5,7,9,10,12,17,21 bug`() {
+        val treeSize = 26
+        val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
+
+        val proof1 = makeProof(merkleTree, listOf(5,6,7,9,10,12,17,21))
+        val proofX = proof1.subset(trivialHashDigestProvider, listOf(6))
+        assertThat(proofX.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
+                00000569 (calc)┳0000058B (calc)   ┳00000589 (calc)   ┳0000069F (input 2)┳unknown           ┳unknown            filtered
+                               ┃                  ┃                  ┃                  ┃                  ┗unknown            filtered
+                               ┃                  ┃                  ┃                  ┗unknown           ┳unknown            filtered
+                               ┃                  ┃                  ┃                                     ┗unknown            filtered
+                               ┃                  ┃                  ┗000006AF (calc)   ┳00000638 (input 1)┳unknown            filtered
+                               ┃                  ┃                                     ┃                  ┗unknown            filtered
+                               ┃                  ┃                                     ┗0000063C (calc)   ┳00000006 (calc)    known leaf
+                               ┃                  ┃                                                        ┗00000007 (input 0) filtered
+                               ┃                  ┗000005C9 (input 3)┳unknown           ┳unknown           ┳unknown            filtered
+                               ┃                                     ┃                  ┃                  ┗unknown            filtered
+                               ┃                                     ┃                  ┗unknown           ┳unknown            filtered
+                               ┃                                     ┃                                     ┗unknown            filtered
+                               ┃                                     ┗unknown           ┳unknown           ┳unknown            filtered
+                               ┃                                                        ┃                  ┗unknown            filtered
+                               ┃                                                        ┗unknown           ┳unknown            filtered
+                               ┃                                                                           ┗unknown            filtered
+                               ┗000006A4 (input 4)┳unknown           ┳unknown           ┳unknown           ┳unknown            filtered
+                                                  ┃                  ┃                  ┃                  ┗unknown            filtered
+                                                  ┃                  ┃                  ┗unknown           ┳unknown            filtered
+                                                  ┃                  ┃                                     ┗unknown            filtered
+                                                  ┃                  ┗unknown           ┳unknown           ┳unknown            filtered
+                                                  ┃                                     ┃                  ┗unknown            filtered
+                                                  ┃                                     ┗unknown           ┳unknown            filtered
+                                                  ┃                                                        ┗unknown            filtered
+                                                  ┗unknown           ━unknown           ━unknown           ┳unknown            filtered
+                                                                                                           ┗unknown            filtered
+                                                                                                   """.trimIndent()
+        )
+
+        val proof1Text = proof1.render(trivialHashDigestProvider)
+        assertThat(proof1.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
+                00000569 (calc)┳0000058B (calc)┳00000589 (calc)    ┳0000069F (input 9)┳unknown           ┳unknown            filtered
+                               ┃               ┃                   ┃                  ┃                  ┗unknown            filtered
+                               ┃               ┃                   ┃                  ┗unknown           ┳unknown            filtered
+                               ┃               ┃                   ┃                                     ┗unknown            filtered
+                               ┃               ┃                   ┗000006AF (calc)   ┳00000638 (calc)   ┳00000004 (input 0) filtered
+                               ┃               ┃                                      ┃                  ┗00000005 (calc)    known leaf
+                               ┃               ┃                                      ┗0000063C (calc)   ┳00000006 (calc)    known leaf
+                               ┃               ┃                                                         ┗00000007 (calc)    known leaf
+                               ┃               ┗000005C9 (calc)    ┳000006BF (calc)   ┳00000640 (calc)   ┳00000008 (input 1) filtered
+                               ┃                                   ┃                  ┃                  ┗00000009 (calc)    known leaf
+                               ┃                                   ┃                  ┗00000644 (calc)   ┳0000000A (calc)    known leaf
+                               ┃                                   ┃                                     ┗0000000B (input 2) filtered
+                               ┃                                   ┗000006CF (calc)   ┳00000648 (calc)   ┳0000000C (calc)    known leaf
+                               ┃                                                      ┃                  ┗0000000D (input 3) filtered
+                               ┃                                                      ┗0000064C (input 6)┳unknown            filtered
+                               ┃                                                                         ┗unknown            filtered
+                               ┗000006A4 (calc)┳00000609 (calc)    ┳000006DF (calc)   ┳00000650 (calc)   ┳00000010 (input 4) filtered
+                                               ┃                   ┃                  ┃                  ┗00000011 (calc)    known leaf
+                                               ┃                   ┃                  ┗00000654 (input 7)┳unknown            filtered
+                                               ┃                   ┃                                     ┗unknown            filtered
+                                               ┃                   ┗000006EF (calc)   ┳00000658 (calc)   ┳00000014 (input 5) filtered
+                                               ┃                                      ┃                  ┗00000015 (calc)    known leaf
+                                               ┃                                      ┗0000065C (input 8)┳unknown            filtered
+                                               ┃                                                         ┗unknown            filtered
+                                               ┗00000660 (input 10)━unknown           ━unknown           ┳unknown            filtered
+                                                                                                         ┗unknown            filtered
+        """)
+        val proofY = proof1.subset(trivialHashDigestProvider, listOf(5,7,9,10,12,17,21))
+        assertThat(proofY.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace("""
+                00000569 (calc)┳0000058B (calc)┳00000589 (calc)    ┳0000069F (input 10)┳unknown           ┳unknown            filtered
+                               ┃               ┃                   ┃                   ┃                  ┗unknown            filtered
+                               ┃               ┃                   ┃                   ┗unknown           ┳unknown            filtered
+                               ┃               ┃                   ┃                                      ┗unknown            filtered
+                               ┃               ┃                   ┗000006AF (calc)    ┳00000638 (calc)   ┳00000004 (input 0) filtered
+                               ┃               ┃                                       ┃                  ┗00000005 (calc)    known leaf
+                               ┃               ┃                                       ┗0000063C (calc)   ┳00000006 (input 1) filtered
+                               ┃               ┃                                                          ┗00000007 (calc)    known leaf
+                               ┃               ┗000005C9 (calc)    ┳000006BF (calc)    ┳00000640 (calc)   ┳00000008 (input 2) filtered
+                               ┃                                   ┃                   ┃                  ┗00000009 (calc)    known leaf
+                               ┃                                   ┃                   ┗00000644 (calc)   ┳0000000A (calc)    known leaf
+                               ┃                                   ┃                                      ┗0000000B (input 3) filtered
+                               ┃                                   ┗000006CF (calc)    ┳00000648 (calc)   ┳0000000C (calc)    known leaf
+                               ┃                                                       ┃                  ┗0000000D (input 4) filtered
+                               ┃                                                       ┗0000064C (input 7)┳unknown            filtered
+                               ┃                                                                          ┗unknown            filtered
+                               ┗000006A4 (calc)┳00000609 (calc)    ┳000006DF (calc)    ┳00000650 (calc)   ┳00000010 (input 5) filtered
+                                               ┃                   ┃                   ┃                  ┗00000011 (calc)    known leaf
+                                               ┃                   ┃                   ┗00000654 (input 8)┳unknown            filtered
+                                               ┃                   ┃                                      ┗unknown            filtered
+                                               ┃                   ┗000006EF (calc)    ┳00000658 (calc)   ┳00000014 (input 6) filtered
+                                               ┃                                       ┃                  ┗00000015 (calc)    known leaf
+                                               ┃                                       ┗0000065C (input 9)┳unknown            filtered
+                                               ┃                                                          ┗unknown            filtered
+                                               ┗00000660 (input 11)━unknown            ━unknown           ┳unknown            filtered
+                                                                                                          ┗unknown            filtered
+        """.trimIndent()
+        )
+        val proofMerged = proofX.merge(proofY, trivialHashDigestProvider)
+        val proofMergedText = proofMerged.render(trivialHashDigestProvider)
+        assertThat(proofMergedText).isEqualTo(proof1Text)
+    }
+
+    @Test
     fun `merkle proof merge size 4 0,2,3 left 0 right 2,3`() {
         val treeSize = 4
         val digest = defaultHashDigestProvider
