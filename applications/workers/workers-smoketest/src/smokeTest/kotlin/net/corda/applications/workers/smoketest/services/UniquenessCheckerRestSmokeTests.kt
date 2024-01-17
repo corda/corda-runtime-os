@@ -42,10 +42,10 @@ import java.util.UUID
 import kotlin.random.Random
 
 /**
- * Tests for the UniquenessChecker RPC service
+ * Tests for the UniquenessChecker REST service
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class UniquenessCheckerRPCSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
+class UniquenessCheckerRestSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
     private val httpClient: HttpClient = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(30))
         .build()
@@ -123,7 +123,7 @@ class UniquenessCheckerRPCSmokeTests : ClusterReadiness by ClusterReadinessCheck
     }
 
     @Test
-    fun `RPC endpoint accepts a request and returns back a response`() {
+    fun `REST endpoint accepts a request and returns back a response`() {
         val url = "${System.getProperty("uniquenessWorkerUrl")}api/$PLATFORM_VERSION/uniqueness-checker"
 
         logger.info("uniqueness url: $url")

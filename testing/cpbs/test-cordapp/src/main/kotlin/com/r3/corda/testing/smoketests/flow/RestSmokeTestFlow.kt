@@ -6,8 +6,8 @@ import com.r3.corda.testing.smoketests.flow.messages.InitiatedSmokeTestMessage
 import com.r3.corda.testing.smoketests.flow.messages.JsonSerializationFlowOutput
 import com.r3.corda.testing.smoketests.flow.messages.JsonSerializationInput
 import com.r3.corda.testing.smoketests.flow.messages.JsonSerializationOutput
-import com.r3.corda.testing.smoketests.flow.messages.RpcSmokeTestInput
-import com.r3.corda.testing.smoketests.flow.messages.RpcSmokeTestOutput
+import com.r3.corda.testing.smoketests.flow.messages.RestSmokeTestInput
+import com.r3.corda.testing.smoketests.flow.messages.RestSmokeTestOutput
 import net.corda.v5.application.crypto.CompositeKeyGenerator
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
@@ -37,13 +37,13 @@ import java.util.UUID
 
 @Suppress("unused", "TooManyFunctions")
 @InitiatingFlow(protocol = "smoke-test-protocol")
-class RpcSmokeTestFlow : ClientStartableFlow {
+class RestSmokeTestFlow : ClientStartableFlow {
 
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val commandMap: Map<String, (RpcSmokeTestInput) -> String> = mapOf(
+    private val commandMap: Map<String, (RestSmokeTestInput) -> String> = mapOf(
         "echo" to this::echo,
         "start_sessions" to this::startSessions,
         "persistence_persist" to this::persistencePersistDog,
@@ -107,16 +107,16 @@ class RpcSmokeTestFlow : ClientStartableFlow {
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
-        val request = requestBody.getRequestBodyAs(jsonMarshallingService, RpcSmokeTestInput::class.java)
+        val request = requestBody.getRequestBodyAs(jsonMarshallingService, RestSmokeTestInput::class.java)
         return jsonMarshallingService.format(execute(request))
     }
 
-    private fun echo(input: RpcSmokeTestInput): String {
+    private fun echo(input: RestSmokeTestInput): String {
         return input.getValue("echo_value")
     }
 
     @Suspendable
-    private fun persistencePersistDog(input: RpcSmokeTestInput): String {
+    private fun persistencePersistDog(input: RestSmokeTestInput): String {
         val dogId = getDogId(input)
         val dog = Dog(dogId, "dog", Instant.now(), "none")
         persistenceService.persist(dog)
@@ -124,28 +124,28 @@ class RpcSmokeTestFlow : ClientStartableFlow {
     }
 
     @Suspendable
-    private fun persistencePersistDogs(input: RpcSmokeTestInput): String {
+    private fun persistencePersistDogs(input: RestSmokeTestInput): String {
         val dogs = getDogIds(input).map { id -> Dog(id, "dog-$id", Instant.now(), "none") }
         persistenceService.persist(dogs)
         return "dogs ${dogs.map { it.id }} saved"
     }
 
     @Suspendable
-    private fun persistenceDeleteDog(input: RpcSmokeTestInput): String {
+    private fun persistenceDeleteDog(input: RestSmokeTestInput): String {
         val dogId = getDogId(input)
         persistenceService.remove(Dog(dogId, "dog", Instant.now(), "none"))
         return "dog '${dogId}' deleted"
     }
 
     @Suspendable
-    private fun persistenceDeleteDogs(input: RpcSmokeTestInput): String {
+    private fun persistenceDeleteDogs(input: RestSmokeTestInput): String {
         val dogs = getDogIds(input).map { id -> Dog(id, "dog-$id", Instant.now(), "none") }
         persistenceService.remove(dogs)
         return "dogs ${dogs.map { it.id }} deleted"
     }
 
     @Suspendable
-    private fun persistenceMergeDog(input: RpcSmokeTestInput): String {
+    private fun persistenceMergeDog(input: RestSmokeTestInput): String {
         val dogId = getDogId(input)
         val newDogName = input.getValue("name")
         persistenceService.merge(Dog(dogId, newDogName, Instant.now(), "none"))
@@ -153,14 +153,14 @@ class RpcSmokeTestFlow : ClientStartableFlow {
     }
 
     @Suspendable
-    private fun persistenceMergeDogs(input: RpcSmokeTestInput): String {
+    private fun persistenceMergeDogs(input: RestSmokeTestInput): String {
         val dogs = getDogIds(input).map { id -> Dog(id, "dog-$id", Instant.now(), "merged") }
         persistenceService.merge(dogs)
         return "dogs ${dogs.map { it.id }} merged"
     }
 
     @Suspendable
-    private fun persistenceFindDog(input: RpcSmokeTestInput): String {
+    private fun persistenceFindDog(input: RestSmokeTestInput): String {
         val dogId = getDogId(input)
         val dog = persistenceService.find(Dog::class.java, dogId)
         return if (dog == null) {
@@ -171,7 +171,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
     }
 
     @Suspendable
-    private fun persistenceFindDogs(input: RpcSmokeTestInput): String {
+    private fun persistenceFindDogs(input: RestSmokeTestInput): String {
         val dogIds = getDogIds(input)
         val dogs = persistenceService.find(Dog::class.java, dogIds)
         return if (dogs.isEmpty()) {
@@ -201,7 +201,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         }
     }
 
-    private fun getDogId(input: RpcSmokeTestInput): UUID {
+    private fun getDogId(input: RestSmokeTestInput): UUID {
         val id = input.getValue("id")
         return try {
             UUID.fromString(id)
@@ -211,7 +211,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         }
     }
 
-    private fun getDogIds(input: RpcSmokeTestInput): List<UUID> {
+    private fun getDogIds(input: RestSmokeTestInput): List<UUID> {
         val ids = input.getValue("ids").split(";")
         return ids.map { id ->
             try {
@@ -224,7 +224,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
     }
 
     @Suspendable
-    private fun startSessions(input: RpcSmokeTestInput): String {
+    private fun startSessions(input: RestSmokeTestInput): String {
         val sessions = input.getValue("sessions").split(";")
         val messages = input.getValue("messages").split(";")
         if (sessions.size != messages.size) {
@@ -253,7 +253,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
     }
 
     @Suspendable
-    private fun signAndVerify(input: RpcSmokeTestInput): String {
+    private fun signAndVerify(input: RestSmokeTestInput): String {
         val x500Name = input.getValue("memberX500")
         val member = memberLookup.lookup(MemberX500Name.parse(x500Name))
         checkNotNull(member) { "Member $x500Name could not be looked up" }
@@ -276,7 +276,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
     }
 
     @Suspendable
-    private fun verifyInvalidSignature(input: RpcSmokeTestInput): String {
+    private fun verifyInvalidSignature(input: RestSmokeTestInput): String {
         val x500Name = input.getValue("memberX500")
         val member = memberLookup.lookup(MemberX500Name.parse(x500Name))
         checkNotNull(member) { "Member $x500Name could not be looked up" }
@@ -306,7 +306,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
     }
 
     @Suspendable
-    private fun getDefaultSignatureSpec(input: RpcSmokeTestInput): String {
+    private fun getDefaultSignatureSpec(input: RestSmokeTestInput): String {
         val x500Name = input.getValue("memberX500")
         val member = memberLookup.lookup(MemberX500Name.parse(x500Name))
         checkNotNull(member) { "Member $x500Name could not be looked up" }
@@ -327,7 +327,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
     }
 
     @Suspendable
-    private fun getCompatibleSignatureSpecs(input: RpcSmokeTestInput): String {
+    private fun getCompatibleSignatureSpecs(input: RestSmokeTestInput): String {
         val x500Name = input.getValue("memberX500")
         val member = memberLookup.lookup(MemberX500Name.parse(x500Name))
         checkNotNull(member) { "Member $x500Name could not be looked up" }
@@ -352,7 +352,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
 
     @Suppress("unused_parameter")
     @Suspendable
-    private fun findMySigningKeys(input: RpcSmokeTestInput): String {
+    private fun findMySigningKeys(input: RestSmokeTestInput): String {
         val myInfo = memberLookup.myInfo()
         val myKeysFromMemberInfo = myInfo.ledgerKeys.toSet()
         val myKeysFromCryptoWorker = signingService.findMySigningKeys(myKeysFromMemberInfo)
@@ -376,7 +376,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
 
     @Suppress("unused_parameter")
     @Suspendable
-    private fun compositeKeyGeneratorWorksInFlows(input: RpcSmokeTestInput): String {
+    private fun compositeKeyGeneratorWorksInFlows(input: RestSmokeTestInput): String {
         val someKeys = memberLookup.lookup().flatMap { it.ledgerKeys }
         val keysAndWeights = someKeys.map {
             CompositeKeyNodeAndWeight(it, 1)
@@ -391,7 +391,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
 
     @Suppress("unused_parameter")
     @Suspendable
-    private fun getDefaultDigestAlgorithm(input: RpcSmokeTestInput): String {
+    private fun getDefaultDigestAlgorithm(input: RestSmokeTestInput): String {
         val defaultDigestAlgorithm = digestService.defaultDigestAlgorithm()
         return if (defaultDigestAlgorithm == DigestAlgorithmName.SHA2_256) {
             "SUCCESS"
@@ -401,7 +401,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
 
     @Suppress("unused_parameter")
     @Suspendable
-    private fun getSupportedDigestAlgorithms(input: RpcSmokeTestInput): String {
+    private fun getSupportedDigestAlgorithms(input: RestSmokeTestInput): String {
         val supportedDigestAlgorithms = digestService.supportedDigestAlgorithms()
         val expectedSupportedDigestAlgorithms = linkedSetOf(
             DigestAlgorithmName.SHA2_256,
@@ -419,7 +419,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
     }
 
     @Suspendable
-    private fun lookupMember(input: RpcSmokeTestInput): String {
+    private fun lookupMember(input: RestSmokeTestInput): String {
         val memberX500Name = input.getValue("id")
         val memberInfo = memberLookup.lookup(MemberX500Name.parse(memberX500Name))
         checkNotNull(memberInfo) { IllegalStateException("Failed to find MemberInfo for $memberX500Name") }
@@ -440,20 +440,20 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         }""".trimIndent()
     }
 
-    private fun RpcSmokeTestInput.getValue(key: String): String {
-        return checkNotNull(this.data?.get(key)) { "Failed to find key '${key}' in the RPC input args" }
+    private fun RestSmokeTestInput.getValue(key: String): String {
+        return checkNotNull(this.data?.get(key)) { "Failed to find key '${key}' in the REST input args" }
     }
 
     @Suspendable
-    private fun execute(input: RpcSmokeTestInput): RpcSmokeTestOutput {
-        return RpcSmokeTestOutput(
+    private fun execute(input: RestSmokeTestInput): RestSmokeTestOutput {
+        return RestSmokeTestOutput(
             checkNotNull(input.command) { "No smoke test command received" },
             checkNotNull(commandMap[input.command]) { "command '${input.command}' not recognised" }.invoke(input)
         )
     }
 
     @Suspendable
-    private fun jsonSerialization(input: RpcSmokeTestInput): String {
+    private fun jsonSerialization(input: RestSmokeTestInput): String {
         // First test checks custom serializers with message defined in the CorDapp
         // this should output json with 2 fields each with test-string as the value
         val jsonString = jsonMarshallingService.format(JsonSerializationInput("test-string"))
