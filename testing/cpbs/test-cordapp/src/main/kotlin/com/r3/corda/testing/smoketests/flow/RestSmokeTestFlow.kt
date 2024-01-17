@@ -204,6 +204,7 @@ class RestSmokeTestFlow : ClientStartableFlow {
         }
     }
 
+    @Suspendable
     private fun getDogId(input: RestSmokeTestInput): UUID {
         val id = input.getValue("id")
         return try {
@@ -214,6 +215,7 @@ class RestSmokeTestFlow : ClientStartableFlow {
         }
     }
 
+    @Suspendable
     private fun getDogIds(input: RestSmokeTestInput): List<UUID> {
         val ids = input.getValue("ids").split(";")
         return ids.map { id ->
@@ -240,10 +242,10 @@ class RestSmokeTestFlow : ClientStartableFlow {
             log.info("Creating session for '${x500}'...")
             val session = flowMessaging.initiateFlow(MemberX500Name.parse(x500))
 
-            val countpartyInfo = session.counterpartyFlowInfo
+            val counterpartyInfo = session.counterpartyFlowInfo
+            log.info("Creating session '${session}' with version ${counterpartyInfo.protocolVersion()} now sending and " +
+                    "waiting for response...")
 
-            log.info("Creating session '${session}' with version ${countpartyInfo.protocolVersion()} now sending and waiting for response" +
-                    " ...")
             val response = session
                 .sendAndReceive(InitiatedSmokeTestMessage::class.java, InitiatedSmokeTestMessage(messages[idx]))
 
@@ -262,6 +264,7 @@ class RestSmokeTestFlow : ClientStartableFlow {
         val signatureSpec: SignatureSpec
     )
 
+    @Suspendable
     private fun RestSmokeTestInput.performSigning() : SigningResult {
         val x500Name = getValue("memberX500")
         val member = memberLookup.lookup(MemberX500Name.parse(x500Name))
@@ -311,6 +314,7 @@ class RestSmokeTestFlow : ClientStartableFlow {
         }.toString()
     }
 
+    @Suspendable
     private fun RestSmokeTestInput.retrievePublicKeyAndDigest(): Pair<PublicKey, String?> {
         val x500Name = getValue("memberX500")
         val member = memberLookup.lookup(MemberX500Name.parse(x500Name))
@@ -442,6 +446,7 @@ class RestSmokeTestFlow : ClientStartableFlow {
         }""".trimIndent()
     }
 
+    @Suspendable
     private fun RestSmokeTestInput.getValue(key: String): String {
         return checkNotNull(this.data?.get(key)) { "Failed to find key '${key}' in the REST input args" }
     }
