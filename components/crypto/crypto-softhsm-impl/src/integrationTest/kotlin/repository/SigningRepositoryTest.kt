@@ -19,7 +19,6 @@ import net.corda.crypto.persistence.db.model.SigningKeyEntity
 import net.corda.crypto.persistence.db.model.SigningKeyMaterialEntity
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
 import net.corda.crypto.softhsm.impl.SigningRepositoryImpl
-import net.corda.crypto.softhsm.impl.toDto
 import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapImpl
@@ -110,39 +109,35 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
         val generation: Int
     )
 
-    private val uniqueWrappingKeys = mutableSetOf<UniqueAliasAndGeneration>()
+    private val uniqueWrappingKeys = mutableMapOf<UniqueAliasAndGeneration, UUID>()
 
+    /**
+     * Need to ensure we only create wrapping keys for a unique combination of alias and generation to fulfil the
+     * db constraint for each EMF. Tests can reuse existing wrapping keys with the same combination if they already exist.
+     */
     private fun saveWrappingKey(
         emf: EntityManagerFactory,
         alias: String,
         generation: Int = 1
-    ): UUID {
-        val uuid = UUID.randomUUID()
-        // Need to ensure we only create wrapping keys for a unique combination of alias and generation to fulfil the
-        // db constraint for each EMF. Tests can reuse existing wrapping keys with the same combination if they already exist.
-        val uniqueAliasAndGeneration = UniqueAliasAndGeneration(emf, alias, generation)
-        if (!uniqueWrappingKeys.contains(uniqueAliasAndGeneration)) {
-            uniqueWrappingKeys.add(uniqueAliasAndGeneration)
-            emf.createEntityManager().use { em ->
-                em.transaction {
-                    it.merge(
-                        WrappingKeyEntity(
-                            id = uuid,
-                            generation = generation,
-                            alias = alias,
-                            created = Instant.now(),
-                            rotationDate = LocalDate.parse("9999-12-31").atStartOfDay().toInstant(ZoneOffset.UTC),
-                            encodingVersion = 1,
-                            algorithmName = "foo",
-                            keyMaterial = SecureHashUtils.randomBytes(),
-                            isParentKeyManaged = false,
-                            parentKeyReference = "root",
-                        )
+    ) = uniqueWrappingKeys.computeIfAbsent(UniqueAliasAndGeneration(emf, alias, generation)) {
+        emf.createEntityManager().use { em ->
+            em.transaction {
+                it.merge(
+                    WrappingKeyEntity(
+                        id = UUID.randomUUID(),
+                        generation = generation,
+                        alias = alias,
+                        created = Instant.now(),
+                        rotationDate = LocalDate.parse("9999-12-31").atStartOfDay().toInstant(ZoneOffset.UTC),
+                        encodingVersion = 1,
+                        algorithmName = "foo",
+                        keyMaterial = SecureHashUtils.randomBytes(),
+                        isParentKeyManaged = false,
+                        parentKeyReference = "root",
                     )
-                }
-            }.toDto()
-        }
-        return uuid
+                )
+            }
+        }.id
     }
 
     private val createdKeys = mutableMapOf<EntityManagerFactory, List<SigningKeyInfo>>()
@@ -209,9 +204,12 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
     @MethodSource("emfs")
     fun `savePrivateKey uses latest generation of wrapping key`(emf: EntityManagerFactory) {
         val info = createSigningKeyInfo()
-        saveWrappingKey(emf, info.wrappingKeyAlias, generation = 1)
-        saveWrappingKey(emf, info.wrappingKeyAlias, generation = 2)
+        val unexpectedUuid1 = saveWrappingKey(emf, info.wrappingKeyAlias, generation = 1)
+        val unexpectedUuid2 = saveWrappingKey(emf, info.wrappingKeyAlias, generation = 2)
         val expectedUuid = saveWrappingKey(emf, info.wrappingKeyAlias, generation = 3)
+
+        assertThat(unexpectedUuid1).isNotEqualTo(expectedUuid)
+        assertThat(unexpectedUuid2).isNotEqualTo(expectedUuid)
 
         val ctx = createSigningWrappedKeySaveContext(info)
 
