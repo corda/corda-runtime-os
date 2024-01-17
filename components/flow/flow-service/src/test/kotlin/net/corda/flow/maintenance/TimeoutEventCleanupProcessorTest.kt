@@ -3,6 +3,7 @@ package net.corda.flow.maintenance
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.data.flow.FlowTimeout
 import net.corda.data.flow.state.checkpoint.Checkpoint
+import net.corda.data.messaging.mediator.MediatorState
 import net.corda.flow.state.impl.FlowCheckpointFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.State
@@ -14,12 +15,14 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.time.Instant
 
 class TimeoutEventCleanupProcessorTest {
     private val checkpointCleanupHandler = mock<CheckpointCleanupHandler>()
     private val stateManager = mock<StateManager>()
-    private val avroDeserializer = mock<CordaAvroDeserializer<Checkpoint>>()
+    private val checkpointCordaAvroDeserializer = mock<CordaAvroDeserializer<Checkpoint>>()
+    private val mediatorDeserializer = mock<CordaAvroDeserializer<MediatorState>>()
     private val flowCheckpointFactory = mock<FlowCheckpointFactory>()
     private val config = mock<SmartConfig>()
 
@@ -30,10 +33,17 @@ class TimeoutEventCleanupProcessorTest {
 
     @BeforeEach
     fun setup() {
+        val checkpointBytes = mock<ByteBuffer>().apply {
+            whenever(array()).thenReturn("bytes".toByteArray())
+        }
         val checkpoint = mock<Checkpoint>().apply {
             whenever(flowId).thenReturn("flowID")
         }
-        whenever(avroDeserializer.deserialize(any())).thenReturn(checkpoint)
+        val mediatorState = mock<MediatorState>().apply {
+            whenever(state).thenReturn(checkpointBytes)
+        }
+        whenever(checkpointCordaAvroDeserializer.deserialize(any())).thenReturn(checkpoint)
+        whenever(mediatorDeserializer.deserialize(any())).thenReturn(mediatorState)
         whenever(flowCheckpointFactory.create(any(), any(), any())).thenReturn(mock())
         whenever(checkpointCleanupHandler.cleanupCheckpoint(any(), any(), any())).thenReturn(listOf(mock()))
     }
@@ -45,7 +55,8 @@ class TimeoutEventCleanupProcessorTest {
         val processor = TimeoutEventCleanupProcessor(
             checkpointCleanupHandler,
             stateManager,
-            avroDeserializer,
+            mediatorDeserializer,
+            checkpointCordaAvroDeserializer,
             flowCheckpointFactory,
             config
         )
@@ -60,7 +71,8 @@ class TimeoutEventCleanupProcessorTest {
         val processor = TimeoutEventCleanupProcessor(
             checkpointCleanupHandler,
             stateManager,
-            avroDeserializer,
+            mediatorDeserializer,
+            checkpointCordaAvroDeserializer,
             flowCheckpointFactory,
             config
         )
@@ -75,7 +87,8 @@ class TimeoutEventCleanupProcessorTest {
         val processor = TimeoutEventCleanupProcessor(
             checkpointCleanupHandler,
             stateManager,
-            avroDeserializer,
+            mediatorDeserializer,
+            checkpointCordaAvroDeserializer,
             flowCheckpointFactory,
             config
         )
@@ -86,12 +99,13 @@ class TimeoutEventCleanupProcessorTest {
     @Test
     fun `when avro deserializer fails to deserialize no records are output`() {
         whenever(stateManager.get(any())).thenReturn(inputRecords.associate { it.key to buildState(it.key) })
-        whenever(avroDeserializer.deserialize(any())).thenReturn(null)
+        whenever(checkpointCordaAvroDeserializer.deserialize(any())).thenReturn(null)
         whenever(stateManager.delete(any())).thenReturn(mapOf())
         val processor = TimeoutEventCleanupProcessor(
             checkpointCleanupHandler,
             stateManager,
-            avroDeserializer,
+            mediatorDeserializer,
+            checkpointCordaAvroDeserializer,
             flowCheckpointFactory,
             config
         )
