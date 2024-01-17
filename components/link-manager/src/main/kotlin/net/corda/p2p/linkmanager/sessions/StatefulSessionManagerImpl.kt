@@ -65,7 +65,9 @@ internal class StatefulSessionManagerImpl(
                     ).sessionData as? Session
                     session?.let {
                         sessionsIdsNotInCache[sessionId]?.let {
-                            it to SessionManager.SessionDirection.Inbound(state.metadata.from().toCounterparties(), session)
+                            val inboundSession = SessionManager.SessionDirection.Inbound(state.metadata.from().toCounterparties(), session)
+                            cachedInboundSessions.put(sessionId, inboundSession)
+                            it to inboundSession
                         }
                     }
                 }
