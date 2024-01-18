@@ -103,7 +103,7 @@ class CryptoRekeyBusProcessor(
                     State(
                         // key is set as a unique string to prevent table search in re-wrap bus processor
                         getKeyRotationStatusRecordKey(request.oldParentKeyAlias, tenantId),
-                        serializer.serialize(status)!!,
+                        checkNotNull(serializer.serialize(status)),
                         1,
                         Metadata(
                             mapOf(
