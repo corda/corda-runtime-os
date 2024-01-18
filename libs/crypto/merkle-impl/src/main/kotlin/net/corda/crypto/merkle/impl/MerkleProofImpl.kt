@@ -428,7 +428,19 @@ class MerkleProofImpl(
     }
 }
 
-
+/**
+ * Construct a MerkleProof from a number of proofs at different positions, and fill in some gaps with
+ * secure hashes.
+ *
+ * @param elements Merkle proofs indexed by position
+ * @param gaps Secure hash values for gaps
+ * @return A MerkleProof containing all the elements specified
+ *
+ * Throws IllegalArgumentException if there are positions in the output not covered by elements or gaps,
+ * or if there are common indices with both an element and gap hash.
+ *
+ * Note: test coverage is pretty limited, and this is not currently in use in production.
+ */
 fun concatenate(elements: Map<Int, MerkleProof>, gaps: Map<Int, SecureHash>): MerkleProof {
     val highest = (elements.keys + gaps.keys).max()
     for (i in 0..highest) {
