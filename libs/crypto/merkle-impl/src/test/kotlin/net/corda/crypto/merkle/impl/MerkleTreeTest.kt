@@ -1433,10 +1433,10 @@ class MerkleTreeTest {
         val tree1 = makeTestMerkleTree(2, defaultHashDigestProvider) { it -> (it+2).toByteArray()}
         val expected = makeTestMerkleTree(4, defaultHashDigestProvider)
         val proof0 = tree0.createAuditProof(listOf(0,1))
-        val proof1 = tree1.createAuditProof(listOf(2,3))
+        val proof1 = tree1.createAuditProof(listOf(0,1))
         val proofExpected = expected.createAuditProof(listOf(0,1,2,3)) as MerkleProofImpl
-        val proofConcatenated = concatenate( mapOf(0 to proof0, 1 to proof1))
-        assertThat(proofExpected.render(defaultHashDigestProvider)).isEqualTo(proofConcatenated)
+        val proofConcatenated = concatenate( mapOf(0 to proof0, 1 to proof1), emptyMap()) as MerkleProofImpl
+        assertThat(proofExpected.render(defaultHashDigestProvider)).isEqualTo(proofConcatenated.render(defaultHashDigestProvider))
     }
 }
 

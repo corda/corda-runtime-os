@@ -8,6 +8,7 @@ import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleProofRebuildFailureException
 import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.crypto.merkle.MerkleTreeHashDigest
+import java.lang.UnsupportedOperationException
 import kotlin.math.min
 
 /**
@@ -425,4 +426,34 @@ class MerkleProofImpl(
         }
         return renderTree(leafLabels, nodeLabels)
     }
+}
+
+
+fun concatenate(elements: Map<Int, MerkleProof>, gaps: Map<Int, SecureHash>): MerkleProof {
+    val highest = (elements.keys + gaps.keys).max()
+    for (i in 0..highest) {
+        require(! (elements.containsKey(i) && gaps.containsKey(i) )) {"element $i may not be in both elements and gaps"}
+        require( elements.containsKey(i) || gaps.containsKey(i)) {"element $i unspecified"}
+    }
+    val leaves = mutableListOf<IndexedMerkleLeaf>()
+    val hashes = mutableListOf<SecureHash>()
+    var treeSize = 0
+    for (i in 0 .. highest) {
+        val element = elements[i]
+        val gap = gaps[i]
+        when {
+            element != null -> {
+                leaves += element.leaves.map { IndexedMerkleLeafImpl(it.index + treeSize, it.nonce, it.leafData)}
+                hashes += element.hashes
+                treeSize += element.treeSize
+            }
+            gap != null -> {
+                hashes += gap
+                treeSize += 1
+            }
+            else ->
+                throw UnsupportedOperationException("should be unreachable; cannot resolve element $i")
+        }
+    }
+    return MerkleProofImpl(MerkleProofType.AUDIT, treeSize, leaves, hashes)
 }
