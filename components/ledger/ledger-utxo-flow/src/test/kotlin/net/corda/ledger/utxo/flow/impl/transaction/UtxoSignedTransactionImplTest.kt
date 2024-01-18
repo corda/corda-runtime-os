@@ -31,6 +31,14 @@ internal class UtxoSignedTransactionImplTest : UtxoLedgerTest() {
 
     @BeforeEach
     fun beforeEach() {
+        val flowId = "fc321a0c-62c6-41a1-85e6-e61870ab93aa"
+        val suspendCount = 10
+
+        val checkpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
+
+        whenever(checkpoint.flowId).thenReturn(flowId)
+        whenever(checkpoint.suspendCount).thenReturn(suspendCount)
+
         val notaryInfo = mock<NotaryInfo>().also {
             whenever(it.name).thenReturn(notaryX500Name)
             whenever(it.publicKey).thenReturn(notaryKey)
