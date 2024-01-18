@@ -20,9 +20,9 @@ import net.corda.layeredpropertymap.impl.LayeredPropertyMapImpl
 import net.corda.layeredpropertymap.impl.PropertyConverter
 import net.corda.v5.crypto.SecureHash
 import java.lang.IllegalStateException
-import java.rmi.server.UID
 import java.security.PublicKey
 import java.time.Instant
+import java.util.UUID
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -113,7 +113,7 @@ class TestSigningRepository : SigningRepository {
         // We do not clear keys here, since we want to be able to reuse the repository.
     }
 
-    override fun getKeyMaterials(wrappingKeyId: UID): Collection<SigningKeyMaterialInfo> {
+    override fun getKeyMaterials(wrappingKeyId: UUID): Collection<SigningKeyMaterialInfo> {
         throw IllegalStateException("Unexpected call to getKeyMaterials")
     }
 }
