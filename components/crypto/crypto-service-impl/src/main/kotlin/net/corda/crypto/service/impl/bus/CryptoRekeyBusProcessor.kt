@@ -37,7 +37,7 @@ class CryptoRekeyBusProcessor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val wrappingRepositoryFactory: WrappingRepositoryFactory,
     private val rekeyPublisher: Publisher,
-    private val stateManager: StateManager?,
+    private val stateManagerInit: StateManager?,
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) : DurableProcessor<String, KeyRotationRequest> {
     companion object {
@@ -47,6 +47,10 @@ class CryptoRekeyBusProcessor(
     override val keyClass: Class<String> = String::class.java
     override val valueClass = KeyRotationRequest::class.java
     private val serializer = cordaAvroSerializationFactory.createAvroSerializer<UnmanagedKeyStatus>()
+    private val stateManager: StateManager
+        get() = checkNotNull(stateManagerInit) {
+            "State manager for key rotation is not initialised."
+        }
 
     @Suppress("NestedBlockDepth")
     override fun onNext(events: List<Record<String, KeyRotationRequest>>): List<Record<*, *>> {
@@ -116,7 +120,7 @@ class CryptoRekeyBusProcessor(
 
             // Only delete previous key rotation status if we are actually going to rotate something
             if (records.isNotEmpty()) deleteStateManagerRecords(request.oldParentKeyAlias)
-            stateManager!!.create(records)
+            stateManager.create(records)
 
             rekeyPublisher.publish(
                 targetWrappingKeys.map { (tenantId, wrappingKeyInfo) ->
@@ -142,7 +146,7 @@ class CryptoRekeyBusProcessor(
     }
 
     private fun hasPreviousRotationFinished(oldKeyAlias: String): Boolean {
-        stateManager!!.findByMetadataMatchingAll(
+        stateManager.findByMetadataMatchingAll(
             listOf(
                 MetadataFilter(KeyRotationMetadataValues.ROOT_KEY_ALIAS, Operation.Equals, oldKeyAlias),
                 MetadataFilter(KeyRotationMetadataValues.TYPE, Operation.Equals, KeyRotationRecordType.KEY_ROTATION)
@@ -154,7 +158,7 @@ class CryptoRekeyBusProcessor(
     }
 
     private fun deleteStateManagerRecords(oldParentKeyAlias: String) {
-        val toDelete = stateManager!!.findByMetadataMatchingAll(
+        val toDelete = stateManager.findByMetadataMatchingAll(
             listOf(
                 MetadataFilter(KeyRotationMetadataValues.ROOT_KEY_ALIAS, Operation.Equals, oldParentKeyAlias),
                 MetadataFilter(KeyRotationMetadataValues.TYPE, Operation.Equals, KeyRotationRecordType.KEY_ROTATION)
