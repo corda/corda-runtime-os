@@ -1450,7 +1450,8 @@ class MerkleTreeTest {
         val proofExpected = expected.createAuditProof(listOf(0,1,2,3)) as MerkleProofImpl
         val proofConcatenated = concatenate( mapOf(0 to proof0), mapOf(1 to proof1.calculateRoot(
             defaultHashDigestProvider))) as MerkleProofImpl
-        assertThat(proofExpected.calculateRoot(defaultHashDigestProvider)).isEqualTo(proofConcatenated.calculateRoot(defaultHashDigestProvider))
+        assertThat(proofExpected.calculateRoot(defaultHashDigestProvider)).isEqualTo(
+            proofConcatenated.calculateRoot(defaultHashDigestProvider))
     }
 }
 
