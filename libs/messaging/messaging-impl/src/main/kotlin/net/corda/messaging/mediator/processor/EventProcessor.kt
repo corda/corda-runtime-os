@@ -29,10 +29,14 @@ class EventProcessor<K : Any, S : Any, E : Any>(
 
     /**
      * Process a group of events.
-     * If the mediator has previously processed a record, then the asynchronous outputs from the previous invocation of the processor will be retrieved from the [MediatorState].
-     * In this case, the message processor is not executed again, and the previously retrieved outputs are returned for resending.
-     * Otherwise, the message processor is executed and any synchronous calls are processed and responses handled.
+     * If the mediator has previously processed a record, then the asynchronous outputs from the previous invocation
+     * of the processor will be retrieved from the [MediatorState].In this case, the message processor is not executed again,
+     * and the previously retrieved outputs are returned for resending.
+     *
+     * Otherwise, the message processor is executed and any synchronous calls are sent and responses are processed immediately.
+     *
      * Finally, any asynchronous outputs are returned, as well as the [State] object to update.
+     *
      * @param group Group of consumer records of various keys
      * @param retrievedStates states for each key
      * @return The asynchronous outputs and state updates grouped by record key
@@ -99,7 +103,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     private fun getReplayOutputsAndNonReplayInputs(
         allConsumerInputs: List<Record<K, E>>,
         mediatorState: MediatorState
-    ): Pair<List<Record<K, E>>, List<MediatorMessage<Any>>>  {
+    ): Pair<List<Record<K, E>>, List<MediatorMessage<Any>>> {
         val cachedOutputs = mutableListOf<MediatorMessage<Any>>()
         val nonReplayOutputs = allConsumerInputs.filter { inputEvent ->
             mediatorReplayService.getReplayEvents(inputEvent, mediatorState)?.let {
@@ -112,7 +116,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     private fun MutableMap<Record<K, E>, MutableList<MediatorMessage<Any>>>.addOutputs(
         inputEvent: Record<K, E>,
         asyncEvents: List<MediatorMessage<Any>>
-    ) =  computeIfAbsent(inputEvent) { mutableListOf() }.addAll(asyncEvents)
+    ) = computeIfAbsent(inputEvent) { mutableListOf() }.addAll(asyncEvents)
 
 
     private fun createNewMediatorState(): MediatorState {
