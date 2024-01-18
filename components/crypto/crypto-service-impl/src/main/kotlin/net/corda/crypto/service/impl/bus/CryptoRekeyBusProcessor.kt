@@ -96,19 +96,19 @@ class CryptoRekeyBusProcessor(
             val records = mutableListOf<State>()
 
             // Group by tenantId/vNode
-            targetWrappingKeys.groupBy { it.first }.forEach {
-                logger.debug("Grouping wrapping keys by vNode/tenantId ${it.key}")
-                val status = UnmanagedKeyStatus(request.oldParentKeyAlias, it.value.size, 0)
+            targetWrappingKeys.groupBy { it.first }.forEach { (tenantId, wrappingKeys) ->
+                logger.debug("Grouping wrapping keys by vNode/tenantId $tenantId")
+                val status = UnmanagedKeyStatus(request.oldParentKeyAlias, wrappingKeys.size, 0)
                 records.add(
                     State(
                         // key is set as a unique string to prevent table search in re-wrap bus processor
-                        getKeyRotationStatusRecordKey(request.oldParentKeyAlias, it.key),
+                        getKeyRotationStatusRecordKey(request.oldParentKeyAlias, tenantId),
                         serializer.serialize(status)!!,
                         1,
                         Metadata(
                             mapOf(
                                 KeyRotationMetadataValues.ROOT_KEY_ALIAS to request.oldParentKeyAlias,
-                                KeyRotationMetadataValues.TENANT_ID to it.key,
+                                KeyRotationMetadataValues.TENANT_ID to tenantId,
                                 KeyRotationMetadataValues.TYPE to KeyRotationRecordType.KEY_ROTATION,
                                 KeyRotationMetadataValues.STATUS to KeyRotationStatus.IN_PROGRESS,
                                 STATE_TYPE to status::class.java.name
