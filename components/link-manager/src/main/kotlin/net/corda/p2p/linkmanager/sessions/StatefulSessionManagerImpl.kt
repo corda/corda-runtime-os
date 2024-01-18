@@ -203,8 +203,8 @@ internal class StatefulSessionManagerImpl(
                 }
             }
         val sessionsNotInInboundStateManager =
-            (sessionIdsNotInCache.values - inboundSessionsFromStateManager.map { it.first }.toSet()).map {
-                getSessionIdFilter(getSessionId(it))
+            (sessionIdsNotInCache.keys - inboundSessionsFromStateManager.map { getSessionId(it.first) }.toSet()).map {
+                getSessionIdFilter(it)
             }
         val outboundSessionsFromStateManager: List<Pair<T, SessionManager.SessionDirection>> =
             if (sessionsNotInInboundStateManager.isEmpty()) {
@@ -431,6 +431,7 @@ internal class StatefulSessionManagerImpl(
         val newState = State(
             initMessage.first.sessionId,
             stateConvertor.toStateByteArray(SessionState(message.second, initMessage.first)),
+            version = 0,
             metadata = newMetadata.toMetadata()
         )
         return SessionManager.SessionState.NewSessionsNeeded(listOf(message), counterParties) to newState
@@ -443,7 +444,7 @@ internal class StatefulSessionManagerImpl(
         ).message ?: return null
         val updatedMetadata = metadata.toOutbound().copy(lastSendTimestamp = clock.instant())
         val updatedState = State(
-            key, value, version = version + 1, metadata = updatedMetadata.toMetadata()
+            key, value, version = version, metadata = updatedMetadata.toMetadata()
         )
         return SessionManager.SessionState.NewSessionsNeeded(
             listOf(updatedMetadata.sessionId to sessionMessage), updatedState.getSessionCounterparties()
@@ -546,7 +547,7 @@ internal class StatefulSessionManagerImpl(
                     val newState = State(
                         key = state.key,
                         value = state.value,
-                        version = state.version + 1,
+                        version = state.version,
                         metadata = updatedMetadata.toMetadata(),
                     )
                     responderHelloToResend to newState
@@ -592,7 +593,7 @@ internal class StatefulSessionManagerImpl(
                             counterparties.ourId, counterparties.counterpartyId, counterparties.serial
                         ),
                         stateConvertor.toStateByteArray(SessionState(responseMessage, authenticationProtocol)),
-                        version = state.version + 1,
+                        version = state.version,
                         metadata = updatedMetadata.toMetadata()
                     )
                     responseMessage to newState
@@ -609,7 +610,7 @@ internal class StatefulSessionManagerImpl(
                     val newState = State(
                         key = state.key,
                         value = state.value,
-                        version = state.version + 1,
+                        version = state.version,
                         metadata = updatedMetadata.toMetadata()
                     )
                     initiatorHandshakeToResend to newState
@@ -681,7 +682,7 @@ internal class StatefulSessionManagerImpl(
                     val newState = State(
                         message.initiatorHandshakeMessage.header.sessionId,
                         stateConvertor.toStateByteArray(SessionState(responseMessage, session)),
-                        version = state.version + 1,
+                        version = state.version,
                         metadata = newMetadata.toMetadata(),
                     )
                     ProcessHandshakeResult(responseMessage, newState, session)
@@ -698,7 +699,7 @@ internal class StatefulSessionManagerImpl(
                     val newState = State(
                         key = state.key,
                         value = state.value,
-                        version = state.version + 1,
+                        version = state.version,
                         metadata = updatedMetadata.toMetadata(),
                     )
                     ProcessHandshakeResult(responderHandshakeToResend, newState, null)
@@ -735,7 +736,7 @@ internal class StatefulSessionManagerImpl(
                             counterparties.ourId, counterparties.counterpartyId, counterparties.serial
                         ),
                         stateConvertor.toStateByteArray(SessionState(null, session)),
-                        version = state.version + 1,
+                        version = state.version,
                         metadata = updatedMetadata.toMetadata()
                     )
                     ProcessHandshakeResult(null, newState, session)
