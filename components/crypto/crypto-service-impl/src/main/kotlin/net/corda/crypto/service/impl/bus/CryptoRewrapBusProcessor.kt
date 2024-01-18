@@ -83,7 +83,7 @@ class CryptoRewrapBusProcessor(
                         state.metadata
                     }
                     val failedToUpdate =
-                        stateManager.update(listOf(State(state.key, newValue!!, state.version, newMetadata)))
+                        stateManager.update(listOf(State(state.key, newValue, state.version, newMetadata)))
                     if (failedToUpdate.isNotEmpty()) {
                         logger.debug("Failed to update following states ${failedToUpdate.keys}, retrying.")
                         Thread.sleep(Random.nextLong(0, 1000))
