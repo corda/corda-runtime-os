@@ -651,7 +651,7 @@ open class SoftCryptoService(
      * @param oldWrappingKey The original wrapping key
      * @param wrappingRepository The WrappingRepository object to save the new key with
      */
-    fun createWrappingKeyFrom(wrappingRepository: WrappingRepository, oldWrappingKey: WrappingKeyInfo) {
+    private fun createWrappingKeyFrom(wrappingRepository: WrappingRepository, oldWrappingKey: WrappingKeyInfo) {
         logger.trace {
             "createWrappingKeyFrom(alias=${oldWrappingKey.alias})"
         }
