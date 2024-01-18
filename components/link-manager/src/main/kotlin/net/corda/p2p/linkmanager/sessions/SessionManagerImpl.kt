@@ -1334,6 +1334,8 @@ internal class SessionManagerImpl(
 
                 val timeSinceLastSend = timeStamp() - sessionInfo.lastSendTimestamp
                 if (timeSinceLastSend >= config.heartbeatPeriod.toMillis()) {
+                    logger.info("[HeartbeatTest]: Heartbeat time passed, now sending from ${counterparties.ourId.x500Name} " +
+                            "to ${counterparties.counterpartyId.x500Name}")
                     logger.trace {
                         "Sending heartbeat message between ${counterparties.ourId} (our Identity) and " +
                                 "${counterparties.counterpartyId}."
@@ -1345,12 +1347,21 @@ internal class SessionManagerImpl(
                         counterparties.status,
                         counterparties.serial
                     )
+
+                    logger.info("[HeartbeatTest]: Heartbeat sent from ${counterparties.ourId.x500Name} " +
+                            "to ${counterparties.counterpartyId.x500Name} now scheduling new one in " +
+                            "${config.heartbeatPeriod.toMillis()}ms")
+
                     executorService.schedule(
                         { sendHeartbeat(counterparties, session) },
                         config.heartbeatPeriod.toMillis(),
                         TimeUnit.MILLISECONDS
                     )
                 } else {
+                    logger.info("[HeartbeatTest]: Heartbeat not ready from ${counterparties.ourId.x500Name} " +
+                            "to ${counterparties.counterpartyId.x500Name} now scheduling new one in " +
+                            "${config.heartbeatPeriod.toMillis() - timeSinceLastSend}ms")
+
                     executorService.schedule(
                         { sendHeartbeat(counterparties, session) },
                         config.heartbeatPeriod.toMillis() - timeSinceLastSend,
@@ -1391,7 +1402,10 @@ internal class SessionManagerImpl(
                     )
                 )
 
+                logger.info("[HeartbeatTest]: Waiting for future to complete, from ${source.x500Name} to ${dest.x500Name}")
+
                 future.single().whenComplete { _, error ->
+                    logger.info("[HeartbeatTest]: Future completed, from ${source.x500Name} to ${dest.x500Name}")
                     if (error != null) {
                         logger.warn("An exception was thrown when sending a heartbeat message.\nException:", error)
                     } else {
