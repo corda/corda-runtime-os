@@ -10,6 +10,7 @@ import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.metadata
 import net.corda.messaging.api.constants.MessagingMetadataKeys.PROCESSING_FAILURE
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 
 /**
@@ -20,6 +21,9 @@ class StateManagerHelper<S : Any>(
     private val stateDeserializer: CordaAvroDeserializer<S>,
     private val mediatorStateDeserializer: CordaAvroDeserializer<MediatorState>,
 ) {
+
+    private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
 
     /**
      * Creates an updated [State] or a new one if there was no previous version.
@@ -35,6 +39,7 @@ class StateManagerHelper<S : Any>(
         mediatorState: MediatorState,
         newState: StateAndEventProcessor.State<S>?,
     ) = serialize(newState?.value)?.let { serializedValue ->
+        log.info("Lorcan - ${serializedValue.size}")
         mediatorState.state = ByteBuffer.wrap(serializedValue)
         val mediatorStateBytes = serializer.serialize(mediatorState)
             ?: throw IllegalStateException("Serialized mediator state was null. This should not be possible!")
