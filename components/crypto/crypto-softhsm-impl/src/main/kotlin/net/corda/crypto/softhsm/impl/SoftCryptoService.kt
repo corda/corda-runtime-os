@@ -42,6 +42,7 @@ import net.corda.crypto.softhsm.SigningRepositoryFactory
 import net.corda.crypto.softhsm.TenantInfoService
 import net.corda.crypto.softhsm.WrappingRepositoryFactory
 import net.corda.crypto.softhsm.deriveSupportedSchemes
+import net.corda.crypto.softhsm.WrappingRepository
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import net.corda.utilities.trace
@@ -644,5 +645,35 @@ open class SoftCryptoService(
     override fun close() {
     }
 
+    /**
+     * Create a new wrapping key based on an existing key with the same alias and an incremented generation number
+     *
+     * @param wrappingRepository The WrappingRepository the new key will be saved in
+     * @param oldWrappingKey The original wrapping key
+     */
+    private fun createWrappingKeyFrom(wrappingRepository: WrappingRepository, oldWrappingKey: WrappingKeyInfo) {
+        logger.trace {
+            "createWrappingKeyFrom(alias=${oldWrappingKey.alias})"
+        }
+        val wrappingKey = recoverable("createWrappingKeyFrom generate wrapping key") { wrappingKeyFactory(schemeMetadata) }
+        val parentKeyAlias = oldWrappingKey.parentKeyAlias
+        val parentKey = checkNotNull(unmanagedWrappingKeys[parentKeyAlias])
+            {"No wrapping key $parentKeyAlias found"}
+        val wrappingKeyEncrypted = recoverable("wrap") { parentKey.wrap(wrappingKey) }
+        val wrappingKeyInfo =
+            WrappingKeyInfo(
+                oldWrappingKey.encodingVersion,
+                wrappingKey.algorithm,
+                wrappingKeyEncrypted,
+                oldWrappingKey.generation + 1,
+                parentKeyAlias,
+                oldWrappingKey.alias
+            )
+        recoverable("createWrappingKeyFrom save key") {
+            wrappingRepository.saveKey(wrappingKeyInfo)
+        }
+        logger.trace("Regenerated wrapping key alias ${oldWrappingKey.alias}")
+        wrappingKeyCache?.put(wrappingKeyInfo.alias, wrappingKey)
+    }
 }
 
