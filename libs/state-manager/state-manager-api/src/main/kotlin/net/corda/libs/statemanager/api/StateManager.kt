@@ -56,8 +56,14 @@ interface StateManager : Lifecycle {
      * persistent storage, if any, are synced.
      *
      * Typical usage is to get some states, e.g. using `findByMetadataMatchingAll`, then make changes to the
-     * state content but leave the version alone, then try calling `update`. If the result is non empty,
-     * sleep for a random time, then query and update again.
+     * state content while leaving the version number alone, then try calling `update`.  If the result is non empty,
+     * sleep for a random time, then requery and try the update again if changes are still needed.
+     *
+     * If we have `X` and `Y` trying to update the same state and `Y` wins the race, and:
+     *
+     * - `X` and `Y` are doing different things, then `X` needs to remake its change and try again.
+     * - `X` and `Y` are doing the same thing, then `X` can check and move on. You may not want to sleep
+     *    before rechecking the first time around if this is the common case.
      *
      * @param states Collection of states to be updated. Each state record has a version field; it should be the
      *      version currently in the database. The State Manager will increment the version it stores by one
