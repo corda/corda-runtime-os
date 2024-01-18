@@ -38,7 +38,11 @@ import net.corda.crypto.impl.getSigningData
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.WrappingKeyInfo
-import net.corda.crypto.softhsm.*
+import net.corda.crypto.softhsm.SigningRepositoryFactory
+import net.corda.crypto.softhsm.TenantInfoService
+import net.corda.crypto.softhsm.WrappingRepositoryFactory
+import net.corda.crypto.softhsm.deriveSupportedSchemes
+import net.corda.crypto.softhsm.WrappingRepository
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import net.corda.utilities.trace
@@ -646,7 +650,6 @@ open class SoftCryptoService(
      *
      * @param oldWrappingKey The original wrapping key
      * @param wrappingRepository The WrappingRepository object to save the new key with
-     * @return The new wrapping key based on the existing one
      */
     private fun createWrappingKeyFrom(oldWrappingKey: WrappingKeyInfo, wrappingRepository: WrappingRepository){
         logger.trace {
