@@ -32,7 +32,7 @@ import kotlin.concurrent.scheduleAtFixedRate
 /*
  * This will be removed in future PRs, for now it's useful for testing different optimizations.
  */
-class SimpleHttpRPCPerformanceTest {
+class SimpleHttpRestPerformanceTest {
 
     private companion object {
         const val HOLDING_ID = "A332E0C2F697"

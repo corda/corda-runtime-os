@@ -5,17 +5,17 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.e2etest.utilities.ClusterReadiness
 import net.corda.e2etest.utilities.ClusterReadinessChecker
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
-import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
+import net.corda.e2etest.utilities.REST_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
 import net.corda.e2etest.utilities.TestRequestIdGenerator
-import net.corda.e2etest.utilities.awaitRpcFlowFinished
+import net.corda.e2etest.utilities.awaitRestFlowFinished
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.registerStaticMember
-import net.corda.e2etest.utilities.startRpcFlow
+import net.corda.e2etest.utilities.startRestFlow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer
@@ -72,16 +72,16 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
 
         val tokenBalanceQueryFlowName = "com.r3.corda.demo.utxo.token.selection.TokenBalanceQueryFlow"
 
-        val tokenBalanceQueryRpcStartArgs = mapOf(
+        val tokenBalanceQueryRestStartArgs = mapOf(
             "tokenType" to "com.r3.corda.demo.utxo.contract.CoinState",
             "issuerBankX500" to bobX500,
             "currency" to "USD"
         )
 
-        startRpcFlow(aliceHoldingId, tokenBalanceQueryRpcStartArgs, tokenBalanceQueryFlowName, requestId = flowRequestId)
+        startRestFlow(aliceHoldingId, tokenBalanceQueryRestStartArgs, tokenBalanceQueryFlowName, requestId = flowRequestId)
 
-        val flowResult = awaitRpcFlowFinished(aliceHoldingId, flowRequestId)
-        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        val flowResult = awaitRestFlowFinished(aliceHoldingId, flowRequestId)
+        assertThat(flowResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
 
         return convertToTokenBalanceQueryResponseMsg(flowResult.flowResult!!)
     }
@@ -142,37 +142,37 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
         val idGenerator = TestRequestIdGenerator(testInfo)
         // Create a simple UTXO transaction
         val input = "token test input"
-        val utxoFlowRequestId = startRpcFlow(
+        val utxoFlowRequestId = startRestFlow(
             bobHoldingId,
             mapOf("input" to input, "members" to listOf(aliceX500), "notary" to NOTARY_SERVICE_X500),
             "com.r3.corda.demo.utxo.UtxoDemoFlow",
             requestId = idGenerator.nextId
         )
-        val utxoFlowResult = awaitRpcFlowFinished(bobHoldingId, utxoFlowRequestId)
-        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        val utxoFlowResult = awaitRestFlowFinished(bobHoldingId, utxoFlowRequestId)
+        assertThat(utxoFlowResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
         assertThat(utxoFlowResult.flowError).isNull()
 
         // Attempt to select the token created by the transaction
-        val tokenSelectionFlowId1 = startRpcFlow(
+        val tokenSelectionFlowId1 = startRestFlow(
             aliceHoldingId,
             mapOf(),
             "com.r3.corda.demo.utxo.token.selection.TokenSelectionFlow2",
             requestId = idGenerator.nextId
         )
-        val tokenSelectionResult1 = awaitRpcFlowFinished(aliceHoldingId, tokenSelectionFlowId1)
-        assertThat(tokenSelectionResult1.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        val tokenSelectionResult1 = awaitRestFlowFinished(aliceHoldingId, tokenSelectionFlowId1)
+        assertThat(tokenSelectionResult1.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
         assertThat(tokenSelectionResult1.flowError).isNull()
         assertThat(tokenSelectionResult1.flowResult).isEqualTo("SUCCESS")
 
         // Attempt to select the token created by the transaction
-        val tokenSelectionFlowId2 = startRpcFlow(
+        val tokenSelectionFlowId2 = startRestFlow(
             aliceHoldingId,
             mapOf(),
             "com.r3.corda.demo.utxo.token.selection.TokenSelectionFlow2",
             requestId = idGenerator.nextId
         )
-        val tokenSelectionResult2 = awaitRpcFlowFinished(aliceHoldingId, tokenSelectionFlowId2)
-        assertThat(tokenSelectionResult2.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        val tokenSelectionResult2 = awaitRestFlowFinished(aliceHoldingId, tokenSelectionFlowId2)
+        assertThat(tokenSelectionResult2.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
         assertThat(tokenSelectionResult2.flowError).isNull()
         assertThat(tokenSelectionResult2.flowResult).isEqualTo("SUCCESS")
     }
