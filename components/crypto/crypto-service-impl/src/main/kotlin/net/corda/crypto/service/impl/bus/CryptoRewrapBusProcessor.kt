@@ -43,6 +43,7 @@ class CryptoRewrapBusProcessor(
     private val serializer = cordaAvroSerializationFactory.createAvroSerializer<UnmanagedKeyStatus>()
 
     override fun onNext(events: List<Record<String, IndividualKeyRotationRequest>>): List<Record<*, *>> {
+        checkNotNull(stateManager) { "State manager is not initialised, cannot proceed with key rotation." }
         events.mapNotNull { it.value }.map { request ->
             rewrapTimer.recordCallable {
                 cryptoService.rewrapWrappingKey(request.tenantId, request.targetKeyAlias, request.newParentKeyAlias)
@@ -53,7 +54,7 @@ class CryptoRewrapBusProcessor(
             while (!statusUpdated) {
                 // we defined the key to be unique to avoid table search through state manager
                 val tenantIdWrappingKeysRecords =
-                    stateManager!!.get(listOf(getKeyRotationStatusRecordKey(request.oldParentKeyAlias, request.tenantId)))
+                    stateManager.get(listOf(getKeyRotationStatusRecordKey(request.oldParentKeyAlias, request.tenantId)))
                 require(tenantIdWrappingKeysRecords.size == 1) { "Found none or more than 1 ${request.tenantId} record " +
                         "in the database for rootKeyAlias ${request.oldParentKeyAlias}. Found records $tenantIdWrappingKeysRecords." }
 
