@@ -10,10 +10,24 @@ import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.whenever
 import kotlin.test.assertIs
 
 internal class ConsensualTransactionBuilderImplTest : ConsensualLedgerTest() {
+
+    @BeforeEach
+    fun setup() {
+        val flowId = "fc321a0c-62c6-41a1-85e6-e61870ab93aa"
+        val suspendCount = 10
+
+        val checkpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
+
+        whenever(checkpoint.flowId).thenReturn(flowId)
+        whenever(checkpoint.suspendCount).thenReturn(suspendCount)
+    }
+
     @Test
     fun `can build a simple Transaction`() {
         val tx = consensualTransactionBuilder

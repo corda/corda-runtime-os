@@ -7,12 +7,26 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.ConsensualState
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.whenever
 import java.time.Instant
 import kotlin.math.abs
 import kotlin.test.assertIs
 
 class ConsensualLedgerTransactionImplTest : ConsensualLedgerTest() {
+
+    @BeforeEach
+    fun setup() {
+        val flowId = "fc321a0c-62c6-41a1-85e6-e61870ab93aa"
+        val suspendCount = 10
+
+        val checkpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
+
+        whenever(checkpoint.flowId).thenReturn(flowId)
+        whenever(checkpoint.suspendCount).thenReturn(suspendCount)
+    }
+
     @Test
     fun `ledger transaction contains the same data what it was created with`() {
         val testTimestamp = Instant.now()
