@@ -646,9 +646,9 @@ open class SoftCryptoService(
     }
 
     /**
-     * Create a wrapping key from an existing key
+     * Create a new wrapping key based on an existing key with the same alias and an incremented generation number
      *
-     * @param wrappingRepository The WrappingRepository object to save the new key with
+     * @param wrappingRepository The WrappingRepository the new key will be saved in
      * @param oldWrappingKey The original wrapping key
      */
     private fun createWrappingKeyFrom(wrappingRepository: WrappingRepository, oldWrappingKey: WrappingKeyInfo) {
@@ -656,24 +656,24 @@ open class SoftCryptoService(
             "createWrappingKeyFrom(alias=${oldWrappingKey.alias})"
         }
         val wrappingKey = recoverable("createWrappingKeyFrom generate wrapping key") { wrappingKeyFactory(schemeMetadata) }
-        val parentKeyName = oldWrappingKey.parentKeyAlias
-        val parentKey = unmanagedWrappingKeys[parentKeyName]
-            ?: throw IllegalStateException("No wrapping key $parentKeyName found")
+        val parentKeyAlias = oldWrappingKey.parentKeyAlias
+        val parentKey = checkNotNull(unmanagedWrappingKeys[parentKeyAlias])
+            {"No wrapping key $parentKeyAlias found"}
         val wrappingKeyEncrypted = recoverable("wrap") { parentKey.wrap(wrappingKey) }
-        val newWrappingKey =
+        val wrappingKeyInfo =
             WrappingKeyInfo(
                 oldWrappingKey.encodingVersion,
                 wrappingKey.algorithm,
                 wrappingKeyEncrypted,
                 oldWrappingKey.generation + 1,
-                parentKeyName,
+                parentKeyAlias,
                 oldWrappingKey.alias
             )
         recoverable("createWrappingKeyFrom save key") {
-            wrappingRepository.saveKey(newWrappingKey)
+            wrappingRepository.saveKey(wrappingKeyInfo)
         }
         logger.trace("Regenerated wrapping key alias ${oldWrappingKey.alias}")
-        wrappingKeyCache?.put(newWrappingKey.alias, wrappingKey)
+        wrappingKeyCache?.put(wrappingKeyInfo.alias, wrappingKey)
     }
 }
 
