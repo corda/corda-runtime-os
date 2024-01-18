@@ -155,6 +155,17 @@ class UtxoLedgerServiceImpl @Activate constructor(
         sessions: List<FlowSession>
     ): FinalizationResult {
         /*
+         * Called from user flows when it is time to verify, sign and distribute a transaction.
+         *
+         * `signedTransaction` has various bits of data for the transaction. It isn't actually signed, but
+         * includes the public keys that should use.
+         *
+         * `sessions` has one entry for each other virtual node that should receive the transaction and hopefully
+         * sign it; they will hopefully call in via `receiveFinality`
+         *
+         */
+
+        /*
         Need [doPrivileged] due to [contextLogger] being used in the flow's constructor.
         Creating the executing the SubFlow must be independent otherwise the security manager causes issues with Quasar.
          */
