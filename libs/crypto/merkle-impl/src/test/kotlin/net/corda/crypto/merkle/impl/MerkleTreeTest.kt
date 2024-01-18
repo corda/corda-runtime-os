@@ -1438,6 +1438,20 @@ class MerkleTreeTest {
         val proofConcatenated = concatenate( mapOf(0 to proof0, 1 to proof1), emptyMap()) as MerkleProofImpl
         assertThat(proofExpected.render(defaultHashDigestProvider)).isEqualTo(proofConcatenated.render(defaultHashDigestProvider))
     }
+
+
+    @Test
+    fun `concatenate with gap`() {
+        val tree0 = makeTestMerkleTree(2, defaultHashDigestProvider)
+        val tree1 = makeTestMerkleTree(2, defaultHashDigestProvider) { it -> (it+2).toByteArray()}
+        val expected = makeTestMerkleTree(4, defaultHashDigestProvider)
+        val proof0 = tree0.createAuditProof(listOf(0,1))
+        val proof1 = tree1.createAuditProof(listOf(0,1))
+        val proofExpected = expected.createAuditProof(listOf(0,1,2,3)) as MerkleProofImpl
+        val proofConcatenated = concatenate( mapOf(0 to proof0), mapOf(1 to proof1.calculateRoot(
+            defaultHashDigestProvider))) as MerkleProofImpl
+        assertThat(proofExpected.calculateRoot(defaultHashDigestProvider)).isEqualTo(proofConcatenated.calculateRoot(defaultHashDigestProvider))
+    }
 }
 
 fun SecureHash.hex() = bytes.joinToString(separator = "") { "%02x".format(it) }
