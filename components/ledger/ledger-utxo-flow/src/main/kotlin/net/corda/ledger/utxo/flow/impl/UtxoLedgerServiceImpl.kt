@@ -73,7 +73,11 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Reference(service = UtxoLedgerTransactionVerificationService::class)
     private val transactionVerificationService: UtxoLedgerTransactionVerificationService
 ) : UtxoLedgerService, UsedByFlow, SingletonSerializeAsToken {
-
+    /* A service class which is typically injected in to any cordApp which wishes to interact with the UTXO ledger.
+     * Therefore the methods of this class are typically running from within flow sandboxes, and are subject
+     * to the limitations of flows. In particular since flows use Quasar every method that can be block must be annotated
+     * @Suspendable, and since it is not possible to annotate lambdas they sometimes cannot be used.
+     */
     private companion object {
         const val FIND_UNCONSUMED_STATES_BY_EXACT_TYPE = "CORDA_FIND_UNCONSUMED_STATES_BY_EXACT_TYPE"
         val clock = UTCClock()
@@ -157,8 +161,8 @@ class UtxoLedgerServiceImpl @Activate constructor(
         /*
          * Called from user flows when it is time to verify, sign and distribute a transaction.
          *
-         * `signedTransaction` has various bits of data for the transaction. It isn't actually signed, but
-         * includes the public keys that should use.
+         * `signedTransaction` has various bits of data for the transaction. It isn't actually signed at this point,
+         * but does include a list of the public keys from key pairs that should be used to sign the transaction.
          *
          * `sessions` has one entry for each other virtual node that should receive the transaction and hopefully
          * sign it; they will hopefully call in via `receiveFinality`
@@ -191,6 +195,14 @@ class UtxoLedgerServiceImpl @Activate constructor(
         session: FlowSession,
         validator: UtxoTransactionValidator
     ): FinalizationResult {
+        /*
+         * Called by flows in user corDapps that wish to participate in finality, to counter sign them. Works
+         * by starting a new receive finality flow to do the work.
+         *
+         * `session` provides the ability to receive the transaction from the counterparty who initiated the finalize,
+         * and later send back to the counterparty who initiated the finalize, as well as providing access to the
+         * X500Name of the counterparty.
+         */
         val utxoReceiveFinalityFlow = try {
             @Suppress("deprecation", "removal")
             java.security.AccessController.doPrivileged(
