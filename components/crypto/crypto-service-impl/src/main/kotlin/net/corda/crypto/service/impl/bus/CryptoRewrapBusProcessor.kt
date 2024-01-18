@@ -55,13 +55,17 @@ class CryptoRewrapBusProcessor(
                 // we defined the key to be unique to avoid table search through state manager
                 val tenantIdWrappingKeysRecords =
                     stateManager.get(listOf(getKeyRotationStatusRecordKey(request.oldParentKeyAlias, request.tenantId)))
-                require(tenantIdWrappingKeysRecords.size == 1) { "Found none or more than 1 ${request.tenantId} record " +
-                        "in the database for rootKeyAlias ${request.oldParentKeyAlias}. Found records $tenantIdWrappingKeysRecords." }
+                require(tenantIdWrappingKeysRecords.size == 1) {
+                    "Found none or more than 1 ${request.tenantId} record " +
+                            "in the database for rootKeyAlias ${request.oldParentKeyAlias}. Found records $tenantIdWrappingKeysRecords."
+                }
 
                 tenantIdWrappingKeysRecords.forEach { (_, state) ->
-                    logger.debug("Updating state manager record for tenantId ${state.metadata[KeyRotationMetadataValues.TENANT_ID]} " +
-                            "after re-wrapping ${request.targetKeyAlias}.")
-                    val deserializedStatus = deserializer.deserialize(state.value)!!
+                    logger.debug(
+                        "Updating state manager record for tenantId ${state.metadata[KeyRotationMetadataValues.TENANT_ID]} " +
+                                "after re-wrapping ${request.targetKeyAlias}."
+                    )
+                    val deserializedStatus = checkNotNull(deserializer.deserialize(state.value))
                     val newValue =
                         serializer.serialize(
                             UnmanagedKeyStatus(
