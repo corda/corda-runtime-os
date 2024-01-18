@@ -217,7 +217,6 @@ class KeyRotationRestResourceImpl @Activate constructor(
                 MetadataFilter("type", Operation.Equals, "keyRotation")
             )
         ).forEach {
-            // if we find one In Progress status, we know we are not done
             if (it.value.metadata["status"] != "Done") return false
         }
         return true
