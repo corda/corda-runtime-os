@@ -76,7 +76,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
     )
 
     private var publishToKafka: Publisher? = null
-    private var stateManager: StateManager? = null
+    private var stateManagerInit: StateManager? = null
     private val deserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, UnmanagedKeyStatus::class.java)
 
     override val targetInterface: Class<KeyRotationRestResource> = KeyRotationRestResource::class.java
@@ -98,6 +98,11 @@ class KeyRotationRestResourceImpl @Activate constructor(
     override fun stop() {
         lifecycleCoordinator.stop()
     }
+
+    private val stateManager: StateManager
+        get() = checkNotNull(stateManagerInit) {
+            "State manager for key rotation is not initialised."
+        }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("Handling KeyRotationRestResource event, $event.")
@@ -127,7 +132,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
 
             is StopEvent -> {
                 subscriptionRegistrationHandle?.close()
-                stateManager?.stop()
+                stateManager.stop()
                 publishToKafka?.close()
             }
 
@@ -158,24 +163,21 @@ class KeyRotationRestResourceImpl @Activate constructor(
     fun initialiseStateManager(config: Map<String, SmartConfig>) {
         val stateManagerConfig = config.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)
 
-        stateManager?.stop()
-        stateManager = stateManagerFactory.create(stateManagerConfig).also { it.start() }
-        logger.debug("State manager created and started ${stateManager!!.name}")
+        stateManagerInit?.stop()
+        stateManagerInit = stateManagerFactory.create(stateManagerConfig).also { it.start() }
+        logger.debug("State manager created and started {}", stateManager.name)
     }
 
     override fun getKeyRotationStatus(keyAlias: String): KeyRotationStatusResponse {
-        tryWithExceptionHandling(logger, "retrieve key rotation status") {
-            checkNotNull(stateManager)
-        }
-
-        val entries = stateManager!!.findByMetadataMatchingAll(
+        val entries = stateManager.findByMetadataMatchingAll(
             listOf(
                 MetadataFilter("rootKeyAlias", Operation.Equals, keyAlias),
                 MetadataFilter("type", Operation.Equals, "keyRotation")
             )
         )
+
         // if entries are empty, there is no rootKeyAlias data stored in the state manager, so no key rotation is/was in progress
-        if (entries.isNullOrEmpty()) throw ResourceNotFoundException("No key rotation for $keyAlias is in progress.")
+        if (entries.isEmpty()) throw ResourceNotFoundException("No key rotation for $keyAlias is in progress.")
 
         var lastUpdatedTimestamp = Instant.MIN
         var rotationStatus = "Done"
@@ -189,6 +191,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
                     keyRotationStatus.rotatedKeys
                 )
             )
+            // Get the latest modified time of all the records
             if (state.modifiedTime.isAfter(lastUpdatedTimestamp)) lastUpdatedTimestamp = state.modifiedTime
             if (state.metadata["status"] != "Done") rotationStatus = "In Progress"
         }
@@ -198,7 +201,6 @@ class KeyRotationRestResourceImpl @Activate constructor(
     override fun startKeyRotation(oldKeyAlias: String, newKeyAlias: String): ResponseEntity<KeyRotationResponse> {
         tryWithExceptionHandling(logger, "start key rotation") {
             checkNotNull(publishToKafka)
-            checkNotNull(stateManager)
         }
 
         if (!hasPreviousRotationFinished(oldKeyAlias)) throw ForbiddenException("Previous key rotation for $oldKeyAlias is in progress.")
@@ -211,7 +213,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
     }
 
     private fun hasPreviousRotationFinished(oldKeyAlias: String): Boolean {
-        stateManager!!.findByMetadataMatchingAll(
+        stateManager.findByMetadataMatchingAll(
             listOf(
                 MetadataFilter("rootKeyAlias", Operation.Equals, oldKeyAlias),
                 MetadataFilter("type", Operation.Equals, "keyRotation")

@@ -134,7 +134,7 @@ class KeyRotationRestResourceTest {
     fun `get key rotation status throws when state manager is not initialised`() {
         val keyRotationRestResource =
             createKeyRotationRestResource(initialiseKafkaPublisher = true, initialiseStateManager = false)
-        assertThrows<InternalServerException> {
+        assertThrows<IllegalStateException> {
             keyRotationRestResource.getKeyRotationStatus("")
         }
         verify(stateManager, never()).findByMetadataMatchingAll(any())
@@ -170,7 +170,7 @@ class KeyRotationRestResourceTest {
     fun `start key rotation event throws when state manager is not initialised`() {
         val keyRotationRestResource =
             createKeyRotationRestResource(initialiseKafkaPublisher = true, initialiseStateManager = false)
-        assertThrows<InternalServerException> {
+        assertThrows<IllegalStateException> {
             keyRotationRestResource.startKeyRotation("", "")
         }
         verify(publishToKafka, never()).publish(any())
