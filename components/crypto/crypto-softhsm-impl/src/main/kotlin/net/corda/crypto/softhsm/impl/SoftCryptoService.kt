@@ -660,7 +660,7 @@ open class SoftCryptoService(
         val parentKey = unmanagedWrappingKeys[parentKeyName]
             ?: throw IllegalStateException("No wrapping key $parentKeyName found")
         val wrappingKeyEncrypted = recoverable("wrap") { parentKey.wrap(wrappingKey) }
-        val wrappingKeyInfo =
+        val newWrappingKey =
             WrappingKeyInfo(
                 oldWrappingKey.encodingVersion,
                 wrappingKey.algorithm,
@@ -669,11 +669,11 @@ open class SoftCryptoService(
                 parentKeyName,
                 oldWrappingKey.alias
             )
-        recoverable("createWrappingKey save key") {
-            wrappingRepository.saveKey(wrappingKeyInfo)
+        recoverable("createWrappingKeyFrom save key") {
+            wrappingRepository.saveKey(newWrappingKey)
         }
         logger.trace("Regenerated wrapping key alias ${oldWrappingKey.alias}")
-        wrappingKeyCache?.put(oldWrappingKey.alias, wrappingKey)
+        wrappingKeyCache?.put(newWrappingKey.alias, wrappingKey)
     }
 }
 
