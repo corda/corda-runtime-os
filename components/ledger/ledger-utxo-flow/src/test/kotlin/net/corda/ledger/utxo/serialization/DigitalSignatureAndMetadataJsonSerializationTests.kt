@@ -72,14 +72,15 @@ class DigitalSignatureAndMetadataJsonSerializationTests : UtxoLedgerTest() {
         whenever(checkpoint.suspendCount).thenReturn(suspendCount)
     }
 
-    private val signedTransaction: UtxoSignedTransactionInternal =
-        UtxoTransactionBuilderImpl(utxoSignedTransactionFactory, mockNotaryLookup)
+    private fun createSignedTransaction(): UtxoSignedTransactionInternal {
+        return UtxoTransactionBuilderImpl(utxoSignedTransactionFactory, mockNotaryLookup)
             .setNotary(notaryX500Name)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addOutputState(getUtxoStateExample())
             .addSignatories(listOf(anotherPublicKeyExample))
             .addCommand(UtxoCommandExample())
             .toSignedTransaction() as UtxoSignedTransactionInternal
+    }
 
     companion object {
         // Clone of SecureHash serializer/deserializer from JsonMarshallingServiceImpl call which are not exposed outside,
@@ -148,7 +149,7 @@ class DigitalSignatureAndMetadataJsonSerializationTests : UtxoLedgerTest() {
     @Test
     fun `digitalSignatureAndMetadata with Merkle proof`() {
         val signatureBatches =
-            transactionSignatureService.signBatch(listOf(signedTransaction), listOf(publicKeyExample))
+            transactionSignatureService.signBatch(listOf(createSignedTransaction()), listOf(publicKeyExample))
         assertEquals(1, signatureBatches.size)
         val signatureBatch = signatureBatches.first()
         assertEquals(1, signatureBatch.size)
@@ -165,7 +166,7 @@ class DigitalSignatureAndMetadataJsonSerializationTests : UtxoLedgerTest() {
     @Test
     fun `deserialization fails without ProofOfActionSerialisation module`() {
         val signatureBatches =
-            transactionSignatureService.signBatch(listOf(signedTransaction), listOf(publicKeyExample))
+            transactionSignatureService.signBatch(listOf(createSignedTransaction()), listOf(publicKeyExample))
         assertEquals(1, signatureBatches.size)
         val signatureBatch = signatureBatches.first()
         assertEquals(1, signatureBatch.size)
