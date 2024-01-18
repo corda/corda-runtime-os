@@ -56,8 +56,8 @@ interface StateManager : Lifecycle {
      * persistent storage, if any, are synced.
      *
      * Typical usage is to get some states, e.g. using `findByMetadataMatchingAll`, then make changes to the
-     * state content while leaving the version number alone, then try calling `update`.  If the result is non empty,
-     * sleep for a random time, then requery and try the update again if changes are still needed.
+     * state content while leaving the version number alone, then try calling `update`.  If the result is non-empty,
+     * see if the update you wanted has already been made, and if not sleep for a random time, try the update again.
      *
      * If we have `X` and `Y` trying to update the same state and `Y` wins the race, and:
      *
