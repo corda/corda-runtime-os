@@ -125,6 +125,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                         future.getOrThrow(Duration.ofMillis(EVENT_PROCESSING_TIMEOUT_MILLIS))
                     } catch (e: TimeoutException) {
                         keys.associateWith {
+                            log.info("Timeout exception for key $it. ")
                             val oldState = statesToProcess[it.toString()]
                             val state = stateManagerHelper.failStateProcessing(it.toString(), oldState)
                             val stateChange = if (oldState != null) {

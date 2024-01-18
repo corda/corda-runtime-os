@@ -1,7 +1,5 @@
 package net.corda.messagebus.kafka.serialization
 
-import java.nio.ByteBuffer
-import java.util.function.Consumer
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
@@ -10,6 +8,8 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.kafka.common.serialization.Deserializer
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.util.function.Consumer
 
 /**
  * Corda avro serializer impl
@@ -62,7 +62,7 @@ class CordaAvroDeserializerImpl<T: Any>(
             throw CordaRuntimeException(msg)
         }
     } catch (ex: Throwable) {
-        log.warn("$errorMsg. Expected class: $expectedClass, AllowChunks: $allowChunks", ex)
+        log.warn("$errorMsg. Expected class: $expectedClass, AllowChunks: $allowChunks. ByteArray Size: ${data.size}", ex)
         // We don't want to throw as that would mean the entire poll (with possibly
         // many records) would fail, and keep failing.  So we'll just callback to note the bad deserialize
         // and return a null.  This will mean the record gets treated as 'deleted' in the processors

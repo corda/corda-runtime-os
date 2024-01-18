@@ -12,6 +12,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.tracing.addTraceContextToRecord
+import org.slf4j.LoggerFactory
 
 /**
  * Class to process records received from the consumer.
@@ -27,6 +28,9 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     private val mediatorReplayService: MediatorReplayService,
 ) {
 
+    private val log = LoggerFactory.getLogger("${this.javaClass.name}-EventProcessor-${config.name}")
+
+
     /**
      * Process a group of events.
      * @param group Group of records of various keys
@@ -39,6 +43,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         return group.mapValues { groupEntry ->
             val groupKey = groupEntry.key.toString()
             val state = retrievedStates.getOrDefault(groupKey, null)
+            log.info("Deserializing mediator state for key $groupKey, ${state?.key}")
             val mediatorState = stateManagerHelper.deserializeMediatorState(state) ?: createNewMediatorState()
             var processorState = stateManagerHelper.deserializeValue(mediatorState)?.let { stateValue ->
                 StateAndEventProcessor.State(
