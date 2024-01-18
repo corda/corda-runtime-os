@@ -648,8 +648,8 @@ open class SoftCryptoService(
     /**
      * Create a wrapping key from an existing key
      *
-     * @param oldWrappingKey The original wrapping key
      * @param wrappingRepository The WrappingRepository object to save the new key with
+     * @param oldWrappingKey The original wrapping key
      */
     private fun createWrappingKeyFrom(wrappingRepository: WrappingRepository, oldWrappingKey: WrappingKeyInfo) {
         logger.trace {
