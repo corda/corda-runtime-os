@@ -4,15 +4,19 @@ package net.corda.crypto.service.impl.bus
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.KeyRotationMetadataValues
+import net.corda.crypto.core.KeyRotationRecordType
+import net.corda.crypto.core.KeyRotationStatus
+import net.corda.crypto.core.getKeyRotationStatusRecordKey
 import net.corda.crypto.softhsm.WrappingRepositoryFactory
 import net.corda.data.crypto.wire.ops.key.rotation.IndividualKeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyType
 import net.corda.data.crypto.wire.ops.key.status.UnmanagedKeyStatus
 import net.corda.libs.statemanager.api.Metadata
-import net.corda.libs.statemanager.api.STATE_TYPE
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.Operation
+import net.corda.libs.statemanager.api.STATE_TYPE
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.processor.DurableProcessor
@@ -94,15 +98,15 @@ class CryptoRekeyBusProcessor(
                 records.add(
                     State(
                         // key is set as a unique string to prevent table search in re-wrap bus processor
-                        request.oldParentKeyAlias + it.key + "keyRotation",  // rootKeyAlias + tenantId + keyRotation
+                        getKeyRotationStatusRecordKey(request.oldParentKeyAlias, it.key),
                         serializer.serialize(status)!!,
                         1,
                         Metadata(
                             mapOf(
-                                "rootKeyAlias" to request.oldParentKeyAlias,
-                                "tenantId" to it.key,
-                                "type" to "keyRotation", // maybe create an enum from type, so we can easily add more if needed
-                                "status" to "inProgress",
+                                KeyRotationMetadataValues.ROOT_KEY_ALIAS to request.oldParentKeyAlias,
+                                KeyRotationMetadataValues.TENANT_ID to it.key,
+                                KeyRotationMetadataValues.TYPE to KeyRotationRecordType.KEY_ROTATION,
+                                KeyRotationMetadataValues.STATUS to KeyRotationStatus.IN_PROGRESS,
                                 STATE_TYPE to status::class.java.name
                             )
                         )
@@ -140,12 +144,11 @@ class CryptoRekeyBusProcessor(
     private fun hasPreviousRotationFinished(oldKeyAlias: String): Boolean {
         stateManager!!.findByMetadataMatchingAll(
             listOf(
-                MetadataFilter("rootKeyAlias", Operation.Equals, oldKeyAlias),
-                MetadataFilter("type", Operation.Equals, "keyRotation")
+                MetadataFilter(KeyRotationMetadataValues.ROOT_KEY_ALIAS, Operation.Equals, oldKeyAlias),
+                MetadataFilter(KeyRotationMetadataValues.TYPE, Operation.Equals, KeyRotationRecordType.KEY_ROTATION)
             )
         ).forEach {
-            // if we find one In Progress status, we know we are not done
-            if (it.value.metadata["status"] != "Done") return false
+            if (it.value.metadata[KeyRotationMetadataValues.STATUS] != KeyRotationStatus.DONE) return false
         }
         return true
     }
@@ -153,8 +156,8 @@ class CryptoRekeyBusProcessor(
     private fun deleteStateManagerRecords(oldParentKeyAlias: String) {
         val toDelete = stateManager!!.findByMetadataMatchingAll(
             listOf(
-                MetadataFilter("rootKeyAlias", Operation.Equals, oldParentKeyAlias),
-                MetadataFilter("type", Operation.Equals, "keyRotation")
+                MetadataFilter(KeyRotationMetadataValues.ROOT_KEY_ALIAS, Operation.Equals, oldParentKeyAlias),
+                MetadataFilter(KeyRotationMetadataValues.TYPE, Operation.Equals, KeyRotationRecordType.KEY_ROTATION)
             )
         )
         logger.info("Deleting following records ${toDelete.keys} for previous key rotation for rootKeyAlias $oldParentKeyAlias.")

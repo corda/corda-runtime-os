@@ -3,6 +3,9 @@ package net.corda.crypto.rest.impl
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.core.KeyRotationMetadataValues
+import net.corda.crypto.core.KeyRotationRecordType
+import net.corda.crypto.core.KeyRotationStatus
 import net.corda.crypto.rest.KeyRotationRestResource
 import net.corda.crypto.rest.response.KeyRotationResponse
 import net.corda.crypto.rest.response.KeyRotationStatusResponse
@@ -171,8 +174,8 @@ class KeyRotationRestResourceImpl @Activate constructor(
     override fun getKeyRotationStatus(keyAlias: String): KeyRotationStatusResponse {
         val entries = stateManager.findByMetadataMatchingAll(
             listOf(
-                MetadataFilter("rootKeyAlias", Operation.Equals, keyAlias),
-                MetadataFilter("type", Operation.Equals, "keyRotation")
+                MetadataFilter(KeyRotationMetadataValues.ROOT_KEY_ALIAS, Operation.Equals, keyAlias),
+                MetadataFilter(KeyRotationMetadataValues.TYPE, Operation.Equals, KeyRotationRecordType.KEY_ROTATION)
             )
         )
 
@@ -180,20 +183,20 @@ class KeyRotationRestResourceImpl @Activate constructor(
         if (entries.isEmpty()) throw ResourceNotFoundException("No key rotation for $keyAlias is in progress.")
 
         var lastUpdatedTimestamp = Instant.MIN
-        var rotationStatus = "Done"
+        var rotationStatus = KeyRotationStatus.DONE
         val result = mutableListOf<Pair<String, TenantIdWrappingKeysStatus>>()
         entries.forEach {
             val state = it.value
             val keyRotationStatus = deserializer.deserialize(state.value)!!
             result.add(
-                state.metadata["tenantId"].toString() to TenantIdWrappingKeysStatus(
+                state.metadata[KeyRotationMetadataValues.TENANT_ID].toString() to TenantIdWrappingKeysStatus(
                     keyRotationStatus.total,
                     keyRotationStatus.rotatedKeys
                 )
             )
             // Get the latest modified time of all the records
             if (state.modifiedTime.isAfter(lastUpdatedTimestamp)) lastUpdatedTimestamp = state.modifiedTime
-            if (state.metadata["status"] != "Done") rotationStatus = "In Progress"
+            if (state.metadata[KeyRotationMetadataValues.STATUS] != KeyRotationStatus.DONE) rotationStatus = KeyRotationStatus.IN_PROGRESS
         }
         return KeyRotationStatusResponse(keyAlias, rotationStatus, lastUpdatedTimestamp, result)
     }
@@ -215,11 +218,11 @@ class KeyRotationRestResourceImpl @Activate constructor(
     private fun hasPreviousRotationFinished(oldKeyAlias: String): Boolean {
         stateManager.findByMetadataMatchingAll(
             listOf(
-                MetadataFilter("rootKeyAlias", Operation.Equals, oldKeyAlias),
-                MetadataFilter("type", Operation.Equals, "keyRotation")
+                MetadataFilter(KeyRotationMetadataValues.ROOT_KEY_ALIAS, Operation.Equals, oldKeyAlias),
+                MetadataFilter(KeyRotationMetadataValues.TYPE, Operation.Equals, KeyRotationRecordType.KEY_ROTATION)
             )
         ).forEach {
-            if (it.value.metadata["status"] != "Done") return false
+            if (it.value.metadata[KeyRotationMetadataValues.STATUS] != KeyRotationStatus.DONE) return false
         }
         return true
     }

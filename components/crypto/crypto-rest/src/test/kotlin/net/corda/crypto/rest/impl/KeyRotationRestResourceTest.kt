@@ -8,6 +8,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.config.impl.CryptoHSMConfig
 import net.corda.crypto.config.impl.HSM
+import net.corda.crypto.core.KeyRotationStatus
 import net.corda.crypto.rest.KeyRotationRestResource
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.status.UnmanagedKeyStatus
@@ -117,7 +118,7 @@ class KeyRotationRestResourceTest {
 
         verify(stateManager, times(1)).findByMetadataMatchingAll(any())
 
-        assertThat(response.status).isEqualTo("In Progress")
+        assertThat(response.status).isEqualTo(KeyRotationStatus.IN_PROGRESS)
         assertThat(response.rootKeyAlias).isEqualTo(oldKeyAlias)
     }
 
