@@ -651,11 +651,11 @@ open class SoftCryptoService(
      * @param oldWrappingKey The original wrapping key
      * @param wrappingRepository The WrappingRepository object to save the new key with
      */
-    private fun createWrappingKeyFrom(oldWrappingKey: WrappingKeyInfo, wrappingRepository: WrappingRepository){
+    fun createWrappingKeyFrom(wrappingRepository: WrappingRepository, oldWrappingKey: WrappingKeyInfo) {
         logger.trace {
             "createWrappingKeyFrom(alias=${oldWrappingKey.alias})"
         }
-        val wrappingKey = recoverable("createWrappingKey generate wrapping key") { wrappingKeyFactory(schemeMetadata) }
+        val wrappingKey = recoverable("createWrappingKeyFrom generate wrapping key") { wrappingKeyFactory(schemeMetadata) }
         val parentKeyName = oldWrappingKey.parentKeyAlias
         val parentKey = unmanagedWrappingKeys[parentKeyName]
             ?: throw IllegalStateException("No wrapping key $parentKeyName found")
