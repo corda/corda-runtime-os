@@ -67,11 +67,13 @@ class CryptoRewrapBusProcessor(
                     )
                     val deserializedStatus = checkNotNull(deserializer.deserialize(state.value))
                     val newValue =
-                        serializer.serialize(
-                            UnmanagedKeyStatus(
-                                deserializedStatus.rootKeyAlias,
-                                deserializedStatus.total,
-                                deserializedStatus.rotatedKeys + 1
+                        checkNotNull(
+                            serializer.serialize(
+                                UnmanagedKeyStatus(
+                                    deserializedStatus.rootKeyAlias,
+                                    deserializedStatus.total,
+                                    deserializedStatus.rotatedKeys + 1
+                                )
                             )
                         )
                     // Update status to Done if all keys for the tenant have been rotated
