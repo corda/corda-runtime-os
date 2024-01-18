@@ -22,7 +22,9 @@ class StateManagerHelper<S : Any>(
     private val mediatorStateDeserializer: CordaAvroDeserializer<MediatorState>,
 ) {
 
-    private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    companion object {
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
 
     /**
