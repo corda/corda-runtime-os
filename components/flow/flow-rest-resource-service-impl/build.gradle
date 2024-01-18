@@ -35,7 +35,7 @@ dependencies {
     implementation 'net.corda:corda-topic-schema'
     implementation 'net.corda:corda-rbac-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation libs.slf4j.api
     implementation "com.google.guava:guava:$guavaVersion"
     implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
 

@@ -1,5 +1,6 @@
 package net.corda.application.impl.services.json
 
+import net.corda.crypto.cipher.suite.merkle.MerkleProofProvider
 import net.corda.v5.application.marshalling.json.JsonDeserializer
 import net.corda.v5.application.marshalling.json.JsonNodeReader
 import net.corda.v5.application.marshalling.json.JsonSerializer
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.mock
 import java.lang.reflect.ParameterizedType
 
 class JsonMarshallingServiceImplTest {
@@ -111,7 +113,7 @@ class JsonMarshallingServiceImplTest {
             quantity = 1
         )
 
-        val json = JsonMarshallingServiceImpl().format(dto)
+        val json = JsonMarshallingServiceImpl(mock<MerkleProofProvider>{}).format(dto)
         assertThat(json).isEqualTo("""
             {
               "name": "n1",
@@ -122,7 +124,7 @@ class JsonMarshallingServiceImplTest {
 
     @Test
     fun `Can deserialize object from json string`() {
-        val dto = JsonMarshallingServiceImpl().parse("""
+        val dto = JsonMarshallingServiceImpl(mock<MerkleProofProvider>{}).parse("""
             {
               "name": "n1",
               "quantity": 1
@@ -134,7 +136,7 @@ class JsonMarshallingServiceImplTest {
 
     @Test
     fun `Can deserialize list from json string`() {
-        val dtoList = JsonMarshallingServiceImpl().parseList("""
+        val dtoList = JsonMarshallingServiceImpl(mock<MerkleProofProvider>{}).parseList("""
             [
               {
                 "name": "n1",
@@ -158,7 +160,7 @@ class JsonMarshallingServiceImplTest {
 
     @Test
     fun `can deserialize map from json string`() {
-        val dtoMap = JsonMarshallingServiceImpl().parseMap("""
+        val dtoMap = JsonMarshallingServiceImpl(mock<MerkleProofProvider>{}).parseMap("""
             {
               "100": {
                 "name": "n1",
@@ -193,7 +195,7 @@ class JsonMarshallingServiceImplTest {
             "net.corda.application.impl.services.json.JsonMarshallingServiceImplTest\$SimpleSerializer"
         )
 
-        val jms = JsonMarshallingServiceImpl()
+        val jms = JsonMarshallingServiceImpl(mock<MerkleProofProvider>{})
         jms.setSerializer(instance as JsonSerializer<*>, extractSerializingType(instance))
 
         val dto = SimpleDto(
@@ -215,7 +217,7 @@ class JsonMarshallingServiceImplTest {
             "net.corda.application.impl.services.json.JsonMarshallingServiceImplTest\$SimpleDeserializer"
         )
 
-        val jms = JsonMarshallingServiceImpl()
+        val jms = JsonMarshallingServiceImpl(mock<MerkleProofProvider>{})
         jms.setDeserializer(instance as JsonDeserializer<*>, extractSerializingType(instance))
 
         val dto = jms.parse("""
@@ -230,7 +232,7 @@ class JsonMarshallingServiceImplTest {
 
     @Test
     fun `Duplicate serializers are rejected`() {
-        val jms = JsonMarshallingServiceImpl()
+        val jms = JsonMarshallingServiceImpl(mock<MerkleProofProvider>{})
         assertTrue(jms.setSerializer(SimpleSerializer(), SimpleDto::class.java))
         assertTrue(jms.setSerializer(OtherSerializer(), OtherDto::class.java))
         assertFalse(jms.setSerializer(SimpleSerializer(), SimpleDto::class.java)) // exact duplicate
@@ -239,7 +241,7 @@ class JsonMarshallingServiceImplTest {
 
     @Test
     fun `Duplicate deserializers are rejected`() {
-        val jms = JsonMarshallingServiceImpl()
+        val jms = JsonMarshallingServiceImpl(mock<MerkleProofProvider>{})
         assertTrue(jms.setDeserializer(SimpleDeserializer(), SimpleDto::class.java))
         assertTrue(jms.setDeserializer(OtherDeserializer(), OtherDto::class.java))
         assertFalse(jms.setDeserializer(SimpleDeserializer(), SimpleDto::class.java)) // exact duplicate
@@ -248,7 +250,7 @@ class JsonMarshallingServiceImplTest {
 
     @Test
     fun `Nested field with custom serializer and deserializer picks them up correctly`() {
-        val jms = JsonMarshallingServiceImpl()
+        val jms = JsonMarshallingServiceImpl(mock<MerkleProofProvider>{})
 
         // ComplexDto has no explicit serializer or deserializer but contains a field which does. The
         // JsonMarshallingService should automatically recognise the custom field serialization even though the outer

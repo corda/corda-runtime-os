@@ -23,6 +23,7 @@ import net.corda.p2p.linkmanager.forwarding.gateway.mtls.ClientCertificatePublis
 import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
 import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueuesImpl
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
+import net.corda.p2p.linkmanager.sessions.StateConvertor
 import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl
 import net.corda.schema.Schemas
 import net.corda.schema.registry.AvroSchemaRegistry
@@ -89,8 +90,11 @@ internal class CommonComponents(
                 linkManagerHostingMap,
                 clock = clock,
             ),
-            schemaRegistry,
-            sessionEncryptionOpsClient,
+            StateConvertor(
+                schemaRegistry,
+                sessionEncryptionOpsClient,
+            ),
+            clock,
             membershipGroupReaderProvider,
         )
     } else {
