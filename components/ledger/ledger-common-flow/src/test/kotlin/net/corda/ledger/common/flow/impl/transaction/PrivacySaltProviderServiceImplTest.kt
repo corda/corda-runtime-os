@@ -13,7 +13,6 @@ internal class PrivacySaltProviderServiceImplTest : CommonLedgerTest() {
     private val canonicalJson = jsonValidator.canonicalize(metadataJson)
     private val privacySaltProviderService = PrivacySaltProviderServiceImpl(flowFiberService)
 
-
     @BeforeEach
     fun setupPrivacySaltProviderService() {
         val flowId = "fc321a0c-62c6-41a1-85e6-e61870ab93aa"
