@@ -96,6 +96,9 @@ class ConfigurationChangeTest : ClusterReadiness by ClusterReadinessChecker() {
             logger.info("Wait for the rest-worker to reload the configuration and come back up")
             waitForConfigurationChange(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue.toString(), false)
 
+            //Ensure cluster is ready after Config Update.
+            assertIsReady(Duration.ofMinutes(1), Duration.ofMillis(100))
+
             // Execute some flows which require functionality from different workers and make sure they succeed
             logger.info("Execute some flows which require functionality from different workers and make sure they succeed")
             val flowIds = mutableListOf(
