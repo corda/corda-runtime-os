@@ -98,15 +98,19 @@ class ConsumerProcessorTest {
                 RoutingDestination.Type.ASYNCHRONOUS
             )
         )
-        whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(getGroups(2, 4))
+        whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(
+            getGroups(2, 4),
+            listOf()
+        )
         whenever(stateManagerHelper.createOrUpdateState(any(), any(), any(), any())).thenReturn(mock())
+        whenever(stateManager.get(any())).thenReturn(mapOf())
 
         consumerProcessor.processTopic(getConsumerFactory(), getConsumerConfig())
 
         verify(consumer, times(1)).poll(any())
         verify(consumerFactory, times(1)).create<String, String>(any())
         verify(consumer, times(1)).subscribe()
-        verify(groupAllocator, times(1)).allocateGroups<String, String, String>(any(), any())
+        verify(groupAllocator, times(2)).allocateGroups<String, String, String>(any(), any())
         verify(taskManager, times(2)).executeShortRunningTask<Unit>(any())
 
         verify(stateManager, times(2)).get(any())
@@ -169,7 +173,7 @@ class ConsumerProcessorTest {
             future
         }
         whenever(stateManagerHelper.failStateProcessing(any(), anyOrNull())).thenReturn(mock())
-        whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(getGroups(2, 4))
+        whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(getGroups(2, 4), listOf())
 
         consumerProcessor.processTopic(getConsumerFactory(), getConsumerConfig())
 

@@ -99,7 +99,7 @@ class GroupAllocatorTest {
         assertEquals(groupSize.size, groups.size)
 
         groupSize.map {
-            assertEquals(groupSize[it.key], groups[it.key].values.map { it.records }.flatten().size)
+            assertEquals(groupSize[it.key], groups[it.key].values.map { input -> input.records }.flatten().size)
         }
     }
 
@@ -120,7 +120,7 @@ class GroupAllocatorTest {
 
     private fun getIntInputs(recordCountByKey: List<Int>): List<EventProcessingInput<Int, Int>> {
         return recordCountByKey.mapIndexed { index, count ->
-            val records = (0..count).map {value ->
+            val records = (1..count).map {value ->
                 Record(null, index, value)
             }
             EventProcessingInput(index, records, null)
