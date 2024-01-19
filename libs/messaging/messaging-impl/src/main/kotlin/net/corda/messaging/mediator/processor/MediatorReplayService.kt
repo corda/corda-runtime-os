@@ -58,19 +58,26 @@ class MediatorReplayService @Activate constructor(
     }
 
     /**
-     * Compare the [inputRecord] to the existing [mediatorState] to see if it is a replayed record or not.
-     * If it is replay then return all the outputs from the [mediatorState] as [MediatorMessage]s.
-     * @param inputRecord Record to check whether it is a replay or not
+     * Compare the [inputRecords] to the existing [mediatorState] to see which records are a replayed records or not.
+     * If it is replay then return all the outputs from the [mediatorState] as [MediatorMessage]s to the resulting map.
+     * If a given input is not a replayed event the mediator has been before, then no entry in the map is added.
+     * @param inputRecords Record to check whether it is a replay or not
      * @param mediatorState The mediator state to check the [inputRecord] against
-     * @return Null if it is not a replayed event, if it is a replay event,
-     * a list of mediator messages are returned associated with the [inputRecord].
+     * @return Map of replayed input records to their the outputs as [MediatorMessage]s
      */
-    fun <K : Any, V : Any> getReplayEvents(inputRecord: Record<K, V>, mediatorState: MediatorState): List<MediatorMessage<Any>>? {
-        val inputHash = getInputHash(inputRecord).array()
-        return mediatorState.outputEvents
-            .findLast { inputHash.contentEquals(it.inputEventHash.array()) }
-            ?.outputEvents
-            ?.map { it.toMediatorMessage() }
+    fun <K : Any, V : Any> getReplayEvents(
+        inputRecords: Set<Record<K, V>>,
+        mediatorState: MediatorState
+    ): Map<Record<K, V>, List<MediatorMessage<Any>>> {
+        val inputHashes = inputRecords.associateBy { getInputHash(it) }
+        val replayEvents = mutableMapOf<Record<K, V>, List<MediatorMessage<Any>>>()
+        mediatorState.outputEvents.asReversed().forEach { replay ->
+            inputHashes[replay.inputEventHash]?.let { inputRecord ->
+                replayEvents[inputRecord] = replay.outputEvents.map { it.toMediatorMessage() }
+            }
+        }
+
+        return replayEvents
     }
 
     fun MutableMap<String, Any>.getProperty(key: String): String {
@@ -85,7 +92,7 @@ class MediatorReplayService @Activate constructor(
      */
     private fun <K : Any, E : Any> getInputHash(inputEvent: Record<K, E>): ByteBuffer {
         val recordValueBytes = serialize(inputEvent.value)
-        check (recordValueBytes != null) {
+        check(recordValueBytes != null) {
             "Input record key and value bytes should not be null"
         }
         return ByteBuffer.wrap((recordValueBytes).sha256Bytes())

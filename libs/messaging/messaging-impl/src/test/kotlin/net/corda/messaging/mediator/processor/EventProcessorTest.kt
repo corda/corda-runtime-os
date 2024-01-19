@@ -52,7 +52,7 @@ class EventProcessorTest {
         stateAndEventProcessor = mock()
         stateManagerHelper = mock()
         mediatorReplayService = mock<MediatorReplayService>().apply {
-            whenever(getReplayEvents<String, String>(anyOrNull(), anyOrNull())).thenReturn(null)
+            whenever(getReplayEvents<String, String>(anyOrNull(), anyOrNull())).thenReturn(emptyMap())
         }
         messageRouter = mock()
         whenever(messageRouter.getDestination(any())).thenAnswer {
@@ -119,11 +119,17 @@ class EventProcessorTest {
     fun `When all inputs are replays, processor is not executed and replayed outputs are returned`() {
         val expectedOutputPerInput = MediatorMessage<Any>("payload")
         val recordCount = 2
-        whenever(mediatorReplayService.getReplayEvents<String, String>(anyOrNull(), anyOrNull())).thenReturn(listOf(expectedOutputPerInput))
+        val key1Records = getStringRecords(recordCount, "key1")
+        val key2Records = getStringRecords(recordCount, "key2")
+        whenever(mediatorReplayService.getReplayEvents<String, String>(anyOrNull(), anyOrNull())).thenReturn(
+            (key1Records + key2Records).associateWith {
+                listOf(expectedOutputPerInput)
+            }
+        )
 
         val group = mapOf(
-            "key1" to getStringRecords(recordCount, "key1"),
-            "key2" to getStringRecords(recordCount, "key2")
+            "key1" to key1Records,
+            "key2" to key2Records
         )
         val states = mapOf(
             "key1" to state1,
@@ -134,7 +140,7 @@ class EventProcessorTest {
         assertEquals(group.keys.size, result.size)
         result.values.forEach {
             assertEquals(StateChangeAndOperation.Noop, it.stateChangeAndOperation)
-            assertEquals(recordCount, it.asyncOutputs.size)
+            assertEquals(4, it.asyncOutputs.size)
             assertContains(it.asyncOutputs, expectedOutputPerInput)
         }
         verify(stateManagerHelper, times(2)).deserializeValue(any())
@@ -150,15 +156,19 @@ class EventProcessorTest {
         val recordCount = 2
         val mediatorState2 = mock<MediatorState>()
         whenever(stateManagerHelper.deserializeMediatorState(state2)).thenReturn(mediatorState2)
-        whenever(mediatorReplayService.getReplayEvents<String, String>(anyOrNull(), eq(mediatorState2))).thenReturn(
-            listOf(
-                expectedOutputPerInput
+        val key1Records = getStringRecords(recordCount, "key1")
+        val key2Records = getStringRecords(recordCount, "key2")
+        (key1Records + key2Records).forEach {
+            whenever(mediatorReplayService.getReplayEvents<String, String>(anyOrNull(), eq(mediatorState2))).thenReturn(
+                key2Records.associateWith {
+                    listOf(expectedOutputPerInput)
+                }
             )
-        )
+        }
 
         val group = mapOf(
-            "key1" to getStringRecords(recordCount, "key1"),
-            "key2" to getStringRecords(recordCount, "key2")
+            "key1" to key1Records,
+            "key2" to key2Records
         )
         val states = mapOf(
             "key1" to state1,
@@ -192,13 +202,14 @@ class EventProcessorTest {
         val expectedOutputPerInput = MediatorMessage<Any>("payload")
         val mediatorState1 = mock<MediatorState>()
         val recordCount = 2
-        val records = getStringRecords(recordCount, "key1")
-
+        val key1Records = getStringRecords(recordCount, "key1")
         whenever(stateManagerHelper.deserializeMediatorState(state1)).thenReturn(mediatorState1)
-        whenever(mediatorReplayService.getReplayEvents(eq(records.first()), eq(mediatorState1))).thenReturn(listOf(expectedOutputPerInput))
+        whenever(mediatorReplayService.getReplayEvents<String, String>(any(), eq(mediatorState1))).thenReturn(
+            mapOf(key1Records.first() to listOf(expectedOutputPerInput))
+        )
 
         val group = mapOf(
-            "key1" to records,
+            "key1" to key1Records,
         )
         val states = mapOf(
             "key1" to state1

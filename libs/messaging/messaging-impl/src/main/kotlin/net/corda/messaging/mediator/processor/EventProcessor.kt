@@ -46,7 +46,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         retrievedStates: Map<String, State>
     ): Map<K, EventProcessingOutput> {
         return group.mapValues { groupEntry ->
-            val allConsumerInputs = groupEntry.value
+            val allConsumerInputs = groupEntry.value.toSet()
             val groupKey = groupEntry.key.toString()
             val state = retrievedStates.getOrDefault(groupKey, null)
             val mediatorState = stateManagerHelper.deserializeMediatorState(state) ?: createNewMediatorState()
@@ -101,16 +101,15 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     }
 
     private fun getReplayOutputsAndNonReplayInputs(
-        allConsumerInputs: List<Record<K, E>>,
+        allConsumerInputs: Set<Record<K, E>>,
         mediatorState: MediatorState
-    ): Pair<List<Record<K, E>>, List<MediatorMessage<Any>>> {
-        val cachedOutputs = mutableListOf<MediatorMessage<Any>>()
-        val nonReplayOutputs = allConsumerInputs.filter { inputEvent ->
-            mediatorReplayService.getReplayEvents(inputEvent, mediatorState)?.let {
-                cachedOutputs.addAll(it)
-            } == null
-        }
-        return Pair(nonReplayOutputs, cachedOutputs)
+    ): Pair<Set<Record<K, E>>, List<MediatorMessage<Any>>> {
+        val replaysByInput = mediatorReplayService.getReplayEvents(allConsumerInputs, mediatorState)
+        if (replaysByInput.isEmpty()) return Pair(allConsumerInputs, emptyList())
+
+        val nonReplays = allConsumerInputs.minus(replaysByInput.keys)
+        val outputs = replaysByInput.values.flatten()
+        return Pair(nonReplays, outputs)
     }
 
     private fun MutableMap<Record<K, E>, MutableList<MediatorMessage<Any>>>.addOutputs(

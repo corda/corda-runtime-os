@@ -21,7 +21,6 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
-import kotlin.test.assertNull
 
 class MediatorReplayServiceTest {
     private val topic = "topic"
@@ -109,24 +108,26 @@ class MediatorReplayServiceTest {
 
     @Test
     fun `input record is replay event`() {
-        val inputRecord = Record(topic, "1", "1")
+        val record = Record(topic, "1", "1")
+        val inputRecords = setOf(record)
         val existingOutputs = mediatorReplayOutputEvents(2, 3)
-        val outputs  = mediatorReplayService.getReplayEvents(inputRecord, MediatorState(testState, existingOutputs))
-        assertEquals(3, outputs?.size)
+        val outputs  = mediatorReplayService.getReplayEvents(inputRecords, MediatorState(testState, existingOutputs))
+        assertEquals(1, outputs.size)
+        assertEquals(3, outputs[record]?.size)
     }
 
     @Test
     fun `input record is not a replay event, empty outputs`() {
-        val inputRecord = Record(topic, "test1", "test1")
-        assertNull(mediatorReplayService.getReplayEvents(inputRecord, MediatorState(testState, mutableListOf())))
+        val inputRecords = setOf(Record(topic, "test1", "test1"))
+        assertEquals(0, mediatorReplayService.getReplayEvents(inputRecords, MediatorState(testState, mutableListOf())).size)
     }
 
     @Test
     fun `input record is not a replay event, existing outputs`() {
         val existingOutputs = mediatorReplayOutputEvents(2, 3)
-        val inputRecord = Record(topic, "test3", "test3")
+        val inputRecords = setOf(Record(topic, "test3", "test3"))
         whenever(serializer.serialize(any())).thenReturn("bytes".toByteArray())
-        assertNull(mediatorReplayService.getReplayEvents(inputRecord, MediatorState(testState, existingOutputs)))
+        assertEquals(0, mediatorReplayService.getReplayEvents(inputRecords, MediatorState(testState, existingOutputs)).size)
     }
 
     private fun mediatorReplayOutputEvents(existingKeys: Int = 0, existingValuesPerKey: Int = 0): List<MediatorReplayOutputEvents> {
