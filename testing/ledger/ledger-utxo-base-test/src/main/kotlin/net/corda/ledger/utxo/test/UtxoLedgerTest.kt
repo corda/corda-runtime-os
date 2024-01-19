@@ -85,7 +85,7 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         mockGroupParametersLookup,
         mockSignedGroupParametersVerifier,
         mockNotarySignatureVerificationService,
-        privacySaltProviderService
+        mockPrivacySaltProviderService
     )
     val utxoLedgerService = UtxoLedgerServiceImpl(
         utxoFilteredTransactionFactory,

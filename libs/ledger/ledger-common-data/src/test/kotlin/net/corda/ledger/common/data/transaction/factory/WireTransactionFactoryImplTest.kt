@@ -17,7 +17,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
     private val canonicalJson = jsonValidator.canonicalize(metadataJson)
 
     @BeforeEach
-    fun setup() {
+    fun setupPrivacySaltProviderService() {
         val flowId = "fc321a0c-62c6-41a1-85e6-e61870ab93aa"
         val suspendCount = 10
 

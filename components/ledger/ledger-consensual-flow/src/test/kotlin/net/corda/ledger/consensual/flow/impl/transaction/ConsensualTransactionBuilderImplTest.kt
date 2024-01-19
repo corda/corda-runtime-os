@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertIs
 
 internal class ConsensualTransactionBuilderImplTest : ConsensualLedgerTest() {
-
     @Test
     fun `can build a simple Transaction`() {
         val tx = consensualTransactionBuilder
