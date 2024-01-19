@@ -180,7 +180,7 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
             JOIN {h-schema}utxo_transaction_merkle_proof_leaves utmpl
                 ON utmpl.merkle_proof_id = utmp.merkle_proof_id
             JOIN {h-schema}utxo_transaction utt
-                ON utt.transaction_id = utmp.transaction_id
+                ON utt.id = utmp.transaction_id
             WHERE utmp.transaction_id = :transactionId
                 AND utmp.group_idx = :groupIndex"""
             .trimIndent()
