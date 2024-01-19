@@ -249,10 +249,10 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
 
     @ParameterizedTest
     @MethodSource("emfs")
-    fun `find by alias joind the key material with the highest generation wrapping key`(emf: EntityManagerFactory) {
-        val info = createSigningKeyInfo()
+    fun `find by alias joined the key material with the highest generation wrapping key`(emf: EntityManagerFactory) {
+        val info = createSigningKeyInfo(wrappingKeyAlias = UUID.randomUUID().toString() + "alias")
         val ctx = createSigningWrappedKeySaveContext(info)
-        val someOtherAlias = "some_other_alias"
+        val someOtherAlias = UUID.randomUUID().toString() + "some_other_alias"
 
         val repo = SigningRepositoryImpl(
             emf,
