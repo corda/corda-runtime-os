@@ -53,7 +53,6 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
     private val jsonValidator: JsonValidator,
     @Reference(service = PrivacySaltProviderService::class)
     private val privacySaltProviderService: PrivacySaltProviderService
-
 ) : ConsensualSignedTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
 
     /**
