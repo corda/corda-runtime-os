@@ -2,17 +2,18 @@ package net.corda.p2p.linkmanager.sessions.metadata
 
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.statemanager.api.Metadata
+import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata.Companion.toCommonMetadata
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import java.time.Duration
 import java.time.Instant
-import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata.Companion.toCommonMetadata
 
-enum class OutboundSessionStatus{
-    SentInitiatorHello, SentInitiatorHandshake, SessionReady
+internal enum class OutboundSessionStatus {
+    SentInitiatorHello,
+    SentInitiatorHandshake,
+    SessionReady,
 }
-
 internal enum class InboundSessionStatus {
     SentResponderHello,
     SentResponderHandshake,
@@ -106,13 +107,13 @@ internal data class OutboundSessionMetadata(
     fun toMetadata(): Metadata {
         return Metadata(
             commonData.metadataMap +
-            mapOf(
-                STATUS to this.status.toString(),
-                SERIAL to this.serial,
-                MEMBERSHIP_STATUS to this.membershipStatus.toString(),
-                COMMUNICATION_WITH_MGM to this.communicationWithMgm,
-                SESSION_ID to this.sessionId
-            )
+                mapOf(
+                    STATUS to this.status.toString(),
+                    SERIAL to this.serial,
+                    MEMBERSHIP_STATUS to this.membershipStatus.toString(),
+                    COMMUNICATION_WITH_MGM to this.communicationWithMgm,
+                    SESSION_ID to this.sessionId,
+                ),
         )
     }
 }
@@ -164,9 +165,5 @@ internal data class CommonMetadata(
 
     fun sessionExpired(clock: Clock): Boolean {
         return clock.instant() > expiry + SESSION_EXPIRY_PERIOD
-    }
-
-    fun toMetadata(): Metadata {
-        return Metadata(metadataMap)
     }
 }
