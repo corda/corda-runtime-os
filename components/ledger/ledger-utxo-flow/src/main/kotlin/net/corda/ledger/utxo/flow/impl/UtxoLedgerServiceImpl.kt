@@ -199,6 +199,8 @@ class UtxoLedgerServiceImpl @Activate constructor(
          * Called by flows in user corDapps that wish to participate in finality, to counter sign them. Works
          * by starting a new receive finality flow to do the work.
          *
+         * Once the flow gets a signed transaction, the first test is to verify the signatures match the public keys.
+         *
          * `session` provides the ability to receive the transaction from the counterparty who initiated the finalize,
          * and later send back to the counterparty who initiated the finalize, as well as providing access to the
          * X500Name of the counterparty.
