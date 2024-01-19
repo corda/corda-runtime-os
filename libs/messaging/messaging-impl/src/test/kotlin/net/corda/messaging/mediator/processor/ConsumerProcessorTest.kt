@@ -16,16 +16,15 @@ import net.corda.messaging.api.mediator.config.MediatorConsumerConfig
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.messaging.api.records.Record
 import net.corda.messaging.getStringRecords
 import net.corda.messaging.mediator.GroupAllocator
 import net.corda.messaging.mediator.MediatorSubscriptionState
 import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.taskmanager.TaskManager
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
 import org.mockito.kotlin.any
@@ -148,7 +147,9 @@ class ConsumerProcessorTest {
         consumer.apply {
             whenever(poll(any())).thenReturn(listOf(getConsumerRecord()))
         }
-        assertThrows<CordaMessageAPIFatalException> { consumerProcessor.processTopic(consumerFactory, getConsumerConfig()) }
+        assertThrows(CordaMessageAPIFatalException::class.java) {
+            consumerProcessor.processTopic(consumerFactory, getConsumerConfig())
+        }
 
         verify(consumer, times(0)).poll(any())
         verify(consumerFactory, times(1)).create<String, String>(any())
@@ -176,12 +177,12 @@ class ConsumerProcessorTest {
     }
 
 
-    private fun getGroups(groupCount: Int, recordCountPerGroup: Int): List<Map<String, List<Record<String, String>>>> {
-        val groups = mutableListOf<Map<String, List<Record<String, String>>>>()
+    private fun getGroups(groupCount: Int, recordCountPerGroup: Int): List<Map<String, EventProcessingInput<String, String>>> {
+        val groups = mutableListOf<Map<String, EventProcessingInput<String, String>>>()
         for (i in 0 until groupCount) {
             val key = "key$i"
-            val records = getStringRecords(recordCountPerGroup, key)
-            val map = mapOf(key to records)
+            val input = EventProcessingInput(key, getStringRecords(recordCountPerGroup, key), null)
+            val map = mapOf(key to input)
             groups.add(map)
         }
 
