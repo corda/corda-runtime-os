@@ -34,7 +34,7 @@ abstract class AbstractFlow : ClientStartableFlow, MemberResolver {
 
         try {
             val request = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)
-            val memberInfoRequest = checkNotNull(request["id"]) { "Failed to find key 'id' in the RPC input args" }
+            val memberInfoRequest = checkNotNull(request["id"]) { "Failed to find key 'id' in the REST input args" }
 
             return buildOutput(findMember(memberInfoRequest))
         } catch (e: Exception) {

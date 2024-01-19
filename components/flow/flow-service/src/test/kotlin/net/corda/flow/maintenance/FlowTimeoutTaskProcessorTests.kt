@@ -1,10 +1,12 @@
 package net.corda.flow.maintenance
 
 import net.corda.data.flow.FlowTimeout
+import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.scheduler.ScheduledTaskTrigger
 import net.corda.flow.state.impl.CheckpointMetadataKeys.STATE_META_SESSION_EXPIRY_KEY
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.Metadata
+import net.corda.libs.statemanager.api.STATE_TYPE
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.constants.MessagingMetadataKeys
@@ -23,26 +25,41 @@ import java.time.Instant
 
 class FlowTimeoutTaskProcessorTests {
     private val now = Instant.now()
+    private val checkpointMetadata = STATE_TYPE to Checkpoint::class.java.name
     private val flowConfig = mock<SmartConfig>().apply {
         whenever(getLong(any())).thenReturn(10L)
     }
 
-    private val idleState = State("idle", randomBytes(), 0)
+    private val nonCheckpointState = State("not-a-checkpoint", randomBytes(), 0)
+    private val idleState = State("idle", randomBytes(), 0, Metadata(mapOf(checkpointMetadata)))
     private val sessionTimeoutState =
         State(
             "sessionTimeout", randomBytes(), 0,
-            Metadata(mapOf(STATE_META_SESSION_EXPIRY_KEY to now.minusSeconds(1).epochSecond.toInt()))
+            Metadata(
+                mapOf(
+                    checkpointMetadata,
+                    STATE_META_SESSION_EXPIRY_KEY to now.minusSeconds(1).epochSecond.toInt()
+                )
+            )
         )
     private val messagingLayerTimeoutState =
         State(
             "messagingLayerTimeout", randomBytes(), 0,
-            Metadata(mapOf(MessagingMetadataKeys.PROCESSING_FAILURE to true))
+            Metadata(
+                mapOf(
+                    checkpointMetadata,
+                    MessagingMetadataKeys.PROCESSING_FAILURE to true
+                )
+            )
         )
     private val stateManager = mock<StateManager> {
-        on { updatedBetween(any()) } doReturn (mapOf(idleState.key to idleState))
         on { findByMetadataMatchingAny(any()) } doReturn (mapOf(
             sessionTimeoutState.key to sessionTimeoutState,
             messagingLayerTimeoutState.key to messagingLayerTimeoutState
+        ))
+        on { findUpdatedBetweenWithMetadataMatchingAll(any(), any()) } doReturn (mapOf(
+            idleState.key to idleState,
+            nonCheckpointState.key to nonCheckpointState
         ))
     }
     private val record1 = Record<String, ScheduledTaskTrigger>(
@@ -96,8 +113,12 @@ class FlowTimeoutTaskProcessorTests {
 
     @Test
     fun `when no states are found return empty list of clean up records`() {
-        whenever(stateManager.updatedBetween(any())).doReturn(emptyMap())
-        whenever(stateManager.findByMetadataMatchingAny(any())).doReturn(emptyMap())
+        whenever(
+            stateManager.findByMetadataMatchingAny(any())
+        ).doReturn(mapOf(nonCheckpointState.key to nonCheckpointState))
+        whenever(
+            stateManager.findUpdatedBetweenWithMetadataMatchingAll(any(), any())
+        ).doReturn(mapOf(nonCheckpointState.key to nonCheckpointState))
 
         val output = processor.onNext(listOf(record1))
         assertThat(output).isEmpty()

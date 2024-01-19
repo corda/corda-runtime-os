@@ -3,6 +3,7 @@ package net.corda.flow.maintenance
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.data.flow.FlowTimeout
 import net.corda.data.flow.state.checkpoint.Checkpoint
+import net.corda.data.messaging.mediator.MediatorState
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.state.impl.FlowCheckpointFactory
 import net.corda.libs.configuration.SmartConfig
@@ -12,10 +13,12 @@ import net.corda.messaging.api.records.Record
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
+@Suppress("LongParameterList")
 class TimeoutEventCleanupProcessor(
     private val checkpointCleanupHandler: CheckpointCleanupHandler,
     private val stateManager: StateManager,
-    private val avroDeserializer: CordaAvroDeserializer<Checkpoint>,
+    private val mediatorDeserializer: CordaAvroDeserializer<MediatorState>,
+    private val checkpointDeserializer: CordaAvroDeserializer<Checkpoint>,
     private val flowCheckpointFactory: FlowCheckpointFactory,
     private val config: SmartConfig
 ) : DurableProcessor<String, FlowTimeout> {
@@ -29,8 +32,10 @@ class TimeoutEventCleanupProcessor(
         val statesToRecords = stateManager.get(events.mapNotNull {
             it.value?.checkpointStateKey
         }).mapNotNull { (_, state) ->
-            avroDeserializer.deserialize(state.value)?.let {
-                state to generateCleanupRecords(it)
+            mediatorDeserializer.deserialize(state.value)?.let { mediatorState ->
+                checkpointDeserializer.deserialize(mediatorState.state.array())?.let {
+                    state to generateCleanupRecords(it)
+                }
             }
         }.toMap()
         if (statesToRecords.size < events.size) {

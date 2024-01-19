@@ -9,13 +9,13 @@ import net.corda.e2etest.utilities.CODE_SIGNER_CERT_ALIAS
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT_USAGE
 import net.corda.e2etest.utilities.ClusterReadiness
 import net.corda.e2etest.utilities.ClusterReadinessChecker
-import net.corda.e2etest.utilities.RpcSmokeTestInput
+import net.corda.e2etest.utilities.RestSmokeTestInput
 import net.corda.e2etest.utilities.assertWithRetryIgnoringExceptions
 import net.corda.e2etest.utilities.cluster
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
-import net.corda.e2etest.utilities.startRpcFlow
+import net.corda.e2etest.utilities.startRestFlow
 import net.corda.e2etest.utilities.websocket.client.useWebsocketConnection
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
@@ -43,7 +43,7 @@ class FlowStatusFeedSmokeTest : ClusterReadiness by ClusterReadinessChecker() {
         )
     }
 
-    private enum class FlowStates { START_REQUESTED, RUNNING, RETRYING, COMPLETED, FAILED, KILLED }
+    private enum class FlowStates { START_REQUESTED, RUNNING, COMPLETED }
 
     private fun generateRequestId(identifyingTest: String): String {
         return "$identifyingTest-${UUID.randomUUID()}"
@@ -113,11 +113,11 @@ class FlowStatusFeedSmokeTest : ClusterReadiness by ClusterReadinessChecker() {
     }
 
     private fun startFlow(clientRequestId: String) {
-        val requestBody = RpcSmokeTestInput().apply {
+        val requestBody = RestSmokeTestInput().apply {
             command = "echo"
             data = mapOf("echo_value" to "hello")
         }
 
-        startRpcFlow(holdingId = bobHoldingId, args = requestBody, requestId = clientRequestId)
+        startRestFlow(holdingId = bobHoldingId, args = requestBody, requestId = clientRequestId)
     }
 }

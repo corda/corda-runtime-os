@@ -13,7 +13,7 @@ dependencies {
     api 'net.corda:corda-application'
     implementation 'net.corda:corda-config-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation libs.slf4j.api
 
     api project(':libs:messaging:messaging')
     api project(':libs:messaging:message-bus')
