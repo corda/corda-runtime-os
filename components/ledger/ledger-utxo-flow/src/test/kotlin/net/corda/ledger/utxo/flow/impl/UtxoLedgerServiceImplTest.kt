@@ -24,7 +24,6 @@ import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import net.corda.v5.membership.NotaryInfo
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.any
@@ -37,17 +36,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 class UtxoLedgerServiceImplTest : UtxoLedgerTest() {
-
-    @BeforeEach
-    fun setup() {
-        val flowId = "fc321a0c-62c6-41a1-85e6-e61870ab93aa"
-        val suspendCount = 10
-
-        val checkpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
-
-        whenever(checkpoint.flowId).thenReturn(flowId)
-        whenever(checkpoint.suspendCount).thenReturn(suspendCount)
-    }
 
     @Test
     fun `createTransactionBuilder should return a Transaction Builder`() {

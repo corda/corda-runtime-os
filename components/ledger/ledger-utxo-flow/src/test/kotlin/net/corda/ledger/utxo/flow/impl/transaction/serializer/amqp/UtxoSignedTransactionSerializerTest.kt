@@ -12,7 +12,6 @@ import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.utilities.serialization.deserialize
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
@@ -23,17 +22,6 @@ class UtxoSignedTransactionSerializerTest : UtxoLedgerTest() {
         it.register(wireTransactionAMQPSerializer, it)
         it.register(utxoSignedTransactionAMQPSerializer, it)
     }, cipherSchemeMetadata)
-
-    @BeforeEach
-    fun setup() {
-        val flowId = "fc321a0c-62c6-41a1-85e6-e61870ab93aa"
-        val suspendCount = 10
-
-        val checkpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
-
-        whenever(checkpoint.flowId).thenReturn(flowId)
-        whenever(checkpoint.suspendCount).thenReturn(suspendCount)
-    }
 
     @Test
     fun `Should serialize and then deserialize wire Tx`() {

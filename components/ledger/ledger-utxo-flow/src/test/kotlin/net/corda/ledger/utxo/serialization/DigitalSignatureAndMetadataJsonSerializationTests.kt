@@ -36,9 +36,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrowsExactly
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.whenever
 import java.util.TimeZone
 import kotlin.test.assertContains
 
@@ -61,26 +59,15 @@ import kotlin.test.assertContains
 
 class DigitalSignatureAndMetadataJsonSerializationTests : UtxoLedgerTest() {
 
-    @BeforeEach
-    fun setup() {
-        val flowId = "fc321a0c-62c6-41a1-85e6-e61870ab93aa"
-        val suspendCount = 10
-
-        val checkpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
-
-        whenever(checkpoint.flowId).thenReturn(flowId)
-        whenever(checkpoint.suspendCount).thenReturn(suspendCount)
-    }
-
-    private fun createSignedTransaction(): UtxoSignedTransactionInternal {
-        return UtxoTransactionBuilderImpl(utxoSignedTransactionFactory, mockNotaryLookup)
+    private val signedTransaction: UtxoSignedTransactionInternal =
+        UtxoTransactionBuilderImpl(utxoSignedTransactionFactory, mockNotaryLookup)
             .setNotary(notaryX500Name)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addOutputState(getUtxoStateExample())
             .addSignatories(listOf(anotherPublicKeyExample))
             .addCommand(UtxoCommandExample())
             .toSignedTransaction() as UtxoSignedTransactionInternal
-    }
+
 
     companion object {
         // Clone of SecureHash serializer/deserializer from JsonMarshallingServiceImpl call which are not exposed outside,
@@ -149,7 +136,7 @@ class DigitalSignatureAndMetadataJsonSerializationTests : UtxoLedgerTest() {
     @Test
     fun `digitalSignatureAndMetadata with Merkle proof`() {
         val signatureBatches =
-            transactionSignatureService.signBatch(listOf(createSignedTransaction()), listOf(publicKeyExample))
+            transactionSignatureService.signBatch(listOf(signedTransaction), listOf(publicKeyExample))
         assertEquals(1, signatureBatches.size)
         val signatureBatch = signatureBatches.first()
         assertEquals(1, signatureBatch.size)
@@ -166,7 +153,7 @@ class DigitalSignatureAndMetadataJsonSerializationTests : UtxoLedgerTest() {
     @Test
     fun `deserialization fails without ProofOfActionSerialisation module`() {
         val signatureBatches =
-            transactionSignatureService.signBatch(listOf(createSignedTransaction()), listOf(publicKeyExample))
+            transactionSignatureService.signBatch(listOf(signedTransaction), listOf(publicKeyExample))
         assertEquals(1, signatureBatches.size)
         val signatureBatch = signatureBatches.first()
         assertEquals(1, signatureBatch.size)
