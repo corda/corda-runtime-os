@@ -1,4 +1,5 @@
 @file:Suppress("TooManyFunctions")
+
 package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.module.kotlin.contains
@@ -223,9 +224,12 @@ fun ClusterInfo.whenNoKeyExists(
     }
 }
 
-/*
-This method triggers rotation of keys for crypto unmanaged Wrapping keys.
-It takes input the old and new KeyAlias and the status code based on from where it is called (positive or negative scenario)
+/**
+ * This method triggers rotation of keys for crypto unmanaged Wrapping keys.
+ * It takes input 3 parameters, the old and new KeyAlias (in string type) and the status code (Int type)
+ *   @param  oldKeyAlias  old unmanaged root key alias that need to be rotated
+ *   @param  newKeyAlias  new unmanaged root key alias
+ *   @param expectedHttpStatusCode Status code that should be displayed when the API is hit, helps to validate both positive or negative scenarios.
  */
 fun ClusterInfo.rotateCryptoUnmanagedWrappingKeys(
     oldKeyAlias: String,
@@ -238,9 +242,10 @@ fun ClusterInfo.rotateCryptoUnmanagedWrappingKeys(
     }
 }
 
-/*
-This method fetch the status of keys for unmanaged Wrapping key Rotation.
-It takes input the key (KeyAlias) and the status code based on from where it is called (positive or negative scenario)
+/**
+ * This method fetch the status of keys for unmanaged Wrapping key Rotation.
+ * It takes input 2 parameter, the KeyAlias (in String type) and the status code (in Int type)
+ *  @param expectedHttpStatusCode Status code that should be displayed when the API is hit, helps to validate both positive or negative scenarios.
  */
 fun ClusterInfo.getStatusForUnmanagedWrappingKeysRotation(
     keyAlias: String,
@@ -252,8 +257,8 @@ fun ClusterInfo.getStatusForUnmanagedWrappingKeysRotation(
     }
 }
 
-/*
-This method fetch the protocol version for unmanaged key Rotation
+/**
+ * This method fetch the protocol version for unmanaged key Rotation
  */
 fun ClusterInfo.getProtocolVersionForUnmanagedKeyRotation(
 ) = cluster {
