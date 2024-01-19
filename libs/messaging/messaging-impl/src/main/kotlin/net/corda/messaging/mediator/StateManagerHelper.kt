@@ -47,13 +47,19 @@ class StateManagerHelper<S : Any>(
         )
     }
 
+    /**
+     * Marks a state as having failed event mediator processing.
+     *
+     * In the event processing failed for a non-existent state, a new state is created with the metadata key set. This
+     * allows clients to detect issues with any failed processing.
+     */
     fun failStateProcessing(key: String, originalState: State?) : State {
         val newMetadata = (originalState?.metadata?.toMutableMap() ?: mutableMapOf()).also {
             it[PROCESSING_FAILURE] = true
         }
         return State(
             key,
-            byteArrayOf(),
+            originalState?.value ?: byteArrayOf(),
             version = originalState?.version ?: State.VERSION_INITIAL_VALUE,
             metadata = Metadata(newMetadata)
         )
