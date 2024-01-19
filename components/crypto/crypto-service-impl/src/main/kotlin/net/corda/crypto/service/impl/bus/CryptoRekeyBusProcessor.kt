@@ -119,7 +119,14 @@ class CryptoRekeyBusProcessor(
             }
 
             // Only delete previous key rotation status if we are actually going to rotate something
-            if (records.isNotEmpty()) deleteStateManagerRecords(request.oldParentKeyAlias)
+            // If we can't delete previous records, we won't start new key rotation
+            try {
+                if (records.isNotEmpty()) deleteStateManagerRecords(request.oldParentKeyAlias)
+            } catch (e: IllegalStateException) {
+                logger.error("Unable to delete previous key rotation records. " +
+                        "Cannot start new key rotation for ${request.oldParentKeyAlias}.")
+                return emptyList()
+            }
             stateManager.create(records)
 
             rekeyPublisher.publish(
@@ -135,8 +142,7 @@ class CryptoRekeyBusProcessor(
                             wrappingKeyInfo.alias,
                             KeyType.UNMANAGED
                         ),
-                        timestamp // TODO probably remove timestamp? not sure if we need this here.
-                            // If we are keeping the track of start time, than yes, this is useful
+                        timestamp // This is useful, if we are keeping the track of start time
                     )
                 }.toList()
             )
@@ -158,19 +164,27 @@ class CryptoRekeyBusProcessor(
     }
 
     private fun deleteStateManagerRecords(oldParentKeyAlias: String) {
-        val toDelete = stateManager.findByMetadataMatchingAll(
-            listOf(
-                MetadataFilter(KeyRotationMetadataValues.ROOT_KEY_ALIAS, Operation.Equals, oldParentKeyAlias),
-                MetadataFilter(KeyRotationMetadataValues.TYPE, Operation.Equals, KeyRotationRecordType.KEY_ROTATION)
+        var recordsDeleted = false
+        var retries = 10
+        while (!recordsDeleted) {
+            if (retries == 0) throw IllegalStateException("Cannot delete previous key rotation records. Cannot proceed with key rotation.")
+            val toDelete = stateManager.findByMetadataMatchingAll(
+                listOf(
+                    MetadataFilter(KeyRotationMetadataValues.ROOT_KEY_ALIAS, Operation.Equals, oldParentKeyAlias),
+                    MetadataFilter(KeyRotationMetadataValues.TYPE, Operation.Equals, KeyRotationRecordType.KEY_ROTATION)
+                )
             )
-        )
-        logger.info("Deleting following records ${toDelete.keys} for previous key rotation for rootKeyAlias $oldParentKeyAlias.")
-        val failedToDelete = stateManager.delete(
-            toDelete.values
-        )
-
-        // TODO should we throw the exception?
-        if (failedToDelete.isNotEmpty()) logger.warn("Failed to delete following states " +
-                "${failedToDelete.keys} from the state manager for rootKeyAlias $oldParentKeyAlias.")
+            logger.info("Deleting following records ${toDelete.keys} for previous key rotation for rootKeyAlias $oldParentKeyAlias.")
+            val failedToDelete = stateManager.delete(toDelete.values)
+            if (failedToDelete.isNotEmpty()) {
+                logger.warn(
+                    "Failed to delete following states " +
+                            "${failedToDelete.keys} from the state manager for rootKeyAlias $oldParentKeyAlias, retrying."
+                )
+                retries--
+            } else {
+                recordsDeleted = true
+            }
+        }
     }
 }
