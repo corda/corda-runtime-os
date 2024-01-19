@@ -1,7 +1,6 @@
 package net.corda.messaging.mediator
 
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
-import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.processor.EventProcessingInput
 import kotlin.math.ceil
 import kotlin.math.min
@@ -46,7 +45,7 @@ class GroupAllocator {
             ceil(events / config.minGroupSize).toInt(),
             config.threads
         )
-        
+
         return List(numGroups) { mutableMapOf() }
     }
 }
