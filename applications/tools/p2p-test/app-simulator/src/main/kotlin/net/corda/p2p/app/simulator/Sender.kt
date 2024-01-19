@@ -21,6 +21,7 @@ import net.corda.utilities.time.Clock
 import org.slf4j.LoggerFactory
 import java.io.Closeable
 import java.nio.ByteBuffer
+import java.sql.Timestamp
 import java.time.Duration
 import java.time.Instant
 import java.util.Random
@@ -62,11 +63,29 @@ class Sender(
 
         val threads = (1..commonConfig.clients).map { client ->
             thread(isDaemon = true) {
-                val dbConnection = if (dbParams != null) {
+                val dbConnectionForSentMessages = if (dbParams != null) {
                     DbConnection(
                         dbParams,
                         "INSERT INTO sent_messages (sender_id, message_id) " +
                             "VALUES (?, ?) on conflict do nothing",
+                    )
+                } else {
+                    null
+                }
+                val dbConnectionToInsertIndex = if (dbParams != null) {
+                    DbConnection(
+                        dbParams,
+                        "INSERT INTO latest_index (combinations_index, persisted_timestamp) " +
+                            "VALUES (?, ?)",
+                    )
+                } else {
+                    null
+                }
+                val dbConnectionToGetIndex = if (dbParams != null) {
+                    DbConnection(
+                        dbParams,
+                        "SELECT combinations_index FROM latest_index ORDER BY " +
+                            "persisted_timestamp DESC LIMIT 1",
                     )
                 } else {
                     null
@@ -80,28 +99,48 @@ class Sender(
                 val messagingConfig = configMerger.getMessagingConfig(configWithInstanceId)
                 val publisher = publisherFactory.createPublisher(PublisherConfig("app-simulator", false), messagingConfig)
                 publisher.use {
+                    val allPossibleCombinations = senderIds.flatMap { (_, senderHoldingId) ->
+                        loadGenParams.peers.map { destinationHoldingId ->
+                            senderHoldingId to destinationHoldingId
+                        }
+                    }
+
+                    var currentIndex =
+                        dbConnectionToGetIndex?.statement?.executeQuery()?.getInt("combinations_index")?.plus(1) ?: 0
+
+                    logger.info("Continue to send messages starting from $currentIndex index")
+
                     while (moreMessagesToSend(messagesSent, loadGenParams)) {
                         val messagesWithIds = mutableListOf<Pair<MessageMetaData, AppMessage>>()
                         while (messagesWithIds.size < loadGenParams.batchSize) {
-                            senderIds.forEach outer@{ (senderId, senderHoldingId) ->
-                                if (messagesWithIds.size >= loadGenParams.batchSize) return@outer
-                                loadGenParams.peers.forEach { destination ->
-                                    if (messagesWithIds.size >= loadGenParams.batchSize) return@forEach
-                                    messagesWithIds.add(
-                                        createMessage(
-                                            "$senderId:$client:${++messagesSent}",
-                                            senderId,
-                                            destination,
-                                            senderHoldingId,
-                                            loadGenParams.messageSizeBytes
-                                        )
+                            for (i in currentIndex..allPossibleCombinations.size) {
+                                if (messagesWithIds.size >= loadGenParams.batchSize) break
+                                val currentSenderDestinationPair = allPossibleCombinations[i]
+                                val senderHoldingId = currentSenderDestinationPair.first
+                                val destination = currentSenderDestinationPair.second
+                                val senderId = senderIds.entries.first {
+                                    it.value == currentSenderDestinationPair.first
+                                }.key
+
+                                messagesWithIds.add(
+                                    createMessage(
+                                        "$senderId:$client:${++messagesSent}",
+                                        senderId,
+                                        destination,
+                                        senderHoldingId,
+                                        loadGenParams.messageSizeBytes
                                     )
-                                }
+                                )
                             }
+                            currentIndex = 0
                         }
-                        logger.info("Topic name is ${commonConfig.parameters.sendTopic}")
+
+                        if (dbConnectionToInsertIndex != null) {
+                            writeIndexToDb(dbConnectionToInsertIndex, currentIndex)
+                        }
+
                         val records = messagesWithIds.map { (messageMetaData, message) ->
-                            logger.info("Going to publish message with ID ${messageMetaData.messageId}")
+                            logger.debug("Going to publish message with ID ${messageMetaData.messageId}")
                             Record(commonConfig.parameters.sendTopic, messageMetaData.messageId, message)
                         }
                         stopLock.read {
@@ -117,11 +156,11 @@ class Sender(
                                 }.map { it.second.first }
                                 logger.info("Published ${publishedIds.size} messages")
 
-                                if (dbConnection?.connection != null) {
+                                if (dbConnectionForSentMessages?.connection != null) {
                                     val messageSentEvents = publishedIds.map { messageMetaData ->
                                         MessageSentEvent(messageMetaData.senderId, messageMetaData.messageId)
                                     }
-                                    writeSentMessagesToDb(dbConnection, messageSentEvents)
+                                    writeSentMessagesToDb(dbConnectionForSentMessages, messageSentEvents)
                                 }
                             }
                         }
@@ -130,7 +169,9 @@ class Sender(
                     }
                     logger.info("Client $client sent $messagesSent messages.")
                 }
-                dbConnection?.close()
+                dbConnectionToGetIndex?.close()
+                dbConnectionToInsertIndex?.close()
+                dbConnectionForSentMessages?.close()
             }
         }
         writerThreads.addAll(threads)
@@ -195,8 +236,15 @@ class Sender(
         }
         val payload = MessagePayload(senderId, randomData, Instant.now())
         val message = AuthenticatedMessage(messageHeader, ByteBuffer.wrap(objectMapper.writeValueAsBytes(payload)))
-        logger.info("Created message from ${srcIdentity.x500Name} to ${destinationIdentity.x500Name}")
+        logger.debug("Created message from ${srcIdentity.x500Name} to ${destinationIdentity.x500Name}")
         return MessageMetaData(senderId, messageId) to AppMessage(message)
+    }
+
+    private fun writeIndexToDb(dbConnection: DbConnection, index: Int) {
+        dbConnection.statement.setInt(1, index)
+        dbConnection.statement.setTimestamp(2, Timestamp.from(Instant.now()))
+        dbConnection.statement.execute()
+        dbConnection.connection.commit()
     }
 
     private fun writeSentMessagesToDb(dbConnection: DbConnection, messages: List<MessageSentEvent>) {
