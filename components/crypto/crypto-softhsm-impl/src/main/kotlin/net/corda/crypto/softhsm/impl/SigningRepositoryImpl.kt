@@ -37,6 +37,7 @@ import java.util.*
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.persistence.SigningKeyMaterialInfo
 
 @Suppress("LongParameterList")
 class SigningRepositoryImpl(
@@ -209,6 +210,22 @@ class SigningRepositoryImpl(
                 }
             }!!
     }
+
+    override fun getKeyMaterials(wrappingKeyId: UUID): Collection<SigningKeyMaterialInfo> =
+        entityManagerFactory.createEntityManager().use { em ->
+            em.transaction {
+                em.createQuery(
+                    "FROM ${SigningKeyMaterialEntity::class.java.simpleName} WHERE wrappingKeyId=:wrappingKeyId",
+                    SigningKeyMaterialEntity::class.java
+                ).setParameter("wrappingKeyId", wrappingKeyId)
+                    .resultList.map {
+                        SigningKeyMaterialInfo(
+                            signingKeyId = it.signingKeyId,
+                            keyMaterial = it.keyMaterial
+                        )
+                    }
+            }
+        }
 }
 
 
