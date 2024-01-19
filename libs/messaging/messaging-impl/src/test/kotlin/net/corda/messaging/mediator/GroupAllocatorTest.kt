@@ -8,6 +8,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.processor.EventProcessingInput
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 
@@ -93,6 +94,14 @@ class GroupAllocatorTest {
         val result = groupAllocator.allocateGroups(records, config)
 
         assertGroupsSize(result, mapOf(0 to 50, 1 to 48))
+    }
+
+    @Test
+    fun `no groups allocated if there are no input events`() {
+        val config = buildTestConfig(2, 20)
+        val records = listOf<EventProcessingInput<Int, Int>>()
+        val result = groupAllocator.allocateGroups(records, config)
+        assertTrue(result.isEmpty())
     }
 
     private fun assertGroupsSize(groups: List<Map<Int, EventProcessingInput<Int, Int>>>, groupSize: Map<Int, Int> ) {
