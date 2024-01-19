@@ -47,14 +47,16 @@ class StateManagerHelper<S : Any>(
         )
     }
 
-    fun failStateProcessing(key: String, originalState: State?) : State {
-        val newMetadata = (originalState?.metadata?.toMutableMap() ?: mutableMapOf()).also {
+    fun failStateProcessing(key: String, originalState: State?) : State? {
+        if (originalState == null) return null
+
+        val newMetadata = (originalState.metadata.toMutableMap()).also {
             it[PROCESSING_FAILURE] = true
         }
         return State(
             key,
-            byteArrayOf(),
-            version = originalState?.version ?: State.VERSION_INITIAL_VALUE,
+            originalState.value,
+            version = originalState.version,
             metadata = Metadata(newMetadata)
         )
     }

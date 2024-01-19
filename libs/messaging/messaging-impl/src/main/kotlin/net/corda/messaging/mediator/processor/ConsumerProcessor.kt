@@ -127,10 +127,10 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                         keys.associateWith {
                             val oldState = statesToProcess[it.toString()]
                             val state = stateManagerHelper.failStateProcessing(it.toString(), oldState)
-                            val stateChange = if (oldState != null) {
+                            val stateChange = if (state != null) {
                                 StateChangeAndOperation.Update(state)
                             } else {
-                                StateChangeAndOperation.Create(state)
+                                StateChangeAndOperation.Noop
                             }
                             EventProcessingOutput(listOf(), stateChange)
                         }
