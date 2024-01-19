@@ -70,11 +70,4 @@ internal object SessionManagerWarnings {
         this.warn("Could not get session information from message sent from $us" +
                 " to $peer with ID `$messageId`. Peer is not in the members map.")
     }
-
-    internal fun Logger.invalidSessionStatusError(messageName: String, sessionId: String, status: String) {
-        this.error(
-            "Received $messageName with session ID $sessionId but the corresponding pending session with this ID has an " +
-                    "unexpected status $status."
-        )
-    }
 }

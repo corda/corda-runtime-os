@@ -125,8 +125,8 @@ internal class SessionManagerImpl(
         membershipGroupReaderProvider,
         clock
     ),
-
-    executorServiceFactory: () -> ScheduledExecutorService = Executors::newSingleThreadScheduledExecutor
+    private val trackSessionHealthAndReplaySessionMessages: Boolean = true,
+    executorServiceFactory: () -> ScheduledExecutorService = Executors::newSingleThreadScheduledExecutor,
 ) : SessionManager {
 
     private companion object {
@@ -556,7 +556,6 @@ internal class SessionManagerImpl(
         sessionCounterparties: SessionCounterparties,
         messages: List<Pair<AuthenticationProtocolInitiator, InitiatorHelloMessage>>,
         filter: MembershipStatusFilter,
-        sendHeartbeats: Boolean = true
     ): List<Pair<String, LinkOutMessage>>? {
         val sessionIds = messages.map { it.first.sessionId }
         logger.info(
@@ -578,7 +577,7 @@ internal class SessionManagerImpl(
             return null
         }
 
-        if (sendHeartbeats) {
+        if (trackSessionHealthAndReplaySessionMessages) {
             for (message in messages) {
                 sessionReplayer.addMessageForReplay(
                     initiatorHelloUniqueId(message.first.sessionId),
@@ -631,7 +630,7 @@ internal class SessionManagerImpl(
                 responderMemberInfo,
                 p2pParams.networkType
             )?.let {
-                if (sendHeartbeats) {
+                if (trackSessionHealthAndReplaySessionMessages) {
                     sessionHealthManager.sessionMessageSent(sessionCounterparties, message.first.sessionId)
                 }
                 message.first.sessionId to it
@@ -660,7 +659,7 @@ internal class SessionManagerImpl(
                 Pair(sessionType.sessionCounterparties, sessionType.protocol)
             }
         }
-        return processResponderHello(sessionInfo, session, message, true)?.first
+        return processResponderHello(sessionInfo, session, message)?.first
     }
 
     @Suppress("ComplexMethod")
@@ -668,7 +667,6 @@ internal class SessionManagerImpl(
         sessionInfo: SessionCounterparties,
         session: AuthenticationProtocolInitiator,
         message: ResponderHelloMessage,
-        sendHeartbeatsAndReplaySessionMessages: Boolean = false
     ): Pair<LinkOutMessage?, AuthenticationProtocolInitiator>? {
 
         session.receiveResponderHello(message)
@@ -712,7 +710,7 @@ internal class SessionManagerImpl(
             return null
         }
 
-        if (sendHeartbeatsAndReplaySessionMessages) {
+        if (trackSessionHealthAndReplaySessionMessages) {
             sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(message.header.sessionId), sessionInfo)
             sessionHealthManager.messageAcknowledged(message.header.sessionId)
 
@@ -738,7 +736,7 @@ internal class SessionManagerImpl(
             logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, ourIdentityInfo.holdingIdentity)
             return null
         }
-        if (sendHeartbeatsAndReplaySessionMessages) {
+        if (trackSessionHealthAndReplaySessionMessages) {
             sessionHealthManager.sessionMessageSent(sessionInfo, message.header.sessionId,)
         }
 
@@ -763,7 +761,6 @@ internal class SessionManagerImpl(
                     message,
                     sessionType.sessionCounterparties,
                     sessionType.protocol,
-                    sendHeartbeatsAndReplaySessionMessages = true
                 )?.let {
                     sessionNegotiationLock.write {
                         outboundSessionPool.updateAfterSessionEstablished(it)
@@ -784,7 +781,6 @@ internal class SessionManagerImpl(
         message: ResponderHandshakeMessage,
         sessionCounterparties: SessionCounterparties,
         session: AuthenticationProtocolInitiator,
-        sendHeartbeatsAndReplaySessionMessages: Boolean = false,
     ): Session? {
         val memberInfo = membershipGroupReaderProvider.lookup(
             sessionCounterparties.ourId, sessionCounterparties.counterpartyId, sessionCounterparties.status
@@ -802,7 +798,7 @@ internal class SessionManagerImpl(
             return null
         }
         val authenticatedSession = session.getSession()
-        if (sendHeartbeatsAndReplaySessionMessages) {
+        if (trackSessionHealthAndReplaySessionMessages) {
             sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(message.header.sessionId), sessionCounterparties)
             sessionHealthManager.messageAcknowledged(message.header.sessionId)
             sessionHealthManager.sessionEstablished(authenticatedSession)

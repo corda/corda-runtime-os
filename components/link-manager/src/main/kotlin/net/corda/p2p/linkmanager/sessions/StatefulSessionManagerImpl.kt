@@ -26,7 +26,6 @@ import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.membership.lookup
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.alreadySessionWarning
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.invalidSessionStatusError
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.noSessionWarning
 import net.corda.p2p.linkmanager.sessions.metadata.InboundSessionMetadata
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata
@@ -811,6 +810,11 @@ internal class StatefulSessionManagerImpl(
             metadata.serial,
             metadata.communicationWithMgm
         )
+    }
+
+    private fun Logger.invalidSessionStatusError(messageName: String, sessionId: String, status: String) {
+        this.error("Received $messageName with session ID $sessionId but the corresponding pending session with this ID has an" +
+                " unexpected status $status.")
     }
 
     override val dominoTile = ComplexDominoTile(

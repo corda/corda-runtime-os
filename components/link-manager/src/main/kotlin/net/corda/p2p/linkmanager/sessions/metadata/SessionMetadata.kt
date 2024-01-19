@@ -7,17 +7,11 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import java.time.Duration
 import java.time.Instant
+import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.membershipStatusFromString
+import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.statusFromString
 
 enum class OutboundSessionStatus{
     SentInitiatorHello, SentInitiatorHandshake, SessionReady
-}
-
-private fun String.statusFromString(): OutboundSessionStatus {
-    return OutboundSessionStatus.values().first { it.toString() == this }
-}
-
-private fun String.membershipStatusFromString(): MembershipStatusFilter {
-    return MembershipStatusFilter.values().first { it.toString() == this }
 }
 
 internal enum class InboundSessionStatus {
@@ -83,18 +77,24 @@ data class OutboundSessionMetadata(
         private const val SESSION_ID = "sessionId"
 
         fun Metadata.toOutbound(): OutboundSessionMetadata {
-            return OutboundSessionMetadata(this)
+            return OutboundSessionMetadata(
+                CommonMetadata(this),
+                this[SESSION_ID].toString(),
+                this[STATUS].toString().statusFromString(),
+                this[SERIAL] as Long,
+                this[MEMBERSHIP_STATUS].toString().membershipStatusFromString(),
+                this[COMMUNICATION_WITH_MGM].toString().toBoolean(),
+            )
+        }
+
+        private fun String.statusFromString(): OutboundSessionStatus {
+            return OutboundSessionStatus.values().first { it.toString() == this }
+        }
+
+        private fun String.membershipStatusFromString(): MembershipStatusFilter {
+            return MembershipStatusFilter.values().first { it.toString() == this }
         }
     }
-
-    constructor(metadata: Metadata): this(
-        CommonMetadata(metadata),
-        metadata[SESSION_ID].toString(),
-        metadata[STATUS].toString().statusFromString(),
-        metadata[SERIAL] as Long,
-        metadata[MEMBERSHIP_STATUS].toString().membershipStatusFromString(),
-        metadata[COMMUNICATION_WITH_MGM].toString().toBoolean(),
-    )
 
     fun lastSendExpired(clock: Clock): Boolean {
         return commonData.lastSendExpired(clock)
