@@ -14,7 +14,6 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
 import org.slf4j.LoggerFactory
-import kotlin.random.Random
 
 private const val REWRAP_KEYS_OPERATION_NAME = "rewrapKeys"
 
@@ -86,7 +85,6 @@ class CryptoRewrapBusProcessor(
                         stateManager.update(listOf(State(state.key, newValue, state.version, newMetadata)))
                     if (failedToUpdate.isNotEmpty()) {
                         logger.debug("Failed to update following states ${failedToUpdate.keys}, retrying.")
-                        Thread.sleep(Random.nextLong(0, 1000))
                     } else {
                         statusUpdated = true
                     }
