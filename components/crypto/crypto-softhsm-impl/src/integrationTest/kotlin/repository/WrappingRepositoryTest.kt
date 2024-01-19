@@ -118,4 +118,12 @@ class WrappingRepositoryTest : CryptoRepositoryTest() {
         assertThat(loadedKeyAndId2).isNotNull()
         assertThat(loadedKeyAndId!!.first).isEqualTo(loadedKeyAndId2!!.first)
     }
+
+    @ParameterizedTest
+    @MethodSource("emfs")
+    fun `getKeyByID returns null for non existing id`(emf: EntityManagerFactory) {
+        val repo = WrappingRepositoryImpl(emf, "test")
+        val loadedKey = repo.getKeyById(UUID.randomUUID())
+        assertThat(loadedKey).isNull()
+    }
 }

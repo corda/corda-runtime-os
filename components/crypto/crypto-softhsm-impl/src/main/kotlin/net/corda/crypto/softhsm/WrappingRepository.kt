@@ -54,5 +54,11 @@ interface WrappingRepository : Closeable {
      */
     fun findKeysWrappedByAlias(alias: String): List<WrappingKeyInfo>
 
+    /**
+     * Find the wrapping key associated with the provided UUID
+     *
+     * @param id The UUID of the wrapping key
+     * @return Information about the requested wrapping key if it exists
+     */
     fun getKeyById(id: UUID): WrappingKeyInfo?
 }
