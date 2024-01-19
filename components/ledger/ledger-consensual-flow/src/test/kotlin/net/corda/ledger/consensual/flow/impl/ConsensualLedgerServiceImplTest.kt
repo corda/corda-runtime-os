@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertIs
 
 class ConsensualLedgerServiceImplTest : ConsensualLedgerTest() {
-
     @Test
     fun `createTransactionBuilder should return a Transaction Builder`() {
         val transactionBuilder = consensualLedgerService.createTransactionBuilder()

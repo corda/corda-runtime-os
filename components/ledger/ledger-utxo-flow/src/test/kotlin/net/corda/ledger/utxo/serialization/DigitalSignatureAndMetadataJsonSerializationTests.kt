@@ -37,7 +37,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrowsExactly
 import org.junit.jupiter.api.Test
-import java.util.TimeZone
+import java.util.*
 import kotlin.test.assertContains
 
 /**
@@ -67,7 +67,6 @@ class DigitalSignatureAndMetadataJsonSerializationTests : UtxoLedgerTest() {
             .addSignatories(listOf(anotherPublicKeyExample))
             .addCommand(UtxoCommandExample())
             .toSignedTransaction() as UtxoSignedTransactionInternal
-
 
     companion object {
         // Clone of SecureHash serializer/deserializer from JsonMarshallingServiceImpl call which are not exposed outside,
