@@ -225,20 +225,22 @@ fun ClusterInfo.whenNoKeyExists(
 
 fun ClusterInfo.rotateCryptoUnmanagedWrappingKeys(
     oldKeyAlias: String,
-    newKeyAlias: String
+    newKeyAlias: String,
+    expectedStatus: Int
 ) = cluster {
     assertWithRetry {
         command { doRotateCryptoUnmanagedWrappingKeys(oldKeyAlias, newKeyAlias) }
-        condition { it.code == ResponseCode.ACCEPTED.statusCode }
+        condition { it.code == expectedStatus }
     }
 }
 
 fun ClusterInfo.getStatusForUnmanagedWrappingKeysRotation(
-    requestid: String
+    keyAlias: String,
+    expectedStatus: Int
 ) = cluster {
     assertWithRetry {
-        command { getCryptoUnmanagedWrappingKeysRotationStatus(requestid) }
-        condition { it.code == ResponseCode.OK.statusCode }
+        command { getCryptoUnmanagedWrappingKeysRotationStatus(keyAlias) }
+        condition { it.code == expectedStatus }
     }
 }
 
