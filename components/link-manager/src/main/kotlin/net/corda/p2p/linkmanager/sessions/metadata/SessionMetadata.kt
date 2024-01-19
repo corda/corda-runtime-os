@@ -7,8 +7,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import java.time.Duration
 import java.time.Instant
-import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.membershipStatusFromString
-import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.statusFromString
+import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata.Companion.toCommonMetadata
 
 enum class OutboundSessionStatus{
     SentInitiatorHello, SentInitiatorHandshake, SessionReady
@@ -37,7 +36,7 @@ internal data class InboundSessionMetadata(
 
         fun Metadata.toInbound(): InboundSessionMetadata {
             return InboundSessionMetadata(
-                CommonMetadata(this),
+                this.toCommonMetadata(),
                 this[STATUS].toString().statusFromString(),
             )
         }
@@ -61,7 +60,7 @@ internal data class InboundSessionMetadata(
  *
  * @param status Where we are in the Session negotiation process.
  */
-data class OutboundSessionMetadata(
+internal data class OutboundSessionMetadata(
     val commonData: CommonMetadata,
     val sessionId: String,
     val status: OutboundSessionStatus,
@@ -78,7 +77,7 @@ data class OutboundSessionMetadata(
 
         fun Metadata.toOutbound(): OutboundSessionMetadata {
             return OutboundSessionMetadata(
-                CommonMetadata(this),
+                this.toCommonMetadata(),
                 this[SESSION_ID].toString(),
                 this[STATUS].toString().statusFromString(),
                 this[SERIAL] as Long,
@@ -124,7 +123,7 @@ data class OutboundSessionMetadata(
  * @param lastSendTimestamp The last time a session negotiation message was sent.
  * @param expiry When the Session Expires and should be rotated.
  */
-data class CommonMetadata(
+internal data class CommonMetadata(
     val source: HoldingIdentity,
     val destination: HoldingIdentity,
     val lastSendTimestamp: Instant,
@@ -138,15 +137,16 @@ data class CommonMetadata(
         private const val EXPIRY = "expiry"
         private val SESSION_EXPIRY_PERIOD: Duration = Duration.ofDays(7)
         private val MESSAGE_EXPIRY_PERIOD: Duration = Duration.ofSeconds(2L)
-    }
 
-    constructor(metadata: Metadata):
-        this(
-            HoldingIdentity(MemberX500Name.parse(metadata[SOURCE_VNODE].toString()), metadata[GROUP_ID_KEY].toString()),
-            HoldingIdentity(MemberX500Name.parse(metadata[DEST_VNODE].toString()), metadata[GROUP_ID_KEY].toString()),
-            Instant.ofEpochMilli(metadata[LAST_SEND_TIMESTAMP] as Long),
-            Instant.ofEpochMilli(metadata[EXPIRY] as Long),
-        )
+        fun Metadata.toCommonMetadata(): CommonMetadata {
+            return CommonMetadata(
+                HoldingIdentity(MemberX500Name.parse(this[SOURCE_VNODE].toString()), this[GROUP_ID_KEY].toString()),
+                HoldingIdentity(MemberX500Name.parse(this[DEST_VNODE].toString()), this[GROUP_ID_KEY].toString()),
+                Instant.ofEpochMilli(this[LAST_SEND_TIMESTAMP] as Long),
+                Instant.ofEpochMilli(this[EXPIRY] as Long),
+            )
+        }
+    }
 
     internal val metadataMap by lazy {
         mapOf(
