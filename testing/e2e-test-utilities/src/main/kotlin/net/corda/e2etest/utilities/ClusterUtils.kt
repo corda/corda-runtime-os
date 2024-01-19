@@ -223,27 +223,38 @@ fun ClusterInfo.whenNoKeyExists(
     }
 }
 
+/*
+This method triggers rotation of keys for crypto unmanaged Wrapping keys.
+It takes input the old and new KeyAlias and the status code based on from where it is called (positive or negative scenario)
+ */
 fun ClusterInfo.rotateCryptoUnmanagedWrappingKeys(
     oldKeyAlias: String,
     newKeyAlias: String,
-    expectedStatus: Int
+    expectedHttpStatusCode: Int
 ) = cluster {
     assertWithRetry {
         command { doRotateCryptoUnmanagedWrappingKeys(oldKeyAlias, newKeyAlias) }
-        condition { it.code == expectedStatus }
+        condition { it.code == expectedHttpStatusCode }
     }
 }
 
+/*
+This method fetch the status of keys for unmanaged Wrapping key Rotation.
+It takes input the key (KeyAlias) and the status code based on from where it is called (positive or negative scenario)
+ */
 fun ClusterInfo.getStatusForUnmanagedWrappingKeysRotation(
     keyAlias: String,
-    expectedStatus: Int
+    expectedHttpStatusCode: Int
 ) = cluster {
     assertWithRetry {
         command { getCryptoUnmanagedWrappingKeysRotationStatus(keyAlias) }
-        condition { it.code == expectedStatus }
+        condition { it.code == expectedHttpStatusCode }
     }
 }
 
+/*
+This method fetch the protocol version for unmanaged key Rotation
+ */
 fun ClusterInfo.getProtocolVersionForUnmanagedKeyRotation(
 ) = cluster {
     assertWithRetry {
