@@ -990,7 +990,7 @@
         "databases": {
             "type": "array",
             "minItems": 1,
-            "title": "List of databases uses by the platform",
+            "title": "List of databases used by the platform",
             "items": {
                 "type": "object",
                 "allOf": [
@@ -1004,6 +1004,7 @@
                     "type"
                 ]
             },
+            "$comment": "At least one database with name 'default' must be defined",
             "contains": {
                 "type": "object",
                 "properties": {
