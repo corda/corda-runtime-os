@@ -57,6 +57,7 @@ import java.security.PrivateKey
 import java.security.Provider
 import java.security.PublicKey
 import java.time.Duration
+import java.util.UUID
 import javax.crypto.Cipher
 import javax.persistence.PersistenceException
 
@@ -651,7 +652,7 @@ open class SoftCryptoService(
      * @param wrappingRepository The WrappingRepository the new key will be saved in
      * @param oldWrappingKey The original wrapping key
      */
-    private fun createWrappingKeyFrom(wrappingRepository: WrappingRepository, oldWrappingKey: WrappingKeyInfo) {
+    private fun createWrappingKeyFrom(wrappingRepository: WrappingRepository, oldWrappingKey: WrappingKeyInfo): UUID {
         logger.trace {
             "createWrappingKeyFrom(alias=${oldWrappingKey.alias})"
         }
@@ -669,11 +670,13 @@ open class SoftCryptoService(
                 parentKeyAlias,
                 oldWrappingKey.alias
             )
+        val wrappingKeyUUID = UUID.randomUUID()
         recoverable("createWrappingKeyFrom save key") {
-            wrappingRepository.saveKey(wrappingKeyInfo)
+            wrappingRepository.saveKeyWithId(wrappingKeyInfo, wrappingKeyUUID)
         }
         logger.trace("Regenerated wrapping key alias ${oldWrappingKey.alias}")
         wrappingKeyCache?.put(wrappingKeyInfo.alias, wrappingKey)
+        return wrappingKeyUUID
     }
 }
 

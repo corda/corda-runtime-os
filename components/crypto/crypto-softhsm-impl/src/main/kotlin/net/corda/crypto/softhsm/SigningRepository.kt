@@ -3,11 +3,14 @@ package net.corda.crypto.softhsm
 import java.security.PublicKey
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.SigningKeyInfo
+import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.persistence.SigningKeyMaterialInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
+import net.corda.crypto.persistence.db.model.SigningKeyMaterialEntity
 import net.corda.v5.crypto.SecureHash
 import java.io.Closeable
+import java.security.PrivateKey
 import java.util.UUID
 
 /**
@@ -78,4 +81,23 @@ interface SigningRepository : Closeable {
      * @return a collection of all key materials all wrapped with the specified wrapping key
      */
     fun getKeyMaterials(wrappingKeyId: UUID): Collection<SigningKeyMaterialInfo>
+
+    /**
+     * Creates a new signing key material from an existing signing key and a wrapping key
+     *
+     * @param newWrappingKey The new wrapping key to encrypt the signing key
+     * @param signingKeyId The UUID of the signing key
+     * @param signingKey The signing key to be encrypted
+     *
+     * @return the [SigningKeyMaterialEntity] that describes the new key material
+     */
+    fun createNewSigningMaterial(newWrappingKey: WrappingKey, signingKeyId: UUID, signingKey: PrivateKey): SigningKeyMaterialInfo
+
+    /**
+     * Saves a signing key material entity to the database
+     *
+     * @param signingKeyMaterialInfo The signing key material to be saved to the database
+     * @param wrappingKeyId The UUID of the wrapping key
+     */
+    fun saveSigningKeyMaterial(signingKeyMaterialInfo: SigningKeyMaterialInfo, wrappingKeyId: UUID)
 }
