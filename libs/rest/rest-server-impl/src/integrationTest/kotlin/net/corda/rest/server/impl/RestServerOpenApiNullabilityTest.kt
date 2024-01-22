@@ -115,7 +115,7 @@ class RestServerOpenApiNullabilityTest : RestServerTestBase() {
             assertThat(requiredString.nullable).isFalse()
             assertThat(requiredString.type).isEqualTo("string")
 
-            assertThat(schema.required).isEqualTo("requiredString")
+            assertThat(schema.required).isEqualTo(listOf("requiredString"))
         }
     }
 }
