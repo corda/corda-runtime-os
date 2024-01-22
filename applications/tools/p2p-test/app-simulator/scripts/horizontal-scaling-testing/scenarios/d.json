@@ -3,6 +3,5 @@
   "workerReplicas": 8,
   "kafkaBrokers": 7,
   "partitionCount": 16,
-  "replicationFactor": 3,
-  "oneWayLoad": "false"
+  "replicationFactor": 3
 }

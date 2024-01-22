@@ -32,7 +32,6 @@ export KAFKA_REPLICAS=$(echo "$scenario" | jq -r '.kafkaBrokers')
 export WORKER_REPLICAS=$(echo "$scenario" | jq -r '.workerReplicas')
 export KAFKA_REPLICATION_FACTOR=$(echo "$scenario" | jq -r '.replicationFactor')
 export KAFKA_PARTITION_COUNT=$(echo "$scenario" | jq -r '.partitionCount')
-export ONE_WAY_LOAD=$(echo "$scenario" | jq -r '.oneWayLoad')
 echo "$(echo "$scenario" | jq -r '.name')" > "$reportFile"
 echo "---" >> "$reportFile"
 echo "$WORKER_REPLICAS Link manager instances" >> "$reportFile"
@@ -49,7 +48,7 @@ export CORDA_EKS_FILE="$SCRIPT_DIR/corda-eks-large.yaml"
 export PREREQS_EKS_FILE="$SCRIPT_DIR/prereqs-eks-large.yaml"
 source "$SCRIPT_DIR/settings.sh"
 
-if [ "$ONE_WAY_LOAD" == "true" ]
+if [ "$RUN_MODE" == "ONE_WAY" ]
 then
   echo "One way load scenario will be generated."
 else
@@ -64,7 +63,7 @@ echo "Onboarding clusters"
 "$SCRIPT_DIR"/onBoardCluster.sh
 echo "Deploying receiver in $RUN_MODE mode"
 "$SCRIPT_DIR"/runReceiver.sh "$RUN_MODE"
-if [ "$ONE_WAY_LOAD" == "true" ]
+if [ "$RUN_MODE" == "ONE_WAY" ]
 then
   dbPassword=$(kubectl get secret --namespace $APP_SIMULATOR_DB_NAMESPACE-db db-postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
 else
@@ -128,7 +127,7 @@ run_sender() {
     echo 'Waiting...'
     sleep 1
     echo 'Checking how many messages had been sent...'
-    if [ "$ONE_WAY_LOAD" == "true" ]
+    if [ "$RUN_MODE" == "ONE_WAY" ]
     then
       sent=$(count_sent $APP_SIMULATOR_DB_NAMESPACE $dbPassword)
       received=$(count_received $APP_SIMULATOR_DB_NAMESPACE $dbPassword)
@@ -154,7 +153,7 @@ run_sender() {
     fi
   done
   end=$(date -u '+%Y-%m-%d %H:%M:%S')
-  if [ "$ONE_WAY_LOAD" == "true" ]
+  if [ "$RUN_MODE" == "ONE_WAY" ]
   then
     latency=$(calculate_latency $APP_SIMULATOR_DB_NAMESPACE $dbPassword "$start" "$end")
     echo "Latency was $latency" >> "$reportFile"
@@ -192,7 +191,7 @@ until (( $(echo "$latency > 1.0" |bc -l) || ($(echo "$latency_a > 1.0" |bc -l) |
   batchSize=$((batchSize + 10))
 done
 
-if [ "$ONE_WAY_LOAD" == "true" ]
+if [ "$RUN_MODE" == "ONE_WAY" ]
 then
   echo "---" >> "$reportFile"
   write_report_file $APP_SIMULATOR_DB_NAMESPACE $dbPassword

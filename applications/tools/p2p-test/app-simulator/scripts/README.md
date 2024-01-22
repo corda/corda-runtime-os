@@ -44,3 +44,19 @@ In the two-way mode one sender is being deployed to both cluster A, cluster B an
 export RUN_MODE="TWO_WAY"
 ```
 This can be modified in the `settings.sh` script as well.
+
+### Number of members being onboarded to clusters
+
+It is possible to onboard a given number of members into the clusters using the `onboardCluster.sh`.
+
+To define the number of members you want to have on cluster A, you need to set the following environment variable:
+```shell
+export NUM_OF_MEMBERS_PER_CLUSTER_A=1
+```
+
+To define the number of members you want to have on cluster B, you need to set the following environment variable:
+```shell
+export NUM_OF_MEMBERS_PER_CLUSTER_B=1
+```
+
+This can be modified in the `settings.sh` script as well.

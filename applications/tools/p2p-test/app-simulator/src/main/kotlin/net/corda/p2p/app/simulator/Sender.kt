@@ -89,9 +89,9 @@ class Sender(
                     var currentIndex = 0
 
                     while (moreMessagesToSend(messagesSent, loadGenParams)) {
+                        logger.debug("Continue to send messages starting from $currentIndex index")
                         val messagesWithIds = mutableListOf<Pair<MessageMetaData, AppMessage>>()
                         while (messagesWithIds.size < loadGenParams.batchSize) {
-                            logger.info("Continue to send messages starting from $currentIndex index")
                             val currentSenderDestinationPair = allPossibleCombinations[currentIndex]
                             val senderHoldingId = currentSenderDestinationPair.first
                             val destination = currentSenderDestinationPair.second
