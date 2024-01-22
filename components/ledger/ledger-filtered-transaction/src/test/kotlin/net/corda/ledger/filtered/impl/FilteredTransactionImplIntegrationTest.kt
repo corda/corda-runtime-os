@@ -9,10 +9,10 @@ import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.filtered.impl.factory.FilteredTransactionFactoryImpl
-import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
-import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters
-import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters.AuditProof.AuditProofPredicate
 import net.corda.ledger.common.testkit.getWireTransactionExample
+import net.corda.ledger.filtered.ComponentGroupFilterParameters
+import net.corda.ledger.filtered.ComponentGroupFilterParameters.AuditProof.AuditProofPredicate
+import net.corda.ledger.filtered.FilteredTransaction
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import org.junit.jupiter.api.Assertions.assertArrayEquals

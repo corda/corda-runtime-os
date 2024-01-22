@@ -9,9 +9,11 @@ dependencies {
 
     api project(':testing:ledger:ledger-common-base-test')
     api project(':testing:ledger:ledger-utxo-testkit')
+    api project(':components:ledger:ledger-filtered-transaction-api')
 
     implementation project(':libs:ledger:ledger-utxo-transaction-verifier')
     implementation project(':components:ledger:ledger-utxo-flow')
+    implementation project(':components:ledger:ledger-filtered-transaction')
     implementation project(':libs:membership:membership-common')
     implementation project(':libs:flows:flow-api')
     implementation libs.mockito.kotlin

@@ -78,8 +78,7 @@ class UtxoLedgerPersistenceServiceImplTest {
             serializationService,
             utxoLedgerTransactionFactory,
             utxoSignedTransactionFactory,
-            stateAndRefCache,
-            mock()
+            stateAndRefCache
         )
 
         whenever(serializationService.serialize(any<Any>())).thenReturn(serializedBytes)

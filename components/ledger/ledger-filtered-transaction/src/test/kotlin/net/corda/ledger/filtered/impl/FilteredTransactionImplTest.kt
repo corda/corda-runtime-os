@@ -7,11 +7,12 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.merkle.impl.IndexedMerkleLeafImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.crypto.merkle.impl.NonceHashDigestProvider
+import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
-import net.corda.ledger.common.flow.transaction.filtered.FilteredComponentGroup
-import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransactionVerificationException
+import net.corda.ledger.filtered.FilteredComponentGroup
+import net.corda.ledger.filtered.FilteredTransaction
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
@@ -610,6 +611,7 @@ class FilteredTransactionImplTest {
             transactionId,
             componentGroupMerkleProof,
             filteredComponentGroups,
+            PrivacySaltImpl(ByteArray(0)),
             jsonMarshallingService,
             merkleTreeProvider
         )
