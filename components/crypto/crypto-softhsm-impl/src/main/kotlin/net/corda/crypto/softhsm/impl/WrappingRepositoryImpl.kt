@@ -52,26 +52,31 @@ class WrappingRepositoryImpl(
     override fun findKeyAndId(alias: String): Pair<UUID, WrappingKeyInfo>? =
         entityManagerFactory.createEntityManager().use { it ->
             it.createQuery(
-                "FROM ${WrappingKeyEntity::class.simpleName} AS k WHERE k.alias = :alias",
+                "FROM ${WrappingKeyEntity::class.simpleName} AS k WHERE k.alias = :alias " +
+                    "AND k.generation = (SELECT MAX(k.generation) FROM ${WrappingKeyEntity::class.java.simpleName} k WHERE k.alias=:alias)",
                 WrappingKeyEntity::class.java
-            ).setParameter("alias", alias).setMaxResults(1).resultList.singleOrNull()?.let {dao ->
+            ).setParameter("alias", alias).setMaxResults(1).resultList.singleOrNull()?.let { dao ->
                 Pair(dao.id, dao.toDto())
             }
         }
 
-    override fun findKeysWrappedByAlias(alias: String): List<WrappingKeyInfo> =
+    override fun findKeysWrappedByParentKey(parentKeyAlias: String): List<WrappingKeyInfo> =
         entityManagerFactory.createEntityManager().use {
             it.createQuery(
-                "FROM ${WrappingKeyEntity::class.simpleName} AS k WHERE k.parentKeyReference = :alias",
+                "FROM ${WrappingKeyEntity::class.simpleName} AS k WHERE k.parentKeyReference = :parentKeyAlias",
                 WrappingKeyEntity::class.java
-            ).setParameter("alias", alias).resultList.map { dao -> dao.toDto() }
+            ).setParameter("parentKeyAlias", parentKeyAlias).resultList
+                .map { dao -> dao.toDto() }
+                .groupBy { it.alias } // bucket into aliases
+                .map { it.value.sortedBy { it.generation }.lastOrNull() } // grab only the highest generation per alias
+                .filterNotNull()
         }
 
     override fun getKeyById(id: UUID): WrappingKeyInfo? = entityManagerFactory.createEntityManager().use {
         it.createQuery(
             "FROM ${WrappingKeyEntity::class.simpleName} AS k WHERE k.id = :id",
             WrappingKeyEntity::class.java
-        ).setParameter("id", id).resultStream.map {dao -> dao.toDto() }.findFirst().orElse(null)
+        ).setParameter("id", id).resultStream.map { dao -> dao.toDto() }.findFirst().orElse(null)
     }
 }
 
