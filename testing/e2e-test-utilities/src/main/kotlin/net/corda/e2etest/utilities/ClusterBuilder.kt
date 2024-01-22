@@ -773,9 +773,9 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         )
     }
 
-    fun getCryptoUnmanagedWrappingKeysRotationStatus(requestid: String): SimpleResponse {
+    fun getCryptoUnmanagedWrappingKeysRotationStatus(keyAlias: String): SimpleResponse {
         return get(
-            "/api/$REST_API_VERSION_PATH/wrappingkey/unmanaged/rotation/${requestid}",
+            "/api/$REST_API_VERSION_PATH/wrappingkey/unmanaged/rotation/${keyAlias}",
         )
     }
 
