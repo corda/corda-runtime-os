@@ -27,7 +27,6 @@ import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Path
 import java.util.UUID
 import java.util.concurrent.TimeUnit
-import kotlin.concurrent.thread
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
