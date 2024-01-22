@@ -164,6 +164,6 @@ internal data class CommonMetadata(
     }
 
     fun sessionExpired(clock: Clock): Boolean {
-        return clock.instant() > expiry + SESSION_EXPIRY_PERIOD
+        return clock.instant() > expiry
     }
 }
