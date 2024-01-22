@@ -2427,6 +2427,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
+                "required" : [ "reason" ],
                 "type" : "object",
                 "properties" : {
                   "reason" : {
@@ -3654,6 +3655,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
+                "required" : [ "password" ],
                 "type" : "object",
                 "properties" : {
                   "password" : {
@@ -4408,6 +4410,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
+                "required" : [ "newKeyAlias" ],
                 "type" : "object",
                 "properties" : {
                   "newKeyAlias" : {
