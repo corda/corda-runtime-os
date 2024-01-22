@@ -36,7 +36,7 @@ interface NullabilityRestResource : RestResource {
 
     @HttpPOST(path = "postTakesRequiredStringReturnsNullableString")
     fun postTakesRequiredStringReturnsNullableString(
-        @ClientRequestBodyParameter
+        @ClientRequestBodyParameter(name = "requiredString1")
         requiredString: String
     ): String?
 }

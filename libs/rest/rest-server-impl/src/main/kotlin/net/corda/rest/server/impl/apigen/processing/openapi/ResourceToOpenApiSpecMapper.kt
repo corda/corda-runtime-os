@@ -159,7 +159,7 @@ private fun List<EndpointParameter>.toMediaType(
         MediaType().schema(
             Schema<Any>().properties(this.toProperties(schemaModelProvider))
                 .type(DataType.OBJECT.toString().lowercase())
-                .required(with(this.first()) { if (required) listOf(id) else null })
+                .required(with(this.first()) { if (required) listOf(name) else null })
         )
     }
 }

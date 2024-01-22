@@ -111,11 +111,11 @@ class RestServerOpenApiNullabilityTest : RestServerTestBase() {
             assertNotNull(requestBodyJson)
             val schema = requestBodyJson.schema
 
-            val requiredString = assertNotNull(schema.properties["requiredString"])
+            val requiredString = assertNotNull(schema.properties["requiredString1"])
             assertThat(requiredString.nullable).isFalse()
             assertThat(requiredString.type).isEqualTo("string")
 
-            assertThat(schema.required).isEqualTo(listOf("requiredString"))
+            assertThat(schema.required).isEqualTo(listOf("requiredString1"))
         }
     }
 }
