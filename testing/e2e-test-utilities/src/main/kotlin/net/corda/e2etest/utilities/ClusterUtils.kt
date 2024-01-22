@@ -229,7 +229,8 @@ fun ClusterInfo.whenNoKeyExists(
  * It takes input 3 parameters, the old and new KeyAlias (in string type) and the status code (Int type)
  *   @param  oldKeyAlias  old unmanaged root key alias that need to be rotated
  *   @param  newKeyAlias  new unmanaged root key alias
- *   @param expectedHttpStatusCode Status code that should be displayed when the API is hit, helps to validate both positive or negative scenarios.
+ *   @param expectedHttpStatusCode Status code that should be displayed when the API is hit,
+ *   helps to validate both positive or negative scenarios.
  */
 fun ClusterInfo.rotateCryptoUnmanagedWrappingKeys(
     oldKeyAlias: String,
@@ -245,7 +246,8 @@ fun ClusterInfo.rotateCryptoUnmanagedWrappingKeys(
 /**
  * This method fetch the status of keys for unmanaged Wrapping key Rotation.
  * It takes input 2 parameter, the KeyAlias (in String type) and the status code (in Int type)
- *  @param expectedHttpStatusCode Status code that should be displayed when the API is hit, helps to validate both positive or negative scenarios.
+ *  @param expectedHttpStatusCode Status code that should be displayed when the API is hit,
+ *  helps to validate both positive or negative scenarios.
  */
 fun ClusterInfo.getStatusForUnmanagedWrappingKeysRotation(
     keyAlias: String,
