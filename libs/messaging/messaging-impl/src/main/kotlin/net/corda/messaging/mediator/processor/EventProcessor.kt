@@ -83,7 +83,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                     stateManagerHelper.failStateProcessing(groupKey, input.state)
                 }
                 val stateChangeAndOperation = stateChangeAndOperation(input.state, processed)
-                EventProcessingOutput(asyncOutputs.values.flatten(), stateChangeAndOperation)
+                EventProcessingOutput(replayOutputs + asyncOutputs.values.flatten(), stateChangeAndOperation)
             }
         }
     }

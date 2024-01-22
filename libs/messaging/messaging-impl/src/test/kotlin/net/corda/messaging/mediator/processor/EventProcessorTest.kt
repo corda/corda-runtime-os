@@ -128,17 +128,14 @@ class EventProcessorTest {
             }
         )
 
-        val group = mapOf(
-            "key1" to key1Records,
-            "key2" to key2Records
+        val input = mapOf(
+            "key1" to EventProcessingInput("key1", getStringRecords(recordCount, "key1"), state1),
+            "key2" to EventProcessingInput("key2", getStringRecords(recordCount, "key2"), state2),
         )
-        val states = mapOf(
-            "key1" to state1,
-            "key2" to state2
-        )
-        val result = eventProcessor.processEvents(group, states)
+
+        val result = eventProcessor.processEvents(input)
         assertNotNull(result)
-        assertEquals(group.keys.size, result.size)
+        assertEquals(2, result.size)
         result.values.forEach {
             assertEquals(StateChangeAndOperation.Noop, it.stateChangeAndOperation)
             assertEquals(4, it.asyncOutputs.size)
@@ -167,17 +164,14 @@ class EventProcessorTest {
             )
         }
 
-        val group = mapOf(
-            "key1" to key1Records,
-            "key2" to key2Records
+        val input = mapOf(
+            "key1" to EventProcessingInput("key1", getStringRecords(recordCount, "key1"), state1),
+            "key2" to EventProcessingInput("key2", getStringRecords(recordCount, "key2"), state2),
         )
-        val states = mapOf(
-            "key1" to state1,
-            "key2" to state2
-        )
-        val result = eventProcessor.processEvents(group, states)
+
+        val result = eventProcessor.processEvents(input)
         assertNotNull(result)
-        assertEquals(group.keys.size, result.size)
+        assertEquals(2, result.size)
 
         result["key1"].let {
             assertNotNull(it)
@@ -209,15 +203,13 @@ class EventProcessorTest {
             mapOf(key1Records.first() to listOf(expectedOutputPerInput))
         )
 
-        val group = mapOf(
-            "key1" to key1Records,
+        val input = mapOf(
+            "key1" to EventProcessingInput("key1", key1Records, state1)
         )
-        val states = mapOf(
-            "key1" to state1
-        )
-        val result = eventProcessor.processEvents(group, states)
+
+        val result = eventProcessor.processEvents(input)
         assertNotNull(result)
-        assertEquals(group.keys.size, 1)
+        assertEquals(1, result.size)
 
         result["key1"].let { eventProcessingOutput ->
             assertNotNull(eventProcessingOutput)
