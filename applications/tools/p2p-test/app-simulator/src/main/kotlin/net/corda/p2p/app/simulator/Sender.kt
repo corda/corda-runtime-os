@@ -105,8 +105,13 @@ class Sender(
                         }
                     }
 
-                    var currentIndex =
-                        dbConnectionToGetIndex?.statement?.executeQuery()?.getInt("combinations_index")?.plus(1) ?: 0
+                    val queryResult = dbConnectionToGetIndex?.statement?.executeQuery()
+                    var currentIndex = 0
+                    if (queryResult != null && queryResult.next()) {
+                        currentIndex = queryResult.getInt("combinations_index").plus(1)
+                    } else {
+                        logger.info("Query for latest index returned no result, going to set the index to 0")
+                    }
 
                     logger.info("Continue to send messages starting from $currentIndex index")
 
