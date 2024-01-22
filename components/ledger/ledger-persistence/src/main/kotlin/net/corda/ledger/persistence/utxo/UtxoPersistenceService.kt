@@ -3,8 +3,8 @@ package net.corda.ledger.persistence.utxo
 import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.filtered.FilteredTransaction
 import net.corda.ledger.persistence.common.InconsistentLedgerStateException
-import net.corda.ledger.utxo.data.transaction.MerkleProofDto
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.v5.crypto.SecureHash
@@ -68,16 +68,26 @@ interface UtxoPersistenceService {
 
     fun persistSignedGroupParametersIfDoNotExist(signedGroupParameters: SignedGroupParameters)
 
-    fun persistMerkleProof(
-        transactionId: String,
-        groupIndex: Int,
-        treeSize: Int,
-        leaves: List<Int>,
-        hashes: List<String>
+    /**
+     * Persist a list of filtered transactions to the persistence context.
+     *
+     * @param filteredTransactions The list of [FilteredTransaction]s to persist
+     * @param account The account to persist for the [FilteredTransaction]s
+     */
+    fun persistFilteredTransactions(
+        filteredTransactions: List<FilteredTransaction>,
+        account: String
     )
 
-    fun findMerkleProofs(
-        transactionId: String,
-        groupIndex: Int
-    ): List<MerkleProofDto>
+    /**
+     * Find filtered transactions with the given IDs in the persistence context.
+     *
+     * @param ids IDs of the transactions to find
+     *
+     * @return A map that maps the filtered transaction ID to the found [FilteredTransaction] object.
+     * If a transaction for a given ID was not found then it will not be part of the map.
+     */
+    fun findFilteredTransactions(
+        ids: List<String>
+    ): Map<String, FilteredTransaction>
 }

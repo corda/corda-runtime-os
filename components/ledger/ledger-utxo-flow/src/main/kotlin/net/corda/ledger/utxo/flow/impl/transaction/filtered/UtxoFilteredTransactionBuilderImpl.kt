@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.transaction.filtered
 
-import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters
-import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters.AuditProof.AuditProofPredicate
+import net.corda.ledger.filtered.ComponentGroupFilterParameters
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactory
@@ -53,7 +52,7 @@ data class UtxoFilteredTransactionBuilderImpl(
             signatories = ComponentGroupFilterParameters.AuditProof(
                 UtxoComponentGroup.SIGNATORIES.ordinal,
                 PublicKey::class.java,
-                AuditProofPredicate.Content(predicate)
+                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content(predicate)
             )
         )
     }
@@ -74,7 +73,7 @@ data class UtxoFilteredTransactionBuilderImpl(
             inputStates = ComponentGroupFilterParameters.AuditProof(
                 UtxoComponentGroup.INPUTS.ordinal,
                 StateRef::class.java,
-                AuditProofPredicate.Content(predicate)
+                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content(predicate)
             )
         )
     }
@@ -95,7 +94,7 @@ data class UtxoFilteredTransactionBuilderImpl(
             referenceStates = ComponentGroupFilterParameters.AuditProof(
                 UtxoComponentGroup.REFERENCES.ordinal,
                 StateRef::class.java,
-                AuditProofPredicate.Content(predicate)
+                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content(predicate)
             )
         )
     }
@@ -116,7 +115,7 @@ data class UtxoFilteredTransactionBuilderImpl(
             outputStates = ComponentGroupFilterParameters.AuditProof(
                 UtxoComponentGroup.OUTPUTS.ordinal,
                 ContractState::class.java,
-                AuditProofPredicate.Content(predicate)
+                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content(predicate)
             )
         )
     }
@@ -127,7 +126,7 @@ data class UtxoFilteredTransactionBuilderImpl(
             outputStates = ComponentGroupFilterParameters.AuditProof(
                 UtxoComponentGroup.OUTPUTS.ordinal,
                 ContractState::class.java,
-                AuditProofPredicate.Index(indexes)
+                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Index(indexes)
             )
         )
     }
@@ -148,7 +147,7 @@ data class UtxoFilteredTransactionBuilderImpl(
             commands = ComponentGroupFilterParameters.AuditProof(
                 UtxoComponentGroup.COMMANDS.ordinal,
                 Command::class.java,
-                AuditProofPredicate.Content(predicate)
+                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content(predicate)
             )
         )
     }

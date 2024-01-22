@@ -1,10 +1,21 @@
 package net.corda.ledger.persistence.utxo.impl
 
 import com.fasterxml.jackson.core.JsonProcessingException
+import net.corda.common.json.validation.JsonValidator
+import net.corda.crypto.cipher.suite.merkle.MerkleProofFactory
+import net.corda.crypto.cipher.suite.merkle.MerkleProofInternal
+import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.core.parseSecureHash
 import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
+import net.corda.ledger.common.data.transaction.TransactionMetadataUtils.createHashDigestProvider
+import net.corda.ledger.common.data.transaction.TransactionMetadataUtils.createTopLevelDigestProvider
+import net.corda.ledger.common.data.transaction.TransactionMetadataUtils.parseMetadata
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.filtered.FilteredComponentGroup
+import net.corda.ledger.filtered.FilteredTransaction
+import net.corda.ledger.filtered.factory.FilteredTransactionFactory
 import net.corda.ledger.persistence.common.InconsistentLedgerStateException
 import net.corda.ledger.persistence.json.ContractStateVaultJsonFactoryRegistry
 import net.corda.ledger.persistence.json.DefaultContractStateVaultJsonFactory
@@ -12,7 +23,6 @@ import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
-import net.corda.ledger.utxo.data.transaction.MerkleProofDto
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
@@ -47,6 +57,10 @@ class UtxoPersistenceServiceImpl(
     private val factoryStorage: ContractStateVaultJsonFactoryRegistry,
     private val defaultContractStateVaultJsonFactory: DefaultContractStateVaultJsonFactory,
     private val jsonMarshallingService: JsonMarshallingService,
+    private val jsonValidator: JsonValidator,
+    private val merkleProofFactory: MerkleProofFactory,
+    private val merkleTreeProvider: MerkleTreeProvider,
+    private val filteredTransactionFactory: FilteredTransactionFactory,
     private val utcClock: Clock
 ) : UtxoPersistenceService {
 
@@ -160,7 +174,8 @@ class UtxoPersistenceServiceImpl(
             transaction.account,
             nowUtc,
             transaction.status,
-            metadataHash
+            metadataHash,
+            false
         )
 
         // Insert the Transactions components
@@ -335,35 +350,150 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
-    override fun persistMerkleProof(
-        transactionId: String,
-        groupIndex: Int,
-        treeSize: Int,
-        leaves: List<Int>,
-        hashes: List<String>
+    override fun persistFilteredTransactions(
+        filteredTransactions: List<FilteredTransaction>,
+        account: String
     ) {
-        return entityManagerFactory.transaction { em ->
-            val persistedMerkleProofId = repository.persistMerkleProof(
-                em,
-                transactionId,
-                groupIndex,
-                treeSize,
-                leaves,
-                hashes
-            )
+        entityManagerFactory.transaction { em ->
 
-            leaves.forEach { leafIndex ->
-                repository.persistMerkleProofLeaf(em, persistedMerkleProofId, leafIndex)
+            filteredTransactions.forEach { filteredTransaction ->
+                val metadata = filteredTransaction.metadata as TransactionMetadataInternal
+
+                val metadataBytes = jsonValidator.canonicalize(
+                    jsonMarshallingService.format(metadata)
+                ).toByteArray()
+
+                val metadataHash = sandboxDigestService.hash(
+                    metadataBytes,
+                    DigestAlgorithmName.SHA2_256
+                ).toString()
+
+                repository.persistTransactionMetadata(
+                    em,
+                    metadataHash,
+                    metadataBytes,
+                    requireNotNull(metadata.getMembershipGroupParametersHash()) {
+                        "Metadata without membership group parameters hash"
+                    },
+                    requireNotNull(metadata.getCpiMetadata()) {
+                        "Metadata without CPI metadata"
+                    }.fileChecksum
+                )
+
+                repository.persistTransaction(
+                    em,
+                    filteredTransaction.id.toString(),
+                    filteredTransaction.privacySalt.bytes,
+                    account,
+                    utcClock.instant(),
+                    TransactionStatus.VERIFIED,
+                    metadataHash,
+                    isFiltered = true
+                )
+
+                filteredTransaction.filteredComponentGroups.forEach { (groupIndex, groupData) ->
+
+                    // Persist the merkle proof for each component group
+                    val persistedMerkleProofId = repository.persistMerkleProof(
+                        em,
+                        filteredTransaction.id.toString(),
+                        groupIndex,
+                        groupData.merkleProof.treeSize,
+                        groupData.merkleProof.leaves.map { it.index },
+                        groupData.merkleProof.hashes.map { it.toString() }
+                    )
+
+                    groupData.merkleProof.leaves.forEach { leaf ->
+
+                        // Persist each merkle proof leaf to the merkle proof leaf table
+                        repository.persistMerkleProofLeaf(
+                            em,
+                            persistedMerkleProofId,
+                            leaf.index
+                        )
+
+                        // Persist the data for each leaf to the component table
+                        repository.persistTransactionComponentLeaf(
+                            em,
+                            filteredTransaction.id.toString(),
+                            groupIndex,
+                            leaf.index,
+                            leaf.leafData,
+                            sandboxDigestService.hash(leaf.leafData, DigestAlgorithmName.SHA2_256).toString()
+                        )
+                    }
+                }
             }
         }
     }
 
-    override fun findMerkleProofs(
-        transactionId: String,
-        groupIndex: Int
-    ): List<MerkleProofDto> {
+    override fun findFilteredTransactions(
+        ids: List<String>
+    ): Map<String, FilteredTransaction> {
         return entityManagerFactory.transaction { em ->
-            repository.findMerkleProofs(em, transactionId, groupIndex)
-        }
+            repository.findFilteredTransactions(em, ids)
+        }.map { (transactionId, ftxDto) ->
+            // Map through each found transaction
+
+            // 1. Parse the metadata bytes
+            val filteredTransactionMetadata = parseMetadata(
+                ftxDto.metadataBytes,
+                jsonValidator,
+                jsonMarshallingService
+            )
+
+            // 2. Merge the Merkle proofs for each component group
+            val mergedMerkleProofs = ftxDto.merkleProofMap.mapValues { (_, merkleProofDtoList) ->
+
+                merkleProofDtoList.map { merkleProofDto ->
+                    // Transform the MerkleProofDto objects to MerkleProof objects
+                    merkleProofFactory.createAuditMerkleProof(
+                        merkleProofDto.transactionId,
+                        merkleProofDto.groupIndex,
+                        merkleProofDto.treeSize,
+                        merkleProofDto.leavesWithData,
+                        merkleProofDto.hashes
+                    )
+                }.reduce { accumulator, merkleProof ->
+                    // Then  keep merging the elements into each other
+                    (accumulator as MerkleProofInternal).merge(
+                        merkleProof,
+                        createHashDigestProvider(filteredTransactionMetadata, merkleTreeProvider)
+                    )
+                }
+            }
+
+            // 3. Create the top level Merkle proof by serializing the root of each merged Merkle proof
+            // (i.e. component group Merkle proof)
+            val topLevelMerkleProof = merkleProofFactory.createAuditMerkleProof(
+                transactionId,
+                0,
+                mergedMerkleProofs.size,
+                mergedMerkleProofs.map { (groupIndex, mergedMerkleProof) ->
+                    groupIndex to serializationService.serialize(
+                        mergedMerkleProof.calculateRoot(
+                            createTopLevelDigestProvider(
+                                filteredTransactionMetadata,
+                                merkleTreeProvider
+                            )
+                        )
+                    ).bytes
+                }.toMap(),
+                emptyList()
+            )
+
+            // 4. Create the filtered transaction
+            val filteredTransaction = filteredTransactionFactory.create(
+                parseSecureHash(transactionId),
+                topLevelMerkleProof,
+                mergedMerkleProofs.map {
+                    it.key to FilteredComponentGroup(it.key, it.value)
+                }.toMap(),
+                ftxDto.privacySalt.bytes,
+                ftxDto.metadataBytes
+            )
+
+            filteredTransaction.id.toString() to filteredTransaction
+        }.toMap()
     }
 }

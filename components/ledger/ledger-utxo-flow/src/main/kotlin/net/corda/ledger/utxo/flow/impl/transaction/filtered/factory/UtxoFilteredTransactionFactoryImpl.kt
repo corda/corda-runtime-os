@@ -1,8 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction.filtered.factory
 
-import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters
-import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters.AuditProof.AuditProofPredicate
-import net.corda.ledger.common.flow.transaction.filtered.factory.FilteredTransactionFactory
+import net.corda.ledger.filtered.ComponentGroupFilterParameters
+import net.corda.ledger.filtered.factory.FilteredTransactionFactory
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup.METADATA
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup.NOTARY
@@ -45,7 +44,7 @@ class UtxoFilteredTransactionFactoryImpl @Activate constructor(
             ComponentGroupFilterParameters.AuditProof(
                 NOTARY.ordinal,
                 Any::class.java,
-                AuditProofPredicate.Content {
+                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content {
                     filteredTransactionBuilder.notary && (it is MemberX500Name || it is PublicKey) || // notary components
                         filteredTransactionBuilder.timeWindow && it is TimeWindow // time window
                 }
@@ -61,7 +60,7 @@ class UtxoFilteredTransactionFactoryImpl @Activate constructor(
                     ComponentGroupFilterParameters.AuditProof(
                         METADATA.ordinal,
                         TransactionMetadata::class.java,
-                        AuditProofPredicate.Content { true }
+                        ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
                     ),
                     notaryAndTimeWindow,
                     filteredTransactionBuilder.signatories,
@@ -71,7 +70,7 @@ class UtxoFilteredTransactionFactoryImpl @Activate constructor(
                         ComponentGroupFilterParameters.AuditProof(
                             UtxoComponentGroup.OUTPUTS_INFO.ordinal,
                             UtxoOutputInfoComponent::class.java,
-                            AuditProofPredicate.Content { true }
+                            ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
                         )
                     },
                     filteredTransactionBuilder.outputStates,
@@ -79,7 +78,7 @@ class UtxoFilteredTransactionFactoryImpl @Activate constructor(
                         ComponentGroupFilterParameters.AuditProof(
                             UtxoComponentGroup.COMMANDS_INFO.ordinal,
                             List::class.java,
-                            AuditProofPredicate.Content { true }
+                            ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
                         )
                     },
                     filteredTransactionBuilder.commands

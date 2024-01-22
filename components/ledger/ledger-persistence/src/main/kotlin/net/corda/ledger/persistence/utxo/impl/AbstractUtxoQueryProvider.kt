@@ -19,14 +19,16 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
             WHERE id IN (:transactionIds)"""
             .trimIndent()
 
-    override val findTransactionPrivacySaltAndMetadata: String
+    override val findTransactionsPrivacySaltAndMetadata: String
         get() = """
-            SELECT privacy_salt,
-            utm.canonical_data
+            SELECT 
+                id,
+                privacy_salt,
+                utm.canonical_data
             FROM {h-schema}utxo_transaction AS ut
             JOIN {h-schema}utxo_transaction_metadata AS utm
                 ON ut.metadata_hash = utm.hash
-            WHERE id = :transactionId"""
+            WHERE id IN (:transactionIds)"""
             .trimIndent()
 
     override val findTransactionComponentLeafs: String
@@ -177,11 +179,13 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
             JOIN {h-schema}utxo_transaction_component utc
                 ON utc.transaction_id = utmp.transaction_id
                 AND utc.group_idx = utmp.group_idx
-            JOIN {h-schema}utxo_transaction_merkle_proof_leaves utmpl
-                ON utmpl.merkle_proof_id = utmp.merkle_proof_id
             JOIN {h-schema}utxo_transaction utt
                 ON utt.id = utmp.transaction_id
-            WHERE utmp.transaction_id = :transactionId
-                AND utmp.group_idx = :groupIndex"""
+            WHERE utmp.transaction_id IN (:transactionIds)
+            AND utc.leaf_idx IN (
+                SELECT utmpl.leaf_index
+                FROM {h-schema}utxo_transaction_merkle_proof_leaves utmpl
+                WHERE utmpl.merkle_proof_id = utmp.merkle_proof_id
+            )"""
             .trimIndent()
 }

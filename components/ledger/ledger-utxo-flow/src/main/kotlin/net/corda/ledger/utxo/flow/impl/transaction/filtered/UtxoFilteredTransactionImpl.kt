@@ -1,6 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.transaction.filtered
 
-import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
+import net.corda.ledger.filtered.FilteredTransaction
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.ledger.utxo.data.state.getEncumbranceGroup
@@ -20,14 +20,13 @@ import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.transaction.filtered.FilteredDataInconsistencyException
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
-import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import java.security.PublicKey
 
 @Suppress("TooManyFunctions")
 class UtxoFilteredTransactionImpl(
     private val serializationService: SerializationService,
-    val filteredTransaction: FilteredTransaction
-) : UtxoFilteredTransaction {
+    override val filteredTransaction: FilteredTransaction
+) : UtxoFilteredTransactionInternal {
 
     override fun getId(): SecureHash {
         return filteredTransaction.id
