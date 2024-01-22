@@ -98,6 +98,24 @@ class RestServerOpenApiNullabilityTest : RestServerTestBase() {
             val numberProperty = this.properties["number"]
             assertNotNull(numberProperty)
             assertThat(numberProperty.nullable).isFalse
+            assertThat(this.required.toSet()).isEqualTo(setOf("id", "number"))
+        }
+
+        with(openAPI.paths["/nullability/posttakesrequiredstringreturnsnullablestring"]) {
+            assertNotNull(this)
+            val post = this.post
+            assertNotNull(post)
+            val postReqBody = post.requestBody
+            assertTrue(postReqBody.required)
+            val requestBodyJson = post.requestBody.content["application/json"]
+            assertNotNull(requestBodyJson)
+            val schema = requestBodyJson.schema
+
+            val requiredString = assertNotNull(schema.properties["requiredString"])
+            assertThat(requiredString.nullable).isFalse()
+            assertThat(requiredString.type).isEqualTo("string")
+
+            assertThat(schema.required).isEqualTo("requiredString")
         }
     }
 }

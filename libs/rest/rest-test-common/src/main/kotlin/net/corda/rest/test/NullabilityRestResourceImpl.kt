@@ -19,6 +19,10 @@ class NullabilityRestResourceImpl : PluggableRestResource<NullabilityRestResourc
         return null
     }
 
+    override fun postTakesRequiredStringReturnsNullableString(requiredString: String): String? {
+        return null
+    }
+
     override val protocolVersion: Int
         get() = 1
 
