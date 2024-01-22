@@ -277,34 +277,34 @@ stateManager:
   # Persistent storage configuration for the 'flowCheckpoint' state type
   flowCheckpoint:
     # -- persistent storage type
-    type: DATABASE
-    # -- name of the persistent storage to use. When using 'DATABASE' as the type, an element with the given id should exist under the databases section
+    type: Database
+    # -- name of the persistent storage to use. When using 'Database' as the type, an element with the given id should exist under the databases section
     storageId: "default"
-    # -- name of the partition to use. When using 'DATABASE' as the type, the 'partition' represents the name of the database schema
+    # -- name of the partition to use. When using 'Database' as the type, the 'partition' represents the name of the database schema
     partition: "state_manager"
   # Persistent storage configuration for the 'flowMapping' state type
   flowMapping:
     # -- persistent storage type
-    type: DATABASE
-    # -- name of the persistent storage to use. When using 'DATABASE' as the type, an element with the given id should exist under the databases section
+    type: Database
+    # -- name of the persistent storage to use. When using 'Database' as the type, an element with the given id should exist under the databases section
     storageId: "default"
-    # -- name of the partition to use. When using 'DATABASE' as the type, the 'partition' represents the name of the database schema
+    # -- name of the partition to use. When using 'Database' as the type, the 'partition' represents the name of the database schema
     partition: "state_manager"
   # Persistent storage configuration for the 'keyRotation' state type
   keyRotation:
     # -- persistent storage type
-    type: DATABASE
-    # -- name of the persistent storage to use. When using 'DATABASE' as the type, an element with the given id should exist under the databases section
+    type: Database
+    # -- name of the persistent storage to use. When using 'Database' as the type, an element with the given id should exist under the databases section
     storageId: "default"
-    # -- name of the partition to use. When using 'DATABASE' as the type, the 'partition' represents the name of the database schema
+    # -- name of the partition to use. When using 'Database' as the type, the 'partition' represents the name of the database schema
     partition: "state_manager"
   # Persistent storage configuration for the 'tokenPoolCache' state type
   tokenPoolCache:
     # -- persistent storage type
-    type: DATABASE
-    # -- name of the persistent storage to use. When using 'DATABASE' as the type, an element with the given id should exist under the databases section
+    type: Database
+    # -- name of the persistent storage to use. When using 'Database' as the type, an element with the given id should exist under the databases section
     storageId: "default"
-    # -- name of the partition to use. When using 'DATABASE' as the type, the 'partition' represents the name of the database schema
+    # -- name of the partition to use. When using 'Database' as the type, the 'partition' represents the name of the database schema
     partition: "state_manager"
 
 # Configuration for cluster bootstrap
@@ -361,7 +361,7 @@ bootstrap:
       # -- tag for image containing a db client, used to set up the db
       tag: "14.4"
 
-    # Administrator credentials per database to use when grating required runtime permissions
+    # Administrator credentials per database to use when creating required runtime permissions
     databases:
       - name: default
         # The bootstrap default database user configuration
@@ -834,7 +834,7 @@ workers:
 #      # Runtime configuration settings for the State Manager used to interact with 'KeyRotation' states
 #      keyRotation:
 #        # -- persistent storage type
-#        type: DATABASE
+#        type: Database
 #        # Database user, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
 #        username:
 #          # -- the State Manager database user
@@ -1032,7 +1032,7 @@ workers:
 #      # Runtime configuration settings for the State Manager used to interact with 'flowCheckpoint' states
 #      flowCheckpoint:
 #        # -- persistent storage type
-#        type: DATABASE
+#        type: Database
 #        # Database user, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
 #        username:
 #          # -- the State Manager database user
@@ -1177,7 +1177,7 @@ workers:
 #      # Runtime configuration settings for the State Manager used to interact with 'flowMapping' states
 #      flowMapping:
 #        # -- persistent storage type
-#        type: DATABASE
+#        type: Database
 #        # Database user, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
 #        username:
 #          # -- the State Manager database user
@@ -1501,7 +1501,7 @@ workers:
 #      # Runtime configuration settings for the State Manager used to interact with 'keyRotation' states
 #      keyRotation:
 #        # -- persistent storage type
-#        type: DATABASE
+#        type: Database
 #        # Database user, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
 #        username:
 #          # -- the State Manager database user
@@ -1927,7 +1927,7 @@ workers:
 #      # Runtime configuration settings for the State Manager used to interact with 'tokenPoolCache' states
 #      tokenPoolCache:
 #        # -- persistent storage type
-#        type: DATABASE
+#        type: Database
 #        # Database user, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
 #        username:
 #          # -- the State Manager database user

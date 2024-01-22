@@ -977,7 +977,7 @@
                 "tokenPoolCache": {
                     "type": "object",
                     "$ref": "#/$defs/stateTypePersistentStorageMapping",
-                    "title": "Persistent Storage configuration to be used by the State Manager when dealing with 'keyRotation' states"
+                    "title": "Persistent Storage configuration to be used by the State Manager when dealing with 'tokenPoolCache' states"
                 }
             }
         },
@@ -1429,7 +1429,6 @@
                             "type": "array",
                             "title": "Administrator credentials per database, used to configure users/roles and grant required runtime permissions",
                             "items": {
-                                "type": "array",
                                 "$ref": "#/$defs/databaseTemplate"
                             }
                         }
@@ -3958,10 +3957,10 @@
             "properties": {
                 "type": {
                     "type": "string",
-                    "default": "DATABASE",
+                    "default": "Database",
                     "title": "The type of the persistent storage used by the State Manager instance",
                     "enum": [
-                        "DATABASE"
+                        "Database"
                     ]
                 },
                 "storageId": {
@@ -3989,10 +3988,10 @@
             "properties": {
                 "type": {
                     "type": "string",
-                    "default": "DATABASE",
+                    "default": "Database",
                     "title": "The type of the persistent storage used by the State Manager instance",
                     "enum": [
-                        "DATABASE"
+                        "Database"
                     ]
                 },
                 "username": {
@@ -4020,7 +4019,7 @@
             "if": {
                 "properties": {
                     "type": {
-                        "const": "DATABASE"
+                        "const": "Database"
                     }
                 }
             },
