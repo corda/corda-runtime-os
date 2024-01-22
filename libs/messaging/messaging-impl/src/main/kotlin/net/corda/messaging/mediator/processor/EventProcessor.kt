@@ -62,7 +62,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
             } else {
                 val asyncOutputs = mutableMapOf<Record<K, E>, MutableList<MediatorMessage<Any>>>()
                 val processed = try {
-                    nonReplayConsumerInputs.onEach { consumerInputEvent ->
+                    nonReplayConsumerInputs.forEach { consumerInputEvent ->
                         val queue = ArrayDeque(listOf(consumerInputEvent))
                         while (queue.isNotEmpty()) {
                             val response = config.messageProcessor.onNext(processorState, queue.removeFirst())
