@@ -57,7 +57,7 @@ class EntitySandboxStressTests : TestBase() {
     }
 
     fun prepareTest(testType: StressTestType) {
-        createVnodes(testType.numSandboxes)
+        createVnodes(testType.numSandboxes, true)
         val connections = mutableListOf<Pair<UUID, String>>()
         val schemaName = "PSIT${testType.numSandboxes}"
         vNodes.forEach {
@@ -113,7 +113,7 @@ class EntitySandboxStressTests : TestBase() {
     }
 
     @ParameterizedTest
-    @EnumSource(value = StressTestType::class, names = ["ONE_HUNDRED_SANDBOXES"])
+    @EnumSource(value = StressTestType::class, names = ["ONE_HUNDRED_SANDBOXES", "TWO_HUNDRED_FIFTY_SANDBOXES"])
     @Timeout(value = 1, unit = TimeUnit.MINUTES)
     fun `retrieve sandboxes from cache - size 10`(testType: StressTestType) {
         retrieveSandboxes(testType, 10, testType.numSandboxes - 10)

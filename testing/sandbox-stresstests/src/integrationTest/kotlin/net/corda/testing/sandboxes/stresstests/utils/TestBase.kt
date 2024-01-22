@@ -62,10 +62,14 @@ open class TestBase {
         Assertions.assertThat(Metrics.globalRegistry.registries.size == 0)
     }
 
-    fun createVnodes(quantity: Int) {
+    fun createVnodes(quantity: Int, doMigration: Boolean = false) {
         vNodes = mutableListOf()
         repeat(quantity) {
-            vNodes.add(virtualNodeService.load(Resources.EXTENDABLE_CPB))
+            if (doMigration) {
+                vNodes.add(virtualNodeService.loadWithDbMigration(Resources.EXTENDABLE_CPB))
+            } else {
+                vNodes.add(virtualNodeService.load(Resources.EXTENDABLE_CPB))
+            }
         }
     }
 

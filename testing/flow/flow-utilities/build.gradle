@@ -3,17 +3,11 @@ plugins {
 }
 
 dependencies {
-    compileOnly "org.osgi:org.osgi.service.component.annotations"
-    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     compileOnly 'org.osgi:osgi.annotation'
-    compileOnly 'org.osgi:osgi.core'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-avro-schema:$cordaApiVersion"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-
-    implementation project(':testing:sandboxes-testkit')
-    implementation project(':testing:test-utilities')
 }
 
 description 'Flow Test Utilities'

@@ -14,33 +14,6 @@ configurations {
         transitive = false
     }
 }
-
-sourceSets {
-    stressTest {
-        kotlin {
-            srcDirs += [ 'src/stressTest/kotlin' ]
-        }
-        compileClasspath += main.output + test.output
-        runtimeClasspath += main.output + test.output
-    }
-}
-
-kotlin {
-    target {
-        java
-        compilations.stressTest {
-            associateWith compilations.main
-            associateWith compilations.test
-        }
-
-        configurations {
-            stressTestApi.extendsFrom testApi
-            stressTestImplementation.extendsFrom testImplementation
-            stressTestRuntimeOnly.extendsFrom testRuntimeOnly
-        }
-    }
-}
-
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"

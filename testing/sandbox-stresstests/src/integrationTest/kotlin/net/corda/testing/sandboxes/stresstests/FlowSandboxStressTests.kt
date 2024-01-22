@@ -105,7 +105,7 @@ class FlowSandboxStressTests : TestBase() {
     }
 
     @ParameterizedTest
-    @EnumSource(StressTestType::class, names = ["ONE_HUNDRED_SANDBOXES"])
+    @EnumSource(StressTestType::class, names = ["ONE_HUNDRED_SANDBOXES", "TWO_HUNDRED_FIFTY_SANDBOXES"])
     @Timeout(value = 5, unit = TimeUnit.MINUTES)
     fun `retrieve sandboxes using small cache`(testType: StressTestType) {
         createVnodes(testType.numSandboxes)

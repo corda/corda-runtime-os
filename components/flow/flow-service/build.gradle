@@ -5,33 +5,6 @@ plugins {
 }
 
 description "Flow service"
-
-sourceSets {
-    stressTest {
-        kotlin {
-            srcDirs += [ 'src/stressTest/kotlin' ]
-        }
-        compileClasspath += main.output + test.output
-        runtimeClasspath += main.output + test.output
-    }
-}
-
-kotlin {
-    target {
-        java
-        compilations.stressTest {
-            associateWith compilations.main
-            associateWith compilations.test
-        }
-
-        configurations {
-            stressTestApi.extendsFrom testApi
-            stressTestImplementation.extendsFrom testImplementation
-            stressTestRuntimeOnly.extendsFrom testRuntimeOnly
-        }
-    }
-}
-
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
@@ -108,10 +81,6 @@ dependencies {
     integrationTestImplementation project(':testing:cpi-info-read-service-fake')
     integrationTestImplementation project(':testing:group-policy-test-common')
 
-    integrationTestImplementation project(':testing:sandboxes-testkit')
-    integrationTestImplementation project(':testing:sandboxes')
-    integrationTestImplementation project(':testing:test-utilities')
-
     integrationTestRuntimeOnly project(':libs:application:application-impl')
     integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
@@ -124,33 +93,4 @@ dependencies {
     integrationTestRuntimeOnly project(':components:virtual-node:cpk-read-service-impl')
 
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
-
-    stressTestImplementation project(':testing:sandboxes')
-    stressTestImplementation project(':testing:virtual-node-info-read-service-fake')
-    stressTestImplementation project(':testing:cpi-info-read-service-fake')
-    stressTestImplementation project(':testing:group-policy-test-common')
-
-    stressTestImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
-
-
-    stressTestRuntimeOnly project(':libs:application:application-impl')
-    stressTestRuntimeOnly project(':libs:flows:session-manager-impl')
-    stressTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
-    stressTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
-    stressTestRuntimeOnly project(':libs:messaging:messaging-impl')
-    stressTestRuntimeOnly project(':libs:serialization:serialization-checkpoint-api')
-    stressTestRuntimeOnly project(':libs:serialization:serialization-kryo')
-    stressTestRuntimeOnly project(':libs:state-manager:state-manager-db-impl')
-    stressTestRuntimeOnly project(':components:membership:membership-group-read-impl')
-    stressTestRuntimeOnly project(':components:virtual-node:cpk-read-service-impl')
-}
-
-tasks.register('stressTest', Test) {
-    description = "Runs smoke tests."
-    group = "verification"
-
-    testClassesDirs = project.sourceSets["stressTest"].output.classesDirs
-    classpath = project.sourceSets["stressTest"].runtimeClasspath
-
-    println "Running sandbox stress tests"
 }
