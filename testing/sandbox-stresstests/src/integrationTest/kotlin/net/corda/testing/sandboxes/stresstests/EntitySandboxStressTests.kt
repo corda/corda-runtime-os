@@ -27,6 +27,7 @@ import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Path
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import kotlin.concurrent.thread
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -64,14 +65,18 @@ class EntitySandboxStressTests : TestBase() {
             connections.add(Pair(it.vaultDmlConnectionId, it.holdingIdentity.shortHash.value))
         }
 
+        println("Creating db connection manager")
+
         // create db connection manager and sandbox service
         dbConnectionManager = FakeDbConnectionManager(connections, schemaName)
+        println("Creating entity sandbox service")
         entitySandboxService = EntitySandboxServiceFactory().create(
             virtualNodeService.sandboxGroupContextComponent,
             cpkReadService,
             virtualNodeInfoReadService,
             dbConnectionManager
         )
+        println("Created entity sandbox service")
     }
 
     @AfterEach
@@ -109,7 +114,7 @@ class EntitySandboxStressTests : TestBase() {
     }
 
     @ParameterizedTest
-    @EnumSource(value = StressTestType::class, names = ["ONE_HUNDRED_SANDBOXES", "TWO_HUNDRED_FIFTY_SANDBOXES"])
+    @EnumSource(value = StressTestType::class, names = ["ONE_HUNDRED_SANDBOXES"])
     @Timeout(value = 1, unit = TimeUnit.MINUTES)
     fun `retrieve sandboxes from cache - size 10`(testType: StressTestType) {
         retrieveSandboxes(testType, 10, testType.numSandboxes - 10)

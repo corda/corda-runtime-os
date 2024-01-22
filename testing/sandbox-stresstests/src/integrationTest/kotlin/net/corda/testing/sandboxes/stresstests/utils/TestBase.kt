@@ -46,7 +46,7 @@ open class TestBase {
 
     @AfterEach
     fun cleanUpMetrics() {
-//        println(prometheusMeterRegistry.scrape())
+        println(prometheusMeterRegistry.scrape())
 
         prometheusMeterRegistry.forEachMeter {
             prometheusMeterRegistry.remove(it)
