@@ -41,7 +41,7 @@ import java.security.spec.AlgorithmParameterSpec
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
-import java.util.*
+import java.util.UUID
 import javax.persistence.EntityManagerFactory
 import javax.persistence.PersistenceException
 
@@ -245,6 +245,69 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             assertThat(signingKeyMaterialResult.size).isEqualTo(1)
             assertThat(signingKeyMaterialResult.first().wrappingKeyId).isEqualTo(expectedUuid)
         }
+    }
+
+    @ParameterizedTest
+    @MethodSource("emfs")
+    fun `find by alias joined the key material with the highest generation wrapping key`(emf: EntityManagerFactory) {
+        val info = createSigningKeyInfo(wrappingKeyAlias = UUID.randomUUID().toString() + "alias")
+        val ctx = createSigningWrappedKeySaveContext(info)
+        val someOtherAlias = UUID.randomUUID().toString() + "some_other_alias"
+
+        val repo = SigningRepositoryImpl(
+            emf,
+            info.tenantId,
+            cipherSchemeMetadata,
+            digestService,
+            createLayeredPropertyMapFactory(),
+        )
+
+        // Create the first key against the generation 1 wrapping key
+        saveWrappingKey(emf, info.wrappingKeyAlias, generation = 1)
+        repo.savePrivateKey(ctx)
+
+        // Do a db search to get the signing key Id
+        val signingKeyResult = emf.createEntityManager().use { em ->
+            em.createQuery(
+                "FROM ${SigningKeyEntity::class.java.simpleName} WHERE tenantId=:tenantId AND alias=:alias",
+                SigningKeyEntity::class.java
+            ).setParameter("tenantId", info.tenantId)
+                .setParameter("alias", info.alias)
+                .resultList
+        }
+        assertThat(signingKeyResult.size).isEqualTo(1)
+
+        val dummyKeyMaterialPrefix = "dummy_key_material"
+
+        // Create 2 more wrapping keys and key materials for them for the same signing key just saved
+        // This is simulating two key rotations
+        repeat(2) {
+            val generation = it + 2
+            val wrappingKeyUuid = saveWrappingKey(emf, info.wrappingKeyAlias, generation = generation)
+            val materialEntity = SigningKeyMaterialEntity(
+                signingKeyId = signingKeyResult.first().id,
+                wrappingKeyId = wrappingKeyUuid,
+                created = Instant.now(),
+                keyMaterial = "$dummyKeyMaterialPrefix$generation".toByteArray()
+            )
+            emf.createEntityManager().use { em ->
+                em.transaction {
+                    em.persist(materialEntity)
+                }
+            }
+        }
+
+        // Create a wrapping key with a high generation but a different alias to make sure we never pick this up
+        saveWrappingKey(emf, someOtherAlias, generation = 150)
+
+        // Check the key info found via the public api has been joined to the last of the 2 dummy key materials
+        val found = checkNotNull(repo.findKey(info.alias!!))
+        assertThat(found.keyMaterial.contentEquals("${dummyKeyMaterialPrefix}3".toByteArray())).isTrue()
+
+        // Other than the keyMaterial which is deliberately changed, the signing key info should be the same after rotation
+        assertThat(found)
+            .usingRecursiveComparison().ignoringFields("timestamp", "keyMaterial")
+            .isEqualTo(info)
     }
 
     @ParameterizedTest
