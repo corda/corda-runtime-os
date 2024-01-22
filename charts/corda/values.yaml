@@ -237,7 +237,7 @@ kafka:
           # -- the default SASL password secret key  for client connection to Kafka
           key: ""
 
-# List of databases uses by the Platform
+# List of databases used by the Platform
 databases:
   # The default database configuration
   - name: default
