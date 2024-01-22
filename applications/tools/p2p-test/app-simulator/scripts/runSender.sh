@@ -62,17 +62,23 @@ then
   DESTINATIONS=$(calculate_peers $NUM_OF_MEMBERS_PER_CLUSTER_B $HELM_B_X500_NAME)
   get_db_password $APP_SIMULATOR_DB_NAMESPACE_A
   deploy_sender $A_CLUSTER_NAMESPACE $POSTGRES_ADMIN_PASSWORD $SENDERS $DESTINATIONS $APP_SIMULATOR_DB_NAMESPACE
-  wait
+  sender_pid=$!
+
+  wait $sender_pid
 else
   echo "Deploying two-way sender."
   SENDERS=$(calculate_peers $NUM_OF_MEMBERS_PER_CLUSTER_A $HELM_A_X500_NAME)
   DESTINATIONS=$(calculate_peers $NUM_OF_MEMBERS_PER_CLUSTER_B $HELM_B_X500_NAME)
   get_db_password $APP_SIMULATOR_DB_NAMESPACE_A
   deploy_sender $A_CLUSTER_NAMESPACE $POSTGRES_ADMIN_PASSWORD $SENDERS $DESTINATIONS $APP_SIMULATOR_DB_NAMESPACE_A
+  sender_a_pid=$!
 
   SENDERS=$(calculate_peers $NUM_OF_MEMBERS_PER_CLUSTER_B $HELM_B_X500_NAME)
   DESTINATIONS=$(calculate_peers $NUM_OF_MEMBERS_PER_CLUSTER_A $HELM_A_X500_NAME)
   get_db_password $APP_SIMULATOR_DB_NAMESPACE_B
   deploy_sender $B_CLUSTER_NAMESPACE $POSTGRES_ADMIN_PASSWORD $SENDERS $DESTINATIONS $APP_SIMULATOR_DB_NAMESPACE_B
-  wait
+  sender_b_pid=$!
+
+  wait $sender_a_pid
+  wait $sender_b_pid
 fi

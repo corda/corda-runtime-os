@@ -204,6 +204,6 @@ fi
 
 
 echo "Tearing down previous clusters"
-#"$SCRIPT_DIR"/tearDown.sh
+"$SCRIPT_DIR"/tearDown.sh
 
 echo "Report was saved into $reportFile"
