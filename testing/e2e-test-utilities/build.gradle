@@ -30,4 +30,7 @@ dependencies {
     implementation project(':tools:plugins:package')
     implementation project(":testing:packaging-test-utilities")
     implementation project(':testing:test-utilities')
+
+    implementation project(':libs:tracing')
+    runtimeOnly project(':libs:tracing-impl')
 }
