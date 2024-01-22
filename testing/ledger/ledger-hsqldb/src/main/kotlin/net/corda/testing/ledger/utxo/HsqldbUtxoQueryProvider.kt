@@ -106,4 +106,27 @@ class HsqldbUtxoQueryProvider @Activate constructor(
                 INSERT (hash, parameters, signature_public_key, signature_content, signature_spec, created)
                 VALUES (x.hash, x.parameters, x.signature_public_key, x.signature_content, x.signature_spec, x.created)"""
             .trimIndent()
+
+    override val persistMerkleProof: String
+        get() = """
+            MERGE INTO {h-schema}utxo_transaction_merkle_proof AS utmp
+            USING (VALUES :merkleProofId, :transactionId, :groupIndex, :treeSize, :hashes)
+                AS x(merkle_proof_id, transaction_id, group_idx, tree_size, hashes)
+            ON utmp.merkle_proof_id = x.merkle_proof_id 
+            WHEN NOT MATCHED THEN
+                INSERT (merkle_proof_id, transaction_id, group_idx, tree_size, hashes)
+                VALUES (x.merkle_proof_id, x.transaction_id, x.group_idx, x.tree_size, x.hashes)"""
+            .trimIndent()
+
+    override val persistMerkleProofLeaf: String
+        get() = """
+            MERGE INTO {h-schema}utxo_transaction_merkle_proof_leaves AS utmpl
+            USING (VALUES :merkleProofId, :leafIndex)
+                AS x(merkle_proof_id, leaf_index)
+            ON utmpl.merkle_proof_id = x.merkle_proof_id 
+            AND utmpl.leaf_index = x.leaf_index 
+            WHEN NOT MATCHED THEN
+                INSERT (merkle_proof_id, leaf_index)
+                VALUES (x.merkle_proof_id, x.leaf_index)"""
+            .trimIndent()
 }

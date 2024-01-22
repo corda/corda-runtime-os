@@ -54,7 +54,10 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
     private val defaultTenantId = "Memento Mori"
     private val defaultMasterKeyName = "Domination's the name of the game"
 
-    private fun createSigningKeyInfo(): SigningKeyInfo {
+    private fun createSigningKeyInfo(
+        tenantId: String? = null,
+        wrappingKeyAlias: String = defaultMasterKeyName
+    ): SigningKeyInfo {
         val unique = UUID.randomUUID().toString()
         val keyPair = keyPairGenerator.generateKeyPair()
         val keyId = publicKeyIdFromBytes(keyPair.public.encoded)
@@ -63,7 +66,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
         return SigningKeyInfo(
             id = ShortHash.parse(keyId),
             fullId = parseSecureHash(fullKey),
-            tenantId = "t-$unique".take(12),
+            tenantId = tenantId ?: "t-$unique".take(12),
             category = "c-$unique",
             alias = "a-$unique",
             hsmAlias = null,
@@ -75,7 +78,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             status = SigningKeyStatus.NORMAL,
             keyMaterial = keyPair.private.encoded,
             encodingVersion = 1,
-            wrappingKeyAlias = defaultMasterKeyName
+            wrappingKeyAlias = wrappingKeyAlias
         )
     }
 
@@ -544,5 +547,47 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             val keys = (0..KEY_LOOKUP_INPUT_ITEMS_LIMIT).map { ShortHash.of(SecureHashUtils.randomSecureHash()) }
             repo.lookupByPublicKeyShortHashes(keys.toSet())
         }
+    }
+
+    @ParameterizedTest
+    @MethodSource("emfs")
+    fun `get key materials`(emf: EntityManagerFactory) {
+        val someOtherAlias = "some_other_alias"
+        val tenantId = "gkm${UUID.randomUUID()}".take(12)
+
+        val wrappingKeyUuid = saveWrappingKey(emf, alias = defaultMasterKeyName)
+        saveWrappingKey(emf, alias = someOtherAlias)
+
+        val repo = SigningRepositoryImpl(
+            emf,
+            tenantId,
+            cipherSchemeMetadata,
+            digestService,
+            createLayeredPropertyMapFactory(),
+        )
+
+        // Create 3 different signing keys for the same tenant, each using the same wrapping key alias. This will result
+        // in 3 key materials each wrapped by the same wrapping key.
+        repeat(3) {
+            val info = createSigningKeyInfo(tenantId = tenantId, wrappingKeyAlias = defaultMasterKeyName)
+            val ctx = createSigningWrappedKeySaveContext(info)
+            repo.savePrivateKey(ctx)
+        }
+
+        // Create 2 more signing keys using a different alias, these should not show up in our key materials we fetch from
+        // the previous wrapping key uuid.
+        repeat(2) {
+            val info = createSigningKeyInfo(tenantId = tenantId, wrappingKeyAlias = someOtherAlias)
+            val ctx = createSigningWrappedKeySaveContext(info)
+            repo.savePrivateKey(ctx)
+        }
+
+        // We can now retrieve all the key materials wrapped by the defaultMasterKeyName wrapping key uid
+        val keyMaterials = repo.getKeyMaterials(wrappingKeyUuid).toList()
+        assertThat(keyMaterials.size).isEqualTo(3)
+
+        assertThat(keyMaterials[0]).isNotEqualTo(keyMaterials[1])
+        assertThat(keyMaterials[0]).isNotEqualTo(keyMaterials[2])
+        assertThat(keyMaterials[1]).isNotEqualTo(keyMaterials[2])
     }
 }

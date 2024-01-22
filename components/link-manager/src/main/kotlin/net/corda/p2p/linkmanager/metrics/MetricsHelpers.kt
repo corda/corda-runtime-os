@@ -63,8 +63,10 @@ fun recordInboundMessagesMetric(message: InboundUnauthenticatedMessage) {
         message.header.subsystem, message::class.java.simpleName)
 }
 
-fun recordInboundSessionMessagesMetric() {
-    recordInboundMessagesMetric(null, null, null, P2P_SUBSYSTEM, SESSION_MESSAGE_TYPE)
+fun recordInboundSessionMessagesMetric(datapoints: Int = 1) {
+    repeat(datapoints) {
+        recordInboundMessagesMetric(null, null, null, P2P_SUBSYSTEM, SESSION_MESSAGE_TYPE)
+    }
 }
 
 fun recordInboundHeartbeatMessagesMetric(sourceVnode: HoldingIdentity,

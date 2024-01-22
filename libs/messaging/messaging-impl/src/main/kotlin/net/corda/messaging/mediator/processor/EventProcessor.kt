@@ -42,18 +42,16 @@ class EventProcessor<K : Any, S : Any, E : Any>(
      * @return The asynchronous outputs and state updates grouped by record key
      */
     fun processEvents(
-        group: Map<K, List<Record<K, E>>>,
-        retrievedStates: Map<String, State>
+        inputs: Map<K, EventProcessingInput<K, E>>
     ): Map<K, EventProcessingOutput> {
-        return group.mapValues { groupEntry ->
-            val allConsumerInputs = groupEntry.value.toSet()
-            val groupKey = groupEntry.key.toString()
-            val state = retrievedStates.getOrDefault(groupKey, null)
-            val mediatorState = stateManagerHelper.deserializeMediatorState(state) ?: createNewMediatorState()
+        return inputs.mapValues { (key, input) ->
+            val groupKey = key.toString()
+            val allConsumerInputs = input.records.toSet()
+            val mediatorState = stateManagerHelper.deserializeMediatorState(input.state) ?: createNewMediatorState()
             var processorState = stateManagerHelper.deserializeValue(mediatorState)?.let { stateValue ->
                 StateAndEventProcessor.State(
                     stateValue,
-                    state?.metadata
+                    input.state?.metadata
                 )
             }
             val (nonReplayConsumerInputs, replayOutputs) = getReplayOutputsAndNonReplayInputs(allConsumerInputs, mediatorState)
@@ -65,27 +63,27 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                     nonReplayConsumerInputs.onEach { consumerInputEvent ->
                         val queue = ArrayDeque(listOf(consumerInputEvent))
                         while (queue.isNotEmpty()) {
-                            val response = config.messageProcessor.onNext(processorState, queue.removeFirst())
+                            val event = queue.removeFirst()
+                            val response = config.messageProcessor.onNext(processorState, event)
                             processorState = response.updatedState
                             val (syncEvents, asyncEvents) = response.responseEvents.map { convertToMessage(it) }.partition {
                                 messageRouter.getDestination(it).type == RoutingDestination.Type.SYNCHRONOUS
                             }
                             asyncOutputs.addOutputs(consumerInputEvent, asyncEvents)
-                            queue.addAll(processSyncEvents(groupEntry.key, syncEvents))
+                            queue.addAll(processSyncEvents(key, syncEvents))
                         }
                     }
                     mediatorState.outputEvents = mediatorReplayService.getOutputEvents(mediatorState.outputEvents, asyncOutputs)
-                    stateManagerHelper.createOrUpdateState(groupKey, state, mediatorState, processorState)
+                    stateManagerHelper.createOrUpdateState(groupKey, input.state, mediatorState, processorState)
                 } catch (e: CordaMessageAPIIntermittentException) {
                     // If an intermittent error occurs here, the RPC client has failed to deliver a message to another part
                     // of the system despite the retry loop implemented there. This should trigger individual processing to
                     // fail.
                     asyncOutputs.clear()
-                    stateManagerHelper.failStateProcessing(groupKey, state)
+                    stateManagerHelper.failStateProcessing(groupKey, input.state)
                 }
-
-                val stateChangeAndOperation = stateChangeAndOperation(state, processed)
-                EventProcessingOutput(replayOutputs + asyncOutputs.values.flatten(), stateChangeAndOperation)
+                val stateChangeAndOperation = stateChangeAndOperation(input.state, processed)
+                EventProcessingOutput(asyncOutputs.values.flatten(), stateChangeAndOperation)
             }
         }
     }

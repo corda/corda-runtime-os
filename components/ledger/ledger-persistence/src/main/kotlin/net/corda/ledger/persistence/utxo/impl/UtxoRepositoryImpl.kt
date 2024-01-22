@@ -11,6 +11,7 @@ import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.persistence.common.mapToComponentGroups
 import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoRepository
+import net.corda.ledger.utxo.data.transaction.MerkleProofDto
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByPersistence
@@ -32,13 +33,13 @@ import javax.persistence.EntityManager
 import javax.persistence.Query
 import javax.persistence.Tuple
 
-@Suppress("TooManyFunctions")
 /**
  * Reads and writes ledger transaction data to and from the virtual node vault database.
  * The component only exists to be created inside a PERSISTENCE sandbox. We denote it
  * as "corda.marker.only" to force the sandbox to create it, despite it implementing
  * only the [UsedByPersistence] marker interface.
  */
+@Suppress("TooManyFunctions")
 @Component(
     service = [ UtxoRepository::class, UsedByPersistence::class ],
     property = [ CORDA_MARKER_ONLY_SERVICE ],
@@ -348,6 +349,74 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("createdAt", timestamp)
             .executeUpdate()
             .logResult("signed group parameters [$hash]")
+    }
+
+    override fun persistMerkleProof(
+        entityManager: EntityManager,
+        transactionId: String,
+        groupIndex: Int,
+        treeSize: Int,
+        leaves: List<Int>,
+        hashes: List<String>
+    ): String {
+        // Generate an ID by concatenating transaction ID - group index - leaves
+        val merkleProofId = "$transactionId-$groupIndex-${leaves.joinToString(separator = ",")}"
+
+        entityManager.createNativeQuery(queryProvider.persistMerkleProof)
+            .setParameter("merkleProofId", merkleProofId)
+            .setParameter("transactionId", transactionId)
+            .setParameter("groupIndex", groupIndex)
+            .setParameter("treeSize", treeSize)
+            .setParameter("hashes", hashes.joinToString(","))
+            .executeUpdate()
+            .logResult("merkle proof for transaction: $transactionId")
+
+        return merkleProofId
+    }
+
+    override fun persistMerkleProofLeaf(entityManager: EntityManager, merkleProofId: String, leafIndex: Int) {
+        entityManager.createNativeQuery(queryProvider.persistMerkleProofLeaf)
+            .setParameter("merkleProofId", merkleProofId)
+            .setParameter("leafIndex", leafIndex)
+            .executeUpdate()
+            .logResult("merkle proof leaf for merkle proof: $merkleProofId")
+    }
+
+    override fun findMerkleProofs(
+        entityManager: EntityManager,
+        transactionId: String,
+        groupIndex: Int
+    ): List<MerkleProofDto> {
+        return entityManager.createNativeQuery(queryProvider.findMerkleProofs, Tuple::class.java)
+            .setParameter("transactionId", transactionId)
+            .setParameter("groupIndex", groupIndex)
+            .resultListAsTuples()
+            .groupBy { tuple ->
+                // We'll have multiple rows for the same Merkle proof if it revealed more than one leaf
+                // We group the rows by the Merkle proof ID to see which are the ones that belong together
+                tuple.get(0) as String
+            }.map { (_, rows) ->
+                // We can retrieve most of the properties from the first row because they will be the same for each row
+                val firstRow = rows.first()
+
+                MerkleProofDto(
+                    firstRow.get(1) as String, // Transaction ID
+                    firstRow.get(2) as Int, // Group index
+                    firstRow.get(3) as Int, // Tree size
+
+                    // We store the hashes as a comma separated string, so we need to split it and parse into SecureHash
+                    // we filter out the blank ones just in case
+                    (firstRow.get(4) as String).split(",")
+                        .filter { it.isNotBlank() }.map { parseSecureHash(it) },
+
+                    // Each leaf will have its own row, so we need to go through each row that belongs to the Merkle proof
+                    rows.associate {
+                        // Map the leaf index to the data we fetched from the component table
+                        (it.get(5) as Int) to (it.get(6) as ByteArray)
+                    },
+                    firstRow.get(7) as ByteArray
+                )
+            }
     }
 
     private fun Int.logResult(entity: String): Int {

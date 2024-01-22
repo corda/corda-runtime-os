@@ -4349,6 +4349,43 @@
         }
       }
     },
+    "/wrappingkey/unmanaged/rotation/{keyalias}" : {
+      "get" : {
+        "tags" : [ "Key Rotation API" ],
+        "description" : "This method gets the status of the latest key rotation.",
+        "operationId" : "get_wrappingkey_unmanaged_rotation__keyalias_",
+        "parameters" : [ {
+          "name" : "keyalias",
+          "in" : "path",
+          "description" : "The keyAlias we are rotating away from.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The keyAlias we are rotating away from.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Number of wrapping keys needs rotating grouped by vNode.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/KeyRotationStatusResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
     "/wrappingkey/unmanaged/rotation/{oldkeyalias}" : {
       "post" : {
         "tags" : [ "Key Rotation API" ],
@@ -4392,61 +4429,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/KeyRotationResponse"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
-    "/wrappingkey/unmanaged/rotation/{requestid}" : {
-      "get" : {
-        "tags" : [ "Key Rotation API" ],
-        "description" : "This method gets the status of the current rotation.",
-        "operationId" : "get_wrappingkey_unmanaged_rotation__requestid_",
-        "parameters" : [ {
-          "name" : "requestid",
-          "in" : "path",
-          "description" : "The requestId obtained when starting key rotation request.",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "The requestId obtained when starting key rotation request.",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Success",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "uniqueItems" : false,
-                  "type" : "array",
-                  "nullable" : false,
-                  "items" : {
-                    "type" : "object",
-                    "properties" : {
-                      "first" : {
-                        "type" : "string",
-                        "nullable" : false,
-                        "example" : "string"
-                      },
-                      "second" : {
-                        "type" : "string",
-                        "nullable" : false,
-                        "example" : "string"
-                      }
-                    },
-                    "example" : "No example available for this type"
-                  }
                 }
               }
             }
@@ -5322,6 +5304,47 @@
           }
         }
       },
+      "KeyRotationStatusResponse" : {
+        "required" : [ "lastUpdatedTimestamp", "rootKeyAlias", "status", "wrappingKeys" ],
+        "type" : "object",
+        "properties" : {
+          "lastUpdatedTimestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T10:15:30Z"
+          },
+          "rootKeyAlias" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "status" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "wrappingKeys" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "type" : "object",
+              "properties" : {
+                "first" : {
+                  "type" : "string",
+                  "nullable" : false,
+                  "example" : "string"
+                },
+                "second" : {
+                  "$ref" : "#/components/schemas/TenantIdWrappingKeysStatus"
+                }
+              },
+              "example" : "No example available for this type"
+            }
+          }
+        }
+      },
       "MemberInfoSubmitted" : {
         "required" : [ "data" ],
         "type" : "object",
@@ -5850,6 +5873,24 @@
           }
         },
         "description" : "Parameters for suspending or activating a member."
+      },
+      "TenantIdWrappingKeysStatus" : {
+        "required" : [ "rotatedKeys", "total" ],
+        "type" : "object",
+        "properties" : {
+          "rotatedKeys" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          },
+          "total" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          }
+        }
       },
       "UpdateConfigParameters" : {
         "required" : [ "config", "schemaVersion", "section", "version" ],

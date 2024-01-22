@@ -92,8 +92,8 @@ class EventProcessorTest {
             }
         }
         whenever(client.send(any())).thenReturn(MediatorMessage(syncMessage))
-
-        eventProcessor.processEvents(mapOf("key" to getStringRecords(1, "key")), mapOf("key" to state1))
+        val input = mapOf("key" to EventProcessingInput("key", getStringRecords(1, "key"), state1))
+        eventProcessor.processEvents(input)
 
         verify(stateManagerHelper, times(1)).deserializeValue(any())
         verify(stateAndEventProcessor, times(4)).onNext(anyOrNull(), any())
@@ -108,7 +108,8 @@ class EventProcessorTest {
         whenever(client.send(any())).thenThrow(CordaMessageAPIIntermittentException("baz"))
         whenever(stateManagerHelper.failStateProcessing(any(), anyOrNull())).thenReturn(mock())
 
-        val outputMap = eventProcessor.processEvents(mapOf("key" to getStringRecords(1, "key")), mapOf("key" to state1))
+        val input = mapOf("key" to EventProcessingInput("key", getStringRecords(1, "key"), state1))
+        val outputMap = eventProcessor.processEvents(input)
 
         val output = outputMap["key"]
         assertEquals(emptyList<MediatorMessage<Any>>(), output?.asyncOutputs)
