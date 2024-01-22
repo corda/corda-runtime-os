@@ -33,11 +33,11 @@ import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.v5.crypto.SecureHash
 import java.time.Instant
-import java.util.*
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.persistence.SigningKeyMaterialInfo
+import java.util.UUID
 
 @Suppress("LongParameterList")
 class SigningRepositoryImpl(
@@ -228,38 +228,36 @@ class SigningRepositoryImpl(
         }
 }
 
-
 fun SigningKeyEntity.joinSigningKeyInfo(em: EntityManager, keyEncodingService: KeyEncodingService): SigningKeyInfo {
-    val signingKeyMaterialEntity = checkNotNull(
-        em.createQuery(
-            "FROM ${SigningKeyMaterialEntity::class.java.simpleName} WHERE signingKeyId=:signingKeyId",
-            SigningKeyMaterialEntity::class.java
-        ).setParameter("signingKeyId", id)
-            .resultList.singleOrNull()
-    ) { "private key material for $id not found" }
-    val wrappingKey = checkNotNull(
-        em.createQuery(
-            "FROM WrappingKeyEntity WHERE id=:wrappingKeyId", WrappingKeyEntity::class.java
-        ).setParameter("wrappingKeyId", signingKeyMaterialEntity.wrappingKeyId).resultList.singleOrNull()
-    ) {
-        "wrapping key for $id not found"
-    }
+    em.createQuery(
+        "SELECT m, w FROM ${SigningKeyMaterialEntity::class.java.simpleName} m, ${WrappingKeyEntity::class.java.simpleName} w" +
+            " WHERE m.signingKeyId=:signingKeyId AND m.wrappingKeyId = w.id" +
+            " ORDER BY w.generation DESC"
+    ).setMaxResults(1)
+        .setParameter("signingKeyId", id)
+        .resultList.singleOrNull()?.let { results ->
+            val keyMaterialAndWrappingKey = checkNotNull(results as? Array<*>) { "JPA returned invalid results object" }
+            val signingKeyMaterialEntity = checkNotNull(keyMaterialAndWrappingKey[0] as? SigningKeyMaterialEntity)
+            { "JPA returned wrong entity type for SigningKeyMaterialEntity for signing key id ${id}" }
+            val wrappingKey = checkNotNull(keyMaterialAndWrappingKey[1] as? WrappingKeyEntity)
+            { "JPA returned wrong entity type for WrappingKeyEntity for signing key id ${id}" }
 
-    return SigningKeyInfo(
-        id = ShortHash.parse(keyId),
-        fullId = parseSecureHash(fullKeyId),
-        tenantId = tenantId,
-        category = category,
-        alias = alias,
-        hsmAlias = hsmAlias,
-        publicKey = keyEncodingService.decodePublicKey(publicKey),
-        keyMaterial = signingKeyMaterialEntity.keyMaterial,
-        schemeCodeName = schemeCodeName,
-        wrappingKeyAlias = wrappingKey.alias,
-        externalId = externalId,
-        encodingVersion = encodingVersion,
-        timestamp = created,
-        hsmId = hsmId,
-        status = SigningKeyStatus.valueOf(status.name)
-    )
+            return SigningKeyInfo(
+                id = ShortHash.parse(keyId),
+                fullId = parseSecureHash(fullKeyId),
+                tenantId = tenantId,
+                category = category,
+                alias = alias,
+                hsmAlias = hsmAlias,
+                publicKey = keyEncodingService.decodePublicKey(publicKey),
+                keyMaterial = signingKeyMaterialEntity.keyMaterial,
+                schemeCodeName = schemeCodeName,
+                wrappingKeyAlias = wrappingKey.alias,
+                externalId = externalId,
+                encodingVersion = encodingVersion,
+                timestamp = created,
+                hsmId = hsmId,
+                status = SigningKeyStatus.valueOf(status.name)
+            )
+        } ?: throw IllegalStateException("Cannot match a key material and wrapping key to signing key ${id}")
 }
