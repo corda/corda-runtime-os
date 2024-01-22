@@ -124,7 +124,7 @@ internal class StatefulSessionManagerImpl(
                 processOutboundMessagesState(state)
             }
 
-        return processStateUpdates((resultStates))
+        return processStateUpdates(resultStates)
     }
 
     private fun <T> processOutboundMessagesState(
@@ -275,7 +275,7 @@ internal class StatefulSessionManagerImpl(
         val failedUpdate =
             stateManager.update(results.mapNotNull { it.result?.stateUpdate })
                 .keys.onEach {
-                    logger.warn("Failed to update the state of session $it")
+                    logger.info("Failed to update the state of session $it")
                 }
 
         return results.mapNotNull { result ->
