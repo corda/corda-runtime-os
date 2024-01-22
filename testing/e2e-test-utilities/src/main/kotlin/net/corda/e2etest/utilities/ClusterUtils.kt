@@ -234,10 +234,10 @@ fun ClusterInfo.rotateCryptoUnmanagedWrappingKeys(
 }
 
 fun ClusterInfo.getStatusForUnmanagedWrappingKeysRotation(
-    requestid: String
+    keyAlias: String
 ) = cluster {
     assertWithRetry {
-        command { getCryptoUnmanagedWrappingKeysRotationStatus(requestid) }
+        command { getCryptoUnmanagedWrappingKeysRotationStatus(keyAlias) }
         condition { it.code == ResponseCode.OK.statusCode }
     }
 }
