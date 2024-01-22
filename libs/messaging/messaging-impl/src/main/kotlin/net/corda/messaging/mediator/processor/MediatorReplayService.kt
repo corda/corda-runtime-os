@@ -27,7 +27,7 @@ class MediatorReplayService @Activate constructor(
 
     /**
      * Generate the new [MediatorReplayOutputEvents] given the mediators [existingOutputs] when provided with the [newOutputs]
-     * @param existingOutputs The existing output events saved to the mediator state/
+     * @param existingOutputs The existing output events saved to the mediator state
      * @param newOutputs The new outputs to add to the existingOutputs to be stored in the mediator.
      * @return Return a new [MediatorReplayOutputEvents] object containing all the existing outputs with the new outputs added to it.
      */
