@@ -8,8 +8,10 @@ import net.corda.crypto.core.getKeyRotationStatusRecordKey
 import net.corda.data.crypto.wire.ops.key.rotation.IndividualKeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.status.UnmanagedKeyStatus
 import net.corda.libs.statemanager.api.Metadata
+import net.corda.libs.statemanager.api.STATE_TYPE
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.libs.statemanager.api.metadata
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
@@ -77,7 +79,11 @@ class CryptoRewrapBusProcessor(
                         )
                     // Update status to Done if all keys for the tenant have been rotated
                     val newMetadata = if (deserializedStatus.total == deserializedStatus.rotatedKeys + 1) {
-                        updateMetadata(state.metadata, KeyRotationMetadataValues.STATUS, KeyRotationStatus.DONE)
+                        mergeMetadata(
+                            state.metadata,
+                            Metadata(mapOf(KeyRotationMetadataValues.STATUS to KeyRotationStatus.DONE)),
+                            state.metadata[STATE_TYPE].toString()
+                        )
                     } else {
                         state.metadata
                     }
@@ -94,13 +100,11 @@ class CryptoRewrapBusProcessor(
         return emptyList()
     }
 
-    private fun updateMetadata(metadata: Metadata, key: String, value: String): Metadata {
-        val newMetadata = mutableMapOf<String, String>()
-        metadata.keys.filter { it != key }
-            .forEach { metadataKey ->
-                newMetadata[metadataKey] = metadata[metadataKey].toString()
-            }
-        newMetadata[key] = value
-        return Metadata(newMetadata)
+    private fun mergeMetadata(existing: Metadata?, newMetadata: Metadata?, stateType: String): Metadata {
+        val map = (existing ?: metadata()).toMutableMap()
+        newMetadata?.forEach { map[it.key] = it.value }
+        map[STATE_TYPE] = stateType
+
+        return Metadata(map)
     }
 }
