@@ -158,10 +158,8 @@ class LiquibaseSchemaMigratorImpl(
                 database
             )
 
-            log.info("Updating ${database.databaseProductName} ${database.databaseProductVersion} " +
-                    "DB Schema for ${database.connection.catalog}")
+            log.info("Retrieving ${database.databaseProductName} DB Schema")
             lb.update(null, Contexts(), sql)
-            log.info("${database.connection.catalog} DB schema update complete")
         }
     }
 
