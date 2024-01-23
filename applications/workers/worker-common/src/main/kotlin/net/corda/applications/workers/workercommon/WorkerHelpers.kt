@@ -79,7 +79,7 @@ class WorkerHelpers {
          * @param params The input map of parameters to be included in the resulting Config.
          * @return A Typesafe Config object created from the modified parameter keys.
          */
-        fun createConfigFromParams(topLevelKey: String, params: Map<String, Any>): Config {
+        fun createConfigFromParams(topLevelKey: String, params: Map<String, String>): Config {
             return ConfigFactory.parseMap(
                 params.mapKeys { (originalKey, _) -> "$topLevelKey.$originalKey" }
             )

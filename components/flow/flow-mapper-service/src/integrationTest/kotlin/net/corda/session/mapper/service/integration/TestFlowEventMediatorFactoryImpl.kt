@@ -79,7 +79,7 @@ class TestFlowEventMediatorFactoryImpl @Activate constructor(
         .messageRouterFactory(createMessageRouterFactory())
         .threads(1)
         .threadName("flow-event-mediator")
-        .stateManager(stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.FLOW_CHECKPOINT))
+        .stateManager(stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.FLOW_CHECKPOINT.value))
         .minGroupSize(20)
         .build()
 

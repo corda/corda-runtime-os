@@ -112,7 +112,7 @@ class LinkManagerProcessorImpl @Activate constructor(
 
                 val localStateManager = stateManagerFactory.create(
                     event.config.getConfig(BootConfig.BOOT_STATE_MANAGER),
-                    StateManagerConfig.StateType.P2P_SESSION
+                    StateManagerConfig.StateType.P2P_SESSION.value
                 ).also { it.start() }
 
                 log.info("StateManager ${localStateManager.name} has been created and started.")

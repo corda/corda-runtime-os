@@ -54,7 +54,7 @@ class TokenCacheSubscriptionHandlerImpl(
 
             // Create a new state manager and the token selection rpc processor
             val messagingConfig = toStateManagerConfig(config)
-            val localStateManager = stateManagerFactory.create(messagingConfig, StateManagerConfig.StateType.TOKEN_POOL_CACHE)
+            val localStateManager = stateManagerFactory.create(messagingConfig, StateManagerConfig.StateType.TOKEN_POOL_CACHE.value)
             val processor = tokenCacheEventProcessorFactory.createTokenSelectionSyncRPCProcessor(localStateManager)
 
             // Create the HTTP RPC subscription

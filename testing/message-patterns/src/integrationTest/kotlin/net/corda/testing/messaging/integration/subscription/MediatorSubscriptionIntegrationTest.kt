@@ -93,7 +93,7 @@ class MediatorSubscriptionIntegrationTest {
     }
 
     private fun buildStateManager(): StateManager {
-        return stateManagerFactory.create(SmartConfigImpl.empty(), StateManagerConfig.StateType.FLOW_CHECKPOINT)
+        return stateManagerFactory.create(SmartConfigImpl.empty(), StateManagerConfig.StateType.FLOW_CHECKPOINT.value)
     }
 
     private fun buildBuilder(
