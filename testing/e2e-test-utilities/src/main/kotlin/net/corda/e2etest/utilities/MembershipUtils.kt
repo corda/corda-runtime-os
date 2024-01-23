@@ -45,7 +45,7 @@ const val DEFAULT_NOTARY_SERVICE = "O=NotaryService, L=London, C=GB"
  *
  * @param cpb The path to the CPB to use when creating the CPI.
  * @param cpiName The name to be used for the CPI.
- * @param mgm The details of the MGM.
+ * @param groupPolicyFactory [GroupPolicyFactory] to be used.
  * @param x500Name The X500 name of the onboarding member.
  * @param waitForApproval Boolean flag to indicate whether the function should wait and assert for approved status.
  *  Defaults to true.
@@ -121,6 +121,7 @@ fun ClusterInfo.onboardMember(
     return NetworkOnboardingMetadata(holdingId, x500Name, registrationId, registrationContext, this)
 }
 
+@Suppress("unused")
 /**
  * Register a member who has registered previously using the [NetworkOnboardingMetadata] from the previous registration
  * for the cluster connection details and for the member identifier.
@@ -388,12 +389,13 @@ fun ClusterInfo.lookup(
         interval(1.seconds)
         command {
             val additionalQuery = statuses.joinToString(prefix = "?", separator = "&") { "statuses=$it" }
-            get("/api/${ClusterBuilder.REST_API_VERSION_PATH}/members/$holdingId$additionalQuery")
+            get("/api/$REST_API_VERSION_PATH/members/$holdingId$additionalQuery")
         }
         condition { it.code == ResponseCode.OK.statusCode }
     }
 }
 
+@Suppress("unused")
 /**
  * Look up the current group parameters as viewed on a specific cluster by a specific holding ID.
  */
@@ -404,7 +406,7 @@ fun ClusterInfo.lookupGroupParameters(
         timeout(15.seconds)
         interval(1.seconds)
         command {
-            get("/api/${ClusterBuilder.REST_API_VERSION_PATH}/members/$holdingId/group-parameters")
+            get("/api/$REST_API_VERSION_PATH/members/$holdingId/group-parameters")
         }
         condition { it.code == ResponseCode.OK.statusCode }
     }

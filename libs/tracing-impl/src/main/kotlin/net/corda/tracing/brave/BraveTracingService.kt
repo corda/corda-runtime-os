@@ -26,6 +26,7 @@ import net.corda.tracing.BatchPublishTracing
 import net.corda.tracing.BatchRecordTracer
 import net.corda.tracing.TraceContext
 import net.corda.tracing.TracingService
+import net.corda.utilities.debug
 import org.eclipse.jetty.servlet.FilterHolder
 import org.slf4j.LoggerFactory
 import zipkin2.Span
@@ -116,7 +117,7 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
         HttpTracing.newBuilder(tracing)
             .serverRequestParser(
                 object : HttpRequestParser.Default() {
-                    override fun spanName(req: HttpRequest?, context: brave.propagation.TraceContext?): String? {
+                    override fun spanName(req: HttpRequest?, context: brave.propagation.TraceContext?): String {
                         return "http server - ${req?.method()} - ${req?.path()}"
                     }
                 }
@@ -153,7 +154,12 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
         traceHeadersToOverrideContext: List<Pair<String, String>>
     ): List<Pair<String, String>> {
         val ctx = recordTracing.getTraceContext(traceHeadersToOverrideContext)
-        return recordInjector.inject(ctx, headers)
+        return if (ctx == null) {
+            logger.debug { "Tracing context is not set" }
+            headers
+        } else {
+            recordInjector.inject(ctx, headers)
+        }
     }
 
     override fun addTraceHeaders(
@@ -161,7 +167,12 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
         traceHeadersToOverrideContext: Map<String, Any>
     ): List<Pair<String, String>> {
         val ctx = recordTracing.getTraceContext(traceHeadersToOverrideContext)
-        return recordInjector.inject(ctx, headers)
+        return if (ctx == null) {
+            logger.debug { "Tracing context is not set" }
+            headers
+        } else {
+            recordInjector.inject(ctx, headers)
+        }
     }
 
     override fun addTraceHeaders(
@@ -169,7 +180,12 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
         traceHeadersToOverrideContext: Map<String, Any>
     ): Map<String, Any> {
         val ctx = recordTracing.getTraceContext(traceHeadersToOverrideContext)
-        return recordInjector.inject(ctx, headers)
+        return if (ctx == null) {
+            logger.debug { "Tracing context is not set" }
+            headers
+        } else {
+            return recordInjector.inject(ctx, headers)
+        }
     }
 
     override fun traceBatch(operationName: String): BatchRecordTracer {

@@ -1,6 +1,7 @@
 package net.corda.messaging.mediator.processor
 
 import net.corda.libs.statemanager.api.State
+import net.corda.messaging.api.constants.MessagingMetadataKeys.PROCESSING_FAILURE
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorConsumer
 import net.corda.messaging.api.mediator.MediatorMessage
@@ -106,10 +107,11 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     private fun pollAndProcessEvents(consumer: MediatorConsumer<K, E>) {
         val messages = consumer.poll(pollTimeout)
         val startTimestamp = System.nanoTime()
-        val polledRecords = messages.map { it.toRecord() }
+        val polledRecords = messages.map { it.toRecord() }.groupBy { it.key }
         if (messages.isNotEmpty()) {
-            var groups = groupAllocator.allocateGroups(polledRecords, config)
-            var statesToProcess = stateManager.get(messages.map { it.key.toString() }.distinct())
+            val states = stateManager.get(polledRecords.keys.map { it.toString() })
+            val inputs = generateInputs(states.values, polledRecords)
+            var groups = groupAllocator.allocateGroups(inputs, config)
 
             while (groups.isNotEmpty()) {
                 // Process each group on a thread
@@ -117,16 +119,16 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                     it.isNotEmpty()
                 }.map { group ->
                     val future = taskManager.executeShortRunningTask {
-                        eventProcessor.processEvents(group, statesToProcess)
+                        eventProcessor.processEvents(group)
                     }
-                    Pair(future, group.keys)
-                }.map { (future, keys) ->
+                    Pair(future, group)
+                }.map { (future, group) ->
                     try {
                         future.getOrThrow(Duration.ofMillis(EVENT_PROCESSING_TIMEOUT_MILLIS))
                     } catch (e: TimeoutException) {
-                        keys.associateWith {
-                            val oldState = statesToProcess[it.toString()]
-                            val state = stateManagerHelper.failStateProcessing(it.toString(), oldState)
+                        group.mapValues { (key, input) ->
+                            val oldState = input.state
+                            val state = stateManagerHelper.failStateProcessing(key.toString(), oldState)
                             val stateChange = if (oldState != null) {
                                 StateChangeAndOperation.Update(state)
                             } else {
@@ -143,14 +145,38 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
 
                 // Persist state changes, send async outputs and setup to reprocess states that fail to persist
                 val failedStates = processOutputs(outputs)
-                statesToProcess = failedStates
-                groups = assignNewGroupsForFailedStates(failedStates, polledRecords)
+                val failedRecords = polledRecords.filter { (key, _) ->
+                    key.toString() in failedStates
+                }
+                groups = groupAllocator.allocateGroups(generateInputs(failedStates.values, failedRecords), config)
             }
             metrics.commitTimer.recordCallable {
                 consumer.syncCommitOffsets()
             }
         }
         metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
+    }
+
+    /**
+     * Generates inputs for a round of event processing.
+     *
+     * The input records must be the set of records that should be processed.
+     */
+    private fun generateInputs(states: Collection<State>, records: Map<K, List<Record<K, E>>>) : List<EventProcessingInput<K, E>> {
+        val (runningStates, failedStates) = states.partition {
+            it.metadata[PROCESSING_FAILURE] != true
+        }
+        if (failedStates.isNotEmpty()) {
+            log.info("Not processing ${failedStates.size} states as processing has previously failed.")
+        }
+        val failedKeys = failedStates.map { it.key }.toSet()
+        val recordsToProcess = records.filter { (key, _) ->
+            !failedKeys.contains(key.toString())
+        }
+        val stateMap = runningStates.associateBy { it.key }
+        return recordsToProcess.map { (key, value) ->
+            EventProcessingInput(key, value, stateMap[key.toString()])
+        }
     }
 
     /**
@@ -183,18 +209,6 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         sendAsynchronousEvents(outputsToSend)
 
         return failedToCreate + failedToDelete + failedToUpdateOptimisticLockFailure
-    }
-
-    /**
-     * Set processing groups for states that failed to save.
-     */
-    private fun assignNewGroupsForFailedStates(
-        retrievedStates: Map<String, State>,
-        polledEvents: List<Record<K, E>>
-    ) = if (retrievedStates.isNotEmpty()) {
-        groupAllocator.allocateGroups(polledEvents.filter { retrievedStates.containsKey(it.key.toString()) }, config)
-    } else {
-        listOf()
     }
 
     /**

@@ -10,6 +10,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':libs:tracing')
+    implementation project(':libs:utilities')
 
     implementation("io.zipkin.reporter2:zipkin-sender-urlconnection:$zipkinVersion")
     implementation("io.zipkin.brave:brave-context-slf4j:$braveVersion")
