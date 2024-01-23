@@ -21,7 +21,7 @@ data class KeyRotationStatusResponse(
 /**
  * The key rotation status for wrapping keys per particular tenantId.
  *
- * @param total Total number of wrapping keys to be rotated for particular tenantId.
+ * @param total Total number of wrapping keys that will be rotated for particular tenantId.
  * @param rotatedKeys The number of wrapping keys already rotated for particular tenantId.
  */
 
