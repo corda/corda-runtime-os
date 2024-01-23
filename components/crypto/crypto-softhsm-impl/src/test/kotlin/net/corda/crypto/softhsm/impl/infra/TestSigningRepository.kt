@@ -3,7 +3,6 @@ package net.corda.crypto.softhsm.impl.infra
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.core.SigningKeyStatus
-import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.publicKeyHashFromBytes
 import net.corda.crypto.core.publicKeyShortHashFromBytes
 import net.corda.crypto.persistence.SigningKeyMaterialInfo
@@ -12,7 +11,6 @@ import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.softhsm.SigningRepository
 import net.corda.v5.crypto.SecureHash
 import java.lang.IllegalStateException
-import java.security.PrivateKey
 import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
@@ -67,14 +65,6 @@ class TestSigningRepository(val tenantId: String = "test") : SigningRepository {
 
     override fun getKeyMaterials(wrappingKeyId: UUID): Collection<SigningKeyMaterialInfo> {
         throw IllegalStateException("Unexpected call to getKeyMaterials")
-    }
-
-    override fun createNewSigningKeyMaterial(
-        newWrappingKey: WrappingKey,
-        signingKeyId: UUID,
-        signingKey: PrivateKey
-    ): SigningKeyMaterialInfo {
-        throw IllegalStateException("Unexpected call to createNewSigningKeyMaterial")
     }
 
     override fun saveSigningKeyMaterial(signingKeyMaterialInfo: SigningKeyMaterialInfo, wrappingKeyId: UUID) {
