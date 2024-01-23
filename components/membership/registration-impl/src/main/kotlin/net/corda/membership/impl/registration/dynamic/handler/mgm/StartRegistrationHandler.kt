@@ -20,14 +20,11 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.impl.registration.verifiers.RegistrationContextCustomFieldsVerifier
 import net.corda.membership.lib.ContextDeserializationException
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
-import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
-import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
-import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
@@ -52,6 +49,7 @@ import net.corda.membership.lib.registration.DECLINED_REASON_SERIAL_NEGATIVE
 import net.corda.membership.lib.registration.DECLINED_REASON_SERIAL_NULL
 import net.corda.membership.lib.registration.RegistrationRequestHelpers.getPreAuthToken
 import net.corda.membership.lib.toMap
+import net.corda.membership.lib.verifyReRegistrationChanges
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -238,16 +236,9 @@ internal class StartRegistrationHandler(
             activeOrSuspendedInfo?.let { previous ->
                 val previousContext = previous.memberProvidedContext.toMap()
                 val pendingContext = pendingMemberInfo.memberProvidedContext.toMap()
-                val diff = ((pendingContext.entries - previousContext.entries) + (previousContext.entries - pendingContext.entries))
-                    .filter {
-                        it.key.startsWith(SESSION_KEYS) ||
-                            it.key.startsWith(LEDGER_KEYS) ||
-                            it.key.startsWith(ROLES_PREFIX) ||
-                            it.key.startsWith("corda.notary")
-                    }
-                val diffInvalidMsgFn = { "Fields ${diff.map { it.key }} cannot be added, removed or updated during re-registration." }
+                val diffInvalidMsgFn = verifyReRegistrationChanges(previousContext, pendingContext)
                 validateRegistrationRequest(
-                    diff.isEmpty(),
+                    diffInvalidMsgFn.isEmpty(),
                     registrationLogger,
                     diffInvalidMsgFn,
                     diffInvalidMsgFn
