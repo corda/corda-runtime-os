@@ -140,6 +140,7 @@ class UtxoReceiveFinalityFlowV1(
         val notaryInfo = requireNotNull(notaryLookup.lookup(initialTransaction.notaryName)) {
             "Notary ${initialTransaction.notaryName} does not exist in the network"
         }
+        log.info("receiveTransactionAndBackchain on ${initialTransaction.id}: backchain required ${notaryInfo.isBackchainRequired}")
         return if (notaryInfo.isBackchainRequired) {
             val transactionDependencies = initialTransaction.dependencies
             if (transactionDependencies.isNotEmpty()) {
