@@ -1,0 +1,23 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description "Generic Corda Messaging Services"
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda:corda-base'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-config-schema"
+    implementation "net.corda:corda-topic-schema"
+
+    implementation project(":libs:messaging:messaging")
+    implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:utilities")
+
+}
