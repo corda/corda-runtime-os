@@ -59,18 +59,21 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
     private val bobX500 = "CN=Bob-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
     private val charlieX500 = "CN=Charlie-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
     private val notaryX500 = "CN=Notary-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
+    private val extraParties = 10
+    private val extraPartiesX500 = (0 until extraParties).map { "CN=Extra-${it}-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB" }
 
     private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, groupId)
     private val bobHoldingId: String = getHoldingIdShortHash(bobX500, groupId)
     private val charlieHoldingId: String = getHoldingIdShortHash(charlieX500, groupId)
     private val notaryHoldingId: String = getHoldingIdShortHash(notaryX500, groupId)
+    private val extraPartiesHoldingIds: List<String> = extraPartiesX500.map { getHoldingIdShortHash(it, groupId) }
 
     private val staticMemberList = listOf(
         aliceX500,
         bobX500,
         charlieX500,
         notaryX500
-    )
+    ) + extraPartiesX500
 
     @BeforeAll
     fun beforeAll() {
@@ -95,16 +98,21 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
         val aliceActualHoldingId = getOrCreateVirtualNodeFor(aliceX500, cpiName)
         val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, cpiName)
         val charlieActualHoldingId = getOrCreateVirtualNodeFor(charlieX500, cpiName)
+        val extraPartiesActualHoldingIds = extraPartiesX500.map { getOrCreateVirtualNodeFor(it, cpiName) }
         val notaryActualHoldingId = getOrCreateVirtualNodeFor(notaryX500, notaryCpiName)
 
         assertThat(aliceActualHoldingId).isEqualTo(aliceHoldingId)
         assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
         assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
+        (0 until extraParties).forEach {
+            assertThat(extraPartiesActualHoldingIds[it]).isEqualTo(extraPartiesHoldingIds[it])
+        }
         assertThat(notaryActualHoldingId).isEqualTo(notaryHoldingId)
 
         registerStaticMember(aliceHoldingId)
         registerStaticMember(bobHoldingId)
         registerStaticMember(charlieHoldingId)
+        extraPartiesHoldingIds.forEach { registerStaticMember(it) }
         registerStaticMember(notaryHoldingId, NOTARY_SERVICE_X500)
     }
 
