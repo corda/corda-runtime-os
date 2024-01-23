@@ -188,7 +188,7 @@ internal fun Endpoint.toOperation(path: String, schemaModelProvider: SchemaModel
         .responses(
             ApiResponses()
                 .addApiResponse(
-                    HttpStatus.OK_200.toString(),
+                    this.responseBody.successCode.toString(),
                     ApiResponse().withResponseBodyFrom(this, schemaModelProvider)
                 )
                 .addApiResponse(HttpStatus.UNAUTHORIZED_401.toString(), ApiResponse().description("Unauthorized"))
