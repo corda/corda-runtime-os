@@ -257,7 +257,6 @@ class CryptoRekeyBusProcessorTests {
             KeyType.UNMANAGED,
             oldKeyAlias,
             "",
-            null,
             tenantId,
         )
     )
