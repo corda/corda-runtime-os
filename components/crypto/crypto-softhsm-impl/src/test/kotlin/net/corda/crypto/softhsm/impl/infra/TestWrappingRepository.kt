@@ -33,13 +33,13 @@ class TestWrappingRepository(
     }
 
     override fun getKeyById(id: UUID): WrappingKeyInfo? {
-        TODO("Not yet implemented")
+        TODO("Not needed")
     }
 
-    override fun findKeysWrappedByAlias(alias: String): List<WrappingKeyInfo> {
-        TODO("Not yet implemented")
+    override fun findKeysWrappedByParentKey(parentKeyAlias: String): List<WrappingKeyInfo> {
+        TODO("Not needed")
     }
-    
+
     override fun close() {
     }
 }
