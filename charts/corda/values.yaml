@@ -281,7 +281,7 @@ stateManager:
     # -- name of the persistent storage to use. When using 'Database' as the type, an element with the given id should exist under the databases section
     storageId: "default"
     # -- name of the partition to use. When using 'Database' as the type, the 'partition' represents the name of the database schema
-    partition: "state_manager"
+    partition: "sm_flow_checkpoint"
   # Persistent storage configuration for the 'flowMapping' state type
   flowMapping:
     # -- persistent storage type
@@ -289,7 +289,7 @@ stateManager:
     # -- name of the persistent storage to use. When using 'Database' as the type, an element with the given id should exist under the databases section
     storageId: "default"
     # -- name of the partition to use. When using 'Database' as the type, the 'partition' represents the name of the database schema
-    partition: "state_manager"
+    partition: "sm_flow_mapping"
   # Persistent storage configuration for the 'keyRotation' state type
   keyRotation:
     # -- persistent storage type
@@ -297,7 +297,7 @@ stateManager:
     # -- name of the persistent storage to use. When using 'Database' as the type, an element with the given id should exist under the databases section
     storageId: "default"
     # -- name of the partition to use. When using 'Database' as the type, the 'partition' represents the name of the database schema
-    partition: "state_manager"
+    partition: "sm_key_rotation"
   # Persistent storage configuration for the 'p2pSession' state type
   p2pSession:
     # -- persistent storage type
@@ -305,7 +305,7 @@ stateManager:
     # -- name of the persistent storage to use. When using 'Database' as the type, an element with the given id should exist under the databases section
     storageId: "default"
     # -- name of the partition to use. When using 'Database' as the type, the 'partition' represents the name of the database schema
-    partition: "state_manager"
+    partition: "sm_p2p_session"
   # Persistent storage configuration for the 'tokenPoolCache' state type
   tokenPoolCache:
     # -- persistent storage type
@@ -313,7 +313,7 @@ stateManager:
     # -- name of the persistent storage to use. When using 'Database' as the type, an element with the given id should exist under the databases section
     storageId: "default"
     # -- name of the partition to use. When using 'Database' as the type, the 'partition' represents the name of the database schema
-    partition: "state_manager"
+    partition: "sm_token_pool_cache"
 
 # Configuration for cluster bootstrap
 bootstrap:
