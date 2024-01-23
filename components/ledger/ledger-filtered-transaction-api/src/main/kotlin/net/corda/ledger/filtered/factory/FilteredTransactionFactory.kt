@@ -30,7 +30,6 @@ interface FilteredTransactionFactory {
         componentGroupFilterParameters: List<ComponentGroupFilterParameters>
     ): FilteredTransaction
 
-
     @Suspendable
     fun create(
         transactionId: SecureHash,

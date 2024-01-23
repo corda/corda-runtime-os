@@ -26,6 +26,7 @@ import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import java.util.Base64
 import java.util.Objects
 
+@Suppress("LongParameterList")
 class FilteredTransactionImpl(
     override val id: SecureHash,
     override val topLevelMerkleProof: MerkleProof,

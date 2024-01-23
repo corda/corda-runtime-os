@@ -26,7 +26,7 @@ object TransactionMetadataUtils {
 
         check(metadata.digestSettings == WireTransactionDigestSettings.defaultValues) {
             "Only the default digest settings are acceptable now! ${metadata.digestSettings} vs " +
-                    "${WireTransactionDigestSettings.defaultValues}"
+                "${WireTransactionDigestSettings.defaultValues}"
         }
         return metadata
     }
@@ -52,7 +52,6 @@ object TransactionMetadataUtils {
         metadata: TransactionMetadata,
         merkleTreeProvider: MerkleTreeProvider
     ): MerkleTreeHashDigestProvider {
-
         val batchMerkleTreeDigestProviderName = requireNotNull(
             metadata.digestSettings[BATCH_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY]
         )

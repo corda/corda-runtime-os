@@ -6,8 +6,8 @@ import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.filtered.ComponentGroupFilterParameters
 import net.corda.ledger.filtered.FilteredComponentGroup
 import net.corda.ledger.filtered.FilteredTransaction
-import net.corda.ledger.filtered.impl.FilteredTransactionImpl
 import net.corda.ledger.filtered.factory.FilteredTransactionFactory
+import net.corda.ledger.filtered.impl.FilteredTransactionImpl
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence

@@ -424,7 +424,6 @@ class UtxoRepositoryImpl @Activate constructor(
             }
     }
 
-
     override fun findFilteredTransactions(
         entityManager: EntityManager,
         ids: List<String>
