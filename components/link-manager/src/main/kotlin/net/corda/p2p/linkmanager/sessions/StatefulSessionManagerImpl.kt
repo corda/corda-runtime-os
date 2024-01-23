@@ -43,6 +43,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.security.MessageDigest
 import java.time.Duration
+import java.util.concurrent.ConcurrentHashMap
 import net.corda.data.p2p.crypto.InitiatorHandshakeMessage as AvroInitiatorHandshakeMessage
 import net.corda.data.p2p.crypto.InitiatorHelloMessage as AvroInitiatorHelloMessage
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage as AvroResponderHandshakeMessage
@@ -97,10 +98,14 @@ internal class StatefulSessionManagerImpl(
                     )
                 }
             }
-        val keysToQuery = keysToMessages.keys.filterNotNull()
+
+        val sessionsToQuery = keysToMessages.mapNotNull { entry -> entry.key?.let { it to entry.value } }.toMap()
+        val cachedSessions = getCachedOutboundSessions(sessionsToQuery)
+
+        val keysNotInCache = (sessionsToQuery - cachedSessions.keys).keys
         val sessionStates =
-            if (keysToQuery.isNotEmpty()) {
-                stateManager.get(keysToQuery).let { states ->
+            if (keysNotInCache.isNotEmpty()) {
+                stateManager.get(keysNotInCache).let { states ->
                     keysToMessages.map { (id, items) ->
                         OutboundMessageState(
                             id,
@@ -124,7 +129,7 @@ internal class StatefulSessionManagerImpl(
                 processOutboundMessagesState(state)
             }
 
-        return processStateUpdates(resultStates)
+        return processStateUpdates(resultStates) + cachedSessions.values
     }
 
     private fun <T> processOutboundMessagesState(
@@ -149,6 +154,12 @@ internal class StatefulSessionManagerImpl(
                 }
                 OutboundSessionStatus.SessionReady -> {
                     state.state.retrieveEstablishedSession(counterparties)?.let { establishedState ->
+                        cachedOutboundSessions.put(
+                            state.key, SessionManager.SessionDirection.Outbound(
+                                state.state.toCounterparties(), establishedState.session
+                            )
+                        )
+                        counterpartiesForSessionId[establishedState.session.sessionId] = state.key
                         state.toResults(establishedState)
                     } ?: state.toResults(CannotEstablishSession)
                 }
@@ -184,6 +195,12 @@ internal class StatefulSessionManagerImpl(
 
                 OutboundSessionStatus.SessionReady -> {
                     state.state.retrieveEstablishedSession(counterparties)?.let { established ->
+                        cachedOutboundSessions.put(
+                            state.key, SessionManager.SessionDirection.Outbound(
+                                state.state.toCounterparties(), established.session
+                            )
+                        )
+                        counterpartiesForSessionId[established.session.sessionId] = state.key
                         state.toResults(
                             established,
                         )
@@ -203,11 +220,18 @@ internal class StatefulSessionManagerImpl(
             return emptyList()
         }
         val traceable = uuids.associateBy { getSessionId(it) }
-        val sessionFromInboundCache = cachedInboundSessions.getAllPresent(traceable.keys)
-        val allCached =
-            sessionFromInboundCache +
-                cachedOutboundSessions.getAllPresent((traceable - sessionFromInboundCache.keys).keys)
-        val sessionIdsNotInCache = traceable - allCached.keys
+
+        val (allCached, sessionIdsNotInCache) = traceable.run {
+            val sessionsFromInboundCache = cachedInboundSessions.getAllPresent(traceable.keys)
+            val remainingSessionIds = (traceable - sessionsFromInboundCache.keys)
+            val outboundCacheKeys = remainingSessionIds.keys.associateWith { counterpartiesForSessionId[it] }
+            val sessionsFromOutboundCache = cachedOutboundSessions.getAllPresent(outboundCacheKeys.values)
+            val notCached = remainingSessionIds - outboundCacheKeys.filterValues {
+                sessionsFromOutboundCache.containsKey(it)
+            }.keys
+            (sessionsFromInboundCache + sessionsFromOutboundCache) to notCached
+        }
+
         val inboundSessionsFromStateManager: List<Pair<T, SessionManager.SessionDirection>> =
             if (sessionIdsNotInCache.isEmpty()) {
                 emptyList()
@@ -239,7 +263,7 @@ internal class StatefulSessionManagerImpl(
             if (sessionsNotInInboundStateManager.isEmpty()) {
                 emptyList()
             } else {
-                stateManager.findByMetadataMatchingAny(sessionsNotInInboundStateManager).entries.mapNotNull { (_, state) ->
+                stateManager.findByMetadataMatchingAny(sessionsNotInInboundStateManager).entries.mapNotNull { (key, state) ->
                     val session =
                         stateConvertor.toCordaSessionState(
                             state,
@@ -253,7 +277,8 @@ internal class StatefulSessionManagerImpl(
                                     state.toCounterparties(),
                                     session,
                                 )
-                            cachedOutboundSessions.put(sessionId, outboundSession)
+                            cachedOutboundSessions.put(key, outboundSession)
+                            counterpartiesForSessionId[sessionId] = key
                             it to outboundSession
                         }
                     }
@@ -300,13 +325,15 @@ internal class StatefulSessionManagerImpl(
                 }
                 is AvroInitiatorHelloMessage, is AvroInitiatorHandshakeMessage -> {
                     result.result.sessionToCache?.let { sessionToCache ->
+                        val key = result.result.stateUpdate.key
                         cachedOutboundSessions.put(
-                            sessionToCache.sessionId,
+                            key,
                             SessionManager.SessionDirection.Inbound(
                                 result.result.stateUpdate.toCounterparties(),
                                 sessionToCache,
                             ),
                         )
+                        counterpartiesForSessionId[sessionToCache.sessionId] = key
                     }
                 }
             }
@@ -475,12 +502,32 @@ internal class StatefulSessionManagerImpl(
                 .maximumSize(CACHE_SIZE),
         )
 
-    private val cachedOutboundSessions: Cache<String, SessionManager.SessionDirection> =
-        CacheFactoryImpl().build(
-            "P2P-outbound-sessions-cache",
-            Caffeine.newBuilder()
-                .maximumSize(CACHE_SIZE),
-        )
+    private val counterpartiesForSessionId = ConcurrentHashMap<String, String>()
+
+    private val cachedOutboundSessions: Cache<String, SessionManager.SessionDirection> = CacheFactoryImpl().build(
+        "P2P-outbound-sessions-cache",
+        Caffeine.newBuilder()
+            .maximumSize(CACHE_SIZE)
+            .removalListener { _, session, _ ->
+                counterpartiesForSessionId.remove((session as SessionManager.SessionDirection.Outbound).session.sessionId)
+            }
+    )
+
+    private fun <T> getCachedOutboundSessions(
+        messagesAndKeys: Map<String, Collection<OutboundMessageContext<T>>>,
+    ): Map<String, Pair<T, SessionEstablished>> {
+        return messagesAndKeys.flatMap { entry ->
+            val cached = cachedOutboundSessions.getIfPresent(entry.key) as? SessionManager.SessionDirection.Outbound
+                ?: return@flatMap emptyList()
+            val counterparties = entry.value.firstOrNull()?.let {
+                sessionManagerImpl.getSessionCounterpartiesFromMessage(it.message.message)
+            } ?: return@flatMap emptyList()
+
+            entry.value.map { context ->
+                entry.key to Pair(context.trace, SessionEstablished(cached.session, counterparties))
+            }
+        }.toMap()
+    }
 
     private fun State.toCounterparties(): SessionManager.Counterparties {
         val common = this.metadata.toCommonMetadata()
