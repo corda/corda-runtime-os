@@ -1,7 +1,6 @@
 package net.corda.applications.workers.combined
 
 import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory.fromAnyRef
 import net.corda.application.dbsetup.PostgresDbSetup
 import net.corda.applications.workers.workercommon.ApplicationBanner
@@ -16,7 +15,6 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.creat
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
-import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.mergeOver
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
@@ -44,7 +42,6 @@ import net.corda.schema.configuration.BootConfig.BOOT_JDBC_URL
 import net.corda.schema.configuration.BootConfig.BOOT_WORKER_SERVICE
 import net.corda.schema.configuration.DatabaseConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
-import net.corda.schema.configuration.StateManagerConfig
 import net.corda.tracing.configureTracing
 import net.corda.tracing.shutdownTracing
 import net.corda.web.api.WebServer
@@ -54,7 +51,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
-import java.time.Duration
 
 
 // We use a different port for the combined worker since it is often run on Macs, which 
@@ -217,32 +213,6 @@ class CombinedWorker @Activate constructor(
         linkManagerProcessor.start(config)
         gatewayProcessor.start(config)
         schedulerProcessor.start(config)
-    }
-
-    private fun createStateManagerFallbackConfig(clusterDbUrl: String, dbConfig: Config): Config {
-        val stateTypes = setOf(
-            StateManagerConfig.StateType.FLOW_CHECKPOINT,
-            StateManagerConfig.StateType.P2P_SESSION,
-            StateManagerConfig.StateType.FLOW_MAPPING,
-            StateManagerConfig.StateType.KEY_ROTATION,
-            StateManagerConfig.StateType.TOKEN_POOL_CACHE,
-        )
-        val fallbackClusterConfig = mapOf(
-            StateManagerConfig.Database.JDBC_URL to clusterDbUrl,
-            StateManagerConfig.Database.JDBC_USER to dbConfig.getString(BootConfig.BOOT_JDBC_USER),
-            StateManagerConfig.Database.JDBC_PASS to dbConfig.getString(BootConfig.BOOT_JDBC_PASS),
-            StateManagerConfig.Database.JDBC_DRIVER to fromAnyRef("org.postgresql.Driver"),
-            StateManagerConfig.Database.JDBC_POOL_MIN_SIZE to fromAnyRef(1),
-            StateManagerConfig.Database.JDBC_POOL_MAX_SIZE to fromAnyRef(5),
-            StateManagerConfig.Database.JDBC_POOL_IDLE_TIMEOUT_SECONDS to fromAnyRef(Duration.ofMinutes(2).toSeconds()),
-            StateManagerConfig.Database.JDBC_POOL_MAX_LIFETIME_SECONDS to fromAnyRef(Duration.ofMinutes(30).toSeconds()),
-            StateManagerConfig.Database.JDBC_POOL_KEEP_ALIVE_TIME_SECONDS to fromAnyRef(Duration.ZERO.toSeconds()),
-            StateManagerConfig.Database.JDBC_POOL_VALIDATION_TIMEOUT_SECONDS to fromAnyRef(Duration.ofSeconds(5).toSeconds())
-        )
-
-        return stateTypes.map { type ->
-            createConfigFromParams("${BootConfig.BOOT_STATE_MANAGER}.$type", fallbackClusterConfig)
-        }.mergeOver(ConfigFactory.empty())
     }
 
     /**

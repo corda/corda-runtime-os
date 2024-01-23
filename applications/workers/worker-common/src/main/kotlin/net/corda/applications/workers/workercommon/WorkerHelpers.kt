@@ -155,11 +155,12 @@ class WorkerHelpers {
                 acc.withFallback(fileConfig)
             }.withFallback(ConfigFactory.parseMap(defaultParamsDefaultValuesMap))
 
-            val configWithStateManagerFallback = if (defaultParams.stateManagerParams.isNotEmpty() && !configWithFiles.hasPath(BOOT_STATE_MANAGER)) {
-                configWithFiles.withFallback(createStateManagerConfigFromCli(defaultParams.stateManagerParams))
-            } else {
-                configWithFiles
-            }
+            val configWithStateManagerFallback =
+                if (defaultParams.stateManagerParams.isNotEmpty() && !configWithFiles.hasPath(BOOT_STATE_MANAGER)) {
+                    configWithFiles.withFallback(createStateManagerConfigFromCli(defaultParams.stateManagerParams))
+                } else {
+                    configWithFiles
+                }
 
             val smartConfigFactory = SmartConfigFactory
                 .createWith(
@@ -237,8 +238,9 @@ class WorkerHelpers {
 
             val arguments = processInfo.arguments()
             if (arguments.isPresent) {
-                arguments.get().map { arg -> SENSITIVE_ARGS.firstOrNull { arg.trim().startsWith(it) }
-                    .let { prefix -> if (prefix == null) arg else "$prefix=[REDACTED]" }
+                arguments.get().map { arg ->
+                    SENSITIVE_ARGS.firstOrNull { arg.trim().startsWith(it) }
+                        .let { prefix -> if (prefix == null) arg else "$prefix=[REDACTED]" }
                 }.forEachIndexed { i, redactedArg -> info("argument $i, $redactedArg") }
             } else {
                 info("arguments: Null")

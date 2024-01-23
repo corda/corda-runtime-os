@@ -6,16 +6,9 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.mergeOver
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.StateManagerConfig
+import java.lang.IllegalArgumentException
 
 object StateManagerConfigHelper {
-
-    private val stateTypes = setOf(
-        StateManagerConfig.StateType.FLOW_CHECKPOINT,
-        StateManagerConfig.StateType.P2P_SESSION,
-        StateManagerConfig.StateType.FLOW_MAPPING,
-        StateManagerConfig.StateType.KEY_ROTATION,
-        StateManagerConfig.StateType.TOKEN_POOL_CACHE,
-    )
 
     private const val DEFAULT_DATABASE_TYPE = "DATABASE"
     private const val DEFAULT_POSTGRES_DRIVER = "org.postgresql.Driver"
@@ -27,6 +20,7 @@ object StateManagerConfigHelper {
     private const val DEFAULT_JDBC_POOL_VALIDATION_TIMEOUT_SECONDS = 5
 
     fun createStateManagerConfigFromClusterDb(config: Config): Config {
+        if (!config.hasPath(BootConfig.BOOT_JDBC_URL)) throw IllegalArgumentException("${BootConfig.BOOT_JDBC_URL} not provided")
         val clusterStateManagerConfig = createClusterConfig(config).withFallback(getDatabaseDefaults())
         return duplicateConfigForAllStateTypes(clusterStateManagerConfig)
     }
@@ -81,9 +75,9 @@ object StateManagerConfigHelper {
     }
 
     private fun duplicateConfigForAllStateTypes(stateManagerTypeConfig: Config): Config {
-        return stateTypes.map { type ->
+        return StateManagerConfig.StateType.values().map { type ->
             ConfigFactory.empty().withValue(
-                "${BootConfig.BOOT_STATE_MANAGER}.$type",
+                "${BootConfig.BOOT_STATE_MANAGER}.${type.value}",
                 stateManagerTypeConfig.root()
             )
         }.mergeOver(ConfigFactory.empty())

@@ -24,7 +24,7 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
 
     private val storage = ConcurrentHashMap<String, State>()
 
-    override fun create(config: SmartConfig): StateManager {
+    override fun create(config: SmartConfig, stateType: String): StateManager {
         return object : StateManager {
             override val name = LifecycleCoordinatorName("TestStateManager", UUID.randomUUID().toString())
 

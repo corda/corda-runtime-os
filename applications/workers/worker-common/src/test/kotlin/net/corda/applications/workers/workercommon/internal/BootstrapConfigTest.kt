@@ -3,7 +3,6 @@ package net.corda.applications.workers.workercommon.internal
 import com.typesafe.config.ConfigFactory
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.WorkerHelpers
-import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.libs.configuration.validation.ConfigurationValidator
@@ -11,9 +10,7 @@ import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.ConfigDefaults
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.StateManagerConfig
-import net.corda.schema.configuration.StateManagerConfig.Database.*
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.SoftAssertions
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -116,15 +113,15 @@ class BootstrapConfigTest {
             softly.assertThat(config.hasPath("secrets")).isFalse
 
             val stateManagerConfig = config.getConfig(BootConfig.BOOT_STATE_MANAGER)
-            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.FLOW_CHECKPOINT,
+            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.FLOW_CHECKPOINT.value,
                 minSize = 111, maxSize = 222, idleTimeout = 333, maxLifetime = 444, keepAlive = 555, validationTimeout = 666)
-            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.FLOW_MAPPING,
+            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.FLOW_MAPPING.value,
                 minSize = 111, maxSize = 222, idleTimeout = 333, maxLifetime = 444, keepAlive = 555, validationTimeout = 666)
-            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION,
+            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION.value,
                 minSize = 111, maxSize = 222, idleTimeout = 333, maxLifetime = 444, keepAlive = 555, validationTimeout = 666)
-            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.TOKEN_POOL_CACHE,
+            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.TOKEN_POOL_CACHE.value,
                 minSize = 111, maxSize = 222, idleTimeout = 333, maxLifetime = 444, keepAlive = 555, validationTimeout = 666)
-            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.P2P_SESSION,
+            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.P2P_SESSION.value,
                 minSize = 111, maxSize = 222, idleTimeout = 333, maxLifetime = 444, keepAlive = 555, validationTimeout = 666)
         }
     }
@@ -154,11 +151,11 @@ class BootstrapConfigTest {
         assertSoftly { softly ->
             val stateManagerConfig = config.getConfig(BootConfig.BOOT_STATE_MANAGER)
             val defaultDriver = "org.postgresql.Driver"
-            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.FLOW_CHECKPOINT, user, pass, url, defaultDriver)
-            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.FLOW_MAPPING, user, pass, url, defaultDriver)
-            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION, user, pass, url, defaultDriver)
-            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.TOKEN_POOL_CACHE, user, pass, url, defaultDriver)
-            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.P2P_SESSION, user, pass, url, defaultDriver)
+            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.FLOW_CHECKPOINT.value, user, pass, url, defaultDriver)
+            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.FLOW_MAPPING.value, user, pass, url, defaultDriver)
+            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION.value, user, pass, url, defaultDriver)
+            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.TOKEN_POOL_CACHE.value, user, pass, url, defaultDriver)
+            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.P2P_SESSION.value, user, pass, url, defaultDriver)
         }
     }
 
@@ -203,26 +200,5 @@ class BootstrapConfigTest {
             softly.assertThat(config.getInt("maxAllowedMessageSize")).isEqualTo(0)
             softly.assertThat(config.getString("topicPrefix")).isEqualTo("")
         }
-    }
-
-    private fun assertStateType(
-        softly: SoftAssertions, config: SmartConfig, stateType: String,
-        user: String = "$stateType-user", pass: String = "$stateType-pass", url: String = "$stateType-url",
-        driver: String = "$stateType-driver",
-        minSize: Int = 0, maxSize: Int = 5, idleTimeout: Int = 120, maxLifetime: Int = 1800, keepAlive: Int = 0, validationTimeout: Int = 5,
-    ) {
-        softly.assertThat(config.hasPath(stateType))
-        softly.assertThat(config.getString("$stateType.${StateManagerConfig.TYPE}")).isEqualTo("DATABASE")
-        softly.assertThat(config.getString("$stateType.${JDBC_URL}")).isEqualTo(url)
-        softly.assertThat(config.getString("$stateType.${JDBC_USER}")).isEqualTo(user)
-        softly.assertThat(config.getString("$stateType.${JDBC_PASS}")).isEqualTo(pass)
-        softly.assertThat(config.getString("$stateType.${JDBC_DRIVER}")).isEqualTo(driver)
-        softly.assertThat(config.getInt("$stateType.$JDBC_POOL_MIN_SIZE")).isEqualTo(minSize)
-        softly.assertThat(config.getInt("$stateType.${JDBC_POOL_MAX_SIZE}")).isEqualTo(maxSize)
-        softly.assertThat(config.getInt("$stateType.${JDBC_POOL_IDLE_TIMEOUT_SECONDS}")).isEqualTo(idleTimeout)
-        softly.assertThat(config.getInt("$stateType.${JDBC_POOL_MAX_LIFETIME_SECONDS}")).isEqualTo(maxLifetime)
-        softly.assertThat(config.getInt("$stateType.${JDBC_POOL_KEEP_ALIVE_TIME_SECONDS}")).isEqualTo(keepAlive)
-        softly.assertThat(config.getInt("$stateType.${JDBC_POOL_VALIDATION_TIMEOUT_SECONDS}")).isEqualTo(validationTimeout)
-
     }
 }
