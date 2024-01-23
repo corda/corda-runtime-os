@@ -88,7 +88,7 @@ class CryptoRekeyBusProcessor(
             logger.debug("Found ${allTenantIds.size} tenants; first few are: ${allTenantIds.take(10)}")
             val targetWrappingKeys = allTenantIds.asSequence().map { tenantId ->
                 wrappingRepositoryFactory.create(tenantId).use { wrappingRepo ->
-                    wrappingRepo.findKeysWrappedByAlias(request.oldParentKeyAlias).map { wki -> tenantId to wki }
+                    wrappingRepo.findKeysWrappedByParentKey(request.oldParentKeyAlias).map { wki -> tenantId to wki }
                 }
             }.flatten()
 
