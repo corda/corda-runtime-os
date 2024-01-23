@@ -19,6 +19,9 @@ interface ResponseEntityRestResource : RestResource {
     @HttpPOST(path = "post-returns-ok-string-json")
     fun postReturnsOkWithEscapedJson(): ResponseEntity<String>
 
+    @HttpPOST(path = "post-returns-created-string-json", responseDescription = "Description of postReturnsCreatedWithEscapedJson")
+    fun postReturnsCreatedWithEscapedJson(): ResponseEntity<String>
+
     @HttpPOST(path = "post-returns-raw-entity")
     fun postReturnsRawEntity(): TestHttpEntity
 
