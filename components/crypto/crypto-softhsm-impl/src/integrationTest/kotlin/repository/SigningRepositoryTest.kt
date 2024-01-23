@@ -10,9 +10,6 @@ import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.core.SigningKeyStatus
-import net.corda.crypto.core.aes.AES_KEY_ALGORITHM
-import net.corda.crypto.core.aes.AesKey
-import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.core.fullPublicKeyIdFromBytes
 import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.core.publicKeyIdFromBytes
@@ -35,8 +32,6 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.KeySchemeCodes
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
-import org.bouncycastle.jce.ECNamedCurveTable
-import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
@@ -47,7 +42,6 @@ import java.security.spec.AlgorithmParameterSpec
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
-import javax.crypto.spec.SecretKeySpec
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
 import javax.persistence.PersistenceException
@@ -659,37 +653,6 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
         assertThat(keyMaterials[0]).isNotEqualTo(keyMaterials[1])
         assertThat(keyMaterials[0]).isNotEqualTo(keyMaterials[2])
         assertThat(keyMaterials[1]).isNotEqualTo(keyMaterials[2])
-    }
-
-    @ParameterizedTest
-    @MethodSource("emfs")
-    fun `createNewSigningMaterial creates new key with same metadata`(emf: EntityManagerFactory) {
-        val repo = SigningRepositoryImpl(
-            emf,
-            defaultTenantId,
-            cipherSchemeMetadata,
-            digestService,
-            createLayeredPropertyMapFactory(),
-        )
-
-        val schemeMetadata = CipherSchemeMetadataImpl()
-        val encoded = AesKey.encodePassPhrase(UUID.randomUUID().toString(), UUID.randomUUID().toString())
-        val secretKey = SecretKeySpec(encoded, AES_KEY_ALGORITHM)
-        val key = WrappingKeyImpl(AesKey(key = secretKey), schemeMetadata)
-
-        val keyPairGenerator = KeyPairGenerator.getInstance("EC", BouncyCastleProvider())
-        keyPairGenerator.initialize(
-            ECNamedCurveTable.getParameterSpec("secp256r1"),
-            schemeMetadata.secureRandom
-        )
-
-        val privateKey = keyPairGenerator.genKeyPair().private
-        val newSigningUuid = UUID.randomUUID()
-
-        val signingMaterialEntity = repo.createNewSigningKeyMaterial(key, newSigningUuid, privateKey)
-
-        assertThat(signingMaterialEntity.signingKeyId).isEqualTo(newSigningUuid)
-        assertThat(key.unwrap(signingMaterialEntity.keyMaterial)).isEqualTo(privateKey)
     }
 
     @ParameterizedTest

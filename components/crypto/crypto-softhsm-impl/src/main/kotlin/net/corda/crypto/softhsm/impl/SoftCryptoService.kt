@@ -651,6 +651,7 @@ open class SoftCryptoService(
      *
      * @param wrappingRepository The WrappingRepository the new key will be saved in
      * @param oldWrappingKey The original wrapping key
+     * @return The [UUID] of the new wrapping key
      */
     private fun createWrappingKeyFrom(wrappingRepository: WrappingRepository, oldWrappingKey: WrappingKeyInfo): UUID {
         logger.trace {

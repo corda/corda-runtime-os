@@ -36,10 +36,8 @@ import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.persistence.SigningKeyMaterialInfo
 import java.util.UUID
-import java.security.PrivateKey
 
 @Suppress("LongParameterList")
 class SigningRepositoryImpl(
@@ -228,15 +226,6 @@ class SigningRepositoryImpl(
                     }
             }
         }
-
-    override fun createNewSigningKeyMaterial(
-        newWrappingKey: WrappingKey,
-        signingKeyId: UUID,
-        signingKey: PrivateKey
-    ): SigningKeyMaterialInfo {
-        val newKeyMaterial = newWrappingKey.wrap(signingKey)
-        return SigningKeyMaterialInfo(signingKeyId, newKeyMaterial)
-    }
 
     override fun saveSigningKeyMaterial(signingKeyMaterialInfo: SigningKeyMaterialInfo, wrappingKeyId: UUID) {
         val signingKeyMaterialEntity = SigningKeyMaterialEntity(
