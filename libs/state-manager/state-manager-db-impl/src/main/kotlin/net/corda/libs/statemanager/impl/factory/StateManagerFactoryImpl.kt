@@ -31,6 +31,7 @@ class StateManagerFactoryImpl @Activate constructor(
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private const val STATE_MANAGER_SCHEMA = "STATE_MANAGER"
     }
 
     // TODO-[CORE-16663]: factory when multiple databases are supported by the Corda platform (only Postgres now).
@@ -38,31 +39,35 @@ class StateManagerFactoryImpl @Activate constructor(
         return PostgresQueryProvider()
     }
 
-    override fun create(config: SmartConfig): StateManager {
+    override fun create(config: SmartConfig, stateType: String): StateManager {
         lock.withLock {
             if (dataSource == null) {
                 logger.info("Initializing Shared State Manager DataSource")
 
-                val user = config.getString(StateManagerConfig.Database.JDBC_USER)
-                val pass = config.getString(StateManagerConfig.Database.JDBC_PASS)
-                val jdbcUrl = config.getString(StateManagerConfig.Database.JDBC_URL)
-                val jdbcDiver = config.getString(StateManagerConfig.Database.JDBC_DRIVER)
-                val maxPoolSize = config.getInt(StateManagerConfig.Database.JDBC_POOL_MAX_SIZE)
-                val minPoolSize = config.getIntOrDefault(StateManagerConfig.Database.JDBC_POOL_MIN_SIZE, maxPoolSize)
+                val stateManagerConfig = config.getConfig(stateType)
+
+                val user = stateManagerConfig.getString(StateManagerConfig.Database.JDBC_USER)
+                val pass = stateManagerConfig.getString(StateManagerConfig.Database.JDBC_PASS)
+                val jdbcBaseUrl = stateManagerConfig.getString(StateManagerConfig.Database.JDBC_URL)
+                val jdbcSchema = STATE_MANAGER_SCHEMA // [CORE-19033] adds support for configurable state manager schema
+                val jdbcUrl = "$jdbcBaseUrl?currentSchema=$jdbcSchema"
+                val jdbcDiver = stateManagerConfig.getString(StateManagerConfig.Database.JDBC_DRIVER)
+                val maxPoolSize = stateManagerConfig.getInt(StateManagerConfig.Database.JDBC_POOL_MAX_SIZE)
+                val minPoolSize = stateManagerConfig.getIntOrDefault(StateManagerConfig.Database.JDBC_POOL_MIN_SIZE, maxPoolSize)
                 val idleTimeout =
-                    config.getInt(StateManagerConfig.Database.JDBC_POOL_IDLE_TIMEOUT_SECONDS).toLong().run(
+                    stateManagerConfig.getInt(StateManagerConfig.Database.JDBC_POOL_IDLE_TIMEOUT_SECONDS).toLong().run(
                         Duration::ofSeconds
                     )
                 val maxLifetime =
-                    config.getInt(StateManagerConfig.Database.JDBC_POOL_MAX_LIFETIME_SECONDS).toLong().run(
+                    stateManagerConfig.getInt(StateManagerConfig.Database.JDBC_POOL_MAX_LIFETIME_SECONDS).toLong().run(
                         Duration::ofSeconds
                     )
                 val keepAliveTime =
-                    config.getInt(StateManagerConfig.Database.JDBC_POOL_KEEP_ALIVE_TIME_SECONDS).toLong().run(
+                    stateManagerConfig.getInt(StateManagerConfig.Database.JDBC_POOL_KEEP_ALIVE_TIME_SECONDS).toLong().run(
                         Duration::ofSeconds
                     )
                 val validationTimeout =
-                    config.getInt(StateManagerConfig.Database.JDBC_POOL_VALIDATION_TIMEOUT_SECONDS).toLong()
+                    stateManagerConfig.getInt(StateManagerConfig.Database.JDBC_POOL_VALIDATION_TIMEOUT_SECONDS).toLong()
                         .run(Duration::ofSeconds)
 
                 dataSource = DataSourceFactoryImpl().create(

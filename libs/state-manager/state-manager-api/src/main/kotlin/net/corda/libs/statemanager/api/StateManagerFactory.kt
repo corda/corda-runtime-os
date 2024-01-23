@@ -13,5 +13,5 @@ interface StateManagerFactory {
      * @param config containing the state manager to connect to underlying storage mechanism.
      * @return a state manager created from the given [config].
      */
-    fun create(config: SmartConfig): StateManager
+    fun create(config: SmartConfig, stateType: String): StateManager
 }

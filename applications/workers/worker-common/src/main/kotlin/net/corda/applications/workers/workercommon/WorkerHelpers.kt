@@ -77,7 +77,7 @@ class WorkerHelpers {
          * @param params The input map of parameters to be included in the resulting Config.
          * @return A Typesafe Config object created from the modified parameter keys.
          */
-        fun createConfigFromParams(topLevelKey: String, params: Map<String, String>): Config {
+        fun createConfigFromParams(topLevelKey: String, params: Map<String, Any>): Config {
             return ConfigFactory.parseMap(
                 params.mapKeys { (originalKey, _) -> "$topLevelKey.$originalKey" }
             )
@@ -143,10 +143,7 @@ class WorkerHelpers {
             val secretsConfig =
                 defaultParams.secrets.mapKeys { (key, _) -> "${BootConfig.BOOT_SECRETS}.${key.trim()}" }
 
-            val stateManagerConfig =
-                defaultParams.stateManagerParams.mapKeys { (key, _) -> "${BootConfig.BOOT_STATE_MANAGER}.${key.trim()}" }
-
-            val builtConfig = ConfigFactory.parseMap(messagingParams + defaultParamsMap + secretsConfig + stateManagerConfig)
+            val builtConfig = ConfigFactory.parseMap(messagingParams + defaultParamsMap + secretsConfig)
 
             val config = extraConfigs.mergeOver(builtConfig)
 

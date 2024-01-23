@@ -28,6 +28,7 @@ import net.corda.p2p.linkmanager.LinkManager
 import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.MessagingConfig.Subscription.POLL_TIMEOUT
+import net.corda.schema.configuration.StateManagerConfig
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -109,8 +110,11 @@ class LinkManagerProcessorImpl @Activate constructor(
             is BootConfigEvent -> {
                 configurationReadService.bootstrapConfig(event.config)
 
-                val localStateManager = stateManagerFactory.create(event.config.getConfig(BootConfig.BOOT_STATE_MANAGER))
-                    .also { it.start() }
+                val localStateManager = stateManagerFactory.create(
+                    event.config.getConfig(BootConfig.BOOT_STATE_MANAGER),
+                    StateManagerConfig.StateType.P2P_SESSION
+                ).also { it.start() }
+
                 log.info("StateManager ${localStateManager.name} has been created and started.")
 
                 Security.addProvider(BouncyCastleProvider())
