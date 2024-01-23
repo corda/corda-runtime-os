@@ -199,7 +199,18 @@ class KeyRotationRestResourceImpl @Activate constructor(
             if (state.metadata[KeyRotationMetadataValues.STATUS] != KeyRotationStatus.DONE) rotationStatus =
                 KeyRotationStatus.IN_PROGRESS
         }
-        return KeyRotationStatusResponse(keyAlias, rotationStatus, lastUpdatedTimestamp, result)
+
+        // newParentKeyAlias and createdTimestamp are in all records, we just need to grab it from one
+        val deserializedValueOfOneRecord = requireNotNull(deserializer.deserialize(entries[entries.keys.first()]!!.value))
+
+        return KeyRotationStatusResponse(
+            keyAlias,
+            deserializedValueOfOneRecord.newParentKeyAlias,
+            rotationStatus,
+            deserializedValueOfOneRecord.createdTimestamp,
+            lastUpdatedTimestamp,
+            result
+        )
     }
 
     override fun startKeyRotation(oldKeyAlias: String, newKeyAlias: String): ResponseEntity<KeyRotationResponse> {

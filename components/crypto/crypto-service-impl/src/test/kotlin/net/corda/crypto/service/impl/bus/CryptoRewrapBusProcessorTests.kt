@@ -19,19 +19,27 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import java.time.Instant
 import java.util.UUID
 
 class CryptoRewrapBusProcessorTests {
     companion object {
         private val tenantId = UUID.randomUUID().toString()
         private const val OLD_PARENT_KEY_ALIAS = "alias1"
+        private const val NEW_PARENT_KEY_ALIAS = "alias2"
     }
 
     private val serializer = mock<CordaAvroSerializer<UnmanagedKeyStatus>> {
         on { serialize(any()) } doReturn byteArrayOf(42)
     }
     private val deserializer = mock<CordaAvroDeserializer<UnmanagedKeyStatus>> {
-        on { deserialize(any()) } doReturn UnmanagedKeyStatus(OLD_PARENT_KEY_ALIAS, 10, 5)
+        on { deserialize(any()) } doReturn UnmanagedKeyStatus(
+            OLD_PARENT_KEY_ALIAS,
+            NEW_PARENT_KEY_ALIAS,
+            10,
+            5,
+            Instant.now()
+        )
     }
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<UnmanagedKeyStatus>() } doReturn serializer

@@ -38,6 +38,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.time.Instant
 
 class KeyRotationRestResourceTest {
 
@@ -97,7 +98,7 @@ class KeyRotationRestResourceTest {
         }
 
         deserializer = mock<CordaAvroDeserializer<UnmanagedKeyStatus>> {
-            on { deserialize(any()) } doReturn UnmanagedKeyStatus(oldKeyAlias, 10, 5)
+            on { deserialize(any()) } doReturn UnmanagedKeyStatus(oldKeyAlias, newKeyAlias, 10, 5, Instant.now())
         }
 
         cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
@@ -119,7 +120,7 @@ class KeyRotationRestResourceTest {
         verify(stateManager, times(1)).findByMetadataMatchingAll(any())
 
         assertThat(response.status).isEqualTo(KeyRotationStatus.IN_PROGRESS)
-        assertThat(response.rootKeyAlias).isEqualTo(oldKeyAlias)
+        assertThat(response.oldParentKeyAlias).isEqualTo(oldKeyAlias)
     }
 
     @Test
