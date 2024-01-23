@@ -5,6 +5,7 @@
     "default": {},
     "title": "Corda helm chart schema",
     "additionalProperties": false,
+    "$comment": "TODO-[CORE-19372]: make 'databases' and 'stateManager' required",
     "required": [
         "db",
         "kafka"
@@ -698,6 +699,7 @@
             }]
         },
         "db": {
+            "$comment": "TODO-[CORE-19372]: should we replace this by the new 'databases' instead?.",
             "type": "object",
             "default": {},
             "title": "cluster database configuration",
@@ -736,13 +738,8 @@
                             ]
                         },
                         "type": {
-                            "type": "string",
-                            "default": "postgresql",
-                            "title": "the cluster database type",
-                            "examples": [
-                                "postgresql"
-                            ],
-                            "enum": ["postgresql"]
+                            "$ref": "#/$defs/databaseEngine",
+                            "title": "the cluster database type"
                         },
                         "port": {
                             "type": "integer",
@@ -950,6 +947,74 @@
                 }
             }
         },
+        "stateManager": {
+            "type": "object",
+            "default": {},
+            "title": "Persistent Storage configuration for each State Type managed by the State Manager within the Platform",
+            "required": [
+                "flowCheckpoint",
+                "flowMapping",
+                "keyRotation",
+                "p2pSession",
+                "tokenPoolCache"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "flowCheckpoint": {
+                    "type": "object",
+                    "$ref": "#/$defs/stateTypePersistentStorageMapping",
+                    "title": "Persistent Storage configuration to be used by the State Manager when dealing with 'flowCheckpoint' states"
+                },
+                "flowMapping": {
+                    "type": "object",
+                    "$ref": "#/$defs/stateTypePersistentStorageMapping",
+                    "title": "Persistent Storage configuration to be used by the State Manager when dealing with 'flowMapping' states"
+                },
+                "keyRotation": {
+                    "type": "object",
+                    "$ref": "#/$defs/stateTypePersistentStorageMapping",
+                    "title": "Persistent Storage configuration to be used by the State Manager when dealing with 'keyRotation' states"
+                },
+                "p2pSession": {
+                    "type": "object",
+                    "$ref": "#/$defs/stateTypePersistentStorageMapping",
+                    "title": "Persistent Storage configuration to be used by the State Manager when dealing with 'peerToPeerSession' states"
+                },
+                "tokenPoolCache": {
+                    "type": "object",
+                    "$ref": "#/$defs/stateTypePersistentStorageMapping",
+                    "title": "Persistent Storage configuration to be used by the State Manager when dealing with 'tokenPoolCache' states"
+                }
+            }
+        },
+        "databases": {
+            "type": "array",
+            "minItems": 1,
+            "title": "List of databases used by the platform",
+            "items": {
+                "type": "object",
+                "allOf": [
+                    {
+                        "$ref": "#/$defs/databaseTemplate"
+                    }
+                ],
+                "required": [
+                    "host",
+                    "port",
+                    "type"
+                ]
+            },
+            "$comment": "At least one database with name 'default' must be defined",
+            "contains": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "const": "default"
+                    }
+                }
+            }
+        },
         "bootstrap": {
             "type": "object",
             "default": {},
@@ -1038,7 +1103,61 @@
                         "enabled"
                     ],
                     "additionalProperties": false,
+                    "$comment": "TODO-[CORE-19372]: should we replace 'cluster', 'crypto' and 'rbac' by the new 'databases' section instead?.",
                     "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "default": true,
+                            "title": "indicates whether DB bootstrap is enabled as part of installation",
+                            "examples": [
+                                true,
+                                false
+                            ]
+                        },
+                        "clientImage": {
+                            "type": "object",
+                            "default": {},
+                            "title": "db client image",
+                            "required": [
+                                "registry",
+                                "repository",
+                                "tag"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                                "registry": {
+                                    "type": "string",
+                                    "default": "",
+                                    "title": "registry for image containing a db client, used to set up the db",
+                                    "examples": [
+                                        "docker.io"
+                                    ]
+                                },
+                                "repository": {
+                                    "type": "string",
+                                    "default": "postgres",
+                                    "title": "repository for image containing a db client, used to set up the db",
+                                    "examples": [
+                                        "postgres"
+                                    ],
+                                    "minLength": 1
+                                },
+                                "tag": {
+                                    "type": "string",
+                                    "default": "14.4",
+                                    "title": "tag for image containing a db client, used to set up the db",
+                                    "examples": [
+                                        "14.4"
+                                    ],
+                                    "minLength": 1
+                                }
+                            },
+                            "examples": [{
+                                "registry": "docker.io",
+                                "repository": "postgres",
+                                "tag": "14.4"
+                            }]
+                        },
                         "cluster": {
                             "type": "object",
                             "default": {},
@@ -1064,15 +1183,6 @@
                                     "value": "username"
                                 }
                             }]
-                        },
-                        "enabled": {
-                            "type": "boolean",
-                            "default": true,
-                            "title": "indicates whether DB bootstrap is enabled as part of installation",
-                            "examples": [
-                                true,
-                                false
-                            ]
                         },
                         "crypto": {
                             "type": "object",
@@ -1277,6 +1387,7 @@
                             }]
                         },
                         "stateManager": {
+                            "$comment": "TODO-[CORE-19372]: remove the entire 'stateManager' section",
                             "flow": {
                                 "allOf": [
                                     {
@@ -1320,49 +1431,12 @@
                                 ]
                             }
                         },
-                        "clientImage": {
-                            "type": "object",
-                            "default": {},
-                            "title": "db client image",
-                            "required": [
-                                "registry",
-                                "repository",
-                                "tag"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "registry": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "registry for image containing a db client, used to set up the db",
-                                    "examples": [
-                                        "docker.io"
-                                    ]
-                                },
-                                "repository": {
-                                    "type": "string",
-                                    "default": "postgres",
-                                    "title": "repository for image containing a db client, used to set up the db",
-                                    "examples": [
-                                        "postgres"
-                                    ],
-                                    "minLength": 1
-                                },
-                                "tag": {
-                                    "type": "string",
-                                    "default": "14.4",
-                                    "title": "tag for image containing a db client, used to set up the db",
-                                    "examples": [
-                                        "14.4"
-                                    ],
-                                    "minLength": 1
-                                }
-                            },
-                            "examples": [{
-                                "registry": "docker.io",
-                                "repository": "postgres",
-                                "tag": "14.4"
-                            }]
+                        "databases": {
+                            "type": "array",
+                            "title": "Administrator credentials per database, used to configure users/roles and grant required runtime permissions",
+                            "items": {
+                                "$ref": "#/$defs/databaseTemplate"
+                            }
                         }
                     },
                     "examples": [{
@@ -1665,8 +1739,8 @@
                         {
                             "additionalProperties": false,
                             "required": [
-                                "clusterDbConnectionPool",
-                                "stateManager"
+                                "stateManager",
+                                "clusterDbConnectionPool"
                             ],
                             "properties": {
                                 "image": {},
@@ -1679,7 +1753,25 @@
                                 "resources": {},
                                 "kafka": {},
                                 "stateManager": {
-                                    "$ref": "#/$defs/stateManager"
+                                    "$comment": "TODO-[CORE-19372]: remove the condition and leave 'keyRotation' only.",
+                                    "oneOf": [
+                                        {
+                                            "$ref": "#/$defs/stateManager"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "keyRotation"
+                                            ],
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "keyRotation": {
+                                                    "type": "object",
+                                                    "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
+                                                }
+                                            }
+                                        }
+                                    ]
                                 },
                                 "clusterDbConnectionPool": {
                                     "type": "object",
@@ -1875,7 +1967,25 @@
                                 "resources": {},
                                 "kafka": {},
                                 "stateManager": {
-                                    "$ref": "#/$defs/stateManager"
+                                    "$comment": "TODO-[CORE-19372]: remove the condition and leave 'flowCheckpoint' only.",
+                                    "oneOf": [
+                                        {
+                                            "$ref": "#/$defs/stateManager"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "flowCheckpoint"
+                                            ],
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "flowCheckpoint": {
+                                                    "type": "object",
+                                                    "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
+                                                }
+                                            }
+                                        }
+                                    ]
                                 },
                                 "verifyInstrumentation": {
                                     "type": "boolean",
@@ -1938,8 +2048,26 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
-                                "stateManager" : {
-                                    "$ref": "#/$defs/stateManager"
+                                "stateManager": {
+                                    "$comment": "TODO-[CORE-19372]: remove the condition and leave 'flowMapping' only.",
+                                    "oneOf": [
+                                        {
+                                            "$ref": "#/$defs/stateManager"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "flowMapping"
+                                            ],
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "flowMapping": {
+                                                    "type": "object",
+                                                    "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
+                                                }
+                                            }
+                                        }
+                                    ]
                                 },
                                 "verifyInstrumentation": {
                                     "type": "boolean",
@@ -2084,8 +2212,26 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
-                                "stateManager" : {
-                                    "$ref": "#/$defs/stateManager"
+                                "stateManager": {
+                                    "$comment": "TODO-[CORE-19372]: remove the condition and leave 'keyRotation' only.",
+                                    "oneOf": [
+                                        {
+                                            "$ref": "#/$defs/stateManager"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "keyRotation"
+                                            ],
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "keyRotation": {
+                                                    "type": "object",
+                                                    "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
+                                                }
+                                            }
+                                        }
+                                    ]
                                 },
                                 "service": {
                                     "type": "object",
@@ -2335,7 +2481,25 @@
                                 "resources": {},
                                 "kafka": {},
                                 "stateManager": {
-                                    "$ref": "#/$defs/stateManager"
+                                    "$comment": "TODO-[CORE-19372]: remove the condition and leave 'p2pSession' only.",
+                                    "oneOf": [
+                                        {
+                                            "$ref": "#/$defs/stateManager"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "p2pSession"
+                                            ],
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "p2pSession": {
+                                                    "type": "object",
+                                                    "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
+                                                }
+                                            }
+                                        }
+                                    ]
                                 }
                             },
                             "examples": [
@@ -2631,7 +2795,25 @@
                                 "profiling": {},
                                 "resources": {},
                                 "stateManager": {
-                                    "$ref": "#/$defs/stateManager"
+                                    "$comment": "TODO-[CORE-19372]: remove the condition and leave 'tokenPoolCache' only.",
+                                    "oneOf": [
+                                        {
+                                            "$ref": "#/$defs/stateManager"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "tokenPoolCache"
+                                            ],
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "tokenPoolCache": {
+                                                    "type": "object",
+                                                    "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
+                                                }
+                                            }
+                                        }
+                                    ]
                                 },
                                 "kafka": {},
                                 "sharding": {
@@ -3572,11 +3754,19 @@
                 }
             }
         },
+        "databaseEngine": {
+            "type": "string",
+            "default": "postgresql",
+            "title": "The Database Engine Type",
+            "enum": [
+                "postgresql"
+            ]
+        },
         "stateManager": {
             "type": "object",
             "default": {},
             "title": "State Manager configuration",
-            "additionalProperties": true,
+            "additionalProperties": false,
             "properties": {
                 "type": {
                     "type": "string",
@@ -3616,13 +3806,7 @@
                             ]
                         },
                         "type": {
-                            "type": "string",
-                            "default": "postgresql",
-                            "title": "the State Manager database type",
-                            "examples": [
-                                "postgresql"
-                            ],
-                            "enum": ["postgresql"]
+                            "$ref": "#/$defs/databaseEngine"
                         },
                         "port": {
                             "type": "integer",
@@ -3642,64 +3826,9 @@
                             "minLength": 1
                         },
                         "connectionPool": {
-                            "type": "object",
+                            "$ref": "#/$defs/connectionPool",
                             "default": {},
-                            "title": "JDBC connection pool configuration for State Manager DB",
-                            "required": [
-                                "maxSize",
-                                "idleTimeoutSeconds",
-                                "maxLifetimeSeconds",
-                                "keepAliveTimeSeconds",
-                                "validationTimeoutSeconds"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "maxSize": {
-                                    "type": "integer",
-                                    "default": 5,
-                                    "title": "JDBC connection pool size for State Manager DB",
-                                    "examples": [
-                                        5
-                                    ]
-                                },
-                                "minSize": {
-                                    "anyOf": [
-                                        {
-                                            "type": "integer",
-                                            "minimum": 0
-                                        },
-                                        {
-                                            "type": "null"
-                                        }
-                                    ],
-                                    "default": null,
-                                    "title": "Minimum JDBC connection pool size for State Manager DB; null value means pool's min size will default to pool's max size value"
-                                },
-                                "idleTimeoutSeconds": {
-                                    "type": "integer",
-                                    "default": 120,
-                                    "minimum": 0,
-                                    "title": "Maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool"
-                                },
-                                "maxLifetimeSeconds": {
-                                    "type": "integer",
-                                    "default": 1800,
-                                    "minimum": 1,
-                                    "title": "Maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle"
-                                },
-                                "keepAliveTimeSeconds": {
-                                    "type": "integer",
-                                    "default": 0,
-                                    "minimum": 0,
-                                    "title": "Interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled"
-                                },
-                                "validationTimeoutSeconds": {
-                                    "type": "integer",
-                                    "minimum": 1,
-                                    "default": 5,
-                                    "title": "Maximum time (in seconds) that the pool will wait for a connection to be validated as alive"
-                                }
-                            }
+                            "title": "JDBC connection pool configuration for State Manager DB"
                         }
                     },
                     "examples": [{
@@ -3729,6 +3858,202 @@
                 },
                 "password": {
                     "$ref": "#/$defs/config"
+                }
+            }
+        },
+        "connectionPool": {
+            "type": "object",
+            "default": {},
+            "title": "Connection pool configuration for JDBC connections",
+            "required": [
+                "maxSize",
+                "idleTimeoutSeconds",
+                "maxLifetimeSeconds",
+                "keepAliveTimeSeconds",
+                "validationTimeoutSeconds"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "maxSize": {
+                    "type": "integer",
+                    "default": 5,
+                    "title": "Maximum pool size",
+                    "examples": [
+                        5
+                    ]
+                },
+                "minSize": {
+                    "anyOf": [
+                        {
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Minimum pool size (defaults to pool's max size value when null)"
+                },
+                "idleTimeoutSeconds": {
+                    "type": "integer",
+                    "default": 120,
+                    "minimum": 0,
+                    "title": "Maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool"
+                },
+                "maxLifetimeSeconds": {
+                    "type": "integer",
+                    "default": 1800,
+                    "minimum": 1,
+                    "title": "Maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetimeSeconds\" timeout, it will be removed from the pool only when it becomes idle"
+                },
+                "keepAliveTimeSeconds": {
+                    "type": "integer",
+                    "default": 0,
+                    "minimum": 0,
+                    "title": "Interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled"
+                },
+                "validationTimeoutSeconds": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 5,
+                    "title": "Maximum time (in seconds) that the pool will wait for a connection to be validated as alive"
+                }
+            }
+        },
+        "databaseTemplate": {
+            "type": "object",
+            "default": {},
+            "title": "Connection settings for databases used by the Platform",
+            "additionalProperties": false,
+            "required": [
+                "name",
+                "username",
+                "password"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "host": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "format": "hostname"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "The database host"
+                },
+                "port": {
+                    "type": "integer",
+                    "default": 5432,
+                    "title": "The database port",
+                    "examples": [
+                        5432
+                    ]
+                },
+                "type": {
+                    "$ref": "#/$defs/databaseEngine"
+                },
+                "username": {
+                    "$ref": "#/$defs/config"
+                },
+                "password": {
+                    "$ref": "#/$defs/config"
+                }
+            }
+        },
+        "stateTypePersistentStorageMapping": {
+            "type": "object",
+            "default": {},
+            "title": "Association between a State Type managed by the State Manager and a defined Persistent Storage",
+            "additionalProperties": false,
+            "required": [
+                "type",
+                "storageId",
+                "partition"
+            ],
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "default": "Database",
+                    "title": "The type of the persistent storage used by the State Manager instance",
+                    "enum": [
+                        "Database"
+                    ]
+                },
+                "storageId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "default": "default",
+                    "title": "The id of the persistent storage, defined elsewhere, that will be used to manage states"
+                },
+                "partition": {
+                    "type": "string",
+                    "minLength": 1,
+                    "default": "default",
+                    "title": "The name of the internal representation (schema, region, partition, namespace, etc.) within the persistent storage that will be used to manage states"
+                }
+            }
+        },
+        "stateManagerRuntimeConnectionSettings": {
+            "type": "object",
+            "default": {},
+            "title": "Runtime connection settings for a given State Manager instance and Persistent Storage",
+            "additionalProperties": false,
+            "required": [
+                "type"
+            ],
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "default": "Database",
+                    "title": "The type of the persistent storage used by the State Manager instance",
+                    "enum": [
+                        "Database"
+                    ]
+                },
+                "username": {
+                    "oneOf": [
+                        {
+                            "$ref": "#/$defs/config"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "password": {
+                    "oneOf": [
+                        {
+                            "$ref": "#/$defs/config"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "connectionPool": {}
+            },
+            "if": {
+                "properties": {
+                    "type": {
+                        "const": "Database"
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "connectionPool": {
+                        "$ref": "#/$defs/connectionPool",
+                        "default": {},
+                        "title": "JDBC connection pool configuration for the State Manager instance"
+                    }
                 }
             }
         }
