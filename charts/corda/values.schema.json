@@ -955,6 +955,7 @@
                 "flowCheckpoint",
                 "flowMapping",
                 "keyRotation",
+                "p2pSession",
                 "tokenPoolCache"
             ],
             "additionalProperties": false,
@@ -973,6 +974,11 @@
                     "type": "object",
                     "$ref": "#/$defs/stateTypePersistentStorageMapping",
                     "title": "Persistent Storage configuration to be used by the State Manager when dealing with 'keyRotation' states"
+                },
+                "p2pSession": {
+                    "type": "object",
+                    "$ref": "#/$defs/stateTypePersistentStorageMapping",
+                    "title": "Persistent Storage configuration to be used by the State Manager when dealing with 'peerToPeerSession' states"
                 },
                 "tokenPoolCache": {
                     "type": "object",
@@ -2475,7 +2481,25 @@
                                 "resources": {},
                                 "kafka": {},
                                 "stateManager": {
-                                    "$ref": "#/$defs/stateManager"
+                                    "$comment": "TODO-[CORE-19372]: remove the condition and leave 'p2pSession' only.",
+                                    "oneOf": [
+                                        {
+                                            "$ref": "#/$defs/stateManager"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "p2pSession"
+                                            ],
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "p2pSession": {
+                                                    "type": "object",
+                                                    "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
+                                                }
+                                            }
+                                        }
+                                    ]
                                 }
                             },
                             "examples": [
