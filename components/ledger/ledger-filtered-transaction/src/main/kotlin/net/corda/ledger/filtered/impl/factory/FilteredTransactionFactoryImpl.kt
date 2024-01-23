@@ -4,6 +4,7 @@ import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.filtered.ComponentGroupFilterParameters
+import net.corda.ledger.filtered.ComponentGroupFilterParameters.AuditProof
 import net.corda.ledger.filtered.FilteredComponentGroup
 import net.corda.ledger.filtered.FilteredTransaction
 import net.corda.ledger.filtered.factory.FilteredTransactionFactory
@@ -104,7 +105,7 @@ class FilteredTransactionFactoryImpl @Activate constructor(
             }
 
         val merkleProof = when (parameters) {
-            is ComponentGroupFilterParameters.AuditProof<*> -> {
+            is AuditProof<*> -> {
                 val skipFiltering = componentGroupIndex == 0
 
                 val filteredComponents = componentGroup
@@ -114,15 +115,15 @@ class FilteredTransactionFactoryImpl @Activate constructor(
                             true
                         } else {
                             when (val predicate = parameters.predicate) {
-                                is ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content -> {
-                                    (predicate as ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content<Any>).test(
+                                is AuditProof.AuditProofPredicate.Content -> {
+                                    (predicate as AuditProof.AuditProofPredicate.Content<Any>).test(
                                         serializationService.deserialize(
                                             component,
                                             parameters.deserializedClass
                                         )
                                     )
                                 }
-                                is ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Index -> {
+                                is AuditProof.AuditProofPredicate.Index -> {
                                     predicate.test(index)
                                 }
                             }
