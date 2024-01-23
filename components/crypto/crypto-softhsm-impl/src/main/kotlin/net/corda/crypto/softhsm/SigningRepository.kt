@@ -91,7 +91,7 @@ interface SigningRepository : Closeable {
      *
      * @return the [SigningKeyMaterialEntity] that describes the new key material
      */
-    fun createNewSigningMaterial(newWrappingKey: WrappingKey, signingKeyId: UUID, signingKey: PrivateKey): SigningKeyMaterialInfo
+    fun createNewSigningKeyMaterial(newWrappingKey: WrappingKey, signingKeyId: UUID, signingKey: PrivateKey): SigningKeyMaterialInfo
 
     /**
      * Saves a signing key material entity to the database

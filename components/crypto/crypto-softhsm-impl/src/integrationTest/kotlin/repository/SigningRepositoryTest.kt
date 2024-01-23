@@ -686,7 +686,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
         val privateKey = keyPairGenerator.genKeyPair().private
         val newSigningUuid = UUID.randomUUID()
 
-        val signingMaterialEntity = repo.createNewSigningMaterial(key, newSigningUuid, privateKey)
+        val signingMaterialEntity = repo.createNewSigningKeyMaterial(key, newSigningUuid, privateKey)
 
         assertThat(signingMaterialEntity.signingKeyId).isEqualTo(newSigningUuid)
         assertThat(key.unwrap(signingMaterialEntity.keyMaterial)).isEqualTo(privateKey)

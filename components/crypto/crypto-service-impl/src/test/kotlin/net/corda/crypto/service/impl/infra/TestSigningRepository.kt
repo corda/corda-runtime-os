@@ -119,13 +119,15 @@ class TestSigningRepository : SigningRepository {
         throw IllegalStateException("Unexpected call to getKeyMaterials")
     }
 
-    override fun createNewSigningMaterial(
+    override fun createNewSigningKeyMaterial(
         newWrappingKey: WrappingKey,
         signingKeyId: UUID,
         signingKey: PrivateKey
-    ): SigningKeyMaterialInfo = SigningKeyMaterialInfo(signingKeyId, byteArrayOf())
+    ): SigningKeyMaterialInfo {
+        throw IllegalStateException("Unexpected call to createNewSigningKeyMaterial")
+    }
 
     override fun saveSigningKeyMaterial(signingKeyMaterialInfo: SigningKeyMaterialInfo, wrappingKeyId: UUID) {
-
+        throw IllegalStateException("Unexpected call to saveSigningKeyMaterial")
     }
 }
