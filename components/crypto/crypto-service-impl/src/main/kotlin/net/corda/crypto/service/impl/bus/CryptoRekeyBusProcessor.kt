@@ -142,7 +142,7 @@ class CryptoRekeyBusProcessor(
                             request.oldParentKeyAlias,
                             request.newParentKeyAlias,
                             wrappingKeyInfo.alias,
-                            null, // keyUuid not used in managed key rotation
+                            null, // keyUuid not used in unmanaged key rotation
                             KeyType.UNMANAGED
                         ),
                         timestamp // This is useful, if we are keeping the track of start time
