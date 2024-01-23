@@ -202,6 +202,18 @@ class UtxoReceiveFinalityFlowV1(
                     mutableMapOf()
                 )
 
+                log.info("[FTXPOC] Persisting!!! ${filteredTransaction.id}")
+
+                persistenceService.persistFilteredTransactions(listOf(filteredTransaction))
+
+                log.info("[FTXPOC] Persisted!!! ${filteredTransaction.id}")
+
+                log.info("[FTXPOC] Fetching!!! ${filteredTransaction.id}")
+
+                val ftxMap = persistenceService.findFilteredTransactions(listOf(filteredTransaction.id))
+
+                log.info("[FTXPOC] Fetched!!! ${ftxMap[filteredTransaction.id]}")
+
                 (filteredTransaction.outputStateAndRefs as Audit<StateAndRef<*>>).values.values
             }.associateBy { stateRef -> stateRef.ref }
         val inputStateAndRefs = initialTransaction.inputStateRefs.map { stateRef ->

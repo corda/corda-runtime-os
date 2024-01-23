@@ -7,6 +7,7 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 
 /**
  * [UtxoLedgerPersistenceService] allows to insert and find UTXO signed transactions in the persistent store provided
@@ -119,4 +120,14 @@ interface UtxoLedgerPersistenceService {
         transaction: UtxoSignedTransaction,
         transactionStatus: TransactionStatus
     ): Pair<TransactionExistenceStatus, List<CordaPackageSummary>>
+
+    @Suspendable
+    fun persistFilteredTransactions(
+        filteredTransactions: List<UtxoFilteredTransaction>
+    )
+
+    @Suspendable
+    fun findFilteredTransactions(
+        transactionIds: List<SecureHash>
+    ): Map<SecureHash, UtxoFilteredTransaction>
 }

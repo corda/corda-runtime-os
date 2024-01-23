@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.utxo.impl
 
+import net.corda.data.ledger.persistence.FindFilteredTransactions
 import net.corda.data.ledger.persistence.FindSignedGroupParameters
 import net.corda.data.ledger.persistence.FindSignedLedgerTransaction
 import net.corda.data.ledger.persistence.FindTransaction
@@ -7,6 +8,7 @@ import net.corda.data.ledger.persistence.FindTransactionIdsAndStatuses
 import net.corda.data.ledger.persistence.FindUnconsumedStatesByType
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
+import net.corda.data.ledger.persistence.PersistFilteredTransactionsIfDoNotExist
 import net.corda.data.ledger.persistence.PersistSignedGroupParametersIfDoNotExist
 import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.data.ledger.persistence.PersistTransactionIfDoesNotExist
@@ -20,11 +22,13 @@ import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFacto
 import net.corda.ledger.persistence.query.execution.impl.VaultNamedQueryExecutorImpl
 import net.corda.ledger.persistence.utxo.UtxoRequestHandlerSelector
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoExecuteNamedQueryHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindFilteredTransactionsRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedGroupParametersRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedLedgerTransactionRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionIdsAndStatusesRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindUnconsumedStatesByTypeRequestHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistFilteredTransactionsIfDoNotExistRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistSignedGroupParametersIfDoNotExistRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistTransactionIfDoesNotExistRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistTransactionRequestHandler
@@ -169,6 +173,25 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     externalEventResponseFactory,
                     serializationService
                 )
+            }
+            is PersistFilteredTransactionsIfDoNotExist -> {
+                UtxoPersistFilteredTransactionsIfDoNotExistRequestHandler(
+                    req,
+                    externalEventContext,
+                    externalEventResponseFactory,
+                    persistenceService,
+                    serializationService
+                )
+            }
+            is FindFilteredTransactions -> {
+                UtxoFindFilteredTransactionsRequestHandler(
+                    req,
+                    externalEventContext,
+                    persistenceService,
+                    externalEventResponseFactory,
+                    serializationService
+                )
+
             }
             else -> {
                 throw UnsupportedRequestTypeException(LedgerTypes.UTXO, request.request.javaClass)

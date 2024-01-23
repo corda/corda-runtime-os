@@ -12,5 +12,7 @@ enum class LedgerPersistenceMetricOperationName {
     PersistTransaction,
     PersistTransactionIfDoesNotExist,
     ResolveStateRefs,
-    UpdateTransactionStatus
+    UpdateTransactionStatus,
+    PersistFilteredTransaction,
+    FindFilteredTransaction
 }

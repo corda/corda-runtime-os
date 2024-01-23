@@ -1,25 +1,34 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
 import io.micrometer.core.instrument.Timer
+import net.corda.crypto.core.parseSecureHash
+import net.corda.data.ledger.persistence.PersistFilteredTransactionsIfDoNotExist
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.fiber.metrics.recordSuspendable
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTransactionStatus
+import net.corda.ledger.filtered.FilteredTransaction
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.flow.impl.cache.StateAndRefCache
+import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindFilteredTransaction
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindSignedLedgerTransactionWithStatus
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindTransactionIdsAndStatuses
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindTransactionWithStatus
+import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.PersistFilteredTransaction
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.PersistTransaction
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.PersistTransactionIfDoesNotExist
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.UpdateTransactionStatus
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindFilteredTransactionsExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindFilteredTransactionsParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedLedgerTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedLedgerTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionIdsAndStatusesExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionIdsAndStatusesParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionParameters
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistFilteredTransactionsIfDoNotExistExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistFilteredTransactionsIfDoNotExistParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionIfDoesNotExistExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionIfDoesNotExistParameters
@@ -31,6 +40,8 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedLedgerTransactionIm
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
+import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionImpl
+import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionInternal
 import net.corda.metrics.CordaMetrics
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
@@ -41,6 +52,7 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -199,6 +211,45 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                     else -> throw IllegalStateException("Invalid status $status")
                 } to summaries
             }
+        }
+    }
+
+    @Suspendable
+    override fun persistFilteredTransactions(filteredTransactions: List<UtxoFilteredTransaction>) {
+        val filteredTxs = filteredTransactions.map {
+            (it as UtxoFilteredTransactionInternal).filteredTransaction
+        }
+
+        recordSuspendable({ ledgerPersistenceFlowTimer(PersistFilteredTransaction) }) @Suspendable {
+            wrapWithPersistenceException {
+                externalEventExecutor.execute(
+                    PersistFilteredTransactionsIfDoNotExistExternalEventFactory::class.java,
+                    PersistFilteredTransactionsIfDoNotExistParameters(serialize(filteredTxs))
+                )
+            }
+        }
+    }
+
+    @Suspendable
+    override fun findFilteredTransactions(transactionIds: List<SecureHash>): Map<SecureHash, UtxoFilteredTransaction> {
+        val filteredTransactionMap =
+            recordSuspendable({ ledgerPersistenceFlowTimer(FindFilteredTransaction) }) @Suspendable {
+                wrapWithPersistenceException {
+                    externalEventExecutor.execute(
+                        FindFilteredTransactionsExternalEventFactory::class.java,
+                        FindFilteredTransactionsParameters(transactionIds.map { it.toString() })
+                    )
+                }.firstOrNull()?.let {
+                    serializationService.deserialize<Map<String, FilteredTransaction>>(
+                        it.array()
+                    )
+                }?.mapKeys {
+                    parseSecureHash(it.key)
+                }
+            } ?: emptyMap()
+
+        return filteredTransactionMap.mapValues {
+            UtxoFilteredTransactionImpl(serializationService, it.value)
         }
     }
 
