@@ -36,6 +36,9 @@ interface FilteredTransaction {
      */
     val metadata: TransactionMetadata
 
+    /**
+     * Gets the [PrivacySalt] of the transaction.
+     */
     val privacySalt: PrivacySalt
 
     /**

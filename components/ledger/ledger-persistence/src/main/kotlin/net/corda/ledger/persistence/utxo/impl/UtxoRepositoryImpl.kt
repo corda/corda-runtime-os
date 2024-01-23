@@ -437,6 +437,8 @@ class UtxoRepositoryImpl @Activate constructor(
         }.associateWith { transactionId ->
             UtxoFilteredTransactionDto(
                 transactionId,
+                // At this point it's safe to assume that both merkleProofs[transactionId]
+                // and privacySaltAndMetadataMap[transactionId] are not null due to the filter earlier
                 merkleProofs[transactionId]!!.groupBy { it.groupIndex },
                 privacySaltAndMetadataMap[transactionId]!!.first,
                 privacySaltAndMetadataMap[transactionId]!!.second
