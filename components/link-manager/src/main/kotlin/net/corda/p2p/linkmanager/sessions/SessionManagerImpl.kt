@@ -630,10 +630,13 @@ internal class SessionManagerImpl(
                 responderMemberInfo,
                 p2pParams.networkType
             )?.let {
-                if (trackSessionHealthAndReplaySessionMessages) {
-                    sessionHealthManager.sessionMessageSent(sessionCounterparties, message.first.sessionId)
-                }
                 message.first.sessionId to it
+            }
+        }.also {
+            if (trackSessionHealthAndReplaySessionMessages) {
+                it.forEach { (sessionId, _) ->
+                    sessionHealthManager.sessionMessageSent(sessionCounterparties, sessionId)
+                }
             }
         }
     }

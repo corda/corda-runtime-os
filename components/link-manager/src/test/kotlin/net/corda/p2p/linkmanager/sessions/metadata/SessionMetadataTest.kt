@@ -16,6 +16,12 @@ import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.toOutbound
 
 class SessionMetadataTest {
+    companion object {
+        const val SESSION_EXPIRED_TIMESTAMP = 15000L
+        const val SESSION_EXPIRY_TIMESTAMP = 10000L
+        const val SESSION_UNEXPIRED_TIMESTAMP = 5000L
+    }
+
     @Nested
     inner class InboundFromTests {
         private val metadata = Metadata(
@@ -225,7 +231,7 @@ class SessionMetadataTest {
                 mock(),
                 mock(),
                 mock(),
-                Instant.ofEpochMilli(10000L),
+                Instant.ofEpochMilli(SESSION_EXPIRY_TIMESTAMP),
             ),
             mock(),
         )
@@ -234,7 +240,7 @@ class SessionMetadataTest {
                 mock(),
                 mock(),
                 mock(),
-                Instant.ofEpochMilli(10000L),
+                Instant.ofEpochMilli(SESSION_EXPIRY_TIMESTAMP),
             ),
             "",
             mock(),
@@ -246,7 +252,7 @@ class SessionMetadataTest {
         @Test
         fun `it return true if the session expiration passed for inbound metadata`() {
             val clock = mock<Clock> {
-                on { instant() } doReturn Instant.ofEpochMilli(10000L + Duration.ofDays(8).toMillis())
+                on { instant() } doReturn Instant.ofEpochMilli(SESSION_EXPIRED_TIMESTAMP)
             }
 
             assertThat(inboundMetadata.sessionExpired(clock)).isTrue()
@@ -255,7 +261,7 @@ class SessionMetadataTest {
         @Test
         fun `it return false if the session had not expired for inbound metadata`() {
             val clock = mock<Clock> {
-                on { instant() } doReturn Instant.ofEpochMilli(10000L + Duration.ofDays(6).toMillis())
+                on { instant() } doReturn Instant.ofEpochMilli(SESSION_UNEXPIRED_TIMESTAMP)
             }
 
             assertThat(inboundMetadata.sessionExpired(clock)).isFalse()
@@ -264,7 +270,7 @@ class SessionMetadataTest {
         @Test
         fun `it return true if the session expiration passed for outbound metadata`() {
             val clock = mock<Clock> {
-                on { instant() } doReturn Instant.ofEpochMilli(10000L + Duration.ofDays(8).toMillis())
+                on { instant() } doReturn Instant.ofEpochMilli(SESSION_EXPIRED_TIMESTAMP)
             }
 
             assertThat(outboundMetadata.sessionExpired(clock)).isTrue()
@@ -273,7 +279,7 @@ class SessionMetadataTest {
         @Test
         fun `it return false if the session had not expired for outbound metadata`() {
             val clock = mock<Clock> {
-                on { instant() } doReturn Instant.ofEpochMilli(10000L + Duration.ofDays(6).toMillis())
+                on { instant() } doReturn Instant.ofEpochMilli(SESSION_UNEXPIRED_TIMESTAMP)
             }
 
             assertThat(outboundMetadata.sessionExpired(clock)).isFalse()
