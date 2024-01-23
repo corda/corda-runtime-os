@@ -10,6 +10,8 @@ import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.Health
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
 import net.corda.applications.workers.workercommon.Metrics
+import net.corda.applications.workers.workercommon.StateManagerConfigHelper.createStateManagerConfigFromCli
+import net.corda.applications.workers.workercommon.StateManagerConfigHelper.createStateManagerConfigFromClusterDb
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.createConfigFromParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
@@ -129,13 +131,17 @@ class CombinedWorker @Activate constructor(
         val params = getParams(args, CombinedWorkerParams())
         // Extract the schemaless db url from the params, the combined worker needs this to set up all the schemas which
         // it does in the same db.
-        val clusterDbUrl = params.databaseParams[DatabaseConfig.JDBC_URL] ?: "jdbc:postgresql://localhost:5432/cordacluster"
+        val dbUrl = params.databaseParams[DatabaseConfig.JDBC_URL] ?: "jdbc:postgresql://localhost:5432/cordacluster"
 
         val dbConfig = createConfigFromParams(BootConfig.BOOT_DB, params.databaseParams)
 
-        val preparedDbConfig = prepareDbConfig(dbConfig)
+        val stateManagerConfig = if (params.defaultParams.stateManagerParams.isEmpty()) {
+            createStateManagerConfigFromClusterDb(dbConfig)
+        } else {
+            createStateManagerConfigFromCli(params.defaultParams.stateManagerParams)
+        }
 
-        val stateManagerFallbackConfig = createStateManagerFallbackConfig(clusterDbUrl, dbConfig)
+        val preparedDbConfig = prepareDbConfig(dbConfig)
 
         if (printHelpOrVersion(params.defaultParams, CombinedWorker::class.java, shutDownService)) return
         if (params.hsmId.isBlank()) {
@@ -151,14 +157,14 @@ class CombinedWorker @Activate constructor(
                 preparedDbConfig,
                 createConfigFromParams(BootConfig.BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId)),
                 createConfigFromParams(BootConfig.BOOT_REST, params.restParams),
-                createConfigFromParams(BOOT_WORKER_SERVICE, params.workerEndpoints),
-                stateManagerFallbackConfig
+                stateManagerConfig,
+                createConfigFromParams(BOOT_WORKER_SERVICE, params.workerEndpoints)
             )
         )
 
         val superUser = System.getenv("CORDA_DEV_POSTGRES_USER") ?: "postgres"
         val superUserPassword = System.getenv("CORDA_DEV_POSTGRES_PASSWORD") ?: "password"
-        val dbName = clusterDbUrl.split("/").last().split("?").first()
+        val dbName = dbUrl.split("/").last().split("?").first()
         val dbAdmin = if (config.getConfig(BootConfig.BOOT_DB).hasPath(DatabaseConfig.DB_USER))
             config.getConfig(BootConfig.BOOT_DB).getString(DatabaseConfig.DB_USER) else "user"
         val dbAdminPassword = if (config.getConfig(BootConfig.BOOT_DB).hasPath(DatabaseConfig.DB_PASS))
@@ -179,7 +185,7 @@ class CombinedWorker @Activate constructor(
         val isDbBusType: Boolean = params.defaultParams.messaging[BUS_TYPE] == BusType.DATABASE.name
 
         PostgresDbSetup(
-            clusterDbUrl,
+            dbUrl,
             superUser,
             superUserPassword,
             dbAdmin,
