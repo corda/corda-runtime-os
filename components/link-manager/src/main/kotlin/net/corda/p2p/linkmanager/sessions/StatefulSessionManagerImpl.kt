@@ -99,13 +99,12 @@ internal class StatefulSessionManagerImpl(
                 }
             }
 
-        val sessionsToQuery = keysToMessages.mapNotNull { entry -> entry.key?.let { it to entry.value } }.toMap()
-        val cachedSessions = getCachedOutboundSessions(sessionsToQuery)
+        val cachedSessions = getCachedOutboundSessions(keysToMessages)
 
-        val keysNotInCache = (sessionsToQuery - cachedSessions.keys).keys
+        val keysNotInCache = (keysToMessages - cachedSessions.keys).keys
         val sessionStates =
             if (keysNotInCache.isNotEmpty()) {
-                stateManager.get(keysNotInCache).let { states ->
+                stateManager.get(keysNotInCache.filterNotNull()).let { states ->
                     keysToMessages.map { (id, items) ->
                         OutboundMessageState(
                             id,
@@ -221,16 +220,7 @@ internal class StatefulSessionManagerImpl(
         }
         val traceable = uuids.associateBy { getSessionId(it) }
 
-        val (allCached, sessionIdsNotInCache) = traceable.run {
-            val sessionsFromInboundCache = cachedInboundSessions.getAllPresent(traceable.keys)
-            val remainingSessionIds = (traceable - sessionsFromInboundCache.keys)
-            val outboundCacheKeys = remainingSessionIds.keys.associateWith { counterpartiesForSessionId[it] }
-            val sessionsFromOutboundCache = cachedOutboundSessions.getAllPresent(outboundCacheKeys.values)
-            val notCached = remainingSessionIds - outboundCacheKeys.filterValues {
-                sessionsFromOutboundCache.containsKey(it)
-            }.keys
-            (sessionsFromInboundCache + sessionsFromOutboundCache) to notCached
-        }
+        val (allCached, sessionIdsNotInCache) = lookupCachedSessions(traceable)
 
         val inboundSessionsFromStateManager: List<Pair<T, SessionManager.SessionDirection>> =
             if (sessionIdsNotInCache.isEmpty()) {
@@ -328,7 +318,7 @@ internal class StatefulSessionManagerImpl(
                         val key = result.result.stateUpdate.key
                         cachedOutboundSessions.put(
                             key,
-                            SessionManager.SessionDirection.Inbound(
+                            SessionManager.SessionDirection.Outbound(
                                 result.result.stateUpdate.toCounterparties(),
                                 sessionToCache,
                             ),
@@ -504,29 +494,42 @@ internal class StatefulSessionManagerImpl(
 
     private val counterpartiesForSessionId = ConcurrentHashMap<String, String>()
 
-    private val cachedOutboundSessions: Cache<String, SessionManager.SessionDirection> = CacheFactoryImpl().build(
+    private val cachedOutboundSessions: Cache<String, SessionManager.SessionDirection.Outbound> = CacheFactoryImpl().build(
         "P2P-outbound-sessions-cache",
         Caffeine.newBuilder()
             .maximumSize(CACHE_SIZE)
             .removalListener { _, session, _ ->
-                counterpartiesForSessionId.remove((session as SessionManager.SessionDirection.Outbound).session.sessionId)
+                session?.session?.let {
+                    counterpartiesForSessionId.remove(it.sessionId)
+                }
             }
     )
 
     private fun <T> getCachedOutboundSessions(
-        messagesAndKeys: Map<String, Collection<OutboundMessageContext<T>>>,
+        messagesAndKeys: Map<String?, Collection<OutboundMessageContext<T>>>,
     ): Map<String, Pair<T, SessionEstablished>> {
-        return messagesAndKeys.flatMap { entry ->
-            val cached = cachedOutboundSessions.getIfPresent(entry.key) as? SessionManager.SessionDirection.Outbound
-                ?: return@flatMap emptyList()
-            val counterparties = entry.value.firstOrNull()?.let {
+        val allCached = cachedOutboundSessions.getAllPresent(messagesAndKeys.keys.filterNotNull())
+        return allCached.flatMap { entry ->
+            val contexts = messagesAndKeys[entry.key]
+            val counterparties = contexts?.firstOrNull()?.let {
                 sessionManagerImpl.getSessionCounterpartiesFromMessage(it.message.message)
             } ?: return@flatMap emptyList()
 
-            entry.value.map { context ->
-                entry.key to Pair(context.trace, SessionEstablished(cached.session, counterparties))
+            contexts.map { context ->
+                entry.key to Pair(context.trace, SessionEstablished(entry.value.session, counterparties))
             }
         }.toMap()
+    }
+
+    private fun <T> lookupCachedSessions(traceable: Map<String, T>): Pair<Map<String, SessionManager.SessionDirection>, Map<String, T>> {
+        val sessionsFromInboundCache = cachedInboundSessions.getAllPresent(traceable.keys)
+        val remainingSessionIds = (traceable - sessionsFromInboundCache.keys)
+        val outboundCacheKeys = remainingSessionIds.mapValues { counterpartiesForSessionId[it.key] }
+        val sessionsFromOutboundCache = cachedOutboundSessions.getAllPresent(outboundCacheKeys.values.filterNotNull())
+        val notCached = remainingSessionIds - outboundCacheKeys.filterValues {
+            sessionsFromOutboundCache.containsKey(it)
+        }.keys
+        return (sessionsFromInboundCache + sessionsFromOutboundCache) to notCached
     }
 
     private fun State.toCounterparties(): SessionManager.Counterparties {
@@ -644,8 +647,7 @@ internal class StatefulSessionManagerImpl(
             if (failedUpdates.containsKey(key)) {
                 val savedState = failedUpdates[key]
                 val savedMetadata = savedState?.metadata?.toOutbound()
-                val savedStatus = savedMetadata?.status
-                val newState = when (savedStatus) {
+                val newState = when (savedMetadata?.status) {
                     OutboundSessionStatus.SentInitiatorHello, OutboundSessionStatus.SentInitiatorHandshake ->
                         resultState.messages.first().sessionCounterparties()?.let {
                             SessionAlreadyPending(it)
