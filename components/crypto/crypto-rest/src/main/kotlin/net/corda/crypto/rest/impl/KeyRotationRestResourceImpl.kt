@@ -196,7 +196,8 @@ class KeyRotationRestResourceImpl @Activate constructor(
             )
             // Get the latest modified time of all the records
             if (state.modifiedTime.isAfter(lastUpdatedTimestamp)) lastUpdatedTimestamp = state.modifiedTime
-            if (state.metadata[KeyRotationMetadataValues.STATUS] != KeyRotationStatus.DONE) rotationStatus = KeyRotationStatus.IN_PROGRESS
+            if (state.metadata[KeyRotationMetadataValues.STATUS] != KeyRotationStatus.DONE) rotationStatus =
+                KeyRotationStatus.IN_PROGRESS
         }
         return KeyRotationStatusResponse(keyAlias, rotationStatus, lastUpdatedTimestamp, result)
     }
@@ -251,7 +252,6 @@ fun doKeyRotation(
         KeyType.UNMANAGED,
         oldKeyAlias,
         newKeyAlias,
-        null,
         null
     )
 

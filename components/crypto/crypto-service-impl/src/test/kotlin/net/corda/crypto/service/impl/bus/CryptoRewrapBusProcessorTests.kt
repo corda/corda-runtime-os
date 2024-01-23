@@ -29,7 +29,7 @@ class CryptoRewrapBusProcessorTests {
         on { serialize(any()) } doReturn byteArrayOf(42)
     }
     private val deserializer = mock<CordaAvroDeserializer<UnmanagedKeyStatus>> {
-        on { deserialize(any()) } doReturn  UnmanagedKeyStatus(OLD_PARENT_KEY_ALIAS, 10, 5)
+        on { deserialize(any()) } doReturn UnmanagedKeyStatus(OLD_PARENT_KEY_ALIAS, 10, 5)
     }
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<UnmanagedKeyStatus>() } doReturn serializer
@@ -67,6 +67,7 @@ class CryptoRewrapBusProcessorTests {
                         OLD_PARENT_KEY_ALIAS,
                         "root2",
                         "alias1",
+                        null,
                         KeyType.UNMANAGED
                     )
                 )
