@@ -27,6 +27,15 @@ import java.time.Instant
 
 @InitiatingFlow(protocol = "utxo-flow-protocol")
 class UtxoDemoFlow : ClientStartableFlow {
+    /*
+     * Make a transaction given a list of X500 name (`members`) and an arbitrary string (`input`), and
+     * possibly the X500 name of a notary (`notary`). `members` will typically be the other parties to the transaction,
+     * not the party running this flow who is initiating the transaction.
+     *
+     * For each entry in `members`, initiate a flow session. Use these sessions to initiate a system finality
+     * flow by calling `UtxoLedgerService.finalize`, which will wait for responses and either assemble a
+     * `SignedTransaction` or fail.
+     */
     data class InputMessage(val input: String, val members: List<String>, val notary: String?)
 
     private companion object {
@@ -106,7 +115,22 @@ class UtxoDemoFlow : ClientStartableFlow {
 
 @InitiatedBy(protocol = "utxo-flow-protocol")
 class UtxoResponderFlow : ResponderFlow {
-
+    /*
+     * Wait for and handle a single receive finality record from a UtxoDemoFlow, and respond by either:
+     *   - if validation succeeded: send back Payload with a list of DigitalSignatureAndMetadata records,
+     *   - otherwise since validation failed: send back a Payload.Failure error with a reason string
+     *
+     * This is a responder flow, so it gets run by the platform when another flow in the session manager
+     * which has the InitiatingFlow set to the same protocol label "utxo-flow-protocol". In our case,
+     * UtxoDemoFlow above has the same protocol label, so Corda will handle starting this flow on a different
+     * virtual node provide the virtual nodes are in the same session manager.
+     *
+     * In particular, the `finalize` on the `UtxoDemoFlow` above launches a system flow, which then sends
+     * a `FinalityPayload` with the protocol label `utxo-flow-protocol`, so we must make sure we are setup to handle that.
+     * We do that by calling UtxoLedgerService.receiveFinality`, which ends up executing
+     * `UtxoReceiveFinalityFlowV1.receiveTransactionAndBackchain`,
+     * which does a `session.receive(FinalityPayload::class.java)`.
+     */
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }

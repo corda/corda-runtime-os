@@ -23,7 +23,7 @@ import java.time.Instant
 @InitiatingFlow(protocol = "utxo-evolve-protocol")
 class UtxoDemoEvolveFlow : ClientStartableFlow {
 
-    data class EvolveMessage(val update: String, val transactionId: String, val index: Int)
+    data class EvolveMessage(val update: String, val transactionId: String, val index: Int, val newParticipant: String?)
     data class EvolveResponse( val transactionId: String?, val errorMessage: String?)
 
     class EvolveFlowError(message: String): Exception(message)
@@ -48,7 +48,7 @@ class UtxoDemoEvolveFlow : ClientStartableFlow {
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
-        log.info("Utxo flow demo starting...")
+        log.info("Utxo flow demo starting... v2")
         val response = try {
             val request = requestBody.getRequestBodyAs(jsonMarshallingService, EvolveMessage::class.java)
 
@@ -65,10 +65,23 @@ class UtxoDemoEvolveFlow : ClientStartableFlow {
             val inputState = input.state.contractState as? TestUtxoState ?:
                 throw EvolveFlowError( "State ${prevStates[request.index].ref} is not of type TestUtxoState")
 
+            val outParticipants = if (request.newParticipant != null) {
+                log.info("adding new participant ${request.newParticipant}")
+                val newParticipantInfo = memberLookup.lookup(MemberX500Name.parse(request.newParticipant))
+                if (newParticipantInfo == null) {
+                    val msg ="new member ${request.newParticipant} not found"
+                    log.error(msg)
+                    throw IllegalStateException(msg)
+                } else {
+                    val newKey = newParticipantInfo.ledgerKeys.first()
+                    log.info("adding new participant ${request.newParticipant} key $newKey")
+                    inputState.participants + newKey
+                }
+            } else inputState.participants
             val output =
                 TestUtxoState(
                     request.update,
-                    inputState.participants,
+                    outParticipants,
                     inputState.participantNames
                 )
 
