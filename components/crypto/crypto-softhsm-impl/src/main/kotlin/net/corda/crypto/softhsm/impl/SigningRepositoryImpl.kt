@@ -229,7 +229,11 @@ class SigningRepositoryImpl(
             }
         }
 
-    override fun createNewSigningKeyMaterial(newWrappingKey: WrappingKey, signingKeyId: UUID, signingKey: PrivateKey): SigningKeyMaterialInfo {
+    override fun createNewSigningKeyMaterial(
+        newWrappingKey: WrappingKey,
+        signingKeyId: UUID,
+        signingKey: PrivateKey
+    ): SigningKeyMaterialInfo {
         val newKeyMaterial = newWrappingKey.wrap(signingKey)
         return SigningKeyMaterialInfo(signingKeyId, newKeyMaterial)
     }
