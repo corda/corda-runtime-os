@@ -60,9 +60,9 @@ class VaultNamedParameterizedQueryImpl<T>(
     @Suspendable
     override fun execute(): PagedQuery.ResultSet<T> {
         getCreatedTimestampLimit()?.let {
-            require(it <= clock.instant()) {
-                "Timestamp limit must not be in the future."
-            }
+//            require(it <= clock.instant()) {
+//                "Timestamp limit must not be in the future."
+//            }
         } ?: setCreatedTimestampLimit(clock.instant())
 
         val resultSet = resultSetFactory.create(
@@ -89,7 +89,7 @@ class VaultNamedParameterizedQueryImpl<T>(
     }
 
     override fun setCreatedTimestampLimit(timestampLimit: Instant): VaultNamedParameterizedQuery<T> {
-        require(timestampLimit <= Instant.now()) { "Timestamp limit must not be in the future." }
+//        require(timestampLimit <= Instant.now()) { "Timestamp limit must not be in the future." }
 
         parameters[TIMESTAMP_LIMIT_PARAM_NAME] = timestampLimit
         return this

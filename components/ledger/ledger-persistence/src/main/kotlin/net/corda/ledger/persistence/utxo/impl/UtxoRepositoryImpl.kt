@@ -20,6 +20,7 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef
+import org.hibernate.Session
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -27,6 +28,8 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 import java.nio.ByteBuffer
+import java.sql.Connection
+import java.sql.Timestamp
 import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.Query
@@ -54,6 +57,7 @@ class UtxoRepositoryImpl @Activate constructor(
 ) : UtxoRepository, UsedByPersistence {
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private const val BATCH_SIZE = 5
     }
 
     override fun findTransaction(
@@ -219,26 +223,48 @@ class UtxoRepositoryImpl @Activate constructor(
             .logResult("transaction source [$transactionId, $groupIndex, $leafIndex]")
     }
 
-    override fun persistTransactionComponentLeaf(
+    override fun persistTransactionComponents(
         entityManager: EntityManager,
         transactionId: String,
-        groupIndex: Int,
-        leafIndex: Int,
-        data: ByteArray,
-        hash: String
+        components: List<List<ByteArray>>,
+        hash: (ByteArray) -> String
     ) {
-        // Metadata is not stored with the other components. See persistTransactionMetadata().
-        if (groupIndex == 0 && leafIndex == 0) {
-            return
+        fun isMetadata(groupIndex: Int, leafIndex: Int) = groupIndex == 0 && leafIndex == 0
+
+        entityManager.connection { connection ->
+            connection.prepareStatement(queryProvider.persistTransactionComponentLeaf).use { statement ->
+                var counter = 0
+                components.forEachIndexed { groupIndex, leaves ->
+                    leaves.forEachIndexed { leafIndex, data ->
+                        // Metadata is not stored with the other components. See persistTransactionMetadata()
+                        if (!isMetadata(groupIndex, leafIndex)) {
+                            statement.clearParameters()
+                            statement.setString(1, transactionId)
+                            statement.setInt(2, groupIndex)
+                            statement.setInt(3, leafIndex)
+                            statement.setBytes(4, data)
+                            statement.setString(5, hash(data))
+                            statement.addBatch()
+                            if (++counter == BATCH_SIZE) {
+                                statement.executeBatch()
+                                statement.clearBatch()
+                                counter = 0
+                            }
+                        }
+                    }
+                }
+                if (counter > 0) {
+                    statement.executeBatch()
+                }
+            }
         }
-        entityManager.createNativeQuery(queryProvider.persistTransactionComponentLeaf)
-            .setParameter("transactionId", transactionId)
-            .setParameter("groupIndex", groupIndex)
-            .setParameter("leafIndex", leafIndex)
-            .setParameter("data", data)
-            .setParameter("hash", hash)
-            .executeUpdate()
-            .logResult("transaction component [$transactionId, $groupIndex, $leafIndex]")
+    }
+
+    private fun <T> EntityManager.connection(block: (connection: Connection) -> T) {
+        val hibernateSession = unwrap(Session::class.java)
+        hibernateSession.doWork { connection ->
+            block(connection)
+        }
     }
 
     override fun persistVisibleTransactionOutput(
