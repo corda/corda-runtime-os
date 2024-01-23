@@ -43,10 +43,17 @@ class PostgresUtxoQueryProvider @Activate constructor(
             ON CONFLICT DO NOTHING"""
             .trimIndent()
 
+//    override val persistTransactionComponentLeaf: String
+//        get() = """
+//            INSERT INTO {h-schema}utxo_transaction_component(transaction_id, group_idx, leaf_idx, data, hash)
+//                VALUES(:transactionId, :groupIndex, :leafIndex, :data, :hash)
+//            ON CONFLICT DO NOTHING"""
+//            .trimIndent()
+
     override val persistTransactionComponentLeaf: String
         get() = """
-            INSERT INTO {h-schema}utxo_transaction_component(transaction_id, group_idx, leaf_idx, data, hash)
-                VALUES(:transactionId, :groupIndex, :leafIndex, :data, :hash)
+            INSERT INTO utxo_transaction_component(transaction_id, group_idx, leaf_idx, data, hash)
+                VALUES (?, ?, ?, ?, ?)
             ON CONFLICT DO NOTHING"""
             .trimIndent()
 
