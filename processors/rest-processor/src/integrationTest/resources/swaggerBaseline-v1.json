@@ -2413,6 +2413,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
+                "required" : [ "reason" ],
                 "type" : "object",
                 "properties" : {
                   "reason" : {
