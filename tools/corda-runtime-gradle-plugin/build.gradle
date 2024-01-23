@@ -1,8 +1,11 @@
 plugins {
     id 'java-gradle-plugin'
     id 'com.r3.internal.gradle.plugins.r3Publish'
-    id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish' apply false // Only put this to false due to compile error
     id 'org.jetbrains.kotlin.jvm'
+}
+
+ext {
+    releasable = true
 }
 
 group 'net.corda.gradle.plugin'
@@ -37,40 +40,6 @@ publishing {
             pom {
                 name = 'corda-runtime-gradle-plugin'
                 description = 'A Gradle plugin that wraps a subset of the SDK functions to facilitate their use in developer and CI scenarios.'
-                url = ''
-                scm {
-                    url = ''
-                }
-
-                licenses {
-                    license {
-                        name = licenseName
-                        url = licenseUrl
-                        distribution = "repo"
-                    }
-                }
-
-                developers {
-                    developer {
-                        id = 'R3'
-                        name = 'R3'
-                        email = 'dev@corda.net'
-                    }
-                }
-            }
-        }
-    }
-
-    if (project.hasProperty('maven.repo.s3')) {
-        repositories {
-            maven {
-                name = 'AWS'
-                url = project.findProperty('maven.repo.s3')
-                credentials(AwsCredentials) {
-                    accessKey "${System.getenv('AWS_ACCESS_KEY_ID')}"
-                    secretKey "${System.getenv('AWS_SECRET_ACCESS_KEY')}"
-                    sessionToken "${System.getenv('AWS_SESSION_TOKEN')}"
-                }
             }
         }
     }
