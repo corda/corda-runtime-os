@@ -11,6 +11,7 @@ import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import java.security.PublicKey
+import java.util.UUID
 
 /**
  * Crypto service which can be used to sign and generate new key pairs.
@@ -110,7 +111,7 @@ interface CryptoService {
     ): ByteArray
 
     /**
-     * Generates a new key to be used as a wrapping key. 
+     * Generates a new key to be used as a wrapping key.
      *
      * @param wrappingKeyAlias the alias of the key to be used as a wrapping key.
      * @param failIfExists a flag indicating whether the method should fail if a key already exists under
@@ -201,7 +202,7 @@ interface CryptoService {
      *
      * @param tenantId The tenant's id which the keys belong to.
      * @param keyIds Key ids to look keys for.
-     * 
+     *
      * @return the set of keys we could find information about, which may not be all keys. In particular
      *         information about keys for other tenants will be missing.
      */
@@ -215,7 +216,7 @@ interface CryptoService {
      *
      * @param tenantId The tenant's id which the keys belong to.
      * @param fullKeyIds Key ids to look keys for.
-     * 
+     *
      * @return the set of keys we could find information about, which may not be all keys. In particular
      *         information about keys for other tenants will be missing.
      */
@@ -240,7 +241,7 @@ interface CryptoService {
         masterKeyAlias: String,
         context: Map<String, String>,
     )
-    
+
     /**
      * Generates a new random key pair using the configured default key scheme and adds it to the internal key storage.
      *
@@ -346,4 +347,12 @@ interface CryptoService {
         cipherBytes: ByteArray,
         alias: String? = null,
     ): ByteArray
+
+    /**
+     * Rewrap all managed keys which are wrapped in the specified wrappingKey.
+     *
+     * @param wrappingKey The wrapping key which is being rotated away from
+     * @param tenantId The tenant Id which uses the specified wrapping key
+     */
+    fun rewrapAllManagedKeysWrappedBy(wrappingKey: UUID, tenantId: String)
 }
