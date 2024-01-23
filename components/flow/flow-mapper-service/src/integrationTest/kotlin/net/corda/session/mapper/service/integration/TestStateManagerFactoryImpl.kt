@@ -27,7 +27,7 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
         fun clear() = storage.clear()
     }
 
-    override fun create(config: SmartConfig): StateManager {
+    override fun create(config: SmartConfig, stateType: String): StateManager {
         return object : StateManager {
             override val name = LifecycleCoordinatorName("MockStateManager", UUID.randomUUID().toString())
 
