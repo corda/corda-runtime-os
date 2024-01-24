@@ -10,6 +10,7 @@ import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.libs.statemanager.api.StateOperationGroupBuilder
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messagebus.kafka.serialization.CordaAvroSerializationFactoryImpl
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
@@ -209,6 +210,10 @@ class PerformanceClaimStateStoreImplTest {
         }
 
         override fun delete(states: Collection<State>): Map<String, State> {
+            TODO("Not yet implemented")
+        }
+
+        override fun createUpdateGroup(): StateOperationGroupBuilder {
             TODO("Not yet implemented")
         }
 
