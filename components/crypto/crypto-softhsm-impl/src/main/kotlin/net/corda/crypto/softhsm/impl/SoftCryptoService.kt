@@ -57,6 +57,7 @@ import java.security.PrivateKey
 import java.security.Provider
 import java.security.PublicKey
 import java.time.Duration
+import java.util.UUID
 import javax.crypto.Cipher
 import javax.persistence.PersistenceException
 
@@ -121,10 +122,10 @@ open class SoftCryptoService(
      * that includes a description of what was being done. The set of exceptions that are to
      * be wrapped is controlled by the `isRecoverable` extensions function. The idea is that
      * we let the callers know when it is worth trying again.
-     * 
+     *
      * @param description A message describing what the block will do
      * @param block A callback to be executed
-     * 
+     *
      * @return The result of the callback.
      */
     private fun <R> recoverable(description: String, block: () -> R) = try {
@@ -283,7 +284,7 @@ open class SoftCryptoService(
                     keyScheme = scheme,
                     category = category
                 )
-                repo.savePrivateKey(saveContext) 
+                repo.savePrivateKey(saveContext)
             }
         }
     }
@@ -315,7 +316,13 @@ open class SoftCryptoService(
         logger.debug { "sign(tenant=$tenantId, publicKey=${record.data.id})" }
         val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
         val spec =
-            SigningWrappedSpec(getKeySpec(record, publicKey, tenantId), record.publicKey, scheme, signatureSpec, record.data.category)
+            SigningWrappedSpec(
+                getKeySpec(record, publicKey, tenantId),
+                record.publicKey,
+                scheme,
+                signatureSpec,
+                record.data.category
+            )
         val signedBytes = sign(spec, data, context + mapOf(CRYPTO_TENANT_ID to tenantId))
         return DigitalSignatureWithKey(record.publicKey, signedBytes)
     }
@@ -498,11 +505,10 @@ open class SoftCryptoService(
     ) {
         logger.debug {
             "createWrappingKey(hsmId=$hsmId,masterKeyAlias=$masterKeyAlias,failIfExists=$failIfExists," +
-                    "onBehalf=${context[CRYPTO_TENANT_ID]})"
+                "onBehalf=${context[CRYPTO_TENANT_ID]})"
         }
         createWrappingKey(masterKeyAlias, failIfExists, context)
     }
-
 
 
     override fun deriveSharedSecret(
@@ -583,6 +589,7 @@ open class SoftCryptoService(
 
         return OwnedKeyRecord(publicKey, signingKeyInfo)
     }
+
     @Suppress("ThrowsCount")
     private fun getKeySpec(
         record: OwnedKeyRecord,
@@ -590,7 +597,7 @@ open class SoftCryptoService(
         tenantId: String,
     ): KeyMaterialSpec {
         val keyMaterial: ByteArray = record.data.keyMaterial
-        val masterKeyAlias = record.data.wrappingKeyAlias 
+        val masterKeyAlias = record.data.wrappingKeyAlias
         val encodingVersion = record.data.encodingVersion ?: throw IllegalStateException(
             "The encoding version for public key ${publicKey.publicKeyId()} of tenant $tenantId must be specified, but is null"
         )
@@ -619,19 +626,22 @@ open class SoftCryptoService(
                     }
                     val newGeneration = wrappingKeyInfo.generation + 1
                     oldParentKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial).also { wrappingKey ->
-                        logger.trace { "Should decrypt key material in row $id with alias $targetAlias using " +
-                                "${wrappingKeyInfo.parentKeyAlias} and encrypt key material using $newParentKeyAlias" }
+                        logger.trace {
+                            "Should decrypt key material in row $id with alias $targetAlias using " +
+                                "${wrappingKeyInfo.parentKeyAlias} and encrypt key material using $newParentKeyAlias"
+                        }
                         val wrappedWithNewKey = newParentKey.wrap(wrappingKey)
                         val newInfo = wrappingKeyInfo.copy(
                             keyMaterial = wrappedWithNewKey,
                             parentKeyAlias = newParentKeyAlias,
-                            generation = newGeneration)
+                            generation = newGeneration
+                        )
                         check(newInfo.alias == wrappingKeyInfo.alias)
                         wrappingRepo.saveKeyWithId(newInfo, id)
                     }
                     return newGeneration
                 } catch (e: PersistenceException) {
-                    if (e.cause?.message?.contains("ConstraintViolationException") != true)  throw e
+                    if (e.cause?.message?.contains("ConstraintViolationException") != true) throw e
                     // we lost a race updating the generation number, and we
                     // don't know if the other update rewrapped as we are trying to do
                     // so retry
@@ -655,10 +665,11 @@ open class SoftCryptoService(
         logger.trace {
             "createWrappingKeyFrom(alias=${oldWrappingKey.alias})"
         }
-        val wrappingKey = recoverable("createWrappingKeyFrom generate wrapping key") { wrappingKeyFactory(schemeMetadata) }
+        val wrappingKey =
+            recoverable("createWrappingKeyFrom generate wrapping key") { wrappingKeyFactory(schemeMetadata) }
         val parentKeyAlias = oldWrappingKey.parentKeyAlias
         val parentKey = checkNotNull(unmanagedWrappingKeys[parentKeyAlias])
-            {"No wrapping key $parentKeyAlias found"}
+        { "No wrapping key $parentKeyAlias found" }
         val wrappingKeyEncrypted = recoverable("wrap") { parentKey.wrap(wrappingKey) }
         val wrappingKeyInfo =
             WrappingKeyInfo(
@@ -675,5 +686,8 @@ open class SoftCryptoService(
         logger.trace("Regenerated wrapping key alias ${oldWrappingKey.alias}")
         wrappingKeyCache?.put(wrappingKeyInfo.alias, wrappingKey)
     }
-}
 
+    override fun rewrapAllSigningKeysWrappedBy(managedWrappingKey: UUID, tenantId: String) {
+        logger.info("Attempt made to rewrap all signing keys wrapped by wrappingKey: ${managedWrappingKey} and tenant Id: ${tenantId}")
+    }
+}
