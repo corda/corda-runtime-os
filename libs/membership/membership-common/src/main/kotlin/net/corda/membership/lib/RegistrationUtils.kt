@@ -65,7 +65,7 @@ fun verifyBackchainFlagMovement(previousContext: Map<String, String>, newContext
 fun verifyReRegistrationChanges(
     previousRegistrationContext: Map<String, String>,
     newRegistrationContext: Map<String, String>,
-): String {
+): String? {
     verifyBackchainFlagMovement(previousRegistrationContext, newRegistrationContext)
     val newOrChangedKeys = newRegistrationContext.filter {
         previousRegistrationContext[it.key] != it.value
@@ -85,5 +85,5 @@ fun verifyReRegistrationChanges(
     if (changed.isNotEmpty()) {
         return "Fields $changed cannot be added, removed or updated during re-registration."
     }
-    return ""
+    return null
 }

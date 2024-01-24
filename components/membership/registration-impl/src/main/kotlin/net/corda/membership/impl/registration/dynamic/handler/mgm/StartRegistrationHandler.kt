@@ -237,12 +237,10 @@ internal class StartRegistrationHandler(
                 val previousContext = previous.memberProvidedContext.toMap()
                 val pendingContext = pendingMemberInfo.memberProvidedContext.toMap()
                 val diffInvalidMsgFn = verifyReRegistrationChanges(previousContext, pendingContext)
-                validateRegistrationRequest(
-                    diffInvalidMsgFn.isEmpty(),
-                    registrationLogger,
-                    diffInvalidMsgFn,
-                    diffInvalidMsgFn
-                )
+                if (!diffInvalidMsgFn.isNullOrEmpty()) {
+                    registrationLogger.info(diffInvalidMsgFn)
+                    throw InvalidRegistrationRequestException(diffInvalidMsgFn, diffInvalidMsgFn)
+                }
             }
 
             // The group ID matches the group ID of the MGM

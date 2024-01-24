@@ -473,7 +473,7 @@ class DynamicMemberRegistrationService @Activate constructor(
 
             previousRegistrationContext?.let {
                 val diffInvalidMsg = verifyReRegistrationChanges(previousRegistrationContext, newRegistrationContext)
-                require(diffInvalidMsg.isEmpty()) {
+                if (!diffInvalidMsg.isNullOrEmpty()) {
                     throw InvalidMembershipRegistrationException(
                         diffInvalidMsg
                     )
