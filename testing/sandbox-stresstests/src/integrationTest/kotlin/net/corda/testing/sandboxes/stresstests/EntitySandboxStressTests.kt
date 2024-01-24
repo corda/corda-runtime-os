@@ -114,7 +114,8 @@ class EntitySandboxStressTests : TestBase() {
             }
             println("Create sandbox for vNode ${it.holdingIdentity.shortHash} ${sandbox!!.sandboxGroup.id}")
 
-            bw.write("### Memory usage after creating sandbox with ID ${sandbox!!.sandboxGroup.id} for vNode ${it.holdingIdentity.shortHash}")
+            bw.write("### Memory usage after creating sandbox with ID ${sandbox!!.sandboxGroup.id} " +
+                    "for vNode ${it.holdingIdentity.shortHash}")
             bw.newLine()
             bw.write(getMemoryUsage())
             bw.newLine()
@@ -177,7 +178,8 @@ class EntitySandboxStressTests : TestBase() {
 
             println("Create sandbox for vNode ${it.holdingIdentity.shortHash}\n${sandbox!!.sandboxGroup.id}")
 
-            bw.write("### Memory usage after creating sandbox with ID ${sandbox!!.sandboxGroup.id} for vNode ${it.holdingIdentity.shortHash}")
+            bw.write("### Memory usage after creating sandbox with ID ${sandbox!!.sandboxGroup.id} " +
+                    "for vNode ${it.holdingIdentity.shortHash}")
             bw.newLine()
             bw.write(getMemoryUsage())
             bw.newLine()
@@ -198,7 +200,8 @@ class EntitySandboxStressTests : TestBase() {
             sandboxes.add(sandbox!!.sandboxGroup.id)
             println("Retrieving sandbox ${sandbox!!.sandboxGroup.id} for virtual node ${it.holdingIdentity.shortHash}")
 
-            bw.write("### Memory usage after retrieving sandbox with ID ${sandbox!!.sandboxGroup.id} for vNode ${it.holdingIdentity.shortHash}")
+            bw.write("### Memory usage after retrieving sandbox with ID ${sandbox!!.sandboxGroup.id} " +
+                    "for vNode ${it.holdingIdentity.shortHash}")
             bw.newLine()
             bw.write(getMemoryUsage())
             bw.newLine()
