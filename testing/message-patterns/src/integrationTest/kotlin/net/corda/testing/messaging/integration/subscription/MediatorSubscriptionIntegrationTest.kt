@@ -191,7 +191,7 @@ class MediatorSubscriptionIntegrationTest {
         publisher.close()
 
         val latch = CountDownLatch(1)
-        val processor = TestStateEventProcessorStrings(latch, true, -1, MEDIATOR_TOPIC2,  throwFatalExceptionOnItem = 2)
+        val processor = TestStateEventProcessorStrings(latch, true, -1, MEDIATOR_TOPIC2, throwFatalExceptionOnItem = 2)
         val builder = buildBuilder(TEST_CONFIG, processor, MEDIATOR_TOPIC1_OUTPUT, MEDIATOR_TOPIC2, true)
 
         val mediator = multiSourceEventMediatorFactory.create(builder)
