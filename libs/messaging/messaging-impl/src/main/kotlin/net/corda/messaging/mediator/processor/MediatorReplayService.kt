@@ -3,8 +3,10 @@ package net.corda.messaging.mediator.processor
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.data.messaging.mediator.MediatorReplayOutputEvent
+import net.corda.data.messaging.mediator.MediatorReplayOutputEventType
 import net.corda.data.messaging.mediator.MediatorReplayOutputEvents
 import net.corda.data.messaging.mediator.MediatorState
+import net.corda.data.messaging.mediator.SerializationType
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_KEY
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_TOPIC
@@ -24,6 +26,8 @@ class MediatorReplayService @Activate constructor(
 ) {
     private val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
     private val bytesDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, ByteArray::class.java)
+    private val stringDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, String::class.java)
+    private val avroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
 
     /**
      * Generate the new [MediatorReplayOutputEvents] given the mediators [existingOutputs] when provided with the [newOutputs]
@@ -41,8 +45,8 @@ class MediatorReplayService @Activate constructor(
             val hash = getInputHash(entry.key)
             val mediatorOutputList = entry.value.map {
                 val topic = it.properties.getProperty(MSG_PROP_TOPIC)
-                val key = ByteBuffer.wrap(serializer.serialize(it.properties.getProperty(MSG_PROP_KEY)))
-                val payload = ByteBuffer.wrap(serialize(it.payload))
+                val key = serializeOutput(it.properties.getProperty(MSG_PROP_KEY))
+                val payload = serializeOutput(it.payload)
                 MediatorReplayOutputEvent(topic, key, payload)
             }
             mediatorOutputs.find { it.inputEventHash == hash }.let {
@@ -57,6 +61,16 @@ class MediatorReplayService @Activate constructor(
         return mediatorOutputs
     }
 
+    private fun <T> serializeOutput(any: T?) : MediatorReplayOutputEventType? {
+        if (any == null) return null
+        val serializationType = when(any) {
+            is String -> SerializationType.STRING
+            is ByteArray -> SerializationType.BYTEARRAY
+            else -> SerializationType.AVRO
+        }
+
+        return MediatorReplayOutputEventType(ByteBuffer.wrap(serialize(any)), serializationType)
+    }
     /**
      * Compare the [inputRecords] to the existing [mediatorState] to see which records are a replayed records or not.
      * If it is replay then return all the outputs from the [mediatorState] as [MediatorMessage]s to the resulting map.
@@ -101,20 +115,32 @@ class MediatorReplayService @Activate constructor(
     private fun serialize(value: Any?) = value?.let { serializer.serialize(it) }
 
     /**
-     * Deserialize to mediator messages as byte arrays.
-     * The keys and values may have been serialized from strings, bytes arrays or AVRO messages.
-     * The result is always a byte array. Deserializing as a byte array preserves the serialized bytes.
-     * This allows the consumer that reads from the output topics to deserialize to their expected types     *
+     * Deserialize to mediator messages. We expect keys to be of type string for now
+     * and value objects to be type avro.
      */
     private fun MediatorReplayOutputEvent.toMediatorMessage(): MediatorMessage<Any> {
-        val key =
-            bytesDeserializer.deserialize(key.array()) ?: throw IllegalStateException("Mediator message key is null after deserialization")
-        val payload = value.let { bytesDeserializer.deserialize(it.array()) }
+        val key = deserializeReplayValue(key) ?: throw IllegalStateException("Mediator message key is null after deserialization")
+        val payload = deserializeReplayValue(value)
         val properties = mutableMapOf<String, Any>(
             MSG_PROP_TOPIC to topic,
             MSG_PROP_KEY to key
         )
         return MediatorMessage(payload, properties)
+    }
+
+    /**
+     * Deserialize to mediator messages as their original type
+     * The keys and values may have been serialized from strings, bytes arrays or AVRO messages.
+     * The result is always a byte array.
+     */
+    private fun deserializeReplayValue(replayValue: MediatorReplayOutputEventType?) : Any? {
+        if (replayValue == null) return null
+        val replayValueBytes = replayValue.value.array()
+        return when(replayValue.type) {
+            SerializationType.BYTEARRAY -> bytesDeserializer.deserialize(replayValueBytes)
+            SerializationType.STRING -> stringDeserializer.deserialize(replayValueBytes)
+            else -> avroDeserializer.deserialize(replayValueBytes)
+        }
     }
 }
 

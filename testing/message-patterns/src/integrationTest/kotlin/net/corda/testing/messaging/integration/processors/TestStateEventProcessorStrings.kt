@@ -1,5 +1,6 @@
 package net.corda.testing.messaging.integration.processors
 
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.Response
@@ -10,10 +11,12 @@ import java.util.concurrent.CountDownLatch
 class TestStateEventProcessorStrings(
     private val onNextLatch: CountDownLatch,
     private val updateState: Boolean,
-    private var throwExceptionOnFirst: Boolean = false,
+    private var throwIntermittentExceptionOnItem: Int = -1,
     private val outputTopic: String? = null,
-    private var delayProcessorOnFirst: Long? = null
-) :
+    private var delayProcessorOnFirst: Long? = null,
+    private var throwFatalExceptionOnItem: Int = -1,
+
+    ) :
     StateAndEventProcessor<String,
             String,
             String> {
@@ -24,19 +27,25 @@ class TestStateEventProcessorStrings(
     override val eventValueClass: Class<String>
         get() = String::class.java
 
+    private var counter = 0
+
     override fun onNext(
         state: State<String>?, event: Record<String, String>
     ): Response<String> {
         onNextLatch.countDown()
+        counter++
 
         if (delayProcessorOnFirst != null) {
             Thread.sleep(delayProcessorOnFirst!!)
             delayProcessorOnFirst = null
         }
 
-        if (throwExceptionOnFirst) {
-            throwExceptionOnFirst = false
-            throw CordaMessageAPIIntermittentException("Test exception")
+        if (throwIntermittentExceptionOnItem == counter) {
+            throw CordaMessageAPIIntermittentException("Test Intermittent exception")
+        }
+
+        if (throwFatalExceptionOnItem == counter) {
+            throw CordaMessageAPIFatalException("Test Fatal exception")
         }
 
         val newState = if (updateState) {

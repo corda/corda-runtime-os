@@ -5,7 +5,7 @@ import net.corda.messaging.api.records.Record
 import java.util.concurrent.CountDownLatch
 
 class TestDurableProcessorStrings(
-    private val latch: CountDownLatch
+    private val latch: CountDownLatch,
 ) : DurableProcessor<String, String> {
     override val keyClass: Class<String>
         get() = String::class.java

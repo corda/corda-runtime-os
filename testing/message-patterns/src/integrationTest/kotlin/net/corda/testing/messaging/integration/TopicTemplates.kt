@@ -462,8 +462,8 @@ class TopicTemplates {
                     } 
                 ]"""
 
-    const val MEDIATOR_TOPIC1 = "MediatorTopic1"
-    val MEDIATOR_TOPIC1_TEMPLATE = """topics = [ 
+        const val MEDIATOR_TOPIC1 = "MediatorTopic1"
+        val MEDIATOR_TOPIC1_TEMPLATE = """topics = [ 
             { 
                 topicName = "$TEST_TOPIC_PREFIX$MEDIATOR_TOPIC1" 
                 numPartitions = 2 
@@ -471,18 +471,28 @@ class TopicTemplates {
             } 
         ]"""
 
-    const val MEDIATOR_TOPIC1_OUTPUT = "MediatorTopic1Output"
-    val MEDIATOR_TOPIC1_OUTPUT_TEMPLATE = """topics = [ 
+        const val MEDIATOR_TOPIC1_OUTPUT = "MediatorTopic1Output"
+        val MEDIATOR_TOPIC1_OUTPUT_TEMPLATE = """topics = [ 
             { 
                 topicName = "$TEST_TOPIC_PREFIX$MEDIATOR_TOPIC1_OUTPUT" 
                 numPartitions = 2 
                 replicationFactor = 3 
             } 
         ]"""
-    const val MEDIATOR_TOPIC2 = "MediatorTopic2"
-    val MEDIATOR_TOPIC2_TEMPLATE = """topics = [ 
+        const val MEDIATOR_TOPIC2 = "MediatorTopic2"
+        val MEDIATOR_TOPIC2_TEMPLATE = """topics = [ 
             { 
                 topicName = "$TEST_TOPIC_PREFIX$MEDIATOR_TOPIC2" 
+                numPartitions = 2 
+                replicationFactor = 3 
+            } 
+        ]"""
+
+
+        const val MEDIATOR_TOPIC2_OUTPUT = "${MEDIATOR_TOPIC2}Output"
+        val MEDIATOR_TOPIC2_OUTPUT_TEMPLATE = """topics = [ 
+            { 
+                topicName = "$TEST_TOPIC_PREFIX$MEDIATOR_TOPIC2_OUTPUT" 
                 numPartitions = 2 
                 replicationFactor = 3 
             } 

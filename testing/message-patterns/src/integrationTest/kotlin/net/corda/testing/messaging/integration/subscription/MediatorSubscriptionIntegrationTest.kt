@@ -21,6 +21,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.testing.messaging.integration.IntegrationTestProperties.Companion.TEST_CONFIG
@@ -28,6 +29,10 @@ import net.corda.testing.messaging.integration.TopicTemplates.Companion.MEDIATOR
 import net.corda.testing.messaging.integration.TopicTemplates.Companion.MEDIATOR_TOPIC1_OUTPUT
 import net.corda.testing.messaging.integration.TopicTemplates.Companion.MEDIATOR_TOPIC1_OUTPUT_TEMPLATE
 import net.corda.testing.messaging.integration.TopicTemplates.Companion.MEDIATOR_TOPIC1_TEMPLATE
+import net.corda.testing.messaging.integration.TopicTemplates.Companion.MEDIATOR_TOPIC2
+import net.corda.testing.messaging.integration.TopicTemplates.Companion.MEDIATOR_TOPIC2_OUTPUT
+import net.corda.testing.messaging.integration.TopicTemplates.Companion.MEDIATOR_TOPIC2_OUTPUT_TEMPLATE
+import net.corda.testing.messaging.integration.TopicTemplates.Companion.MEDIATOR_TOPIC2_TEMPLATE
 import net.corda.testing.messaging.integration.getKafkaProperties
 import net.corda.testing.messaging.integration.getStringRecords
 import net.corda.testing.messaging.integration.getTopicConfig
@@ -99,7 +104,8 @@ class MediatorSubscriptionIntegrationTest {
         messagingConfig: SmartConfig,
         processor: StateAndEventProcessor<String, String, String>,
         outputTopic: String,
-        inputTopic: String
+        inputTopic: String,
+        replaysEnabled: Boolean = true,
     ): EventMediatorConfig<String, String, String> {
         return EventMediatorConfigBuilder<String, String, String>()
             .name("FlowEventMediator")
@@ -119,7 +125,7 @@ class MediatorSubscriptionIntegrationTest {
             .threads(THREAD_COUNT)
             .threadName("messaging-test-mediator")
             .stateManager(buildStateManager())
-            .saveOutputsForReplay(true)
+            .saveOutputsForReplay(replaysEnabled)
             .minGroupSize(GROUP_SIZE)
             .build()
     }
@@ -130,6 +136,8 @@ class MediatorSubscriptionIntegrationTest {
             MessageRouter { message ->
                 when (message.payload) {
                     is String -> routeTo(messageBusClient, outputTopic, RoutingDestination.Type.ASYNCHRONOUS)
+                    is ByteArray -> routeTo(messageBusClient, outputTopic, RoutingDestination.Type.ASYNCHRONOUS)
+                    is Any -> routeTo(messageBusClient, outputTopic, RoutingDestination.Type.ASYNCHRONOUS)
                     else -> throw IllegalStateException("No route defined for message $message")
                 }
             }
@@ -148,7 +156,7 @@ class MediatorSubscriptionIntegrationTest {
         publisher.close()
 
         val latch = CountDownLatch(50)
-        val processor = TestStateEventProcessorStrings(latch, true, false, MEDIATOR_TOPIC1)
+        val processor = TestStateEventProcessorStrings(latch, true, -1, MEDIATOR_TOPIC1)
         val builder = buildBuilder(TEST_CONFIG, processor, MEDIATOR_TOPIC1_OUTPUT, MEDIATOR_TOPIC1)
 
         val mediator = multiSourceEventMediatorFactory.create(builder)
@@ -167,6 +175,43 @@ class MediatorSubscriptionIntegrationTest {
         verifySub.start()
         verifyLatch.await(30, TimeUnit.SECONDS)
         verifySub.close()
+    }
+
+
+    @Test
+    @Timeout(value = 600, unit = TimeUnit.SECONDS)
+    fun `publish 2 records, 1 is a duplicate, verify processor is called once - replays enabled`() {
+        topicUtils.createTopics(getTopicConfig(MEDIATOR_TOPIC2_TEMPLATE))
+        topicUtils.createTopics(getTopicConfig(MEDIATOR_TOPIC2_OUTPUT_TEMPLATE))
+
+        publisherConfig = PublisherConfig(CLIENT_ID + MEDIATOR_TOPIC2, false)
+        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
+        val record = Record(MEDIATOR_TOPIC2, "key1", "value1")
+        publisher.publish(listOf(record))
+        publisher.close()
+
+        val latch = CountDownLatch(1)
+        val processor = TestStateEventProcessorStrings(latch, true, -1, MEDIATOR_TOPIC2,  throwFatalExceptionOnItem = 2)
+        val builder = buildBuilder(TEST_CONFIG, processor, MEDIATOR_TOPIC1_OUTPUT, MEDIATOR_TOPIC2, true)
+
+        val mediator = multiSourceEventMediatorFactory.create(builder)
+        mediator.start()
+        latch.await()
+        publisher.publish(listOf(record))
+        publisher.close()
+
+        val verifyLatch = CountDownLatch(1)
+        val verifySub = subscriptionFactory.createDurableSubscription(
+            SubscriptionConfig("$MEDIATOR_TOPIC2_OUTPUT-verify", MEDIATOR_TOPIC2_OUTPUT),
+            TestDurableProcessorStrings(verifyLatch),
+            TEST_CONFIG,
+            null
+        )
+
+        verifySub.start()
+        verifyLatch.await(30, TimeUnit.SECONDS)
+        verifySub.close()
+        mediator.close()
     }
 
 }

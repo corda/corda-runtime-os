@@ -5,8 +5,10 @@ import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.data.messaging.mediator.MediatorReplayOutputEvent
+import net.corda.data.messaging.mediator.MediatorReplayOutputEventType
 import net.corda.data.messaging.mediator.MediatorReplayOutputEvents
 import net.corda.data.messaging.mediator.MediatorState
+import net.corda.data.messaging.mediator.SerializationType
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_TOPIC
@@ -141,8 +143,8 @@ class MediatorReplayServiceTest {
                 outputsPerKey.add(
                     MediatorReplayOutputEvent(
                         topic,
-                        ByteBuffer.wrap(recordKey.toByteArray()),
-                        ByteBuffer.wrap("$j".toByteArray())
+                        MediatorReplayOutputEventType(ByteBuffer.wrap(recordKey.toByteArray()), SerializationType.BYTEARRAY),
+                        MediatorReplayOutputEventType(ByteBuffer.wrap("$j".toByteArray()), SerializationType.BYTEARRAY),
                     )
                 )
             }
