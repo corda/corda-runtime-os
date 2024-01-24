@@ -7,7 +7,6 @@ import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateOperationGroupBuilder
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.repository.StateRepository
-import org.slf4j.LoggerFactory
 
 class StateOperationGroupBuilderImpl(
     private val dataSource: CloseableDataSource,
@@ -19,6 +18,7 @@ class StateOperationGroupBuilderImpl(
     private val creates = mutableListOf<State>()
     private val updates = mutableListOf<State>()
     private val deletes = mutableListOf<State>()
+    private var executed = false
 
     override fun create(states: Collection<State>): StateOperationGroupBuilder {
         addToList(states, creates)
@@ -36,10 +36,13 @@ class StateOperationGroupBuilderImpl(
     }
 
     private fun addToList(states: Collection<State>, list: MutableList<State>) {
+        if (executed) {
+            throw IllegalStateException("Attempted to add states to already executed state operation batch")
+        }
         states.forEach { state ->
             if (state.key in stateKeys) {
                 throw IllegalArgumentException(
-                    "Attempted to add state with key ${state.key} more than once to the same update batch"
+                    "Attempted to add state with key ${state.key} more than once to the same operation batch"
                 )
             }
             stateKeys.add(state.key)
@@ -76,6 +79,8 @@ class StateOperationGroupBuilderImpl(
             }
 
             createFailures + updateFailures + deleteFailures
+        }.also {
+            executed = true
         }
     }
 
