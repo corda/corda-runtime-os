@@ -3,6 +3,7 @@ package net.corda.ledger.persistence.utxo
 import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.utxo.data.transaction.MerkleProofDto
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.SecureHash
@@ -161,4 +162,29 @@ interface UtxoRepository {
         signedGroupParameters: SignedGroupParameters,
         timestamp: Instant
     )
+
+    /** Persists a merkle proof and returns its ID */
+    @Suppress("LongParameterList")
+    fun persistMerkleProof(
+        entityManager: EntityManager,
+        transactionId: String,
+        groupIndex: Int,
+        treeSize: Int,
+        leaves: List<Int>,
+        hashes: List<String>
+    ): String
+
+    /** Persist a leaf index that belongs to a given merkle proof with ID [merkleProofId] */
+    fun persistMerkleProofLeaf(
+        entityManager: EntityManager,
+        merkleProofId: String,
+        leafIndex: Int
+    )
+
+    /** Find all the merkle proofs for a given transaction ID and component group index */
+    fun findMerkleProofs(
+        entityManager: EntityManager,
+        transactionId: String,
+        groupIndex: Int
+    ): List<MerkleProofDto>
 }

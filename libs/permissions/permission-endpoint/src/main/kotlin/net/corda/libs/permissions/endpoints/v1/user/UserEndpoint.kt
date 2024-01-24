@@ -4,6 +4,7 @@ import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserPermissionSummaryResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 import net.corda.rest.RestResource
+import net.corda.rest.SC_CREATED
 import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.annotations.HttpDELETE
 import net.corda.rest.annotations.HttpGET
@@ -47,7 +48,8 @@ interface UserEndpoint : RestResource {
             parentGroup: An optional identifier of the user group for the new user to be included;
                     value of null means that the user will belong to the root group
             properties: An optional set of key/value properties associated with a user account
-            roleAssociations: A set of roles associated with the user account"""
+            roleAssociations: A set of roles associated with the user account""",
+        successCode = SC_CREATED
     )
     fun createUser(
         @ClientRequestBodyParameter(

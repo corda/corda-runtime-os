@@ -10,18 +10,18 @@ class BraveRecordTracing(private val tracing: Tracing) {
     private val tracer = tracing.tracer()
     private val recordExtractor = BraveRecordExtractor(tracing)
 
-    fun getTraceContext(headers: List<Pair<String, String>>): brave.propagation.TraceContext {
+    fun getTraceContext(headers: List<Pair<String, String>>): brave.propagation.TraceContext? {
         val extracted = recordExtractor.extract(headers)
         return getTraceContext(extracted)
     }
 
-    fun getTraceContext(headers: Map<String, Any>): brave.propagation.TraceContext {
+    fun getTraceContext(headers: Map<String, Any>): brave.propagation.TraceContext? {
         val extracted = recordExtractor.extract(headers)
         return getTraceContext(extracted)
     }
 
-    private fun getTraceContext(extracted: TraceContextOrSamplingFlags?): brave.propagation.TraceContext {
-        return extracted?.context() ?: tracing.currentTraceContext().get()
+    private fun getTraceContext(extracted: TraceContextOrSamplingFlags?): brave.propagation.TraceContext? {
+        return extracted?.context() ?: tracing.currentTraceContext()?.get()
     }
 
     fun nextSpan(record: Record<*, *>): Span {

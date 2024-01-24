@@ -4,7 +4,6 @@ package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.crypto.test.certificates.generation.toPem
-import net.corda.e2etest.utilities.ClusterBuilder.Companion.REST_API_VERSION_PATH
 import net.corda.e2etest.utilities.types.NetworkOnboardingMetadata
 import net.corda.rest.ResponseCode
 import net.corda.utilities.minutes
@@ -92,6 +91,7 @@ fun ClusterInfo.exportGroupPolicy(
     }.body
 }
 
+@Suppress("unused")
 /**
  * Attempt to create a standard approval rule.
  */
@@ -99,8 +99,9 @@ fun ClusterInfo.createApprovalRule(
     mgmHoldingId: String,
     regex: String,
     label: String
-) = createApprovalRuleCommon("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/approval/rules", regex, label)
+) = createApprovalRuleCommon({ "/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/approval/rules" }, regex, label)
 
+@Suppress("unused")
 /**
  * Attempt to create a pre-auth approval rule.
  */
@@ -108,13 +109,13 @@ fun ClusterInfo.createPreAuthApprovalRule(
     mgmHoldingId: String,
     regex: String,
     label: String
-) = createApprovalRuleCommon("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/approval/rules/preauth", regex, label)
+) = createApprovalRuleCommon({ "/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/approval/rules/preauth" }, regex, label)
 
 /**
  * Attempt to create an approval rule at a given resource URL.
  */
 private fun ClusterInfo.createApprovalRuleCommon(
-    url: String,
+    urlFn: ClusterBuilder.() -> String,
     regex: String,
     label: String
 ) = cluster {
@@ -125,40 +126,43 @@ private fun ClusterInfo.createApprovalRuleCommon(
 
     assertWithRetry {
         interval(1.seconds)
-        command { post(url, ObjectMapper().writeValueAsString(payload)) }
+        command { post(urlFn(), ObjectMapper().writeValueAsString(payload)) }
         condition { it.code == ResponseCode.OK.statusCode }
     }.toJson()["ruleId"].textValue()
 }
 
+@Suppress("unused")
 /**
  * Attempt to delete a standard approval rule.
  */
 fun ClusterInfo.deleteApprovalRule(
     mgmHoldingId: String,
     ruleId: String
-) = delete("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/approval/rules/$ruleId")
+) = delete { "/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/approval/rules/$ruleId" }
 
+@Suppress("unused")
 /**
  * Attempt to delete a pre-auth approval rule.
  */
 fun ClusterInfo.deletePreAuthApprovalRule(
     mgmHoldingId: String,
     ruleId: String
-) = delete("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/approval/rules/preauth/$ruleId")
+) = delete {"/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/approval/rules/preauth/$ruleId" }
 
 /**
  * Attempt to delete a resource at a given URL with retries.
  */
 private fun ClusterInfo.delete(
-    url: String
+    urlFn: ClusterBuilder.() -> String
 ) = cluster {
     assertWithRetry {
         interval(1.seconds)
-        command { delete(url) }
+        command { delete(urlFn()) }
         condition { it.code == ResponseCode.NO_CONTENT.statusCode }
     }
 }
 
+@Suppress("unused")
 /**
  * Attempt to create a pre-auth token.
  */
@@ -187,6 +191,7 @@ fun ClusterInfo.createPreAuthToken(
     }.toJson()["id"].textValue()
 }
 
+@Suppress("unused")
 /**
  * Attempt to revoke a pre-auth token.
  */
@@ -209,6 +214,7 @@ fun ClusterInfo.revokePreAuthToken(
     }
 }
 
+@Suppress("unused")
 /**
  * Get the visible pre-auth tokens for an MGM and return the whole response payload.
  */
@@ -232,6 +238,7 @@ fun ClusterInfo.getPreAuthTokens(
     }.toJson()
 }
 
+@Suppress("unused")
 /**
  * Wait for a pending approval registration to be visible to the MGM in the list of registrations paused waiting for
  * review.
@@ -259,6 +266,7 @@ fun ClusterInfo.waitForPendingRegistrationReviews(
     }
 }
 
+@Suppress("unused")
 /**
  * Attempt to approve a registration.
  */
@@ -275,6 +283,7 @@ fun ClusterInfo.approveRegistration(
     }
 }
 
+@Suppress("unused")
 /**
  * Attempt to decline a registration.
  */
@@ -332,6 +341,7 @@ private fun ClusterInfo.createMgmRegistrationContext(
     "corda.group.trustroot.session.0" to caTrustRoot,
 )
 
+@Suppress("unused")
 /**
  * Suspend a member identified by [x500Name].
  * Suspension is performed by the MGM identified by [mgmHoldingId].
@@ -354,6 +364,7 @@ fun ClusterInfo.suspendMember(
     }
 }
 
+@Suppress("unused")
 /**
  * Suspend a member identified by [x500Name].
  * Suspension is performed by the MGM identified by [mgmHoldingId].
@@ -378,6 +389,7 @@ fun ClusterInfo.deprecatedSuspendMember(
     }
 }
 
+@Suppress("unused")
 /**
  * Activate a member identified by [x500Name].
  * Activation is performed by the MGM identified by [mgmHoldingId].
@@ -400,6 +412,7 @@ fun ClusterInfo.activateMember(
     }
 }
 
+@Suppress("unused")
 /**
  * Activate a member identified by [x500Name].
  * Activation is performed by the MGM identified by [mgmHoldingId].
@@ -424,6 +437,7 @@ fun ClusterInfo.deprecatedActivateMember(
     }
 }
 
+@Suppress("unused")
 /**
  * Update the group parameters as the MGM identified by [mgmHoldingId], and return the newly updated group parameters.
  */
@@ -455,8 +469,8 @@ fun ClusterInfo.allowClientCertificates(certificatePem: String, mgmHoldingId: St
         .subjectX500Principal
 
     val encodedSubject = encode(subject.toString(), StandardCharsets.UTF_8)
-    val endpoint = "/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/mutual-tls/allowed-client-certificate-subjects/$encodedSubject"
     cluster {
+        val endpoint = "/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/mutual-tls/allowed-client-certificate-subjects/$encodedSubject"
         assertWithRetryIgnoringExceptions {
             timeout(15.seconds)
             interval(1.seconds)

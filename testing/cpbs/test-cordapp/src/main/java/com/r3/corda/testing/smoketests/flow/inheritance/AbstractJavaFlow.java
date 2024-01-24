@@ -6,7 +6,6 @@ import net.corda.v5.application.flows.ClientStartableFlow;
 import net.corda.v5.application.marshalling.JsonMarshallingService;
 import net.corda.v5.application.membership.MemberLookup;
 import net.corda.v5.base.annotations.Suspendable;
-import net.corda.v5.base.types.MemberX500Name;
 import net.corda.v5.membership.MemberInfo;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -34,8 +33,7 @@ public abstract class AbstractJavaFlow implements ClientStartableFlow, JavaMembe
 
         try {
             Map<String, String> request = requestBody.getRequestBodyAsMap(jsonMarshallingService, String.class, String.class);
-            String memberInfoRequest = Objects.requireNonNull(request.get("id"), "Failed to find key 'id' in the RPC input args");
-            MemberInfo memberInfoResponse = memberLookupService.lookup(MemberX500Name.parse(memberInfoRequest));
+            String memberInfoRequest = Objects.requireNonNull(request.get("id"), "Failed to find key 'id' in the REST input args");
 
             return buildOutput(findMember(memberInfoRequest));
         } catch (Exception exception) {

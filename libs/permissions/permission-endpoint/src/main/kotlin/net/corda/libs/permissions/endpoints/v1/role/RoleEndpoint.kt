@@ -3,6 +3,7 @@ package net.corda.libs.permissions.endpoints.v1.role
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.libs.permissions.endpoints.v1.role.types.RoleResponseType
 import net.corda.rest.RestResource
+import net.corda.rest.SC_CREATED
 import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.annotations.HttpDELETE
 import net.corda.rest.annotations.HttpGET
@@ -53,7 +54,8 @@ interface RoleEndpoint : RestResource {
         updateTimestamp: The date and time when the role was last updated
         roleName: The name of the role
         groupVisibility: An optional group visibility of the role
-        permissions: The list of permissions associated with the role"""
+        permissions: The list of permissions associated with the role""",
+        successCode = SC_CREATED
     )
     fun createRole(
         @ClientRequestBodyParameter(

@@ -2,6 +2,7 @@ package net.corda.rest.server.impl.apigen.processing
 
 import io.swagger.v3.oas.models.media.ArraySchema
 import net.corda.rest.JsonObject
+import net.corda.rest.SC_OK
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.server.impl.apigen.models.Endpoint
 import net.corda.rest.server.impl.apigen.models.EndpointMethod
@@ -224,6 +225,7 @@ class ResourceToOpenApiSpecMapperTest {
             ),
             responseBody = ResponseBody(
                 description = "",
+                successCode = SC_OK,
                 type = List::class.java,
                 parameterizedTypes = listOf(
                     GenericParameterizedType(Double::class.java)
@@ -250,7 +252,12 @@ class ResourceToOpenApiSpecMapperTest {
             description = "",
             path = "plusOne",
             parameters = emptyList(),
-            responseBody = ResponseBody(description = "", type = Void.TYPE, parameterizedTypes = emptyList()),
+            responseBody = ResponseBody(
+                description = "",
+                successCode = SC_OK,
+                type = Void.TYPE,
+                parameterizedTypes = emptyList()
+            ),
             invocationMethod = InvocationMethod(
                 method = TestHealthCheckAPI::voidResponse.javaMethod!!,
                 instance = TestHealthCheckAPIImpl()
@@ -274,7 +281,12 @@ class ResourceToOpenApiSpecMapperTest {
             description = "",
             path = "plusOne",
             parameters = emptyList(),
-            responseBody = ResponseBody(description = "", type = Void::class.java, parameterizedTypes = emptyList()),
+            responseBody = ResponseBody(
+                description = "",
+                successCode = SC_OK,
+                type = Void::class.java,
+                parameterizedTypes = emptyList()
+            ),
             invocationMethod = InvocationMethod(
                 method = TestHealthCheckAPI::voidResponse.javaMethod!!,
                 instance = TestHealthCheckAPIImpl()
@@ -298,7 +310,12 @@ class ResourceToOpenApiSpecMapperTest {
             description = "",
             path = "plusOne",
             parameters = emptyList(),
-            responseBody = ResponseBody(description = "", type = Void::class.java, parameterizedTypes = emptyList()),
+            responseBody = ResponseBody(
+                description = "",
+                successCode = SC_OK,
+                type = Void::class.java,
+                parameterizedTypes = emptyList()
+            ),
             invocationMethod = InvocationMethod(
                 method = TestHealthCheckAPI::voidResponse.javaMethod!!,
                 instance = TestHealthCheckAPIImpl()
@@ -342,6 +359,7 @@ class ResourceToOpenApiSpecMapperTest {
             ),
             responseBody = ResponseBody(
                 description = "",
+                successCode = SC_OK,
                 type = String::class.java,
                 parameterizedTypes = emptyList()
             ),
@@ -400,6 +418,7 @@ class ResourceToOpenApiSpecMapperTest {
             ),
             responseBody = ResponseBody(
                 description = "",
+                successCode = SC_OK,
                 type = String::class.java,
                 parameterizedTypes = emptyList()
             ),
