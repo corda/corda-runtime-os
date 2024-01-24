@@ -1,16 +1,12 @@
 package net.corda.ledger.common.flow.impl.transaction
 
 import net.corda.ledger.common.test.CommonLedgerTest
-import net.corda.ledger.common.testkit.transactionMetadataExample
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.whenever
 
 internal class PrivacySaltProviderServiceImplTest : CommonLedgerTest() {
-    private val metadata = transactionMetadataExample()
-    private val metadataJson = jsonMarshallingService.format(metadata)
-    private val canonicalJson = jsonValidator.canonicalize(metadataJson)
     private val privacySaltProviderService = PrivacySaltProviderServiceImpl(flowFiberService)
 
     @BeforeEach
@@ -18,7 +14,6 @@ internal class PrivacySaltProviderServiceImplTest : CommonLedgerTest() {
         val flowId = "fc321a0c-62c6-41a1-85e6-e61870ab93aa"
         val suspendCount = 10
         val ledgerSaltCounter = 1
-
         val checkpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
 
         whenever(checkpoint.flowId).thenReturn(flowId)
@@ -30,7 +25,6 @@ internal class PrivacySaltProviderServiceImplTest : CommonLedgerTest() {
     fun `transaction ids are deterministic`() {
         val transaction1 = privacySaltProviderService.generatePrivacySalt()
         val transaction2 = privacySaltProviderService.generatePrivacySalt()
-
         Assertions.assertThat(transaction1).isEqualTo(transaction2)
     }
 
@@ -43,7 +37,6 @@ internal class PrivacySaltProviderServiceImplTest : CommonLedgerTest() {
         whenever(checkpoint.flowId).thenReturn(newFlowId)
 
         val transaction2 = privacySaltProviderService.generatePrivacySalt()
-
         Assertions.assertThat(transaction1).isNotEqualTo(transaction2)
     }
 
