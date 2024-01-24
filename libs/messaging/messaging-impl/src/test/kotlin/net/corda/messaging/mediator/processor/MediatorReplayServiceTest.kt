@@ -40,7 +40,7 @@ class MediatorReplayServiceTest {
         }
         deserializer = mock<CordaAvroDeserializer<Any>>().apply {
             whenever(deserialize(anyOrNull())).doAnswer {
-                it.arguments[0].toString()
+                it.arguments[0].toString().toByteArray()
             }
         }
 
