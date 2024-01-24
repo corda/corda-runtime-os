@@ -61,7 +61,7 @@ class EventProcessorTest {
                 RoutingDestination(client, "endpoint", RoutingDestination.Type.SYNCHRONOUS)
             } else RoutingDestination(client, "endpoint", RoutingDestination.Type.ASYNCHRONOUS)
         }
-        eventMediatorConfig = buildStringTestConfig()
+        eventMediatorConfig = buildTestConfig(true)
 
         whenever(stateAndEventProcessor.onNext(anyOrNull(), any())).thenAnswer {
             Response(
@@ -99,6 +99,31 @@ class EventProcessorTest {
         verify(stateAndEventProcessor, times(4)).onNext(anyOrNull(), any())
         verify(messageRouter, times(9)).getDestination(any())
         verify(client, times(3)).send(any())
+        verify(mediatorReplayService, times(1)).getOutputEvents<String, String>(any(), any())
+        verify(mediatorReplayService, times(1)).getReplayEvents<String, String>(any(), any())
+        verify(stateManagerHelper, times(1)).createOrUpdateState(any(), anyOrNull(), any(), anyOrNull())
+    }
+
+    @Test
+    fun `When save replays is set to false, replays are not saved`() {
+        eventMediatorConfig = buildTestConfig(false)
+        eventProcessor = EventProcessor(eventMediatorConfig, stateManagerHelper, messageRouter, mediatorReplayService)
+
+        whenever(stateAndEventProcessor.onNext(anyOrNull(), any())).thenReturn(Response(
+                    null, listOf(
+                        Record("", "key", asyncMessage)
+                    )
+                ))
+
+        val input = mapOf("key" to EventProcessingInput("key", getStringRecords(1, "key"), state1))
+        eventProcessor.processEvents(input)
+
+        verify(stateManagerHelper, times(1)).deserializeValue(any())
+        verify(stateAndEventProcessor, times(1)).onNext(anyOrNull(), any())
+        verify(messageRouter, times(1)).getDestination(any())
+        verify(client, times(0)).send(any())
+        verify(mediatorReplayService, times(0)).getOutputEvents<String, String>(any(), any())
+        verify(mediatorReplayService, times(0)).getReplayEvents<String, String>(any(), any())
         verify(stateManagerHelper, times(1)).createOrUpdateState(any(), anyOrNull(), any(), anyOrNull())
     }
 
@@ -145,6 +170,7 @@ class EventProcessorTest {
         verify(stateAndEventProcessor, times(0)).onNext(anyOrNull(), any())
         verify(messageRouter, times(0)).getDestination(any())
         verify(client, times(0)).send(any())
+        verify(mediatorReplayService, times(0)).getOutputEvents<String, String>(any(), any())
         verify(stateManagerHelper, times(0)).createOrUpdateState(any(), anyOrNull(), any(), anyOrNull())
     }
 
@@ -189,6 +215,8 @@ class EventProcessorTest {
         verify(stateAndEventProcessor, times(2)).onNext(anyOrNull(), any())
         verify(messageRouter, times(6)).getDestination(any())
         verify(client, times(2)).send(any())
+        verify(mediatorReplayService, times(2)).getReplayEvents<String, String>(any(), any())
+        verify(mediatorReplayService, times(1)).getOutputEvents<String, String>(any(), any())
         verify(stateManagerHelper, times(1)).createOrUpdateState(any(), anyOrNull(), any(), anyOrNull())
     }
 
@@ -223,10 +251,12 @@ class EventProcessorTest {
         verify(stateAndEventProcessor, times(1)).onNext(anyOrNull(), any())
         verify(messageRouter, times(3)).getDestination(any())
         verify(client, times(1)).send(any())
+        verify(mediatorReplayService, times(1)).getReplayEvents<String, String>(any(), any())
+        verify(mediatorReplayService, times(1)).getOutputEvents<String, String>(any(), any())
         verify(stateManagerHelper, times(1)).createOrUpdateState(any(), anyOrNull(), any(), anyOrNull())
     }
 
-    private fun buildStringTestConfig() = EventMediatorConfig(
+    private fun buildTestConfig(saveReplays: Boolean) = EventMediatorConfig(
         "",
         SmartConfigImpl.empty(),
         emptyList(),
@@ -236,6 +266,7 @@ class EventProcessorTest {
         1,
         "",
         mock(),
-        20
+        20,
+        saveReplays
     )
 }

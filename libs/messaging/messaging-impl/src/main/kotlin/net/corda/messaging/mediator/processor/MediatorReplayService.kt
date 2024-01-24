@@ -107,7 +107,8 @@ class MediatorReplayService @Activate constructor(
      * This allows the consumer that reads from the output topics to deserialize to their expected types     *
      */
     private fun MediatorReplayOutputEvent.toMediatorMessage(): MediatorMessage<Any> {
-        val key = bytesDeserializer.deserialize(key.array()) ?: throw IllegalStateException("Mediator message key is null after deserialization")
+        val key =
+            bytesDeserializer.deserialize(key.array()) ?: throw IllegalStateException("Mediator message key is null after deserialization")
         val payload = value.let { bytesDeserializer.deserialize(it.array()) }
         val properties = mutableMapOf<String, Any>(
             MSG_PROP_TOPIC to topic,

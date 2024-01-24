@@ -246,6 +246,7 @@ class ConsumerProcessorTest {
         1,
         "",
         stateManager,
-        20
+        20,
+        true
     )
 }

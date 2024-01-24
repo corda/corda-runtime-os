@@ -119,6 +119,7 @@ class MediatorSubscriptionIntegrationTest {
             .threads(THREAD_COUNT)
             .threadName("messaging-test-mediator")
             .stateManager(buildStateManager())
+            .saveOutputsForReplay(true)
             .minGroupSize(GROUP_SIZE)
             .build()
     }
