@@ -67,7 +67,7 @@ internal class FlowMapperServiceTest {
                 .whenever(it).create(any(), any(), any())
         }
         val stateManagerFactory = mock<StateManagerFactory>().also {
-            doAnswer { mock<StateManager>() }.whenever(it).create(any(), eq(StateManagerConfig.StateType.FLOW_MAPPING.value))
+            doAnswer { mock<StateManager>() }.whenever(it).create(any(), eq(StateManagerConfig.StateType.FLOW_MAPPING))
         }
 
         LifecycleTest {
@@ -132,7 +132,7 @@ internal class FlowMapperServiceTest {
                 .thenReturn(eventMediator)
         }
         val stateManagerFactory = mock<StateManagerFactory>().also {
-            doAnswer { mock<StateManager>() }.whenever(it).create(any(), eq(StateManagerConfig.StateType.FLOW_MAPPING.value))
+            doAnswer { mock<StateManager>() }.whenever(it).create(any(), eq(StateManagerConfig.StateType.FLOW_MAPPING))
         }
 
         LifecycleTest {
@@ -187,7 +187,7 @@ internal class FlowMapperServiceTest {
                 .thenThrow(CordaMessageAPIConfigException("Bad config!"))
         }
         val stateManagerFactory = mock<StateManagerFactory>().also {
-            doAnswer { mock<StateManager>() }.whenever(it).create(any(), eq(StateManagerConfig.StateType.FLOW_MAPPING.value))
+            doAnswer { mock<StateManager>() }.whenever(it).create(any(), eq(StateManagerConfig.StateType.FLOW_MAPPING))
         }
 
         LifecycleTest {

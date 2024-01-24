@@ -115,7 +115,7 @@ class FlowMapperService @Activate constructor(
             val stateManagerConfig = event.config.getConfig(STATE_MANAGER_CONFIG)
 
             stateManager?.stop()
-            stateManager = stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.FLOW_MAPPING.value)
+            stateManager = stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.FLOW_MAPPING)
                 .also { it.start() }
 
             coordinator.createManagedResource(EVENT_MEDIATOR) {

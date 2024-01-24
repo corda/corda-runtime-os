@@ -428,7 +428,7 @@ class FlowMapperServiceIntegrationTest {
         // flow processing time.
         val stateKey = "foo"
         val config = SmartConfigImpl.empty()
-        val stateManager = stateManagerFactory.create(config, StateManagerConfig.StateType.FLOW_MAPPING.value)
+        val stateManager = stateManagerFactory.create(config, StateManagerConfig.StateType.FLOW_MAPPING)
         stateManager.create(listOf(
             State(
                 stateKey,

@@ -169,7 +169,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
         val stateManagerConfig = config.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)
 
         stateManagerInit?.stop()
-        stateManagerInit = stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION.value)
+        stateManagerInit = stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION)
             .also { it.start() }
         logger.debug("State manager created and started {}", stateManager.name)
     }

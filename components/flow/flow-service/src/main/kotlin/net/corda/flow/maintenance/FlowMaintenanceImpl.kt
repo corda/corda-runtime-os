@@ -59,7 +59,7 @@ class FlowMaintenanceImpl @Activate constructor(
             subscriptionRegistrationHandle?.close()
             stateManager?.stop()
 
-            stateManager = stateManagerFactory.create(newStateManagerConfig, StateManagerConfig.StateType.FLOW_CHECKPOINT.value)
+            stateManager = stateManagerFactory.create(newStateManagerConfig, StateManagerConfig.StateType.FLOW_CHECKPOINT)
                 .also { it.start() }
 
             coordinator.createManagedResource("FLOW_MAINTENANCE_SUBSCRIPTION") {

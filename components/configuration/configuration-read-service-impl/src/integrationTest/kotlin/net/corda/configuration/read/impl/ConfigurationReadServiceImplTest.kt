@@ -45,7 +45,7 @@ class ConfigurationReadServiceImplTest {
     companion object {
         private const val JDBC_URL_DATA = "testDataToTriggerBootDBParamLogic"
         private const val STATE_MANAGER_JDBC_URL_DATA = "testDataToTriggerBootStateManagerDBParamLogic"
-        private val stateConfig = "$BOOT_STATE_MANAGER.${StateManagerConfig.StateType.FLOW_CHECKPOINT.value}"
+        private val stateConfig = "$BOOT_STATE_MANAGER.${StateManagerConfig.StateType.FLOW_CHECKPOINT}"
         private val stateManagerTypeKey = "$stateConfig.${StateManagerConfig.TYPE}"
         private val stateManagerJdbcKey = "$stateConfig.${StateManagerConfig.Database.JDBC_URL}"
         private val BOOT_CONFIG_STRING = """
@@ -62,8 +62,8 @@ class ConfigurationReadServiceImplTest {
         """
 
         private val STATE_MANAGER_CONFIG_STRING = """
-            ${StateManagerConfig.StateType.FLOW_CHECKPOINT.value}.${StateManagerConfig.TYPE} = "DATABASE"
-            ${StateManagerConfig.StateType.FLOW_CHECKPOINT.value}.${StateManagerConfig.Database.JDBC_URL} = $STATE_MANAGER_JDBC_URL_DATA
+            ${StateManagerConfig.StateType.FLOW_CHECKPOINT}.${StateManagerConfig.TYPE} = "DATABASE"
+            ${StateManagerConfig.StateType.FLOW_CHECKPOINT}.${StateManagerConfig.Database.JDBC_URL} = $STATE_MANAGER_JDBC_URL_DATA
         """
 
         private const val TIMEOUT = 10000L

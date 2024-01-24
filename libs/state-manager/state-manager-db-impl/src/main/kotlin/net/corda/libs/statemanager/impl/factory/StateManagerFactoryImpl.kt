@@ -38,12 +38,12 @@ class StateManagerFactoryImpl @Activate constructor(
         return PostgresQueryProvider()
     }
 
-    override fun create(config: SmartConfig, stateType: String): StateManager {
+    override fun create(config: SmartConfig, stateType: StateManagerConfig.StateType): StateManager {
         lock.withLock {
             if (dataSource == null) {
                 logger.info("Initializing Shared State Manager DataSource")
 
-                val stateManagerConfig = config.getConfig(stateType)
+                val stateManagerConfig = config.getConfig(stateType.value)
 
                 val user = stateManagerConfig.getString(StateManagerConfig.Database.JDBC_USER)
                 val pass = stateManagerConfig.getString(StateManagerConfig.Database.JDBC_PASS)

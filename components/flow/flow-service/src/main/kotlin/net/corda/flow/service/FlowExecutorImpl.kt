@@ -78,7 +78,7 @@ class FlowExecutorImpl constructor(
             multiSourceEventMediator?.close()
             stateManager?.stop()
 
-            stateManager = stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.FLOW_CHECKPOINT.value)
+            stateManager = stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.FLOW_CHECKPOINT)
             multiSourceEventMediator = flowEventMediatorFactory.create(updatedConfigs, messagingConfig, stateManager!!)
             subscriptionRegistrationHandle = coordinator.followStatusChangesByName(
                 setOf(multiSourceEventMediator!!.subscriptionName, stateManager!!.name)

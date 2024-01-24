@@ -60,7 +60,7 @@ class FlowExecutorImplTest {
     @BeforeEach
     fun setup() {
         whenever(flowEventProcessorFactory.create(any())).thenReturn(flowEventProcessor)
-        whenever(stateManagerFactory.create(any(), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT.value))).thenReturn(stateManager)
+        whenever(stateManagerFactory.create(any(), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT))).thenReturn(stateManager)
         whenever(
             flowEventMediatorFactory.create(
                 any(),
@@ -160,7 +160,7 @@ class FlowExecutorImplTest {
                 any(),
             )
         ).thenReturn(multiSourceEventMediator2)
-        whenever(stateManagerFactory.create(any(), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT.value))).thenReturn(stateManager2)
+        whenever(stateManagerFactory.create(any(), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT))).thenReturn(stateManager2)
         whenever(flowExecutorCoordinator.followStatusChangesByName(any())).thenReturn(subscriptionRegistrationHandle2)
 
         flowExecutor.onConfigChange(config)

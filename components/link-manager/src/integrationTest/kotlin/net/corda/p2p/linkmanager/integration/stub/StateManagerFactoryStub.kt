@@ -7,9 +7,10 @@ import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.schema.configuration.StateManagerConfig
 
 class StateManagerFactoryStub : StateManagerFactory {
-    override fun create(config: SmartConfig, stateType: String): StateManager {
+    override fun create(config: SmartConfig, stateType: StateManagerConfig.StateType): StateManager {
         return object : StateManager {
             override val name = LifecycleCoordinatorName.forComponent<StateManager>()
             override fun create(states: Collection<State>): Set<String> = throw UnsupportedOperationException()

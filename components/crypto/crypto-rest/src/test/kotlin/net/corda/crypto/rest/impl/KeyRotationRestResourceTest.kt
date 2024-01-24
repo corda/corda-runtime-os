@@ -109,7 +109,7 @@ class KeyRotationRestResourceTest {
         }
 
         stateManagerFactory = mock<StateManagerFactory> {
-            on { create(any(), eq(StateManagerConfig.StateType.KEY_ROTATION.value)) } doReturn stateManager
+            on { create(any(), eq(StateManagerConfig.StateType.KEY_ROTATION)) } doReturn stateManager
         }
 
         stateManagerPublicationCount = 0
@@ -149,7 +149,7 @@ class KeyRotationRestResourceTest {
     fun `initialize creates the publisher and state manager`() {
         createKeyRotationRestResource()
         verify(publisherFactory, times(1)).createPublisher(any(), any())
-        verify(stateManagerFactory, times(1)).create(any(), eq(StateManagerConfig.StateType.KEY_ROTATION.value))
+        verify(stateManagerFactory, times(1)).create(any(), eq(StateManagerConfig.StateType.KEY_ROTATION))
     }
 
     @Test

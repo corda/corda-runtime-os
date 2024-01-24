@@ -233,7 +233,7 @@ class CryptoProcessorImpl @Activate constructor(
 
                 if (bootConfig.hasPath(StateManagerConfig.STATE_MANAGER)) {
                     val stateManagerConfig = bootConfig.getConfig(StateManagerConfig.STATE_MANAGER)
-                    stateManager = stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION.value)
+                    stateManager = stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION)
                         .also { it.start() }
                 }
 
