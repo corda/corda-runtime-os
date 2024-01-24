@@ -17,11 +17,13 @@ internal class PrivacySaltProviderServiceImplTest : CommonLedgerTest() {
     fun setupPrivacySaltProviderService() {
         val flowId = "fc321a0c-62c6-41a1-85e6-e61870ab93aa"
         val suspendCount = 10
+        val ledgerSaltCounter = 1
 
         val checkpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
 
         whenever(checkpoint.flowId).thenReturn(flowId)
         whenever(checkpoint.suspendCount).thenReturn(suspendCount)
+        whenever(checkpoint.ledgerSaltCounter).thenReturn(ledgerSaltCounter)
     }
 
     @Test
@@ -80,6 +82,30 @@ internal class PrivacySaltProviderServiceImplTest : CommonLedgerTest() {
         val newSuspendCount = 50
         val checkpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
         whenever(checkpoint.suspendCount).thenReturn(newSuspendCount)
+
+        val transaction2 = wireTransactionFactory.create(
+            listOf(
+                listOf(canonicalJson.toByteArray()),
+            ),
+            privacySaltProviderService.generatePrivacySalt()
+        )
+
+        Assertions.assertThat(transaction1.id).isNotEqualTo(transaction2.id)
+        Assertions.assertThat(transaction1.privacySalt).isNotEqualTo(transaction2.privacySalt)
+    }
+
+    @Test
+    fun `different privacy salts are created from different salt counters`() {
+        val transaction1 = wireTransactionFactory.create(
+            listOf(
+                listOf(canonicalJson.toByteArray()),
+            ),
+            privacySaltProviderService.generatePrivacySalt()
+        )
+
+        val ledgerSaltCounter = 2
+        val checkpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
+        whenever(checkpoint.ledgerSaltCounter).thenReturn(ledgerSaltCounter)
 
         val transaction2 = wireTransactionFactory.create(
             listOf(

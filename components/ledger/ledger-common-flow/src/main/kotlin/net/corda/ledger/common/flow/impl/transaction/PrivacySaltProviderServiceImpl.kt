@@ -15,9 +15,11 @@ class PrivacySaltProviderServiceImpl @Activate constructor(
 ) : PrivacySaltProviderService {
 
     override fun generatePrivacySalt(): PrivacySalt {
-        val flowID = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.flowId
-        val suspendCount = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.suspendCount
-        val input = flowID + suspendCount
+        val flowCheckpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
+        val flowID = flowCheckpoint.flowId
+        val suspendCount = flowCheckpoint.suspendCount
+        val saltCounter = flowCheckpoint.ledgerSaltCounter
+        val input = "$flowID-$suspendCount-$saltCounter"
         return PrivacySaltImpl(input.toByteArray())
     }
 }
