@@ -88,5 +88,5 @@ dependencies {
 
     integrationTestRuntimeOnly project(':libs:messaging:kafka-message-bus-impl')
     integrationTestRuntimeOnly 'org.osgi:osgi.core'
-    integrationTestRuntimeOnly "org.webjars:swagger-ui:$swaggeruiVersion"
+    integrationTestRuntimeOnly libs.swagger.ui
 }
