@@ -15,7 +15,8 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.FLOW_TIMEOUT_TOPIC
 import net.corda.schema.Schemas.ScheduledTask
-import net.corda.schema.configuration.FlowConfig
+import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_IDLE_TIME
+import net.corda.schema.configuration.FlowConfig.SESSION_TIMEOUT_WINDOW
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -25,7 +26,12 @@ import java.time.Instant
  * A flow will be picked up to be timed out if and only if any of the following conditions is true:
  *  - Flow has at least one opened session that timed out.
  *  - Flow hasn't been updated within the configured maximum idle time.
- *  - Flow processing marked as failed by the messaging layer (key [MessagingMetadataKeys.PROCESSING_FAILURE] set).
+ *  - Flow processing marked as failed by the messaging layer (key [PROCESSING_FAILURE] set).
+ *
+ * This processor is responsible for deciding which flows to time out based on the above conditions, so it makes sense
+ * for the time out reason to be set here as well. The generated [FlowTimeout] records are later picked up by the
+ * [TimeoutEventCleanupProcessor], which is responsible for cleaning up [Checkpoint]s and signaling other parts of the
+ * system.
  *
  * TODO - Execute a single State Manager API call once all filters are supported at once.
  */
@@ -36,11 +42,19 @@ class FlowTimeoutTaskProcessor(
 ) : DurableProcessor<String, ScheduledTaskTrigger> {
     companion object {
         private val logger = LoggerFactory.getLogger(FlowTimeoutTaskProcessor::class.java)
+        const val MAX_IDLE_TIME_ERROR_MESSAGE =
+            "Flow has been 'RUNNING' without updates for longer than the configured '${PROCESSING_MAX_IDLE_TIME}' milliseconds"
+        const val SESSION_EXPIRED_ERROR_MESSAGE =
+            "Flow has at least one open session that has not received messages for longer than the configured " +
+                "'${SESSION_TIMEOUT_WINDOW}' milliseconds"
+        const val PROCESS_FAILURE_ERROR_MESSAGE =
+            "Flow encountered an unrecoverable error while processing an event. Please check the logs and ensure that " +
+                "there are no flaws in the Corda Application"
     }
 
     override val keyClass = String::class.java
     override val valueClass = ScheduledTaskTrigger::class.java
-    private val maxIdleTimeMilliseconds = config.getLong(FlowConfig.PROCESSING_MAX_IDLE_TIME)
+    private val maxIdleTimeMilliseconds = config.getLong(PROCESSING_MAX_IDLE_TIME)
 
     private fun idleTimeOutExpired() =
         // Flows that have not been updated in at least [maxIdleTimeMilliseconds]
@@ -52,9 +66,19 @@ class FlowTimeoutTaskProcessor(
             listOf(
                 MetadataFilter(STATE_TYPE, Operation.Equals, Checkpoint::class.java.name),
             )
-        )
+        ).map { kvp ->
+            Record(
+                FLOW_TIMEOUT_TOPIC,
+                kvp.key,
+                FlowTimeout().apply {
+                    timeoutDateTime = now()
+                    checkpointStateKey = kvp.value.key
+                    reason = MAX_IDLE_TIME_ERROR_MESSAGE
+                }
+            )
+        }
 
-    private fun sessionExpiredFailureSignaledByMessagingLayer() =
+    private fun sessionExpiredOrFailureSignaledByMessagingLayer() =
         // Flows timed out by the messaging layer + sessions timed out
         stateManager.findByMetadataMatchingAny(
             listOf(
@@ -63,7 +87,23 @@ class FlowTimeoutTaskProcessor(
                 // Session expired
                 MetadataFilter(STATE_META_SESSION_EXPIRY_KEY, Operation.LesserThan, now().epochSecond),
             )
-        )
+        ).filter {
+            it.value.metadata.containsKeyWithValue(STATE_TYPE, Checkpoint::class.java.name)
+        }.map { kvp ->
+            Record(
+                FLOW_TIMEOUT_TOPIC,
+                kvp.key,
+                FlowTimeout().apply {
+                    timeoutDateTime = now()
+                    checkpointStateKey = kvp.value.key
+                    reason = if (kvp.value.metadata.containsKeyWithValue(PROCESSING_FAILURE, true)) {
+                        PROCESS_FAILURE_ERROR_MESSAGE
+                    } else {
+                        SESSION_EXPIRED_ERROR_MESSAGE
+                    }
+                }
+            )
+        }
 
     override fun onNext(events: List<Record<String, ScheduledTaskTrigger>>): List<Record<*, *>> {
         // If we receive multiple, there's probably an issue somewhere, and we can ignore all but the last one.
@@ -71,18 +111,14 @@ class FlowTimeoutTaskProcessor(
             it.key == ScheduledTask.SCHEDULED_TASK_NAME_SESSION_TIMEOUT
         }?.value?.let { trigger ->
             logger.trace("Processing trigger scheduled at {}", trigger.timestamp)
-            val flowsToTimeOut = (idleTimeOutExpired() + sessionExpiredFailureSignaledByMessagingLayer()).filter {
-                it.value.metadata.containsKeyWithValue(STATE_TYPE, Checkpoint::class.java.name)
-            }
+            val flowsToTimeOut = idleTimeOutExpired() + sessionExpiredOrFailureSignaledByMessagingLayer()
 
             if (flowsToTimeOut.isEmpty()) {
                 logger.trace("No flows to time out")
                 emptyList()
             } else {
-                logger.debug { "Trigger cleanup of $flowsToTimeOut" }
-                flowsToTimeOut.map { kvp ->
-                    Record(FLOW_TIMEOUT_TOPIC, kvp.key, FlowTimeout(kvp.value.key, now()))
-                }
+                logger.debug { "Triggering cleanup of ${flowsToTimeOut.joinToString { it.key }}" }
+                flowsToTimeOut
             }
         } ?: emptyList()
     }

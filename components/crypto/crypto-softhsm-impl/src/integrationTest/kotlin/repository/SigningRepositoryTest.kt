@@ -13,6 +13,7 @@ import net.corda.crypto.core.SigningKeyStatus
 import net.corda.crypto.core.fullPublicKeyIdFromBytes
 import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.core.publicKeyIdFromBytes
+import net.corda.crypto.persistence.SigningKeyMaterialInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.db.model.SigningKeyEntity
@@ -652,5 +653,30 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
         assertThat(keyMaterials[0]).isNotEqualTo(keyMaterials[1])
         assertThat(keyMaterials[0]).isNotEqualTo(keyMaterials[2])
         assertThat(keyMaterials[1]).isNotEqualTo(keyMaterials[2])
+    }
+
+    @ParameterizedTest
+    @MethodSource("emfs")
+    fun `saveSigningKeyMaterials correctly persists data to db`(emf: EntityManagerFactory) {
+        val tenantId = "gkm${UUID.randomUUID()}".take(12)
+
+        val repo = SigningRepositoryImpl(
+            emf,
+            tenantId,
+            cipherSchemeMetadata,
+            digestService,
+            createLayeredPropertyMapFactory(),
+        )
+
+        val signingKeyMaterialInfo = SigningKeyMaterialInfo(UUID.randomUUID(), byteArrayOf())
+        val wrappingKeyUuid = saveWrappingKey(emf, alias = defaultMasterKeyName)
+        val prev = repo.getKeyMaterials(wrappingKeyUuid).toSet()
+        repo.saveSigningKeyMaterial(signingKeyMaterialInfo, wrappingKeyUuid)
+        val curr = repo.getKeyMaterials(wrappingKeyUuid).toSet()
+
+        assertThat(curr.size).isEqualTo(prev.size + 1)
+        val key = curr.minus(prev).single()
+        assertThat(key.signingKeyId).isEqualTo(signingKeyMaterialInfo.signingKeyId)
+        assertThat(key.keyMaterial).isEqualTo(signingKeyMaterialInfo.keyMaterial)
     }
 }
