@@ -52,8 +52,8 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
         }
     }
 
-    private val testRunUniqueId = UUID.randomUUID()
-    private val groupId = UUID.randomUUID().toString()
+    private val testRunUniqueId = "r1" // UUID.randomUUID()
+    private val groupId = "083edf6d-0f7d-435d-9dc3-b7db07b92821" // UUID.randomUUID().toString()
     private val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
     private val notaryCpiName = "${TEST_NOTARY_CPI_NAME}_$testRunUniqueId"
 
@@ -159,11 +159,12 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
         var currentTransactionId = checkNotNull(utxoFlowResult.flowResult)
         var message = input
         var prevInput = ""
+        val constant = true
         for (stage in 1 until extraParties) {
             val start = Instant.now()
             val evolvedMessage = "evolved input $stage"
-            val addList: List<String> = listOf(extraPartiesX500[stage-1])
-            val removeList: List<String> = if (stage >= 2) listOf(extraPartiesX500[stage-2]) else emptyList()
+            val addList: List<String> = if (constant) { if (stage == 1) listOf(extraPartiesX500[stage-1]) else emptyList() } else listOf(extraPartiesX500[stage-1])
+            val removeList: List<String> = if (constant) emptyList() else  (if (stage >= 2) listOf(extraPartiesX500[stage-2]) else emptyList())
             println("adding participants $addList  and removing participants $removeList")
             val evolveRequestId = startRestFlow(
                 bobHoldingId,
