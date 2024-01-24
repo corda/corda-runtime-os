@@ -11,7 +11,9 @@ package net.corda.libs.statemanager.api
 interface StateOperationGroupBuilder {
 
     /**
-     * States to be created as part of this state operations group.
+     * Add a collection of states to be created as part of this state operations group.
+     *
+     * The builder is not copied on return, and so it is safe to reuse the existing builder if desired.
      *
      * @param states The collection of states to be created.
      * @return The builder, to which new state operations can be added.
@@ -19,7 +21,19 @@ interface StateOperationGroupBuilder {
     fun create(states: Collection<State>) : StateOperationGroupBuilder
 
     /**
-     * States to be updated as part of this state operations group.
+     * Add a single state to be created as part of this operations group.
+     *
+     * The builder is not copied on return, and so it is safe to reuse the existing builder if desired.
+     *
+     * @param state The state to be created.
+     * @return The builder, to which new state operations can be added.
+     */
+    fun create(state: State) : StateOperationGroupBuilder = create(listOf(state))
+
+    /**
+     * Add a collection of states to be updated as part of this state operations group.
+     *
+     * The builder is not copied on return, and so it is safe to reuse the existing builder if desired.
      *
      * @param states The collection of states to be updated.
      * @return The builder, to which new state operations can be added.
@@ -27,12 +41,34 @@ interface StateOperationGroupBuilder {
     fun update(states: Collection<State>) : StateOperationGroupBuilder
 
     /**
-     * States to be deleted as part of this state operations group.
+     * Add a single state to be updated as part of this state operations group.
+     *
+     * The builder is not copied on return, and so it is safe to reuse the existing builder if desired.
+     *
+     * @param state The state to be updated.
+     * @return The builder, to which new state operations can be added.
+     */
+    fun update(state: State) : StateOperationGroupBuilder = update(listOf(state))
+
+    /**
+     * Add a collection of states to be deleted as part of this state operations group.
+     *
+     * The builder is not copied on return, and so it is safe to reuse the existing builder if desired.
      *
      * @param states The collection of states to be deleted.
      * @return The builder, to which new state operations can be added.
      */
     fun delete(states: Collection<State>) : StateOperationGroupBuilder
+
+    /**
+     * Add a state to be deleted as part of this state operations group.
+     *
+     * The builder is not copied on return, and so it is safe to reuse the existing builder if desired.
+     *
+     * @param state The state to be deleted.
+     * @return The builder, to which new state operations can be added.
+     */
+    fun delete(state: State) : StateOperationGroupBuilder = delete(listOf(state))
 
     /**
      * Execute all operations requested as part of this state operations group.
