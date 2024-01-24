@@ -37,10 +37,7 @@ internal class VirtualNodeSchemaHandler(
             val sql = when (virtualNodeSchemaRequest.dbType) {
                 DbTypes.CRYPTO, DbTypes.UNIQUENESS -> {
                     val changelog = getChangelog(virtualNodeSchemaRequest.dbType)
-                    StringWriter().use { writer ->
-                        schemaMigrator.createUpdateSqlOffline(changelog, writer)
-                        writer.toString()
-                    }
+                    buildSqlWithStringWriter(changelog)
                 }
 
                 DbTypes.VAULT -> {
@@ -48,8 +45,8 @@ internal class VirtualNodeSchemaHandler(
                         val changeLog = getChangelog(virtualNodeSchemaRequest.dbType)
                         dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction { em ->
                             val cpkChangeLog = getCpkChangelog(em, virtualNodeSchemaRequest.cpiChecksum)
-                            buildSqlWithStringWriter(connection, changeLog) + buildSqlWithStringWriter(
-                                connection, cpkChangeLog
+                            buildSqlWithStringWriter(changeLog) + buildSqlWithStringWriter(
+                                cpkChangeLog, connection
                             )
                         }
                     } else if (virtualNodeSchemaRequest.virtualNodeShortHash != null && virtualNodeSchemaRequest.cpiChecksum != null) {
@@ -62,8 +59,8 @@ internal class VirtualNodeSchemaHandler(
                             val connectionVNodeVault =
                                 dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).connection
                             buildSqlWithStringWriter(
-                                connectionVNodeVault,
-                                cpkChangeLog
+                                cpkChangeLog,
+                                connectionVNodeVault
                             )
                         }
                     } else {
@@ -112,11 +109,15 @@ internal class VirtualNodeSchemaHandler(
     }
 
     private fun buildSqlWithStringWriter(
-        connection: Connection,
-        dbChange: DbChange
+        dbChange: DbChange,
+        connection: Connection? = null
     ): String {
         StringWriter().use { writer ->
-            schemaMigrator.createUpdateSql(connection, dbChange, writer)
+            if (connection == null) {
+                schemaMigrator.createUpdateSqlOffline(dbChange, writer)
+            } else {
+                schemaMigrator.createUpdateSql(connection, dbChange, writer)
+            }
             return writer.toString()
         }
     }
