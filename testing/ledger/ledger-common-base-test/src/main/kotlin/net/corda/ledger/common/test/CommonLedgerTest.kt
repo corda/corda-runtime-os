@@ -26,6 +26,7 @@ import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.util.UUID
 
 abstract class CommonLedgerTest {
 
@@ -48,7 +49,10 @@ abstract class CommonLedgerTest {
     val flowFiberService = TestFlowFiberServiceWithSerialization(currentSandboxGroupContext)
 
     val mockPrivacySaltProviderService = mock<PrivacySaltProviderService>().apply {
-        whenever(generatePrivacySalt()).thenReturn(PrivacySaltImpl("someBytes".repeat(10).toByteArray())) }
+        whenever(generatePrivacySalt()).thenAnswer {
+            PrivacySaltImpl(UUID.randomUUID().toString().toByteArray())
+        }
+    }
 
     val flowEngine = FlowEngineImpl(flowFiberService)
 

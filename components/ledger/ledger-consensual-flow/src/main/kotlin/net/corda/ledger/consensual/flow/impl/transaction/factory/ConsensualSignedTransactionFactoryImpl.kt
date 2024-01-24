@@ -60,7 +60,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
      */
     @Suspendable
     override fun create(
-        consensualTransactionBuilder: ConsensualTransactionBuilder,
+        consensualTransactionBuilder: ConsensualTransactionBuilder
     ): ConsensualSignedTransaction {
         val metadata: TransactionMetadata = transactionMetadataFactory.create(consensualMetadata())
         verifyMetadata(metadata)
