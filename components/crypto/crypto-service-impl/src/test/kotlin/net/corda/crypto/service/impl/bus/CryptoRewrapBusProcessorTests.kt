@@ -314,7 +314,7 @@ class CryptoRewrapBusProcessorTests {
     }
 
     @Test
-    fun `managed rewrap calls rewrapAllManagedKeysWrappedBy in crypto service`() {
+    fun `managed rewrap calls rewrapAllSigningKeysWrappedBy in crypto service`() {
         val uuid = UUID.randomUUID()
         cryptoRewrapBusProcessor.onNext(
             listOf(
