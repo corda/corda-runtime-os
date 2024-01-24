@@ -68,9 +68,9 @@ class CryptoRekeyBusProcessorTests {
             setOf(ConfigKeys.MESSAGING_CONFIG),
             mapOf(
                 ConfigKeys.MESSAGING_CONFIG to
-                        SmartConfigFactory.createWithoutSecurityServices().create(
-                            createMessagingConfig()
-                        )
+                    SmartConfigFactory.createWithoutSecurityServices().create(
+                        createMessagingConfig()
+                    )
             )
         )
         config = configEvent.config
@@ -81,7 +81,16 @@ class CryptoRekeyBusProcessorTests {
         virtualNodeInfoReadService = mock()
 
         val wrappingRepository: WrappingRepository = mock {
-            on { findKeysWrappedByAlias(any()) } doReturn listOf(WrappingKeyInfo(0, "", byteArrayOf(), 0, oldKeyAlias, "alias1"))
+            on { findKeysWrappedByParentKey(any()) } doReturn listOf(
+                WrappingKeyInfo(
+                    0,
+                    "",
+                    byteArrayOf(),
+                    0,
+                    oldKeyAlias,
+                    "alias1"
+                )
+            )
         }
 
         wrappingRepositoryFactory = mock {
@@ -103,7 +112,8 @@ class CryptoRekeyBusProcessorTests {
             cryptoService, virtualNodeInfoReadService,
             wrappingRepositoryFactory, rewrapPublisher,
             mock(),
-            cordaAvroSerializationFactory)
+            cordaAvroSerializationFactory
+        )
     }
 
     @Test
@@ -247,7 +257,6 @@ class CryptoRekeyBusProcessorTests {
             KeyType.UNMANAGED,
             oldKeyAlias,
             "",
-            null,
             tenantId,
         )
     )

@@ -54,12 +54,12 @@ class FlowTimeoutTaskProcessorTests {
         )
     private val stateManager = mock<StateManager> {
         on { findByMetadataMatchingAny(any()) } doReturn (mapOf(
+            nonCheckpointState.key to nonCheckpointState,
             sessionTimeoutState.key to sessionTimeoutState,
             messagingLayerTimeoutState.key to messagingLayerTimeoutState
         ))
         on { findUpdatedBetweenWithMetadataMatchingAll(any(), any()) } doReturn (mapOf(
-            idleState.key to idleState,
-            nonCheckpointState.key to nonCheckpointState
+            idleState.key to idleState
         ))
     }
     private val record1 = Record<String, ScheduledTaskTrigger>(
@@ -80,6 +80,7 @@ class FlowTimeoutTaskProcessorTests {
     fun `when multiple scheduled tasks process only the first one`() {
         processor.onNext(listOf(record1, record1.copy(value = mock())))
         verify(stateManager, times(1)).findByMetadataMatchingAny(any())
+        verify(stateManager, times(1)).findUpdatedBetweenWithMetadataMatchingAll(any(), any())
     }
 
     @Test
@@ -96,17 +97,17 @@ class FlowTimeoutTaskProcessorTests {
             Record(
                 Schemas.Flow.FLOW_TIMEOUT_TOPIC,
                 idleState.key,
-                FlowTimeout(idleState.key, now)
+                FlowTimeout(idleState.key, FlowTimeoutTaskProcessor.MAX_IDLE_TIME_ERROR_MESSAGE, now)
             ),
             Record(
                 Schemas.Flow.FLOW_TIMEOUT_TOPIC,
                 sessionTimeoutState.key,
-                FlowTimeout(sessionTimeoutState.key, now)
+                FlowTimeout(sessionTimeoutState.key, FlowTimeoutTaskProcessor.SESSION_EXPIRED_ERROR_MESSAGE, now)
             ),
             Record(
                 Schemas.Flow.FLOW_TIMEOUT_TOPIC,
                 messagingLayerTimeoutState.key,
-                FlowTimeout(messagingLayerTimeoutState.key, now)
+                FlowTimeout(messagingLayerTimeoutState.key, FlowTimeoutTaskProcessor.PROCESS_FAILURE_ERROR_MESSAGE, now)
             )
         )
     }
@@ -118,13 +119,16 @@ class FlowTimeoutTaskProcessorTests {
         ).doReturn(mapOf(nonCheckpointState.key to nonCheckpointState))
         whenever(
             stateManager.findUpdatedBetweenWithMetadataMatchingAll(any(), any())
-        ).doReturn(mapOf(nonCheckpointState.key to nonCheckpointState))
+        ).doReturn(emptyMap())
 
         val output = processor.onNext(listOf(record1))
         assertThat(output).isEmpty()
     }
 
     private fun randomBytes(): ByteArray {
-        return (1..16).map { ('0'..'9').random() }.joinToString("").toByteArray()
+        return (1..16)
+            .map { ('0'..'9').random() }
+            .joinToString("")
+            .toByteArray()
     }
 }

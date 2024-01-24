@@ -66,7 +66,7 @@ class CryptoRekeyBusProcessor(
             if (!hasPreviousRotationFinished(request.oldParentKeyAlias)) {
                 logger.error(
                     "There is already a key rotation of unmanaged wrapping key " +
-                            "with alias ${request.oldParentKeyAlias} in progress."
+                        "with alias ${request.oldParentKeyAlias} in progress."
                 )
                 return emptyList()
             }
@@ -88,7 +88,7 @@ class CryptoRekeyBusProcessor(
             logger.debug("Found ${allTenantIds.size} tenants; first few are: ${allTenantIds.take(10)}")
             val targetWrappingKeys = allTenantIds.asSequence().map { tenantId ->
                 wrappingRepositoryFactory.create(tenantId).use { wrappingRepo ->
-                    wrappingRepo.findKeysWrappedByAlias(request.oldParentKeyAlias).map { wki -> tenantId to wki }
+                    wrappingRepo.findKeysWrappedByParentKey(request.oldParentKeyAlias).map { wki -> tenantId to wki }
                 }
             }.flatten()
 
@@ -123,8 +123,10 @@ class CryptoRekeyBusProcessor(
             try {
                 if (records.isNotEmpty()) deleteStateManagerRecords(request.oldParentKeyAlias)
             } catch (e: IllegalStateException) {
-                logger.error("Unable to delete previous key rotation records. " +
-                        "Cannot start new key rotation for ${request.oldParentKeyAlias}.")
+                logger.error(
+                    "Unable to delete previous key rotation records. " +
+                        "Cannot start new key rotation for ${request.oldParentKeyAlias}."
+                )
                 return emptyList()
             }
             stateManager.create(records)
@@ -140,6 +142,7 @@ class CryptoRekeyBusProcessor(
                             request.oldParentKeyAlias,
                             request.newParentKeyAlias,
                             wrappingKeyInfo.alias,
+                            null, // keyUuid not used in unmanaged key rotation
                             KeyType.UNMANAGED
                         ),
                         timestamp // This is useful, if we are keeping the track of start time
@@ -179,7 +182,7 @@ class CryptoRekeyBusProcessor(
             if (failedToDelete.isNotEmpty()) {
                 logger.warn(
                     "Failed to delete following states " +
-                            "${failedToDelete.keys} from the state manager for rootKeyAlias $oldParentKeyAlias, retrying."
+                        "${failedToDelete.keys} from the state manager for rootKeyAlias $oldParentKeyAlias, retrying."
                 )
                 retries--
             } else {

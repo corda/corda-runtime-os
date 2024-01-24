@@ -131,7 +131,7 @@ class StateManagerHelperTest {
             wrapperDeserializer
         )
 
-        val state = stateManagerHelper.failStateProcessing(TEST_KEY, persistedState)
+        val state = stateManagerHelper.failStateProcessing(TEST_KEY, persistedState, "")
 
         assertEquals(persistedState.key, state.key)
         assertEquals(persistedState.version, state.version)
@@ -146,7 +146,7 @@ class StateManagerHelperTest {
             wrapperDeserializer
         )
 
-        val state = stateManagerHelper.failStateProcessing(TEST_KEY, null)
+        val state = stateManagerHelper.failStateProcessing(TEST_KEY, null, "")
 
         assertEquals(TEST_KEY, state.key)
         assertEquals(VERSION_INITIAL_VALUE, state.version)

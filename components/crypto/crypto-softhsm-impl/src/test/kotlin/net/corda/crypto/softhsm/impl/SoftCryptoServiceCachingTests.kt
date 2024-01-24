@@ -198,7 +198,7 @@ class SoftCryptoServiceCachingTests {
             }
 
             override fun saveKeyWithId(key: WrappingKeyInfo, id: UUID?): WrappingKeyInfo {
-                TODO("Not yet implemented")
+                TODO("Not needed")
             }
 
             override fun findKey(alias: String): WrappingKeyInfo? {
@@ -208,12 +208,12 @@ class SoftCryptoServiceCachingTests {
 
             override fun findKeyAndId(alias: String): Pair<UUID, WrappingKeyInfo>? = TODO("Not needed")
 
-            override fun findKeysWrappedByAlias(alias: String): List<WrappingKeyInfo> {
-                TODO("Not yet implemented")
+            override fun findKeysWrappedByParentKey(parentKeyAlias: String): List<WrappingKeyInfo> {
+                TODO("Not needed")
             }
 
             override fun getKeyById(id: UUID): WrappingKeyInfo? {
-                TODO("Not yet implemented")
+                TODO("Not needed")
             }
 
             override fun close() {
@@ -227,7 +227,7 @@ class SoftCryptoServiceCachingTests {
             wrappingKeyCache = wrappingKeyCache,
             privateKeyCache = makePrivateKeyCache(),
             shortHashCache = makeShortHashCache()
-            
+
         )
 
         // starting fresh, all 3 aliases are missing from both store and cache
