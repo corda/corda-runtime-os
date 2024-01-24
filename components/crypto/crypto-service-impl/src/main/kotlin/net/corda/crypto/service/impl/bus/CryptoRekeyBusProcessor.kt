@@ -25,6 +25,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Crypto.REWRAP_MESSAGE_TOPIC
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.LoggerFactory
+import java.time.Instant
 import java.util.UUID
 
 /**
@@ -98,7 +99,13 @@ class CryptoRekeyBusProcessor(
             // Group by tenantId/vNode
             targetWrappingKeys.groupBy { it.first }.forEach { (tenantId, wrappingKeys) ->
                 logger.debug("Grouping wrapping keys by vNode/tenantId $tenantId")
-                val status = UnmanagedKeyStatus(request.oldParentKeyAlias, wrappingKeys.size, 0)
+                val status = UnmanagedKeyStatus(
+                    request.oldParentKeyAlias,
+                    request.newParentKeyAlias,
+                    wrappingKeys.size,
+                    0,
+                    Instant.ofEpochMilli(timestamp)
+                )
                 records.add(
                     State(
                         // key is set as a unique string to prevent table search in re-wrap bus processor
@@ -144,8 +151,7 @@ class CryptoRekeyBusProcessor(
                             wrappingKeyInfo.alias,
                             null, // keyUuid not used in unmanaged key rotation
                             KeyType.UNMANAGED
-                        ),
-                        timestamp // This is useful, if we are keeping the track of start time
+                        )
                     )
                 }.toList()
             )
