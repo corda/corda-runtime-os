@@ -52,15 +52,11 @@ class WireTransactionFactoryImpl @Activate constructor(
             "Number of component groups in metadata structure description does not match with the real number!"
         }
 
-        val completeComponentGroupLists = (0 until metadata.getNumberOfComponentGroups()).map { index ->
-            componentGroupLists.getOrElse(index) { arrayListOf() }
-        }
-
         return WireTransaction(
             merkleTreeProvider,
             digestService,
             privacySalt,
-            completeComponentGroupLists,
+            componentGroupLists,
             metadata
         )
     }
