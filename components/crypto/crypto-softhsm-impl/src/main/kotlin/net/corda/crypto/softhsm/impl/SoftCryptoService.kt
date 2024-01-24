@@ -687,7 +687,7 @@ open class SoftCryptoService(
         wrappingKeyCache?.put(wrappingKeyInfo.alias, wrappingKey)
     }
 
-    override fun rewrapAllManagedKeysWrappedBy(wrappingKey: UUID, tenantId: String) {
-        logger.info("Attempt made to rewrap all managed keys for wrappingKey: ${wrappingKey} and tenant Id: ${tenantId}")
+    override fun rewrapAllSigningKeysWrappedBy(managedWrappingKey: UUID, tenantId: String) {
+        logger.info("Attempt made to rewrap all signing keys wrapped by wrappingKey: ${managedWrappingKey} and tenant Id: ${tenantId}")
     }
 }

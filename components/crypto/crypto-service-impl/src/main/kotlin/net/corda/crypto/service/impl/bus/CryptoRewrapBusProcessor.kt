@@ -108,7 +108,7 @@ class CryptoRewrapBusProcessor(
                     }
 
                     rewrapTimer.recordCallable {
-                        cryptoService.rewrapAllManagedKeysWrappedBy(uuid, request.tenantId)
+                        cryptoService.rewrapAllSigningKeysWrappedBy(uuid, request.tenantId)
                     }
 
                     writeStateForManagedKey(stateManager, request)

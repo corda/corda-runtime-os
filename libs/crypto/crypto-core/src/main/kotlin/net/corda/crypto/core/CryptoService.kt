@@ -349,10 +349,10 @@ interface CryptoService {
     ): ByteArray
 
     /**
-     * Rewrap all managed keys which are wrapped in the specified wrappingKey.
+     * Rewrap all signing keys which are wrapped in the specified managed wrappingKey.
      *
-     * @param wrappingKey The wrapping key which is being rotated away from
+     * @param managedWrappingKey The managed wrapping key which is being rotated away from
      * @param tenantId The tenant Id which uses the specified wrapping key
      */
-    fun rewrapAllManagedKeysWrappedBy(wrappingKey: UUID, tenantId: String)
+    fun rewrapAllSigningKeysWrappedBy(managedWrappingKey: UUID, tenantId: String)
 }

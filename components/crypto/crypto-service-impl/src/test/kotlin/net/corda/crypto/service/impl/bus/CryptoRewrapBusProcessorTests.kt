@@ -333,7 +333,7 @@ class CryptoRewrapBusProcessorTests {
                 )
             )
         )
-        verify(cryptoService, times(1)).rewrapAllManagedKeysWrappedBy(uuid, tenantId)
+        verify(cryptoService, times(1)).rewrapAllSigningKeysWrappedBy(uuid, tenantId)
     }
 
     @Test
