@@ -61,7 +61,7 @@ class UtxoRepositoryImpl @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val TOP_LEVEL_MERKLE_PROOF_INDEX = -1
-        private const val BATCH_SIZE = 5
+        private const val BATCH_SIZE = 30
     }
 
     override fun findTransaction(
@@ -230,6 +230,43 @@ class UtxoRepositoryImpl @Activate constructor(
             .logResult("transaction source [$transactionId, $groupIndex, $leafIndex]")
     }
 
+//    override fun persistTransactionComponents(
+//        entityManager: EntityManager,
+//        transactionId: String,
+//        components: List<List<ByteArray>>,
+//        hash: (ByteArray) -> String
+//    ) {
+//        fun isMetadata(groupIndex: Int, leafIndex: Int) = groupIndex == 0 && leafIndex == 0
+//
+//        entityManager.connection { connection ->
+//            connection.prepareStatement(queryProvider.persistTransactionComponentLeaf).use { statement ->
+//                var counter = 0
+//                components.forEachIndexed { groupIndex, leaves ->
+//                    leaves.forEachIndexed { leafIndex, data ->
+//                        // Metadata is not stored with the other components. See persistTransactionMetadata()
+//                        if (!isMetadata(groupIndex, leafIndex)) {
+//                            statement.clearParameters()
+//                            statement.setString(1, transactionId)
+//                            statement.setInt(2, groupIndex)
+//                            statement.setInt(3, leafIndex)
+//                            statement.setBytes(4, data)
+//                            statement.setString(5, hash(data))
+//                            statement.addBatch()
+//                            if (++counter == BATCH_SIZE) {
+//                                statement.executeBatch()
+//                                statement.clearBatch()
+//                                counter = 0
+//                            }
+//                        }
+//                    }
+//                }
+//                if (counter > 0) {
+//                    statement.executeBatch()
+//                }
+//            }
+//        }
+//    }
+
     override fun persistTransactionComponents(
         entityManager: EntityManager,
         transactionId: String,
@@ -238,33 +275,44 @@ class UtxoRepositoryImpl @Activate constructor(
     ) {
         fun isMetadata(groupIndex: Int, leafIndex: Int) = groupIndex == 0 && leafIndex == 0
 
+        val totalBatchSize = components.sumOf { group -> group.size } - 1
+        var index = 1
+
         entityManager.connection { connection ->
-            connection.prepareStatement(queryProvider.persistTransactionComponentLeaf).use { statement ->
-                var counter = 0
+            connection.prepareStatement(createComponentInsertBatchStatement(totalBatchSize)).use { statement ->
                 components.forEachIndexed { groupIndex, leaves ->
                     leaves.forEachIndexed { leafIndex, data ->
                         // Metadata is not stored with the other components. See persistTransactionMetadata()
                         if (!isMetadata(groupIndex, leafIndex)) {
-                            statement.clearParameters()
-                            statement.setString(1, transactionId)
-                            statement.setInt(2, groupIndex)
-                            statement.setInt(3, leafIndex)
-                            statement.setBytes(4, data)
-                            statement.setString(5, hash(data))
-                            statement.addBatch()
-                            if (++counter == BATCH_SIZE) {
-                                statement.executeBatch()
-                                statement.clearBatch()
-                                counter = 0
-                            }
+                            statement.setString(index++, transactionId)
+                            statement.setInt(index++, groupIndex)
+                            statement.setInt(index++, leafIndex)
+                            statement.setBytes(index++, data)
+                            statement.setString(index++, hash(data))
                         }
                     }
                 }
-                if (counter > 0) {
-                    statement.executeBatch()
-                }
+                statement.execute()
             }
         }
+    }
+
+    private fun createComponentInsertBatchStatement(size: Int): String {
+//        """
+//            INSERT INTO utxo_transaction_component(transaction_id, group_idx, leaf_idx, data, hash)
+//                VALUES (?, ?, ?, ?, ?)
+//            ON CONFLICT DO NOTHING"""
+//        """
+//            WITH data (transaction_id, group_idx, leaf_idx, data, hash) as (
+//                VALUES ${List(size) { "(?, ?, ?, ?, ?)"}.joinToString(",")}
+//            )
+//            INSERT INTO utxo_transaction_component
+//        """.trimIndent()
+        return """
+            INSERT INTO utxo_transaction_component(transaction_id, group_idx, leaf_idx, data, hash)
+            VALUES ${List(size) { "(?, ?, ?, ?, ?)"}.joinToString(",")}
+            ON CONFLICT DO NOTHING
+        """.trimIndent()
     }
 
     private fun <T> EntityManager.connection(block: (connection: Connection) -> T) {
