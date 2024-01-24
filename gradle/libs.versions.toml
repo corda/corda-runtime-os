@@ -15,6 +15,7 @@ swaggerVersion = "2.2.12"
 swaggeruiVersion = "4.18.2"
 jcipAnnotationsVersion = "1.0_2"
 pf4jVersion = "3.10.0"
+braveVersion = "5.15.0"
 
 log4jVersion = "2.22.1"
 # SLF4J cannot be ugraded to 2.x due to CorDapps requiring the 1.7 <= x < 2.0
@@ -80,6 +81,8 @@ swagger-core = { group = "io.swagger.core.v3", name = "swagger-core", version.re
 swagger-ui = { group = "org.webjars", name = "swagger-ui", version.ref = "swaggeruiVersion" }
 jcip-annotations = { group = "org.apache.servicemix.bundles", name = "org.apache.servicemix.bundles.jcip-annotations", version.ref = "jcipAnnotationsVersion" }
 pf4j = { group = "org.pf4j", name = "pf4j", version.ref = "pf4jVersion" }
+brave-context-slf4j = { group = "io.zipkin.brave", name = "brave-context-slf4j", version.ref = "braveVersion" }
+brave-instrumentation-servlet = { group = "io.zipkin.brave", name = "brave-instrumentation-servlet", version.ref = "braveVersion" }
 
 gradle-enterprise = { group = "com.gradle", name = "gradle-enterprise-gradle-plugin", version.ref = "gradleEnterpriseVersion" }
 
