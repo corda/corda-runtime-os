@@ -14,6 +14,7 @@ swaggerVersion = "2.2.12"
 # Please also update SWAGGERUI.version in net.corda.rest.server.impl.internal.OptionalDependency
 swaggeruiVersion = "4.18.2"
 jcipAnnotationsVersion = "1.0_2"
+pf4jVersion = "3.10.0"
 
 log4jVersion = "2.22.1"
 # SLF4J cannot be ugraded to 2.x due to CorDapps requiring the 1.7 <= x < 2.0
@@ -78,6 +79,7 @@ nimbus-sdk = { group = "com.nimbusds", name = "oauth2-oidc-sdk", version.ref = "
 swagger-core = { group = "io.swagger.core.v3", name = "swagger-core", version.ref = "swaggerVersion" }
 swagger-ui = { group = "org.webjars", name = "swagger-ui", version.ref = "swaggeruiVersion" }
 jcip-annotations = { group = "org.apache.servicemix.bundles", name = "org.apache.servicemix.bundles.jcip-annotations", version.ref = "jcipAnnotationsVersion" }
+pf4j = { group = "org.pf4j", name = "pf4j", version.ref = "pf4jVersion" }
 
 gradle-enterprise = { group = "com.gradle", name = "gradle-enterprise-gradle-plugin", version.ref = "gradleEnterpriseVersion" }
 
