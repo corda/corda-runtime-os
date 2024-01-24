@@ -115,7 +115,7 @@ internal class StatefulSessionManagerImpl(
                     }
                 }
             } else {
-                val messagesWithoutKey = keysToMessages[null] ?: return emptyList()
+                val messagesWithoutKey = keysToMessages[null] ?: return cachedSessions.values
                 listOf(
                     OutboundMessageState(
                         null,
@@ -220,7 +220,10 @@ internal class StatefulSessionManagerImpl(
             return emptyList()
         }
         val traceable = uuids.associateBy { getSessionId(it) }
-        val (allCached, sessionIdsNotInCache) = lookupCachedSessions(traceable)
+        val allCached = traceable.mapNotNull { (key, trace) ->
+            getSessionIfCached(key)?.let { key to Pair(trace, it) }
+        }.toMap()
+        val sessionIdsNotInCache = (traceable - allCached.keys)
         val inboundSessionsFromStateManager = if (sessionIdsNotInCache.isEmpty()) {
             emptyList()
         } else {
@@ -272,9 +275,7 @@ internal class StatefulSessionManagerImpl(
             }
         }
 
-        return allCached.mapNotNull { (sessionId, sessionDirection) ->
-            traceable[sessionId]?.let { it to sessionDirection }
-        } + inboundSessionsFromStateManager + outboundSessionsFromStateManager
+        return allCached.values + inboundSessionsFromStateManager + outboundSessionsFromStateManager
     }
 
     override fun <T> processSessionMessages(
@@ -518,16 +519,10 @@ internal class StatefulSessionManagerImpl(
         }.toMap()
     }
 
-    private fun <T> lookupCachedSessions(traceable: Map<String, T>): Pair<Map<String, SessionManager.SessionDirection>, Map<String, T>> {
-        val sessionsFromInboundCache = cachedInboundSessions.getAllPresent(traceable.keys)
-        val remainingSessionIds = (traceable - sessionsFromInboundCache.keys)
-        val outboundCacheKeys = remainingSessionIds.mapValues { counterpartiesForSessionId[it.key] }
-        val sessionsFromOutboundCache = cachedOutboundSessions.getAllPresent(outboundCacheKeys.values.filterNotNull())
-        val notCached = remainingSessionIds - outboundCacheKeys.filterValues {
-            sessionsFromOutboundCache.containsKey(it)
-        }.keys
-        return (sessionsFromInboundCache + sessionsFromOutboundCache) to notCached
-    }
+    private fun getSessionIfCached(sessionID: String): SessionManager.SessionDirection? =
+        cachedInboundSessions.getIfPresent(sessionID) ?: counterpartiesForSessionId[sessionID]?.let {
+            cachedOutboundSessions.getIfPresent(it)
+        }
 
     private fun State.toCounterparties(): SessionManager.Counterparties {
         val common = this.metadata.toCommonMetadata()
