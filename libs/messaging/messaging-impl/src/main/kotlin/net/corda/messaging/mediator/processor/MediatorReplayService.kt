@@ -80,7 +80,7 @@ class MediatorReplayService @Activate constructor(
      * @return Map of replayed input records to their the outputs as [MediatorMessage]s
      */
     fun <K : Any, V : Any> getReplayEvents(
-        inputRecords: Set<Record<K, V>>,
+        inputRecords: List<Record<K, V>>,
         mediatorState: MediatorState
     ): Map<Record<K, V>, List<MediatorMessage<Any>>> {
         val inputHashes = inputRecords.associateBy { getInputHash(it) }

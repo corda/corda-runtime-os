@@ -45,7 +45,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     ): Map<K, EventProcessingOutput> {
         return inputs.mapValues { (key, input) ->
             val groupKey = key.toString()
-            val allConsumerInputs = input.records.toSet()
+            val allConsumerInputs = input.records
             val mediatorState = stateManagerHelper.deserializeMediatorState(input.state) ?: createNewMediatorState()
             var processorState = stateManagerHelper.deserializeValue(mediatorState)?.let { stateValue ->
                 StateAndEventProcessor.State(
@@ -60,16 +60,22 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                 val asyncOutputs = mutableMapOf<Record<K, E>, MutableList<MediatorMessage<Any>>>()
                 val processed = try {
                     nonReplayConsumerInputs.forEach { consumerInputEvent ->
-                        val queue = ArrayDeque(listOf(consumerInputEvent))
-                        while (queue.isNotEmpty()) {
-                            val event = queue.removeFirst()
-                            val response = config.messageProcessor.onNext(processorState, event)
-                            processorState = response.updatedState
-                            val (syncEvents, asyncEvents) = response.responseEvents.map { convertToMessage(it) }.partition {
-                                messageRouter.getDestination(it).type == RoutingDestination.Type.SYNCHRONOUS
+                        //replay or duplicate within the batch
+                        val duplicatesOutputs = asyncOutputs[consumerInputEvent]
+                        if (duplicatesOutputs != null) {
+                            asyncOutputs.addOutputs(consumerInputEvent, duplicatesOutputs)
+                        } else {
+                            val queue = ArrayDeque(listOf(consumerInputEvent))
+                            while (queue.isNotEmpty()) {
+                                val event = queue.removeFirst()
+                                val response = config.messageProcessor.onNext(processorState, event)
+                                processorState = response.updatedState
+                                val (syncEvents, asyncEvents) = response.responseEvents.map { convertToMessage(it) }.partition {
+                                    messageRouter.getDestination(it).type == RoutingDestination.Type.SYNCHRONOUS
+                                }
+                                asyncOutputs.addOutputs(consumerInputEvent, asyncEvents)
+                                queue.addAll(processSyncEvents(key, syncEvents))
                             }
-                            asyncOutputs.addOutputs(consumerInputEvent, asyncEvents)
-                            queue.addAll(processSyncEvents(key, syncEvents))
                         }
                     }
                     if (config.saveOutputsForReplay) {
@@ -105,9 +111,9 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     }
 
     private fun getReplayOutputsAndNonReplayInputs(
-        allConsumerInputs: Set<Record<K, E>>,
+        allConsumerInputs: List<Record<K, E>>,
         mediatorState: MediatorState
-    ): Pair<Set<Record<K, E>>, List<MediatorMessage<Any>>> {
+    ): Pair<List<Record<K, E>>, List<MediatorMessage<Any>>> {
         if (!config.saveOutputsForReplay) return Pair(allConsumerInputs, emptyList())
 
         val replaysByInput = mediatorReplayService.getReplayEvents(allConsumerInputs, mediatorState)

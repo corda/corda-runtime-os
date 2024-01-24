@@ -111,7 +111,7 @@ class MediatorReplayServiceTest {
     @Test
     fun `input record is replay event`() {
         val record = Record(topic, "1", "1")
-        val inputRecords = setOf(record)
+        val inputRecords = listOf(record)
         val existingOutputs = mediatorReplayOutputEvents(2, 3)
         val outputs  = mediatorReplayService.getReplayEvents(inputRecords, MediatorState(testState, existingOutputs))
         assertEquals(1, outputs.size)
@@ -120,14 +120,14 @@ class MediatorReplayServiceTest {
 
     @Test
     fun `input record is not a replay event, empty outputs`() {
-        val inputRecords = setOf(Record(topic, "test1", "test1"))
+        val inputRecords = listOf(Record(topic, "test1", "test1"))
         assertEquals(0, mediatorReplayService.getReplayEvents(inputRecords, MediatorState(testState, mutableListOf())).size)
     }
 
     @Test
     fun `input record is not a replay event, existing outputs`() {
         val existingOutputs = mediatorReplayOutputEvents(2, 3)
-        val inputRecords = setOf(Record(topic, "test3", "test3"))
+        val inputRecords = listOf(Record(topic, "test3", "test3"))
         whenever(serializer.serialize(any())).thenReturn("bytes".toByteArray())
         assertEquals(0, mediatorReplayService.getReplayEvents(inputRecords, MediatorState(testState, existingOutputs)).size)
     }
