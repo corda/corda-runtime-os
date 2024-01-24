@@ -36,13 +36,14 @@ import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionStatus
 import net.corda.p2p.linkmanager.state.SessionState
 import net.corda.utilities.time.Clock
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.security.MessageDigest
 import java.time.Duration
+import java.util.Base64
+import net.corda.crypto.core.bytes
 import java.util.concurrent.ConcurrentHashMap
 import net.corda.data.p2p.crypto.InitiatorHandshakeMessage as AvroInitiatorHandshakeMessage
 import net.corda.data.p2p.crypto.InitiatorHelloMessage as AvroInitiatorHelloMessage
@@ -219,61 +220,57 @@ internal class StatefulSessionManagerImpl(
             return emptyList()
         }
         val traceable = uuids.associateBy { getSessionId(it) }
-
         val (allCached, sessionIdsNotInCache) = lookupCachedSessions(traceable)
-
-        val inboundSessionsFromStateManager: List<Pair<T, SessionManager.SessionDirection>> =
-            if (sessionIdsNotInCache.isEmpty()) {
-                emptyList()
-            } else {
-                stateManager.get(sessionIdsNotInCache.keys).entries.mapNotNull { (sessionId, state) ->
-                    val session =
-                        stateConvertor.toCordaSessionState(
-                            state,
-                            sessionManagerImpl.revocationCheckerClient::checkRevocation,
-                        ).sessionData as? Session
-                    session?.let {
-                        sessionIdsNotInCache[sessionId]?.let {
-                            val inboundSession =
-                                SessionManager.SessionDirection.Inbound(
-                                    state.toCounterparties(),
-                                    session,
-                                )
-                            cachedInboundSessions.put(sessionId, inboundSession)
-                            it to inboundSession
-                        }
+        val inboundSessionsFromStateManager = if (sessionIdsNotInCache.isEmpty()) {
+            emptyList()
+        } else {
+            stateManager.get(sessionIdsNotInCache.keys).entries.mapNotNull { (sessionId, state) ->
+                val session =
+                    stateConvertor.toCordaSessionState(
+                        state,
+                        sessionManagerImpl.revocationCheckerClient::checkRevocation,
+                    ).sessionData as? Session
+                session?.let {
+                    sessionIdsNotInCache[sessionId]?.let {
+                        val inboundSession =
+                            SessionManager.SessionDirection.Inbound(
+                                state.toCounterparties(),
+                                session,
+                            )
+                        cachedInboundSessions.put(sessionId, inboundSession)
+                        it to inboundSession
                     }
                 }
             }
+        }
         val sessionsNotInInboundStateManager =
-            (sessionIdsNotInCache.keys - inboundSessionsFromStateManager.map { getSessionId(it.first) }.toSet()).map {
+            (sessionIdsNotInCache.keys - inboundSessionsFromStateManager.map { it.second.session.sessionId }.toSet()).map {
                 getSessionIdFilter(it)
             }
-        val outboundSessionsFromStateManager: List<Pair<T, SessionManager.SessionDirection>> =
-            if (sessionsNotInInboundStateManager.isEmpty()) {
-                emptyList()
-            } else {
-                stateManager.findByMetadataMatchingAny(sessionsNotInInboundStateManager).entries.mapNotNull { (key, state) ->
-                    val session =
-                        stateConvertor.toCordaSessionState(
-                            state,
-                            sessionManagerImpl.revocationCheckerClient::checkRevocation,
-                        ).sessionData as? Session
-                    val sessionId = state.metadata.toOutbound().sessionId
-                    session?.let {
-                        sessionIdsNotInCache[sessionId]?.let {
-                            val outboundSession =
-                                SessionManager.SessionDirection.Outbound(
-                                    state.toCounterparties(),
-                                    session,
-                                )
-                            cachedOutboundSessions.put(key, outboundSession)
-                            counterpartiesForSessionId[sessionId] = key
-                            it to outboundSession
-                        }
+        val outboundSessionsFromStateManager = if (sessionsNotInInboundStateManager.isEmpty()) {
+            emptyList()
+        } else {
+            stateManager.findByMetadataMatchingAny(sessionsNotInInboundStateManager).entries.mapNotNull { (key, state) ->
+                val session =
+                    stateConvertor.toCordaSessionState(
+                        state,
+                        sessionManagerImpl.revocationCheckerClient::checkRevocation,
+                    ).sessionData as? Session
+                val sessionId = state.metadata.toOutbound().sessionId
+                session?.let {
+                    sessionIdsNotInCache[sessionId]?.let {
+                        val outboundSession =
+                            SessionManager.SessionDirection.Outbound(
+                                state.toCounterparties(),
+                                session,
+                            )
+                        cachedOutboundSessions.put(key, outboundSession)
+                        counterpartiesForSessionId[sessionId] = key
+                        it to outboundSession
                     }
                 }
             }
+        }
 
         return allCached.mapNotNull { (sessionId, sessionDirection) ->
             traceable[sessionId]?.let { it to sessionDirection }
@@ -433,7 +430,7 @@ internal class StatefulSessionManagerImpl(
         source: HoldingIdentity,
         destination: HoldingIdentity,
         serial: Long,
-    ) = SessionCounterpartiesKey(source, destination, serial).hash.toHexString()
+    ) = SessionCounterpartiesKey(source, destination, serial).hash
 
     private fun getCounterpartySerial(
         source: HoldingIdentity,
@@ -446,11 +443,11 @@ internal class StatefulSessionManagerImpl(
         override val counterpartyId: HoldingIdentity,
         val serial: Long,
     ) : SessionManager.BaseCounterparties {
-        val hash: SecureHash by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        val hash: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
             val s = (ourId.x500Name.toString() + counterpartyId.x500Name.toString() + serial.toString())
             val digest: MessageDigest = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
             val hash: ByteArray = digest.digest(s.toByteArray())
-            SecureHashImpl(DigestAlgorithmName.SHA2_256.name, hash)
+            String(Base64.getEncoder().encode(SecureHashImpl(DigestAlgorithmName.SHA2_256.name, hash).bytes))
         }
     }
 
@@ -635,7 +632,7 @@ internal class StatefulSessionManagerImpl(
         val failedUpdates = if (updates.isNotEmpty()) {
             stateManager.update(updates).also {
                 if (it.isNotEmpty()) {
-                    logger.warn("Failed to update the following session states: ${it.keys}.")
+                    logger.info("Failed to update the following session states: ${it.keys}.")
                 }
             }
         } else {
@@ -1025,21 +1022,21 @@ internal class StatefulSessionManagerImpl(
     private fun <T> Any.getSessionIdIfInboundSessionMessage(trace: T): InboundSessionMessageContext<T>? {
         return when (this) {
             is AvroInitiatorHelloMessage ->
-                InboundSessionMessageContext(
-                    this.header!!.sessionId,
-                    InboundSessionMessage.InitiatorHelloMessage(
-                        this,
-                    ),
-                    trace,
-                )
+                this.header?.sessionId?.let { sessionId ->
+                    InboundSessionMessageContext(
+                        sessionId,
+                        InboundSessionMessage.InitiatorHelloMessage(this),
+                        trace,
+                    )
+                }
             is AvroInitiatorHandshakeMessage ->
-                InboundSessionMessageContext(
-                    this.header!!.sessionId,
-                    InboundSessionMessage.InitiatorHandshakeMessage(
-                        this,
-                    ),
-                    trace,
-                )
+                this.header?.sessionId?.let { sessionId ->
+                    InboundSessionMessageContext(
+                        sessionId,
+                        InboundSessionMessage.InitiatorHandshakeMessage(this),
+                        trace,
+                    )
+                }
             else -> null
         }
     }
@@ -1047,19 +1044,22 @@ internal class StatefulSessionManagerImpl(
     private fun <T> Any.getSessionIdIfOutboundSessionMessage(trace: T): OutboundSessionMessageContext<T>? {
         return when (this) {
             is AvroResponderHelloMessage ->
-                OutboundSessionMessageContext(
-                    this.header!!.sessionId,
-                    OutboundSessionMessage.ResponderHelloMessage(this),
-                    trace,
-                )
+                this.header?.sessionId?.let { sessionId ->
+                    OutboundSessionMessageContext(
+                        sessionId,
+                        OutboundSessionMessage.ResponderHelloMessage(this),
+                        trace,
+                    )
+                }
 
             is AvroResponderHandshakeMessage ->
-                OutboundSessionMessageContext(
-                    this.header!!.sessionId,
-                    OutboundSessionMessage.ResponderHandshakeMessage(this),
-                    trace,
-                )
-
+                this.header?.sessionId?.let { sessionId ->
+                    OutboundSessionMessageContext(
+                        sessionId,
+                        OutboundSessionMessage.ResponderHandshakeMessage(this),
+                        trace,
+                    )
+                }
             else -> null
         }
     }
