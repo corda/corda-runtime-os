@@ -14,7 +14,7 @@ import org.assertj.core.api.SoftAssertions
 @Suppress("LongParameterList")
 fun assertStateType(
     softly: SoftAssertions, config: Config, stateType: StateManagerConfig.StateType,
-    user: String = "$stateType-user", pass: String = "$stateType-pass", url: String = "$stateType-url",
+    user: String = "${stateType.value}-user", pass: String = "${stateType.value}-pass", url: String = "${stateType.value}-url",
     driver: String = DEFAULT_DRIVER,
     minSize: Int = DEFAULT_JDBC_POOL_MIN_SIZE, maxSize: Int = DEFAULT_JDBC_POOL_MAX_SIZE,
     idleTimeout: Int = DEFAULT_JDBC_POOL_IDLE_TIMEOUT_SECONDS, maxLifetime: Int = DEFAULT_JDBC_POOL_MAX_LIFETIME_SECONDS,
