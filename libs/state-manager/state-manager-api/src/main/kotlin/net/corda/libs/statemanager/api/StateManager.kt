@@ -181,4 +181,15 @@ interface StateManager : Lifecycle {
         intervalFilter: IntervalFilter,
         metadataFilters: Collection<MetadataFilter>
     ): Map<String, State>
+
+    /**
+     * Create a new update group.
+     *
+     * An update group can be used to logically group together a set of create, update and delete operations. These
+     * operations will use the same underlying context for communicating with the implementation backend. For example,
+     * with the database backend, all these operations will be completed as part of the same database transaction.
+     *
+     * @return The group builder to which operations can be added.
+     */
+    fun createUpdateGroup() : StateOperationGroupBuilder
 }
