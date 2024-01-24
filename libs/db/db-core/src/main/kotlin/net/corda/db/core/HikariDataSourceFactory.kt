@@ -80,6 +80,7 @@ class HikariDataSourceFactory(
         if(Duration.ZERO != keepaliveTime)
             conf.keepaliveTime = keepaliveTime.toMillis()
         conf.validationTimeout = validationTimeout.toMillis()
+        // conf.connectionInitSql = "SET plan_cache_mode = force_custom_plan;"
 
         return hikariDataSourceFactory(conf)
     }

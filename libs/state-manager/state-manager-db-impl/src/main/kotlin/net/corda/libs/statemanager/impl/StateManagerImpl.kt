@@ -11,7 +11,6 @@ import net.corda.libs.statemanager.impl.lifecycle.CheckConnectionEventHandler
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorder
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.CREATE
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.DELETE
-import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.FIND
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.GET
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.UPDATE
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
@@ -107,7 +106,9 @@ class StateManagerImpl(
         return metricsRecorder.recordProcessingTime(UPDATE) {
             try {
                 val (_, failedUpdates) = dataSource.connection.transaction { conn ->
-                    stateRepository.update(conn, states.map { it.toPersistentEntity() })
+                    metricsRecorder.recordProcessingTime(MetricsRecorder.OperationType.UPDATE_REPO) {
+                        stateRepository.update(conn, states.map { it.toPersistentEntity() })
+                    }
                 }
 
                 if (failedUpdates.isEmpty()) {
@@ -151,7 +152,7 @@ class StateManagerImpl(
     }
 
     override fun updatedBetween(interval: IntervalFilter): Map<String, State> {
-        return metricsRecorder.recordProcessingTime(FIND) {
+        return metricsRecorder.recordProcessingTime(MetricsRecorder.OperationType.UPDATE_BETWEEN) {
             dataSource.connection.use { connection ->
                 stateRepository.updatedBetween(connection, interval)
             }.map {
@@ -165,7 +166,7 @@ class StateManagerImpl(
     override fun findByMetadataMatchingAll(filters: Collection<MetadataFilter>): Map<String, State> {
         if (filters.isEmpty()) return emptyMap()
 
-        return metricsRecorder.recordProcessingTime(FIND) {
+        return metricsRecorder.recordProcessingTime(MetricsRecorder.OperationType.FIND_ALL) {
             dataSource.connection.use { connection ->
                 stateRepository.filterByAll(connection, filters)
             }.map {
@@ -179,7 +180,7 @@ class StateManagerImpl(
     override fun findByMetadataMatchingAny(filters: Collection<MetadataFilter>): Map<String, State> {
         if (filters.isEmpty()) return emptyMap()
 
-        return metricsRecorder.recordProcessingTime(FIND) {
+        return metricsRecorder.recordProcessingTime(MetricsRecorder.OperationType.FIND_ANY) {
             dataSource.connection.use { connection ->
                 stateRepository.filterByAny(connection, filters)
             }.map {
@@ -194,7 +195,7 @@ class StateManagerImpl(
         intervalFilter: IntervalFilter,
         metadataFilters: Collection<MetadataFilter>
     ): Map<String, State> {
-        return metricsRecorder.recordProcessingTime(FIND) {
+        return metricsRecorder.recordProcessingTime(MetricsRecorder.OperationType.FIND_BETWEEN) {
             dataSource.connection.use { connection ->
                 stateRepository.filterByUpdatedBetweenWithMetadataMatchingAll(
                     connection,
@@ -213,7 +214,7 @@ class StateManagerImpl(
         intervalFilter: IntervalFilter,
         metadataFilters: Collection<MetadataFilter>
     ): Map<String, State> {
-        return metricsRecorder.recordProcessingTime(FIND) {
+        return metricsRecorder.recordProcessingTime(MetricsRecorder.OperationType.FIND_UPDATED) {
             dataSource.connection.use { connection ->
                 stateRepository.filterByUpdatedBetweenWithMetadataMatchingAny(
                     connection,

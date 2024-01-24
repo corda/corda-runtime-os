@@ -65,6 +65,8 @@ class StateManagerFactoryImpl @Activate constructor(
                     config.getInt(StateManagerConfig.Database.JDBC_POOL_VALIDATION_TIMEOUT_SECONDS).toLong()
                         .run(Duration::ofSeconds)
 
+                logger.info("State Manager minPoolSize=$minPoolSize, maxPoolSize=$maxPoolSize")
+
                 dataSource = HikariDataSourceFactory().create(
                     username = user,
                     password = pass,

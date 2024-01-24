@@ -650,6 +650,8 @@ object CordaMetrics {
 
             object MessageSendAsyncTime : Metric<Timer>("messaging.sendasync.time", CordaMetrics::timer)
 
+            object MediatorTime : Metric<Timer>("mediator.time", CordaMetrics::timer)
+
             /**
              * The size of batches of messages received in polls from the message bus by consumers.
              */

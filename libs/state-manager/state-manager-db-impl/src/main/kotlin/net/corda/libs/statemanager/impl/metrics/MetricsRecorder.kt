@@ -7,8 +7,8 @@ interface MetricsRecorder {
     // Tags used by the different State Manager operations
     enum class OperationType {
         GET, // Retrieve by key
-        FIND, // Retrieve using filters
-        CREATE, UPDATE, DELETE
+        FIND_ALL, FIND_ANY, FIND_BETWEEN, FIND_UPDATED, // Retrieve using filters
+        CREATE, UPDATE, UPDATE_BETWEEN, UPDATE_REPO, DELETE, FIND
     }
 
     fun <T> recordProcessingTime(operationType: OperationType, block: () -> T): T

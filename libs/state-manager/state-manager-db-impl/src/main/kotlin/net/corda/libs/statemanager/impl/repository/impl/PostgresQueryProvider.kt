@@ -8,8 +8,10 @@ import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.METADATA_
 import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.MODIFIED_TIME_COLUMN
 import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.VALUE_COLUMN
 import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.VERSION_COLUMN
+import java.util.concurrent.atomic.AtomicInteger
 
 class PostgresQueryProvider : AbstractQueryProvider() {
+    private val r = AtomicInteger(0)
 
     override fun createStates(size: Int): String = """
         WITH data ($KEY_COLUMN, $VALUE_COLUMN, $VERSION_COLUMN, $METADATA_COLUMN, $MODIFIED_TIME_COLUMN) as (
@@ -24,7 +26,9 @@ class PostgresQueryProvider : AbstractQueryProvider() {
         RETURNING $STATE_MANAGER_TABLE.$KEY_COLUMN;
     """.trimIndent()
 
-    override fun updateStates(size: Int): String = """
+    override fun updateStates(size: Int): String {
+        val i = r.incrementAndGet()
+        return """
             UPDATE $STATE_MANAGER_TABLE AS s 
             SET 
                 $KEY_COLUMN = temp.key, 
@@ -36,9 +40,10 @@ class PostgresQueryProvider : AbstractQueryProvider() {
             (
                 VALUES ${List(size) { "(?, ?, ?, ?)" }.joinToString(",")}
             ) AS temp(key, value, metadata, version)
-            WHERE temp.key = s.$KEY_COLUMN AND temp.version = s.$VERSION_COLUMN
+            WHERE temp.key = s.$KEY_COLUMN AND temp.version = s.$VERSION_COLUMN AND $i=$i
             RETURNING s.$KEY_COLUMN
     """.trimIndent()
+    }
 
     override fun findStatesByMetadataMatchingAll(filters: Collection<MetadataFilter>) =
         """
