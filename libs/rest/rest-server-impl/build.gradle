@@ -36,7 +36,7 @@ dependencies {
         }
     }
     implementation libs.nimbus.sdk
-    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.jcip-annotations:$jcipAnnotationsVersion"
+    implementation libs.jcip.annotations
     implementation libs.swagger.core
     implementation libs.jetty.http2.server
 
