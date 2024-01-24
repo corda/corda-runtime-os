@@ -3,7 +3,7 @@ package net.corda.db.connection.manager
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
-import java.util.*
+import java.util.UUID
 import javax.persistence.EntityManager
 import javax.sql.DataSource
 
@@ -57,17 +57,19 @@ interface DbConnectionsRepository {
      * Creates [CloseableDataSource] for given [connectionId].
      *
      * @param connectionId
+     * @param enablePool enable client side connection pooling (default = true)
      * @return The [DataSource] or null if the connection cannot be found.
      * @throws [DBConfigurationException] if the cluster DB cannot be connected to.
      */
-    fun create(connectionId: UUID): CloseableDataSource?
+    fun create(connectionId: UUID, enablePool: Boolean = true): CloseableDataSource?
 
     /**
      * Creates [CloseableDataSource] for given configuration.
      *
      * @param config DB config
+     * @param enablePool enable client side connection pooling (default = true)
      */
-    fun create(config: SmartConfig): CloseableDataSource
+    fun create(config: SmartConfig, enablePool: Boolean = true): CloseableDataSource
 
     /**
      * Get cluster DB [DataSource]

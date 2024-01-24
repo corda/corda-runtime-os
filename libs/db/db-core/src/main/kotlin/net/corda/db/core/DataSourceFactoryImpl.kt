@@ -2,8 +2,11 @@ package net.corda.db.core
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import com.zaxxer.hikari.util.DriverDataSource
 import java.io.Closeable
+import java.sql.Connection
 import java.time.Duration
+import java.util.Properties
 import javax.sql.DataSource
 
 /**
@@ -15,22 +18,60 @@ import javax.sql.DataSource
  *
  * If not, we use Hikari, which, under the covers uses [java.sql.DriverManager].
  */
-class HikariDataSourceFactory(
+class DataSourceFactoryImpl(
     private val hikariDataSourceFactory: (c: HikariConfig) -> CloseableDataSource = { c ->
         val ds = HikariDataSource(c)
         // TODO - this can be enabled when https://github.com/brettwooldridge/HikariCP/pull/1989 is released
         //   https://r3-cev.atlassian.net/browse/CORE-7113
         // ds.metricsTrackerFactory = MicrometerMetricsTrackerFactory(MeterFactory.registry)
-        DataSourceWrapper(ds)
-    }
+        HikariDataSourceWrapper(ds)
+    },
+    private val driverDataSourceFactory:
+        (
+        jdbcUrl: String,
+        driverClass: String,
+        username: String,
+        password: String,
+    ) -> DriverDataSource = { jdbcUrl, driverClass, username, password ->
+        val props = Properties()
+        DriverDataSource(
+            jdbcUrl,
+            driverClass,
+            props,
+            username,
+            password,
+        )
+    },
 ) : DataSourceFactory {
     /**
      * [HikariDataSource] wrapper that makes it [CloseableDataSource]
      */
-    private class DataSourceWrapper(private val delegate: HikariDataSource)
-        : CloseableDataSource, Closeable by delegate, DataSource by delegate
+    private class HikariDataSourceWrapper(
+        private val delegate: HikariDataSource,
+    ) : CloseableDataSource,
+        Closeable by delegate, DataSource by delegate
+
+    /**
+     * [DataSourceWrapper] should only be used in a non-OSGi context.
+     * Sets the autocommit and readonly flags when creating a connection.
+     */
+    private class DataSourceWrapper(
+        private val delegate: DataSource,
+        private val isAutoCommit: Boolean,
+        private val isReadOnly: Boolean
+    ) : CloseableDataSource, Closeable,
+        DataSource by delegate {
+        override fun getConnection(): Connection {
+            return delegate.connection.also {
+                it.autoCommit = isAutoCommit
+                it.isReadOnly = isReadOnly
+            }
+        }
+        override fun close() {}
+    }
 
     override fun create(
+        enablePool: Boolean,
         driverClass: String,
         jdbcUrl: String,
         username: String,
@@ -42,27 +83,31 @@ class HikariDataSourceFactory(
         idleTimeout: Duration,
         maxLifetime: Duration,
         keepaliveTime: Duration,
-        validationTimeout: Duration
+        validationTimeout: Duration,
     ): CloseableDataSource {
-        val conf = HikariConfig()
-
-        try {
+        val dataSource = try {
             // Create and *wrap* an existing data source.
-            conf.dataSource = OSGiDataSourceFactory.create(
+            OSGiDataSourceFactory.create(
                 driverClass,
                 jdbcUrl,
                 username,
-                password
+                password,
             )
         } catch (_: UnsupportedOperationException) {
-            // Defer to Hikari, and hence java.sql.DriverManager, which we don't want in production
+            // Defer to Hikari's `DriverDataSource`, and hence java.sql.DriverManager, which we don't want in production
             // code. This part should only be hit in unit tests that don't use an OSGi framework.
-            conf.driverClassName = driverClass
-            conf.jdbcUrl = jdbcUrl
-            conf.username = username
-            conf.password = password
+            driverDataSourceFactory(
+                jdbcUrl,
+                driverClass,
+                username,
+                password
+            )
         }
 
+        if (!enablePool) return DataSourceWrapper(dataSource, isAutoCommit, isReadOnly)
+
+        val conf = HikariConfig()
+        conf.dataSource = dataSource
         conf.isAutoCommit = isAutoCommit
         conf.isReadOnly = isReadOnly
         conf.maximumPoolSize = maximumPoolSize
@@ -77,7 +122,7 @@ class HikariDataSourceFactory(
             conf.idleTimeout = 0
         }
         conf.maxLifetime = maxLifetime.toMillis()
-        if(Duration.ZERO != keepaliveTime)
+        if (Duration.ZERO != keepaliveTime)
             conf.keepaliveTime = keepaliveTime.toMillis()
         conf.validationTimeout = validationTimeout.toMillis()
 

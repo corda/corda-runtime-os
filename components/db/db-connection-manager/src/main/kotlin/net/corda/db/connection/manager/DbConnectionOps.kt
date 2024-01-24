@@ -5,7 +5,7 @@ import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
 import net.corda.orm.JpaEntitiesSet
-import java.util.*
+import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.sql.DataSource
@@ -76,9 +76,10 @@ interface DbConnectionOps {
      * Create a datasource from a connectionId. Can be used to interaction with virtual node DBs.
      *
      * @param connectionId
+     * @param enablePool enable client side connection pooling (default = true)
      * @return [CloseableDataSource] instance
      */
-    fun createDatasource(connectionId: UUID): CloseableDataSource
+    fun createDatasource(connectionId: UUID, enablePool: Boolean = true): CloseableDataSource
 
     /**
      * Get DB connection for given [name].
@@ -94,8 +95,9 @@ interface DbConnectionOps {
      * Get DB connection for given configuration.
      *
      * @param config DB config
+     * @param enablePool enable client side connection pooling (default = true)
      */
-    fun getDataSource(config: SmartConfig): CloseableDataSource
+    fun getDataSource(config: SmartConfig, enablePool: Boolean = true): CloseableDataSource
 
     /**
      * Get cluster DB [EntityManagerFactory]

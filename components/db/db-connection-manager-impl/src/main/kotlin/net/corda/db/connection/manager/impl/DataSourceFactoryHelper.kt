@@ -26,7 +26,7 @@ private val dbFallbackConfig = getConfigurationDefaults(ConfigKeys.DB_CONFIG, DB
  *
  * @throws DBConfigurationException If required configuration attributes are missing.
  */
-fun DataSourceFactory.createFromConfig(config: SmartConfig): CloseableDataSource {
+fun DataSourceFactory.createFromConfig(config: SmartConfig, enablePool: Boolean = true): CloseableDataSource {
     // We are falling back to the (same) defaults from the schema for both cluster and VNode datasource configurations
     val configWithFallback = config.withFallback(dbFallbackConfig)
 
@@ -65,6 +65,7 @@ fun DataSourceFactory.createFromConfig(config: SmartConfig): CloseableDataSource
 
     DataSourceFactoryHelper.log.debug("Creating DB connection for: $driver, $jdbcUrl, $username, $maxPoolSize")
     return this.create(
+        enablePool = enablePool,
         driverClass = driver,
         jdbcUrl = jdbcUrl,
         username = username,

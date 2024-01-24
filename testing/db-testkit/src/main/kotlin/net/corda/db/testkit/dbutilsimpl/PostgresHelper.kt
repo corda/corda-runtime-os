@@ -38,7 +38,7 @@ class PostgresHelper : ExternalDbHelper() {
         val jdbcUrlCopy = if (!schemaName.isNullOrBlank()) {
             if (createSchema) {
                 logger.info("Creating schema: $schemaName".emphasise())
-                net.corda.db.core.createDataSource(
+                net.corda.db.core.createUnpooledDataSource(
                     driverClass,
                     jdbcUrl,
                     user,
@@ -59,7 +59,7 @@ class PostgresHelper : ExternalDbHelper() {
             jdbcUrl
         }
         logger.info("Using URL $jdbcUrlCopy".emphasise())
-        return net.corda.db.core.createDataSource(
+        return net.corda.db.core.createUnpooledDataSource(
             driverClass,
             jdbcUrlCopy,
             user,
