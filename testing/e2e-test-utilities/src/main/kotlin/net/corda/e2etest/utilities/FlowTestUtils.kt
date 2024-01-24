@@ -271,10 +271,11 @@ class TestRequestIdGenerator(testName: String) {
     constructor(testInfo: TestInfo) : this(getNameFromTestInfo(testInfo))
 
     private val baseName: String = Regex("[^-._A-Za-z0-9]").replace(testName, "_")
+    private val guid = UUID.randomUUID()
     private var count = 0
 
     val nextId: String
         get() {
-            return "$baseName-${count++}"
+            return "$baseName-$guid-${count++}"
         }
 }

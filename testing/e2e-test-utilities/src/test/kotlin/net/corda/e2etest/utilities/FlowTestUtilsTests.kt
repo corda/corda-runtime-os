@@ -57,6 +57,6 @@ class FlowTestUtilsTests {
     @Test
     fun `This is a test with a stupid long name so that we exceed the allowed length of a request id - therefore we need to put a lot more text here because we need to hit over two hundred and fourty characters! Are we there yet (question mark) Not quite, but nearly, this should do it`(testInfo: TestInfo){
         val idGenerator = TestRequestIdGenerator(testInfo)
-        assertThat(idGenerator.nextId).matches("ore_text_here_because_we_need_to_hit_over_two_hundred_and_fourty_characters__Are_we_there_yet__question_mark__Not_quite__but_nearly__this_should_do_it-[-\\da-f]{36}-0")
+        assertThat(idGenerator.nextId).matches("ore_text_here_because_we_need_to_hit_over_two_hundred_and_fourty_characters__Are_we_there_yet__question_mark__Not_quite__but_nearly__this_should_do_it-[-\\da-f]{36}-[-\\da-f]{36}-0")
     }
 }
