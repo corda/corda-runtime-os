@@ -23,7 +23,6 @@ import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -84,8 +83,7 @@ class ConfigurationChangeTest : ClusterReadiness by ClusterReadinessChecker() {
         // check cluster is ready when done with this test
         assertIsReady(Duration.ofMinutes(1), Duration.ofMillis(100))
     }
-
-    @Disabled ("This test is disabled while we find the root cause CORE-19316")
+    
     @Test
     fun `cluster configuration changes are picked up and workers continue to operate normally`() {
         val currentConfigValue = getConfig(MESSAGING_CONFIG).configWithDefaultsNode()[MAX_ALLOWED_MSG_SIZE].asInt()
