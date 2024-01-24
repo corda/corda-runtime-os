@@ -16,10 +16,11 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
 
     @Test
     fun `Creating a very simple WireTransaction`() {
+        val componentGroupLists = (1 ..10).map {
+            listOf(canonicalJson.toByteArray())
+        }
         wireTransactionFactory.create(
-            listOf(
-                listOf(canonicalJson.toByteArray()),
-            ),
+            componentGroupLists,
             privacySalt
         )
     }
@@ -131,10 +132,11 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
         )
         val metadataJson = jsonMarshallingService.format(metadata)
         val canonicalJson = jsonValidator.canonicalize(metadataJson)
+        val componentGroupLists = (1 ..10).map {
+            listOf(canonicalJson.toByteArray())
+        }
         wireTransactionFactory.create(
-            listOf(
-                listOf(canonicalJson.toByteArray()),
-            ),
+            componentGroupLists,
             privacySalt
         )
     }
@@ -168,10 +170,11 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
         )
         val metadataJson = jsonMarshallingService.format(metadata)
         val canonicalJson = jsonValidator.canonicalize(metadataJson)
+        val componentGroupLists = (1 ..10).map {
+            listOf(canonicalJson.toByteArray())
+        }
         wireTransactionFactory.create(
-            listOf(
-                listOf(canonicalJson.toByteArray()),
-            ),
+            componentGroupLists,
             privacySalt
         )
     }

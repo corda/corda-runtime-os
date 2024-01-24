@@ -8,7 +8,7 @@ interface WireTransactionFactory {
     /**
      * Creates a [WireTransaction] from the passed in [componentGroupLists] and [privacySalt].
      *
-     * This should be used when recreating an existing [WireTransaction].
+     * This can be used when creating a new [WireTransaction] or recreating an existing [WireTransaction].
      *
      * @param componentGroupLists The component groups to include.
      * @param privacySalt An existing [PrivacySalt] to create the transaction with.
