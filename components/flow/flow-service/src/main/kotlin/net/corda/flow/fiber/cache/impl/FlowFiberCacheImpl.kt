@@ -91,6 +91,7 @@ class FlowFiberCacheImpl @Activate constructor(
                 // cached at suspension after the sandbox was already evicted from the cache, so when we resume this
                 // fiber we are going to need another one bound to the new sandbox instead.
                 logger.info("Fiber found in cache but for wrong sandbox group id")
+                cache.invalidate(key)
             }
             null
         }
