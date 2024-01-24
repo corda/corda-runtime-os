@@ -31,7 +31,6 @@ class StateManagerFactoryImpl @Activate constructor(
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private const val STATE_MANAGER_SCHEMA = "STATE_MANAGER"
     }
 
     // TODO-[CORE-16663]: factory when multiple databases are supported by the Corda platform (only Postgres now).
@@ -48,9 +47,7 @@ class StateManagerFactoryImpl @Activate constructor(
 
                 val user = stateManagerConfig.getString(StateManagerConfig.Database.JDBC_USER)
                 val pass = stateManagerConfig.getString(StateManagerConfig.Database.JDBC_PASS)
-                val jdbcBaseUrl = stateManagerConfig.getString(StateManagerConfig.Database.JDBC_URL)
-                val jdbcSchema = STATE_MANAGER_SCHEMA // [CORE-19033] adds support for configurable state manager schema
-                val jdbcUrl = "$jdbcBaseUrl?currentSchema=$jdbcSchema"
+                val jdbcUrl = stateManagerConfig.getString(StateManagerConfig.Database.JDBC_URL)
                 val jdbcDiver = stateManagerConfig.getString(StateManagerConfig.Database.JDBC_DRIVER)
                 val maxPoolSize = stateManagerConfig.getInt(StateManagerConfig.Database.JDBC_POOL_MAX_SIZE)
                 val minPoolSize = stateManagerConfig.getIntOrDefault(StateManagerConfig.Database.JDBC_POOL_MIN_SIZE, maxPoolSize)
