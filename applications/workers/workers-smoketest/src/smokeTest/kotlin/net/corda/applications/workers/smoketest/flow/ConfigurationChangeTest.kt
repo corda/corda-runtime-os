@@ -85,7 +85,7 @@ class ConfigurationChangeTest : ClusterReadiness by ClusterReadinessChecker() {
         assertIsReady(Duration.ofMinutes(1), Duration.ofMillis(100))
     }
 
-    @Disabled ("This test is disabled while we find the root cause for intermittent failure - https://r3-cev.atlassian.net/browse/CORE-19316")
+    @Disabled ("This test is disabled while we find the root cause CORE-19316")
     @Test
     fun `cluster configuration changes are picked up and workers continue to operate normally`() {
         val currentConfigValue = getConfig(MESSAGING_CONFIG).configWithDefaultsNode()[MAX_ALLOWED_MSG_SIZE].asInt()
