@@ -23,7 +23,7 @@ class MediatorReplayService @Activate constructor(
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) {
     private val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
-    private val deSerializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
+    private val bytesDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, ByteArray::class.java)
 
     /**
      * Generate the new [MediatorReplayOutputEvents] given the mediators [existingOutputs] when provided with the [newOutputs]
@@ -100,15 +100,20 @@ class MediatorReplayService @Activate constructor(
 
     private fun serialize(value: Any?) = value?.let { serializer.serialize(it) }
 
+    /**
+     * Deserialize to mediator messages as byte arrays.
+     * The keys and values may have been serialized from strings, bytes arrays or AVRO messages.
+     * The result is always a byte array. Deserializing as a byte array preserves the serialized bytes.
+     * This allows the consumer that reads from the output topics to deserialize to their expected types     *
+     */
     private fun MediatorReplayOutputEvent.toMediatorMessage(): MediatorMessage<Any> {
-        val key = deSerializer.deserialize(key.array()) ?: throw IllegalStateException("Mediator message key is null after deserialization")
-        val payload = value.let { deSerializer.deserialize(it.array()) }
+        val key = bytesDeserializer.deserialize(key.array()) ?: throw IllegalStateException("Mediator message key is null after deserialization")
+        val payload = value.let { bytesDeserializer.deserialize(it.array()) }
         val properties = mutableMapOf<String, Any>(
             MSG_PROP_TOPIC to topic,
             MSG_PROP_KEY to key
         )
         return MediatorMessage(payload, properties)
     }
-
 }
 
