@@ -1,7 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction.serializer.amqp
 
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
-import net.corda.ledger.filtered.impl.serializer.amqp.FilteredTransactionSerializer
+import net.corda.ledger.common.data.transaction.filtered.impl.FilteredTransactionSerializer
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionTestBase
 import net.corda.ledger.utxo.test.UtxoLedgerTest

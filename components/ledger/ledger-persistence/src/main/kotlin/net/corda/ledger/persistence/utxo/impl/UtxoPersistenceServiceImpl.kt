@@ -13,9 +13,9 @@ import net.corda.ledger.common.data.transaction.TransactionMetadataUtils.createH
 import net.corda.ledger.common.data.transaction.TransactionMetadataUtils.createTopLevelDigestProvider
 import net.corda.ledger.common.data.transaction.TransactionMetadataUtils.parseMetadata
 import net.corda.ledger.common.data.transaction.TransactionStatus
-import net.corda.ledger.filtered.FilteredComponentGroup
-import net.corda.ledger.filtered.FilteredTransaction
-import net.corda.ledger.filtered.factory.FilteredTransactionFactory
+import net.corda.ledger.common.data.transaction.filtered.FilteredComponentGroup
+import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
+import net.corda.ledger.common.data.transaction.filtered.factory.FilteredTransactionFactory
 import net.corda.ledger.persistence.common.InconsistentLedgerStateException
 import net.corda.ledger.persistence.json.ContractStateVaultJsonFactoryRegistry
 import net.corda.ledger.persistence.json.DefaultContractStateVaultJsonFactory
