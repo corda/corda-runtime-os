@@ -37,7 +37,7 @@ dependencies {
     }
     implementation libs.nimbus.sdk
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.jcip-annotations:$jcipAnnotationsVersion"
-    implementation "io.swagger.core.v3:swagger-core:$swaggerVersion"
+    implementation libs.swagger.core
     implementation libs.jetty.http2.server
 
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
