@@ -162,12 +162,15 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
         for (stage in 1 until extraParties) {
             val start = Instant.now()
             val evolvedMessage = "evolved input $stage"
-            println("adding participant ${extraPartiesX500[stage]}")
+            val addList: List<String> = listOf(extraPartiesX500[stage-1])
+            val removeList: List<String> = if (stage >= 2) listOf(extraPartiesX500[stage-2]) else emptyList()
+            println("adding participants $addList  and removing participants $removeList")
             val evolveRequestId = startRestFlow(
                 bobHoldingId,
                 mapOf(
                     "update" to evolvedMessage, "transactionId" to currentTransactionId, "index" to "0",
-                    "newParticipant" to extraPartiesX500[stage]
+                    "addParticipants" to addList,
+                    "removeParticipants" to removeList
                 ),
                 "com.r3.corda.demo.utxo.UtxoDemoEvolveFlow",
                 requestId = idGenerator.nextId

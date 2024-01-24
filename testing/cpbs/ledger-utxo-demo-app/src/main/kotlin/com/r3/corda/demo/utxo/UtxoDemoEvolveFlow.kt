@@ -17,13 +17,14 @@ import net.corda.v5.ledger.utxo.UtxoLedgerService
 import com.r3.corda.demo.utxo.contract.TestCommand
 import com.r3.corda.demo.utxo.contract.TestUtxoState
 import org.slf4j.LoggerFactory
+import java.security.PublicKey
 import java.time.Duration
 import java.time.Instant
 
 @InitiatingFlow(protocol = "utxo-evolve-protocol")
 class UtxoDemoEvolveFlow : ClientStartableFlow {
 
-    data class EvolveMessage(val update: String, val transactionId: String, val index: Int, val newParticipant: String?)
+    data class EvolveMessage(val update: String, val transactionId: String, val index: Int, val addParticipants: List<String>, val removeParticipants: List<String>)
     data class EvolveResponse( val transactionId: String?, val errorMessage: String?)
 
     class EvolveFlowError(message: String): Exception(message)
@@ -65,26 +66,26 @@ class UtxoDemoEvolveFlow : ClientStartableFlow {
             val inputState = input.state.contractState as? TestUtxoState ?:
                 throw EvolveFlowError( "State ${prevStates[request.index].ref} is not of type TestUtxoState")
 
-            val outParticipantKeys = if (request.newParticipant != null) {
-                log.info("adding new participant ${request.newParticipant}")
-                val newParticipantInfo = memberLookup.lookup(MemberX500Name.parse(request.newParticipant))
+            val outParticipantKeys = (inputState.participants.filterIndexed { index, _ ->
+                inputState.participantNames[index] !in request.removeParticipants
+            }) + request.addParticipants.map {
+                log.info("adding new participant $it")
+                val newParticipantInfo = memberLookup.lookup(MemberX500Name.parse(it))
                 if (newParticipantInfo == null) {
-                    val msg ="new member ${request.newParticipant} not found"
+                    val msg = "new member $it not found"
                     log.error(msg)
                     throw IllegalStateException(msg)
                 } else {
                     val newKey = newParticipantInfo.ledgerKeys.first()
-                    log.info("adding new participant ${request.newParticipant} key $newKey")
-                    inputState.participants + newKey
+                    log.info("adding new participant ${it} key $newKey")
+                    newKey
                 }
-            } else inputState.participants
-            val outParticipantNames =  if (request.newParticipant != null) {
-                inputState.participantNames + request.newParticipant
-            } else inputState.participantNames
+            }
+            val outParticipantNames =  inputState.participantNames.filter { it !in request.removeParticipants } + request.addParticipants
             log.info("EEEEE evolve output state participant keys are ${outParticipantKeys.size} "
-                +"$outParticipantKeys newParticipant ${request.newParticipant}")
+                +"$outParticipantKeys + ${request.addParticipants} - ${request.removeParticipants}")
             log.info("EEEEE evolve output state participant names are ${outParticipantNames.size} "
-                +"$outParticipantNames newParticipant ${request.newParticipant}")
+                +"$outParticipantNames + ${request.addParticipants} - ${request.removeParticipants}")
             val output =
                 TestUtxoState(
                     request.update,
