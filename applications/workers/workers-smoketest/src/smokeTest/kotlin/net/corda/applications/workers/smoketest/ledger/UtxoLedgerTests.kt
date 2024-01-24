@@ -59,7 +59,7 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
     private val bobX500 = "CN=Bob-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
     private val charlieX500 = "CN=Charlie-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
     private val notaryX500 = "CN=Notary-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
-    private val extraParties = 10
+    private val extraParties = 2
     private val extraPartiesX500 = (0 until extraParties).map { "CN=Extra-${it}-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB" }
 
     private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, groupId)
@@ -157,15 +157,17 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
         val evolvedMessage = "evolved input"
         val evolveRequestId = startRestFlow(
             bobHoldingId,
-            mapOf("update" to evolvedMessage, "transactionId" to utxoFlowResult.flowResult!!, "index" to "0"),
+            mapOf("update" to evolvedMessage, "transactionId" to utxoFlowResult.flowResult!!, "index" to "0",
+                "newParticipant" to extraPartiesX500[0]
+                ),
             "com.r3.corda.demo.utxo.UtxoDemoEvolveFlow",
             requestId = idGenerator.nextId
 
         )
         val evolveFlowResult = awaitRestFlowFinished(bobHoldingId, evolveRequestId)
 
-        val parsedEvolveFlowResult = objectMapper
-            .readValue(evolveFlowResult.flowResult!!, EvolveResponse::class.java)
+        val result = checkNotNull(evolveFlowResult.flowResult) { "no flow result" }
+        val parsedEvolveFlowResult = objectMapper.readValue(result, EvolveResponse::class.java)
         assertThat(parsedEvolveFlowResult.transactionId).isNotNull()
         assertThat(parsedEvolveFlowResult.errorMessage).isNull()
         assertThat(evolveFlowResult.flowError).isNull()
