@@ -8,6 +8,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import java.util.concurrent.CountDownLatch
 
+@Suppress("LongParameterList")
 class TestStateEventProcessorStrings(
     private val onNextLatch: CountDownLatch,
     private val updateState: Boolean,
