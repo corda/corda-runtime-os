@@ -32,6 +32,7 @@ class EventProcessorTest {
     private lateinit var stateManagerHelper: StateManagerHelper<String>
     private lateinit var client: MessagingClient
     private lateinit var messageRouter: MessageRouter
+    private lateinit var mediatorReplayService: MediatorReplayService
     private lateinit var stateAndEventProcessor: StateAndEventProcessor<String, String, String>
     private lateinit var eventProcessor: EventProcessor<String, String, String>
 
@@ -45,6 +46,7 @@ class EventProcessorTest {
         client = mock()
         stateAndEventProcessor = mock()
         stateManagerHelper = mock()
+        mediatorReplayService = mock()
         messageRouter = mock()
         whenever(messageRouter.getDestination(any())).thenAnswer {
             val msg = it.arguments[0] as MediatorMessage<String>
@@ -54,7 +56,7 @@ class EventProcessorTest {
         }
         eventMediatorConfig = buildStringTestConfig()
 
-        eventProcessor = EventProcessor(eventMediatorConfig, stateManagerHelper, messageRouter)
+        eventProcessor = EventProcessor(eventMediatorConfig, stateManagerHelper, messageRouter, mediatorReplayService)
     }
 
     @Test
@@ -73,8 +75,8 @@ class EventProcessorTest {
             }
         }
         whenever(client.send(any())).thenReturn(MediatorMessage(syncMessage))
-
-        eventProcessor.processEvents(mapOf("key" to getStringRecords(1, "key")), mapOf("key" to state))
+        val input = mapOf("key" to EventProcessingInput("key", getStringRecords(1, "key"), state))
+        eventProcessor.processEvents(input)
 
         verify(stateManagerHelper, times(1)).deserializeValue(any())
         verify(stateAndEventProcessor, times(4)).onNext(anyOrNull(), any())
@@ -95,7 +97,8 @@ class EventProcessorTest {
         whenever(client.send(any())).thenThrow(CordaMessageAPIIntermittentException("baz"))
         whenever(stateManagerHelper.failStateProcessing(any(), anyOrNull())).thenReturn(mock())
 
-        val outputMap = eventProcessor.processEvents(mapOf("key" to getStringRecords(1, "key")), mapOf("key" to state))
+        val input = mapOf("key" to EventProcessingInput("key", getStringRecords(1, "key"), state))
+        val outputMap = eventProcessor.processEvents(input)
 
         val output = outputMap["key"]
         assertEquals(emptyList<MediatorMessage<Any>>(), output?.asyncOutputs)

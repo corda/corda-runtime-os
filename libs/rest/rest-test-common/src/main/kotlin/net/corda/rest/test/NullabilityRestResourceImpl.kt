@@ -3,19 +3,23 @@ package net.corda.rest.test
 import net.corda.rest.PluggableRestResource
 
 class NullabilityRestResourceImpl : PluggableRestResource<NullabilityRestResource>, NullabilityRestResource {
-    override fun postTakesNullableReturnsNullable(someInfo: SomeInfo?): SomeInfo? {
+    override fun postTakesNullableReturnsNullable(optionalSomeInfo: SomeInfo?): SomeInfo {
         return SomeInfo("tenantId", 1)
     }
 
-    override fun postTakesInfoReturnsNullable(someInfo: SomeInfo): SomeInfo? {
+    override fun postTakesInfoReturnsNullable(requiredSomeInfo: SomeInfo): SomeInfo {
         return SomeInfo("tenantId", 1)
     }
 
-    override fun postTakesNullableReturnsInfo(someInfo: SomeInfo?): SomeInfo {
+    override fun postTakesNullableReturnsInfo(optionalSomeInfo: SomeInfo?): SomeInfo {
         return SomeInfo("tenantId", 1)
     }
 
-    override fun postTakesNullableStringReturnsNullableString(input: String?): String? {
+    override fun postTakesNullableStringReturnsNullableString(optionalString: String?): String? {
+        return null
+    }
+
+    override fun postTakesRequiredStringReturnsNullableString(requiredString: String): String? {
         return null
     }
 

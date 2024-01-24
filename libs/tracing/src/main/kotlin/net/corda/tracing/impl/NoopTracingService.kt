@@ -11,6 +11,9 @@ import java.util.concurrent.ExecutorService
 class NoopTracingService : TracingService {
 
     class NoopTraceContext : TraceContext {
+
+        override val traceIdString = "Noop traceId"
+
         override fun traceTag(key: String, value: String) {
         }
 

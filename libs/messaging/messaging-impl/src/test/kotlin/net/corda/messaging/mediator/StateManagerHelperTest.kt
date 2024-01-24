@@ -4,6 +4,7 @@ import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.messaging.mediator.MediatorState
 import net.corda.libs.statemanager.api.Metadata
+import net.corda.libs.statemanager.api.STATE_TYPE
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.State.Companion.VERSION_INITIAL_VALUE
 import net.corda.messaging.api.constants.MessagingMetadataKeys.PROCESSING_FAILURE
@@ -46,7 +47,6 @@ class StateManagerHelperTest {
 
     @Test
     fun `successfully creates new state`() {
-
         val persistedState: State? = null
         val newState = StateAndEventProcessor.State(
             StateType(1),
@@ -66,7 +66,7 @@ class StateManagerHelperTest {
         assertEquals(TEST_KEY, state!!.key)
         assertArrayEquals(serialized(mediatorState), state.value)
         assertEquals(VERSION_INITIAL_VALUE, state.version)
-        assertEquals(newState.metadata, state.metadata)
+        assertEquals(Metadata(mapOf(STATE_TYPE to StateType::class.java.name)), state.metadata)
     }
 
     @Test
@@ -76,7 +76,7 @@ class StateManagerHelperTest {
             TEST_KEY,
             serialized(TEST_STATE_VALUE),
             stateVersion,
-            Metadata()
+            Metadata(mapOf(STATE_TYPE to StateType::class.java.simpleName))
         )
         val updatedState = StateAndEventProcessor.State(
             StateType(TEST_STATE_VALUE.id + 1),
@@ -96,7 +96,7 @@ class StateManagerHelperTest {
         assertEquals(persistedState.key, state!!.key)
         assertArrayEquals(serialized(MediatorState(ByteBuffer.wrap(serialized(updatedState.value!!)), emptyList())), state.value)
         assertEquals(persistedState.version, state.version)
-        assertEquals(updatedState.metadata, state.metadata)
+        assertEquals(Metadata(mapOf(STATE_TYPE to StateType::class.java.name)), state.metadata)
     }
 
     @Test

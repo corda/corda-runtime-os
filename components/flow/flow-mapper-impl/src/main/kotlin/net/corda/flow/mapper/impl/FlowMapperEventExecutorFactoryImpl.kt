@@ -40,11 +40,12 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
     ): FlowMapperEventExecutor {
         return when (val flowMapperEventPayload = flowMapperEvent.payload) {
             is SessionEvent -> {
-                when (flowMapperEventPayload.payload) {
+                when (val sessionEventPayload = flowMapperEventPayload.payload) {
                     is SessionError -> {
                         SessionErrorExecutor(
                             eventKey,
                             flowMapperEventPayload,
+                            sessionEventPayload,
                             state,
                             flowConfig,
                             recordFactory,

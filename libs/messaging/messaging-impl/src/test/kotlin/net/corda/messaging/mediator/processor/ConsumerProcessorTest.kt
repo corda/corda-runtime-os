@@ -2,8 +2,11 @@ package net.corda.messaging.mediator.processor
 
 import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.statemanager.api.Metadata
+import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
+import net.corda.messaging.api.constants.MessagingMetadataKeys.PROCESSING_FAILURE
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorConsumer
@@ -16,22 +19,23 @@ import net.corda.messaging.api.mediator.config.MediatorConsumerConfig
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.messaging.api.records.Record
 import net.corda.messaging.getStringRecords
 import net.corda.messaging.mediator.GroupAllocator
 import net.corda.messaging.mediator.MediatorSubscriptionState
 import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.taskmanager.TaskManager
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -99,15 +103,19 @@ class ConsumerProcessorTest {
                 RoutingDestination.Type.ASYNCHRONOUS
             )
         )
-        whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(getGroups(2, 4))
+        whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(
+            getGroups(2, 4),
+            listOf()
+        )
         whenever(stateManagerHelper.createOrUpdateState(any(), any(), any(), any())).thenReturn(mock())
+        whenever(stateManager.get(any())).thenReturn(mapOf())
 
         consumerProcessor.processTopic(getConsumerFactory(), getConsumerConfig())
 
         verify(consumer, times(1)).poll(any())
         verify(consumerFactory, times(1)).create<String, String>(any())
         verify(consumer, times(1)).subscribe()
-        verify(groupAllocator, times(1)).allocateGroups<String, String, String>(any(), any())
+        verify(groupAllocator, times(2)).allocateGroups<String, String, String>(any(), any())
         verify(taskManager, times(2)).executeShortRunningTask<Unit>(any())
 
         verify(stateManager, times(2)).get(any())
@@ -148,7 +156,9 @@ class ConsumerProcessorTest {
         consumer.apply {
             whenever(poll(any())).thenReturn(listOf(getConsumerRecord()))
         }
-        assertThrows<CordaMessageAPIFatalException> { consumerProcessor.processTopic(consumerFactory, getConsumerConfig()) }
+        assertThrows(CordaMessageAPIFatalException::class.java) {
+            consumerProcessor.processTopic(consumerFactory, getConsumerConfig())
+        }
 
         verify(consumer, times(0)).poll(any())
         verify(consumerFactory, times(1)).create<String, String>(any())
@@ -168,20 +178,39 @@ class ConsumerProcessorTest {
             future
         }
         whenever(stateManagerHelper.failStateProcessing(any(), anyOrNull())).thenReturn(mock())
-        whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(getGroups(2, 4))
+        whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(getGroups(2, 4), listOf())
 
         consumerProcessor.processTopic(getConsumerFactory(), getConsumerConfig())
 
         verify(stateManagerHelper, times(2)).failStateProcessing(any(), anyOrNull())
     }
 
+    @Test
+    fun `when the state for a set of events is marked as failed, no further processing occurs`() {
+        whenever(consumer.poll(any())).thenReturn(listOf(CordaConsumerRecord("a", 0, 0, "key", "b", 0L)))
+        val metadata = Metadata(mapOf(PROCESSING_FAILURE to true))
+        val captor = argumentCaptor<List<EventProcessingInput<String, String>>>()
+        whenever(stateManager.get(any())).thenReturn(mapOf("key" to State("key", byteArrayOf(), metadata = metadata)))
+        whenever(groupAllocator.allocateGroups<String, String, String>(captor.capture(), any())).thenAnswer {
+            captor.allValues.mapNotNull {
+                if (it.isNotEmpty()) {
+                    mapOf("key" to it)
+                } else {
+                    null
+                }
+            }
+        }
+        consumerProcessor.processTopic(getConsumerFactory(), getConsumerConfig())
 
-    private fun getGroups(groupCount: Int, recordCountPerGroup: Int): List<Map<String, List<Record<String, String>>>> {
-        val groups = mutableListOf<Map<String, List<Record<String, String>>>>()
+        verify(taskManager, never()).executeShortRunningTask<Unit>(any())
+    }
+
+    private fun getGroups(groupCount: Int, recordCountPerGroup: Int): List<Map<String, EventProcessingInput<String, String>>> {
+        val groups = mutableListOf<Map<String, EventProcessingInput<String, String>>>()
         for (i in 0 until groupCount) {
             val key = "key$i"
-            val records = getStringRecords(recordCountPerGroup, key)
-            val map = mapOf(key to records)
+            val input = EventProcessingInput(key, getStringRecords(recordCountPerGroup, key), null)
+            val map = mapOf(key to input)
             groups.add(map)
         }
 

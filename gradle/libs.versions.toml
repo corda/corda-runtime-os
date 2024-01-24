@@ -9,17 +9,25 @@ javalinVersion = "4.6.8"
 # Once Javalin version is upgraded to the latest, this override may be removed.
 jettyVersion = "9.4.53.v20231009"
 
+log4jVersion = "2.22.1"
+# SLF4J cannot be ugraded to 2.x due to CorDapps requiring the 1.7 <= x < 2.0
+slf4jVersion = { strictly = "1.7.36" }
+# The CLI plugins use SLF4J version 2 because PF4j requires it
+# Since slf4jVersion is "strictly" enforced from `corda-api`, in order to override version we need to specify
+# version strictly here as well
+slf4jV2Version = { strictly = "2.0.6" }
+
 # Testing
 assertjVersion = "3.25.1"
 junitVersion = "5.10.1"
-mockitoVersion = "5.8.0"
+mockitoVersion = "5.9.0"
 mockitoKotlinVersion = "5.2.1"
 
 # Plugins
 gradleDataVersion = "1.12.1"
 gradleEnterpriseVersion = "3.16.1"
 detektVersion = "1.23.4"
-dependencyCheckVersion = "0.50.0"
+dependencyCheckVersion = "0.51.0"
 snykVersion = "0.5.1"
 cyclonedxVersion = "1.8.1"
 dokkaVersion = "1.9.10"
@@ -41,6 +49,10 @@ kotlin-stdlib-jdk8 = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk
 kotlin-osgi-bundle = { group = "org.jetbrains.kotlin", name = "kotlin-osgi-bundle", version.ref = "kotlinVersion" }
 kotlin-reflect= { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlinVersion" }
 kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.ref = "kotlinVersion" }
+log4j-core = { group = "org.apache.logging.log4j", name = "log4j-core", version.ref = "log4jVersion" }
+log4j-layout-json = { group = "org.apache.logging.log4j", name = "log4j-layout-template-json", version.ref = "log4jVersion" }
+log4j-slf4j = { group = "org.apache.logging.log4j", name = "log4j-slf4j-impl", version.ref = "log4jVersion" }
+log4j-slf4j2 = { group = "org.apache.logging.log4j", name = "log4j-slf4j2-impl", version.ref = "log4jVersion" }
 mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockitoVersion" }
 mockito-kotlin = { group = "org.mockito.kotlin", name = "mockito-kotlin", version.ref = "mockitoKotlinVersion" }
 javalin = { group = "io.javalin", name = "javalin-osgi", version.ref = "javalinVersion" }
@@ -50,6 +62,11 @@ jetty-websocket-servlet = { group = "org.eclipse.jetty.websocket", name = "webso
 jetty-websocket-server = { group = "org.eclipse.jetty.websocket", name = "websocket-server", version.ref = "jettyVersion" }
 jetty-websocket-client = { group = "org.eclipse.jetty.websocket", name = "websocket-client", version.ref = "jettyVersion" }
 jetty-http2-server = { group = "org.eclipse.jetty.http2", name = "http2-server", version.ref = "jettyVersion" }
+slf4j-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4jVersion" }
+slf4j-jul = { group = "org.slf4j", name = "jul-to-slf4j", version.ref = "slf4jVersion" }
+slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4jVersion" }
+slf4j-v2-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4jV2Version" }
+
 gradle-enterprise = { group = "com.gradle", name = "gradle-enterprise-gradle-plugin", version.ref = "gradleEnterpriseVersion" }
 
 [bundles]

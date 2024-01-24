@@ -17,8 +17,8 @@ import net.corda.crypto.softhsm.WrappingRepositoryFactory
 import net.corda.crypto.softhsm.impl.WrappingRepositoryImpl
 import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
-import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationStatus
 import net.corda.data.crypto.wire.ops.key.rotation.KeyType
+import net.corda.data.crypto.wire.ops.key.status.UnmanagedKeyStatus
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -68,9 +68,9 @@ class CryptoRekeyBusProcessorTests {
             setOf(ConfigKeys.MESSAGING_CONFIG),
             mapOf(
                 ConfigKeys.MESSAGING_CONFIG to
-                        SmartConfigFactory.createWithoutSecurityServices().create(
-                            createMessagingConfig()
-                        )
+                    SmartConfigFactory.createWithoutSecurityServices().create(
+                        createMessagingConfig()
+                    )
             )
         )
         config = configEvent.config
@@ -81,7 +81,16 @@ class CryptoRekeyBusProcessorTests {
         virtualNodeInfoReadService = mock()
 
         val wrappingRepository: WrappingRepository = mock {
-            on { findKeysWrappedByAlias(any()) } doReturn listOf(WrappingKeyInfo(0, "", byteArrayOf(), 0, oldKeyAlias, "alias1"))
+            on { findKeysWrappedByParentKey(any()) } doReturn listOf(
+                WrappingKeyInfo(
+                    0,
+                    "",
+                    byteArrayOf(),
+                    0,
+                    oldKeyAlias,
+                    "alias1"
+                )
+            )
         }
 
         wrappingRepositoryFactory = mock {
@@ -92,18 +101,19 @@ class CryptoRekeyBusProcessorTests {
             on { publish(rewrapPublishCapture.capture()) } doReturn emptyList()
         }
 
-        val serializer = mock<CordaAvroSerializer<KeyRotationStatus>> {
+        val serializer = mock<CordaAvroSerializer<UnmanagedKeyStatus>> {
             on { serialize(any()) } doReturn byteArrayOf(42)
         }
         cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
-            on { createAvroSerializer<KeyRotationStatus>() } doReturn serializer
+            on { createAvroSerializer<UnmanagedKeyStatus>() } doReturn serializer
         }
 
         cryptoRekeyBusProcessor = CryptoRekeyBusProcessor(
             cryptoService, virtualNodeInfoReadService,
             wrappingRepositoryFactory, rewrapPublisher,
             mock(),
-            cordaAvroSerializationFactory)
+            cordaAvroSerializationFactory
+        )
     }
 
     @Test
@@ -126,7 +136,7 @@ class CryptoRekeyBusProcessorTests {
      * Other tenants return null, therefore no rewrapWrappingKey function is called.
      */
     @Test
-    fun `key rotation re-wraps only those keys where oldKeyAlias alias in the wrapping repo for the tenant`() {
+    fun `key rotation re-wraps only those keys where oldKeyAlias alias is in the wrapping repo for the tenant`() {
         val oldKeyAlias = "Eris"
         val newId = UUID.randomUUID()
         val wrappingKeyInfo = WrappingKeyInfo(
@@ -247,7 +257,6 @@ class CryptoRekeyBusProcessorTests {
             KeyType.UNMANAGED,
             oldKeyAlias,
             "",
-            null,
             tenantId,
         )
     )

@@ -1,6 +1,7 @@
 package net.corda.crypto.rest
 
 import net.corda.crypto.rest.response.KeyRotationResponse
+import net.corda.crypto.rest.response.KeyRotationStatusResponse
 import net.corda.rest.RestResource
 import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.annotations.HttpGET
@@ -8,6 +9,8 @@ import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.HttpRestResource
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.annotations.RestPathParameter
+import net.corda.rest.exception.ForbiddenException
+import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.rest.response.ResponseEntity
 
@@ -22,21 +25,22 @@ import net.corda.rest.response.ResponseEntity
 )
 interface KeyRotationRestResource : RestResource {
     /**
-     * The [getKeyRotationStatus] gets a list of unmanaged wrapping keys [{alias, [requestIds]}] where requestIds is
-     *                         list of rotations runs in progress.
+     * The [getKeyRotationStatus] gets the latest key rotation status for [keyAlias] if one exists.
      *
-     * @return A list of unmanaged wrapping keys [{alias, [requestIds]}] where requestIds is
-     *         the list of rotations runs in progress.
+     * @return A list of vNodes with the total number of keys needs re-rewrapping and the number of already re-wrapped
+     *          keys.
+     *
+     * @throws ResourceNotFoundException If no key rotation was in progress for [keyAlias].
      */
     @HttpGET(
-        path = "unmanaged/rotation/{requestId}",
-        description = "This method gets the status of the current rotation.",
-        responseDescription = "",
+        path = "unmanaged/rotation/{keyAlias}",
+        description = "This method gets the status of the latest key rotation.",
+        responseDescription = "Number of wrapping keys needs rotating grouped by vNode.",
     )
     fun getKeyRotationStatus(
-        @RestPathParameter(description = "The requestId obtained when starting key rotation request.")
-        requestId: String
-    ): List<Pair<String, String>>
+        @RestPathParameter(description = "The keyAlias we are rotating away from.")
+        keyAlias: String
+    ): KeyRotationStatusResponse
 
     /**
      * Initiates the key rotation process. 
@@ -50,6 +54,7 @@ interface KeyRotationRestResource : RestResource {
      *  - newKeyAlias is the alias of the new key the oldKeyAlias key will be rotated with.
      *
      * @throws ServiceUnavailableException If the underlying service for sending messages is not available.
+     * @throws ForbiddenException If the same key rotation is already in progress.
      */
 
     @HttpPOST(

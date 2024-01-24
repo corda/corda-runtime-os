@@ -1,6 +1,6 @@
 package net.corda.rest.server.impl.security.provider
 
-import net.corda.rest.security.AuthorizingSubject
+import net.corda.rest.authorization.AuthorizingSubject
 import net.corda.rest.server.impl.security.provider.credentials.AuthenticationCredentials
 
 /**
