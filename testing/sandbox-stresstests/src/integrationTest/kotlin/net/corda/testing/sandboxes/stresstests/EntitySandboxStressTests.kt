@@ -1,9 +1,11 @@
 package net.corda.testing.sandboxes.stresstests
 
+import io.micrometer.core.instrument.Tag
 import net.corda.cpk.read.CpkReadService
 import net.corda.db.persistence.testkit.fake.FakeDbConnectionManager
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.EntitySandboxServiceFactory
+import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
@@ -24,7 +26,9 @@ import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
+import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -64,18 +68,14 @@ class EntitySandboxStressTests : TestBase() {
             connections.add(Pair(it.vaultDmlConnectionId, it.holdingIdentity.shortHash.value))
         }
 
-        println("Creating db connection manager")
-
         // create db connection manager and sandbox service
         dbConnectionManager = FakeDbConnectionManager(connections, schemaName)
-        println("Creating entity sandbox service")
         entitySandboxService = EntitySandboxServiceFactory().create(
             virtualNodeService.sandboxGroupContextComponent,
             cpkReadService,
             virtualNodeInfoReadService,
             dbConnectionManager
         )
-        println("Created entity sandbox service")
     }
 
     @AfterEach
@@ -89,37 +89,65 @@ class EntitySandboxStressTests : TestBase() {
     fun `create entity sandboxes - no caching`(testType: StressTestType) {
         prepareTest(testType)
 
+        // set-up file to dump metrics in
+        val metricsFilePath = Paths.get("persistence_no-cache_${testType.testName}")
+        val bw = Files.newBufferedWriter(metricsFilePath)
+
         // track evictions
         var evictions = 0
         virtualNodeService.sandboxGroupContextComponent.addEvictionListener(SandboxGroupType.PERSISTENCE) {
             evictions++
-            println("Flow sandbox for virtual node ${it.holdingIdentity.shortHash} has been evicted")
+            println("Persistence sandbox for virtual node ${it.holdingIdentity.shortHash} has been evicted")
         }
 
+        // memory usage before creating sandboxes
+        bw.write("### Memory usage before creating sandboxes")
+        bw.newLine()
+        bw.write(getMemoryUsage())
+        bw.newLine()
+
         vNodes.forEach {
-            // create the sandbox
-            val sandbox = getOrCreateSandbox(entitySandboxService::get, it)
-            println("Create sandbox for vNode ${it.holdingIdentity.shortHash}\n${sandbox.sandboxGroup.id}")
+            var sandbox: SandboxGroupContext? = null
+            prometheusMeterRegistry.timer("persistence.sandbox.create.time",
+                listOf(Tag.of("virtual.node", it.holdingIdentity.shortHash.value))).recordCallable {
+                sandbox = getOrCreateSandbox(entitySandboxService::get, it)
+            }
+            println("Create sandbox for vNode ${it.holdingIdentity.shortHash} ${sandbox!!.sandboxGroup.id}")
+
+            bw.write("### Memory usage after creating sandbox with ID ${sandbox!!.sandboxGroup.id} for vNode ${it.holdingIdentity.shortHash}")
+            bw.newLine()
+            bw.write(getMemoryUsage())
+            bw.newLine()
         }
 
         assertThat(evictions).isEqualTo(testType.numSandboxes)
+
+        // add all measurements (mostly used to get the sandbox creation times)
+        bw.write("### End of test metrics")
+        bw.newLine()
+        bw.write(prometheusMeterRegistry.scrape())
+        bw.close()
     }
 
     @ParameterizedTest
     @EnumSource(value = StressTestType::class)
     @Timeout(value = 1, unit = TimeUnit.MINUTES)
     fun `retrieve sandboxes from cache - size 251`(testType: StressTestType) {
-        retrieveSandboxes(testType, 251, 0)
+        // set-up file to dump metrics in
+        val metricsFilePath = Paths.get("persistence_large-cache_${testType.testName}")
+        retrieveSandboxes(metricsFilePath, testType, 251, 0)
     }
 
     @ParameterizedTest
     @EnumSource(value = StressTestType::class, names = ["ONE_HUNDRED_SANDBOXES", "TWO_HUNDRED_FIFTY_SANDBOXES"])
     @Timeout(value = 1, unit = TimeUnit.MINUTES)
     fun `retrieve sandboxes from cache - size 10`(testType: StressTestType) {
-        retrieveSandboxes(testType, 10, testType.numSandboxes - 10)
+        // set-up file to dump metrics in
+        val metricsFilePath = Paths.get("persistence_small-cache_${testType.testName}")
+        retrieveSandboxes(metricsFilePath, testType, 10, testType.numSandboxes - 10)
     }
 
-    private fun retrieveSandboxes(testType: StressTestType, cacheSize: Long, numberOfEvictions: Int) {
+    private fun retrieveSandboxes(metricsFilePath: Path, testType: StressTestType, cacheSize: Long, numberOfEvictions: Int) {
         // set cache size
         virtualNodeService.sandboxGroupContextComponent.resizeCache(SandboxGroupType.PERSISTENCE, cacheSize)
 
@@ -132,10 +160,27 @@ class EntitySandboxStressTests : TestBase() {
             println("Virtual node ${it.holdingIdentity.shortHash} has been evicted")
         }
 
+        val bw = Files.newBufferedWriter(metricsFilePath)
+        // memory usage before creating sandboxes
+        bw.write("### Memory usage before creating sandboxes")
+        bw.newLine()
+        bw.write(getMemoryUsage())
+        bw.newLine()
+
         vNodes.forEach {
-            // create the sandbox
-            val sandbox = getOrCreateSandbox(entitySandboxService::get, it)
-            println("Create sandbox for vNode ${it.holdingIdentity.shortHash}\n${sandbox.sandboxGroup.id}")
+            var sandbox: SandboxGroupContext? = null
+
+            prometheusMeterRegistry.timer("persistence.sandbox.create.time",
+                listOf(Tag.of("virtual.node", it.holdingIdentity.shortHash.value))).recordCallable {
+                sandbox = getOrCreateSandbox(entitySandboxService::get, it)
+            }
+
+            println("Create sandbox for vNode ${it.holdingIdentity.shortHash}\n${sandbox!!.sandboxGroup.id}")
+
+            bw.write("### Memory usage after creating sandbox with ID ${sandbox!!.sandboxGroup.id} for vNode ${it.holdingIdentity.shortHash}")
+            bw.newLine()
+            bw.write(getMemoryUsage())
+            bw.newLine()
         }
 
         assertThat(evictions).isEqualTo(numberOfEvictions)
@@ -143,13 +188,28 @@ class EntitySandboxStressTests : TestBase() {
         // retrieve all sandboxes from the cache
         val sandboxes = mutableSetOf<UUID>()
         vNodes.forEach {
-            val sandbox = getOrCreateSandbox(entitySandboxService::get, it)
-            sandboxes.add(sandbox.sandboxGroup.id)
-            println("Retrieving sandbox for vNode ${it.holdingIdentity.shortHash}\n${sandbox.sandboxGroup.id}")
+            var sandbox: SandboxGroupContext? = null
 
-            // TODO: should probably exercise the sandbox somehow
+            prometheusMeterRegistry.timer("persistence.sandbox.retrieve.time",
+                listOf(Tag.of("virtual.node", it.holdingIdentity.shortHash.value))).recordCallable {
+                sandbox = getOrCreateSandbox(entitySandboxService::get, it)
+            }
+
+            sandboxes.add(sandbox!!.sandboxGroup.id)
+            println("Retrieving sandbox ${sandbox!!.sandboxGroup.id} for virtual node ${it.holdingIdentity.shortHash}")
+
+            bw.write("### Memory usage after retrieving sandbox with ID ${sandbox!!.sandboxGroup.id} for vNode ${it.holdingIdentity.shortHash}")
+            bw.newLine()
+            bw.write(getMemoryUsage())
+            bw.newLine()
         }
 
         assertThat(sandboxes.size).isEqualTo(testType.numSandboxes)
+
+        // add all measurements (mostly used to get the sandbox creation times)
+        bw.write("### End of test metrics")
+        bw.newLine()
+        bw.write(prometheusMeterRegistry.scrape())
+        bw.close()
     }
 }

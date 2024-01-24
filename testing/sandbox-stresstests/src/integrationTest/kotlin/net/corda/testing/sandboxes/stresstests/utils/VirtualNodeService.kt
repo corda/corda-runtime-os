@@ -8,11 +8,11 @@ import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.testing.sandboxes.testkit.RequireSandboxTestkit
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 
 @RequireSandboxTestkit
@@ -28,20 +28,21 @@ class VirtualNodeService @Activate constructor(
     val sandboxGroupContextComponent: SandboxGroupContextComponent
 ) {
     private companion object {
-        private const val X500_NAME = "CN=Testing, OU=Application, O=R3, L=London, C=GB"
-
-        fun generateHoldingIdentity() = createTestHoldingIdentity(X500_NAME, UUID.randomUUID().toString())
+        fun generateHoldingIdentity(id: Int): HoldingIdentity {
+            val x500Name = "CN=Testing$id, OU=Application, O=R3, L=London, C=GB"
+            return createTestHoldingIdentity(x500Name, "test")
+        }
     }
 
     private var connectionCounter = AtomicInteger(0)
 
-    fun load(resourceName: String): VirtualNodeInfo {
-        return virtualNodeLoader.loadVirtualNode(resourceName, generateHoldingIdentity())
+    fun load(resourceName: String, id: Int): VirtualNodeInfo {
+        return virtualNodeLoader.loadVirtualNode(resourceName, generateHoldingIdentity(id))
     }
 
-    fun loadWithDbMigration(resourceName: String): VirtualNodeInfo {
-        val virtualNodeInfo = virtualNodeLoader.loadVirtualNode(resourceName, generateHoldingIdentity()
-        )
+    fun loadWithDbMigration(resourceName: String, id: Int): VirtualNodeInfo {
+        val virtualNodeInfo = virtualNodeLoader.loadVirtualNode(resourceName, generateHoldingIdentity(id))
+
         val dbConnectionId = virtualNodeInfo.vaultDmlConnectionId
 
         // migrate DB schema

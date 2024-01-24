@@ -18,6 +18,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.osgi.framework.BundleContext
+import java.lang.StringBuilder
 
 open class TestBase {
     companion object {
@@ -46,8 +47,6 @@ open class TestBase {
 
     @AfterEach
     fun cleanUpMetrics() {
-        println(prometheusMeterRegistry.scrape())
-
         prometheusMeterRegistry.forEachMeter {
             prometheusMeterRegistry.remove(it)
         }
@@ -66,9 +65,9 @@ open class TestBase {
         vNodes = mutableListOf()
         repeat(quantity) {
             if (doMigration) {
-                vNodes.add(virtualNodeService.loadWithDbMigration(Resources.EXTENDABLE_CPB))
+                vNodes.add(virtualNodeService.loadWithDbMigration(Resources.EXTENDABLE_CPB, it))
             } else {
-                vNodes.add(virtualNodeService.load(Resources.EXTENDABLE_CPB))
+                vNodes.add(virtualNodeService.load(Resources.EXTENDABLE_CPB, it))
             }
         }
     }
@@ -79,10 +78,21 @@ open class TestBase {
         val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(vNode)
         return builder.invoke(vNode.holdingIdentity, cpkFileHashes)
     }
-}
+
+    fun getMemoryUsage(): String {
+        val sb = StringBuilder()
+        prometheusMeterRegistry.scrape().lines().forEach {
+            if (it.contains("jvm")) {
+                sb.append(it)
+                sb.append(System.lineSeparator())
+            }
+        }
+        return sb.toString()
+    }
+ }
 
 enum class StressTestType(val numSandboxes: Int, val testName: String) {
-    TEN_SANDBOXES(10, "Create 10 sandboxes"),
-    ONE_HUNDRED_SANDBOXES(100, "Create 100 sandboxes"),
-    TWO_HUNDRED_FIFTY_SANDBOXES(250, "Create 250 sandboxes")
+    TEN_SANDBOXES(10, "10-sandboxes"),
+    ONE_HUNDRED_SANDBOXES(100, "100-sandboxes"),
+    TWO_HUNDRED_FIFTY_SANDBOXES(250, "250-sandboxes")
 }
