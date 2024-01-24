@@ -19,6 +19,7 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Duration
+import java.util.UUID
 
 @Suppress("unused")
 @Component(service = [FlowFiberCache::class])
@@ -73,16 +74,24 @@ class FlowFiberCacheImpl @Activate constructor(
         cache.put(key, FiberCacheValue(fiber, suspendCount))
     }
 
-    override fun get(key: FlowKey, suspendCount: Int): FlowFiber? {
-        val fiber = cache.getIfPresent(key)
-        return if (null == fiber) {
+    override fun get(key: FlowKey, suspendCount: Int, sandboxGroupId: UUID): FlowFiber? {
+        val fiberCacheEntry = cache.getIfPresent(key)
+        return if (null == fiberCacheEntry) {
             logger.info("Fiber not found in cache: ${key.id}")
             null
-        } else if (fiber.suspendCount == suspendCount) {
+        } else if (fiberCacheEntry.suspendCount == suspendCount && sandboxGroupId == fiberCacheEntry.fiber.getSandboxGroupId()) {
             logger.debug { "Fiber found in cache: ${key.id}" }
-            fiber.fiber
+            fiberCacheEntry.fiber
         } else {
-            logger.warn("Fiber found in cache but at wrong suspendCount (${fiber.suspendCount} <-> $suspendCount): ${key.id}")
+            if (fiberCacheEntry.suspendCount != suspendCount) {
+                logger.warn("Fiber found in cache but at wrong suspendCount (${fiberCacheEntry.suspendCount} <-> $suspendCount): ${key.id}")
+            }
+            if (sandboxGroupId != fiberCacheEntry.fiber.getSandboxGroupId()) {
+                // This is for information only, actually it's quite possible because the flow fiber might have been
+                // cached at suspension after the sandbox was already evicted from the cache, so when we resume this
+                // fiber we are going to need another one bound to the new sandbox instead.
+                logger.info("Fiber found in cache but for wrong sandbox group id")
+            }
             null
         }
     }
