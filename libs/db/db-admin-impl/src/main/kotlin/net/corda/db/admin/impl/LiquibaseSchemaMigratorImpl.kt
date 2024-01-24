@@ -139,7 +139,7 @@ class LiquibaseSchemaMigratorImpl(
     ) {
         liquibaseAccessLock.withLock {
             val offlineChangeLogFileName = "offline-changelog-${UUID.randomUUID()}.xml"
-            val url = "offline:postgresql?changeLogFile=$offlineChangeLogFileName&outputLiquibaseSql=data_only"
+            val url = "offline:postgresql?changeLogFile=$offlineChangeLogFileName&outputLiquibaseSql=all"
             val database = databaseFactoryOffline(url, StreamResourceAccessor(offlineChangeLogFileName, dbChange))
 
             // only set the schema if it's not specified as the default
