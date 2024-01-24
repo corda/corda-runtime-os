@@ -6,7 +6,9 @@ package net.corda.libs.statemanager.api
  * The state manager will attempt to group all updates in the same group together. If the underlying storage mechanism
  * uses transactions for example, it will group all operations provided in the same transaction.
  *
- * Attempting to add a new state
+ * Attempting to add a new state with the same key as one already in the group will result in an error being thrown.
+ *
+ * Implementations of this interface are not thread safe and should only be accessed from a single thread.
  */
 interface StateOperationGroupBuilder {
 

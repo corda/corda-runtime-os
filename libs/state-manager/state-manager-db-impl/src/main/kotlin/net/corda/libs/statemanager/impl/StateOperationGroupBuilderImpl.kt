@@ -1,9 +1,19 @@
 package net.corda.libs.statemanager.impl
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.db.core.CloseableDataSource
+import net.corda.db.core.utils.transaction
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateOperationGroupBuilder
+import net.corda.libs.statemanager.impl.model.v1.StateEntity
+import net.corda.libs.statemanager.impl.repository.StateRepository
+import org.slf4j.LoggerFactory
 
-class StateOperationGroupBuilderImpl : StateOperationGroupBuilder {
+class StateOperationGroupBuilderImpl(
+    private val dataSource: CloseableDataSource,
+    private val repository: StateRepository,
+    private val objectMapper: ObjectMapper
+) : StateOperationGroupBuilder {
 
     private val stateKeys = mutableSetOf<String>()
     private val creates = mutableListOf<State>()
@@ -38,6 +48,40 @@ class StateOperationGroupBuilderImpl : StateOperationGroupBuilder {
     }
 
     override fun execute(): Map<String, State?> {
-        TODO("Not yet implemented")
+        return dataSource.connection.transaction { connection ->
+            val createFailures = repository.create(
+                connection,
+                creates.map { state -> state.toPersistentEntity() }
+            ).let { successes ->
+                (creates.map { it.key }.toSet() - successes.toSet()).associateWith { null }
+            }
+
+            val updateFailures = repository.update(
+                connection,
+                updates.map { state -> state.toPersistentEntity() }
+            ).let { (_, failed) ->
+                val failedStates = repository.get(connection, failed)
+                    .map { it.fromPersistentEntity() }
+                    .associateBy { it.key }
+                failedStates + (failed - failedStates.keys).associateWith { null }
+            }
+
+            val deleteFailures = repository.delete(
+                connection,
+                deletes.map { state -> state.toPersistentEntity() }
+            ).let { failures ->
+                repository.get(connection, failures)
+                    .map { it.fromPersistentEntity() }
+                    .associateBy { it.key }
+            }
+
+            createFailures + updateFailures + deleteFailures
+        }
     }
+
+    private fun State.toPersistentEntity(): StateEntity =
+        StateEntity(key, value, objectMapper.writeValueAsString(metadata), version, modifiedTime)
+
+    private fun StateEntity.fromPersistentEntity() =
+        State(key, value, version, objectMapper.convertToMetadata(metadata), modifiedTime)
 }

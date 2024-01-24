@@ -34,14 +34,16 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
         }
     }
 
-    override fun get(connection: Connection, keys: Collection<String>) =
-        connection.prepareStatement(queryProvider.findStatesByKey(keys.size)).use {
+    override fun get(connection: Connection, keys: Collection<String>) : Collection<StateEntity> {
+        if (keys.isEmpty()) return emptySet()
+        return connection.prepareStatement(queryProvider.findStatesByKey(keys.size)).use {
             keys.forEachIndexed { index, key ->
                 it.setString(index + 1, key)
             }
 
             it.executeQuery().resultSetAsStateEntityCollection()
         }
+    }
 
     override fun update(connection: Connection, states: List<StateEntity>): StateRepository.StateUpdateSummary {
         if (states.isEmpty()) return StateRepository.StateUpdateSummary(emptyList(), emptyList())
@@ -67,6 +69,7 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
     }
 
     override fun delete(connection: Connection, states: Collection<StateEntity>): Collection<String> {
+        if (states.isEmpty()) return emptySet()
         return connection.prepareStatement(queryProvider.deleteStatesByKey).use { statement ->
             // The actual state order doesn't matter, but we must ensure that the states are iterated over in the same
             // order when examining the result as when the statements were generated.
