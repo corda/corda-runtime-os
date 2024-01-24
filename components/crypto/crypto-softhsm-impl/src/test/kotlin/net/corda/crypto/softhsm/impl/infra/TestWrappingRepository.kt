@@ -42,4 +42,8 @@ class TestWrappingRepository(
 
     override fun close() {
     }
+
+    override fun getAllKeyIds(): Set<UUID> {
+        TODO("Not needed")
+    }
 }
