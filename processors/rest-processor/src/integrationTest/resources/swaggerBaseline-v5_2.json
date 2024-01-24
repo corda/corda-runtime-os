@@ -5308,16 +5308,27 @@
         }
       },
       "KeyRotationStatusResponse" : {
-        "required" : [ "lastUpdatedTimestamp", "rootKeyAlias", "status", "wrappingKeys" ],
+        "required" : [ "createdTimestamp", "lastUpdatedTimestamp", "newParentKeyAlias", "oldParentKeyAlias", "status", "wrappingKeys" ],
         "type" : "object",
         "properties" : {
+          "createdTimestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T10:15:30Z"
+          },
           "lastUpdatedTimestamp" : {
             "type" : "string",
             "format" : "datetime",
             "nullable" : false,
             "example" : "2022-06-24T10:15:30Z"
           },
-          "rootKeyAlias" : {
+          "newParentKeyAlias" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "oldParentKeyAlias" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
