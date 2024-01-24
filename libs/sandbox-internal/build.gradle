@@ -15,33 +15,6 @@ configurations {
         transitive = false
     }
 }
-
-sourceSets {
-    stressTest {
-        kotlin {
-            srcDirs += [ 'src/stressTest/kotlin' ]
-        }
-        compileClasspath += main.output + test.output
-        runtimeClasspath += main.output + test.output
-    }
-}
-
-kotlin {
-    target {
-        java
-        compilations.stressTest {
-            associateWith compilations.main
-            associateWith compilations.test
-        }
-
-        configurations {
-            stressTestApi.extendsFrom testApi
-            stressTestImplementation.extendsFrom testImplementation
-            stressTestRuntimeOnly.extendsFrom testRuntimeOnly
-        }
-    }
-}
-
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:osgi.annotation"
@@ -75,8 +48,6 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
-
-    stressTestImplementation project(':testing:sandboxes')
 }
 
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
@@ -88,14 +59,4 @@ def integrationTestResources = tasks.named('processIntegrationTestResources', Pr
 
 tasks.named('testingBundle', Bundle) {
     dependsOn integrationTestResources
-}
-
-tasks.register('stressTest', Test) {
-    description = "Runs smoke tests."
-    group = "verification"
-
-    testClassesDirs = project.sourceSets["stressTest"].output.classesDirs
-    classpath = project.sourceSets["stressTest"].runtimeClasspath
-
-    println "Running sandbox stress tests"
 }

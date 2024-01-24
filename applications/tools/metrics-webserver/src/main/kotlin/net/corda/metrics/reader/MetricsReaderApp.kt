@@ -4,6 +4,7 @@ import picocli.CommandLine
 import kotlin.concurrent.thread
 import kotlin.system.exitProcess
 
+@Suppress("SpreadOperator")
 fun main(args: Array<String>) {
     val exitCode = CommandLine(MetricsReaderApp()).execute(*args)
     exitProcess(exitCode)

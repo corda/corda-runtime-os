@@ -5,7 +5,6 @@ plugins {
 }
 
 description "Flow service"
-
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"

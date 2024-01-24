@@ -13,6 +13,7 @@ import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import org.slf4j.LoggerFactory
+import java.sql.SQLException
 import java.time.Duration
 import java.util.UUID
 import javax.persistence.EntityManager
@@ -25,7 +26,7 @@ import javax.sql.DataSource
 //@Component(service = [DbConnectionManager::class, FakeDbConnectionManager::class])
 @Suppress("TooManyFunctions")
 class FakeDbConnectionManager(
-    connections: List<Pair<UUID, String>>,
+    private val connections: List<Pair<UUID, String>>,
     private val schemaName: String,
     private val emff: EntityManagerFactoryFactory = EntityManagerFactoryFactoryImpl()
 ): DbConnectionManager, DbConnectionOps, DataSourceFactory {
@@ -45,7 +46,25 @@ class FakeDbConnectionManager(
 
     override fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet):
             EntityManagerFactory {
-        val source = dbSources.single { it.id == connectionId }
+        var source = dbSources.single { it.id == connectionId }
+        try {
+            // This will throw if the datasource is actually closed. This means we need to re-create it
+            // Ideally we'd re-place it in the dbSources list
+            println(source.dataSource.connection.isClosed)
+        } catch (e: SQLException) {
+            if (e.message!!.contains("has been closed")) {
+                val conn = connections.single { it.first == connectionId }
+                source = DbUtils.getEntityManagerConfiguration(
+                    "fake-db-manager-db-$schemaName",
+                    schemaName = "$schemaName${conn.second.replace("-","")}",
+                    createSchema = true).dataSource.let {
+
+                    NamedDataSources(conn.first, conn.second, it)
+                }
+            } else {
+                throw e
+            }
+        }
         return emff.create(
             source.name,
             entitiesSet.classes.toList(),
