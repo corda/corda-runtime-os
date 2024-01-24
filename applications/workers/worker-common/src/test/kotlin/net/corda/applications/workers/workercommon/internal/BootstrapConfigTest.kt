@@ -113,16 +113,36 @@ class BootstrapConfigTest {
             softly.assertThat(config.hasPath("secrets")).isFalse
 
             val stateManagerConfig = config.getConfig(BootConfig.BOOT_STATE_MANAGER)
-            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.FLOW_CHECKPOINT.value,
-                minSize = 111, maxSize = 222, idleTimeout = 333, maxLifetime = 444, keepAlive = 555, validationTimeout = 666)
-            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.FLOW_MAPPING.value,
-                minSize = 111, maxSize = 222, idleTimeout = 333, maxLifetime = 444, keepAlive = 555, validationTimeout = 666)
-            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION.value,
-                minSize = 111, maxSize = 222, idleTimeout = 333, maxLifetime = 444, keepAlive = 555, validationTimeout = 666)
-            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.TOKEN_POOL_CACHE.value,
-                minSize = 111, maxSize = 222, idleTimeout = 333, maxLifetime = 444, keepAlive = 555, validationTimeout = 666)
-            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.P2P_SESSION.value,
-                minSize = 111, maxSize = 222, idleTimeout = 333, maxLifetime = 444, keepAlive = 555, validationTimeout = 666)
+            assertStateType(
+                softly, stateManagerConfig, StateManagerConfig.StateType.FLOW_CHECKPOINT,
+                driver = "flowCheckpoint-driver",
+                minSize = 111, maxSize = 222, idleTimeout = 333, maxLifetime = 444, keepAlive = 555, validationTimeout = 666
+            )
+            assertStateType(
+                softly, stateManagerConfig, StateManagerConfig.StateType.FLOW_MAPPING,
+                driver = "flowMapping-driver",
+                minSize = 111, maxSize = 222, idleTimeout = 333, maxLifetime = 444, keepAlive = 555, validationTimeout = 666
+            )
+            assertStateType(
+                softly, stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION,
+                driver = "keyRotation-driver",
+                minSize = 111, maxSize = 222, idleTimeout = 333, maxLifetime = 444, keepAlive = 555, validationTimeout = 666
+            )
+            assertStateType(
+                softly, stateManagerConfig, StateManagerConfig.StateType.TOKEN_POOL_CACHE,
+                driver = "tokenPoolCache-driver",
+                minSize = 111, maxSize = 222, idleTimeout = 333, maxLifetime = 444, keepAlive = 555, validationTimeout = 666
+            )
+            assertStateType(
+                softly, stateManagerConfig, StateManagerConfig.StateType.P2P_SESSION,
+                driver = "p2pSession-driver",
+                minSize = 111, maxSize = 222, idleTimeout = 333, maxLifetime = 444, keepAlive = 555, validationTimeout = 666
+            )
+            assertStateType(
+                softly, stateManagerConfig, StateManagerConfig.StateType.FLOW_STATUS,
+                driver = "flowStatus-driver",
+                minSize = 111, maxSize = 222, idleTimeout = 333, maxLifetime = 444, keepAlive = 555, validationTimeout = 666
+            )
         }
     }
 
@@ -150,12 +170,11 @@ class BootstrapConfigTest {
 
         assertSoftly { softly ->
             val stateManagerConfig = config.getConfig(BootConfig.BOOT_STATE_MANAGER)
-            val defaultDriver = "org.postgresql.Driver"
-            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.FLOW_CHECKPOINT.value, user, pass, url, defaultDriver)
-            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.FLOW_MAPPING.value, user, pass, url, defaultDriver)
-            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION.value, user, pass, url, defaultDriver)
-            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.TOKEN_POOL_CACHE.value, user, pass, url, defaultDriver)
-            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.P2P_SESSION.value, user, pass, url, defaultDriver)
+            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.FLOW_CHECKPOINT, user, pass, url)
+            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.FLOW_MAPPING, user, pass, url)
+            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION, user, pass, url)
+            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.TOKEN_POOL_CACHE, user, pass, url)
+            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.P2P_SESSION, user, pass, url)
         }
     }
 

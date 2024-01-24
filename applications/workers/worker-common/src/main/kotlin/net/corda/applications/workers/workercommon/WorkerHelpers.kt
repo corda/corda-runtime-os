@@ -156,6 +156,7 @@ class WorkerHelpers {
             }.withFallback(ConfigFactory.parseMap(defaultParamsDefaultValuesMap))
 
             val configWithStateManagerFallback =
+                // TODO CORE-19372 - removal of stateManagerParams CLI arg and removal of fallback logic here
                 if (defaultParams.stateManagerParams.isNotEmpty() && !configWithFiles.hasPath(BOOT_STATE_MANAGER)) {
                     configWithFiles.withFallback(createStateManagerConfigFromCli(defaultParams.stateManagerParams))
                 } else {

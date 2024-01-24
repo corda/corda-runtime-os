@@ -40,8 +40,8 @@ class StateManagerConfigHelperTest {
         val smConfig = result.getConfig(BootConfig.BOOT_STATE_MANAGER)
         SoftAssertions.assertSoftly { softly ->
             StateManagerConfig.StateType.values().map { type ->
-                assertStateType(softly, smConfig, type.value,
-                    url = "url?currentSchema=STATE_MANAGER", user = "user", pass = "pass", driver = "org.postgresql.Driver")
+                assertStateType(softly, smConfig, type,
+                    url = "url?currentSchema=STATE_MANAGER", user = "user", pass = "pass")
             }
         }
     }
@@ -60,7 +60,7 @@ class StateManagerConfigHelperTest {
         val smConfig = result.getConfig(BootConfig.BOOT_STATE_MANAGER)
         SoftAssertions.assertSoftly { softly ->
             StateManagerConfig.StateType.values().map { type ->
-                assertStateType(softly, smConfig, type.value, url = "url", user = "user", pass = "pass", driver = "org.postgresql.Driver")
+                assertStateType(softly, smConfig, type, url = "url", user = "user", pass = "pass")
             }
         }
     }

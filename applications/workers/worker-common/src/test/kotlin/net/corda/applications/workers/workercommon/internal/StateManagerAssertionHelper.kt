@@ -1,18 +1,27 @@
 package net.corda.applications.workers.workercommon.internal
 
 import com.typesafe.config.Config
+import net.corda.applications.workers.workercommon.StateManagerConfigHelper.DEFAULT_DRIVER
+import net.corda.applications.workers.workercommon.StateManagerConfigHelper.DEFAULT_JDBC_POOL_IDLE_TIMEOUT_SECONDS
+import net.corda.applications.workers.workercommon.StateManagerConfigHelper.DEFAULT_JDBC_POOL_KEEP_ALIVE_TIME_SECONDS
+import net.corda.applications.workers.workercommon.StateManagerConfigHelper.DEFAULT_JDBC_POOL_MAX_LIFETIME_SECONDS
+import net.corda.applications.workers.workercommon.StateManagerConfigHelper.DEFAULT_JDBC_POOL_MAX_SIZE
+import net.corda.applications.workers.workercommon.StateManagerConfigHelper.DEFAULT_JDBC_POOL_MIN_SIZE
+import net.corda.applications.workers.workercommon.StateManagerConfigHelper.DEFAULT_JDBC_POOL_VALIDATION_TIMEOUT_SECONDS
 import net.corda.schema.configuration.StateManagerConfig
 import org.assertj.core.api.SoftAssertions
 
 @Suppress("LongParameterList")
 fun assertStateType(
-    softly: SoftAssertions, config: Config, stateType: String,
+    softly: SoftAssertions, config: Config, stateType: StateManagerConfig.StateType,
     user: String = "$stateType-user", pass: String = "$stateType-pass", url: String = "$stateType-url",
-    driver: String = "$stateType-driver",
-    minSize: Int = 0, maxSize: Int = 5, idleTimeout: Int = 120, maxLifetime: Int = 1800, keepAlive: Int = 0, validationTimeout: Int = 5,
+    driver: String = DEFAULT_DRIVER,
+    minSize: Int = DEFAULT_JDBC_POOL_MIN_SIZE, maxSize: Int = DEFAULT_JDBC_POOL_MAX_SIZE,
+    idleTimeout: Int = DEFAULT_JDBC_POOL_IDLE_TIMEOUT_SECONDS, maxLifetime: Int = DEFAULT_JDBC_POOL_MAX_LIFETIME_SECONDS,
+    keepAlive: Int = DEFAULT_JDBC_POOL_KEEP_ALIVE_TIME_SECONDS, validationTimeout: Int = DEFAULT_JDBC_POOL_VALIDATION_TIMEOUT_SECONDS,
 ) {
-    softly.assertThat(config.hasPath(stateType))
-    val typeConfig = config.getConfig(stateType)
+    softly.assertThat(config.hasPath(stateType.value))
+    val typeConfig = config.getConfig(stateType.value)
     softly.assertThat(typeConfig.getString(StateManagerConfig.TYPE)).isEqualTo("DATABASE")
     softly.assertThat(typeConfig.getString(StateManagerConfig.Database.JDBC_URL)).isEqualTo(url)
     softly.assertThat(typeConfig.getString(StateManagerConfig.Database.JDBC_USER)).isEqualTo(user)

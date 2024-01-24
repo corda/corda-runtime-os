@@ -78,12 +78,12 @@
         "pass": "flowMapping-pass"
       }
     },
-    "tokenPoolCache": {
+    "flowStatus": {
       "type": "DATABASE",
       "database": {
         "jdbc": {
-          "url": "tokenPoolCache-url",
-          "driver": "tokenPoolCache-driver"
+          "url": "flowStatus-url",
+          "driver": "flowStatus-driver"
         },
         "pool": {
           "minSize": 111,
@@ -93,8 +93,27 @@
           "keepAliveTimeSeconds": 555,
           "validationTimeoutSeconds": 666
         },
-        "user": "tokenPoolCache-user",
-        "pass": "tokenPoolCache-pass"
+        "user": "flowStatus-user",
+        "pass": "flowStatus-pass"
+      }
+    },
+    "keyRotation": {
+      "type": "DATABASE",
+      "database": {
+        "jdbc": {
+          "url": "keyRotation-url",
+          "driver": "keyRotation-driver"
+        },
+        "pool": {
+          "minSize": 111,
+          "maxSize": 222,
+          "idleTimeoutSeconds": 333,
+          "maxLifetimeSeconds": 444,
+          "keepAliveTimeSeconds": 555,
+          "validationTimeoutSeconds": 666
+        },
+        "user": "keyRotation-user",
+        "pass": "keyRotation-pass"
       }
     },
     "p2pSession": {
@@ -116,12 +135,12 @@
         "pass": "p2pSession-pass"
       }
     },
-    "keyRotation": {
+    "tokenPoolCache": {
       "type": "DATABASE",
       "database": {
         "jdbc": {
-          "url": "keyRotation-url",
-          "driver": "keyRotation-driver"
+          "url": "tokenPoolCache-url",
+          "driver": "tokenPoolCache-driver"
         },
         "pool": {
           "minSize": 111,
@@ -131,8 +150,8 @@
           "keepAliveTimeSeconds": 555,
           "validationTimeoutSeconds": 666
         },
-        "user": "keyRotation-user",
-        "pass": "keyRotation-pass"
+        "user": "tokenPoolCache-user",
+        "pass": "tokenPoolCache-pass"
       }
     }
   }

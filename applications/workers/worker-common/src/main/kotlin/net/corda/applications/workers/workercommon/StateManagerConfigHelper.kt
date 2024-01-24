@@ -10,15 +10,15 @@ import java.lang.IllegalArgumentException
 
 object StateManagerConfigHelper {
 
-    private const val DEFAULT_DATABASE_TYPE = "DATABASE"
+    private const val DEFAULT_TYPE = "DATABASE"
     private const val DEFAULT_SCHEMA = "STATE_MANAGER"
-    private const val DEFAULT_POSTGRES_DRIVER = "org.postgresql.Driver"
-    private const val DEFAULT_JDBC_POOL_MIN_SIZE = 0
-    private const val DEFAULT_JDBC_POOL_MAX_SIZE = 5
-    private const val DEFAULT_JDBC_POOL_IDLE_TIMEOUT_SECONDS = 120
-    private const val DEFAULT_JDBC_POOL_MAX_LIFETIME_SECONDS = 1800
-    private const val DEFAULT_JDBC_POOL_KEEP_ALIVE_TIME_SECONDS = 0
-    private const val DEFAULT_JDBC_POOL_VALIDATION_TIMEOUT_SECONDS = 5
+    internal const val DEFAULT_DRIVER = "org.postgresql.Driver"
+    internal const val DEFAULT_JDBC_POOL_MIN_SIZE = 0
+    internal const val DEFAULT_JDBC_POOL_MAX_SIZE = 5
+    internal const val DEFAULT_JDBC_POOL_IDLE_TIMEOUT_SECONDS = 120
+    internal const val DEFAULT_JDBC_POOL_MAX_LIFETIME_SECONDS = 1800
+    internal const val DEFAULT_JDBC_POOL_KEEP_ALIVE_TIME_SECONDS = 0
+    internal const val DEFAULT_JDBC_POOL_VALIDATION_TIMEOUT_SECONDS = 5
 
     fun createStateManagerConfigFromClusterDb(config: Config): Config {
         if (!config.hasPath(BootConfig.BOOT_JDBC_URL)) throw IllegalArgumentException("${BootConfig.BOOT_JDBC_URL} not provided")
@@ -39,9 +39,9 @@ object StateManagerConfigHelper {
     private fun getDatabaseDefaults() =
         ConfigFactory.parseMap(
             mapOf(
-                StateManagerConfig.TYPE to DEFAULT_DATABASE_TYPE,
+                StateManagerConfig.TYPE to DEFAULT_TYPE,
                 StateManagerConfig.Database.JDBC_DRIVER to ConfigValueFactory.fromAnyRef(
-                    DEFAULT_POSTGRES_DRIVER
+                    DEFAULT_DRIVER
                 ),
                 StateManagerConfig.Database.JDBC_POOL_MIN_SIZE to ConfigValueFactory.fromAnyRef(
                     DEFAULT_JDBC_POOL_MIN_SIZE
