@@ -30,6 +30,8 @@ import org.junit.jupiter.api.TestInfo
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import java.time.Duration
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 @Suppress("Unused", "FunctionName")
@@ -59,7 +61,7 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
     private val bobX500 = "CN=Bob-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
     private val charlieX500 = "CN=Charlie-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
     private val notaryX500 = "CN=Notary-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
-    private val extraParties = 2
+    private val extraParties = 10
     private val extraPartiesX500 = (0 until extraParties).map { "CN=Extra-${it}-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB" }
 
     private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, groupId)
@@ -119,6 +121,7 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
 
     @Test
     fun `Utxo Ledger - create a transaction containing states and finalize it then evolve it`(testInfo: TestInfo) {
+        val timings = mutableListOf<Long>()
         val idGenerator = TestRequestIdGenerator(testInfo)
         val input = "test input"
         val utxoFlowRequestId = startRestFlow(
@@ -153,30 +156,45 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
             assertThat(parsedResult.transaction.states.flatMap { it.participants }).hasSize(3)
             assertThat(parsedResult.transaction.participants).hasSize(3)
         }
-
-        val evolvedMessage = "evolved input"
-        val evolveRequestId = startRestFlow(
-            bobHoldingId,
-            mapOf("update" to evolvedMessage, "transactionId" to utxoFlowResult.flowResult!!, "index" to "0",
-                "newParticipant" to extraPartiesX500[0]
+        var currentTransactionId = checkNotNull(utxoFlowResult.flowResult)
+        var message = input
+        var prevInput = ""
+        for (stage in 1 until extraParties) {
+            val start = Instant.now()
+            val evolvedMessage = "evolved input $stage"
+            println("adding participant ${extraPartiesX500[stage]}")
+            val evolveRequestId = startRestFlow(
+                bobHoldingId,
+                mapOf(
+                    "update" to evolvedMessage, "transactionId" to currentTransactionId, "index" to "0",
+                    "newParticipant" to extraPartiesX500[stage]
                 ),
-            "com.r3.corda.demo.utxo.UtxoDemoEvolveFlow",
-            requestId = idGenerator.nextId
+                "com.r3.corda.demo.utxo.UtxoDemoEvolveFlow",
+                requestId = idGenerator.nextId
 
-        )
-        val evolveFlowResult = awaitRestFlowFinished(bobHoldingId, evolveRequestId)
+            )
+            val evolveFlowResult = awaitRestFlowFinished(bobHoldingId, evolveRequestId)
+            val evolveFlowResultInner = checkNotNull(evolveFlowResult.flowResult) {"evolve failed"}
+            assertThat(evolveFlowResult.flowError).isNull()
+            // Peek into the last transaction
+            val parsedEvolveFlowResultInner = objectMapper.readValue(evolveFlowResultInner, EvolveResponse::class.java)
+            assertThat(parsedEvolveFlowResultInner.transactionId).isNotNull()
+            assertThat(parsedEvolveFlowResultInner.errorMessage).isNull()
 
-        val result = checkNotNull(evolveFlowResult.flowResult) { "no flow result" }
-        val parsedEvolveFlowResult = objectMapper.readValue(result, EvolveResponse::class.java)
-        assertThat(parsedEvolveFlowResult.transactionId).isNotNull()
-        assertThat(parsedEvolveFlowResult.errorMessage).isNull()
-        assertThat(evolveFlowResult.flowError).isNull()
+            currentTransactionId = checkNotNull(parsedEvolveFlowResultInner.transactionId) { "no flow result" }
+            prevInput = message
+            message = evolvedMessage
+            val end = Instant.now()
+            val duration = ChronoUnit.MILLIS.between(start, end)
+            println("TTTTTT completed stage $stage in ${duration}ms")
+            timings += duration
+            println(timings)
+        }
 
-        // Peek into the last transaction
 
         val peekFlowId = startRestFlow(
             bobHoldingId,
-            mapOf("transactionId" to parsedEvolveFlowResult.transactionId!!),
+            mapOf("transactionId" to currentTransactionId),
             "com.r3.corda.demo.utxo.PeekTransactionFlow",
             requestId = idGenerator.nextId
         )
@@ -189,8 +207,10 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
             .readValue(peekFlowResult.flowResult, PeekTransactionResponse::class.java)
 
         assertThat(parsedPeekFlowResult.errorMessage).isNull()
-        assertThat(parsedPeekFlowResult.inputs).singleElement().extracting { it.testField }.isEqualTo(input)
-        assertThat(parsedPeekFlowResult.outputs).singleElement().extracting { it.testField }.isEqualTo(evolvedMessage)
+        assertThat(parsedPeekFlowResult.inputs).singleElement().extracting { it.testField }.isEqualTo(prevInput)
+        assertThat(parsedPeekFlowResult.outputs).singleElement().extracting { it.testField }.isEqualTo(message)
+        println("done; final timings are:")
+        println(timings)
     }
 
     @Test
