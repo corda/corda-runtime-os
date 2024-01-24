@@ -427,7 +427,7 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
-    override fun findFilteredTransactions(
+    private fun findFilteredTransactions(
         ids: List<String>
     ): Map<String, FilteredTransaction> {
         return entityManagerFactory.transaction { em ->
