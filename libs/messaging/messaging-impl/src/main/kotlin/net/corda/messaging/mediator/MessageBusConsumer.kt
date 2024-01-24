@@ -9,10 +9,10 @@ import java.time.Duration
 /**
  * Message bus consumer that reads messages from configured topic.
  */
-class MessageBusConsumer<K: Any, V: Any>(
+class MessageBusConsumer<K : Any, V : Any>(
     private val topic: String,
     private val consumer: CordaConsumer<K, V>,
-): MediatorConsumer<K, V> {
+) : MediatorConsumer<K, V> {
     override fun subscribe() = consumer.subscribe(topic)
 
     override fun poll(timeout: Duration): List<CordaConsumerRecord<K, V>> = consumer.poll(timeout)

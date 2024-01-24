@@ -16,6 +16,7 @@ import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.messaging.mediator.processor.ConsumerProcessor
 import net.corda.messaging.mediator.processor.EventProcessor
 import net.corda.messaging.mediator.processor.MediatorReplayService
+import net.corda.messaging.mediator.slim.SlimConsumerProcessor
 import net.corda.taskmanager.TaskManager
 
 /**
@@ -88,6 +89,15 @@ class MediatorComponentFactory<K : Any, S : Any, E : Any>(
             clientsById[id]
                 ?: throw IllegalStateException("Messaging client with ID \"$id\" not found")
         }
+    }
+
+    fun createSlimConsumerProcessor(
+        eventMediatorConfig: EventMediatorConfig<K, S, E>,
+        taskManager: TaskManager,
+        messageRouter: MessageRouter,
+        mediatorSubscriptionState: MediatorSubscriptionState,
+    ): SlimConsumerProcessor<K, S, E> {
+        return SlimConsumerProcessor()
     }
 
     /**

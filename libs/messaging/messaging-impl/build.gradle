@@ -36,6 +36,7 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "com.google.guava:guava:$guavaVersion"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
     testImplementation project(":testing:test-utilities")
     testImplementation project(':libs:platform-info')

@@ -17,7 +17,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private val config: EventMediatorConfig<K, S, E>,
     private val taskManager: TaskManager,
     private val mediatorComponentFactory: MediatorComponentFactory<K, S, E>,
-    private val lifecycleCoordinator: LifecycleCoordinator
+    private val lifecycleCoordinator: LifecycleCoordinator,
 ) : MultiSourceEventMediator<K, S, E> {
 
     override val subscriptionName: LifecycleCoordinatorName
@@ -28,7 +28,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private val consumerConfig = MediatorConsumerConfig(
         config.messageProcessor.keyClass,
         config.messageProcessor.eventValueClass,
-        ::onSerializationError
+        ::onSerializationError,
     )
 
     override fun start() {
@@ -46,9 +46,16 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
         config.consumerFactories.map { consumerFactory ->
             taskManager.executeLongRunningTask {
-                val consumerProcessor =
+                /*val consumerProcessor =
                     mediatorComponentFactory.createConsumerProcessor(config, taskManager, messageRouter, mediatorSubscriptionState)
                 consumerProcessor.processTopic(consumerFactory, consumerConfig)
+                 */
+                mediatorComponentFactory.createSlimConsumerProcessor(
+                    config,
+                    taskManager,
+                    messageRouter,
+                    mediatorSubscriptionState,
+                ).processTopic(consumerConfig)
             }.exceptionally { exception ->
                 handleTaskException(exception)
             }
@@ -69,7 +76,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         lifecycleCoordinator.close()
     }
 
-    private fun handleTaskException(exception: Throwable): Unit {
+    private fun handleTaskException(exception: Throwable) {
         mediatorSubscriptionState.stop()
         lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, "Error: ${exception.message}")
         log.error("${exception.message}. Closing Multi-Source Event Mediator.", exception)
