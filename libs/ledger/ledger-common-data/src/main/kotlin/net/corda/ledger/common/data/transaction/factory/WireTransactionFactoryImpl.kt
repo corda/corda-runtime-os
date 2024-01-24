@@ -5,7 +5,6 @@ import net.corda.common.json.validation.WrappedJsonSchema
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
-import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.sandbox.type.UsedByFlow
@@ -47,10 +46,6 @@ class WireTransactionFactoryImpl @Activate constructor(
         checkComponentGroups(componentGroupLists)
         val metadata =
             parseMetadata(componentGroupLists[TransactionMetadataImpl.ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first())
-
-        check((metadata as TransactionMetadataInternal).getNumberOfComponentGroups() == componentGroupLists.size) {
-            "Number of component groups in metadata structure description does not match with the real number!"
-        }
 
         val completeComponentGroupLists = (0 until metadata.getNumberOfComponentGroups()).map { index ->
             componentGroupLists.getOrElse(index) { arrayListOf() }
