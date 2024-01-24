@@ -73,7 +73,9 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                             queue.addAll(processSyncEvents(key, syncEvents))
                         }
                     }
-                    mediatorState.outputEvents = mediatorReplayService.getOutputEvents(mediatorState.outputEvents, asyncOutputs)
+                    if (config.saveOutputsForReplay) {
+                        mediatorState.outputEvents = mediatorReplayService.getOutputEvents(mediatorState.outputEvents, asyncOutputs)
+                    }
                     stateManagerHelper.createOrUpdateState(groupKey, input.state, mediatorState, processorState)
                 } catch (e: CordaMessageAPIIntermittentException) {
                     // If an intermittent error occurs here, the RPC client has failed to deliver a message to another part
@@ -102,6 +104,8 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         allConsumerInputs: Set<Record<K, E>>,
         mediatorState: MediatorState
     ): Pair<Set<Record<K, E>>, List<MediatorMessage<Any>>> {
+        if (!config.saveOutputsForReplay) return Pair(allConsumerInputs, emptyList())
+
         val replaysByInput = mediatorReplayService.getReplayEvents(allConsumerInputs, mediatorState)
         if (replaysByInput.isEmpty()) return Pair(allConsumerInputs, emptyList())
 
