@@ -1,6 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.transaction.filtered
 
-import net.corda.ledger.filtered.FilteredTransaction
+import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.ledger.utxo.data.state.getEncumbranceGroup

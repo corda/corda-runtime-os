@@ -3,10 +3,10 @@ package net.corda.ledger.utxo.test
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
+import net.corda.ledger.common.data.transaction.filtered.factory.impl.FilteredTransactionFactoryImpl
 import net.corda.ledger.common.test.CommonLedgerTest
 import net.corda.ledger.common.testkit.anotherPublicKeyExample
 import net.corda.ledger.common.testkit.publicKeyExample
-import net.corda.ledger.filtered.impl.factory.FilteredTransactionFactoryImpl
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerServiceImpl
 import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
