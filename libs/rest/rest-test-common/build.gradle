@@ -15,7 +15,7 @@ dependencies {
     implementation "net.corda:corda-serialization"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "com.nimbusds:oauth2-oidc-sdk:$nimbusVersion"
-    implementation "com.konghq:unirest-java:$unirestVersion"
+    implementation libs.unirest.java
 
     implementation libs.mockito.kotlin
 

@@ -55,7 +55,7 @@ dependencies {
     runtimeOnly "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
 
-    integrationTestImplementation "com.konghq:unirest-java:$unirestVersion"
+    integrationTestImplementation libs.unirest.java
 
     integrationTestImplementation project(':libs:rest:ssl-cert-read-impl')
     integrationTestImplementation project(":testing:test-utilities")
