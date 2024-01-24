@@ -1,7 +1,6 @@
 package net.corda.messaging.mediator.processor
 
 import net.corda.data.messaging.mediator.MediatorState
-import net.corda.libs.statemanager.api.State
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
@@ -26,7 +25,6 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     private val messageRouter: MessageRouter,
     private val mediatorReplayService: MediatorReplayService,
 ) {
-
     /**
      * Process a group of events.
      * @param group Group of records of various keys
@@ -68,8 +66,13 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                 // of the system despite the retry loop implemented there. This should trigger individual processing to
                 // fail.
                 asyncOutputs.clear()
-                stateManagerHelper.failStateProcessing(groupKey, input.state)
+                stateManagerHelper.failStateProcessing(
+                    groupKey,
+                    input.state,
+                    "unable to contact Corda services while processing events"
+                )
             }
+
             val stateChangeAndOperation = when {
                 input.state == null && processed != null -> StateChangeAndOperation.Create(processed)
                 input.state != null && processed != null -> StateChangeAndOperation.Update(processed)
