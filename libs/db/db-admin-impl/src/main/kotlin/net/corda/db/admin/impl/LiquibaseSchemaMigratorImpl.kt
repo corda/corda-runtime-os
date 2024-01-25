@@ -78,8 +78,8 @@ class LiquibaseSchemaMigratorImpl(
         process(datasource, dbChange, sql, controlTablesSchema)
     }
 
-    override fun createUpdateSqlOffline(dbChange: DbChange, sql: Writer) {
-        processOffline(dbChange, sql, DEFAULT_DB_SCHEMA)
+    override fun createUpdateSqlOffline(dbChange: DbChange, offlineDbDirPathString: String, sql: Writer) {
+        processOffline(dbChange, offlineDbDirPathString, sql, DEFAULT_DB_SCHEMA)
     }
 
     override fun listUnrunChangeSets(datasource: Connection, dbChange: DbChange): List<String> {
@@ -134,11 +134,12 @@ class LiquibaseSchemaMigratorImpl(
 
     private fun processOffline(
         dbChange: DbChange,
+        offlineDbDirPathString: String,
         sql: Writer,
         liquibaseSchemaName: String
     ) {
         liquibaseAccessLock.withLock {
-            val offlineChangeLogFileName = "offline-changelog-${UUID.randomUUID()}.xml"
+            val offlineChangeLogFileName = offlineDbDirPathString + "/changelog-${UUID.randomUUID()}.xml"
             val url = "offline:postgresql?changeLogFile=$offlineChangeLogFileName&outputLiquibaseSql=all"
             val database = databaseFactoryOffline(url, StreamResourceAccessor(offlineChangeLogFileName, dbChange))
 

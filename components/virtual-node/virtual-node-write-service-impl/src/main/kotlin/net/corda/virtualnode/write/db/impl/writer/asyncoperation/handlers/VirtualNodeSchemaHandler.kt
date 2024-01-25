@@ -17,12 +17,14 @@ import net.corda.orm.utils.transaction
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbException
 import java.io.StringWriter
+import java.nio.file.Path
 import java.sql.Connection
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
 
 internal class VirtualNodeSchemaHandler(
+    private val offlineDbDir: Path,
     private val dbConnectionManager: DbConnectionManager,
     private val schemaMigrator: LiquibaseSchemaMigrator,
     private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl(),
@@ -114,7 +116,8 @@ internal class VirtualNodeSchemaHandler(
     ): String {
         StringWriter().use { writer ->
             if (connection == null) {
-                schemaMigrator.createUpdateSqlOffline(dbChange, writer)
+                val offlineDbDirPathString = offlineDbDir.toString()
+                schemaMigrator.createUpdateSqlOffline(dbChange, offlineDbDirPathString, writer)
             } else {
                 schemaMigrator.createUpdateSql(connection, dbChange, writer)
             }
