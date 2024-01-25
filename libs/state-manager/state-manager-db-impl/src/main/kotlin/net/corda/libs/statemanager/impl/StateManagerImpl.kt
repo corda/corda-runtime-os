@@ -141,7 +141,7 @@ class StateManagerImpl(
     }
 
     override fun createUpdateGroup(): StateOperationGroupBuilder {
-        return StateOperationGroupBuilderImpl(dataSource, stateRepository, objectMapper)
+        return StateOperationGroupBuilderImpl(dataSource, stateRepository)
     }
 
     override fun updatedBetween(interval: IntervalFilter): Map<String, State> {
