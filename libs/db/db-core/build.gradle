@@ -16,8 +16,7 @@ dependencies {
     implementation "org.osgi:org.osgi.service.jdbc:$osgiJdbcServiceVersion"
     implementation project(':libs:metrics')
 
-    api "com.zaxxer:HikariCP:$hikariCpVersion"
-
+    api libs.hikaricp
 
     integrationTestRuntimeOnly 'org.osgi:osgi.core'
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"

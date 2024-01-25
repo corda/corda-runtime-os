@@ -2,6 +2,7 @@
 kotlinVersion = "1.8.21"
 
 bouncycastleVersion = "1.77"
+hikariCpVersion = "5.1.0"
 
 jacksonVersion = "2.15.0"
 
@@ -49,6 +50,7 @@ testLoggerVersion = "4.0.0"
 assertj-core = { group = "org.assertj", name = "assertj-core", version.ref = "assertjVersion" }
 bouncycastle-pkix = { group = "org.bouncycastle", name = "bcpkix-jdk18on", version.ref = "bouncycastleVersion" }
 bouncycastle-prov = { group = "org.bouncycastle", name = "bcprov-jdk18on", version.ref = "bouncycastleVersion" }
+hikaricp = { group = "com.zaxxer", name = "HikariCP", version.ref = "hikariCpVersion" }
 junit = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junitVersion" }
 junit-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref = "junitVersion" }
 junit-params = { group = "org.junit.jupiter", name = "junit-jupiter-params", version.ref = "junitVersion" }
