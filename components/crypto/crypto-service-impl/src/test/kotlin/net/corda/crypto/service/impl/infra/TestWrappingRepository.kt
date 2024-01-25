@@ -29,6 +29,8 @@ class TestWrappingRepository(
 
     override fun getKeyById(id: UUID): WrappingKeyInfo? = TODO("Not needed")
 
+    override fun getAllKeyIds(): Set<UUID> = TODO("Not needed")
+
     override fun close() {
     }
 }

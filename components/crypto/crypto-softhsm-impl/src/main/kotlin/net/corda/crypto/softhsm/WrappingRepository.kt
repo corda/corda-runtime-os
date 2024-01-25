@@ -73,4 +73,11 @@ interface WrappingRepository : Closeable {
      * @return Information about the requested wrapping key if it exists
      */
     fun getKeyById(id: UUID): WrappingKeyInfo?
+
+    /**
+     * Get all wrapping key Ids in the database for the tenant to which this [WrappingRepository] is bound.
+     *
+     * @return A set of wrapping key UUIDs
+     */
+    fun getAllKeyIds(): Set<UUID>
 }
