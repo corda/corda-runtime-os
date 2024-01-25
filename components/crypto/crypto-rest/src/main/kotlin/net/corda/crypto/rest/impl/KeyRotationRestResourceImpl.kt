@@ -9,6 +9,7 @@ import net.corda.crypto.core.KeyRotationStatus
 import net.corda.crypto.rest.KeyRotationRestResource
 import net.corda.crypto.rest.response.KeyRotationResponse
 import net.corda.crypto.rest.response.KeyRotationStatusResponse
+import net.corda.crypto.rest.response.ManagedKeyRotationResponse
 import net.corda.crypto.rest.response.TenantIdWrappingKeysStatus
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyType
@@ -235,8 +236,19 @@ class KeyRotationRestResourceImpl @Activate constructor(
         return "Tested."
     }
 
-    override fun startManagedKeyRotation(tenantId: String): ResponseEntity<String> {
-        return ResponseEntity.accepted("Tested.")
+    override fun startManagedKeyRotation(tenantId: String): ResponseEntity<ManagedKeyRotationResponse> {
+        tryWithExceptionHandling(logger, "start key rotation") {
+            checkNotNull(publishToKafka)
+        }
+
+        if (tenantId.isEmpty()) throw InvalidInputDataException(
+            "Cannot start key rotation. TenantId is not specified."
+        )
+
+        return doManagedKeyRotation(
+            tenantId,
+            publishRequests = { publishToKafka!!.publish(it) }
+        )
     }
 
     private fun hasPreviousRotationFinished(): Boolean {
@@ -297,4 +309,21 @@ fun doKeyRotation(
 
     publishRequests(listOf(Record(REKEY_MESSAGE_TOPIC, requestId, keyRotationRequest, Instant.now().toEpochMilli())))
     return ResponseEntity.accepted(KeyRotationResponse(requestId, oldKeyAlias, newKeyAlias))
+}
+
+fun doManagedKeyRotation(
+    tenantId: String,
+    publishRequests: ((List<Record<String, KeyRotationRequest>>) -> Unit)
+): ResponseEntity<ManagedKeyRotationResponse> {
+    val requestId = UUID.randomUUID().toString()
+    val keyRotationRequest = KeyRotationRequest(
+        requestId,
+        KeyType.MANAGED,
+        null,
+        null,
+        tenantId
+    )
+
+    publishRequests(listOf(Record(REKEY_MESSAGE_TOPIC, requestId, keyRotationRequest, Instant.now().toEpochMilli())))
+    return ResponseEntity.accepted(ManagedKeyRotationResponse(requestId, tenantId))
 }
