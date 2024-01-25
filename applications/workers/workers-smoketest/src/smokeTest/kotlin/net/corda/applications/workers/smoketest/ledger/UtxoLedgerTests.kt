@@ -159,7 +159,7 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
         var currentTransactionId = checkNotNull(utxoFlowResult.flowResult)
         var message = input
         var prevInput = ""
-        val constant = true
+        val constant = false // if true, keep the number of participants at 4, if false add one on each evolution
         for (stage in 1 until extraParties) {
             val start = Instant.now()
             val evolvedMessage = "evolved input $stage"
