@@ -18,7 +18,7 @@ slf4jVersion = { strictly = "1.7.36" }
 slf4jV2Version = { strictly = "2.0.6" }
 
 # Testing
-assertjVersion = "3.25.1"
+assertjVersion = "3.25.2"
 junitVersion = "5.10.1"
 mockitoVersion = "5.9.0"
 mockitoKotlinVersion = "5.2.1"
