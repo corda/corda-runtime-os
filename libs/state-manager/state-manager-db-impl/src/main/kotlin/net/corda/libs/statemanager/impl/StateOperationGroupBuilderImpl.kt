@@ -56,27 +56,26 @@ class StateOperationGroupBuilderImpl(
                 connection,
                 creates
             ).let { successes ->
-                (creates.map { it.key }.toSet() - successes.toSet()).associateWith { null }
+                (creates.map { it.key }.toSet() - successes.toSet()).toList()
             }
 
             val updateFailures = repository.update(
                 connection,
                 updates
-            ).let { (_, failed) ->
-                val failedStates = repository.get(connection, failed)
-                    .associateBy { it.key }
-                failedStates + (failed - failedStates.keys).associateWith { null }
-            }
+            ).failedKeys
 
             val deleteFailures = repository.delete(
                 connection,
                 deletes
-            ).let { failures ->
-                repository.get(connection, failures)
-                    .associateBy { it.key }
-            }
+            )
 
-            createFailures + updateFailures + deleteFailures
+            val failedKeys = createFailures + updateFailures + deleteFailures
+            val failedStates = repository.get(connection, failedKeys).associateBy { it.key }
+            val nonExistentStateFailures = (createFailures + updateFailures).filter {
+                it !in failedStates.keys
+            }.associateWith { null }
+
+            failedStates + nonExistentStateFailures
         }.also {
             executed = true
         }

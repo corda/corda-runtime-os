@@ -48,12 +48,12 @@ class StateOperationBuilderImplTest {
         verify(repository).create(connection, listOf(stateOne))
         verify(repository).update(connection, listOf(stateTwo))
         verify(repository).delete(connection, listOf(stateThree))
-        verify(repository, times(2)).get(connection, listOf())
+        verify(repository, times(1)).get(connection, listOf())
         verify(datasource, times(1)).connection
     }
 
     @Test
-    fun `when creating a new state fails, the key appears in the output of execute`() {
+    fun `when creating a new state fails, the key and state appears in the output of execute`() {
         setUpRepository(
             listOf(),
             StateRepository.StateUpdateSummary(listOf(), listOf()),
@@ -161,12 +161,7 @@ class StateOperationBuilderImplTest {
 
     @Test
     fun `when execute is called with no states, nothing happens`() {
-        setUpRepository(
-            listOf(stateOne.key),
-            StateRepository.StateUpdateSummary(listOf(), listOf()),
-            listOf(stateThree.key),
-            listOf()
-        )
+        setUpRepository()
         val batch = StateOperationGroupBuilderImpl(datasource, repository)
         val failures = batch
             .execute()
@@ -175,7 +170,7 @@ class StateOperationBuilderImplTest {
         verify(repository).create(connection, listOf())
         verify(repository).update(connection, listOf())
         verify(repository).delete(connection, listOf())
-        verify(repository, times(2)).get(connection, listOf())
+        verify(repository, times(1)).get(connection, listOf())
         verify(datasource, times(1)).connection
     }
 
