@@ -23,7 +23,7 @@ class FlowFibreCacheTest {
     private val cacheEviction = mock<CacheEviction>()
     private val key = mock<FlowKey>()
     private val value = mock<FlowFiber>()
-    private val sandboxGroupId = mock<UUID>()
+    private val sandboxGroupId = UUID.randomUUID()
 
     @BeforeAll
     fun setup() {
@@ -49,7 +49,7 @@ class FlowFibreCacheTest {
     fun `when get and entry wrong sandbox group ID return null and entry evicted`() {
         val cache = FlowFiberCacheImpl(cacheEviction)
         cache.put(key, 1, value)
-        val entry = cache.get(key, 1, mock())
+        val entry = cache.get(key, 1, UUID.randomUUID())
         assertThat(entry).isNull()
         assertThat(cache.get(key, 1, sandboxGroupId)).isNull()
     }
@@ -75,7 +75,7 @@ class FlowFibreCacheTest {
         val cache = FlowFiberCacheImpl(cacheEviction)
         cache.put(key, 1, value)
         cache.remove(key)
-        assertThat(cache.get(key, 1, mock())).isNull()
+        assertThat(cache.get(key, 1, sandboxGroupId)).isNull()
     }
 
     @Test

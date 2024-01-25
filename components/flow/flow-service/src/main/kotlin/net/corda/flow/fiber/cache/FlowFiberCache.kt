@@ -15,7 +15,7 @@ interface FlowFiberCache : SandboxedCache {
     fun put(key: FlowKey, suspendCount: Int, fiber: FlowFiber)
 
     /**
-     * Get a flow fiber from the cache with the given [FlowKey] and [suspendCount], or else return null.
+     * Get a flow fiber from the cache with the given [FlowKey], [suspendCount] and [sandboxGroupId], or else return null.
      */
     fun get(key: FlowKey, suspendCount: Int, sandboxGroupId: UUID): FlowFiber?
 
