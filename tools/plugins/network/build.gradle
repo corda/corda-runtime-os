@@ -21,8 +21,8 @@ dependencies {
 
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
 
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    implementation libs.jackson.module.kotlin
+    implementation libs.jackson.datatype.jsr310
     implementation "org.yaml:snakeyaml:${snakeyamlVersion}"
     implementation libs.unirest.java
     implementation project(":libs:crypto:certificate-generation")

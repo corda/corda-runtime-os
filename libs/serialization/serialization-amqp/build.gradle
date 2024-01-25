@@ -46,7 +46,7 @@ dependencies {
     testImplementation project(':testing:test-serialization')
     testImplementation project(':libs:crypto:cipher-suite')
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
-    testImplementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    testImplementation libs.jackson.databind
     testRuntimeOnly libs.slf4j.simple
     testRuntimeOnly 'org.osgi:osgi.core'
 

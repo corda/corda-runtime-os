@@ -29,9 +29,9 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(':libs:rest:rest')
     implementation project(":libs:utilities")
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
-    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation libs.jackson.datatype.jsr310
+    implementation libs.jackson.dataformat.yaml
+    implementation libs.jackson.module.kotlin
     implementation "org.postgresql:postgresql:$postgresDriverVersion"
 
     implementation project(":osgi-framework-api")

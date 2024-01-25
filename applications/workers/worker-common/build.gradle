@@ -41,7 +41,7 @@ dependencies {
                     'This might be resolved in the future versions of Javalin.'
         }
     }
-    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    implementation libs.jackson.databind
     implementation ("io.micrometer:micrometer-core:$micrometerVersion") {
         // we don't need these in classpath, so excluding them to reduce dependencies.
         exclude group: 'org.hdrhistogram', module: 'HdrHistogram'
@@ -58,7 +58,7 @@ dependencies {
     testRuntimeOnly 'org.osgi:osgi.core'
 
     // Required for enterprise addons, so must appear in all worker JARs even if they don't use them
-    runtimeOnly "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    runtimeOnly libs.jackson.module.kotlin
     runtimeOnly "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
     runtimeOnly project(":libs:cache:cache-caffeine")
 }
