@@ -16,6 +16,7 @@ import net.corda.crypto.softhsm.WrappingRepository
 import net.corda.crypto.softhsm.WrappingRepositoryFactory
 import net.corda.crypto.softhsm.impl.WrappingRepositoryImpl
 import net.corda.crypto.testkit.SecureHashUtils
+import net.corda.data.crypto.wire.ops.key.rotation.IndividualKeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyType
 import net.corda.data.crypto.wire.ops.key.status.UnmanagedKeyStatus
@@ -40,6 +41,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.UUID
@@ -48,7 +50,6 @@ import kotlin.streams.asStream
 
 
 class CryptoRekeyBusProcessorTests {
-    private lateinit var tenantId: String
     private val tenantId1 = ShortHash.of(parseSecureHash("SHA-256:ABC12345678911111111111111")).toString()
     private val tenantId2 = ShortHash.of(parseSecureHash("SHA-256:BCC12345678911111111111111")).toString()
     private val tenantId3 = ShortHash.of(parseSecureHash("SHA-256:CBC12345678911111111111111")).toString()
@@ -61,6 +62,8 @@ class CryptoRekeyBusProcessorTests {
     private lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
     private lateinit var config: Map<String, SmartConfig>
     private val oldKeyAlias = "oldKeyAlias"
+
+    private val dummyUuids = List(4) { UUID.randomUUID() }.toSet()
 
     @BeforeEach
     fun setup() {
@@ -77,7 +80,6 @@ class CryptoRekeyBusProcessorTests {
 
         cryptoService = mock<CryptoService> { }
 
-        tenantId = UUID.randomUUID().toString()
         virtualNodeInfoReadService = mock()
 
         val wrappingRepository: WrappingRepository = mock {
@@ -91,6 +93,7 @@ class CryptoRekeyBusProcessorTests {
                     "alias1"
                 )
             )
+            on { getAllKeyIds() } doReturn dummyUuids
         }
 
         wrappingRepositoryFactory = mock {
@@ -117,11 +120,11 @@ class CryptoRekeyBusProcessorTests {
     }
 
     @Test
-    fun `key rotation re-wraps all the keys`() {
+    fun `unmanaged key rotation re-wraps all the keys`() {
         val virtualNodes = getStubVirtualNodes(listOf(tenantId1, tenantId2, tenantId3))
         whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
 
-        cryptoRekeyBusProcessor.onNext(listOf(getKafkaRecord("")))
+        cryptoRekeyBusProcessor.onNext(listOf(getUnmanagedKeyRotationKafkaRecord()))
 
         verify(rewrapPublisher, times(1)).publish(any())
         assertThat(rewrapPublishCapture.allValues).hasSize(1)
@@ -136,7 +139,7 @@ class CryptoRekeyBusProcessorTests {
      * Other tenants return null, therefore no rewrapWrappingKey function is called.
      */
     @Test
-    fun `key rotation re-wraps only those keys where oldKeyAlias alias is in the wrapping repo for the tenant`() {
+    fun `unmanaged key rotation re-wraps only those keys where oldKeyAlias alias is in the wrapping repo for the tenant`() {
         val oldKeyAlias = "Eris"
         val newId = UUID.randomUUID()
         val wrappingKeyInfo = WrappingKeyInfo(
@@ -174,11 +177,61 @@ class CryptoRekeyBusProcessorTests {
             cordaAvroSerializationFactory,
         )
 
-        cryptoRekeyBusProcessor.onNext(listOf(getKafkaRecord(oldKeyAlias)))
+        cryptoRekeyBusProcessor.onNext(listOf(getUnmanagedKeyRotationKafkaRecord()))
 
         verify(rewrapPublisher, times(1)).publish(any())
         assertThat(rewrapPublishCapture.allValues).hasSize(1)
         assertThat(rewrapPublishCapture.firstValue).hasSize(0)
+    }
+
+    @Test
+    fun `unmanaged key rotation with empty old key alias is ignored`() {
+        val virtualNodes = getStubVirtualNodes(listOf(tenantId1, tenantId2, tenantId3))
+        whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
+
+        cryptoRekeyBusProcessor.onNext(listOf(getUnmanagedKeyRotationKafkaRecord(oldParentKeyAlias = "")))
+
+        verify(rewrapPublisher, never()).publish(any())
+    }
+
+    @Test
+    fun `unmanaged key rotation with null old key alias is ignored`() {
+        val virtualNodes = getStubVirtualNodes(listOf(tenantId1, tenantId2, tenantId3))
+        whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
+
+        cryptoRekeyBusProcessor.onNext(listOf(getUnmanagedKeyRotationKafkaRecord(oldParentKeyAlias = null)))
+
+        verify(rewrapPublisher, never()).publish(any())
+    }
+
+    @Test
+    fun `unmanaged key rotation with empty new key alias is ignored`() {
+        val virtualNodes = getStubVirtualNodes(listOf(tenantId1, tenantId2, tenantId3))
+        whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
+
+        cryptoRekeyBusProcessor.onNext(listOf(getUnmanagedKeyRotationKafkaRecord(newParentKeyAlias = "")))
+
+        verify(rewrapPublisher, never()).publish(any())
+    }
+
+    @Test
+    fun `unmanaged key rotation with null new key alias is ignored`() {
+        val virtualNodes = getStubVirtualNodes(listOf(tenantId1, tenantId2, tenantId3))
+        whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
+
+        cryptoRekeyBusProcessor.onNext(listOf(getUnmanagedKeyRotationKafkaRecord(newParentKeyAlias = null)))
+
+        verify(rewrapPublisher, never()).publish(any())
+    }
+
+    @Test
+    fun `unmanaged key rotation with non null tenant id is ignored`() {
+        val virtualNodes = getStubVirtualNodes(listOf(tenantId1, tenantId2, tenantId3))
+        whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
+
+        cryptoRekeyBusProcessor.onNext(listOf(getUnmanagedKeyRotationKafkaRecord(tenantId = "tenantId")))
+
+        verify(rewrapPublisher, never()).publish(any())
     }
 
     private fun makeWrappingKeyEntity(
@@ -249,14 +302,103 @@ class CryptoRekeyBusProcessorTests {
         return virtualNodesInfos
     }
 
-    private fun getKafkaRecord(oldKeyAlias: String): Record<String, KeyRotationRequest> = Record(
+    private fun getUnmanagedKeyRotationKafkaRecord(
+        oldParentKeyAlias: String? = "oldKeyAlias",
+        newParentKeyAlias: String? = "newKeyAlias",
+        tenantId: String? = null
+    ): Record<String, KeyRotationRequest> = Record(
         "TBC",
         UUID.randomUUID().toString(),
         KeyRotationRequest(
             UUID.randomUUID().toString(),
             KeyType.UNMANAGED,
-            oldKeyAlias,
-            "",
+            oldParentKeyAlias,
+            newParentKeyAlias,
+            tenantId,
+        )
+    )
+
+    @Test
+    fun `managed key rotation with empty old key alias is ignored`() {
+        val virtualNodes = getStubVirtualNodes(listOf(tenantId1, tenantId2, tenantId3))
+        whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
+
+        cryptoRekeyBusProcessor.onNext(listOf(getManagedKeyRotationKafkaRecord(oldParentKeyAlias = "")))
+
+        verify(rewrapPublisher, never()).publish(any())
+    }
+
+    @Test
+    fun `managed key rotation with non null old key alias is ignored`() {
+        val virtualNodes = getStubVirtualNodes(listOf(tenantId1, tenantId2, tenantId3))
+        whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
+
+        cryptoRekeyBusProcessor.onNext(listOf(getManagedKeyRotationKafkaRecord(oldParentKeyAlias = "oldKeyAlias")))
+
+        verify(rewrapPublisher, never()).publish(any())
+    }
+
+    @Test
+    fun `managed key rotation with non null new key alias is ignored`() {
+        val virtualNodes = getStubVirtualNodes(listOf(tenantId1, tenantId2, tenantId3))
+        whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
+
+        cryptoRekeyBusProcessor.onNext(listOf(getManagedKeyRotationKafkaRecord(newParentKeyAlias = "newKeyAlias")))
+
+        verify(rewrapPublisher, never()).publish(any())
+    }
+
+    @Test
+    fun `managed key rotation with null tenant id is ignored`() {
+        val virtualNodes = getStubVirtualNodes(listOf(tenantId1, tenantId2, tenantId3))
+        whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
+
+        cryptoRekeyBusProcessor.onNext(listOf(getManagedKeyRotationKafkaRecord(tenantId = null)))
+
+        verify(rewrapPublisher, never()).publish(any())
+    }
+
+    @Test
+    fun `managed key rotation with empty tenant id is ignored`() {
+        val virtualNodes = getStubVirtualNodes(listOf(tenantId1, tenantId2, tenantId3))
+        whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
+
+        cryptoRekeyBusProcessor.onNext(listOf(getManagedKeyRotationKafkaRecord(tenantId = "")))
+
+        verify(rewrapPublisher, never()).publish(any())
+    }
+
+    @Test
+    fun `managed key rotation issues messages to re-wrap all the keys`() {
+        val tenantId = "MyTenant"
+        cryptoRekeyBusProcessor.onNext(listOf(getManagedKeyRotationKafkaRecord(tenantId = tenantId)))
+
+        verify(rewrapPublisher, times(1)).publish(any())
+
+        assertThat(rewrapPublishCapture.allValues).hasSize(1)
+        assertThat(rewrapPublishCapture.firstValue).hasSize(dummyUuids.size)
+
+        rewrapPublishCapture.firstValue.map { it.value as IndividualKeyRotationRequest }.forEach {
+            assertThat(it.keyType).isEqualTo(KeyType.MANAGED)
+            assertThat(it.tenantId).isEqualTo(tenantId)
+            assertThat(it.oldParentKeyAlias).isNull()
+            assertThat(it.newParentKeyAlias).isNull()
+            assertThat(dummyUuids).contains(UUID.fromString(it.keyUuid))
+        }
+    }
+
+    private fun getManagedKeyRotationKafkaRecord(
+        oldParentKeyAlias: String? = null,
+        newParentKeyAlias: String? = null,
+        tenantId: String? = "tenantId"
+    ): Record<String, KeyRotationRequest> = Record(
+        "TBC",
+        UUID.randomUUID().toString(),
+        KeyRotationRequest(
+            UUID.randomUUID().toString(),
+            KeyType.MANAGED,
+            oldParentKeyAlias,
+            newParentKeyAlias,
             tenantId,
         )
     )
