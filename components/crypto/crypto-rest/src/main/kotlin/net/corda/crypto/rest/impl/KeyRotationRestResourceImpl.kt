@@ -219,7 +219,6 @@ class KeyRotationRestResourceImpl @Activate constructor(
         }
 
         validateInputParams(oldKeyAlias, newKeyAlias)
-        if (!hasPreviousRotationFinished(oldKeyAlias)) throw ForbiddenException("Previous key rotation for $oldKeyAlias is in progress.")
 
         if (!hasPreviousRotationFinished()) {
             throw ForbiddenException("A key rotation operation is already ongoing, a new one cannot be started until it completes.")
@@ -249,7 +248,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
     }
 
     @Suppress("ThrowsCount")
-    private fun validateInputParams(oldKeyAlias: String, newKeyAlias: String){
+    private fun validateInputParams(oldKeyAlias: String, newKeyAlias: String) {
         if (oldKeyAlias == newKeyAlias) throw InvalidInputDataException(
             "Cannot start key rotation. The old key alias must be different to the new key alias."
         )
