@@ -26,11 +26,8 @@ class DbBusConfigMergerImpl : BusConfigMerger {
 
             // Cluster Database
             .withValue(Bus.BUS_TYPE, fromAnyRef("DATABASE"))
+            .withValue(Bus.DB_JDBC_URL, fromAnyRef(bootConfig.getStringOrNull(BootConfig.BOOT_JDBC_URL)))
             .withValue(Bus.DB_USER, fromAnyRef(bootConfig.getStringOrDefault(BootConfig.BOOT_JDBC_USER, "")))
             .withValue(Bus.DB_PASS, fromAnyRef(bootConfig.getStringOrDefault(BootConfig.BOOT_JDBC_PASS, "")))
-            .withValue(
-                Bus.DB_JDBC_URL,
-                fromAnyRef(bootConfig.getStringOrNull(BootConfig.BOOT_JDBC_URL + "_messagebus"))
-            )
     }
 }
