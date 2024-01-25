@@ -26,7 +26,7 @@ interface StateOperationBatch {
      * @throws IllegalArgumentException if a state is added with a key that is already part of the batch.
      * @throws IllegalStateException if the batch has already been executed.
      */
-    fun create(states: Collection<State>) : StateOperationBatch
+    fun create(states: Collection<State>): StateOperationBatch
 
     /**
      * Add a single state to be created as part of this batch.
@@ -38,7 +38,7 @@ interface StateOperationBatch {
      * @throws IllegalArgumentException if a state is added with a key that is already part of the batch.
      * @throws IllegalStateException if the batch has already been executed.
      */
-    fun create(state: State) : StateOperationBatch = create(listOf(state))
+    fun create(state: State): StateOperationBatch = create(listOf(state))
 
     /**
      * Add a collection of states to be updated as part of this batch.
@@ -50,7 +50,7 @@ interface StateOperationBatch {
      * @throws IllegalArgumentException if a state is added with a key that is already part of the batch.
      * @throws IllegalStateException if the batch has already been executed.
      */
-    fun update(states: Collection<State>) : StateOperationBatch
+    fun update(states: Collection<State>): StateOperationBatch
 
     /**
      * Add a single state to be updated as part of this batch.
@@ -62,7 +62,7 @@ interface StateOperationBatch {
      * @throws IllegalArgumentException if a state is added with a key that is already part of the batch.
      * @throws IllegalStateException if the batch has already been executed.
      */
-    fun update(state: State) : StateOperationBatch = update(listOf(state))
+    fun update(state: State): StateOperationBatch = update(listOf(state))
 
     /**
      * Add a collection of states to be deleted as part of this batch.
@@ -74,7 +74,7 @@ interface StateOperationBatch {
      * @throws IllegalArgumentException if a state is added with a key that is already part of the batch.
      * @throws IllegalStateException if the batch has already been executed.
      */
-    fun delete(states: Collection<State>) : StateOperationBatch
+    fun delete(states: Collection<State>): StateOperationBatch
 
     /**
      * Add a state to be deleted as part of this batch.
@@ -86,7 +86,7 @@ interface StateOperationBatch {
      * @throws IllegalArgumentException if a state is added with a key that is already part of the batch.
      * @throws IllegalStateException if the batch has already been executed.
      */
-    fun delete(state: State) : StateOperationBatch = delete(listOf(state))
+    fun delete(state: State): StateOperationBatch = delete(listOf(state))
 
     /**
      * Execute all operations requested as part of this batch.
@@ -102,5 +102,5 @@ interface StateOperationBatch {
      *         failed to be deleted due to the state never existing will not appear here. Updates that failed due to the
      *         state not existing will appear with a null value.
      */
-    fun execute() : Map<String, State?>
+    fun execute(): Map<String, State?>
 }

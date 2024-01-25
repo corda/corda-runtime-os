@@ -191,5 +191,5 @@ interface StateManager : Lifecycle {
      *
      * @return The group builder to which operations can be added.
      */
-    fun createOperationBatch() : StateOperationBatch
+    fun createOperationBatch(): StateOperationBatch
 }

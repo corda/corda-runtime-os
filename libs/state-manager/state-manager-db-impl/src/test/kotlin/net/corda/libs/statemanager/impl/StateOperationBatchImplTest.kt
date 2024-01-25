@@ -25,9 +25,9 @@ class StateOperationBatchImplTest {
     }
     private val repository = mock<StateRepository>()
 
-    private val stateOne = State("key1", "state1".toByteArray(),  1, metadata(), Instant.now())
-    private val stateTwo = State("key2", "state2".toByteArray(),  2, metadata(), Instant.now())
-    private val stateThree = State("key3", "state3".toByteArray(),  3, metadata(), Instant.now())
+    private val stateOne = State("key1", "state1".toByteArray(), 1, metadata(), Instant.now())
+    private val stateTwo = State("key2", "state2".toByteArray(), 2, metadata(), Instant.now())
+    private val stateThree = State("key3", "state3".toByteArray(), 3, metadata(), Instant.now())
 
     @Test
     fun `when states are created, updated and deleted, all operations appear in the same batch`() {
@@ -219,7 +219,8 @@ class StateOperationBatchImplTest {
         createOutput: Collection<String> = listOf(),
         updateOutput: StateRepository.StateUpdateSummary = StateRepository.StateUpdateSummary(listOf(), listOf()),
         deleteOutput: Collection<String> = listOf(),
-        persistedStates: List<State> = listOf()) {
+        persistedStates: List<State> = listOf()
+    ) {
         val captor = argumentCaptor<Collection<String>>()
         whenever(repository.create(any(), any())).thenReturn(createOutput)
         whenever(repository.update(any(), any())).thenReturn(updateOutput)
