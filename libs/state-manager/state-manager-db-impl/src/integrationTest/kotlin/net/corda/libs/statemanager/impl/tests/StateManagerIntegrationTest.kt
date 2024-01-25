@@ -14,11 +14,10 @@ import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.metadata
 import net.corda.libs.statemanager.impl.StateManagerImpl
-import net.corda.libs.statemanager.impl.convertToMetadata
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorder
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorderImpl
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
-import net.corda.libs.statemanager.impl.model.v1.resultSetAsStateEntityCollection
+import net.corda.libs.statemanager.impl.model.v1.resultSetAsStateCollection
 import net.corda.libs.statemanager.impl.repository.impl.PostgresQueryProvider
 import net.corda.libs.statemanager.impl.repository.impl.StateRepositoryImpl
 import net.corda.libs.statemanager.impl.tests.MultiThreadedTestHelper.runMultiThreadedOptimisticLockingTest
@@ -126,7 +125,7 @@ class StateManagerIntegrationTest {
                 .prepareStatement(queryProvider.findStatesByKey(1))
                 .use {
                     it.setString(1, key)
-                    it.executeQuery().resultSetAsStateEntityCollection()
+                    it.executeQuery().resultSetAsStateCollection(objectMapper)
                 }.elementAt(0)
 
             assertSoftly {
@@ -134,7 +133,7 @@ class StateManagerIntegrationTest {
                 it.assertThat(loadedEntity.modifiedTime).isNotNull
                 it.assertThat(loadedEntity.version).isEqualTo(version(i, key))
                 it.assertThat(loadedEntity.value).isEqualTo((stateContent(i, key).toByteArray()))
-                it.assertThat(objectMapper.convertToMetadata(loadedEntity.metadata))
+                it.assertThat(loadedEntity.metadata)
                     .containsExactlyInAnyOrderEntriesOf(metadataContent(i, key))
             }
         }
@@ -146,7 +145,7 @@ class StateManagerIntegrationTest {
                 .use {
                     it.setString(1, startEntityKey)
                     it.setString(2, finishEntityKey)
-                    it.executeQuery().resultSetAsStateEntityCollection()
+                    it.executeQuery().resultSetAsStateCollection(objectMapper)
                 }.sortedBy {
                     it.modifiedTime
                 }
