@@ -84,15 +84,15 @@ class FlowFiberCacheImpl @Activate constructor(
             fiberCacheEntry.fiber
         } else {
             if (fiberCacheEntry.suspendCount != suspendCount) {
-                logger.warn("Fiber found in cache but at wrong suspendCount (${fiberCacheEntry.suspendCount} <-> $suspendCount): ${key.id}")
+                logger.info("Fiber found in cache but at wrong suspendCount (${fiberCacheEntry.suspendCount} <-> $suspendCount): ${key.id}")
             }
             if (sandboxGroupId != fiberCacheEntry.fiber.getSandboxGroupId()) {
                 // This is for information only, actually it's quite possible because the flow fiber might have been
                 // cached at suspension after the sandbox was already evicted from the cache, so when we resume this
                 // fiber we are going to need another one bound to the new sandbox instead.
                 logger.info("Fiber found in cache but for wrong sandbox group id")
-                cache.invalidate(key)
             }
+            cache.invalidate(key)
             null
         }
     }

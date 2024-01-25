@@ -38,11 +38,12 @@ class FlowFibreCacheTest {
     }
 
     @Test
-    fun `when get and entry wrong version return null`() {
+    fun `when get and entry wrong version return null and entry evicted`() {
         val cache = FlowFiberCacheImpl(cacheEviction)
         cache.put(key, 1, value)
-        val entry = cache.get(mock(), 123, sandboxGroupId)
+        val entry = cache.get(key, 123, sandboxGroupId)
         assertThat(entry).isNull()
+        assertThat(cache.get(key, 1, sandboxGroupId)).isNull()
     }
 
     @Test
