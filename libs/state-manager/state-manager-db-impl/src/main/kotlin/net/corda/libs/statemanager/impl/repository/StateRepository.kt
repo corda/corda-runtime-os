@@ -3,7 +3,6 @@ package net.corda.libs.statemanager.impl.repository
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
-import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import java.sql.Connection
 
 /**
@@ -66,7 +65,7 @@ interface StateRepository {
     fun delete(connection: Connection, states: Collection<State>): Collection<String>
 
     /**
-     * Retrieve states for which [StateEntity.modifiedTime] is within [interval].
+     * Retrieve states for which [State.modifiedTime] is within [interval].
      * Transaction should be controlled by the caller.
      *
      * @param connection The JDBC connection used to interact with the database.
@@ -77,7 +76,7 @@ interface StateRepository {
 
     /**
      * Retrieve states exclusively matching all specified [filters] (comparisons are applied against the stored keys
-     * and values within the [StateEntity.metadata]).
+     * and values within the [State.metadata]).
      * Transaction should be controlled by the caller.
      *
      * @param connection The JDBC connection used to interact with the database.
@@ -88,7 +87,7 @@ interface StateRepository {
 
     /**
      * Retrieve states matching any of the specified [filters] (comparisons are applied against the stored keys and
-     * values within the [StateEntity.metadata]).
+     * values within the [State.metadata]).
      * Transaction should be controlled by the caller.
      *
      * @param connection The JDBC connection used to interact with the database.
@@ -98,9 +97,9 @@ interface StateRepository {
     fun filterByAny(connection: Connection, filters: Collection<MetadataFilter>): Collection<State>
 
     /**
-     * Retrieve states that were lastly updated within [interval] (compared against [StateEntity.modifiedTime]) and
+     * Retrieve states that were lastly updated within [interval] (compared against [State.modifiedTime]) and
      * exclusively matching all specified [filters] (comparisons are applied against the stored keys and values within
-     * the [StateEntity.metadata]).
+     * the [State.metadata]).
      * Transaction should be controlled by the caller.
      *
      * @param connection The JDBC connection used to interact with the database.
@@ -115,9 +114,9 @@ interface StateRepository {
     ): Collection<State>
 
     /**
-     * Retrieve states that were lastly updated within [interval] (compared against [StateEntity.modifiedTime]) and
+     * Retrieve states that were lastly updated within [interval] (compared against [State.modifiedTime]) and
      * matching any of the specified [filters] (comparisons are applied against the stored keys and values within
-     * the [StateEntity.metadata]).
+     * the [State.metadata]).
      * Transaction should be controlled by the caller.
      *
      * @param connection The JDBC connection used to interact with the database.

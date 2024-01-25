@@ -1,6 +1,5 @@
 package net.corda.libs.statemanager.impl
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.utils.transaction
 import net.corda.libs.statemanager.api.IntervalFilter
@@ -14,7 +13,6 @@ import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.DE
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.FIND
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.GET
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.UPDATE
-import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.repository.StateRepository
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName

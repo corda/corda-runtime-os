@@ -3,11 +3,12 @@ package net.corda.libs.statemanager.impl.repository.impl
 import net.corda.db.schema.DbSchema.STATE_MANAGER_TABLE
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.Operation
-import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.KEY_COLUMN
-import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.METADATA_COLUMN
-import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.MODIFIED_TIME_COLUMN
-import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.VALUE_COLUMN
-import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.VERSION_COLUMN
+import net.corda.libs.statemanager.impl.model.v1.StateColumns.KEY_COLUMN
+import net.corda.libs.statemanager.impl.model.v1.StateColumns.METADATA_COLUMN
+import net.corda.libs.statemanager.impl.model.v1.StateColumns.MODIFIED_TIME_COLUMN
+import net.corda.libs.statemanager.impl.model.v1.StateColumns.VALUE_COLUMN
+import net.corda.libs.statemanager.impl.model.v1.StateColumns.VERSION_COLUMN
+
 
 class PostgresQueryProvider : AbstractQueryProvider() {
 

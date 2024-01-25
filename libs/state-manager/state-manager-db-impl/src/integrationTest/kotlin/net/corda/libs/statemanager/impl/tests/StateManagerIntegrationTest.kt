@@ -1,6 +1,7 @@
 package net.corda.libs.statemanager.impl.tests
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.core.utils.transaction
@@ -14,9 +15,9 @@ import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.metadata
 import net.corda.libs.statemanager.impl.StateManagerImpl
+import net.corda.libs.statemanager.impl.convertToMetadata
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorder
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorderImpl
-import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.model.v1.resultSetAsStateCollection
 import net.corda.libs.statemanager.impl.repository.impl.PostgresQueryProvider
 import net.corda.libs.statemanager.impl.repository.impl.StateRepositoryImpl
@@ -100,14 +101,15 @@ class StateManagerIntegrationTest {
     ) = indexRange.forEach { i ->
         dataSource.connection.transaction { connection ->
             val key = buildStateKey(i)
-            val stateEntity =
-                StateEntity(key, stateContent(i, key).toByteArray(), metadataContent(i, key), version(i, key))
+            val value = stateContent(i, key).toByteArray()
+            val versionNumber = version(i, key)
+            val metadata = metadataContent(i, key)
 
             connection.prepareStatement(queryProvider.createStates(1)).use {
-                it.setString(1, stateEntity.key)
-                it.setBytes(2, stateEntity.value)
-                it.setInt(3, stateEntity.version)
-                it.setString(4, stateEntity.metadata)
+                it.setString(1, key)
+                it.setBytes(2, value)
+                it.setInt(3, versionNumber)
+                it.setString(4, metadata)
                 it.execute()
             }
         }
