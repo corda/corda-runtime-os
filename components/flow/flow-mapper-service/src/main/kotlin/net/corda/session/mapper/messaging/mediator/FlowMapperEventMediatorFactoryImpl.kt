@@ -55,7 +55,7 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
             messagingConfig,
             FlowMapperMessageProcessor(flowMapperEventExecutorFactory, flowConfig),
             stateManager,
-        )
+        ),
     )
 
     private fun createEventMediatorConfig(
@@ -67,23 +67,70 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
         .messagingConfig(messagingConfig)
         .consumerFactories(
             mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_MAPPER_START, CONSUMER_GROUP, messagingConfig
+                FLOW_MAPPER_START,
+                CONSUMER_GROUP,
+                messagingConfig,
             ),
             mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_MAPPER_SESSION_IN, CONSUMER_GROUP, messagingConfig
+                FLOW_MAPPER_SESSION_IN,
+                CONSUMER_GROUP,
+                messagingConfig,
             ),
             mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_MAPPER_SESSION_OUT, CONSUMER_GROUP, messagingConfig
+                FLOW_MAPPER_SESSION_OUT,
+                CONSUMER_GROUP,
+                messagingConfig,
+            ),
+            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
+                FLOW_MAPPER_SESSION_IN,
+                CONSUMER_GROUP,
+                messagingConfig,
+            ),
+            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
+                FLOW_MAPPER_SESSION_OUT,
+                CONSUMER_GROUP,
+                messagingConfig,
+            ),
+            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
+                FLOW_MAPPER_SESSION_IN,
+                CONSUMER_GROUP,
+                messagingConfig,
+            ),
+            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
+                FLOW_MAPPER_SESSION_OUT,
+                CONSUMER_GROUP,
+                messagingConfig,
+            ),
+            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
+                FLOW_MAPPER_SESSION_IN,
+                CONSUMER_GROUP,
+                messagingConfig,
+            ),
+            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
+                FLOW_MAPPER_SESSION_OUT,
+                CONSUMER_GROUP,
+                messagingConfig,
+            ),
+            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
+                FLOW_MAPPER_SESSION_IN,
+                CONSUMER_GROUP,
+                messagingConfig,
+            ),
+            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
+                FLOW_MAPPER_SESSION_OUT,
+                CONSUMER_GROUP,
+                messagingConfig,
             ),
         )
         .clientFactories(
             messagingClientFactoryFactory.createMessageBusClientFactory(
-                MESSAGE_BUS_CLIENT, messagingConfig
+                MESSAGE_BUS_CLIENT,
+                messagingConfig,
             ),
         )
         .messageProcessor(messageProcessor)
         .messageRouterFactory(createMessageRouterFactory())
-        .threads(messagingConfig.getInt(MEDIATOR_PROCESSING_THREAD_POOL_SIZE))
+        .threads(32)
         .threadName("flow-mapper-event-mediator")
         .stateManager(stateManager)
         .minGroupSize(messagingConfig.getInt(MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT))
@@ -102,6 +149,7 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
                         routeTo(messageBusClient, FLOW_SESSION, ASYNCHRONOUS)
                     }
                 }
+
                 is FlowMapperEvent -> routeTo(messageBusClient, FLOW_MAPPER_SESSION_IN, ASYNCHRONOUS)
                 else -> {
                     val eventType = event?.let { it::class.java }
