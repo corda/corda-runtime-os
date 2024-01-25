@@ -93,6 +93,7 @@ import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.test.util.eventually
 import net.corda.testing.p2p.certificates.Certificates
 import net.corda.utilities.seconds
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
@@ -711,9 +712,26 @@ class P2PLayerEndToEndTest {
 
             on { update(any()) } doAnswer {
                 it.getArgument<Collection<State>>(0).forEach {
-                    states[it.key] = it
+                    states.compute(it.key) { _, value ->
+                        if (value == null) {
+                            throw CordaRuntimeException("Could not update non existing state!")
+                        }
+                        it
+                    }
                 }
                 emptyMap()
+            }
+
+            on { create(any()) } doAnswer {
+                it.getArgument<Collection<State>>(0).forEach {
+                    states.compute(it.key) { _, value ->
+                        if (value != null) {
+                            throw CordaRuntimeException("Could not create an existing state!")
+                        }
+                        it
+                    }
+                }
+                emptySet()
             }
         }
         private val sessionEncryptionOpsClient = mockLifeCycle<SessionEncryptionOpsClient>() {

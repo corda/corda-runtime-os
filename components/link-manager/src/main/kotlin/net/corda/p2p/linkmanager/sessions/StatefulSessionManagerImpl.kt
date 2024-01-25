@@ -5,6 +5,7 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.crypto.client.SessionEncryptionOpsClient
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.bytes
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.LinkOutMessage
@@ -43,7 +44,6 @@ import org.slf4j.LoggerFactory
 import java.security.MessageDigest
 import java.time.Duration
 import java.util.Base64
-import net.corda.crypto.core.bytes
 import java.util.concurrent.ConcurrentHashMap
 import net.corda.data.p2p.crypto.InitiatorHandshakeMessage as AvroInitiatorHandshakeMessage
 import net.corda.data.p2p.crypto.InitiatorHelloMessage as AvroInitiatorHelloMessage
@@ -155,9 +155,11 @@ internal class StatefulSessionManagerImpl(
                 OutboundSessionStatus.SessionReady -> {
                     state.state.retrieveEstablishedSession(counterparties)?.let { establishedState ->
                         cachedOutboundSessions.put(
-                            state.key, SessionManager.SessionDirection.Outbound(
-                                state.state.toCounterparties(), establishedState.session
-                            )
+                            state.key,
+                            SessionManager.SessionDirection.Outbound(
+                                state.state.toCounterparties(),
+                                establishedState.session,
+                            ),
                         )
                         counterpartiesForSessionId[establishedState.session.sessionId] = state.key
                         state.toResults(establishedState)
@@ -172,7 +174,7 @@ internal class StatefulSessionManagerImpl(
                         state.first.message.message.header.statusFilter,
                     )?.let { (needed, newState) ->
                         state.toResultsFirstAndOther(
-                            update = newState,
+                            update = UpdateOrCreate.create(newState),
                             firstState = needed,
                             otherStates = SessionAlreadyPending(counterparties),
                         )
@@ -184,7 +186,7 @@ internal class StatefulSessionManagerImpl(
                 OutboundSessionStatus.SentInitiatorHello, OutboundSessionStatus.SentInitiatorHandshake -> {
                     state.state.replaySessionMessage()?.let { (needed, newState) ->
                         state.toResultsFirstAndOther(
-                            update = newState,
+                            update = UpdateOrCreate.update(newState),
                             firstState = needed,
                             otherStates = SessionAlreadyPending(counterparties),
                         )
@@ -196,9 +198,11 @@ internal class StatefulSessionManagerImpl(
                 OutboundSessionStatus.SessionReady -> {
                     state.state.retrieveEstablishedSession(counterparties)?.let { established ->
                         cachedOutboundSessions.put(
-                            state.key, SessionManager.SessionDirection.Outbound(
-                                state.state.toCounterparties(), established.session
-                            )
+                            state.key,
+                            SessionManager.SessionDirection.Outbound(
+                                state.state.toCounterparties(),
+                                established.session,
+                            ),
                         )
                         counterpartiesForSessionId[established.session.sessionId] = state.key
                         state.toResults(
@@ -286,13 +290,10 @@ internal class StatefulSessionManagerImpl(
         val results = processInboundSessionMessages(messages) + processOutboundSessionMessages(messages)
 
         val failedUpdate =
-            stateManager.update(results.mapNotNull { it.result?.stateUpdate })
-                .keys.onEach {
-                    logger.info("Failed to update the state of session $it")
-                }
+            upsert(results.mapNotNull { it.result?.stateUpdate }).keys
 
         return results.mapNotNull { result ->
-            if (failedUpdate.contains(result.result?.stateUpdate?.key)) {
+            if (failedUpdate.contains(result.result?.stateUpdate?.state?.key)) {
                 null
             } else {
                 result
@@ -302,7 +303,7 @@ internal class StatefulSessionManagerImpl(
                 is AvroResponderHelloMessage, is AvroResponderHandshakeMessage -> {
                     result.result.sessionToCache?.let { sessionToCache ->
                         val session = SessionManager.SessionDirection.Inbound(
-                            result.result.stateUpdate.toCounterparties().reverse(),
+                            result.result.stateUpdate.state.toCounterparties(),
                             sessionToCache,
                         )
                         cachedInboundSessions.put(
@@ -313,11 +314,11 @@ internal class StatefulSessionManagerImpl(
                 }
                 is AvroInitiatorHelloMessage, is AvroInitiatorHandshakeMessage -> {
                     result.result.sessionToCache?.let { sessionToCache ->
-                        val key = result.result.stateUpdate.key
+                        val key = result.result.stateUpdate.state.key
                         cachedOutboundSessions.put(
                             key,
                             SessionManager.SessionDirection.Outbound(
-                                result.result.stateUpdate.toCounterparties(),
+                                result.result.stateUpdate.state.toCounterparties(),
                                 sessionToCache,
                             ),
                         )
@@ -370,6 +371,36 @@ internal class StatefulSessionManagerImpl(
         val trace: T,
         val message: AuthenticatedMessageAndKey,
     )
+    private class UpdateOrCreate(
+        val state: State,
+        val create: Boolean,
+    ) {
+        companion object {
+            fun create(
+                state: State,
+            ) = UpdateOrCreate(
+                state = state,
+                create = true,
+            )
+            fun update(
+                state: State,
+            ) = UpdateOrCreate(
+                state = state,
+                create = false,
+            )
+        }
+
+        fun updateState() = if (!create) {
+            state
+        } else {
+            null
+        }
+        fun createState() = if (create) {
+            state
+        } else {
+            null
+        }
+    }
 
     private data class OutboundMessageState<T>(
         val key: String?,
@@ -398,7 +429,7 @@ internal class StatefulSessionManagerImpl(
         fun toResultsFirstAndOther(
             firstState: SessionManager.SessionState,
             otherStates: SessionManager.SessionState,
-            update: State,
+            update: UpdateOrCreate,
         ): Collection<OutboundMessageResults<T>> {
             return listOf(
                 OutboundMessageResults(
@@ -420,7 +451,7 @@ internal class StatefulSessionManagerImpl(
     private data class OutboundMessageResults<T>(
         val key: String?,
         val messages: Collection<OutboundMessageContext<T>>,
-        val update: State?,
+        val update: UpdateOrCreate?,
         val sessionState: SessionManager.SessionState,
     )
 
@@ -479,7 +510,7 @@ internal class StatefulSessionManagerImpl(
 
     private data class Result(
         val message: LinkOutMessage?,
-        val stateUpdate: State,
+        val stateUpdate: UpdateOrCreate,
         val sessionToCache: Session?,
     )
 
@@ -500,7 +531,7 @@ internal class StatefulSessionManagerImpl(
                 session?.session?.let {
                     counterpartiesForSessionId.remove(it.sessionId)
                 }
-            }
+            },
     )
 
     private fun <T> getCachedOutboundSessions(
@@ -527,15 +558,8 @@ internal class StatefulSessionManagerImpl(
     private fun State.toCounterparties(): SessionManager.Counterparties {
         val common = this.metadata.toCommonMetadata()
         return SessionManager.Counterparties(
-            ourId = common.destination,
-            counterpartyId = common.source,
-        )
-    }
-
-    private fun SessionManager.Counterparties.reverse(): SessionManager.Counterparties {
-        return SessionManager.Counterparties(
-            ourId = this.counterpartyId,
-            counterpartyId = this.ourId,
+            ourId = common.source,
+            counterpartyId = common.destination,
         )
     }
 
@@ -624,15 +648,7 @@ internal class StatefulSessionManagerImpl(
         resultStates: Collection<OutboundMessageResults<T>>,
     ): Collection<Pair<T, SessionManager.SessionState>> {
         val updates = resultStates.mapNotNull { it.update }
-        val failedUpdates = if (updates.isNotEmpty()) {
-            stateManager.update(updates).also {
-                if (it.isNotEmpty()) {
-                    logger.info("Failed to update the following session states: ${it.keys}.")
-                }
-            }
-        } else {
-            emptyMap()
-        }
+        val failedUpdates = upsert(updates)
 
         return resultStates.flatMap { resultState ->
             val key = resultState.key
@@ -670,12 +686,12 @@ internal class StatefulSessionManagerImpl(
                 when (it.inboundSessionMessage) {
                     is InboundSessionMessage.InitiatorHelloMessage -> {
                         processInitiatorHello(state, it.inboundSessionMessage)?.let { (message, stateUpdate) ->
-                            Result(message, stateUpdate, null)
+                            Result(message, UpdateOrCreate.create(stateUpdate), null)
                         }
                     }
                     is InboundSessionMessage.InitiatorHandshakeMessage -> {
                         processInitiatorHandshake(state, it.inboundSessionMessage)?.let { (message, stateUpdate, session) ->
-                            Result(message, stateUpdate, session)
+                            Result(message, UpdateOrCreate.update(stateUpdate), session)
                         }
                     }
                 }
@@ -703,12 +719,12 @@ internal class StatefulSessionManagerImpl(
                 when (it.outboundSessionMessage) {
                     is OutboundSessionMessage.ResponderHelloMessage -> {
                         processResponderHello(state, it.outboundSessionMessage)?.let { (message, stateUpdate) ->
-                            Result(message, stateUpdate, null)
+                            Result(message, UpdateOrCreate.update(stateUpdate), null)
                         }
                     }
                     is OutboundSessionMessage.ResponderHandshakeMessage -> {
                         processResponderHandshake(state, it.outboundSessionMessage)?.let { (message, stateUpdate, session) ->
-                            Result(message, stateUpdate, session)
+                            Result(message, UpdateOrCreate.update(stateUpdate), session)
                         }
                     }
                 }
@@ -1068,6 +1084,28 @@ internal class StatefulSessionManagerImpl(
             metadata.serial,
             metadata.communicationWithMgm,
         )
+    }
+    private fun upsert(
+        changes: Collection<UpdateOrCreate>,
+    ): Map<String, State?> {
+        val updates = changes.mapNotNull { it.updateState() }
+        val creates = changes.mapNotNull { it.createState() }
+        val failedUpdates = if (updates.isNotEmpty()) {
+            stateManager.update(updates).onEach {
+                logger.info("Failed to update the state of session with ID ${it.key}")
+            }
+        } else {
+            emptyMap()
+        }
+        val failedCreates = if (creates.isNotEmpty()) {
+            stateManager.create(creates).associateWith {
+                logger.info("Failed to create the state of session with ID $it")
+                null
+            }
+        } else {
+            emptyMap()
+        }
+        return failedUpdates + failedCreates
     }
 
     override val dominoTile =
