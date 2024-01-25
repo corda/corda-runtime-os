@@ -691,10 +691,10 @@ open class SoftCryptoService(
         return wrappingKeyUUID
     }
 
-    override fun rewrapAllSigningKeysWrappedBy(wrappingKeyUuid: UUID, tenantId: String) {
+    override fun rewrapAllSigningKeysWrappedBy(managedWrappingKey: UUID, tenantId: String) {
         wrappingRepositoryFactory.create(tenantId).use { wrappingRepo ->
-            val oldWrappingKeyInfo = checkNotNull(wrappingRepo.getKeyById(wrappingKeyUuid)) {
-                "Unable to find existing wrapping key with id ${wrappingKeyUuid} for tenantId ${tenantId}"
+            val oldWrappingKeyInfo = checkNotNull(wrappingRepo.getKeyById(managedWrappingKey)) {
+                "Unable to find existing wrapping key with id ${managedWrappingKey} for tenantId ${tenantId}"
             }
             val parentKey = checkNotNull(unmanagedWrappingKeys.get(oldWrappingKeyInfo.parentKeyAlias)) {
                 "Unable to find parent key ${oldWrappingKeyInfo.parentKeyAlias} in the configured unmanaged wrapping keys"
@@ -707,7 +707,7 @@ open class SoftCryptoService(
             val newWrappingKeyDecrypted = parentKey.unwrapWrappingKey(newWrappingKeyInfo.keyMaterial)
             signingRepositoryFactory.getInstance(tenantId).use { signingRepo ->
                 // Get signing materials which use the old wrapping uuid, passed in as wrappingKeyUuid
-                signingRepo.getKeyMaterials(wrappingKeyUuid).forEach { oldSigningKeyMaterial ->
+                signingRepo.getKeyMaterials(managedWrappingKey).forEach { oldSigningKeyMaterial ->
                     val newSigningKeyMaterial = newWrappingKeyDecrypted.wrap(wrappingKeyDecrypted.unwrap(oldSigningKeyMaterial.keyMaterial))
                     val newSigningKeyMaterialInfo = SigningKeyMaterialInfo(
                         oldSigningKeyMaterial.signingKeyId,
