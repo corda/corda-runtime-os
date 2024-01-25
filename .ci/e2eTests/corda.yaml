@@ -84,6 +84,13 @@ kafka:
           key: "kafka-ca.crt"
   sasl:
     enabled: true
+    username:
+        value: "bootstrap"
+      password:
+        valueFrom:
+          secretKeyRef:
+            name: "kafka-credentials"
+            key: "bootstrap"
 
 workers:
   crypto:
