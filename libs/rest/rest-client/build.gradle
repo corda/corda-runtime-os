@@ -25,8 +25,8 @@ dependencies {
     implementation project(":libs:rest:json-serialization")
     implementation project(":libs:utilities")
 
-    implementation "com.konghq:unirest-java:$unirestVersion"
-    implementation "com.konghq:unirest-objectmapper-jackson:$unirestVersion"
+    implementation libs.unirest.java
+    implementation libs.unirest.objectmapper.jackson
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
     testImplementation project(":testing:test-utilities")
