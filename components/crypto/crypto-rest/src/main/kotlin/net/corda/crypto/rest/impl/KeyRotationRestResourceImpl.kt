@@ -231,6 +231,14 @@ class KeyRotationRestResourceImpl @Activate constructor(
         )
     }
 
+    override fun getManagedKeyRotationStatus(tenantId: String): String {
+        return "Tested."
+    }
+
+    override fun startManagedKeyRotation(tenantId: String): ResponseEntity<String> {
+        return ResponseEntity.accepted("Tested.")
+    }
+
     private fun hasPreviousRotationFinished(): Boolean {
         // The current state of this method is to prevent any key rotations being started when any other one is in progress.
         // Same check is done on the Crypto worker side because if user quickly issues two key rotation commands after each other,
