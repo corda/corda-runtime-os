@@ -20,6 +20,7 @@ import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import java.nio.ByteBuffer
+import java.util.concurrent.atomic.AtomicInteger
 
 @Suppress("TooManyFunctions")
 class FlowCheckpointImpl(
@@ -54,6 +55,7 @@ class FlowCheckpointImpl(
     }
 
     private var deleted = false
+    private val ledgerSaltIncrementor = AtomicInteger(0)
 
     private val flowInitialisedOnCreation = checkpoint.flowState != null
 
@@ -145,6 +147,9 @@ class FlowCheckpointImpl(
     override val suspendCount: Int
         get() = checkNotNull(flowStateManager)
         { "Attempt to access context before flow state has been created" }.suspendCount
+
+    override val ledgerSaltCounter: Int
+        get() = ledgerSaltIncrementor.getAndIncrement()
 
     override fun initFlowState(flowStartContext: FlowStartContext, cpkFileHashes: Set<SecureHash>) {
         if (flowStateManager != null) {
