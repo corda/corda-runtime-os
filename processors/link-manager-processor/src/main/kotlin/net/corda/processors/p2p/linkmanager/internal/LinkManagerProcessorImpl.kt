@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.client.SessionEncryptionOpsClient
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.libs.statemanager.api.StateManager
@@ -69,6 +70,8 @@ class LinkManagerProcessorImpl @Activate constructor(
     private val avroSchemaRegistry: AvroSchemaRegistry,
     @Reference(service = StateManagerFactory::class)
     private val stateManagerFactory: StateManagerFactory,
+    @Reference(service = SessionEncryptionOpsClient::class)
+    private val sessionEncryptionOpsClient: SessionEncryptionOpsClient,
 ) : LinkManagerProcessor {
 
     private companion object {
@@ -126,6 +129,8 @@ class LinkManagerProcessorImpl @Activate constructor(
                     membershipQueryClient,
                     groupParametersReaderService,
                     localStateManager,
+                    sessionEncryptionOpsClient,
+                    avroSchemaRegistry
                 )
 
                 stateManager = localStateManager
