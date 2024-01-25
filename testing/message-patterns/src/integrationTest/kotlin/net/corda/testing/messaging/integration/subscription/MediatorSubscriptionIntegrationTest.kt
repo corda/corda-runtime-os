@@ -33,6 +33,10 @@ import net.corda.testing.messaging.integration.TopicTemplates.Companion.MEDIATOR
 import net.corda.testing.messaging.integration.TopicTemplates.Companion.MEDIATOR_TOPIC2_OUTPUT
 import net.corda.testing.messaging.integration.TopicTemplates.Companion.MEDIATOR_TOPIC2_OUTPUT_TEMPLATE
 import net.corda.testing.messaging.integration.TopicTemplates.Companion.MEDIATOR_TOPIC2_TEMPLATE
+import net.corda.testing.messaging.integration.TopicTemplates.Companion.MEDIATOR_TOPIC3
+import net.corda.testing.messaging.integration.TopicTemplates.Companion.MEDIATOR_TOPIC3_OUTPUT
+import net.corda.testing.messaging.integration.TopicTemplates.Companion.MEDIATOR_TOPIC3_OUTPUT_TEMPLATE
+import net.corda.testing.messaging.integration.TopicTemplates.Companion.MEDIATOR_TOPIC3_TEMPLATE
 import net.corda.testing.messaging.integration.getKafkaProperties
 import net.corda.testing.messaging.integration.getStringRecords
 import net.corda.testing.messaging.integration.getTopicConfig
@@ -177,10 +181,9 @@ class MediatorSubscriptionIntegrationTest {
         verifySub.close()
     }
 
-
     @Test
     @Timeout(value = 600, unit = TimeUnit.SECONDS)
-    fun `publish 2 records, 1 is a duplicate, verify processor is called once - replays enabled`() {
+    fun `publish 2 records, 1 is a duplicate, verify processor is called twice - replays enabled`() {
         topicUtils.createTopics(getTopicConfig(MEDIATOR_TOPIC2_TEMPLATE))
         topicUtils.createTopics(getTopicConfig(MEDIATOR_TOPIC2_OUTPUT_TEMPLATE))
 
@@ -190,8 +193,8 @@ class MediatorSubscriptionIntegrationTest {
         publisher.publish(listOf(record))
         publisher.close()
 
-        val latch = CountDownLatch(1)
-        val processor = TestStateEventProcessorStrings(latch, true, -1, MEDIATOR_TOPIC2, throwFatalExceptionOnItem = 2)
+        val latch = CountDownLatch(2)
+        val processor = TestStateEventProcessorStrings(latch, true, -1, MEDIATOR_TOPIC2)
         val builder = buildBuilder(TEST_CONFIG, processor, MEDIATOR_TOPIC1_OUTPUT, MEDIATOR_TOPIC2, true)
 
         val mediator = multiSourceEventMediatorFactory.create(builder)
@@ -200,9 +203,45 @@ class MediatorSubscriptionIntegrationTest {
         publisher.publish(listOf(record))
         publisher.close()
 
-        val verifyLatch = CountDownLatch(1)
+        val verifyLatch = CountDownLatch(2)
         val verifySub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$MEDIATOR_TOPIC2_OUTPUT-verify", MEDIATOR_TOPIC2_OUTPUT),
+            TestDurableProcessorStrings(verifyLatch),
+            TEST_CONFIG,
+            null
+        )
+
+        verifySub.start()
+        verifyLatch.await(30, TimeUnit.SECONDS)
+        verifySub.close()
+        mediator.close()
+    }
+
+    @Test
+    @Timeout(value = 600, unit = TimeUnit.SECONDS)
+    fun `publish 2 records, 1 is a duplicate, verify processor is called twice - replays disabled`() {
+        topicUtils.createTopics(getTopicConfig(MEDIATOR_TOPIC3_TEMPLATE))
+        topicUtils.createTopics(getTopicConfig(MEDIATOR_TOPIC3_OUTPUT_TEMPLATE))
+
+        publisherConfig = PublisherConfig(CLIENT_ID + MEDIATOR_TOPIC3, false)
+        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
+        val record = Record(MEDIATOR_TOPIC3, "key1", "value1")
+        publisher.publish(listOf(record))
+        publisher.close()
+
+        val latch = CountDownLatch(2)
+        val processor = TestStateEventProcessorStrings(latch, true, -1, MEDIATOR_TOPIC3)
+        val builder = buildBuilder(TEST_CONFIG, processor, MEDIATOR_TOPIC1_OUTPUT, MEDIATOR_TOPIC3, true)
+
+        val mediator = multiSourceEventMediatorFactory.create(builder)
+        mediator.start()
+        latch.await()
+        publisher.publish(listOf(record))
+        publisher.close()
+
+        val verifyLatch = CountDownLatch(2)
+        val verifySub = subscriptionFactory.createDurableSubscription(
+            SubscriptionConfig("$MEDIATOR_TOPIC3_OUTPUT-verify", MEDIATOR_TOPIC3_OUTPUT),
             TestDurableProcessorStrings(verifyLatch),
             TEST_CONFIG,
             null

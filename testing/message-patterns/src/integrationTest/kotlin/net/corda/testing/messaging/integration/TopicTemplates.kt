@@ -497,5 +497,24 @@ class TopicTemplates {
                 replicationFactor = 3 
             } 
         ]"""
+
+        const val MEDIATOR_TOPIC3 = "MediatorTopic3"
+        val MEDIATOR_TOPIC3_TEMPLATE = """topics = [ 
+            { 
+                topicName = "$TEST_TOPIC_PREFIX$MEDIATOR_TOPIC3" 
+                numPartitions = 2 
+                replicationFactor = 3 
+            } 
+        ]"""
+
+
+        const val MEDIATOR_TOPIC3_OUTPUT = "${MEDIATOR_TOPIC3}Output"
+        val MEDIATOR_TOPIC3_OUTPUT_TEMPLATE = """topics = [ 
+            { 
+                topicName = "$TEST_TOPIC_PREFIX$MEDIATOR_TOPIC3_OUTPUT" 
+                numPartitions = 2 
+                replicationFactor = 3 
+            } 
+        ]"""
     }
 }
