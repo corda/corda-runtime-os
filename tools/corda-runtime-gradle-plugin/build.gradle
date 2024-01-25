@@ -17,10 +17,13 @@ repositories {
 }
 
 dependencies {
+    api libs.junit.api
+    testImplementation libs.bundles.test
 }
 
-test {
-    useJUnitPlatform()
+integrationTest {
+    systemProperty 'cordaArtifactoryUsername', findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+    systemProperty 'cordaArtifactoryPassword', findProperty('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
 }
 
 gradlePlugin {
