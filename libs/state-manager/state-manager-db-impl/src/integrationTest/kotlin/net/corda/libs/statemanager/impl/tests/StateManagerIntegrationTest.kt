@@ -526,7 +526,7 @@ class StateManagerIntegrationTest {
         val statesToDelete = (11..15).map {
             State(buildStateKey(it), "".toByteArray(), version = State.VERSION_INITIAL_VALUE)
         }
-        val batch = stateManager.createUpdateGroup()
+        val batch = stateManager.createOperationBatch()
         val failures = batch
             .create(statesToCreate)
             .update(statesToUpdate)

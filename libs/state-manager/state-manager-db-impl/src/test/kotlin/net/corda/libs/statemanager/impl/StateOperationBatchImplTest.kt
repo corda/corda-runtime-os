@@ -17,7 +17,7 @@ import org.mockito.kotlin.whenever
 import java.sql.Connection
 import java.time.Instant
 
-class StateOperationBuilderImplTest {
+class StateOperationBatchImplTest {
 
     private val connection = mock<Connection>()
     private val datasource = mock<CloseableDataSource> {
@@ -37,7 +37,7 @@ class StateOperationBuilderImplTest {
             listOf(),
             listOf(stateTwo, stateThree)
         )
-        val batch = StateOperationGroupBuilderImpl(datasource, repository)
+        val batch = StateOperationBatchImpl(datasource, repository)
         val failures = batch
             .create(stateOne)
             .update(stateTwo)
@@ -60,7 +60,7 @@ class StateOperationBuilderImplTest {
             listOf(),
             listOf(stateOne, stateTwo, stateThree)
         )
-        val batch = StateOperationGroupBuilderImpl(datasource, repository)
+        val batch = StateOperationBatchImpl(datasource, repository)
         val failures = batch
             .create(stateOne)
             .execute()
@@ -80,7 +80,7 @@ class StateOperationBuilderImplTest {
             listOf(),
             listOf(stateTwo, stateThree)
         )
-        val batch = StateOperationGroupBuilderImpl(datasource, repository)
+        val batch = StateOperationBatchImpl(datasource, repository)
         val failures = batch
             .update(stateTwo)
             .execute()
@@ -102,7 +102,7 @@ class StateOperationBuilderImplTest {
             listOf(),
             listOf(stateThree)
         )
-        val batch = StateOperationGroupBuilderImpl(datasource, repository)
+        val batch = StateOperationBatchImpl(datasource, repository)
         val failures = batch
             .update(stateTwo)
             .execute()
@@ -124,7 +124,7 @@ class StateOperationBuilderImplTest {
             listOf(stateThree.key),
             listOf(stateThree)
         )
-        val batch = StateOperationGroupBuilderImpl(datasource, repository)
+        val batch = StateOperationBatchImpl(datasource, repository)
         val failures = batch
             .delete(stateThree)
             .execute()
@@ -146,7 +146,7 @@ class StateOperationBuilderImplTest {
             listOf(stateThree.key),
             listOf()
         )
-        val batch = StateOperationGroupBuilderImpl(datasource, repository)
+        val batch = StateOperationBatchImpl(datasource, repository)
         val failures = batch
             .delete(stateThree)
             .execute()
@@ -162,7 +162,7 @@ class StateOperationBuilderImplTest {
     @Test
     fun `when execute is called with no states, nothing happens`() {
         setUpRepository()
-        val batch = StateOperationGroupBuilderImpl(datasource, repository)
+        val batch = StateOperationBatchImpl(datasource, repository)
         val failures = batch
             .execute()
 
@@ -176,7 +176,7 @@ class StateOperationBuilderImplTest {
 
     @Test
     fun `when a state on the same key is added twice, the group builder throws an exception`() {
-        val batch = StateOperationGroupBuilderImpl(datasource, repository)
+        val batch = StateOperationBatchImpl(datasource, repository)
         batch.create(stateOne)
         assertThrows<IllegalArgumentException> {
             batch.create(stateOne)
@@ -192,7 +192,7 @@ class StateOperationBuilderImplTest {
     @Test
     fun `when execute is invoked twice, the second attempt fails`() {
         setUpRepository()
-        val batch = StateOperationGroupBuilderImpl(datasource, repository)
+        val batch = StateOperationBatchImpl(datasource, repository)
         batch.execute()
         assertThrows<IllegalStateException> {
             batch.execute()
@@ -202,7 +202,7 @@ class StateOperationBuilderImplTest {
     @Test
     fun `when adding states to a group builder that has already been executed, an exception is thrown`() {
         setUpRepository()
-        val batch = StateOperationGroupBuilderImpl(datasource, repository)
+        val batch = StateOperationBatchImpl(datasource, repository)
         batch.execute()
         assertThrows<IllegalStateException> {
             batch.create(stateOne)

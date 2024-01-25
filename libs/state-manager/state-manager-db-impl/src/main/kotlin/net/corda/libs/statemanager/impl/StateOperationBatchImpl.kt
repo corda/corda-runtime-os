@@ -3,13 +3,13 @@ package net.corda.libs.statemanager.impl
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.utils.transaction
 import net.corda.libs.statemanager.api.State
-import net.corda.libs.statemanager.api.StateOperationGroupBuilder
+import net.corda.libs.statemanager.api.StateOperationBatch
 import net.corda.libs.statemanager.impl.repository.StateRepository
 
-class StateOperationGroupBuilderImpl(
+class StateOperationBatchImpl(
     private val dataSource: CloseableDataSource,
     private val repository: StateRepository
-) : StateOperationGroupBuilder {
+) : StateOperationBatch {
 
     private val stateKeys = mutableSetOf<String>()
     private val creates = mutableListOf<State>()
@@ -17,17 +17,17 @@ class StateOperationGroupBuilderImpl(
     private val deletes = mutableListOf<State>()
     private var executed = false
 
-    override fun create(states: Collection<State>): StateOperationGroupBuilder {
+    override fun create(states: Collection<State>): StateOperationBatch {
         addToList(states, creates)
         return this
     }
 
-    override fun update(states: Collection<State>): StateOperationGroupBuilder {
+    override fun update(states: Collection<State>): StateOperationBatch {
         addToList(states, updates)
         return this
     }
 
-    override fun delete(states: Collection<State>): StateOperationGroupBuilder {
+    override fun delete(states: Collection<State>): StateOperationBatch {
         addToList(states, deletes)
         return this
     }

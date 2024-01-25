@@ -7,7 +7,7 @@ import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
-import net.corda.libs.statemanager.api.StateOperationGroupBuilder
+import net.corda.libs.statemanager.api.StateOperationBatch
 import net.corda.lifecycle.LifecycleCoordinatorName
 import org.osgi.service.component.annotations.Component
 import java.util.UUID
@@ -69,7 +69,7 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
                 }.associateBy { it.key }
             }
 
-            override fun createUpdateGroup(): StateOperationGroupBuilder {
+            override fun createOperationBatch(): StateOperationBatch {
                 TODO("Not yet implemented")
             }
 
