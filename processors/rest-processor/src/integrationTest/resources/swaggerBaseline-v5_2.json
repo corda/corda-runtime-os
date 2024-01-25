@@ -4406,7 +4406,7 @@
           }
         } ],
         "responses" : {
-          "200" : {
+          "202" : {
             "description" : "Key rotation response",
             "content" : {
               "application/json" : {
