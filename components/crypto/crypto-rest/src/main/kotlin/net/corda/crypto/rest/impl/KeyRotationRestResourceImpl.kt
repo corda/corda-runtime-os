@@ -219,7 +219,10 @@ class KeyRotationRestResourceImpl @Activate constructor(
         }
 
         validateInputParams(oldKeyAlias, newKeyAlias)
-        if (!hasPreviousRotationFinished(oldKeyAlias)) throw ForbiddenException("Previous key rotation for $oldKeyAlias is in progress.")
+
+        if (!hasPreviousRotationFinished()) {
+            throw ForbiddenException("A key rotation operation is already ongoing, a new one cannot be started until it completes.")
+        }
 
         return doKeyRotation(
             oldKeyAlias,
@@ -228,10 +231,14 @@ class KeyRotationRestResourceImpl @Activate constructor(
         )
     }
 
-    private fun hasPreviousRotationFinished(oldKeyAlias: String): Boolean {
+    private fun hasPreviousRotationFinished(): Boolean {
+        // The current state of this method is to prevent any key rotations being started when any other one is in progress.
+        // Same check is done on the Crypto worker side because if user quickly issues two key rotation commands after each other,
+        // it will pass rest worker check as state manager was not yet populated.
+        // On that note, if the logic is changed here, it should also be changed to match in the Crypto worker, see [CryptoRekeyBusProcessor]
+        // for the equivalent method.
         stateManager.findByMetadataMatchingAll(
             listOf(
-                MetadataFilter(KeyRotationMetadataValues.ROOT_KEY_ALIAS, Operation.Equals, oldKeyAlias),
                 MetadataFilter(KeyRotationMetadataValues.TYPE, Operation.Equals, KeyRotationRecordType.KEY_ROTATION)
             )
         ).forEach {
@@ -241,7 +248,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
     }
 
     @Suppress("ThrowsCount")
-    private fun validateInputParams(oldKeyAlias: String, newKeyAlias: String){
+    private fun validateInputParams(oldKeyAlias: String, newKeyAlias: String) {
         if (oldKeyAlias == newKeyAlias) throw InvalidInputDataException(
             "Cannot start key rotation. The old key alias must be different to the new key alias."
         )
