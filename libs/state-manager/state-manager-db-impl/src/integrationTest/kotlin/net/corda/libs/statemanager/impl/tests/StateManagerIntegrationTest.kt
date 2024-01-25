@@ -504,6 +504,50 @@ class StateManagerIntegrationTest {
     }
 
     @Test
+    fun `batch operations perform all requested changes when executed`() {
+        val statesToCreate = (1..5).map {
+            State(buildStateKey(it), "".toByteArray())
+        }
+        persistStateEntities(
+            (6..15),
+            { _, _ -> State.VERSION_INITIAL_VALUE },
+            { i, _ -> "existingState_$i" },
+            { _, _ -> "{}" }
+        )
+        softlyAssertPersistedStateEntities(
+            (6..15),
+            { _, _ -> State.VERSION_INITIAL_VALUE },
+            { i, _ -> "existingState_$i" },
+            { _, _ -> metadata() }
+        )
+        val statesToUpdate = (6..10).map {
+            State(buildStateKey(it), "".toByteArray(), version = State.VERSION_INITIAL_VALUE)
+        }
+        val statesToDelete = (11..15).map {
+            State(buildStateKey(it), "".toByteArray(), version = State.VERSION_INITIAL_VALUE)
+        }
+        val batch = stateManager.createUpdateGroup()
+        val failures = batch
+            .create(statesToCreate)
+            .update(statesToUpdate)
+            .delete(statesToDelete)
+            .execute()
+        assertThat(failures).isEmpty()
+        softlyAssertPersistedStateEntities(
+            (1..5),
+            { _, _ -> State.VERSION_INITIAL_VALUE },
+            { _, _ -> "" },
+            { _, _ -> metadata() }
+        )
+        softlyAssertPersistedStateEntities(
+            (6..10),
+            { _, _ -> 1 },
+            { _, _ -> "" },
+            { _, _ -> metadata() }
+        )
+    }
+
+    @Test
     fun `optimistic locking prevents sequentially deleting states with mismatched versions and does not halt entire batch`() {
         val totalCount = 20
         persistStateEntities(
