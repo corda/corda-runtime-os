@@ -41,6 +41,7 @@ class DurableFlowStatusCacheServiceImpl @Activate constructor(
     @Reference(service = CordaAvroSerializationFactory::class)
     private val cordaSerializationFactory: CordaAvroSerializationFactory,
 ) : FlowStatusCacheService, DurableProcessor<FlowKey, FlowStatus> {
+
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val GROUP_NAME = "Flow Status Subscription"
@@ -81,13 +82,17 @@ class DurableFlowStatusCacheServiceImpl @Activate constructor(
 
     override fun onNext(events: List<Record<FlowKey, FlowStatus>>): List<Record<*, *>> {
         val flowKeys = events.map { it.key.toString() }
-        val existingKeys = stateManager.get(flowKeys).keys.toSet()
+        val existingStates = stateManager.get(flowKeys)
+        val existingKeys = existingStates.keys.toSet()
 
         val (updatedStates, newStates) = events.mapNotNull { record ->
             val key = record.key.toString()
-            record.value?.let { value ->
-                serializer.serialize(value)?.let { State(key, it) }
-            }
+            val bytes = record.value?.let { serializer.serialize(it) } ?: return@mapNotNull null
+
+            existingStates[key]
+                ?.let { oldState -> oldState.copy(value = bytes, version = oldState.version + 1) }
+                ?: State(key, bytes)
+
         }.partition { it.key in existingKeys }
 
         stateManager.create(newStates)
@@ -134,11 +139,17 @@ class DurableFlowStatusCacheServiceImpl @Activate constructor(
                 get() = LifecycleCoordinatorName("MockStateManager")
 
             override fun create(states: Collection<State>): Set<String> {
+                val failedKeys = mutableSetOf<String>()
+
                 states.forEach { state ->
-                    stateStore[state.key] = state.copy(modifiedTime = Instant.now())
+                    if (state.key in stateStore) {
+                        failedKeys.add(state.key)
+                    } else {
+                        stateStore[state.key] = state.copy(modifiedTime = Instant.now())
+                    }
                 }
 
-                return states.map { it.key }.toSet()
+                return failedKeys
             }
 
             override fun get(keys: Collection<String>): Map<String, State> {
@@ -146,26 +157,36 @@ class DurableFlowStatusCacheServiceImpl @Activate constructor(
             }
 
             override fun update(states: Collection<State>): Map<String, State?> {
-                val successful = mutableMapOf<String, State>()
+                val failedUpdates = mutableMapOf<String, State?>()
+
                 states.forEach { state ->
-                    stateStore[state.key]?.let {
-                        val updatedState = state.copy(
-                            version = it.version + 1,
-                            modifiedTime = Instant.now()
-                        )
+                    val currentState = stateStore[state.key]
+                    if (currentState == null || currentState.version + 1 != state.version) {
+                        // State does not exist or version mismatch
+                        failedUpdates[state.key] = currentState
+                    } else {
+                        // Optimistic locking condition met
+                        val updatedState = state.copy(modifiedTime = Instant.now())
                         stateStore[state.key] = updatedState
-                        successful[state.key] = updatedState
                     }
                 }
-                return successful
+
+                return failedUpdates
             }
 
             override fun delete(states: Collection<State>): Map<String, State> {
-                val deleted = mutableMapOf<String, State>()
+                val failedDeletion = mutableMapOf<String, State>()
+
                 states.forEach { state ->
-                    stateStore.remove(state.key)?.let { deleted[state.key] = it }
+                    val currentState = stateStore[state.key]
+                    if (currentState != null && currentState.version == state.version) {
+                        stateStore.remove(state.key)
+                    } else {
+                        currentState?.let { failedDeletion[state.key] = currentState }
+                    }
                 }
-                return deleted
+
+                return failedDeletion
             }
 
             override fun updatedBetween(interval: IntervalFilter): Map<String, State> {
