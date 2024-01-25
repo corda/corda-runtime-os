@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.query.data
 
+import com.typesafe.config.ConfigException.Parse
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryCollector
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryFilter
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryTransformer
@@ -13,11 +14,13 @@ data class VaultNamedQuery(
     val query: ParsedQuery,
     val filter: VaultNamedQueryFilter<Any>?,
     val mapper: VaultNamedQueryTransformer<Any, Any>?,
-    val collector: VaultNamedQueryCollector<Any, Any>?
+    val collector: VaultNamedQueryCollector<Any, Any>?,
+    val orderBy: ParsedQuery?
 ) {
     data class ParsedQuery(val originalQuery: String, val query: String, val type: Type)
 
     enum class Type {
-        WHERE_JSON
+        WHERE_JSON,
+        ORDER_BY
     }
 }
