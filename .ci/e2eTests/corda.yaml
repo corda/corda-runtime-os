@@ -80,8 +80,8 @@ kafka:
     truststore:
       valueFrom:
         secretKeyRef:
-          name: "prereqs-kafka-0-tls"
-          key: "ca.crt"
+          name: "prereqs-kafka-tls"
+          key: "kafka-ca.crt"
   sasl:
     enabled: true
 
