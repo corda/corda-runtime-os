@@ -2,9 +2,9 @@ package net.corda.ledger.common.flow.impl.transaction.filtered.factory
 
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.data.transaction.filtered.FilteredComponentGroup
+import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.flow.impl.transaction.filtered.FilteredTransactionImpl
-import net.corda.ledger.common.flow.transaction.filtered.FilteredComponentGroup
-import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters
 import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters.AuditProof
 import net.corda.ledger.common.flow.transaction.filtered.factory.FilteredTransactionFactory
