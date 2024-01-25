@@ -3,6 +3,7 @@ package net.corda.crypto.rest
 import net.corda.crypto.rest.response.KeyRotationResponse
 import net.corda.crypto.rest.response.KeyRotationStatusResponse
 import net.corda.rest.RestResource
+import net.corda.rest.SC_ACCEPTED
 import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPOST
@@ -61,6 +62,7 @@ interface KeyRotationRestResource : RestResource {
         path = "unmanaged/rotation/{oldKeyAlias}",
         description = "This method enables to rotate a current wrapping key with a new wrapping key.",
         responseDescription = "Key rotation response",
+        successCode = SC_ACCEPTED,
     )
     fun startKeyRotation(
         @RestPathParameter(
