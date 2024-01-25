@@ -240,6 +240,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
         return true
     }
 
+    @Suppress("ThrowsCount")
     private fun validateInputParams(oldKeyAlias: String, newKeyAlias: String){
         if (oldKeyAlias == newKeyAlias) throw InvalidInputDataException(
             "Cannot start key rotation. The old key alias must be different to the new key alias."
