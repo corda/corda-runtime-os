@@ -125,8 +125,8 @@ internal class SessionManagerImpl(
         membershipGroupReaderProvider,
         clock
     ),
-
-    executorServiceFactory: () -> ScheduledExecutorService = Executors::newSingleThreadScheduledExecutor
+    private val trackSessionHealthAndReplaySessionMessages: Boolean = true,
+    executorServiceFactory: () -> ScheduledExecutorService = Executors::newSingleThreadScheduledExecutor,
 ) : SessionManager {
 
     private companion object {
@@ -261,7 +261,7 @@ internal class SessionManagerImpl(
         )
     }
 
-    private fun getSessionCounterpartiesFromMessage(message: AuthenticatedMessage): SessionCounterparties? {
+    internal fun getSessionCounterpartiesFromMessage(message: AuthenticatedMessage): SessionCounterparties? {
         val peer = message.header.destination
         val us = message.header.source
         val status = message.header.statusFilter
@@ -382,7 +382,10 @@ internal class SessionManagerImpl(
         return dominoTile.withLifecycleLock {
             when (val payload = message.payload) {
                 is ResponderHelloMessage -> processResponderHello(payload)
-                is ResponderHandshakeMessage -> processResponderHandshake(payload)
+                is ResponderHandshakeMessage -> {
+                    processResponderHandshake(payload)
+                    null
+                }
                 is InitiatorHelloMessage -> processInitiatorHello(payload)
                 is InitiatorHandshakeMessage -> processInitiatorHandshake(payload)
                 else -> {
@@ -476,7 +479,7 @@ internal class SessionManagerImpl(
         return sessionId + "_" + InitiatorHandshakeMessage::class.java.simpleName
     }
 
-    private fun genSessionInitMessages(
+    internal fun genSessionInitMessages(
         counterparties: SessionCounterparties,
         multiplicity: Int
     ): List<Pair<AuthenticationProtocolInitiator, InitiatorHelloMessage>> {
@@ -549,10 +552,10 @@ internal class SessionManagerImpl(
         }
     }
 
-    private fun linkOutMessagesFromSessionInitMessages(
+    internal fun linkOutMessagesFromSessionInitMessages(
         sessionCounterparties: SessionCounterparties,
         messages: List<Pair<AuthenticationProtocolInitiator, InitiatorHelloMessage>>,
-        filter: MembershipStatusFilter
+        filter: MembershipStatusFilter,
     ): List<Pair<String, LinkOutMessage>>? {
         val sessionIds = messages.map { it.first.sessionId }
         logger.info(
@@ -574,17 +577,19 @@ internal class SessionManagerImpl(
             return null
         }
 
-        for (message in messages) {
-            sessionReplayer.addMessageForReplay(
-                initiatorHelloUniqueId(message.first.sessionId),
-                InMemorySessionReplayer.SessionMessageReplay(
-                    message.second,
-                    message.first.sessionId,
-                    sessionCounterparties,
-                    sessionHealthManager::sessionMessageSent
-                ),
-                sessionCounterparties
-            )
+        if (trackSessionHealthAndReplaySessionMessages) {
+            for (message in messages) {
+                sessionReplayer.addMessageForReplay(
+                    initiatorHelloUniqueId(message.first.sessionId),
+                    InMemorySessionReplayer.SessionMessageReplay(
+                        message.second,
+                        message.first.sessionId,
+                        sessionCounterparties,
+                        sessionHealthManager::sessionMessageSent
+                    ),
+                    sessionCounterparties
+                )
+            }
         }
 
         if (responderMemberInfo == null) {
@@ -625,8 +630,13 @@ internal class SessionManagerImpl(
                 responderMemberInfo,
                 p2pParams.networkType
             )?.let {
-                sessionHealthManager.sessionMessageSent(sessionCounterparties, message.first.sessionId)
                 message.first.sessionId to it
+            }
+        }.also {
+            if (trackSessionHealthAndReplaySessionMessages) {
+                it.forEach { (sessionId, _) ->
+                    sessionHealthManager.sessionMessageSent(sessionCounterparties, sessionId)
+                }
             }
         }
     }
@@ -635,7 +645,6 @@ internal class SessionManagerImpl(
         return Base64.getEncoder().encodeToString(this)
     }
 
-    @Suppress("ComplexMethod")
     private fun processResponderHello(message: ResponderHelloMessage): LinkOutMessage? {
         logger.info("Processing ${message::class.java.simpleName} for session ${message.header.sessionId}.")
 
@@ -653,6 +662,15 @@ internal class SessionManagerImpl(
                 Pair(sessionType.sessionCounterparties, sessionType.protocol)
             }
         }
+        return processResponderHello(sessionInfo, session, message)?.first
+    }
+
+    @Suppress("ComplexMethod")
+    internal fun processResponderHello(
+        sessionInfo: SessionCounterparties,
+        session: AuthenticationProtocolInitiator,
+        message: ResponderHelloMessage,
+    ): Pair<LinkOutMessage?, AuthenticationProtocolInitiator>? {
 
         session.receiveResponderHello(message)
         session.generateHandshakeSecrets()
@@ -695,19 +713,21 @@ internal class SessionManagerImpl(
             return null
         }
 
-        sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(message.header.sessionId), sessionInfo)
-        sessionHealthManager.messageAcknowledged(message.header.sessionId)
+        if (trackSessionHealthAndReplaySessionMessages) {
+            sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(message.header.sessionId), sessionInfo)
+            sessionHealthManager.messageAcknowledged(message.header.sessionId)
 
-        sessionReplayer.addMessageForReplay(
-            initiatorHandshakeUniqueId(message.header.sessionId),
-            InMemorySessionReplayer.SessionMessageReplay(
-                payload,
-                message.header.sessionId,
-                sessionInfo,
-                sessionHealthManager::sessionMessageSent
-            ),
-            sessionInfo
-        )
+            sessionReplayer.addMessageForReplay(
+                initiatorHandshakeUniqueId(message.header.sessionId),
+                InMemorySessionReplayer.SessionMessageReplay(
+                    payload,
+                    message.header.sessionId,
+                    sessionInfo,
+                    sessionHealthManager::sessionMessageSent
+                ),
+                sessionInfo
+            )
+        }
 
         val p2pParams = try {
             groupPolicyProvider.getP2PParameters(ourIdentityInfo.holdingIdentity)
@@ -719,31 +739,52 @@ internal class SessionManagerImpl(
             logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, ourIdentityInfo.holdingIdentity)
             return null
         }
-        sessionHealthManager.sessionMessageSent(
-            sessionInfo,
-            message.header.sessionId,
-        )
+        if (trackSessionHealthAndReplaySessionMessages) {
+            sessionHealthManager.sessionMessageSent(sessionInfo, message.header.sessionId,)
+        }
 
-        return createLinkOutMessage(payload, sessionInfo.ourId, responderMemberInfo, p2pParams.networkType)
+        return createLinkOutMessage(payload, sessionInfo.ourId, responderMemberInfo, p2pParams.networkType) to session
     }
 
-    private fun processResponderHandshake(message: ResponderHandshakeMessage): LinkOutMessage? {
+    private fun processResponderHandshake(
+        message: ResponderHandshakeMessage,
+    ) {
         logger.info("Processing ${message::class.java.simpleName} for session ${message.header.sessionId}.")
         val sessionType = outboundSessionPool.getSession(message.header.sessionId) ?: run {
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
-            return null
+            return
         }
-
-        val (sessionCounterparties, session) = when (sessionType) {
+        when (sessionType) {
             is OutboundSessionPool.SessionType.ActiveSession -> {
                 logger.alreadySessionWarning(message::class.java.simpleName, message.header.sessionId)
-                return null
+                return
             }
             is OutboundSessionPool.SessionType.PendingSession -> {
-                Pair(sessionType.sessionCounterparties, sessionType.protocol)
+                processResponderHandshake(
+                    message,
+                    sessionType.sessionCounterparties,
+                    sessionType.protocol,
+                )?.let {
+                    sessionNegotiationLock.write {
+                        outboundSessionPool.updateAfterSessionEstablished(it)
+                        pendingOutboundSessionMessageQueues.sessionNegotiatedCallback(
+                            this,
+                            sessionType.sessionCounterparties,
+                            it,
+                        )
+                    }
+                    logger.info("Outbound session ${it.sessionId} established (local=${sessionType.sessionCounterparties.ourId}," +
+                            " remote=${sessionType.sessionCounterparties.counterpartyId}).")
+                }
             }
         }
+    }
 
+    internal fun processResponderHandshake(
+        message: ResponderHandshakeMessage,
+        sessionCounterparties: SessionCounterparties,
+        session: AuthenticationProtocolInitiator,
+    ): Session? {
         val memberInfo = membershipGroupReaderProvider.lookup(
             sessionCounterparties.ourId, sessionCounterparties.counterpartyId, sessionCounterparties.status
         )
@@ -760,28 +801,19 @@ internal class SessionManagerImpl(
             return null
         }
         val authenticatedSession = session.getSession()
-        sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(message.header.sessionId), sessionCounterparties)
-        sessionHealthManager.messageAcknowledged(message.header.sessionId)
-        sessionHealthManager.sessionEstablished(authenticatedSession)
-        sessionNegotiationLock.write {
-            outboundSessionPool.updateAfterSessionEstablished(authenticatedSession)
-            pendingOutboundSessionMessageQueues.sessionNegotiatedCallback(
-                this,
-                sessionCounterparties,
-                authenticatedSession,
-            )
+        if (trackSessionHealthAndReplaySessionMessages) {
+            sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(message.header.sessionId), sessionCounterparties)
+            sessionHealthManager.messageAcknowledged(message.header.sessionId)
+            sessionHealthManager.sessionEstablished(authenticatedSession)
         }
-        logger.info(
-            "Outbound session ${authenticatedSession.sessionId} established " +
-                "(local=${sessionCounterparties.ourId}, remote=${sessionCounterparties.counterpartyId})."
-        )
+
         val sessionManagerConfig = config.get()
         executorService.schedule(
             { refreshSessionAndLog(sessionCounterparties, message.header.sessionId) },
             sessionManagerConfig.sessionRefreshThreshold.toLong(),
             TimeUnit.SECONDS
         )
-        return null
+        return authenticatedSession
     }
 
     private fun refreshSessionAndLog(sessionCounterparties: SessionCounterparties, sessionId: String) {

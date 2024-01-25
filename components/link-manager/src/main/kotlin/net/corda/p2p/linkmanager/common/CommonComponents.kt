@@ -89,12 +89,14 @@ internal class CommonComponents(
                 inboundAssignmentListener,
                 linkManagerHostingMap,
                 clock = clock,
+                trackSessionHealthAndReplaySessionMessages = false
             ),
             StateConvertor(
                 schemaRegistry,
                 sessionEncryptionOpsClient,
             ),
             clock,
+            membershipGroupReaderProvider,
         )
     } else {
         SessionManagerImpl(

@@ -13,6 +13,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.linkmanager.state.SessionState
@@ -45,6 +46,7 @@ class StatefulSessionManagerImplTest {
         on { dominoTile } doReturn sessionManagerImplDominoTile
     }
     private val stateConvertor = mock<StateConvertor>()
+    private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider>()
     private val now = Instant.ofEpochMilli(333L)
     private val clock = mock<Clock> {
         on { instant() } doReturn now
@@ -56,6 +58,7 @@ class StatefulSessionManagerImplTest {
         sessionManagerImpl,
         stateConvertor,
         clock,
+        membershipGroupReaderProvider,
     )
 
     private data class Wrapper<T>(
@@ -265,7 +268,7 @@ class StatefulSessionManagerImplTest {
                     }.hasSize(1)
                 assertThat(statesUpdates.firstValue.firstOrNull()?.value).isEqualTo(rawData)
                 assertThat(statesUpdates.firstValue.firstOrNull()?.key).isEqualTo(sessionIdentity)
-                assertThat(statesUpdates.firstValue.firstOrNull()?.version).isEqualTo(1)
+                assertThat(statesUpdates.firstValue.firstOrNull()?.version).isEqualTo(0)
                 assertThat(statesUpdates.firstValue.firstOrNull()?.metadata).containsEntry(
                     "destinationVnode",
                     "O=Bob, L=London, C=GB",
