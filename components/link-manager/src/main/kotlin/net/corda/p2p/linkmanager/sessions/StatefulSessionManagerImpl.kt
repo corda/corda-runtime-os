@@ -174,7 +174,7 @@ internal class StatefulSessionManagerImpl(
                         state.first.message.message.header.statusFilter,
                     )?.let { (needed, newState) ->
                         state.toResultsFirstAndOther(
-                            update = UpdateOrCreate.create(newState),
+                            action = CreateAction(newState),
                             firstState = needed,
                             otherStates = SessionAlreadyPending(counterparties),
                         )
@@ -186,7 +186,7 @@ internal class StatefulSessionManagerImpl(
                 OutboundSessionStatus.SentInitiatorHello, OutboundSessionStatus.SentInitiatorHandshake -> {
                     state.state.replaySessionMessage()?.let { (needed, newState) ->
                         state.toResultsFirstAndOther(
-                            update = UpdateOrCreate.update(newState),
+                            action = UpdateAction(newState),
                             firstState = needed,
                             otherStates = SessionAlreadyPending(counterparties),
                         )
@@ -290,10 +290,10 @@ internal class StatefulSessionManagerImpl(
         val results = processInboundSessionMessages(messages) + processOutboundSessionMessages(messages)
 
         val failedUpdate =
-            upsert(results.mapNotNull { it.result?.stateUpdate }).keys
+            upsert(results.mapNotNull { it.result?.stateAction }).keys
 
         return results.mapNotNull { result ->
-            if (failedUpdate.contains(result.result?.stateUpdate?.state?.key)) {
+            if (failedUpdate.contains(result.result?.stateAction?.state?.key)) {
                 null
             } else {
                 result
@@ -303,7 +303,7 @@ internal class StatefulSessionManagerImpl(
                 is AvroResponderHelloMessage, is AvroResponderHandshakeMessage -> {
                     result.result.sessionToCache?.let { sessionToCache ->
                         val session = SessionManager.SessionDirection.Inbound(
-                            result.result.stateUpdate.state.toCounterparties(),
+                            result.result.stateAction.state.toCounterparties(),
                             sessionToCache,
                         )
                         cachedInboundSessions.put(
@@ -314,11 +314,11 @@ internal class StatefulSessionManagerImpl(
                 }
                 is AvroInitiatorHelloMessage, is AvroInitiatorHandshakeMessage -> {
                     result.result.sessionToCache?.let { sessionToCache ->
-                        val key = result.result.stateUpdate.state.key
+                        val key = result.result.stateAction.state.key
                         cachedOutboundSessions.put(
                             key,
                             SessionManager.SessionDirection.Outbound(
-                                result.result.stateUpdate.state.toCounterparties(),
+                                result.result.stateAction.state.toCounterparties(),
                                 sessionToCache,
                             ),
                         )
@@ -371,36 +371,6 @@ internal class StatefulSessionManagerImpl(
         val trace: T,
         val message: AuthenticatedMessageAndKey,
     )
-    private class UpdateOrCreate(
-        val state: State,
-        val create: Boolean,
-    ) {
-        companion object {
-            fun create(
-                state: State,
-            ) = UpdateOrCreate(
-                state = state,
-                create = true,
-            )
-            fun update(
-                state: State,
-            ) = UpdateOrCreate(
-                state = state,
-                create = false,
-            )
-        }
-
-        fun updateState() = if (!create) {
-            state
-        } else {
-            null
-        }
-        fun createState() = if (create) {
-            state
-        } else {
-            null
-        }
-    }
 
     private data class OutboundMessageState<T>(
         val key: String?,
@@ -421,7 +391,7 @@ internal class StatefulSessionManagerImpl(
                 OutboundMessageResults(
                     key = this.key,
                     messages = this.messages,
-                    update = null,
+                    action = null,
                     sessionState = sessionState,
                 ),
             )
@@ -429,19 +399,19 @@ internal class StatefulSessionManagerImpl(
         fun toResultsFirstAndOther(
             firstState: SessionManager.SessionState,
             otherStates: SessionManager.SessionState,
-            update: UpdateOrCreate,
+            action: StateManagerAction,
         ): Collection<OutboundMessageResults<T>> {
             return listOf(
                 OutboundMessageResults(
                     key = this.key,
                     messages = listOf(first),
-                    update = update,
+                    action = action,
                     sessionState = firstState,
                 ),
                 OutboundMessageResults(
                     key = this.key,
                     messages = others,
-                    update = null,
+                    action = null,
                     sessionState = otherStates,
                 ),
             )
@@ -451,7 +421,7 @@ internal class StatefulSessionManagerImpl(
     private data class OutboundMessageResults<T>(
         val key: String?,
         val messages: Collection<OutboundMessageContext<T>>,
-        val update: UpdateOrCreate?,
+        val action: StateManagerAction?,
         val sessionState: SessionManager.SessionState,
     )
 
@@ -510,7 +480,7 @@ internal class StatefulSessionManagerImpl(
 
     private data class Result(
         val message: LinkOutMessage?,
-        val stateUpdate: UpdateOrCreate,
+        val stateAction: StateManagerAction,
         val sessionToCache: Session?,
     )
 
@@ -647,7 +617,7 @@ internal class StatefulSessionManagerImpl(
     private fun <T> processStateUpdates(
         resultStates: Collection<OutboundMessageResults<T>>,
     ): Collection<Pair<T, SessionManager.SessionState>> {
-        val updates = resultStates.mapNotNull { it.update }
+        val updates = resultStates.mapNotNull { it.action }
         val failedUpdates = upsert(updates)
 
         return resultStates.flatMap { resultState ->
@@ -686,12 +656,12 @@ internal class StatefulSessionManagerImpl(
                 when (it.inboundSessionMessage) {
                     is InboundSessionMessage.InitiatorHelloMessage -> {
                         processInitiatorHello(state, it.inboundSessionMessage)?.let { (message, stateUpdate) ->
-                            Result(message, UpdateOrCreate.create(stateUpdate), null)
+                            Result(message, CreateAction(stateUpdate), null)
                         }
                     }
                     is InboundSessionMessage.InitiatorHandshakeMessage -> {
                         processInitiatorHandshake(state, it.inboundSessionMessage)?.let { (message, stateUpdate, session) ->
-                            Result(message, UpdateOrCreate.update(stateUpdate), session)
+                            Result(message, UpdateAction(stateUpdate), session)
                         }
                     }
                 }
@@ -719,12 +689,12 @@ internal class StatefulSessionManagerImpl(
                 when (it.outboundSessionMessage) {
                     is OutboundSessionMessage.ResponderHelloMessage -> {
                         processResponderHello(state, it.outboundSessionMessage)?.let { (message, stateUpdate) ->
-                            Result(message, UpdateOrCreate.update(stateUpdate), null)
+                            Result(message, UpdateAction(stateUpdate), null)
                         }
                     }
                     is OutboundSessionMessage.ResponderHandshakeMessage -> {
                         processResponderHandshake(state, it.outboundSessionMessage)?.let { (message, stateUpdate, session) ->
-                            Result(message, UpdateOrCreate.update(stateUpdate), session)
+                            Result(message, UpdateAction(stateUpdate), session)
                         }
                     }
                 }
@@ -1086,10 +1056,10 @@ internal class StatefulSessionManagerImpl(
         )
     }
     private fun upsert(
-        changes: Collection<UpdateOrCreate>,
+        changes: Collection<StateManagerAction>,
     ): Map<String, State?> {
-        val updates = changes.mapNotNull { it.updateState() }
-        val creates = changes.mapNotNull { it.createState() }
+        val updates = changes.filterIsInstance<UpdateAction>().map { it.state }
+        val creates = changes.filterIsInstance<CreateAction>().map { it.state }
         val failedUpdates = if (updates.isNotEmpty()) {
             stateManager.update(updates).onEach {
                 logger.info("Failed to update the state of session with ID ${it.key}")
