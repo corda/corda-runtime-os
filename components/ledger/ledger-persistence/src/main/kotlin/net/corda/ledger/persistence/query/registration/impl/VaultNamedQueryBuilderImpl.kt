@@ -1,6 +1,5 @@
 package net.corda.ledger.persistence.query.registration.impl
 
-import com.typesafe.config.ConfigException.Parse
 import net.corda.ledger.persistence.query.data.VaultNamedQuery
 import net.corda.ledger.persistence.query.parsing.VaultNamedQueryParser
 import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
