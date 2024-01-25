@@ -10,6 +10,7 @@ import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.crypto.cipher.suite.schemes.KeySchemeTemplate
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.client.SessionEncryptionOpsClient
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.fullIdHash
 import net.corda.data.config.Configuration
@@ -42,6 +43,9 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_REFRESH_THRESHOLD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.libs.statemanager.api.MetadataFilter
+import net.corda.libs.statemanager.api.Operation
+import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -84,6 +88,7 @@ import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.P2P_LINK_MANAGER_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig
+import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.test.util.eventually
 import net.corda.testing.p2p.certificates.Certificates
@@ -107,6 +112,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.mockito.kotlin.KStubbing
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -128,6 +134,7 @@ import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicInteger
 
 class P2PLayerEndToEndTest {
 
@@ -660,7 +667,79 @@ class P2PLayerEndToEndTest {
 
         private val stateManagerName = mock<LifecycleCoordinatorName>()
         private val stateManager = mockLifeCycle<StateManager>(stateManagerName) {
+            val states = ConcurrentHashMap<String, State>()
             on { name } doReturn stateManagerName
+            on { get(any()) } doAnswer {
+                val ids = it.getArgument<Collection<String>>(0)
+                ids.mapNotNull { id ->
+                    states[id]?.let {
+                        id to it
+                    }
+                }.toMap()
+            }
+
+            on { findByMetadataMatchingAny(any()) } doAnswer {
+                val filters = it.getArgument<Collection<MetadataFilter>>(0)
+                filters.flatMap { filter ->
+                    states.values.filter {
+                        val value = it.metadata[filter.key]
+                        when (filter.operation) {
+                            Operation.Equals -> {
+                                filter.value == value
+                            }
+                            Operation.NotEquals -> {
+                                filter.value != value
+                            }
+                            Operation.LesserThan -> {
+                                val toFilter = (filter.value as? Number)?.toDouble() ?: 0.0
+                                val doubleValue = (value as? Number)?.toDouble() ?: 0.0
+                                doubleValue < toFilter
+                            }
+                            Operation.GreaterThan -> {
+                                val toFilter = (filter.value as? Number)?.toDouble() ?: 0.0
+                                val doubleValue = (value as? Number)?.toDouble() ?: 0.0
+                                doubleValue > toFilter
+                            }
+                        }
+                    }
+                }.groupBy {
+                    it.key
+                }.mapValues {
+                    it.value.first()
+                }
+            }
+
+            on { update(any()) } doAnswer {
+                it.getArgument<Collection<State>>(0).forEach {
+                    states[it.key] = it
+                }
+                emptyMap()
+            }
+        }
+        private val sessionEncryptionOpsClient = mockLifeCycle<SessionEncryptionOpsClient>() {
+            on { encryptSessionData(any(), anyOrNull()) } doAnswer {
+                it.getArgument<ByteArray>(0)
+            }
+            on { decryptSessionData(any(), anyOrNull()) } doAnswer {
+                it.getArgument<ByteArray>(0)
+            }
+        }
+        private val schemaRegistry = mock<AvroSchemaRegistry> {
+            val registryData = ConcurrentHashMap<Int, Any?>()
+            val registryIndex = AtomicInteger()
+            on { deserialize(any(), any(), anyOrNull()) } doAnswer {
+                val index = String(it.getArgument<ByteBuffer>(0).array()).toIntOrNull()
+                registryData[index]
+            }
+            on { serialize(any()) } doAnswer {
+                val index = registryIndex.incrementAndGet()
+                registryData[index] = it.getArgument(0)
+                ByteBuffer.wrap(index.toString().toByteArray())
+            }
+            on { getClassType(any()) } doAnswer {
+                val index = String(it.getArgument<ByteBuffer>(0).array()).toIntOrNull()
+                registryData[index]?.javaClass
+            }
         }
 
         private val linkManager =
@@ -678,6 +757,8 @@ class P2PLayerEndToEndTest {
                 mock(),
                 mock(),
                 stateManager,
+                sessionEncryptionOpsClient,
+                schemaRegistry,
             )
         private val platformInfoProvider = object : PlatformInfoProvider {
             override val activePlatformVersion = 1

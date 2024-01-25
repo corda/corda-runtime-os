@@ -43,6 +43,10 @@ class FlowFiberImpl(
     @Transient
     private var boundSandboxUUID: UUID? = null
 
+    override fun getSandboxGroupId(): UUID? {
+        return boundSandboxUUID
+    }
+
     override fun getExecutionContext(): FlowFiberExecutionContext {
         return flowFiberExecutionContext!!
     }

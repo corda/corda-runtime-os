@@ -16,7 +16,7 @@ import java.nio.ByteBuffer
 import net.corda.data.p2p.state.SessionState as AvroSessionData
 
 internal data class SessionState(
-    val message: LinkOutMessage,
+    val message: LinkOutMessage?,
     val sessionData: SerialisableSessionData,
 ) {
     companion object {
