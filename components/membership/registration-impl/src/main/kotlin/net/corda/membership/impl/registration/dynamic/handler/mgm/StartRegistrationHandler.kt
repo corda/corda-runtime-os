@@ -236,10 +236,10 @@ internal class StartRegistrationHandler(
             activeOrSuspendedInfo?.let { previous ->
                 val previousContext = previous.memberProvidedContext.toMap()
                 val pendingContext = pendingMemberInfo.memberProvidedContext.toMap()
-                val diffInvalidMsgFn = verifyReRegistrationChanges(previousContext, pendingContext)
-                if (!diffInvalidMsgFn.isNullOrEmpty()) {
-                    registrationLogger.info(diffInvalidMsgFn)
-                    throw InvalidRegistrationRequestException(diffInvalidMsgFn, diffInvalidMsgFn)
+                val diffInvalidMsg = verifyReRegistrationChanges(previousContext, pendingContext)
+                if (!diffInvalidMsg.isNullOrEmpty()) {
+                    registrationLogger.info(diffInvalidMsg)
+                    throw InvalidRegistrationRequestException(diffInvalidMsg, diffInvalidMsg)
                 }
             }
 
