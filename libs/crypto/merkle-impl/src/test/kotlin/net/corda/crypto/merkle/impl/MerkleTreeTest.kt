@@ -514,7 +514,7 @@ class MerkleTreeTest {
         check(xSubset.size + ySubset.size == leafIndicesCombination.size)
         val xProof = proof.subset(digest, xSubset)
         val yProof = proof.subset(digest, ySubset)
-        val mergedProof = xProof.merge(yProof, digest)
+        val mergedProof = xProof.merge(yProof, digest) as MerkleProofImpl
         val mergedProofText = mergedProof.render(digest)
         assertThat(mergedProofText).isEqualTo(proofText)
     }
@@ -570,7 +570,7 @@ class MerkleTreeTest {
                                            ┗00000003 (calc)    known leaf
         """.trimIndent()
         )
-        val mergedProof = xProof.merge(yProof, trivialHashDigestProvider)
+        val mergedProof = xProof.merge(yProof, trivialHashDigestProvider) as MerkleProofImpl
         val mergedProofText = mergedProof.render(trivialHashDigestProvider)
         assertThat(mergedProofText).isEqualTo(proofText)
     }
@@ -671,7 +671,7 @@ class MerkleTreeTest {
                                                                   ┗00000005 (input 0) filtered      
         """.trimIndent()
         )
-        val proofMerged = proof2.merge(proof3, trivialHashDigestProvider)
+        val proofMerged = proof2.merge(proof3, trivialHashDigestProvider) as MerkleProofImpl
         assertThat(proofMerged.render(trivialHashDigestProvider)).isEqualToIgnoringWhitespace(
             """
                 00000612 (calc)┳0000069F (calc)┳00000630 (input 2)┳unknown            filtered
@@ -724,7 +724,7 @@ class MerkleTreeTest {
                                                                      ┗unknown            filtered
         """.trimIndent()
         )
-        val proofMerged = proofX.merge(proofY, trivialHashDigestProvider)
+        val proofMerged = proofX.merge(proofY, trivialHashDigestProvider) as MerkleProofImpl
         val proofMergedText = proofMerged.render(trivialHashDigestProvider)
         assertThat(proofMergedText).isEqualTo(proof1Text)
     }
@@ -825,7 +825,7 @@ class MerkleTreeTest {
                                                                                                           ┗unknown            filtered
         """.trimIndent()
         )
-        val proofMerged = proofX.merge(proofY, trivialHashDigestProvider)
+        val proofMerged = proofX.merge(proofY, trivialHashDigestProvider) as MerkleProofImpl
         val proofMergedText = proofMerged.render(trivialHashDigestProvider)
         assertThat(proofMergedText).isEqualTo(proof1Text)
     }
@@ -864,7 +864,7 @@ class MerkleTreeTest {
                                               ┗568F8D2A (calc) known leaf
         """.trimIndent()
         )
-        val proofMerged = proofX.merge(proofY, digest)
+        val proofMerged = proofX.merge(proofY, digest) as MerkleProofImpl
         val proofMergedText = proofMerged.render(digest)
         assertThat(proofMergedText).isEqualTo(proof1Text)
     }
@@ -1390,7 +1390,7 @@ class MerkleTreeTest {
         check(xSubset.size + ySubset.size == leafIndicesCombination.size)
         val xProof = proof.subset(defaultHashDigestProvider, xSubset)
         val yProof = proof.subset(defaultHashDigestProvider, ySubset)
-        val mergedProof = xProof.merge(yProof, defaultHashDigestProvider)
+        val mergedProof = xProof.merge(yProof, defaultHashDigestProvider) as MerkleProofImpl
         val mergedProofText = mergedProof.render(defaultHashDigestProvider)
         assertThat(mergedProofText).isEqualTo(proofText)
     }
