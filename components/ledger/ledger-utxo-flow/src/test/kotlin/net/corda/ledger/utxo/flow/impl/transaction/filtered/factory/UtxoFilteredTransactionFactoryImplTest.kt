@@ -1,7 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction.filtered.factory
 
-import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters
-import net.corda.ledger.common.flow.transaction.filtered.factory.FilteredTransactionFactory
+import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters
+import net.corda.ledger.common.data.transaction.filtered.factory.FilteredTransactionFactory
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowBetweenImpl
