@@ -1,6 +1,5 @@
 package net.corda.ledger.persistence.query.data
 
-import com.typesafe.config.ConfigException.Parse
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryCollector
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryFilter
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryTransformer
