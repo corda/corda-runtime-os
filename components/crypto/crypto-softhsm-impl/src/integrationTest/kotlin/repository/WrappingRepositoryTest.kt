@@ -1,16 +1,22 @@
 package repository
 
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.persistence.WrappingKeyInfo
+import net.corda.crypto.persistence.db.model.SigningKeyEntity
+import net.corda.crypto.persistence.db.model.SigningKeyEntityStatus
+import net.corda.crypto.persistence.db.model.SigningKeyMaterialEntity
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
 import net.corda.crypto.softhsm.impl.WrappingRepositoryImpl
 import net.corda.crypto.softhsm.impl.toDto
 import net.corda.crypto.testkit.SecureHashUtils
+import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
+import java.time.Instant
 import java.util.*
 import javax.persistence.EntityManagerFactory
 import javax.persistence.PersistenceException
@@ -199,5 +205,90 @@ class WrappingRepositoryTest : CryptoRepositoryTest() {
         assertThat(generationSetPka3).contains(wrappingKeyInfo.generation)
         assertThat(generationSetPka3).contains(wrappingKeyInfo.generation + 1)
         assertThat(generationSetPka3).contains(wrappingKeyInfo.generation + 2)
+    }
+
+    @ParameterizedTest
+    @MethodSource("emfs")
+    fun `getAllKeyIds returns latest generation keys for the tenant`(emf: EntityManagerFactory) {
+        val dummyKeyMaterialPrefix = "dummy_key_material"
+        val tenantIdUnderTest = "test_tenant"
+        val repo = WrappingRepositoryImpl(emf, tenantIdUnderTest)
+
+        val expectedWrappingKeys = mutableSetOf<UUID>()
+
+        // Pair is number of generations of wrapping key/key material to create for a signing key, tenant Id
+        // Create at least one signing key/key material/wrapping key for a different tenant to simulate the situation in
+        // the cluster crypto wrapping repo (this wrapping key uuid should not be returned by getAllKeyIds).
+        listOf(
+            Pair(1, tenantIdUnderTest),
+            Pair(2, tenantIdUnderTest),
+            Pair(3, tenantIdUnderTest),
+            Pair(1, "other_tenant")
+        ).forEach {
+            val wrappingKeyAlias = "wrapping-key-${UUID.randomUUID()}"
+            val signingKeyAlias = "signing-key-${UUID.randomUUID()}"
+            var wrappingKeyInfo = wrappingKeyInfo.copy(alias = wrappingKeyAlias)
+            val signingKeyId = UUID.randomUUID()
+            var lastWrappingKeyUuid = UUID.randomUUID()
+
+            // Save the new signing key
+            val entity = SigningKeyEntity(
+                id = signingKeyId,
+                tenantId = it.second,
+                keyId = signingKeyId.toString().take(12),
+                fullKeyId = "123456789012",
+                created = Instant.now(),
+                category = "category",
+                schemeCodeName = "schemeCodeName",
+                publicKey = "publicKeyBytes".toByteArray(),
+                encodingVersion = 1,
+                alias = signingKeyAlias,
+                hsmAlias = null,
+                externalId = "externalId",
+                hsmId = CryptoConsts.SOFT_HSM_ID,
+                status = SigningKeyEntityStatus.NORMAL
+            )
+            emf.createEntityManager().use {
+                it.transaction {
+                    it.persist(entity)
+                }
+            }
+
+            repeat(it.first) {
+                // Save the new wrapping key (using the repo)
+                repo.saveKey(wrappingKeyInfo)
+
+                lastWrappingKeyUuid = repo.findKeyAndId(wrappingKeyAlias)!!.let {
+                    // As we're using the repo under test to grab the UUID, best check it's returning the one we expected
+                    assertThat(it.second.generation).isEqualTo(wrappingKeyInfo.generation)
+                    it.first
+                }
+
+                // Update the wrapping key info for next time round
+                wrappingKeyInfo =
+                    wrappingKeyInfo.copy(generation = wrappingKeyInfo.generation + 1, alias = wrappingKeyAlias)
+
+                // Save the key material which points to this generation of wrapping key and signing key
+                val materialEntity = SigningKeyMaterialEntity(
+                    signingKeyId = signingKeyId,
+                    wrappingKeyId = lastWrappingKeyUuid,
+                    created = Instant.now(),
+                    keyMaterial = "$dummyKeyMaterialPrefix$it".toByteArray()
+                )
+                emf.createEntityManager().use { em ->
+                    em.transaction {
+                        em.persist(materialEntity)
+                    }
+                }
+            }
+
+            // Store the last wrapping key uuid generated into the expected set, assuming it's for the correct tenant
+            if (tenantIdUnderTest == it.second) {
+                expectedWrappingKeys.add(lastWrappingKeyUuid)
+            }
+        }
+
+        val results = repo.getAllKeyIds()
+        assertThat(results).isEqualTo(expectedWrappingKeys)
     }
 }

@@ -78,4 +78,13 @@ interface SigningRepository : Closeable {
      * @return a collection of all key materials all wrapped with the specified wrapping key
      */
     fun getKeyMaterials(wrappingKeyId: UUID): Collection<SigningKeyMaterialInfo>
+
+    /**
+     * Saves a signing key material entity to the database after being rewrapped.
+     * Note: This is not for use when creating new keys, [savePrivateKey] includes that functionality.
+     *
+     * @param signingKeyMaterialInfo The signing key material to be saved to the database
+     * @param wrappingKeyId The UUID of the wrapping key
+     */
+    fun saveSigningKeyMaterial(signingKeyMaterialInfo: SigningKeyMaterialInfo, wrappingKeyId: UUID)
 }

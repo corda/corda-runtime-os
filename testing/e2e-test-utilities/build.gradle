@@ -16,7 +16,7 @@ dependencies {
 
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
-    implementation "com.konghq:unirest-java:$unirestVersion"
+    implementation libs.unirest.java
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "org.apache.commons:commons-text:$commonsTextVersion"
     implementation libs.assertj.core
