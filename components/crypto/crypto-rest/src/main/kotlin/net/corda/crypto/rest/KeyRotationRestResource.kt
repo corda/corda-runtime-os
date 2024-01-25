@@ -101,6 +101,7 @@ interface KeyRotationRestResource : RestResource {
         path = "managed/rotation/{tenantId}",
         description = "This method enables to rotate all wrapping keys for tenantId.",
         responseDescription = "Key rotation response",
+        successCode = SC_ACCEPTED,
     )
     fun startManagedKeyRotation(
         @RestPathParameter(
