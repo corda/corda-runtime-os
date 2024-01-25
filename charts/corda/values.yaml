@@ -1562,7 +1562,7 @@ workers:
 #          keepAliveTimeSeconds: 0
 #          # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
 #          validationTimeoutSeconds: 5
-#     TODO-[CORE-19372]: remove children and uncomment above 'keyRotation' section
+#     TODO-[CORE-19372]: remove children and uncomment above 'keyRotation' and 'flowStatus' sections
       # Type of State Manager
       type: DATABASE
       # State Manager database configuration
