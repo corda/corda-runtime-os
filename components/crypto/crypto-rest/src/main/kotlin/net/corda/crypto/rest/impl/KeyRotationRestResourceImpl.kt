@@ -217,7 +217,9 @@ class KeyRotationRestResourceImpl @Activate constructor(
             checkNotNull(publishToKafka)
         }
 
-        if (!hasPreviousRotationFinished()) throw ForbiddenException("Previous key rotation for $oldKeyAlias is in progress.")
+        if (!hasPreviousRotationFinished()) {
+            throw ForbiddenException("A key rotation operation is already ongoing, a new one cannot be started until it completes.")
+        }
 
         return doKeyRotation(
             oldKeyAlias,
