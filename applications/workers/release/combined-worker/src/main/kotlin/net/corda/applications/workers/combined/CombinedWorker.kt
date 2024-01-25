@@ -223,10 +223,11 @@ class CombinedWorker @Activate constructor(
     private fun prepareDbConfig(dbConfig: Config): Config {
         val tempJdbcUrl = dbConfig.getString(BOOT_JDBC_URL)
         return dbConfig
-            .withValue(BOOT_JDBC_URL, fromAnyRef("$tempJdbcUrl?currentSchema=$CONFIG_SCHEMA_NAME"))
+            // TODO there is no point differentiating urls now is it? I.e. the below 2 should now be stored under a single key
+            .withValue(BOOT_JDBC_URL, fromAnyRef(tempJdbcUrl))
             .withValue(
                 BOOT_JDBC_URL + MESSAGE_BUS_CONFIG_PATH_SUFFIX,
-                fromAnyRef("$tempJdbcUrl?currentSchema=$MESSAGEBUS_SCHEMA_NAME")
+                fromAnyRef(tempJdbcUrl)
             )
     }
 

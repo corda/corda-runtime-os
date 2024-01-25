@@ -50,10 +50,11 @@ class PostgresHelper : ExternalDbHelper() {
                 }
             }
 
+            // TODO this now needs tidying up
             if (rewriteBatchedInserts) {
-                "$jdbcUrl?currentSchema=$schemaName&reWriteBatchedInserts=true"
+                "$jdbcUrl?reWriteBatchedInserts=true"
             } else {
-                "$jdbcUrl?currentSchema=$schemaName"
+                jdbcUrl
             }
         } else {
             jdbcUrl
@@ -68,7 +69,6 @@ class PostgresHelper : ExternalDbHelper() {
         )
     }
 
-
     override fun createConfig(
         inMemoryDbName: String,
         dbUser: String?,
@@ -77,15 +77,9 @@ class PostgresHelper : ExternalDbHelper() {
     ): Config {
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
-        val currentJdbcUrl = if (!schemaName.isNullOrBlank()) {
-            "$jdbcUrl?currentSchema=$schemaName"
-        } else {
-            jdbcUrl
-        }
         return ConfigFactory.empty()
-            .withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(currentJdbcUrl))
+            .withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcUrl))
             .withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(user))
             .withValue(DatabaseConfig.DB_PASS, ConfigValueFactory.fromAnyRef(password))
     }
-
 }

@@ -169,9 +169,9 @@ internal class VirtualNodeDbFactoryImpl(
             val password = generatePassword()
 
             // Add reWriteBatchedInserts JDBC parameter for uniqueness db to enable Hibernate batching
-            var jdbcUrl = virtualNodesDbAdmin.createJdbcUrl(getSchemaName(holdingIdentityShortHash))
+            var jdbcUrl = virtualNodesDbAdmin.getJdbcUrl()
             if (dbType == UNIQUENESS && jdbcUrl.startsWith("jdbc:postgresql")) {
-                jdbcUrl += "&reWriteBatchedInserts=true"
+                jdbcUrl += "?reWriteBatchedInserts=true"
             }
 
             val virtualNodePoolConfig = smartConfigFactory.create(
