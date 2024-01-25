@@ -178,8 +178,7 @@ data class UtxoSignedTransactionImpl(
     private fun getPublicKeysToSignatorySignatures(): Map<PublicKey, DigitalSignatureAndMetadata> {
         return signatures.mapNotNull { // We do not care about non-notary/non-signatory keys
             (getSignatoryKeyFromKeyId(it.by) ?: return@mapNotNull null) to it
-        }
-            .toMap()
+        }.toMap()
     }
 
     override fun verifyAttachedNotarySignature() {
