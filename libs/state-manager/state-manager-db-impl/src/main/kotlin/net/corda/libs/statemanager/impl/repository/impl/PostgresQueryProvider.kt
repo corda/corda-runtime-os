@@ -9,7 +9,6 @@ import net.corda.libs.statemanager.impl.model.v1.StateColumns.MODIFIED_TIME_COLU
 import net.corda.libs.statemanager.impl.model.v1.StateColumns.VALUE_COLUMN
 import net.corda.libs.statemanager.impl.model.v1.StateColumns.VERSION_COLUMN
 
-
 class PostgresQueryProvider : AbstractQueryProvider() {
 
     override fun createStates(size: Int): String = """

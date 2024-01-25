@@ -7,7 +7,6 @@ import net.corda.libs.statemanager.impl.model.v1.StateColumns.MODIFIED_TIME_COLU
 import net.corda.libs.statemanager.impl.model.v1.StateColumns.VALUE_COLUMN
 import net.corda.libs.statemanager.impl.model.v1.StateColumns.VERSION_COLUMN
 
-
 abstract class AbstractQueryProvider : QueryProvider {
 
     override fun findStatesByKey(size: Int) =
