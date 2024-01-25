@@ -73,4 +73,39 @@ interface KeyRotationRestResource : RestResource {
         )
         newKeyAlias: String,
     ): ResponseEntity<KeyRotationResponse>
+
+    /**
+     * The [getManagedKeyRotationStatus] gets the latest key rotation status for [tenantId] if one exists.
+     *
+     * @return A list of wrapping keys with the total number of signing keys needs re-wrapping
+     *        and the number of already re-wrapped keys.
+     *
+     */
+    @HttpGET(
+        path = "managed/rotation/{tenantId}",
+        description = "This method gets the status of the latest key rotation for [tenantId].",
+        responseDescription = "Number of signing keys needs rotating grouped by tenantId's wrapping keys.",
+    )
+    fun getManagedKeyRotationStatus(
+        @RestPathParameter(description = "The tenantId whose wrapping keys are rotating.")
+        tenantId: String
+    ): String
+
+    /**
+     * Initiates the managed key rotation process.
+     *
+     * @param tenantId UUID of the virtual node.
+     *
+     */
+    @HttpPOST(
+        path = "managed/rotation/{tenantId}",
+        description = "This method enables to rotate all wrapping keys for tenantId.",
+        responseDescription = "Key rotation response",
+    )
+    fun startManagedKeyRotation(
+        @RestPathParameter(
+            description = "The tenantId whose wrapping keys are going to be rotated."
+        )
+        tenantId: String
+    ): ResponseEntity<String>
 }
