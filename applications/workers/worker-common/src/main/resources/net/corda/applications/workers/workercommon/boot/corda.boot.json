@@ -193,7 +193,11 @@
       }
     },
     "stateManager": {
-      "$ref": "stateManager.boot.json"
+      "description": "Map of configuration options for state types backed by a storage medium.",
+      "additionalProperties": {
+        "type": "object",
+        "$ref": "#/$defs/stateTypeConfig"
+      }
     },
     "worker": {
       "description": "HTTP connection information for the Corda workers",
@@ -236,5 +240,148 @@
       "additionalProperties": false
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$defs": {
+    "stateTypeConfig": {
+      "properties": {
+        "type": {
+          "description": "The type of state manager implementation.",
+          "enum": [
+            "DATABASE"
+          ]
+        },
+        "additionalProperties": false
+      },
+      "required": [
+        "type"
+      ],
+      "$comment": "Polymorphic state manager storage connection configuration. The valid section depends on which state manager implementation is in use.",
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "DATABASE"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "database": {
+                "description": "Config for a state type backed by database",
+                "$ref": "#/$defs/databaseConfig"
+              }
+            },
+            "required": [
+              "database"
+            ]
+          }
+        }
+      ]
+    },
+    "databaseConfig": {
+      "properties": {
+        "jdbc": {
+          "description": "The JDBC database configuration",
+          "properties": {
+            "url": {
+              "description": "The JDBC URL to of the database",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "directory": {
+              "description": "The JDBC driver directory",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "driver": {
+              "description": "The JDBC driver class",
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "user": {
+          "description": "Username to connect to this database",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pass": {
+          "description": "Password to connect to this database",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pool": {
+          "description": "Connection pool properties",
+          "properties": {
+            "maxSize": {
+              "description": "Maximum connection pool size",
+              "default": 5,
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "minSize": {
+              "description": "Minimum connection pool size",
+              "default": 0,
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "idleTimeoutSeconds": {
+              "description": "Maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool",
+              "default": 120,
+              "minimum": 0,
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "maxLifetimeSeconds": {
+              "description": "Maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle",
+              "default": 1800,
+              "minimum": 1,
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "keepAliveTimeSeconds": {
+              "description": "Interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled",
+              "default": 0,
+              "minimum": 0,
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "validationTimeoutSeconds": {
+              "description": "Maximum time (in seconds) that the pool will wait for a connection to be validated as alive",
+              "minimum": 1,
+              "default": 5,
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": ["jdbc", "user", "pass"]
+    }
+  }
 }
