@@ -245,10 +245,10 @@ class KeyRotationRestResourceImpl @Activate constructor(
         if (oldKeyAlias == newKeyAlias) throw InvalidInputDataException(
             "Cannot start key rotation. The old key alias must be different to the new key alias."
         )
-        if (oldKeyAlias.isNullOrEmpty()) throw InvalidInputDataException(
+        if (oldKeyAlias.isEmpty()) throw InvalidInputDataException(
             "Cannot start key rotation. The old key alias is not specified."
         )
-        if (newKeyAlias.isNullOrEmpty()) throw InvalidInputDataException(
+        if (newKeyAlias.isEmpty()) throw InvalidInputDataException(
             "Cannot start key rotation. The new key alias is not specified."
         )
     }
