@@ -61,7 +61,11 @@ class CryptoRekeyBusProcessorTests {
     private lateinit var rewrapPublisher: Publisher
     private lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
     private lateinit var config: Map<String, SmartConfig>
+
+    // Some default fields
     private val oldKeyAlias = "oldKeyAlias"
+    private val newKeyAlias = "newKeyAlias"
+    private val tenantId = "tenantId"
 
     private val dummyUuids = List(4) { UUID.randomUUID() }.toSet()
 
@@ -303,8 +307,8 @@ class CryptoRekeyBusProcessorTests {
     }
 
     private fun getUnmanagedKeyRotationKafkaRecord(
-        oldParentKeyAlias: String? = "oldKeyAlias",
-        newParentKeyAlias: String? = "newKeyAlias",
+        oldParentKeyAlias: String? = oldKeyAlias,
+        newParentKeyAlias: String? = newKeyAlias,
         tenantId: String? = null
     ): Record<String, KeyRotationRequest> = Record(
         "TBC",
@@ -390,7 +394,7 @@ class CryptoRekeyBusProcessorTests {
     private fun getManagedKeyRotationKafkaRecord(
         oldParentKeyAlias: String? = null,
         newParentKeyAlias: String? = null,
-        tenantId: String? = "tenantId"
+        tenantId: String? = this.tenantId
     ): Record<String, KeyRotationRequest> = Record(
         "TBC",
         UUID.randomUUID().toString(),
