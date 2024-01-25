@@ -84,7 +84,7 @@ interface KeyRotationRestResource : RestResource {
     @HttpGET(
         path = "managed/rotation/{tenantId}",
         description = "This method gets the status of the latest key rotation for [tenantId].",
-        responseDescription = "Number of signing keys needs rotating grouped by tenantId's wrapping keys.",
+        responseDescription = "Number of signing keys which need rotating grouped by tenantId's wrapping keys",
     )
     fun getManagedKeyRotationStatus(
         @RestPathParameter(description = "The tenantId whose wrapping keys are rotating.")
@@ -104,7 +104,7 @@ interface KeyRotationRestResource : RestResource {
     )
     fun startManagedKeyRotation(
         @RestPathParameter(
-            description = "The tenantId whose wrapping keys are going to be rotated."
+            description = "The tenantId whose wrapping keys are requested to be rotated."
         )
         tenantId: String
     ): ResponseEntity<String>
