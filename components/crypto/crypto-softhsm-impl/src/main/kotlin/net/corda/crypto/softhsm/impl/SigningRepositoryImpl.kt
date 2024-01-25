@@ -226,6 +226,20 @@ class SigningRepositoryImpl(
                     }
             }
         }
+
+    override fun saveSigningKeyMaterial(signingKeyMaterialInfo: SigningKeyMaterialInfo, wrappingKeyId: UUID) {
+        val signingKeyMaterialEntity = SigningKeyMaterialEntity(
+            wrappingKeyId,
+            signingKeyMaterialInfo.signingKeyId,
+            signingKeyMaterialInfo.keyMaterial,
+            Instant.now()
+        )
+        entityManagerFactory.createEntityManager().use { em ->
+            em.transaction {
+                em.persist(signingKeyMaterialEntity)
+            }
+        }
+    }
 }
 
 fun SigningKeyEntity.joinSigningKeyInfo(em: EntityManager, keyEncodingService: KeyEncodingService): SigningKeyInfo {

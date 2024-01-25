@@ -216,6 +216,10 @@ class SoftCryptoServiceCachingTests {
                 TODO("Not needed")
             }
 
+            override fun getAllKeyIds(): Set<UUID> {
+                TODO("Not needed")
+            }
+
             override fun close() {
             }
         }

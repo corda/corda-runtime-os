@@ -50,5 +50,17 @@ class MetadataTests {
             .containsExactlyInAnyOrderEntriesOf(mapOf("foo" to "bar", "batman" to "joker"))
     }
 
+    @Test
+    fun `contains key with value returns true when key and value match`() {
+        val meta1 = Metadata(mapOf("foo" to "bar"))
+        assertThat(meta1.containsKeyWithValue("foo", "bar")).isTrue()
+    }
+
+    @Test
+    fun `contains key with value returns false when key matches but value does not`() {
+        val meta1 = Metadata(mapOf("foo" to true))
+        assertThat(meta1.containsKeyWithValue("foo", false)).isFalse()
+    }
+
     data class Superman(val kudos: Int)
 }

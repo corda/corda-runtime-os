@@ -172,7 +172,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
     }
 
     override fun getKeyRotationStatus(keyAlias: String): KeyRotationStatusResponse {
-        val entries = stateManager.findByMetadataMatchingAll(
+        val records = stateManager.findByMetadataMatchingAll(
             listOf(
                 MetadataFilter(KeyRotationMetadataValues.ROOT_KEY_ALIAS, Operation.Equals, keyAlias),
                 MetadataFilter(KeyRotationMetadataValues.TYPE, Operation.Equals, KeyRotationRecordType.KEY_ROTATION)
@@ -180,12 +180,12 @@ class KeyRotationRestResourceImpl @Activate constructor(
         )
 
         // if entries are empty, there is no rootKeyAlias data stored in the state manager, so no key rotation is/was in progress
-        if (entries.isEmpty()) throw ResourceNotFoundException("No key rotation for $keyAlias is in progress.")
+        if (records.isEmpty()) throw ResourceNotFoundException("No key rotation for $keyAlias is in progress.")
 
         var lastUpdatedTimestamp = Instant.MIN
         var rotationStatus = KeyRotationStatus.DONE
         val result = mutableListOf<Pair<String, TenantIdWrappingKeysStatus>>()
-        entries.forEach {
+        records.forEach {
             val state = it.value
             val keyRotationStatus = checkNotNull(deserializer.deserialize(state.value))
             result.add(
@@ -199,7 +199,17 @@ class KeyRotationRestResourceImpl @Activate constructor(
             if (state.metadata[KeyRotationMetadataValues.STATUS] != KeyRotationStatus.DONE) rotationStatus =
                 KeyRotationStatus.IN_PROGRESS
         }
-        return KeyRotationStatusResponse(keyAlias, rotationStatus, lastUpdatedTimestamp, result)
+
+        // newParentKeyAlias and createdTimestamp are in all records, we just need to grab it from one
+        val deserializedValueOfOneRecord = checkNotNull(deserializer.deserialize(records.values.first().value))
+        return KeyRotationStatusResponse(
+            keyAlias,
+            deserializedValueOfOneRecord.newParentKeyAlias,
+            rotationStatus,
+            deserializedValueOfOneRecord.createdTimestamp,
+            lastUpdatedTimestamp,
+            result
+        )
     }
 
     override fun startKeyRotation(oldKeyAlias: String, newKeyAlias: String): ResponseEntity<KeyRotationResponse> {

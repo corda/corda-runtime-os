@@ -10,14 +10,14 @@ plugins {
 group 'net.corda.cli.deployment'
 
 dependencies {
-    compileOnly "org.pf4j:pf4j:$pf4jVersion"
+    compileOnly libs.pf4j
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
 
-    kapt "org.pf4j:pf4j:$pf4jVersion"
+    kapt libs.pf4j
     kapt "info.picocli:picocli:$picocliVersion"
 
     testImplementation libs.bundles.test
-    testImplementation "org.pf4j:pf4j:$pf4jVersion"
+    testImplementation libs.pf4j
     testCompileOnly "net.corda.cli.host:api:$pluginHostVersion"
     testImplementation "com.github.stefanbirkner:system-lambda:$systemLambdaVersion"
     testImplementation "info.picocli:picocli:$picocliVersion"

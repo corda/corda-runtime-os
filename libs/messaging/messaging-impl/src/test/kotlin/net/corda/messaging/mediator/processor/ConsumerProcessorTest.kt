@@ -177,12 +177,12 @@ class ConsumerProcessorTest {
             future.completeExceptionally(TimeoutException())
             future
         }
-        whenever(stateManagerHelper.failStateProcessing(any(), anyOrNull())).thenReturn(mock())
+        whenever(stateManagerHelper.failStateProcessing(any(), anyOrNull(), any())).thenReturn(mock())
         whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(getGroups(2, 4), listOf())
 
         consumerProcessor.processTopic(getConsumerFactory(), getConsumerConfig())
 
-        verify(stateManagerHelper, times(2)).failStateProcessing(any(), anyOrNull())
+        verify(stateManagerHelper, times(2)).failStateProcessing(any(), anyOrNull(), any())
     }
 
     @Test

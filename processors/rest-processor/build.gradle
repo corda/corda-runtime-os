@@ -72,7 +72,7 @@ dependencies {
     runtimeOnly project(':libs:virtual-node:cpi-upload-manager-impl')
     runtimeOnly project(':components:virtual-node:cpi-upload-rest-service')
 
-    integrationTestImplementation "io.swagger.core.v3:swagger-core:$swaggerVersion"
+    integrationTestImplementation libs.swagger.core
 
     integrationTestImplementation project(':libs:rest:rest')
     integrationTestImplementation project(':libs:rest:rest-server')
@@ -88,5 +88,5 @@ dependencies {
 
     integrationTestRuntimeOnly project(':libs:messaging:kafka-message-bus-impl')
     integrationTestRuntimeOnly 'org.osgi:osgi.core'
-    integrationTestRuntimeOnly "org.webjars:swagger-ui:$swaggeruiVersion"
+    integrationTestRuntimeOnly libs.swagger.ui
 }

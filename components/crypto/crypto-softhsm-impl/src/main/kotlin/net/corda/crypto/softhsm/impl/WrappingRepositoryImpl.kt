@@ -1,6 +1,8 @@
 package net.corda.crypto.softhsm.impl
 
 import net.corda.crypto.persistence.WrappingKeyInfo
+import net.corda.crypto.persistence.db.model.SigningKeyEntity
+import net.corda.crypto.persistence.db.model.SigningKeyMaterialEntity
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
 import net.corda.crypto.softhsm.WrappingRepository
 import net.corda.orm.utils.transaction
@@ -78,6 +80,31 @@ class WrappingRepositoryImpl(
             WrappingKeyEntity::class.java
         ).setParameter("id", id).resultStream.map { dao -> dao.toDto() }.findFirst().orElse(null)
     }
+
+    override fun getAllKeyIds(): Set<UUID> =
+        entityManagerFactory.createEntityManager().use { it ->
+            it.createQuery(
+                "SELECT s, w FROM ${SigningKeyEntity::class.java.simpleName} s, ${SigningKeyMaterialEntity::class.java.simpleName} m," +
+                    " ${WrappingKeyEntity::class.java.simpleName} w " +
+                    "WHERE s.tenantId = :tenantId AND m.signingKeyId = s.id AND m.wrappingKeyId = w.id "
+            ).setParameter("tenantId", tenantId).resultList
+                .map {
+                    val signingKeyAndWrappingKey =
+                        checkNotNull(it as? Array<*>) { "JPA returned invalid results object" }
+                    val signingKeyEntity = checkNotNull(signingKeyAndWrappingKey[0] as? SigningKeyEntity)
+                    { "JPA returned wrong entity type for SigningKeyEntity" }
+                    val wrappingKeyEntity = checkNotNull(signingKeyAndWrappingKey[1] as? WrappingKeyEntity)
+                    { "JPA returned wrong entity type for WrappingKeyEntity" }
+                    Pair(signingKeyEntity, wrappingKeyEntity)
+                }
+                .groupBy { it.first.id } // group by signing key id
+                .map {
+                    it.value.sortedBy { it.second.generation }.lastOrNull()
+                } // highest generation wrapping key per signing key only
+                .filterNotNull()
+                .map { it.second.id } // extract UUID of wrapping keys
+                .toSet()
+        }
 }
 
 // NOTE: this should be on the entity object directly, but this means this repo (and the DTOs) need

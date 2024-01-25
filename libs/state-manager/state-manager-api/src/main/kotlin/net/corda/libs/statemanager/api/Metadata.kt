@@ -50,7 +50,7 @@ class Metadata(
         return map.hashCode()
     }
 
-    fun containsKeyWithValue(key: String, value: Any) = map.containsKey(key) && map[key]!! == value
+    fun containsKeyWithValue(key: String, value: Any) = map.containsKey(key) && map[key] == value
 }
 
 fun metadata(): Metadata = Metadata()
