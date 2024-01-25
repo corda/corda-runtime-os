@@ -37,6 +37,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.ForbiddenException
+import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.rest.response.ResponseEntity
@@ -217,6 +218,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
             checkNotNull(publishToKafka)
         }
 
+        validateInputParams(oldKeyAlias, newKeyAlias)
         if (!hasPreviousRotationFinished(oldKeyAlias)) throw ForbiddenException("Previous key rotation for $oldKeyAlias is in progress.")
 
         return doKeyRotation(
@@ -236,6 +238,18 @@ class KeyRotationRestResourceImpl @Activate constructor(
             if (it.value.metadata[KeyRotationMetadataValues.STATUS] != KeyRotationStatus.DONE) return false
         }
         return true
+    }
+
+    private fun validateInputParams(oldKeyAlias: String, newKeyAlias: String){
+        if (oldKeyAlias == newKeyAlias) throw InvalidInputDataException(
+            "Cannot start key rotation. The old key alias must be different to the new key alias."
+        )
+        if (oldKeyAlias.isNullOrEmpty()) throw InvalidInputDataException(
+            "Cannot start key rotation. The old key alias is not specified."
+        )
+        if (newKeyAlias.isNullOrEmpty()) throw InvalidInputDataException(
+            "Cannot start key rotation. The new key alias is not specified."
+        )
     }
 }
 
