@@ -633,7 +633,13 @@ internal class StatefulSessionManagerImpl(
                     OutboundSessionStatus.SessionReady -> resultState.messages.first().sessionCounterparties()?.let {
                         savedState.retrieveEstablishedSession(it)
                     } ?: CannotEstablishSession
-                    null -> CannotEstablishSession
+                    null -> {
+                        logger.info("QQQ CannotEstablishSession?! from $key")
+                        resultStates.filter { it.key == key }.forEach {
+                            logger.info("QQQ \t $key; ${it.sessionState}; ${it.action}")
+                        }
+                        CannotEstablishSession
+                    }
                 }
                 resultState.messages.map { it.trace to newState }
             } else {
@@ -1068,9 +1074,21 @@ internal class StatefulSessionManagerImpl(
             emptyMap()
         }
         val failedCreates = if (creates.isNotEmpty()) {
+            creates.map { it.key }.forEach { id ->
+                logger.info("QQQ Creating: $id")
+            }
+
             stateManager.create(creates).associateWith {
-                logger.info("Failed to create the state of session with ID $it")
+                logger.info("Failed to create the state of session with ID $it", Exception("QQQ"))
+                logger.info("QQQ - size: ${creates.size}")
+                creates.filter {  s ->
+                    s.key == it
+                }.forEach {
+                    logger.info("QQQ - problematic state metadata is ${it.metadata.toMap()}")
+                }
                 null
+            }.also {
+                logger.info("QQQ Created")
             }
         } else {
             emptyMap()

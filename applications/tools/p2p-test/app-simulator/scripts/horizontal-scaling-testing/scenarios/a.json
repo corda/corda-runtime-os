@@ -1,6 +1,6 @@
 {
   "name": "Scenario A",
-  "workerReplicas": 1,
+  "workerReplicas": 4,
   "kafkaBrokers": 3,
   "partitionCount": 10,
   "replicationFactor": 3

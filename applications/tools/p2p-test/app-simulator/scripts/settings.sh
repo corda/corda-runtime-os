@@ -8,6 +8,7 @@ NAMESPACE_PREFIX="${USER//./}"
 CORDA_CHART_VERSION="^5.2.0-beta"
 REPO_TOP_LEVEL_DIR=$(cd "$SCRIPT_DIR"; git rev-parse --show-toplevel)
 CORDA_VERSION="$(cat $REPO_TOP_LEVEL_DIR/gradle.properties | grep cordaProductVersion | awk -F= '{print $2}' | xargs).0"
+DOCKER_IMAGE_VERSION=5.2.0.0-alpha-1706266878126
 if [ -z $DOCKER_IMAGE_VERSION ]; then
   DOCKER_IMAGE_VERSION=$(curl -u $CORDA_ARTIFACTORY_USERNAME:$CORDA_ARTIFACTORY_PASSWORD  https://corda-os-docker-unstable.software.r3.com:/v2/corda-os-p2p-link-manager-worker/tags/list | jq -r -M '.["tags"] | map(select(contains("'$CORDA_VERSION'-beta"))) | sort | reverse | .[0]')
 fi
@@ -16,7 +17,7 @@ fi
 # Uncomment to enable mutual TLS
 # MTLS="Y"
 
-RUN_MODE="ONE_WAY"
+RUN_MODE="TWO_WAY"
 
 # K8s namespaces
 if [ "$CLUSTER_MODE" == "SINGLE_CLUSTER" ]
@@ -95,8 +96,8 @@ MGM_X500_NAME="C=GB,L=London,O=MGM"
 A_X500_NAME="C=GB,L=London,O=Alice"
 B_X500_NAME="C=GB,L=London,O=Bob"
 
-NUM_OF_MEMBERS_PER_CLUSTER_A=1
-NUM_OF_MEMBERS_PER_CLUSTER_B=1
+NUM_OF_MEMBERS_PER_CLUSTER_A=4
+NUM_OF_MEMBERS_PER_CLUSTER_B=4
 
 WORKING_DIR="$SCRIPT_DIR/build/working"
 MGM_HOLDING_ID_FILE="$WORKING_DIR"/mgmHoldingIdShortHash
