@@ -1072,6 +1072,8 @@ internal class StatefulSessionManagerImpl(
         val failedUpdates = if (updates.isNotEmpty()) {
             stateManager.update(updates).onEach {
                 logger.info("Failed to update the state of session with ID ${it.key}")
+                cachedInboundSessions.invalidate(it.key)
+                cachedOutboundSessions.invalidate(it.key)
             }
         } else {
             emptyMap()
@@ -1083,6 +1085,8 @@ internal class StatefulSessionManagerImpl(
 
             stateManager.create(creates).associateWith {
                 logger.info("Failed to create the state of session with ID $it", Exception("QQQ"))
+                cachedInboundSessions.invalidate(it)
+                cachedOutboundSessions.invalidate(it)
                 logger.info("QQQ - size: ${creates.size}")
                 creates.filter {  s ->
                     s.key == it
