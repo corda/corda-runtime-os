@@ -27,7 +27,7 @@ dependencies {
 
     implementation libs.unirest.java
     implementation libs.unirest.objectmapper.jackson
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation libs.jackson.module.kotlin
 
     testImplementation project(":testing:test-utilities")
 
