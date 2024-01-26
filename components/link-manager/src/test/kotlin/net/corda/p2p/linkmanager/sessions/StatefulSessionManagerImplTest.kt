@@ -90,6 +90,7 @@ class StatefulSessionManagerImplTest {
                             "expiry" to 1000L,
                         ),
                     )
+                    on { key } doReturn "stateKey"
                 }
                 val serialisableSessionData = mock<AuthenticatedSession>()
                 val sessionState = mock<SessionState> {
@@ -122,6 +123,8 @@ class StatefulSessionManagerImplTest {
                         "expiry" to 1000L,
                     ),
                 )
+
+                on { key } doReturn "stateKey"
             }
             val sessionIdentity = "id"
             whenever(stateManager.get(listOf(sessionIdentity))).doReturn(
@@ -206,6 +209,7 @@ class StatefulSessionManagerImplTest {
                         "expiry" to 1000L,
                     ),
                 )
+                on { key } doReturn "stateKey"
             }
             val sessionIdentity = "id"
             whenever(stateManager.get(listOf(sessionIdentity))).doReturn(
