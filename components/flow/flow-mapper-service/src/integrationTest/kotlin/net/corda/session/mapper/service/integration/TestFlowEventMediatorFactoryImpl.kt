@@ -79,7 +79,7 @@ class TestFlowEventMediatorFactoryImpl @Activate constructor(
         .threads(1)
         .threadName("flow-event-mediator")
         .stateManager(stateManagerFactory.create(stateManagerConfig))
-        .saveOutputsForReplay(true)
+        .idempotenceProcessor(true)
         .minGroupSize(20)
         .build()
 

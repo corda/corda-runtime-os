@@ -32,17 +32,17 @@ class MediatorReplayService @Activate constructor(
     /**
      * Generate the new [MediatorReplayOutputEvents] given the mediators [existingOutputs] when provided with the [newOutputs]
      * @param existingOutputs The existing output events saved to the mediator state
-     * @param newOutputs The new outputs to add to the existingOutputs to be stored in the mediator.
-     * @return Return a new [MediatorReplayOutputEvents] object containing all the existing outputs with the new outputs added to it.
+     * @param newOutputs The new outputs to be stored in the mediator. Keyed by a hash of the input event, obtained via [getInputHash].
+     * @return Return a list of  new [MediatorReplayOutputEvents] object containing all the existing outputs with the new outputs added.
      */
-    fun <K : Any, E : Any> getOutputEvents(
+    fun getOutputEvents(
         existingOutputs: List<MediatorReplayOutputEvents>,
-        newOutputs: Map<Record<K, E>, MutableList<MediatorMessage<Any>>>
+        newOutputs: Map<ByteBuffer, MutableList<MediatorMessage<Any>>>
     ): List<MediatorReplayOutputEvents> {
         val mediatorOutputs = existingOutputs.toMutableList()
 
         newOutputs.forEach { entry ->
-            val hash = getInputHash(entry.key)
+            val hash = entry.key
             val mediatorOutputList = entry.value.map {
                 val topic = it.properties.getProperty(MSG_PROP_TOPIC)
                 val key = serializeOutput(it.properties.getProperty(MSG_PROP_KEY))
@@ -61,9 +61,9 @@ class MediatorReplayService @Activate constructor(
         return mediatorOutputs
     }
 
-    private fun <T> serializeOutput(any: T?) : MediatorReplayOutputEventType? {
+    private fun <T> serializeOutput(any: T?): MediatorReplayOutputEventType? {
         if (any == null) return null
-        val serializationType = when(any) {
+        val serializationType = when (any) {
             is String -> SerializationType.STRING
             is ByteArray -> SerializationType.BYTEARRAY
             else -> SerializationType.AVRO
@@ -71,28 +71,40 @@ class MediatorReplayService @Activate constructor(
 
         return MediatorReplayOutputEventType(ByteBuffer.wrap(serialize(any)), serializationType)
     }
+
     /**
      * Compare the [inputRecords] to the existing [mediatorState] to see which records are a replayed records or not.
      * If it is replay then return all the outputs from the [mediatorState] as [MediatorMessage]s to the resulting map.
      * If a given input is not a replayed event the mediator has been before, then no entry in the map is added.
      * @param inputRecords Record to check whether it is a replay or not
      * @param mediatorState The mediator state to check the [inputRecord] against
-     * @return Map of replayed input records to their the outputs as [MediatorMessage]s
+     * @return List of replayed input records and their the outputs as [MediatorMessage]s
      */
     fun <K : Any, V : Any> getReplayEvents(
         inputRecords: List<Record<K, V>>,
         mediatorState: MediatorState
-    ): Map<Record<K, V>, List<MediatorMessage<Any>>> {
-        val inputHashes = inputRecords.associateBy { getInputHash(it) }
-        val replayEvents = mutableMapOf<Record<K, V>, List<MediatorMessage<Any>>>()
-        mediatorState.outputEvents.asReversed().forEach { replay ->
-            inputHashes[replay.inputEventHash]?.let { inputRecord ->
-                replayEvents[inputRecord] = replay.outputEvents.map { it.toMediatorMessage() }
+    ): List<MediatorMessagesByInput<K, V>> {
+        val inputHashes = inputRecords.map { it.toInputHashAndRecord() }
+        val replayEvents = mutableListOf<MediatorMessagesByInput<K, V>>()
+
+        inputHashes.forEach { inputHash ->
+            mediatorState.outputEvents.asReversed().map { replay ->
+                if (replay.inputEventHash == inputHash.inputHash) {
+                    replayEvents.add(MediatorMessagesByInput(inputHash.record,replay.outputEvents.map { it.toMediatorMessage() }))
+                }
             }
         }
 
         return replayEvents
     }
+
+    data class InputHashAndRecord<K: Any, V: Any>(
+        val inputHash: ByteBuffer,
+        val record: Record<K, V>
+    )
+
+    private fun <K: Any, V: Any> Record<K, V>.toInputHashAndRecord() =
+        InputHashAndRecord(getInputHash(this), this)
 
     fun MutableMap<String, Any>.getProperty(key: String): String {
         return this[key]?.toString() ?: throw IllegalStateException("Mediator message property $key was null")
@@ -104,12 +116,12 @@ class MediatorReplayService @Activate constructor(
      * @param inputEvent The consumer input event polled from the bus
      * @return A hash of the input event as bytes
      */
-    private fun <K : Any, E : Any> getInputHash(inputEvent: Record<K, E>): ByteBuffer {
+    fun <K : Any, E : Any> getInputHash(inputEvent: Record<K, E>): ByteBuffer {
         val recordValueBytes = serialize(inputEvent.value)
         check(recordValueBytes != null) {
             "Input record key and value bytes should not be null"
         }
-        return ByteBuffer.wrap((recordValueBytes).sha256Bytes())
+        return ByteBuffer.wrap(recordValueBytes.sha256Bytes())
     }
 
     private fun serialize(value: Any?) = value?.let { serializer.serialize(it) }
@@ -133,14 +145,13 @@ class MediatorReplayService @Activate constructor(
      * The keys and values may have been serialized from strings, bytes arrays or AVRO messages.
      * The result is always a byte array.
      */
-    private fun deserializeReplayValue(replayValue: MediatorReplayOutputEventType?) : Any? {
+    private fun deserializeReplayValue(replayValue: MediatorReplayOutputEventType?): Any? {
         if (replayValue == null) return null
         val replayValueBytes = replayValue.value.array()
-        return when(replayValue.type) {
+        return when (replayValue.type) {
             SerializationType.BYTEARRAY -> bytesDeserializer.deserialize(replayValueBytes)
             SerializationType.STRING -> stringDeserializer.deserialize(replayValueBytes)
             else -> avroDeserializer.deserialize(replayValueBytes)
         }
     }
 }
-

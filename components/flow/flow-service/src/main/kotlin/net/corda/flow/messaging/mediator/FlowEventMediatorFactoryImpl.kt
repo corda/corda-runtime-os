@@ -116,7 +116,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         .threads(messagingConfig.getInt(MEDIATOR_PROCESSING_THREAD_POOL_SIZE))
         .threadName("flow-event-mediator")
         .stateManager(stateManager)
-        .saveOutputsForReplay(true)
+        .idempotenceProcessor(true)
         .minGroupSize(messagingConfig.getInt(MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT))
         .build()
 

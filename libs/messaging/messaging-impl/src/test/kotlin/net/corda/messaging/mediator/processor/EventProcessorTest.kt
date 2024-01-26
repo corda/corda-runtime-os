@@ -27,6 +27,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import kotlin.test.assertContains
 import kotlin.test.assertNotNull
 
@@ -52,7 +53,10 @@ class EventProcessorTest {
         stateAndEventProcessor = mock()
         stateManagerHelper = mock()
         mediatorReplayService = mock<MediatorReplayService>().apply {
-            whenever(getReplayEvents<String, String>(anyOrNull(), anyOrNull())).thenReturn(emptyMap())
+            whenever(getReplayEvents<String, String>(anyOrNull(), anyOrNull())).thenReturn(emptyList())
+            whenever(getInputHash<String, String>(anyOrNull())).thenAnswer {
+                ByteBuffer.wrap(it.arguments[0].toString().toByteArray())
+            }
         }
         messageRouter = mock()
         whenever(messageRouter.getDestination(any())).thenAnswer {
@@ -99,7 +103,7 @@ class EventProcessorTest {
         verify(stateAndEventProcessor, times(4)).onNext(anyOrNull(), any())
         verify(messageRouter, times(9)).getDestination(any())
         verify(client, times(3)).send(any())
-        verify(mediatorReplayService, times(1)).getOutputEvents<String, String>(any(), any())
+        verify(mediatorReplayService, times(1)).getOutputEvents(any(), any())
         verify(mediatorReplayService, times(1)).getReplayEvents<String, String>(any(), any())
         verify(stateManagerHelper, times(1)).createOrUpdateState(any(), anyOrNull(), any(), anyOrNull())
     }
@@ -122,7 +126,7 @@ class EventProcessorTest {
         verify(stateAndEventProcessor, times(1)).onNext(anyOrNull(), any())
         verify(messageRouter, times(1)).getDestination(any())
         verify(client, times(0)).send(any())
-        verify(mediatorReplayService, times(0)).getOutputEvents<String, String>(any(), any())
+        verify(mediatorReplayService, times(0)).getOutputEvents(any(), any())
         verify(mediatorReplayService, times(0)).getReplayEvents<String, String>(any(), any())
         verify(stateManagerHelper, times(1)).createOrUpdateState(any(), anyOrNull(), any(), anyOrNull())
     }
@@ -148,8 +152,8 @@ class EventProcessorTest {
         val key1Records = getStringRecords(recordCount, "key1")
         val key2Records = getStringRecords(recordCount, "key2")
         whenever(mediatorReplayService.getReplayEvents<String, String>(anyOrNull(), anyOrNull())).thenReturn(
-            (key1Records + key2Records).associateWith {
-                listOf(expectedOutputPerInput)
+            (key1Records + key2Records).map {
+                MediatorMessagesByInput(it, listOf(expectedOutputPerInput))
             }
         )
 
@@ -170,7 +174,7 @@ class EventProcessorTest {
         verify(stateAndEventProcessor, times(0)).onNext(anyOrNull(), any())
         verify(messageRouter, times(0)).getDestination(any())
         verify(client, times(0)).send(any())
-        verify(mediatorReplayService, times(0)).getOutputEvents<String, String>(any(), any())
+        verify(mediatorReplayService, times(0)).getOutputEvents(any(), any())
         verify(stateManagerHelper, times(0)).createOrUpdateState(any(), anyOrNull(), any(), anyOrNull())
     }
 
@@ -184,8 +188,8 @@ class EventProcessorTest {
         val key2Records = getStringRecords(recordCount, "key2")
         (key1Records + key2Records).forEach {
             whenever(mediatorReplayService.getReplayEvents<String, String>(anyOrNull(), eq(mediatorState2))).thenReturn(
-                key2Records.associateWith {
-                    listOf(expectedOutputPerInput)
+                key2Records.map {
+                    MediatorMessagesByInput(it, listOf(expectedOutputPerInput))
                 }
             )
         }
@@ -216,7 +220,7 @@ class EventProcessorTest {
         verify(messageRouter, times(6)).getDestination(any())
         verify(client, times(2)).send(any())
         verify(mediatorReplayService, times(2)).getReplayEvents<String, String>(any(), any())
-        verify(mediatorReplayService, times(1)).getOutputEvents<String, String>(any(), any())
+        verify(mediatorReplayService, times(1)).getOutputEvents(any(), any())
         verify(stateManagerHelper, times(1)).createOrUpdateState(any(), anyOrNull(), any(), anyOrNull())
     }
 
@@ -228,7 +232,7 @@ class EventProcessorTest {
         val key1Records = getStringRecords(recordCount, "key1")
         whenever(stateManagerHelper.deserializeMediatorState(state1)).thenReturn(mediatorState1)
         whenever(mediatorReplayService.getReplayEvents<String, String>(any(), eq(mediatorState1))).thenReturn(
-            mapOf(key1Records.first() to listOf(expectedOutputPerInput))
+            listOf(MediatorMessagesByInput(key1Records.first(), listOf(expectedOutputPerInput)))
         )
 
         val input = mapOf(
@@ -252,7 +256,7 @@ class EventProcessorTest {
         verify(messageRouter, times(3)).getDestination(any())
         verify(client, times(1)).send(any())
         verify(mediatorReplayService, times(1)).getReplayEvents<String, String>(any(), any())
-        verify(mediatorReplayService, times(1)).getOutputEvents<String, String>(any(), any())
+        verify(mediatorReplayService, times(1)).getOutputEvents(any(), any())
         verify(stateManagerHelper, times(1)).createOrUpdateState(any(), anyOrNull(), any(), anyOrNull())
     }
 

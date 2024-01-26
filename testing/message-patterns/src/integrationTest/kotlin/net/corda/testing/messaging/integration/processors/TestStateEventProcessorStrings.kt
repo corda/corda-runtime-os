@@ -33,7 +33,6 @@ class TestStateEventProcessorStrings(
     override fun onNext(
         state: State<String>?, event: Record<String, String>
     ): Response<String> {
-        onNextLatch.countDown()
         counter++
 
         if (delayProcessorOnFirst != null) {
@@ -60,6 +59,8 @@ class TestStateEventProcessorStrings(
         } else {
             emptyList()
         }
+
+        onNextLatch.countDown()
 
         return Response(
             State(newState, metadata = null),

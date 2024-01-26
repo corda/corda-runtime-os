@@ -12,6 +12,9 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.tracing.addTraceContextToRecord
+import net.corda.utilities.debug
+import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
 
 /**
  * Class to process records received from the consumer.
@@ -26,78 +29,97 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     private val messageRouter: MessageRouter,
     private val mediatorReplayService: MediatorReplayService,
 ) {
+
+    private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.name}")
+
+    private val idempotentProcessor = config.idempotentProcessor
+
     /**
      * Process a group of events.
-     * If the mediator has previously processed a record, then the asynchronous outputs from the previous invocation
-     * of the processor will be retrieved from the [MediatorState].In this case, the message processor is not executed again,
+     *
+     * When the mediator is configured with an idempotence processor, and a duplicate or replayed record is detected, based on a hash of
+     * the record payload, then the asynchronous outputs from the previous invocation  of the processor will be retrieved
+     * from the [MediatorState].In this case, the message processor is not executed again,
      * and the previously retrieved outputs are returned for resending.
      *
      * Otherwise, the message processor is executed and any synchronous calls are sent and responses are processed immediately.
      *
      * Finally, any asynchronous outputs are returned, as well as the [State] object to update.
      *
-     * @param group Group of consumer records of various keys
-     * @param retrievedStates states for each key
+     * @param inputs Group of records of various keys along with their respective states
      * @return The asynchronous outputs and state updates grouped by record key
      */
     fun processEvents(
         inputs: Map<K, EventProcessingInput<K, E>>
     ): Map<K, EventProcessingOutput> {
         return inputs.mapValues { (key, input) ->
-            val groupKey = key.toString()
+            val inputState = input.state
             val allConsumerInputs = input.records
-            val mediatorState = stateManagerHelper.deserializeMediatorState(input.state) ?: createNewMediatorState()
-            var processorState = stateManagerHelper.deserializeValue(mediatorState)?.let { stateValue ->
+            val mediatorState = stateManagerHelper.deserializeMediatorState(inputState) ?: createNewMediatorState()
+            val processorState = stateManagerHelper.deserializeValue(mediatorState)?.let { stateValue ->
                 StateAndEventProcessor.State(
                     stateValue,
-                    input.state?.metadata
+                    inputState?.metadata
                 )
             }
             val (nonReplayConsumerInputs, replayOutputs) = getReplayOutputsAndNonReplayInputs(allConsumerInputs, mediatorState)
             if (nonReplayConsumerInputs.isEmpty()) {
+                log.debug { "All records read in group with key ${input.key} are replayed records. Returning replays with no state update" }
                 EventProcessingOutput(replayOutputs, StateChangeAndOperation.Noop)
             } else {
-                val asyncOutputs = mutableMapOf<Record<K, E>, MutableList<MediatorMessage<Any>>>()
-                val processed = try {
-                    nonReplayConsumerInputs.forEach { consumerInputEvent ->
-                        //replay or duplicate within the batch
-                        val duplicatesOutputs = asyncOutputs[consumerInputEvent]
-                        if (duplicatesOutputs != null) {
-                            asyncOutputs.addOutputs(consumerInputEvent, duplicatesOutputs)
-                        } else {
-                            val queue = ArrayDeque(listOf(consumerInputEvent))
-                            while (queue.isNotEmpty()) {
-                                val event = queue.removeFirst()
-                                val response = config.messageProcessor.onNext(processorState, event)
-                                processorState = response.updatedState
-                                val (syncEvents, asyncEvents) = response.responseEvents.map { convertToMessage(it) }.partition {
-                                    messageRouter.getDestination(it).type == RoutingDestination.Type.SYNCHRONOUS
-                                }
-                                asyncOutputs.addOutputs(consumerInputEvent, asyncEvents)
-                                queue.addAll(processSyncEvents(key, syncEvents))
-                            }
-                        }
-                    }
-                    if (config.saveOutputsForReplay) {
-                        mediatorState.outputEvents = mediatorReplayService.getOutputEvents(mediatorState.outputEvents, asyncOutputs)
-                    }
-                    stateManagerHelper.createOrUpdateState(groupKey, input.state, mediatorState, processorState)
-                } catch (e: CordaMessageAPIIntermittentException) {
-                    // If an intermittent error occurs here, the RPC client has failed to deliver a message to another part
-                    // of the system despite the retry loop implemented there. This should trigger individual processing to
-                    // fail.
-                    asyncOutputs.clear()
-                    stateManagerHelper.failStateProcessing(
-                        groupKey,
-                        input.state,
-                        "unable to contact Corda services while processing events"
-                    )
-                }
-
-                val stateChangeAndOperation = stateChangeAndOperation(input.state, processed)
-                EventProcessingOutput(replayOutputs + asyncOutputs.values.flatten(), stateChangeAndOperation)
+                processNewRecords(key, nonReplayConsumerInputs, processorState, mediatorState, inputState, replayOutputs)
             }
         }
+    }
+
+    private fun processNewRecords(
+        key: K,
+        nonReplayConsumerInputs: List<Record<K, E>>,
+        inputProcessorState: StateAndEventProcessor.State<S>?,
+        mediatorState: MediatorState,
+        inputState: State?,
+        replayOutputs: List<MediatorMessage<Any>>
+    ): EventProcessingOutput {
+        var processorState = inputProcessorState
+        val asyncOutputs = mutableMapOf<ByteBuffer, MutableList<MediatorMessage<Any>>>()
+        val processed = try {
+            nonReplayConsumerInputs.forEach { consumerInputEvent ->
+                val duplicate = asyncOutputs[mediatorReplayService.getInputHash(consumerInputEvent)]
+                if (idempotentProcessor && duplicate != null) {
+                    log.debug { "Duplicate input record within a single poll found with $key. Replaying outputs from previous invocation" }
+                    asyncOutputs.addOutputs(consumerInputEvent, duplicate)
+                } else {
+                    val queue = ArrayDeque(listOf(consumerInputEvent))
+                    while (queue.isNotEmpty()) {
+                        val event = queue.removeFirst()
+                        val response = config.messageProcessor.onNext(processorState, event)
+                        processorState = response.updatedState
+                        val (syncEvents, asyncEvents) = response.responseEvents.map { convertToMessage(it) }.partition {
+                            messageRouter.getDestination(it).type == RoutingDestination.Type.SYNCHRONOUS
+                        }
+                        asyncOutputs.addOutputs(consumerInputEvent, asyncEvents)
+                        queue.addAll(processSyncEvents(key, syncEvents))
+                    }
+                }
+            }
+            if (idempotentProcessor) {
+                mediatorState.outputEvents = mediatorReplayService.getOutputEvents(mediatorState.outputEvents, asyncOutputs)
+            }
+            stateManagerHelper.createOrUpdateState(key.toString(), inputState, mediatorState, processorState)
+        } catch (e: CordaMessageAPIIntermittentException) {
+            // If an intermittent error occurs here, the RPC client has failed to deliver a message to another part
+            // of the system despite the retry loop implemented there. This should trigger individual processing to
+            // fail.
+            asyncOutputs.clear()
+            stateManagerHelper.failStateProcessing(
+                key.toString(),
+                inputState,
+                "unable to contact Corda services while processing events"
+            )
+        }
+
+        val stateChangeAndOperation = stateChangeAndOperation(inputState, processed)
+        return EventProcessingOutput(replayOutputs + asyncOutputs.values.flatten(), stateChangeAndOperation)
     }
 
     private fun stateChangeAndOperation(
@@ -114,21 +136,23 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         allConsumerInputs: List<Record<K, E>>,
         mediatorState: MediatorState
     ): Pair<List<Record<K, E>>, List<MediatorMessage<Any>>> {
-        if (!config.saveOutputsForReplay) return Pair(allConsumerInputs, emptyList())
+        if (!idempotentProcessor) return Pair(allConsumerInputs, emptyList())
 
         val replaysByInput = mediatorReplayService.getReplayEvents(allConsumerInputs, mediatorState)
         if (replaysByInput.isEmpty()) return Pair(allConsumerInputs, emptyList())
 
-        val nonReplays = allConsumerInputs.minus(replaysByInput.keys)
-        val outputs = replaysByInput.values.flatten()
-        return Pair(nonReplays, outputs)
+        val nonReplayInputs = allConsumerInputs.toMutableList().also { inputs ->
+            replaysByInput.map { it.inputRecord }.forEach { i -> inputs.remove(i) }
+        }
+
+        val outputs = replaysByInput.map { it.outputs }.flatten()
+        return Pair(nonReplayInputs, outputs)
     }
 
-    private fun MutableMap<Record<K, E>, MutableList<MediatorMessage<Any>>>.addOutputs(
+    private fun MutableMap<ByteBuffer, MutableList<MediatorMessage<Any>>>.addOutputs(
         inputEvent: Record<K, E>,
         asyncEvents: List<MediatorMessage<Any>>
-    ) = computeIfAbsent(inputEvent) { mutableListOf() }.addAll(asyncEvents)
-
+    ) = computeIfAbsent(mediatorReplayService.getInputHash(inputEvent)) { mutableListOf() }.addAll(asyncEvents)
 
     private fun createNewMediatorState(): MediatorState {
         return MediatorState.newBuilder()

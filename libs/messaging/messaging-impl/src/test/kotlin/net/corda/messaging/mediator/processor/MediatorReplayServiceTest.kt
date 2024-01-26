@@ -78,7 +78,7 @@ class MediatorReplayServiceTest {
             mediatorReplayOutputEvents,
             getNewOutputs(numberOfKeys, numberOfValues)
         )
-        assertEquals(4, outputs.size)
+        assertEquals(7, outputs.size)
         assertEquals(13, outputs.sumOf { it.outputEvents.size })
     }
 
@@ -91,7 +91,7 @@ class MediatorReplayServiceTest {
             mediatorReplayOutputEvents,
             getNewOutputs(numberOfKeys, numberOfValues)
         )
-        assertEquals(3, outputs.size)
+        assertEquals(5, outputs.size)
         assertEquals(17, outputs.sumOf { it.outputEvents.size })
     }
 
@@ -115,7 +115,7 @@ class MediatorReplayServiceTest {
         val existingOutputs = mediatorReplayOutputEvents(2, 3)
         val outputs  = mediatorReplayService.getReplayEvents(inputRecords, MediatorState(testState, existingOutputs))
         assertEquals(1, outputs.size)
-        assertEquals(3, outputs[record]?.size)
+        assertEquals(3, outputs.first().outputs.size)
     }
 
     @Test
@@ -158,15 +158,15 @@ class MediatorReplayServiceTest {
         numberOfKeys: Int,
         numberOfRecordsPerKey: Int,
         missingProperty: Boolean = false
-    ): Map<Record<String, String>, MutableList<MediatorMessage<Any>>> {
-        val newOutputs = mutableMapOf<Record<String, String>, MutableList<MediatorMessage<Any>>>()
+    ): Map<ByteBuffer, MutableList<MediatorMessage<Any>>> {
+        val newOutputs = mutableMapOf<ByteBuffer, MutableList<MediatorMessage<Any>>>()
         for (consumerInputKey in 1 .. numberOfKeys) {
             val recordKey = consumerInputKey.toString()
             val outputsPerKey = mutableListOf<MediatorMessage<Any>>()
             for (outputPayload in 1 .. numberOfRecordsPerKey) {
                 outputsPerKey.add(MediatorMessage("$outputPayload", getProperties(recordKey, missingProperty)))
             }
-            newOutputs[Record(topic, recordKey, recordKey)] = outputsPerKey
+            newOutputs[ByteBuffer.wrap(recordKey.toByteArray())] = outputsPerKey
         }
 
         return newOutputs

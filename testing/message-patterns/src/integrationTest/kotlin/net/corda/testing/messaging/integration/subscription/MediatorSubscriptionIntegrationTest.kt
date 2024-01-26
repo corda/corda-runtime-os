@@ -34,7 +34,6 @@ import net.corda.testing.messaging.integration.TopicTemplates.Companion.MEDIATOR
 import net.corda.testing.messaging.integration.TopicTemplates.Companion.MEDIATOR_TOPIC2_OUTPUT_TEMPLATE
 import net.corda.testing.messaging.integration.TopicTemplates.Companion.MEDIATOR_TOPIC2_TEMPLATE
 import net.corda.testing.messaging.integration.TopicTemplates.Companion.MEDIATOR_TOPIC3
-import net.corda.testing.messaging.integration.TopicTemplates.Companion.MEDIATOR_TOPIC3_OUTPUT
 import net.corda.testing.messaging.integration.TopicTemplates.Companion.MEDIATOR_TOPIC3_OUTPUT_TEMPLATE
 import net.corda.testing.messaging.integration.TopicTemplates.Companion.MEDIATOR_TOPIC3_TEMPLATE
 import net.corda.testing.messaging.integration.getKafkaProperties
@@ -43,6 +42,7 @@ import net.corda.testing.messaging.integration.getTopicConfig
 import net.corda.testing.messaging.integration.processors.TestDurableProcessorStrings
 import net.corda.testing.messaging.integration.processors.TestStateEventProcessorStrings
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -109,7 +109,7 @@ class MediatorSubscriptionIntegrationTest {
         processor: StateAndEventProcessor<String, String, String>,
         outputTopic: String,
         inputTopic: String,
-        replaysEnabled: Boolean = true,
+        idempotenceEnabled: Boolean = true,
     ): EventMediatorConfig<String, String, String> {
         return EventMediatorConfigBuilder<String, String, String>()
             .name("FlowEventMediator")
@@ -129,7 +129,7 @@ class MediatorSubscriptionIntegrationTest {
             .threads(THREAD_COUNT)
             .threadName("messaging-test-mediator")
             .stateManager(buildStateManager())
-            .saveOutputsForReplay(replaysEnabled)
+            .idempotenceProcessor(idempotenceEnabled)
             .minGroupSize(GROUP_SIZE)
             .build()
     }
@@ -149,7 +149,7 @@ class MediatorSubscriptionIntegrationTest {
     }
 
     @Test
-    @Timeout(value = 600, unit = TimeUnit.SECONDS)
+    @Timeout(value = 60, unit = TimeUnit.SECONDS)
     fun `publish 50 records to an input topic and verify the processor is called and async outputs are sent`() {
         topicUtils.createTopics(getTopicConfig(MEDIATOR_TOPIC1_TEMPLATE))
         topicUtils.createTopics(getTopicConfig(MEDIATOR_TOPIC1_OUTPUT_TEMPLATE))
@@ -177,13 +177,47 @@ class MediatorSubscriptionIntegrationTest {
         )
 
         verifySub.start()
-        verifyLatch.await(30, TimeUnit.SECONDS)
+        assertTrue(verifyLatch.await(30, TimeUnit.SECONDS))
         verifySub.close()
     }
 
     @Test
-    @Timeout(value = 600, unit = TimeUnit.SECONDS)
-    fun `publish 2 records, 1 is a duplicate, verify processor is called twice - replays enabled`() {
+    @Timeout(value = 60, unit = TimeUnit.SECONDS)
+    fun `publish 2 records, 1 is a duplicate, verify processor is called once - idempotence enabled`() {
+        topicUtils.createTopics(getTopicConfig(MEDIATOR_TOPIC2_TEMPLATE))
+        topicUtils.createTopics(getTopicConfig(MEDIATOR_TOPIC2_OUTPUT_TEMPLATE))
+
+        publisherConfig = PublisherConfig(CLIENT_ID + MEDIATOR_TOPIC2, false)
+        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
+        val record = Record(MEDIATOR_TOPIC2, "key1", "value1")
+        publisher.publish(listOf(record, record))
+        publisher.close()
+
+        val latch = CountDownLatch(1)
+        val processor = TestStateEventProcessorStrings(latch, true, -1, MEDIATOR_TOPIC2, throwFatalExceptionOnItem = 2)
+        val builder = buildBuilder(TEST_CONFIG, processor, MEDIATOR_TOPIC2_OUTPUT, MEDIATOR_TOPIC2, true)
+
+        val mediator = multiSourceEventMediatorFactory.create(builder)
+        mediator.start()
+        assertTrue(latch.await(30, TimeUnit.SECONDS))
+        mediator.close()
+
+        val verifyLatch = CountDownLatch(2)
+        val verifySub = subscriptionFactory.createDurableSubscription(
+            SubscriptionConfig("$MEDIATOR_TOPIC2_OUTPUT-verify", MEDIATOR_TOPIC2_OUTPUT),
+            TestDurableProcessorStrings(verifyLatch),
+            TEST_CONFIG,
+            null
+        )
+
+        verifySub.start()
+        assertTrue(verifyLatch.await(30, TimeUnit.SECONDS))
+        verifySub.close()
+    }
+
+    @Test
+    @Timeout(value = 60, unit = TimeUnit.SECONDS)
+    fun `publish 2 records, 1 is a replay, verify processor is called once - idempotence enabled`() {
         topicUtils.createTopics(getTopicConfig(MEDIATOR_TOPIC2_TEMPLATE))
         topicUtils.createTopics(getTopicConfig(MEDIATOR_TOPIC2_OUTPUT_TEMPLATE))
 
@@ -191,15 +225,14 @@ class MediatorSubscriptionIntegrationTest {
         publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
         val record = Record(MEDIATOR_TOPIC2, "key1", "value1")
         publisher.publish(listOf(record))
-        publisher.close()
 
-        val latch = CountDownLatch(2)
-        val processor = TestStateEventProcessorStrings(latch, true, -1, MEDIATOR_TOPIC2)
-        val builder = buildBuilder(TEST_CONFIG, processor, MEDIATOR_TOPIC1_OUTPUT, MEDIATOR_TOPIC2, true)
+        val latch = CountDownLatch(1)
+        val processor = TestStateEventProcessorStrings(latch, true, -1, MEDIATOR_TOPIC2, throwFatalExceptionOnItem = 2)
+        val builder = buildBuilder(TEST_CONFIG, processor, MEDIATOR_TOPIC2_OUTPUT, MEDIATOR_TOPIC2, true)
 
         val mediator = multiSourceEventMediatorFactory.create(builder)
         mediator.start()
-        latch.await()
+        assertTrue(latch.await(30, TimeUnit.SECONDS))
         publisher.publish(listOf(record))
         publisher.close()
 
@@ -212,14 +245,48 @@ class MediatorSubscriptionIntegrationTest {
         )
 
         verifySub.start()
-        verifyLatch.await(30, TimeUnit.SECONDS)
+        assertTrue(verifyLatch.await(30, TimeUnit.SECONDS))
         verifySub.close()
         mediator.close()
     }
 
     @Test
-    @Timeout(value = 600, unit = TimeUnit.SECONDS)
-    fun `publish 2 records, 1 is a duplicate, verify processor is called twice - replays disabled`() {
+    @Timeout(value = 60, unit = TimeUnit.SECONDS)
+    fun `publish 2 records, 1 is a duplicate, verify processor is called once - idempotence diabled`() {
+        topicUtils.createTopics(getTopicConfig(MEDIATOR_TOPIC2_TEMPLATE))
+        topicUtils.createTopics(getTopicConfig(MEDIATOR_TOPIC2_OUTPUT_TEMPLATE))
+
+        publisherConfig = PublisherConfig(CLIENT_ID + MEDIATOR_TOPIC2, false)
+        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
+        val record = Record(MEDIATOR_TOPIC2, "key1", "value1")
+        publisher.publish(listOf(record, record))
+        publisher.close()
+
+        val latch = CountDownLatch(2)
+        val processor = TestStateEventProcessorStrings(latch, true, -1, MEDIATOR_TOPIC2)
+        val builder = buildBuilder(TEST_CONFIG, processor, MEDIATOR_TOPIC2_OUTPUT, MEDIATOR_TOPIC2, false)
+
+        val mediator = multiSourceEventMediatorFactory.create(builder)
+        mediator.start()
+        assertTrue(latch.await(30, TimeUnit.SECONDS))
+        mediator.close()
+
+        val verifyLatch = CountDownLatch(2)
+        val verifySub = subscriptionFactory.createDurableSubscription(
+            SubscriptionConfig("$MEDIATOR_TOPIC2_OUTPUT-verify", MEDIATOR_TOPIC2_OUTPUT),
+            TestDurableProcessorStrings(verifyLatch),
+            TEST_CONFIG,
+            null
+        )
+
+        verifySub.start()
+        assertTrue(verifyLatch.await(30, TimeUnit.SECONDS))
+        verifySub.close()
+    }
+
+    @Test
+    @Timeout(value = 60, unit = TimeUnit.SECONDS)
+    fun `publish 3 records, 1 is a replay, verify processor is called twice - idempotence disabled`() {
         topicUtils.createTopics(getTopicConfig(MEDIATOR_TOPIC3_TEMPLATE))
         topicUtils.createTopics(getTopicConfig(MEDIATOR_TOPIC3_OUTPUT_TEMPLATE))
 
@@ -227,30 +294,28 @@ class MediatorSubscriptionIntegrationTest {
         publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
         val record = Record(MEDIATOR_TOPIC3, "key1", "value1")
         publisher.publish(listOf(record))
-        publisher.close()
 
         val latch = CountDownLatch(2)
-        val processor = TestStateEventProcessorStrings(latch, true, -1, MEDIATOR_TOPIC3)
-        val builder = buildBuilder(TEST_CONFIG, processor, MEDIATOR_TOPIC1_OUTPUT, MEDIATOR_TOPIC3, true)
+        val processor = TestStateEventProcessorStrings(latch, true, -1, MEDIATOR_TOPIC2)
+        val builder = buildBuilder(TEST_CONFIG, processor, MEDIATOR_TOPIC2_OUTPUT, MEDIATOR_TOPIC2, false)
 
         val mediator = multiSourceEventMediatorFactory.create(builder)
         mediator.start()
-        latch.await()
+        assertTrue(latch.await(30, TimeUnit.SECONDS))
         publisher.publish(listOf(record))
         publisher.close()
 
         val verifyLatch = CountDownLatch(2)
         val verifySub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$MEDIATOR_TOPIC3_OUTPUT-verify", MEDIATOR_TOPIC3_OUTPUT),
+            SubscriptionConfig("$MEDIATOR_TOPIC2_OUTPUT-verify", MEDIATOR_TOPIC2_OUTPUT),
             TestDurableProcessorStrings(verifyLatch),
             TEST_CONFIG,
             null
         )
 
         verifySub.start()
-        verifyLatch.await(30, TimeUnit.SECONDS)
+        assertTrue(verifyLatch.await(30, TimeUnit.SECONDS))
         verifySub.close()
         mediator.close()
     }
-
 }
