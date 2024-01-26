@@ -214,7 +214,7 @@ class WrappingRepositoryTest : CryptoRepositoryTest() {
         val tenantIdUnderTest = "test_tenant"
         val repo = WrappingRepositoryImpl(emf, tenantIdUnderTest)
 
-        val expectedWrappingKeys = mutableSetOf<UUID>()
+        val expectedWrappingKeys = mutableSetOf<Pair<UUID, String>>()
 
         // Pair is number of generations of wrapping key/key material to create for a signing key, tenant Id
         // Create at least one signing key/key material/wrapping key for a different tenant to simulate the situation in
@@ -284,11 +284,11 @@ class WrappingRepositoryTest : CryptoRepositoryTest() {
 
             // Store the last wrapping key uuid generated into the expected set, assuming it's for the correct tenant
             if (tenantIdUnderTest == it.second) {
-                expectedWrappingKeys.add(lastWrappingKeyUuid)
+                expectedWrappingKeys.add(Pair(lastWrappingKeyUuid, wrappingKeyAlias))
             }
         }
 
-        val results = repo.getAllKeyIds()
+        val results = repo.getAllKeyIdsAndAliases()
         assertThat(results).isEqualTo(expectedWrappingKeys)
     }
 }

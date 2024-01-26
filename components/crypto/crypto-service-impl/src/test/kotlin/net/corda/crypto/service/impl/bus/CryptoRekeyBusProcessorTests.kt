@@ -10,8 +10,11 @@ import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.parseSecureHash
+import net.corda.crypto.persistence.SigningKeyMaterialInfo
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
+import net.corda.crypto.softhsm.SigningRepository
+import net.corda.crypto.softhsm.SigningRepositoryFactory
 import net.corda.crypto.softhsm.WrappingRepository
 import net.corda.crypto.softhsm.WrappingRepositoryFactory
 import net.corda.crypto.softhsm.impl.WrappingRepositoryImpl
@@ -19,6 +22,7 @@ import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.data.crypto.wire.ops.key.rotation.IndividualKeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyType
+import net.corda.data.crypto.wire.ops.key.status.ManagedKeyStatus
 import net.corda.data.crypto.wire.ops.key.status.UnmanagedKeyStatus
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -56,6 +60,7 @@ class CryptoRekeyBusProcessorTests {
     private lateinit var cryptoRekeyBusProcessor: CryptoRekeyBusProcessor
     private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
     private lateinit var wrappingRepositoryFactory: WrappingRepositoryFactory
+    private lateinit var signingRepositoryFactory: SigningRepositoryFactory
     private lateinit var rewrapPublishCapture: KArgumentCaptor<List<Record<*, *>>>
     private lateinit var cryptoService: CryptoService
     private lateinit var rewrapPublisher: Publisher
@@ -67,7 +72,7 @@ class CryptoRekeyBusProcessorTests {
     private val newKeyAlias = "newKeyAlias"
     private val tenantId = "tenantId"
 
-    private val dummyUuids = List(4) { UUID.randomUUID() }.toSet()
+    private val dummyUuidsAndAliases = List(4) { UUID.randomUUID().let { Pair(it, it.toString()) } }.toSet()
 
     @BeforeEach
     fun setup() {
@@ -97,27 +102,38 @@ class CryptoRekeyBusProcessorTests {
                     "alias1"
                 )
             )
-            on { getAllKeyIds() } doReturn dummyUuids
+            on { getAllKeyIdsAndAliases() } doReturn dummyUuidsAndAliases
         }
-
         wrappingRepositoryFactory = mock {
             on { create(any()) } doReturn wrappingRepository
+        }
+
+        val signingRepository: SigningRepository = mock {
+            on { getKeyMaterials(any()) } doReturn listOf(SigningKeyMaterialInfo(UUID.randomUUID(), "".toByteArray()))
+
+        }
+        signingRepositoryFactory = mock {
+            on { getInstance(any()) } doReturn signingRepository
         }
         rewrapPublishCapture = argumentCaptor()
         rewrapPublisher = mock {
             on { publish(rewrapPublishCapture.capture()) } doReturn emptyList()
         }
 
-        val serializer = mock<CordaAvroSerializer<UnmanagedKeyStatus>> {
+        val unmanagedKeySerializer = mock<CordaAvroSerializer<UnmanagedKeyStatus>> {
+            on { serialize(any()) } doReturn byteArrayOf(42)
+        }
+        val managedKeySerializer = mock<CordaAvroSerializer<ManagedKeyStatus>> {
             on { serialize(any()) } doReturn byteArrayOf(42)
         }
         cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
-            on { createAvroSerializer<UnmanagedKeyStatus>() } doReturn serializer
+            on { createAvroSerializer<UnmanagedKeyStatus>() } doReturn unmanagedKeySerializer
+            on { createAvroSerializer<ManagedKeyStatus>() } doReturn managedKeySerializer
         }
 
         cryptoRekeyBusProcessor = CryptoRekeyBusProcessor(
             cryptoService, virtualNodeInfoReadService,
-            wrappingRepositoryFactory, rewrapPublisher,
+            wrappingRepositoryFactory, signingRepositoryFactory, rewrapPublisher,
             mock(),
             cordaAvroSerializationFactory
         )
@@ -176,6 +192,7 @@ class CryptoRekeyBusProcessorTests {
             cryptoService,
             virtualNodeInfoReadService,
             wrappingRepositoryFactory,
+            signingRepositoryFactory,
             rewrapPublisher,
             mock(),
             cordaAvroSerializationFactory,
@@ -380,14 +397,14 @@ class CryptoRekeyBusProcessorTests {
         verify(rewrapPublisher, times(1)).publish(any())
 
         assertThat(rewrapPublishCapture.allValues).hasSize(1)
-        assertThat(rewrapPublishCapture.firstValue).hasSize(dummyUuids.size)
+        assertThat(rewrapPublishCapture.firstValue).hasSize(dummyUuidsAndAliases.size)
 
         rewrapPublishCapture.firstValue.map { it.value as IndividualKeyRotationRequest }.forEach {
             assertThat(it.keyType).isEqualTo(KeyType.MANAGED)
             assertThat(it.tenantId).isEqualTo(tenantId)
             assertThat(it.oldParentKeyAlias).isNull()
             assertThat(it.newParentKeyAlias).isNull()
-            assertThat(dummyUuids).contains(UUID.fromString(it.keyUuid))
+            assertThat(dummyUuidsAndAliases.map { it.first }.toSet()).contains(UUID.fromString(it.keyUuid))
         }
     }
 

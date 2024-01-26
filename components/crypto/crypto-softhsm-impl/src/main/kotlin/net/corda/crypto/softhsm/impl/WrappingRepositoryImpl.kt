@@ -81,7 +81,7 @@ class WrappingRepositoryImpl(
         ).setParameter("id", id).resultStream.map { dao -> dao.toDto() }.findFirst().orElse(null)
     }
 
-    override fun getAllKeyIds(): Set<UUID> =
+    override fun getAllKeyIdsAndAliases(): Set<Pair<UUID, String>> =
         entityManagerFactory.createEntityManager().use { it ->
             // We can have multiple key materials per signing key, all of which point to different wrapping keys with different
             // generation numbers. So it's important to group results from this query by signing key id and then grab only the
@@ -106,7 +106,7 @@ class WrappingRepositoryImpl(
                     it.value.sortedBy { it.second.generation }.lastOrNull()
                 } // highest generation wrapping key per signing key only
                 .filterNotNull()
-                .map { it.second.id } // extract UUID of wrapping keys
+                .map { Pair(it.second.id, it.second.alias) } // extract UUID and alias of wrapping keys
                 .toSet()
         }
 }
