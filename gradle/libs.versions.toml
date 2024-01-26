@@ -11,7 +11,7 @@ javalinVersion = "4.6.8"
 # Once Javalin version is upgraded to the latest, this override may be removed.
 jettyVersion = "9.4.53.v20231009"
 unirestVersion = "3.14.5"
-nimbusVersion = "10.8"
+nimbusVersion = "11.9.1"
 swaggerVersion = "2.2.12"
 # Please also update SWAGGERUI.version in net.corda.rest.server.impl.internal.OptionalDependency
 swaggeruiVersion = "4.18.2"
