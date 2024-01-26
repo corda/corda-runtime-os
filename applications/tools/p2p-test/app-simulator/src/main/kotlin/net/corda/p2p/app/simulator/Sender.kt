@@ -98,10 +98,11 @@ class Sender(
                             val senderId = senderIds.entries.first {
                                 it.value == currentSenderDestinationPair.first
                             }.key
+                            val messageId = "${senderHoldingId.x500Name}->${destination.x500Name}$senderId:$client:${++messagesSent}"
 
                             messagesWithIds.add(
                                 createMessage(
-                                    "$senderId:$client:${++messagesSent}",
+                                    messageId,
                                     senderId,
                                     destination,
                                     senderHoldingId,
