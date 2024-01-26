@@ -2,6 +2,7 @@ package net.corda.ledger.common.data.transaction.filtered.factory
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters
+import net.corda.ledger.common.data.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
