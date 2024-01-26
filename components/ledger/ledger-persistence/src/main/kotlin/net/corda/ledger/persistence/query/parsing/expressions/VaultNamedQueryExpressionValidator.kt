@@ -22,5 +22,4 @@ interface VaultNamedQueryExpressionValidator {
      * @param expression the expression to validate
      */
     fun validateSimpleExpression(original: String, expression: List<Token>): List<Token>
-
 }

@@ -55,10 +55,11 @@ data class StableResultSetImpl<R> internal constructor(
 
 
         resumePoint = nextResumePoint
-        if ( numberOfRowsFromQuery != null ) {
+        if (numberOfRowsFromQuery != null) {
             hasNext = numberOfRowsFromQuery != 0  // If there are no rows left there are no more pages to fetch
-                    && serializedResults.size == limit // If the current page is full, it means we might have more records, so we go and check
-            offset = ( offset ?: 0) + numberOfRowsFromQuery
+                    && serializedResults.size == limit  // If the current page is full, it means we might have
+                                                        // more records, so we go and check
+            offset = (offset ?: 0) + numberOfRowsFromQuery
         }
         firstExecution = false
 
