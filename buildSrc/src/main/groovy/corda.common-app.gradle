@@ -128,8 +128,6 @@ private def addSystemPackagesExtra(
             "sun.nio.ch",
             "sun.security.x509",
             "sun.security.ssl",
-            "javax.annotation",
-            "javax.annotation.meta",
             "javax.servlet",
             "javax.transaction;version=1.2.0",
             "javax.xml.stream;version=1.0",
