@@ -18,6 +18,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.libs.packaging.hash
+import net.corda.metrics.CordaMetrics
 import net.corda.orm.utils.transaction
 import net.corda.utilities.serialization.deserialize
 import net.corda.utilities.time.Clock
@@ -35,6 +36,7 @@ import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.time.Duration
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
@@ -132,6 +134,8 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
+    private fun hash(data: ByteArray) = sandboxDigestService.hash(data, DigestAlgorithmName.SHA2_256).toString()
+
     private fun persistTransaction(
         em: EntityManager,
         transaction: UtxoTransactionReader,
@@ -143,6 +147,7 @@ class UtxoPersistenceServiceImpl(
         val metadataBytes = transaction.rawGroupLists[0][0]
         val metadataHash = sandboxDigestService.hash(metadataBytes, DigestAlgorithmName.SHA2_256).toString()
 
+        var startTime = System.nanoTime()
         val metadata = transaction.metadata
         repository.persistTransactionMetadata(
             em,
@@ -152,6 +157,11 @@ class UtxoPersistenceServiceImpl(
             requireNotNull(metadata.getCpiMetadata()) { "Metadata without CPI metadata" }.fileChecksum
         )
 
+        CordaMetrics.Metric.Ledger.PersistenceTxExecutionTime
+            .builder().withTag(CordaMetrics.Tag.OperationName, "metadata")
+            .build().record(Duration.ofNanos(System.nanoTime() - startTime))
+
+        startTime = System.nanoTime()
         // Insert the Transaction
         repository.persistTransaction(
             em,
@@ -163,20 +173,37 @@ class UtxoPersistenceServiceImpl(
             metadataHash
         )
 
-        // Insert the Transactions components
-        transaction.rawGroupLists.mapIndexed { groupIndex, leaves ->
-            leaves.mapIndexed { leafIndex, data ->
-                repository.persistTransactionComponentLeaf(
-                    em,
-                    transactionIdString,
-                    groupIndex,
-                    leafIndex,
-                    data,
-                    sandboxDigestService.hash(data, DigestAlgorithmName.SHA2_256).toString()
-                )
-            }
-        }
+        CordaMetrics.Metric.Ledger.PersistenceTxExecutionTime
+            .builder().withTag(CordaMetrics.Tag.OperationName, "transaction")
+            .build().record(Duration.ofNanos(System.nanoTime() - startTime))
 
+        startTime = System.nanoTime()
+        // Insert the Transactions components
+//        transaction.rawGroupLists.mapIndexed { groupIndex, leaves ->
+//            leaves.mapIndexed { leafIndex, data ->
+//                repository.persistTransactionComponentLeaf(
+//                    em,
+//                    transactionIdString,
+//                    groupIndex,
+//                    leafIndex,
+//                    data,
+//                    sandboxDigestService.hash(data, DigestAlgorithmName.SHA2_256).toString()
+//                )
+//            }
+//        }
+
+        repository.persistTransactionComponents(
+            em,
+            transactionIdString,
+            transaction.rawGroupLists,
+            this::hash
+        )
+
+        CordaMetrics.Metric.Ledger.PersistenceTxExecutionTime
+            .builder().withTag(CordaMetrics.Tag.OperationName, "componentLeaves")
+            .build().record(Duration.ofNanos(System.nanoTime() - startTime))
+
+        startTime = System.nanoTime()
         // Insert inputs data
         transaction.getConsumedStateRefs().forEachIndexed { index, input ->
             repository.persistTransactionSource(
@@ -188,7 +215,11 @@ class UtxoPersistenceServiceImpl(
                 input.index
             )
         }
+        CordaMetrics.Metric.Ledger.PersistenceTxExecutionTime
+            .builder().withTag(CordaMetrics.Tag.OperationName, "consumedState")
+            .build().record(Duration.ofNanos(System.nanoTime() - startTime))
 
+        startTime = System.nanoTime()
         // Insert reference data
         transaction.getReferenceStateRefs().forEachIndexed { index, reference ->
             repository.persistTransactionSource(
@@ -200,7 +231,11 @@ class UtxoPersistenceServiceImpl(
                 reference.index
             )
         }
+        CordaMetrics.Metric.Ledger.PersistenceTxExecutionTime
+            .builder().withTag(CordaMetrics.Tag.OperationName, "referenceState")
+            .build().record(Duration.ofNanos(System.nanoTime() - startTime))
 
+        startTime = System.nanoTime()
         // Insert outputs data
         transaction.getVisibleStates().entries.forEach { (stateIndex, stateAndRef) ->
             val utxoToken = utxoTokenMap[stateAndRef.ref]
@@ -222,9 +257,13 @@ class UtxoPersistenceServiceImpl(
                 utxoToken?.amount
             )
         }
+        CordaMetrics.Metric.Ledger.PersistenceTxExecutionTime
+            .builder().withTag(CordaMetrics.Tag.OperationName, "visibleStates")
+            .build().record(Duration.ofNanos(System.nanoTime() - startTime))
 
         // Mark inputs as consumed
         if (transaction.status == TransactionStatus.VERIFIED) {
+            startTime = System.nanoTime()
             val inputStateRefs = transaction.getConsumedStateRefs()
             if (inputStateRefs.isNotEmpty()) {
                 repository.markTransactionVisibleStatesConsumed(
@@ -233,8 +272,12 @@ class UtxoPersistenceServiceImpl(
                     nowUtc
                 )
             }
+            CordaMetrics.Metric.Ledger.PersistenceTxExecutionTime
+                .builder().withTag(CordaMetrics.Tag.OperationName, "statesConsumed")
+                .build().record(Duration.ofNanos(System.nanoTime() - startTime))
         }
 
+        startTime = System.nanoTime()
         // Insert the Transactions signatures
         transaction.signatures.forEachIndexed { index, digitalSignatureAndMetadata ->
             repository.persistTransactionSignature(
@@ -245,6 +288,9 @@ class UtxoPersistenceServiceImpl(
                 nowUtc
             )
         }
+        CordaMetrics.Metric.Ledger.PersistenceTxExecutionTime
+            .builder().withTag(CordaMetrics.Tag.OperationName, "signatures")
+            .build().record(Duration.ofNanos(System.nanoTime() - startTime))
         return emptyList()
     }
 
