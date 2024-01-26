@@ -63,8 +63,8 @@ class SessionEncryptionOpsClientComponentTest {
             val resource = mock<Resource>()
             handler.firstValue.processEvent(
                 ConfigChangedEvent(
-                    setOf(ConfigKeys.MESSAGING_CONFIG),
-                    mapOf(ConfigKeys.MESSAGING_CONFIG to messagingConfig)
+                    setOf(ConfigKeys.BOOT_CONFIG),
+                    mapOf(ConfigKeys.BOOT_CONFIG to messagingConfig)
                 ),
                 coordinator,
             )

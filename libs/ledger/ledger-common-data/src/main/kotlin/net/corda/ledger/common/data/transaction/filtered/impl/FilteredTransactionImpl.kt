@@ -1,4 +1,4 @@
-package net.corda.ledger.common.flow.impl.transaction.filtered
+package net.corda.ledger.common.data.transaction.filtered.impl
 
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.core.SecureHashImpl
@@ -10,20 +10,16 @@ import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_PROVIDER
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
-import net.corda.ledger.common.flow.transaction.filtered.FilteredTransactionVerificationException
+import net.corda.ledger.common.data.transaction.filtered.FilteredTransactionVerificationException
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
-import net.corda.v5.crypto.merkle.HashDigestConstants.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
-import net.corda.v5.crypto.merkle.HashDigestConstants.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION
-import net.corda.v5.crypto.merkle.HashDigestConstants.HASH_DIGEST_PROVIDER_NONCE_SIZE_ONLY_VERIFY_NAME
-import net.corda.v5.crypto.merkle.HashDigestConstants.HASH_DIGEST_PROVIDER_NONCE_VERIFY_NAME
+import net.corda.v5.crypto.merkle.HashDigestConstants
 import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
-import java.util.Base64
-import java.util.Objects
+import java.util.*
 
 class FilteredTransactionImpl(
     override val id: SecureHash,
@@ -97,9 +93,13 @@ class FilteredTransactionImpl(
     }
 
     override val metadata: TransactionMetadata by lazy {
-        val proof = checkNotNull(filteredComponentGroups[0]?.merkleProof) { "Component group 0's Merkle proof does not exist" }
+        val proof =
+            checkNotNull(filteredComponentGroups[0]?.merkleProof) { "Component group 0's Merkle proof does not exist" }
         check(proof.leaves.size == 1) { "Component group 0's Merkle proof must have a single leaf but contains ${proof.leaves.size}" }
-        jsonMarshallingService.parse(proof.leaves.single().leafData.decodeToString(), TransactionMetadataImpl::class.java)
+        jsonMarshallingService.parse(
+            proof.leaves.single().leafData.decodeToString(),
+            TransactionMetadataImpl::class.java
+        )
     }
 
     override fun getComponentGroupContent(componentGroupIndex: Int): List<Pair<Int, ByteArray>>? {
@@ -112,9 +112,9 @@ class FilteredTransactionImpl(
             merkleTreeHashDigestProviderName = digestSettings[ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY] as String,
             DigestAlgorithmName(digestSettings[ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY] as String),
             options = mapOf(
-                HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION to Base64.getDecoder()
+                HashDigestConstants.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION to Base64.getDecoder()
                     .decode(digestSettings[ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY] as String),
-                HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION to Base64.getDecoder()
+                HashDigestConstants.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION to Base64.getDecoder()
                     .decode(digestSettings[ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY] as String)
             )
         )
@@ -124,7 +124,7 @@ class FilteredTransactionImpl(
         componentGroupDigestAlgorithmName: DigestAlgorithmName
     ): MerkleTreeHashDigestProvider {
         return merkleTreeProvider.createHashDigestProvider(
-            merkleTreeHashDigestProviderName = HASH_DIGEST_PROVIDER_NONCE_VERIFY_NAME,
+            merkleTreeHashDigestProviderName = HashDigestConstants.HASH_DIGEST_PROVIDER_NONCE_VERIFY_NAME,
             componentGroupDigestAlgorithmName
         )
     }
@@ -133,7 +133,7 @@ class FilteredTransactionImpl(
         componentGroupDigestAlgorithmName: DigestAlgorithmName
     ): MerkleTreeHashDigestProvider {
         return merkleTreeProvider.createHashDigestProvider(
-            merkleTreeHashDigestProviderName = HASH_DIGEST_PROVIDER_NONCE_SIZE_ONLY_VERIFY_NAME,
+            merkleTreeHashDigestProviderName = HashDigestConstants.HASH_DIGEST_PROVIDER_NONCE_SIZE_ONLY_VERIFY_NAME,
             componentGroupDigestAlgorithmName
         )
     }

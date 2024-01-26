@@ -1,6 +1,7 @@
-package net.corda.ledger.common.flow.transaction.filtered.factory
+package net.corda.ledger.common.data.transaction.filtered.factory
 
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters
 import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.v5.base.annotations.Suspendable
 import java.util.function.Predicate
