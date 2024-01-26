@@ -67,39 +67,32 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                 log.debug { "All records read in group with key ${input.key} are replayed records. Returning replays with no state update" }
                 EventProcessingOutput(replayOutputs, StateChangeAndOperation.Noop)
             } else {
-                processNewRecords(key, nonReplayConsumerInputs, processorState, mediatorState, inputState, replayOutputs)
+                val newInputs = EventProcessingInput(key, nonReplayConsumerInputs, inputState)
+                val newOutputs = processNewRecords(newInputs, processorState, mediatorState)
+                EventProcessingOutput(replayOutputs + newOutputs.asyncOutputs, newOutputs.stateChangeAndOperation)
             }
         }
     }
 
     private fun processNewRecords(
-        key: K,
-        nonReplayConsumerInputs: List<Record<K, E>>,
+        input: EventProcessingInput<K, E>,
         inputProcessorState: StateAndEventProcessor.State<S>?,
         mediatorState: MediatorState,
-        inputState: State?,
-        replayOutputs: List<MediatorMessage<Any>>
     ): EventProcessingOutput {
+        val key = input.key
+        val inputState = input.state
         var processorState = inputProcessorState
         val asyncOutputs = mutableMapOf<ByteBuffer, MutableList<MediatorMessage<Any>>>()
         val processed = try {
-            nonReplayConsumerInputs.forEach { consumerInputEvent ->
+            input.records.forEach { consumerInputEvent ->
                 val duplicate = asyncOutputs[mediatorReplayService.getInputHash(consumerInputEvent)]
                 if (idempotentProcessor && duplicate != null) {
                     log.debug { "Duplicate input record within a single poll found with $key. Replaying outputs from previous invocation" }
                     asyncOutputs.addOutputs(consumerInputEvent, duplicate)
                 } else {
-                    val queue = ArrayDeque(listOf(consumerInputEvent))
-                    while (queue.isNotEmpty()) {
-                        val event = queue.removeFirst()
-                        val response = config.messageProcessor.onNext(processorState, event)
-                        processorState = response.updatedState
-                        val (syncEvents, asyncEvents) = response.responseEvents.map { convertToMessage(it) }.partition {
-                            messageRouter.getDestination(it).type == RoutingDestination.Type.SYNCHRONOUS
-                        }
-                        asyncOutputs.addOutputs(consumerInputEvent, asyncEvents)
-                        queue.addAll(processSyncEvents(key, syncEvents))
-                    }
+                    val (updatedProcessorState, newAsyncOutputs) = processSingleConsumerInput(consumerInputEvent, processorState, key)
+                    processorState = updatedProcessorState
+                    asyncOutputs.addOutputs(consumerInputEvent, newAsyncOutputs)
                 }
             }
             if (idempotentProcessor) {
@@ -119,7 +112,28 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         }
 
         val stateChangeAndOperation = stateChangeAndOperation(inputState, processed)
-        return EventProcessingOutput(replayOutputs + asyncOutputs.values.flatten(), stateChangeAndOperation)
+        return EventProcessingOutput(asyncOutputs.values.flatten(), stateChangeAndOperation)
+    }
+
+    private fun processSingleConsumerInput(
+        consumerInputEvent: Record<K, E>,
+        processorState: StateAndEventProcessor.State<S>?,
+        key: K,
+    ): Pair<StateAndEventProcessor.State<S>?, List<MediatorMessage<Any>>> {
+        var processorStateUpdated = processorState
+        val newAsyncOutputs = mutableListOf<MediatorMessage<Any>>()
+        val queue = ArrayDeque(listOf(consumerInputEvent))
+        while (queue.isNotEmpty()) {
+            val event = queue.removeFirst()
+            val response = config.messageProcessor.onNext(processorStateUpdated, event)
+            processorStateUpdated = response.updatedState
+            val (syncEvents, asyncEvents) = response.responseEvents.map { convertToMessage(it) }.partition {
+                messageRouter.getDestination(it).type == RoutingDestination.Type.SYNCHRONOUS
+            }
+            newAsyncOutputs.addAll(asyncEvents)
+            queue.addAll(processSyncEvents(key, syncEvents))
+        }
+        return Pair(processorStateUpdated, newAsyncOutputs)
     }
 
     private fun stateChangeAndOperation(
