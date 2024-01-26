@@ -32,6 +32,8 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransa
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionIfDoesNotExistExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionIfDoesNotExistParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionParameters
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionSignaturesExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionSignaturesParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.UpdateTransactionStatusExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.UpdateTransactionStatusParameters
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedLedgerTransaction
@@ -44,6 +46,7 @@ import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.utilities.serialization.deserialize
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
@@ -249,6 +252,18 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                 externalEventExecutor.execute(
                     PersistMerkleProofIfDoesNotExistExternalEventFactory::class.java,
                     PersistMerkleProofIfDoesNotExistParameters(transactionId.toString(), groupIndex, merkleProof)
+                )
+            }
+        }
+    }
+
+    @Suspendable
+    override fun persistTransactionSignatures(id: SecureHash, startingIndex: Int, signatures: List<DigitalSignatureAndMetadata>) {
+        return recordSuspendable({ ledgerPersistenceFlowTimer(LedgerPersistenceMetricOperationName.PersistTransactionSignatures) }) @Suspendable {
+            wrapWithPersistenceException {
+                externalEventExecutor.execute(
+                    PersistTransactionSignaturesExternalEventFactory::class.java,
+                    PersistTransactionSignaturesParameters(id.toString(), startingIndex, signatures.map { serializationService.serialize(it).bytes })
                 )
             }
         }

@@ -26,6 +26,7 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKey
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
@@ -91,9 +92,9 @@ class UtxoFinalityFlowV1(
         persistUnverifiedTransaction()
 
         sendTransactionAndDependenciesToCounterparties(transferAdditionalSignatures)
-        val (transaction, signaturesReceivedFromSessions) = receiveSignaturesAndAddToTransaction()
+        val (transaction, signaturesReceivedFromSessions, startingIndex, signatures) = receiveSignaturesAndAddToTransaction()
         verifyAllReceivedSignatures(transaction, signaturesReceivedFromSessions)
-        persistTransactionWithCounterpartySignatures(transaction)
+        persistTransactionWithCounterpartySignatures(transaction.id, startingIndex, signatures)
 
         if (transferAdditionalSignatures) {
             sendUnseenSignaturesToCounterparties(transaction, signaturesReceivedFromSessions)
@@ -184,9 +185,16 @@ class UtxoFinalityFlowV1(
         }
     }
 
+    private data class TransactionAndReceivedSignatures(
+        val transaction: UtxoSignedTransactionInternal,
+        val sessionsToSignatures: Map<FlowSession, List<DigitalSignatureAndMetadata>>,
+        val indexOfNewSignatures: Int,
+        val orderedNewSignatures: List<DigitalSignatureAndMetadata>
+    )
+
     @Suppress("MaxLineLength")
     @Suspendable
-    private fun receiveSignaturesAndAddToTransaction(): Pair<UtxoSignedTransactionInternal, Map<FlowSession, List<DigitalSignatureAndMetadata>>> {
+    private fun receiveSignaturesAndAddToTransaction(): TransactionAndReceivedSignatures {
         val signaturesPayloads = try {
             flowMessaging.receiveAllMap(
                 sessions.associateWith { Payload::class.java }
@@ -226,7 +234,14 @@ class UtxoFinalityFlowV1(
             session to signatures
         }.toMap()
 
-        return transaction to signaturesReceivedFromSessions
+        val initialSignaturesSize = initialTransaction.signatures.size
+
+        return TransactionAndReceivedSignatures(
+            transaction,
+            signaturesReceivedFromSessions,
+            initialSignaturesSize,
+            transaction.signatures.drop(initialSignaturesSize)
+        )
     }
 
     @Suspendable
@@ -258,8 +273,12 @@ class UtxoFinalityFlowV1(
     }
 
     @Suspendable
-    private fun persistTransactionWithCounterpartySignatures(transaction: UtxoSignedTransactionInternal) {
-        persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
+    private fun persistTransactionWithCounterpartySignatures(
+        id: SecureHash,
+        startingIndex: Int,
+        signatures: List<DigitalSignatureAndMetadata>
+    ) {
+        persistenceService.persistTransactionSignatures(id, startingIndex, signatures)
         log.debug { "Recorded transaction with all parties' signatures $transactionId" }
     }
 

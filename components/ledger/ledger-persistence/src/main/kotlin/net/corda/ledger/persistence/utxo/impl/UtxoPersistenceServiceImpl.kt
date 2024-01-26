@@ -22,6 +22,7 @@ import net.corda.orm.utils.transaction
 import net.corda.utilities.serialization.deserialize
 import net.corda.utilities.time.Clock
 import net.corda.v5.application.crypto.DigestService
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -261,6 +262,29 @@ class UtxoPersistenceServiceImpl(
             val cpkDetails = persistTransaction(em, transaction)
 
             return null to cpkDetails
+        }
+    }
+
+    override fun persistTransactionSignatures(id: String, signatures: List<ByteArray>, startingIndex: Int) {
+        val nowUtc = utcClock.instant()
+        val digitalSignatureAndMetadatas = signatures.map {
+            serializationService.deserialize<DigitalSignatureAndMetadata>(it)
+        }
+        entityManagerFactory.transaction { em ->
+            val startTime = System.nanoTime()
+            // Insert the Transactions signatures
+            digitalSignatureAndMetadatas.forEachIndexed { index, digitalSignatureAndMetadata ->
+                repository.persistTransactionSignature(
+                    em,
+                    id,
+                    startingIndex + index,
+                    digitalSignatureAndMetadata,
+                    nowUtc
+                )
+            }
+            CordaMetrics.Metric.Ledger.PersistenceTxExecutionTime
+                .builder().withTag(CordaMetrics.Tag.OperationName, "signatures")
+                .build().record(Duration.ofNanos(System.nanoTime() - startTime))
         }
     }
 
