@@ -15,7 +15,7 @@ swaggerVersion = "2.2.12"
 swaggeruiVersion = "4.18.2"
 jcipAnnotationsVersion = "1.0_2"
 pf4jVersion = "3.10.0"
-braveVersion = "5.15.0"
+braveVersion = "6.0.0"
 zipkinVersion = "2.16.3"
 
 log4jVersion = "2.22.1"
