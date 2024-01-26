@@ -100,16 +100,18 @@ internal class OutboundMessageProcessor(
     }
 
     override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<String, *>> {
+        logger.info("QQQ onNext(${events.size}) start")
         val authenticatedMessages = mutableListOf<TraceableItem<AuthenticatedMessageAndKey, AppMessage>>()
         val unauthenticatedMessages = mutableListOf<TraceableItem<OutboundUnauthenticatedMessage, AppMessage>>()
         for (event in events) {
             when (val message = event.value?.message) {
                 is AuthenticatedMessage -> {
-                    logger.info("QQQ In message: ${message.header.messageId}")
+                    logger.info("QQQ \t In (Authenticated) message: ${message.header.messageId}")
                     authenticatedMessages += TraceableItem(AuthenticatedMessageAndKey(message, event.key), event)
                     recordOutboundMessagesMetric(message)
                 }
                 is OutboundUnauthenticatedMessage -> {
+                    logger.info("QQQ \t In (Unauthenticated) message: ${message.header.messageId}")
                     unauthenticatedMessages += TraceableItem(message, event)
                     recordOutboundMessagesMetric(message)
                 }
@@ -131,6 +133,24 @@ internal class OutboundMessageProcessor(
                 traceEventProcessing(originalRecord, tracingEventName) { result.item }
             }
         }
+
+        logger.info("QQQ onNext(${events.size}) done")
+        results.forEach {
+            val id = when (val message = it.originalRecord?.value?.message) {
+                is AuthenticatedMessage -> {
+                    message.header.messageId
+                }
+                is OutboundUnauthenticatedMessage -> {
+                    message.header.messageId
+                }
+                else -> null
+            }
+            logger.info("QQQ \t for $id")
+            it.item.forEach {
+                logger.info("QQQ \t\t sending: (${it.topic}, ${it.key}) -> ${it.value?.javaClass}")
+            }
+        }
+
         return results.map { it.item }.flatten()
     }
 
