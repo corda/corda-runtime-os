@@ -85,7 +85,8 @@ class DbConnectionsRepositoryImpl(
 
             val config = ConfigFactory.parseString(dbConfig.config)
             logger.debug("Creating DB (${dbConfig.description}) from config: $config")
-            return dataSourceFactory.createFromConfig(dbConfigFactory.create(config), DbPrivilege.DML == privilege)
+            return dataSourceFactory.createFromConfig(
+                dbConfigFactory.create(config), enablePool = DbPrivilege.DML == privilege)
         }
     }
 
