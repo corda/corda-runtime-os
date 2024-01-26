@@ -6,7 +6,7 @@ import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.db.connection.manager.DbConnectionsRepository
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DataSourceFactory
-import net.corda.db.core.HikariDataSourceFactory
+import net.corda.db.core.DataSourceFactoryImpl
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -48,7 +48,7 @@ class DbConnectionManagerImpl (
     ) :
             this(
                 lifecycleCoordinatorFactory,
-                HikariDataSourceFactory(),
+                DataSourceFactoryImpl(),
                 entityManagerFactoryFactory,
                 entitiesRegistry,
                 DbConnectionRepositoryFactory(),

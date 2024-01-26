@@ -4,7 +4,7 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.db.core.CloseableDataSource
-import net.corda.db.core.createDataSource
+import net.corda.db.core.createUnpooledDataSource
 import net.corda.db.testkit.TestInMemoryEntityManagerConfiguration
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.schema.configuration.DatabaseConfig
@@ -56,7 +56,7 @@ class HSQLHelper : DbUtilsHelper {
     ): CloseableDataSource {
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
-        return createDataSource("org.hsqldb.jdbc.JDBCDriver","", user, password)
+        return createUnpooledDataSource("org.hsqldb.jdbc.JDBCDriver","", user, password)
     }
 
     override fun createConfig(

@@ -25,7 +25,7 @@ dependencies {
     implementation libs.jackson.dataformat.yaml
     implementation libs.jackson.databind
     implementation libs.jackson.module.kotlin
-    implementation "io.fabric8:kubernetes-client:$kubernetesClientVersion"
+    implementation libs.kubernetes.client
 
     implementation "org.postgresql:postgresql:$postgresDriverVersion"
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
