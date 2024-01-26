@@ -302,6 +302,12 @@ class UtxoReceiveFinalityFlowV1(
         return transaction to Payload.Success(mySignatures)
     }
 
+    private data class TransactionAndReceivedSignatures(
+        val transaction: UtxoSignedTransactionInternal,
+        val indexOfNewSignatures: Int,
+        val orderedNewSignatures: List<DigitalSignatureAndMetadata>
+    )
+
     @Suspendable
     private fun receiveSignaturesAndAddToTransaction(transaction: UtxoSignedTransactionInternal): TransactionAndReceivedSignatures {
         val initialSignaturesSize = transaction.signatures.size

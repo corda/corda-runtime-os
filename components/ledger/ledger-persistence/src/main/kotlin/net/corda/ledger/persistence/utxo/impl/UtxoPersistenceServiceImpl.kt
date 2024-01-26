@@ -56,7 +56,7 @@ import java.time.Duration
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
-@Suppress("LongParameterList", "TooManyFunctions")
+@Suppress("LongParameterList")
 class UtxoPersistenceServiceImpl(
     private val entityManagerFactory: EntityManagerFactory,
     private val repository: UtxoRepository,
@@ -340,6 +340,7 @@ class UtxoPersistenceServiceImpl(
             serializationService.deserialize<DigitalSignatureAndMetadata>(it)
         }
         entityManagerFactory.transaction { em ->
+            val startTime = System.nanoTime()
             // Insert the Transactions signatures
             digitalSignatureAndMetadatas.forEachIndexed { index, digitalSignatureAndMetadata ->
                 repository.persistTransactionSignature(
@@ -350,6 +351,9 @@ class UtxoPersistenceServiceImpl(
                     nowUtc
                 )
             }
+            CordaMetrics.Metric.Ledger.PersistenceTxExecutionTime
+                .builder().withTag(CordaMetrics.Tag.OperationName, "signatures")
+                .build().record(Duration.ofNanos(System.nanoTime() - startTime))
         }
     }
 
