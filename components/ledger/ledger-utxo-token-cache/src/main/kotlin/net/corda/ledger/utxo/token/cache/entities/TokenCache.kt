@@ -29,4 +29,6 @@ interface TokenCache : Iterable<CachedToken> {
      * Empties the cache
      */
     fun removeAll()
+
+    fun getLastAddAgeMs(): Long
 }

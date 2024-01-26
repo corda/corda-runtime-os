@@ -17,7 +17,7 @@ class TokenClaimQueryEventHandler(
     private val filterStrategy: TokenFilterStrategy,
     private val recordFactory: RecordFactory,
     private val availableTokenService: AvailableTokenService,
-    private val serviceConfiguration: ServiceConfiguration
+    private val serviceConfiguration: ServiceConfiguration,
 ) : TokenEventHandler<ClaimQuery> {
 
     private companion object {
@@ -27,7 +27,7 @@ class TokenClaimQueryEventHandler(
     override fun handle(
         tokenCache: TokenCache,
         state: PoolCacheState,
-        event: ClaimQuery
+        event: ClaimQuery,
     ): Record<String, FlowEvent> {
         val claimId = event.externalEventRequestId
         val claim = state.claim(claimId)
@@ -38,7 +38,7 @@ class TokenClaimQueryEventHandler(
                 event.flowId,
                 event.externalEventRequestId,
                 event.poolKey,
-                claim.claimedTokens
+                claim.claimedTokens,
             )
         }
 
@@ -46,12 +46,13 @@ class TokenClaimQueryEventHandler(
         var selectionResult = selectTokens(tokenCache, state, event)
 
         // if we didn't reach the target amount, reload the cache to ensure it's full and retry
-        if (selectionResult.first < event.targetAmount) {
+        if (selectionResult.first < event.targetAmount && tokenCache.getLastAddAgeMs() > 100) {
             // The max. number of tokens retrieved should be the configured size plus the number of claimed tokens
             // This way the cache size will be equal to the configured size once the claimed tokens are removed
             // from the query results
             val maxTokens = serviceConfiguration.cachedTokenPageSize + state.claimedTokens().size
-            val findResult = availableTokenService.findAvailTokens(event.poolKey, event.ownerHash, event.tagRegex, maxTokens)
+            val findResult =
+                availableTokenService.findAvailTokens(event.poolKey, event.ownerHash, event.tagRegex, maxTokens)
 
             // Remove the claimed tokens from the query results
             val tokens = findResult.tokens.filterNot { state.isTokenClaimed(it.stateRef) }
@@ -72,7 +73,7 @@ class TokenClaimQueryEventHandler(
                 event.flowId,
                 event.externalEventRequestId,
                 event.poolKey,
-                selectedTokens
+                selectedTokens,
             )
         } else {
             recordFactory.getFailedClaimResponse(event.flowId, event.externalEventRequestId, event.poolKey)
@@ -82,7 +83,7 @@ class TokenClaimQueryEventHandler(
     private fun selectTokens(
         tokenCache: TokenCache,
         state: PoolCacheState,
-        event: ClaimQuery
+        event: ClaimQuery,
     ): Pair<BigDecimal, List<CachedToken>> {
         val selectedTokens = mutableListOf<CachedToken>()
         var selectedAmount = BigDecimal.ZERO
