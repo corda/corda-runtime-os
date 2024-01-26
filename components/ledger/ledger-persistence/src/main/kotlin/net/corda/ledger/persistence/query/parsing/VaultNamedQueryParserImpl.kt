@@ -25,12 +25,10 @@ class VaultNamedQueryParserImpl(
     override fun parseWhereJson(query: String): String =
         doParse(query, expressionValidator::validateWhereJson)
 
-
     override fun parseSimpleExpression(input: String): String =
         doParse(input, expressionValidator::validateSimpleExpression)
 
-
-    private fun doParse(input: String, validator: (input:String, expression: List<Token>) -> List<Token> ): String {
+    private fun doParse(input: String, validator: (input: String, expression: List<Token>) -> List<Token>): String {
         val expression = expressionParser.parse(input)
         val clause = validator(input, expression)
         return StringBuilder().let { output ->

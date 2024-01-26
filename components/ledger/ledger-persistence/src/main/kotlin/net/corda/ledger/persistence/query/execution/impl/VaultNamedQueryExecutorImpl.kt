@@ -167,12 +167,13 @@ class VaultNamedQueryExecutorImpl(
         val useOffset = vaultNamedQuery.orderBy != null
         response.metadata =
             KeyValuePairList(
-                if (useOffset)
+                if (useOffset) {
                     listOf(
                         KeyValuePair("numberOfRowsFromQuery", numberOfRowsReturned.toString())
                     )
-                else
+                } else {
                     emptyList()
+                }
             )
 
         return response.build()
@@ -221,20 +222,19 @@ class VaultNamedQueryExecutorImpl(
 
             // Fetch the state and refs for the given transaction IDs
             val rawResults = try {
-                if (useOffset){
-                   fetchStateAndRefs(
-                       request,
-                       vaultNamedQuery.query.query,
-                       vaultNamedQuery.orderBy!!.query,
-                       currentOffset
-                   )
+                if (useOffset) {
+                    fetchStateAndRefs(
+                        request,
+                        vaultNamedQuery.query.query,
+                        vaultNamedQuery.orderBy!!.query,
+                        currentOffset
+                    )
                 } else {
                     fetchStateAndRefs(
                         request,
                         vaultNamedQuery.query.query,
                         currentResumePoint
                     )
-
                 }
             } catch (e: Exception) {
                 log.warn(
@@ -301,7 +301,6 @@ class VaultNamedQueryExecutorImpl(
         )
     }
 
-
     private fun fetchStateAndRefs(
         request: FindWithNamedQuery,
         whereJson: String?,
@@ -355,9 +354,7 @@ class VaultNamedQueryExecutorImpl(
         } else {
             RawQueryResults(resultList.map { RawQueryData(it) }, hasMore = false)
         }
-
     }
-
 
     /**
      * A function that fetches the contract states that belong to the given transaction IDs.

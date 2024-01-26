@@ -19,7 +19,7 @@ class VaultNamedQueryBuilderImpl(
     private var filter: VaultNamedQueryFilter<*>? = null
     private var transformer: VaultNamedQueryTransformer<*, *>? = null
 
-    private val orderByFragments: MutableList<Pair<String,String?>> = mutableListOf()
+    private val orderByFragments: MutableList<Pair<String, String?>> = mutableListOf()
     private var unconumedStatesOnly: Boolean = false
 
     private companion object {
@@ -63,7 +63,6 @@ class VaultNamedQueryBuilderImpl(
     }
 
     override fun collect(collector: VaultNamedQueryCollector<*, *>): VaultNamedQueryBuilderCollected {
-
         // TODO These casts are necessary because using `Any` in `VaultNamedQuery` will result in a compilation error
         @Suppress("unchecked_cast")
         return VaultNamedQueryBuilderCollectedImpl(
@@ -103,7 +102,9 @@ class VaultNamedQueryBuilderImpl(
             "${requireNotNull(query) { "Vault named query: $name does not have its query statement set" }}${
                 if (unconumedStatesOnly) {
                     " AND (visible_states.consumed IS NULL OR visible_states.consumed < :${TIMESTAMP_LIMIT_PARAM_NAME})"
-                } else ""
+                } else {
+                    ""
+                }
             }"
 
         return VaultNamedQuery.ParsedQuery(
@@ -113,9 +114,10 @@ class VaultNamedQueryBuilderImpl(
         )
     }
 
-    private fun parseOrderBy(): VaultNamedQuery.ParsedQuery?{
-        if ( orderByFragments.isEmpty())
+    private fun parseOrderBy(): VaultNamedQuery.ParsedQuery? {
+        if (orderByFragments.isEmpty()) {
             return null
+        }
         val parsed = mutableListOf<String>()
         val original = mutableListOf<String>()
 
@@ -123,6 +125,6 @@ class VaultNamedQueryBuilderImpl(
             parsed.add("${vaultNamedQueryParser.parseSimpleExpression(it.first)}${it.second?.let{value -> " $value"} ?: ""}")
             original.add("${it.first}${it.second?.let{value -> " $value"} ?: ""}")
         }
-        return VaultNamedQuery.ParsedQuery(original.joinToString(", "), parsed.joinToString(", "), VaultNamedQuery.Type.ORDER_BY )
+        return VaultNamedQuery.ParsedQuery(original.joinToString(", "), parsed.joinToString(", "), VaultNamedQuery.Type.ORDER_BY)
     }
 }

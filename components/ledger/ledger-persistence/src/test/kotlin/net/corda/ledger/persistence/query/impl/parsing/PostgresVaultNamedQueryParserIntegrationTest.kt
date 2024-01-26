@@ -123,7 +123,7 @@ class PostgresVaultNamedQueryParserIntegrationTest {
 
     @ParameterizedTest
     @MethodSource("simpleInputsToOutputs")
-    fun `simple expressions are parsed from a postgres query and output back into a postgres query`(input: String, output: String){
+    fun `simple expressions are parsed from a postgres query and output back into a postgres query`(input: String, output: String) {
         assertThat(vaultNamedQueryParser.parseSimpleExpression(input)).isEqualTo(output)
     }
 
