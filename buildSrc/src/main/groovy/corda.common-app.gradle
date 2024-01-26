@@ -87,7 +87,7 @@ TaskProvider<Jar> jarTask = tasks.named('jar', Jar) {
 @CompileStatic
 private def addSystemPackagesExtra(
         final ArtifactCollection artifacts,
-        final Set<String> systemBundleExtraSet
+        final Set<String>   systemBundleExtraSet
 ) {
     artifacts.each { resolvedArtifact ->
         final File file = resolvedArtifact.file
@@ -128,6 +128,8 @@ private def addSystemPackagesExtra(
             "sun.nio.ch",
             "sun.security.x509",
             "sun.security.ssl",
+            "javax.annotation",
+            "javax.annotation.meta",
             "javax.servlet",
             "javax.transaction;version=1.2.0",
             "javax.xml.stream;version=1.0",
