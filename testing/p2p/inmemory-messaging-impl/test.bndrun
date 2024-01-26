@@ -12,6 +12,8 @@
 #-runjdb: 5005
 
 -runsystempackages: \
+    javax.annotation;version=3.0.0,\
+    javax.annotation.meta;version=3.0.0,\
     javax.xml.stream;version=1.0.0,\
     javax.xml.stream.events;version=1.0.0,\
     javax.xml.stream.util;version=1.0.0,\
