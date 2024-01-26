@@ -34,6 +34,7 @@ class TestStateEventProcessorStrings(
         state: State<String>?, event: Record<String, String>
     ): Response<String> {
         counter++
+        onNextLatch.countDown()
 
         if (delayProcessorOnFirst != null) {
             Thread.sleep(delayProcessorOnFirst!!)
@@ -59,8 +60,6 @@ class TestStateEventProcessorStrings(
         } else {
             emptyList()
         }
-
-        onNextLatch.countDown()
 
         return Response(
             State(newState, metadata = null),
