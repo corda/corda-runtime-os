@@ -25,7 +25,7 @@ dependencies {
     api 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-ledger-utxo'
     implementation 'net.corda:corda-topic-schema'
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation libs.jackson.module.kotlin
     implementation project(':components:ledger:ledger-common-flow-api')
     implementation project(':components:ledger:ledger-common-flow')
     implementation project(':components:ledger:notary-worker-selection')
@@ -59,8 +59,8 @@ dependencies {
     testImplementation project(':testing:ledger:ledger-utxo-base-test')
 
     // Dependencies for ProofOfActionSerializationTests:
-    testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    testImplementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    testImplementation libs.jackson.module.kotlin
+    testImplementation libs.jackson.datatype.jsr310
     testImplementation project(':libs:crypto:merkle-impl')
 
     integrationTestImplementation project(':testing:sandboxes')
