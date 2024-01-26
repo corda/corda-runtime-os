@@ -290,6 +290,14 @@ stateManager:
     storageId: "default"
     # -- name of the partition to use. When using 'Database' as the type, the 'partition' represents the name of the database schema
     partition: "sm_flow_mapping"
+  # Persistent storage configuration for the 'flowStatus' state type
+  flowStatus:
+    # -- persistent storage type
+    type: Database
+    # -- name of the persistent storage to use. When using 'Database' as the type, an element with the given id should exist under the databases section
+    storageId: "default"
+    # -- name of the partition to use. When using 'Database' as the type, the 'partition' represents the name of the database schema
+    partition: "sm_flow_status"
   # Persistent storage configuration for the 'keyRotation' state type
   keyRotation:
     # -- persistent storage type
@@ -1530,7 +1538,31 @@ workers:
 #          keepAliveTimeSeconds: 0
 #          # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
 #          validationTimeoutSeconds: 5
-#     TODO-[CORE-19372]: remove children and uncomment above 'keyRotation' section
+#      # Runtime configuration settings for the State Manager used to interact with 'flowStatus' states
+#      flowStatus:
+#        # -- persistent storage type
+#        type: Database
+#        # Database user, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
+#        username:
+#          # -- the State Manager database user
+#          value: "flow_status"
+#        # Database password, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
+#        password: null
+#        # Connection pool configuration for the State Manager
+#        connectionPool:
+#          # -- maximum connection pool size
+#          maxSize: 5
+#          # -- minimum connection pool size; null value means pool's min size will default to pool's max size value
+#          minSize: null
+#          # -- maximum time (in seconds) a connection can stay idle in the pool; a value of 0 means that idle connections are never removed from the pool
+#          idleTimeoutSeconds: 120
+#          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; if a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+#          maxLifetimeSeconds: 1800
+#          # -- interval time (in seconds) in which connections will be tested for aliveness; connections which are no longer alive are removed from the pool; a value of 0 means this check is disabled
+#          keepAliveTimeSeconds: 0
+#          # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+#          validationTimeoutSeconds: 5
+#     TODO-[CORE-19372]: remove children and uncomment above 'keyRotation' and 'flowStatus' sections
       # Type of State Manager
       type: DATABASE
       # State Manager database configuration

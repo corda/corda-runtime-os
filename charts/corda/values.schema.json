@@ -954,6 +954,7 @@
             "required": [
                 "flowCheckpoint",
                 "flowMapping",
+                "flowStatus",
                 "keyRotation",
                 "p2pSession",
                 "tokenPoolCache"
@@ -969,6 +970,11 @@
                     "type": "object",
                     "$ref": "#/$defs/stateTypePersistentStorageMapping",
                     "title": "Persistent Storage configuration to be used by the State Manager when dealing with 'flowMapping' states"
+                },
+                "flowStatus": {
+                    "type": "object",
+                    "$ref": "#/$defs/stateTypePersistentStorageMapping",
+                    "title": "Persistent Storage configuration to be used by the State Manager when dealing with 'flowStatus' states"
                 },
                 "keyRotation": {
                     "type": "object",
@@ -1396,6 +1402,13 @@
                                 ]
                             },
                             "flowMapper": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/basicAuthConfig"
+                                    }
+                                ]
+                            },
+                            "flowStatus": {
                                 "allOf": [
                                     {
                                         "$ref": "#/$defs/basicAuthConfig"
@@ -2221,11 +2234,16 @@
                                         {
                                             "type": "object",
                                             "required": [
+                                                "flowStatus",
                                                 "keyRotation"
                                             ],
                                             "additionalProperties": false,
                                             "properties": {
                                                 "keyRotation": {
+                                                    "type": "object",
+                                                    "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
+                                                },
+                                                "flowStatus": {
                                                     "type": "object",
                                                     "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
                                                 }

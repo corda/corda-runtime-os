@@ -25,9 +25,9 @@ dependencies {
     runtimeOnly libs.log4j.layout.json
 
     // Jackson dependencies for JSON formatted logs
-    runtimeOnly "com.fasterxml.jackson.core:jackson-core:$jacksonVersion"
-    runtimeOnly "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
-    runtimeOnly "com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion"
+    runtimeOnly libs.jackson.core
+    runtimeOnly libs.jackson.databind
+    runtimeOnly libs.jackson.annotations
 
     testImplementation libs.mockito.core
     testImplementation "org.apache.sling:org.apache.sling.testing.osgi-mock.junit5:$slingVersion"

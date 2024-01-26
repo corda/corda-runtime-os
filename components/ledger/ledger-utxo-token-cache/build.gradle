@@ -43,7 +43,7 @@ dependencies {
     implementation libs.slf4j.api
 
     testImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
-    testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    testImplementation libs.jackson.module.kotlin
 
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
     testImplementation project(":libs:lifecycle:lifecycle-impl")

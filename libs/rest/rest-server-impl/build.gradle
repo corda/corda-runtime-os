@@ -40,10 +40,10 @@ dependencies {
     implementation libs.swagger.core
     implementation libs.jetty.http2.server
 
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation libs.jackson.module.kotlin
     implementation project(":libs:rest:rest-common")
 
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    implementation libs.jackson.datatype.jsr310
 
     testImplementation project(":libs:rest:rest-test-common")
 
@@ -51,8 +51,8 @@ dependencies {
     testRuntimeOnly libs.slf4j.simple
 
     runtimeOnly libs.swagger.ui
-    runtimeOnly "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
-    runtimeOnly "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    runtimeOnly libs.jackson.databind
+    runtimeOnly libs.jackson.datatype.jsr310
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
 
     integrationTestImplementation libs.unirest.java

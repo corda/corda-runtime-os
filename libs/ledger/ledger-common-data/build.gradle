@@ -17,7 +17,7 @@ dependencies {
 
     implementation 'net.corda:corda-ledger-common'
 
-    implementation "com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion"
+    implementation libs.jackson.annotations
 
     api project(':libs:base-internal')
     implementation project(':libs:crypto:crypto-core')
