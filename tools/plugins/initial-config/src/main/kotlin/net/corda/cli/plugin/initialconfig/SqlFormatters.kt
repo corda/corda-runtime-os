@@ -26,7 +26,7 @@ fun Any.toInsertStatement(): String {
     }
 
     return "insert into ${formatTableName(this)} (${values.joinToString { it.first }}) " +
-            "values (${values.joinToString { it.second }})"
+            "values (${values.joinToString { it.second }});"
 }
 
 private fun formatValue(value: Any?): String? {
