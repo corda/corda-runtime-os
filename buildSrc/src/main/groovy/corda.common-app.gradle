@@ -87,7 +87,7 @@ TaskProvider<Jar> jarTask = tasks.named('jar', Jar) {
 @CompileStatic
 private def addSystemPackagesExtra(
         final ArtifactCollection artifacts,
-        final Set<String>   systemBundleExtraSet
+        final Set<String> systemBundleExtraSet
 ) {
     artifacts.each { resolvedArtifact ->
         final File file = resolvedArtifact.file
