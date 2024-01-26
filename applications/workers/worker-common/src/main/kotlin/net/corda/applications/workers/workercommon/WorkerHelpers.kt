@@ -2,6 +2,7 @@ package net.corda.applications.workers.workercommon
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import net.corda.applications.workers.workercommon.StateManagerConfigHelper.createStateManagerConfigFromCli
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
@@ -9,6 +10,7 @@ import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Shutdown
 import net.corda.schema.configuration.BootConfig
+import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER
 import net.corda.schema.configuration.ConfigDefaults
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
@@ -143,25 +145,31 @@ class WorkerHelpers {
             val secretsConfig =
                 defaultParams.secrets.mapKeys { (key, _) -> "${BootConfig.BOOT_SECRETS}.${key.trim()}" }
 
-            val stateManagerConfig =
-                defaultParams.stateManagerParams.mapKeys { (key, _) -> "${BootConfig.BOOT_STATE_MANAGER}.${key.trim()}" }
+            val builtConfig = ConfigFactory.parseMap(messagingParams + defaultParamsMap + secretsConfig)
 
-            val builtConfig = ConfigFactory.parseMap(messagingParams + defaultParamsMap + secretsConfig + stateManagerConfig)
-
-            val config = extraConfigs.mergeOver(builtConfig)
+            val configWithExtras = extraConfigs.mergeOver(builtConfig)
 
             // merge with all files
-            val configWithFiles = defaultParams.configFiles.reversed().fold(config) { acc, next ->
+            val configWithFiles = defaultParams.configFiles.reversed().fold(configWithExtras) { acc, next ->
                 val fileConfig = ConfigFactory.parseFile(next.toFile())
                 acc.withFallback(fileConfig)
             }.withFallback(ConfigFactory.parseMap(defaultParamsDefaultValuesMap))
 
+            val configWithStateManagerFallback =
+                // TODO CORE-19372 - removal of stateManagerParams CLI arg and removal of fallback logic here
+                if (defaultParams.stateManagerParams.isNotEmpty() && !configWithFiles.hasPath(BOOT_STATE_MANAGER)) {
+                    configWithFiles.withFallback(createStateManagerConfigFromCli(defaultParams.stateManagerParams))
+                } else {
+                    configWithFiles
+                }
+
             val smartConfigFactory = SmartConfigFactory
                 .createWith(
-                    configWithFiles.getConfig(BootConfig.BOOT_SECRETS).atPath(BootConfig.BOOT_SECRETS),
-                    secretsServiceFactoryResolver.findAll())
+                    configWithStateManagerFallback.getConfig(BootConfig.BOOT_SECRETS).atPath(BootConfig.BOOT_SECRETS),
+                    secretsServiceFactoryResolver.findAll()
+                )
 
-            val bootConfig = smartConfigFactory.create(configWithFiles.withoutPath(BootConfig.BOOT_SECRETS))
+            val bootConfig = smartConfigFactory.create(configWithStateManagerFallback.withoutPath(BootConfig.BOOT_SECRETS))
             validator.validate(ConfigKeys.BOOT_CONFIG, bootConfig, loadResource(BOOT_CONFIG_PATH), true)
 
             // we now know bootConfig has:
@@ -231,8 +239,9 @@ class WorkerHelpers {
 
             val arguments = processInfo.arguments()
             if (arguments.isPresent) {
-                arguments.get().map { arg -> SENSITIVE_ARGS.firstOrNull { arg.trim().startsWith(it) }
-                    .let { prefix -> if (prefix == null) arg else "$prefix=[REDACTED]" }
+                arguments.get().map { arg ->
+                    SENSITIVE_ARGS.firstOrNull { arg.trim().startsWith(it) }
+                        .let { prefix -> if (prefix == null) arg else "$prefix=[REDACTED]" }
                 }.forEachIndexed { i, redactedArg -> info("argument $i, $redactedArg") }
             } else {
                 info("arguments: Null")

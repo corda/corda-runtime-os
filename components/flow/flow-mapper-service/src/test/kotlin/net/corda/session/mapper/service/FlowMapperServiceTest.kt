@@ -22,6 +22,7 @@ import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
 import net.corda.schema.configuration.FlowConfig
+import net.corda.schema.configuration.StateManagerConfig
 import net.corda.session.mapper.messaging.mediator.FlowMapperEventMediatorFactory
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -66,7 +67,7 @@ internal class FlowMapperServiceTest {
                 .whenever(it).create(any(), any(), any())
         }
         val stateManagerFactory = mock<StateManagerFactory>().also {
-            doAnswer { mock<StateManager>() }.whenever(it).create(any())
+            doAnswer { mock<StateManager>() }.whenever(it).create(any(), eq(StateManagerConfig.StateType.FLOW_MAPPING))
         }
 
         LifecycleTest {
@@ -131,7 +132,7 @@ internal class FlowMapperServiceTest {
                 .thenReturn(eventMediator)
         }
         val stateManagerFactory = mock<StateManagerFactory>().also {
-            doAnswer { mock<StateManager>() }.whenever(it).create(any())
+            doAnswer { mock<StateManager>() }.whenever(it).create(any(), eq(StateManagerConfig.StateType.FLOW_MAPPING))
         }
 
         LifecycleTest {
@@ -186,7 +187,7 @@ internal class FlowMapperServiceTest {
                 .thenThrow(CordaMessageAPIConfigException("Bad config!"))
         }
         val stateManagerFactory = mock<StateManagerFactory>().also {
-            doAnswer { mock<StateManager>() }.whenever(it).create(any())
+            doAnswer { mock<StateManager>() }.whenever(it).create(any(), eq(StateManagerConfig.StateType.FLOW_MAPPING))
         }
 
         LifecycleTest {

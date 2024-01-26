@@ -3,7 +3,7 @@ package net.corda.ledger.common.flow.impl.transaction.filtered.serializer.amqp
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.ledger.common.data.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
-import net.corda.ledger.common.flow.impl.transaction.filtered.FilteredTransactionImpl
+import net.corda.ledger.common.data.transaction.filtered.impl.FilteredTransactionImpl
 import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByVerification

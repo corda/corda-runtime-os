@@ -3,15 +3,16 @@ package net.corda.db.core
 import java.time.Duration
 
 @Suppress("LongParameterList")
-fun createDataSource(
+fun createUnpooledDataSource(
     driverClass: String,
     jdbcUrl: String,
     username: String,
     password: String,
-    datasourceFactory: DataSourceFactory = HikariDataSourceFactory(),
+    datasourceFactory: DataSourceFactory = DataSourceFactoryImpl(),
     maximumPoolSize: Int = 5,
 ): CloseableDataSource {
     return datasourceFactory.create(
+        enablePool = false,
         driverClass = driverClass,
         jdbcUrl = jdbcUrl,
         username = username,

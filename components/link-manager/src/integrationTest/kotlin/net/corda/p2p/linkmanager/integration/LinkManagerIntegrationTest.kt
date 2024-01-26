@@ -47,6 +47,7 @@ import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.schema.configuration.StateManagerConfig
 import net.corda.test.util.eventually
 import net.corda.test.util.lifecycle.usingLifecycle
 import net.corda.utilities.seconds
@@ -226,7 +227,7 @@ class LinkManagerIntegrationTest {
             membershipGroupReaderProvider,
             MembershipQueryClientStub(),
             groupParametersReaderService,
-            StateManagerFactoryStub().create(bootstrapConfig),
+            StateManagerFactoryStub().create(bootstrapConfig, StateManagerConfig.StateType.P2P_SESSION),
             sessionEncryptionOpsClient,
             schemaRegistry,
         )

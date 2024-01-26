@@ -25,6 +25,7 @@ import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
 import net.corda.schema.configuration.FlowConfig
+import net.corda.schema.configuration.StateManagerConfig
 import net.corda.session.mapper.messaging.mediator.FlowMapperEventMediatorFactory
 import net.corda.session.mapper.service.executor.CleanupProcessor
 import net.corda.session.mapper.service.executor.ScheduledTaskProcessor
@@ -114,7 +115,9 @@ class FlowMapperService @Activate constructor(
             val stateManagerConfig = event.config.getConfig(STATE_MANAGER_CONFIG)
 
             stateManager?.stop()
-            stateManager = stateManagerFactory.create(stateManagerConfig).also { it.start() }
+            stateManager = stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.FLOW_MAPPING)
+                .also { it.start() }
+
             coordinator.createManagedResource(EVENT_MEDIATOR) {
                 flowMapperEventMediatorFactory.create(
                     flowConfig,
