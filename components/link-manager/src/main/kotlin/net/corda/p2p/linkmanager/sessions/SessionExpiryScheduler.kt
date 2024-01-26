@@ -7,6 +7,7 @@ import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata.Companion.toCo
 import net.corda.utilities.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.util.Random
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
@@ -18,6 +19,7 @@ internal class SessionExpiryScheduler(
     private val stateManager: StateManager,
     private val clock: Clock,
     private val scheduler: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(),
+    private val noiseFactory: Random = Random(),
 ) {
     private val tasks = ConcurrentHashMap<String, SavedState>()
 
@@ -29,8 +31,13 @@ internal class SessionExpiryScheduler(
     fun checkStateValidateAndRememberIt(state: State): State? {
         val now = clock.instant()
         val expiry = state.metadata.toCommonMetadata().expiry
-        val duration = Duration.between(now, expiry)
+        val noise = Duration.of(
+            noiseFactory.nextLong(20 * 60),
+            TimeUnit.SECONDS.toChronoUnit(),
+        )
+        val duration = Duration.between(now, expiry) - noise
         return if (duration.isNegative) {
+            forgetState(state)
             null
         } else {
             tasks.compute(state.key) { _, currentValue ->

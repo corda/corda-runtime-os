@@ -87,7 +87,7 @@ class StatefulSessionManagerImplTest {
                             "encryptionKeyId" to "encryptionKeyId",
                             "encryptionTenant" to "encryptionTenant",
                             "status" to "SentResponderHello",
-                            "expiry" to 1000L,
+                            "expiry" to 2000000L,
                         ),
                     )
                     on { key } doReturn "stateKey"
@@ -206,7 +206,7 @@ class StatefulSessionManagerImplTest {
                         "groupId" to "group ID",
                         "lastSendTimestamp" to 50L,
                         "status" to "SentResponderHello",
-                        "expiry" to 1000L,
+                        "expiry" to 20000000L,
                     ),
                 )
                 on { key } doReturn "stateKey"

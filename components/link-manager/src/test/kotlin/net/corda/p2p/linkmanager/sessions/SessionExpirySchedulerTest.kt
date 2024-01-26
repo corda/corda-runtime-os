@@ -17,6 +17,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import java.time.Duration
 import java.time.Instant
+import java.util.Random
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -32,6 +33,9 @@ class SessionExpirySchedulerTest {
     private val task = argumentCaptor<Runnable>()
     private val delay = argumentCaptor<Long>()
     private val unit = argumentCaptor<TimeUnit>()
+    private val random = mock<Random> {
+        on { nextLong(any()) } doReturn 2L
+    }
     private val scheduler = mock<ScheduledExecutorService> {
         on {
             schedule(
@@ -51,6 +55,8 @@ class SessionExpirySchedulerTest {
                 "expiry" to 900,
             ),
         )
+
+        on { key } doReturn "expiredStateKey"
     }
     private val validState = mock<State> {
         on { metadata } doReturn Metadata(
@@ -59,7 +65,7 @@ class SessionExpirySchedulerTest {
                 "destinationVnode" to "O=David, L=London, C=GB",
                 "groupId" to "groupId",
                 "lastSendTimestamp" to 100,
-                "expiry" to 1100,
+                "expiry" to 3100,
             ),
         )
 
@@ -71,6 +77,7 @@ class SessionExpirySchedulerTest {
         stateManager,
         clock,
         scheduler,
+        random,
     )
 
     @Nested
@@ -126,7 +133,7 @@ class SessionExpirySchedulerTest {
                         "destinationVnode" to "O=David, L=London, C=GB",
                         "groupId" to "groupId",
                         "lastSendTimestamp" to 100,
-                        "expiry" to 1200,
+                        "expiry" to 4200,
                     ),
                 )
 
@@ -155,7 +162,7 @@ class SessionExpirySchedulerTest {
         }
 
         @Test
-        fun `it will cancel if the expiry is efferent`() {
+        fun `it will cancel if the expiry is different`() {
             val stateTwo = mock<State> {
                 on { metadata } doReturn Metadata(
                     mapOf(
@@ -163,7 +170,7 @@ class SessionExpirySchedulerTest {
                         "destinationVnode" to "O=David, L=London, C=GB",
                         "groupId" to "groupId",
                         "lastSendTimestamp" to 100,
-                        "expiry" to 1200,
+                        "expiry" to 4200,
                     ),
                 )
 
