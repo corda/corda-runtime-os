@@ -7,13 +7,10 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.rest.FlowStatusCacheService
 import net.corda.flow.rest.flowstatus.FlowStatusUpdateListener
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.statemanager.api.IntervalFilter
-import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
@@ -29,8 +26,6 @@ import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.slf4j.LoggerFactory
-import java.time.Instant
 
 @Component(service = [FlowStatusCacheService::class])
 class DurableFlowStatusCacheServiceImpl @Activate constructor(
@@ -40,10 +35,10 @@ class DurableFlowStatusCacheServiceImpl @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = CordaAvroSerializationFactory::class)
     private val cordaSerializationFactory: CordaAvroSerializationFactory,
+    private val stateManager: StateManager
 ) : FlowStatusCacheService, DurableProcessor<FlowKey, FlowStatus> {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val GROUP_NAME = "Flow Status Subscription"
     }
 
@@ -54,7 +49,6 @@ class DurableFlowStatusCacheServiceImpl @Activate constructor(
     private var subReg: RegistrationHandle? = null
 
     private var flowStatusSubscription: Subscription<FlowKey, FlowStatus>? = null
-    private val stateManager = getMockStateManager()
 
     private val serializer = cordaSerializationFactory.createAvroSerializer<FlowStatus> {}
 
@@ -78,6 +72,8 @@ class DurableFlowStatusCacheServiceImpl @Activate constructor(
         subReg = lifecycleCoordinator.followStatusChangesByName(
             setOf(flowStatusSubscription!!.subscriptionName)
         )
+
+        flowStatusSubscription?.start()
     }
 
     override fun onNext(events: List<Record<FlowKey, FlowStatus>>): List<Record<*, *>> {
@@ -128,103 +124,6 @@ class DurableFlowStatusCacheServiceImpl @Activate constructor(
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                 }
             }
-        }
-    }
-
-    // Temporary measure until we integrate the real state manager
-    private fun getMockStateManager(): StateManager {
-        return object : StateManager {
-            private val stateStore = mutableMapOf<String, State>()
-            override val name: LifecycleCoordinatorName
-                get() = LifecycleCoordinatorName("MockStateManager")
-
-            override fun create(states: Collection<State>): Set<String> {
-                val failedKeys = mutableSetOf<String>()
-
-                states.forEach { state ->
-                    if (state.key in stateStore) {
-                        failedKeys.add(state.key)
-                    } else {
-                        stateStore[state.key] = state.copy(modifiedTime = Instant.now())
-                    }
-                }
-
-                return failedKeys
-            }
-
-            override fun get(keys: Collection<String>): Map<String, State> {
-                return keys.mapNotNull { key -> stateStore[key]?.let { key to it } }.toMap()
-            }
-
-            override fun update(states: Collection<State>): Map<String, State?> {
-                val failedUpdates = mutableMapOf<String, State?>()
-
-                states.forEach { state ->
-                    val currentState = stateStore[state.key]
-                    if (currentState == null || currentState.version + 1 != state.version) {
-                        // State does not exist or version mismatch
-                        failedUpdates[state.key] = currentState
-                    } else {
-                        // Optimistic locking condition met
-                        val updatedState = state.copy(modifiedTime = Instant.now())
-                        stateStore[state.key] = updatedState
-                    }
-                }
-
-                return failedUpdates
-            }
-
-            override fun delete(states: Collection<State>): Map<String, State> {
-                val failedDeletion = mutableMapOf<String, State>()
-
-                states.forEach { state ->
-                    val currentState = stateStore[state.key]
-                    if (currentState != null && currentState.version == state.version) {
-                        stateStore.remove(state.key)
-                    } else {
-                        currentState?.let { failedDeletion[state.key] = currentState }
-                    }
-                }
-
-                return failedDeletion
-            }
-
-            override fun updatedBetween(interval: IntervalFilter): Map<String, State> {
-                TODO("Not yet implemented")
-            }
-
-            override fun findByMetadataMatchingAll(filters: Collection<MetadataFilter>): Map<String, State> {
-                TODO("Not yet implemented")
-            }
-
-            override fun findByMetadataMatchingAny(filters: Collection<MetadataFilter>): Map<String, State> {
-                TODO("Not yet implemented")
-            }
-
-            override fun findUpdatedBetweenWithMetadataMatchingAll(
-                intervalFilter: IntervalFilter,
-                metadataFilters: Collection<MetadataFilter>
-            ): Map<String, State> {
-                TODO("Not yet implemented")
-            }
-
-            override fun findUpdatedBetweenWithMetadataMatchingAny(
-                intervalFilter: IntervalFilter,
-                metadataFilters: Collection<MetadataFilter>
-            ): Map<String, State> {
-                TODO("Not yet implemented")
-            }
-
-            override val isRunning = true
-
-            override fun start() {
-                TODO("Not yet implemented")
-            }
-
-            override fun stop() {
-                TODO("Not yet implemented")
-            }
-
         }
     }
 }
