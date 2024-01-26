@@ -8,8 +8,8 @@ import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_OPTIONS_
 import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY
 import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
-import net.corda.ledger.common.flow.transaction.filtered.FilteredComponentGroup
-import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
+import net.corda.ledger.common.data.transaction.filtered.FilteredComponentGroup
+import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransactionVerificationException
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.crypto.DigestAlgorithmName

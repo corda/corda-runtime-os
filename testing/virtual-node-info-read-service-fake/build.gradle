@@ -17,9 +17,9 @@ dependencies {
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":components:reconciliation:reconciliation")
 
-    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    implementation libs.jackson.dataformat.yaml
+    implementation libs.jackson.module.kotlin
+    implementation libs.jackson.datatype.jsr310
 
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")

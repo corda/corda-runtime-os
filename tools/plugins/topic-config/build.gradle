@@ -13,8 +13,8 @@ group 'net.corda.cli.deployment'
 
 dependencies {
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
-    compileOnly "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    compileOnly "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
+    compileOnly libs.jackson.module.kotlin
+    compileOnly libs.jackson.dataformat.yaml
 
     compileOnly libs.pf4j
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
@@ -36,8 +36,8 @@ dependencies {
     testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
     testImplementation libs.pf4j
     testImplementation "net.corda.cli.host:api:$pluginHostVersion"
-    testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    testImplementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
+    testImplementation libs.jackson.module.kotlin
+    testImplementation libs.jackson.dataformat.yaml
     testImplementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
 }
 

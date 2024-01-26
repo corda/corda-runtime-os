@@ -22,9 +22,9 @@ dependencies {
     testImplementation "com.github.stefanbirkner:system-lambda:$systemLambdaVersion"
     testImplementation "info.picocli:picocli:$picocliVersion"
 
-    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
-    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation libs.jackson.dataformat.yaml
+    implementation libs.jackson.databind
+    implementation libs.jackson.module.kotlin
     implementation "io.fabric8:kubernetes-client:$kubernetesClientVersion"
 
     implementation "org.postgresql:postgresql:$postgresDriverVersion"

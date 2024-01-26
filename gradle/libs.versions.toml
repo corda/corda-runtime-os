@@ -3,6 +3,8 @@ kotlinVersion = "1.8.21"
 
 bouncycastleVersion = "1.77"
 
+jacksonVersion = "2.15.0"
+
 # REST dependency versions
 javalinVersion = "4.6.8"
 # This version of Jetty must be the same major version as used by Javalin, please see above.
@@ -86,6 +88,12 @@ pf4j = { group = "org.pf4j", name = "pf4j", version.ref = "pf4jVersion" }
 brave-context-slf4j = { group = "io.zipkin.brave", name = "brave-context-slf4j", version.ref = "braveVersion" }
 brave-instrumentation-servlet = { group = "io.zipkin.brave", name = "brave-instrumentation-servlet", version.ref = "braveVersion" }
 zipkin-sender = { group = "io.zipkin.reporter2", name = "zipkin-sender-urlconnection", version.ref = "zipkinVersion" }
+jackson-annotations = { group = "com.fasterxml.jackson.core", name = "jackson-annotations", version.ref = "jacksonVersion" }
+jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jacksonVersion" }
+jackson-core = { group = "com.fasterxml.jackson.core", name = "jackson-core", version.ref = "jacksonVersion" }
+jackson-datatype-jsr310 = { group = "com.fasterxml.jackson.datatype", name = "jackson-datatype-jsr310", version.ref = "jacksonVersion" }
+jackson-dataformat-yaml = { group = "com.fasterxml.jackson.dataformat", name = "jackson-dataformat-yaml", version.ref = "jacksonVersion" }
+jackson-module-kotlin = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version.ref = "jacksonVersion" }
 
 gradle-enterprise = { group = "com.gradle", name = "gradle-enterprise-gradle-plugin", version.ref = "gradleEnterpriseVersion" }
 

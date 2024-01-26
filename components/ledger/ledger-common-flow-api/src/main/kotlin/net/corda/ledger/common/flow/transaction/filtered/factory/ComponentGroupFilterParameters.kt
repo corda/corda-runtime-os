@@ -1,6 +1,6 @@
 package net.corda.ledger.common.flow.transaction.filtered.factory
 
-import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
+import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleProofType
 import java.util.function.Predicate
