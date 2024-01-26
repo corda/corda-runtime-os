@@ -7,6 +7,7 @@ import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.persistence.common.InconsistentLedgerStateException
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.ContractState
@@ -76,6 +77,7 @@ interface UtxoPersistenceService {
      */
     fun persistFilteredTransactions(
         filteredTransactions: List<FilteredTransaction>,
+        signatures: List<DigitalSignatureAndMetadata>,
         account: String
     )
 }

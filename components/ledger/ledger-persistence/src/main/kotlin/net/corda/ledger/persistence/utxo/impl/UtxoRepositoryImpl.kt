@@ -56,6 +56,8 @@ class UtxoRepositoryImpl @Activate constructor(
 ) : UtxoRepository, UsedByPersistence {
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
+        const val TOP_LEVEL_MERKLE_PROOF_INDEX = -1
     }
 
     override fun findTransaction(
@@ -430,17 +432,40 @@ class UtxoRepositoryImpl @Activate constructor(
     ): Map<String, UtxoFilteredTransactionDto> {
         val privacySaltAndMetadataMap = findTransactionsPrivacySaltAndMetadata(entityManager, ids)
         val merkleProofs = findMerkleProofs(entityManager, ids)
+        val signaturesMap = ids.associateWith { findTransactionSignatures(entityManager, it) }
 
-        return ids.filter { transactionId ->
-            privacySaltAndMetadataMap[transactionId] != null && merkleProofs[transactionId] != null
-        }.associateWith { transactionId ->
+        return ids.associateWith { transactionId ->
+
+            val transactionMerkleProofs = merkleProofs[transactionId]
+            val topLevelMerkleProof = transactionMerkleProofs?.get(TOP_LEVEL_MERKLE_PROOF_INDEX)
+            val transactionPrivacySaltAndMetadata = privacySaltAndMetadataMap[transactionId]
+            val transactionSignatures = signaturesMap[transactionId]
+
+            requireNotNull(privacySaltAndMetadataMap[transactionId]) {
+                "Couldn't find metadata for transaction with ID: $transactionId."
+            }
+            requireNotNull(transactionMerkleProofs) {
+                "Couldn't find any merkle proofs for transaction with ID: $transactionId."
+            }
+            requireNotNull(topLevelMerkleProof) {
+                "Couldn't find a top level merkle proof for transaction with ID: $transactionId."
+            }
+            requireNotNull(transactionPrivacySaltAndMetadata) {
+                "Couldn't find metadata/privacy salt for transaction with ID: $transactionId"
+            }
+            requireNotNull(transactionSignatures) {
+                "Couldn't find signatures for transaction with ID: $transactionId"
+            }
+
             UtxoFilteredTransactionDto(
-                transactionId,
-                // At this point it's safe to assume that both merkleProofs[transactionId]
-                // and privacySaltAndMetadataMap[transactionId] are not null due to the filter earlier
-                merkleProofs[transactionId]!!.groupBy { it.groupIndex },
-                privacySaltAndMetadataMap[transactionId]!!.first,
-                privacySaltAndMetadataMap[transactionId]!!.second
+                transactionId = transactionId,
+                topLevelMerkleProof = topLevelMerkleProof,
+                componentMerkleProofMap = transactionMerkleProofs.groupBy {
+                    it.groupIndex
+                }.filter { it.key != TOP_LEVEL_MERKLE_PROOF_INDEX },
+                privacySalt = transactionPrivacySaltAndMetadata.first,
+                metadataBytes = transactionPrivacySaltAndMetadata.second,
+                signatures = transactionSignatures
             )
         }
     }

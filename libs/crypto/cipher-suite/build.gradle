@@ -14,7 +14,6 @@ dependencies {
     implementation project(":libs:crypto:crypto-utils")
 
     api platform("net.corda:corda-api:$cordaApiVersion")
-    api 'net.corda:corda-application'
     api 'net.corda:corda-crypto'
     api 'net.corda:corda-crypto-extensions'
 

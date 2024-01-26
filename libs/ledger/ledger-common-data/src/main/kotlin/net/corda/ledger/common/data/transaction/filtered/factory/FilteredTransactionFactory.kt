@@ -32,7 +32,7 @@ interface FilteredTransactionFactory {
 
     /**
      * Creates a [FilteredTransaction] from a [transactionId], [topLevelMerkleProof], [filteredComponentGroups],
-     * [privacySaltBytes] and [rawMetadata].
+     * [privacySaltBytes].
      *
      * @return A constructed [FilteredTransaction] using the given details.
      */
@@ -41,7 +41,6 @@ interface FilteredTransactionFactory {
         transactionId: SecureHash,
         topLevelMerkleProof: MerkleProof,
         filteredComponentGroups: Map<Int, FilteredComponentGroup>,
-        privacySaltBytes: ByteArray,
-        rawMetadata: ByteArray
+        privacySaltBytes: ByteArray
     ): FilteredTransaction
 }

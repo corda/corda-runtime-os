@@ -6,6 +6,7 @@ import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
 import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -24,10 +25,10 @@ class MerkleProofFactoryImpl @Activate constructor()
     @Suspendable
     override fun createAuditMerkleProof(
         transactionId: String,
-        groupId: Int,
         treeSize: Int,
         leavesIndexAndData: Map<Int, ByteArray>,
-        hashes: List<SecureHash>
+        hashes: List<SecureHash>,
+        hashDigestProvider: MerkleTreeHashDigestProvider
     ): MerkleProof {
         return MerkleProofImpl(
             MerkleProofType.AUDIT,
@@ -35,8 +36,7 @@ class MerkleProofFactoryImpl @Activate constructor()
             leavesIndexAndData.map { (leafIndex, data) ->
                 IndexedMerkleLeafImpl(
                     leafIndex,
-                    // TODO CORE-18698 For now this is null as we don't have access to the transaction's metadata to calculate
-                    null,
+                    hashDigestProvider.leafNonce(leafIndex),
                     data
                 )
             },

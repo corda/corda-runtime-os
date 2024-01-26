@@ -67,8 +67,7 @@ class FilteredTransactionFactoryImpl @Activate constructor(
         transactionId: SecureHash,
         topLevelMerkleProof: MerkleProof,
         filteredComponentGroups: Map<Int, FilteredComponentGroup>,
-        privacySaltBytes: ByteArray,
-        rawMetadata: ByteArray
+        privacySaltBytes: ByteArray
     ): FilteredTransaction {
         return FilteredTransactionImpl(
             id = transactionId,
