@@ -5,13 +5,14 @@ import net.corda.flow.metrics.FlowMetricsRecorder
 import net.corda.flow.pipeline.metrics.FlowMetrics
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.utilities.time.Clock
+import org.slf4j.LoggerFactory
 
 @Suppress("TooManyFunctions")
 class FlowMetricsImpl(
     private val clock: Clock,
     private val flowMetricsRecorder: FlowMetricsRecorder,
     private val flowCheckpoint: FlowCheckpoint,
-    private val recordTimestamp: Long
+    private val recordTimestamp: Long,
 ) : FlowMetrics {
 
     private val currentState: FlowMetricState
@@ -25,8 +26,13 @@ class FlowMetricsImpl(
         currentState = flowCheckpoint.readCustomState(FlowMetricState::class.java) ?: FlowMetricState()
     }
 
-    private val currentFlowStackItemMetricState: FlowStackItemMetricState get() = currentState
-        .flowStackItemMetricStates.last()
+    private companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass.name)
+    }
+
+    private val currentFlowStackItemMetricState: FlowStackItemMetricState
+        get() = currentState
+            .flowStackItemMetricStates.last()
 
     override fun flowEventReceived(flowEventType: String) {
         // Record the event lag
@@ -51,7 +57,7 @@ class FlowMetricsImpl(
                     name,
                     isSubFlow,
                     suspensionAction!!,
-                    flowSuspensionTime
+                    flowSuspensionTime,
                 )
                 totalSuspensionTime += flowSuspensionTime
                 suspensionAction = null
@@ -103,14 +109,16 @@ class FlowMetricsImpl(
         flowMetricsRecorder.recordFlowSessionMessagesSent(
             currentFlowStackItemMetricState.name,
             isSubFlow = currentState.flowStackItemMetricStates.size > 1,
-            flowEventType
+            flowEventType,
         )
     }
 
     override fun flowSessionMessageReceived(flowEventType: String) {
         // Use the flow context's class name if the subflow stack hasn't been initialised yet.
-        val (flowName, isSubFlow) = when (val currentFlowStackItem =
-            currentState.flowStackItemMetricStates.lastOrNull()) {
+        val (flowName, isSubFlow) = when (
+            val currentFlowStackItem =
+                currentState.flowStackItemMetricStates.lastOrNull()
+        ) {
             null -> flowCheckpoint.flowStartContext.flowClassName to false
             else -> currentFlowStackItem.name to currentFlowStackItem.isSubFlow
         }
@@ -137,32 +145,32 @@ class FlowMetricsImpl(
             flowMetricsRecorder.recordSubFlowCompletion(
                 finishedFlowStackItem.name,
                 flowCompletionTime,
-                completionStatus.toString()
+                completionStatus.toString(),
             )
             flowMetricsRecorder.recordTotalSuspensionTime(
                 finishedFlowStackItem.name,
                 finishedFlowStackItem.isSubFlow,
-                finishedFlowStackItem.totalSuspensionTime
+                finishedFlowStackItem.totalSuspensionTime,
             )
             flowMetricsRecorder.recordTotalFiberExecutionTime(
                 finishedFlowStackItem.name,
                 finishedFlowStackItem.isSubFlow,
-                finishedFlowStackItem.totalFiberExecutionTime
+                finishedFlowStackItem.totalFiberExecutionTime,
             )
             flowMetricsRecorder.recordTotalPipelineExecutionTime(
                 finishedFlowStackItem.name,
                 finishedFlowStackItem.isSubFlow,
-                finishedFlowStackItem.totalPipelineExecutionTime
+                finishedFlowStackItem.totalPipelineExecutionTime,
             )
             flowMetricsRecorder.recordTotalEventsProcessed(
                 finishedFlowStackItem.name,
                 finishedFlowStackItem.isSubFlow,
-                finishedFlowStackItem.totalEventProcessedCount
+                finishedFlowStackItem.totalEventProcessedCount,
             )
             flowMetricsRecorder.recordTotalFiberSuspensions(
                 finishedFlowStackItem.name,
                 finishedFlowStackItem.isSubFlow,
-                finishedFlowStackItem.totalFiberSuspensionCount
+                finishedFlowStackItem.totalFiberSuspensionCount,
             )
 
             currentFlowStackItemMetricState.apply {
@@ -179,7 +187,7 @@ class FlowMetricsImpl(
         val currentTime = clock.nowInMillis()
         val flowCompletionTime = currentTime - currentState.flowProcessingStartTime
         val flowRunTime = currentTime - flowCheckpoint.flowStartContext.createdTimestamp.toEpochMilli()
-
+        logger.info("FLOW METRIC: ID=${flowCheckpoint.flowId} EXE TIME=$flowCompletionTime LAG=${flowRunTime - flowCompletionTime}")
         currentFlowStackItemMetricState.run {
             flowMetricsRecorder.recordFlowCompletion(name, flowCompletionTime, flowRunTime, completionStatus)
             flowMetricsRecorder.recordTotalSuspensionTime(name, isSubFlow, totalSuspensionTime)
