@@ -5,6 +5,9 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.statemanager.api.State
+import net.corda.libs.statemanager.api.StateManager
+import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
@@ -17,10 +20,13 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.StateManagerConfig
+import net.corda.schema.configuration.StateManagerConfig.StateType.FLOW_STATUS
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
@@ -48,8 +54,19 @@ class FlowStatusCacheServiceImplTest {
         whenever(subscriptionFactory.createCompactedSubscription<FlowKey, FlowStatus>(any(), any(), any()))
             .thenReturn(topicSubscription)
 
+        val stateManagerFactory = mock<StateManagerFactory> { stateManagerFactory ->
+            whenever(stateManagerFactory.create(anyOrNull(), any())).thenReturn(mock() {
+                val data = mutableSetOf<State>()
+                whenever(it.create(any())).then {
+
+                }
+            })
+        }
+
         flowStatusCacheService =
-            FlowStatusCacheServiceImpl(subscriptionFactory, lifecycleTestContext.lifecycleCoordinatorFactory)
+            FlowStatusCacheServiceImpl(subscriptionFactory, lifecycleTestContext.lifecycleCoordinatorFactory,
+                stateManagerFactory
+            )
 
         eventHandler = lifecycleTestContext.getEventHandler()
     }
