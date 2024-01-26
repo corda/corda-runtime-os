@@ -31,10 +31,12 @@ import org.eclipse.jetty.servlet.FilterHolder
 import org.slf4j.LoggerFactory
 import zipkin2.Span
 import zipkin2.reporter.AsyncReporter
+import zipkin2.reporter.BytesMessageSender
 import zipkin2.reporter.Reporter
 import zipkin2.reporter.brave.ZipkinSpanHandler
 import zipkin2.reporter.urlconnection.URLConnectionSender
-import java.util.*
+import java.util.EnumSet
+import java.util.Stack
 import java.util.concurrent.ExecutorService
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -85,8 +87,8 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
         //Establish zipkin connection iff url host is provided and create respective reporter
         if (zipkinHost != null) {
             val zipkinUrl = "$zipkinHost/api/v2/spans"
-            val spanAsyncReporter =
-                AsyncReporter.create(URLConnectionSender.create(zipkinUrl)).also(resourcesToClose::push)
+            val sender: BytesMessageSender = URLConnectionSender.create(zipkinUrl)
+            val spanAsyncReporter = AsyncReporter.create(sender).also(resourcesToClose::push)
             reporters.add(spanAsyncReporter)
         }
 
