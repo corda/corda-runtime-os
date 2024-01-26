@@ -7,6 +7,7 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.merkle.impl.IndexedMerkleLeafImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.crypto.merkle.impl.NonceHashDigestProvider
+import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.data.transaction.filtered.FilteredComponentGroup
@@ -34,6 +35,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import kotlin.random.Random
 
 class FilteredTransactionImplTest {
 
@@ -610,6 +612,7 @@ class FilteredTransactionImplTest {
             transactionId,
             componentGroupMerkleProof,
             filteredComponentGroups,
+            PrivacySaltImpl(Random.nextBytes(32)),
             jsonMarshallingService,
             merkleTreeProvider
         )
