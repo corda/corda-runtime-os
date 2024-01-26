@@ -25,7 +25,7 @@ dependencies {
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    implementation "io.fabric8:kubernetes-client:$kubernetesClientVersion"
+    implementation libs.kubernetes.client
 
     implementation "org.postgresql:postgresql:$postgresDriverVersion"
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"

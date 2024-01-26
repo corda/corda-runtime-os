@@ -17,6 +17,8 @@ slf4jVersion = { strictly = "1.7.36" }
 # version strictly here as well
 slf4jV2Version = { strictly = "2.0.6" }
 
+kubernetesClientVersion = "6.9.2"
+
 # Testing
 assertjVersion = "3.25.1"
 junitVersion = "5.10.1"
@@ -49,6 +51,7 @@ kotlin-stdlib-jdk8 = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk
 kotlin-osgi-bundle = { group = "org.jetbrains.kotlin", name = "kotlin-osgi-bundle", version.ref = "kotlinVersion" }
 kotlin-reflect= { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlinVersion" }
 kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.ref = "kotlinVersion" }
+kubernetes-client = { group = "io.fabric8", name = "kubernetes-client", version.ref = "kubernetesClientVersion" }
 log4j-core = { group = "org.apache.logging.log4j", name = "log4j-core", version.ref = "log4jVersion" }
 log4j-layout-json = { group = "org.apache.logging.log4j", name = "log4j-layout-template-json", version.ref = "log4jVersion" }
 log4j-slf4j = { group = "org.apache.logging.log4j", name = "log4j-slf4j-impl", version.ref = "log4jVersion" }
