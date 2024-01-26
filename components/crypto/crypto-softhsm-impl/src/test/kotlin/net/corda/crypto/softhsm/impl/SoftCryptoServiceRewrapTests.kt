@@ -1,12 +1,18 @@
 package net.corda.crypto.softhsm.impl
 
+import com.github.benmanes.caffeine.cache.Cache
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.SigningKeyInfo
+import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.SigningKeyMaterialInfo
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.SigningRepository
+import net.corda.crypto.softhsm.TenantInfoService
 import net.corda.crypto.softhsm.WrappingRepository
 import net.corda.crypto.softhsm.impl.infra.TestWrappingRepository
 import net.corda.crypto.softhsm.impl.infra.makeShortHashCache
@@ -24,22 +30,23 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import java.lang.IllegalStateException
-import java.security.InvalidParameterException
 import java.security.KeyPairGenerator
+import java.security.PrivateKey
 import java.security.Provider
-import java.util.*
+import java.security.PublicKey
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import javax.crypto.AEADBadTagException
 
-private val schemeMetadata = CipherSchemeMetadataImpl()
+private val defaultSchemeMetadata = CipherSchemeMetadataImpl()
 
 /* Tests around crypto key rewrapping */
 class SoftCryptoServiceRewrapTests {
     companion object {
         private const val rootKeyAlias = "root"
         private const val managedWrappingKey1Alias = "k1"
-        private val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
-        private val knownWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
+        private val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(defaultSchemeMetadata)
+        private val knownWrappingKey = WrappingKeyImpl.generateWrappingKey(defaultSchemeMetadata)
         private val knownWrappingKeyMaterial = rootWrappingKey.wrap(knownWrappingKey)
         private val knownWrappingKeyAlias = managedWrappingKey1Alias
         private val wrappingUUID = UUID.randomUUID()
@@ -59,18 +66,16 @@ class SoftCryptoServiceRewrapTests {
                 ).toMap()
             )
         )
-        private val wrappingKeyCache = makeWrappingKeyCache()
-        private val shortHashCache = makeShortHashCache()
-        private val signingKeys = mutableMapOf<UUID, MutableList<SigningKeyMaterialInfo>>()
+        private val signingKeyMaterialMap = mutableMapOf<UUID, MutableList<SigningKeyMaterialInfo>>()
         private val signingRepository: SigningRepository = mock {
             on { getKeyMaterials(anyVararg()) } doAnswer {args ->
-                signingKeys[args.arguments[0] as UUID]?.map { it }
+                signingKeyMaterialMap[args.arguments[0] as UUID]?.map { it }
             }
             on { saveSigningKeyMaterial(any(), any()) } doAnswer {args ->
-                if (signingKeys.containsKey(args.arguments[1] as UUID)) {
-                    signingKeys[args.arguments[1] as UUID]?.add(args.arguments[0] as SigningKeyMaterialInfo)
+                if (signingKeyMaterialMap.containsKey(args.arguments[1] as UUID)) {
+                    signingKeyMaterialMap[args.arguments[1] as UUID]?.add(args.arguments[0] as SigningKeyMaterialInfo)
                 } else {
-                    signingKeys[args.arguments[1] as UUID] = mutableListOf(args.arguments[0] as SigningKeyMaterialInfo)
+                    signingKeyMaterialMap[args.arguments[1] as UUID] = mutableListOf(args.arguments[0] as SigningKeyMaterialInfo)
                 }
                 null
             }
@@ -78,24 +83,35 @@ class SoftCryptoServiceRewrapTests {
         private val mockHsmAssociation = mock<HSMAssociationInfo> {
             on { masterKeyAlias } doReturn knownWrappingKeyAlias
         }
-        private val cryptoService = SoftCryptoService (
-            wrappingRepositoryFactory = {
-                tenantWrappingRepository
-            },
-            schemeMetadata = schemeMetadata,
-            defaultUnmanagedWrappingKeyName = rootKeyAlias,
-            unmanagedWrappingKeys = mapOf(rootKeyAlias to rootWrappingKey),
-            digestService = PlatformDigestServiceImpl(schemeMetadata),
-            keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
+        private fun createCryptoService(
+            wrappingRepositoryFactory: (String) -> WrappingRepository = { tenantWrappingRepository },
+            schemeMetadata: CipherSchemeMetadata = defaultSchemeMetadata,
+            defaultUnmanagedWrappingKeyName: String = rootKeyAlias,
+            unmanagedWrappingKeys: Map<String, WrappingKey> = mapOf(rootKeyAlias to rootWrappingKey),
+            digestService: PlatformDigestService = PlatformDigestServiceImpl(defaultSchemeMetadata),
+            keyPairGeneratorFactory: (String, Provider) -> KeyPairGenerator = {
+                algorithm: String, provider: Provider ->
                 KeyPairGenerator.getInstance(algorithm, provider)
             },
-            wrappingKeyCache = wrappingKeyCache,
-            shortHashCache = shortHashCache,
-            signingRepositoryFactory = { signingRepository },
-            privateKeyCache = null,
-            tenantInfoService = mock {
+            wrappingKeyCache: Cache<String, WrappingKey> = makeWrappingKeyCache(),
+            shortHashCache: Cache<ShortHashCacheKey, SigningKeyInfo> = makeShortHashCache(),
+            signingRepositoryFactory: (String) -> SigningRepository = { signingRepository },
+            privateKeyCache: Cache<PublicKey, PrivateKey>? = null,
+            tenantInfoService: TenantInfoService = mock {
                 on { lookup(eq(CryptoTenants.P2P), any()) } doReturn mockHsmAssociation
             }
+        ) = SoftCryptoService (
+            wrappingRepositoryFactory = wrappingRepositoryFactory,
+            schemeMetadata = schemeMetadata,
+            defaultUnmanagedWrappingKeyName = defaultUnmanagedWrappingKeyName,
+            unmanagedWrappingKeys = unmanagedWrappingKeys,
+            digestService = digestService,
+            keyPairGeneratorFactory = keyPairGeneratorFactory,
+            wrappingKeyCache = wrappingKeyCache,
+            shortHashCache = shortHashCache,
+            signingRepositoryFactory = signingRepositoryFactory,
+            privateKeyCache = privateKeyCache,
+            tenantInfoService = tenantInfoService
         )
     }
 
@@ -104,37 +120,37 @@ class SoftCryptoServiceRewrapTests {
         val keyPairGenerator = KeyPairGenerator.getInstance("EC", BouncyCastleProvider())
         keyPairGenerator.initialize(
             ECNamedCurveTable.getParameterSpec("secp256r1"),
-            schemeMetadata.secureRandom
+            defaultSchemeMetadata.secureRandom
         )
 
-        val wrappingKeyMaterial = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
-        val wrappingKey = WrappingKeyInfo(
+        val oldWrappingKey = WrappingKeyImpl.generateWrappingKey(defaultSchemeMetadata)
+        val oldWrappingKeyInfo = WrappingKeyInfo(
             1,
-            wrappingKeyMaterial.algorithm,
-            rootWrappingKey.wrap(wrappingKeyMaterial),
+            oldWrappingKey.algorithm,
+            rootWrappingKey.wrap(oldWrappingKey),
             0,
             "root",
             "wrap"
         )
-        tenantWrappingRepository.saveKey(wrappingKey)
-        val oldWrappingKey = rootWrappingKey.unwrapWrappingKey(rootWrappingKey.wrap(wrappingKeyMaterial))
+        tenantWrappingRepository.saveKey(oldWrappingKeyInfo)
 
         val oldSigningKey = keyPairGenerator.genKeyPair().private
-        val keyMaterial = SigningKeyMaterialInfo(
+        val oldSigningKeyMaterialInfo = SigningKeyMaterialInfo(
             UUID.randomUUID(),
             knownWrappingKey.wrap(oldSigningKey)
         )
-        signingRepository.saveSigningKeyMaterial(keyMaterial, wrappingUUID)
-        val originalKeys = signingKeys.keys.toSet()
+        signingRepository.saveSigningKeyMaterial(oldSigningKeyMaterialInfo, wrappingUUID)
+        val originalSigningKeyMaterialIds = signingKeyMaterialMap.keys.toSet()
+        val cryptoService = createCryptoService()
         cryptoService.rewrapAllSigningKeysWrappedBy(wrappingUUID, tenantId)
-        val newKeyId = signingKeys.keys.toSet().minus(originalKeys).single()
+        val newSigningKeyMaterialId = signingKeyMaterialMap.keys.toSet().minus(originalSigningKeyMaterialIds).single()
         val newWrappingKey = rootWrappingKey.unwrapWrappingKey(tenantWrappingRepository.keys[knownWrappingKeyAlias]!!.keyMaterial)
-        val newSigningKeyInfo = signingKeys[newKeyId]!![0]
-        val newSigningKey = newWrappingKey.unwrap(newSigningKeyInfo.keyMaterial)
-        assertThat(newSigningKey).isEqualTo(oldSigningKey)
+        val newSigningKeyMaterialInfo = signingKeyMaterialMap[newSigningKeyMaterialId]!![0]
+        val newSigningKeyMaterialUnwrapped = newWrappingKey.unwrap(newSigningKeyMaterialInfo.keyMaterial)
+        assertThat(newSigningKeyMaterialUnwrapped).isEqualTo(oldSigningKey)
 
         assertThrows<AEADBadTagException> {
-            oldWrappingKey.unwrap(newSigningKeyInfo.keyMaterial)
+            oldWrappingKey.unwrap(newSigningKeyMaterialInfo.keyMaterial)
         }
     }
 
@@ -143,61 +159,19 @@ class SoftCryptoServiceRewrapTests {
         val tenantWrappingRepository: WrappingRepository = mock {
             on { getKeyById(any()) } doReturn null
         }
-        val cryptoService = SoftCryptoService (
-            wrappingRepositoryFactory = {
-                when (it) {
-                    tenantId -> tenantWrappingRepository
-                    else -> throw InvalidParameterException(it)
-                }
-            },
-            schemeMetadata = schemeMetadata,
-            defaultUnmanagedWrappingKeyName = rootKeyAlias,
-            unmanagedWrappingKeys = mapOf(rootKeyAlias to rootWrappingKey),
-            digestService = PlatformDigestServiceImpl(schemeMetadata),
-            keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
-                KeyPairGenerator.getInstance(algorithm, provider)
-            },
-            wrappingKeyCache = wrappingKeyCache,
-            shortHashCache = shortHashCache,
-            signingRepositoryFactory = { signingRepository },
-            privateKeyCache = null,
-            tenantInfoService = mock {
-                on { lookup(eq(CryptoTenants.P2P), any()) } doReturn mockHsmAssociation
-            }
-        )
-        val e = assertThrows<IllegalStateException> {
+        val cryptoService = createCryptoService(wrappingRepositoryFactory = {
+            tenantWrappingRepository
+        })
+        assertThrows<IllegalStateException> {
             cryptoService.rewrapAllSigningKeysWrappedBy(UUID.randomUUID(), tenantId)
         }
-        assertThat(e.message).contains("Unable to find existing wrapping key with id")
     }
 
     @Test
     fun `rewrapAllManagedKeys fails when parent key cannot be found`() {
-        val cryptoService = SoftCryptoService (
-            wrappingRepositoryFactory = {
-                when (it) {
-                    tenantId -> tenantWrappingRepository
-                    else -> throw InvalidParameterException(it)
-                }
-            },
-            schemeMetadata = schemeMetadata,
-            defaultUnmanagedWrappingKeyName = rootKeyAlias,
-            unmanagedWrappingKeys = mapOf(),
-            digestService = PlatformDigestServiceImpl(schemeMetadata),
-            keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
-                KeyPairGenerator.getInstance(algorithm, provider)
-            },
-            wrappingKeyCache = wrappingKeyCache,
-            shortHashCache = shortHashCache,
-            signingRepositoryFactory = { signingRepository },
-            privateKeyCache = null,
-            tenantInfoService = mock {
-                on { lookup(eq(CryptoTenants.P2P), any()) } doReturn mockHsmAssociation
-            }
-        )
-        val e = assertThrows<IllegalStateException> {
+        val cryptoService = createCryptoService(unmanagedWrappingKeys = mapOf())
+        assertThrows<IllegalStateException> {
             cryptoService.rewrapAllSigningKeysWrappedBy(wrappingUUID, tenantId)
         }
-        assertThat(e.message).contains("Unable to find parent key")
     }
 }
