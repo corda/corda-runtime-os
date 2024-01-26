@@ -36,6 +36,7 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
             SELECT group_idx, leaf_idx, data
             FROM {h-schema}utxo_transaction_component
             WHERE transaction_id = :transactionId
+                AND group_idx <> -1
             ORDER BY group_idx, leaf_idx"""
             .trimIndent()
 

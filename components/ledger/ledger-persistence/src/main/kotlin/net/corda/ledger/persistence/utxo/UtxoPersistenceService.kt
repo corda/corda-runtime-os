@@ -80,4 +80,16 @@ interface UtxoPersistenceService {
         signatures: List<DigitalSignatureAndMetadata>,
         account: String
     )
+
+    /**
+     * Find filtered transactions with the given IDs in the persistence context.
+     *
+     * @param ids IDs of the transactions to find
+     *
+     * @return A map that maps the filtered transaction ID to the found [FilteredTransaction] object and its signatures.
+     * If a transaction for a given ID was not found then it will not be part of the map.
+     */
+    fun findFilteredTransactions(
+        ids: List<String>
+    ): Map<String, Pair<FilteredTransaction, List<DigitalSignatureAndMetadata>>>
 }

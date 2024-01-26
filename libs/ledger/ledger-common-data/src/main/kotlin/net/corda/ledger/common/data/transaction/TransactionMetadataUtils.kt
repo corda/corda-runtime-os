@@ -14,6 +14,7 @@ object TransactionMetadataUtils {
 
     private const val SIGNATURE_BATCH_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY = "batchMerkleTreeDigestOptionsLeafPrefixB64"
     private const val SIGNATURE_BATCH_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY = "batchMerkleTreeDigestOptionsNodePrefixB64"
+    private val base64 = Base64.getDecoder()
 
     fun parseMetadata(
         metadataBytes: ByteArray,
@@ -68,8 +69,8 @@ object TransactionMetadataUtils {
             batchMerkleTreeDigestProviderName,
             batchMerkleTreeDigestAlgorithmName,
             mapOf(
-                HashDigestConstants.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION to batchMerkleTreeDigestOptionsLeafPrefix,
-                HashDigestConstants.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION to batchMerkleTreeDigestOptionsNodePrefix
+                HashDigestConstants.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION to base64.decode(batchMerkleTreeDigestOptionsLeafPrefix),
+                HashDigestConstants.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION to base64.decode(batchMerkleTreeDigestOptionsNodePrefix)
             )
         )
     }

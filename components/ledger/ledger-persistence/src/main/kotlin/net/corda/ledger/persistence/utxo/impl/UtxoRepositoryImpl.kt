@@ -437,22 +437,27 @@ class UtxoRepositoryImpl @Activate constructor(
         return ids.associateWith { transactionId ->
 
             val transactionMerkleProofs = merkleProofs[transactionId]
-            val topLevelMerkleProof = transactionMerkleProofs?.get(TOP_LEVEL_MERKLE_PROOF_INDEX)
-            val transactionPrivacySaltAndMetadata = privacySaltAndMetadataMap[transactionId]
-            val transactionSignatures = signaturesMap[transactionId]
-
-            requireNotNull(privacySaltAndMetadataMap[transactionId]) {
-                "Couldn't find metadata for transaction with ID: $transactionId."
-            }
             requireNotNull(transactionMerkleProofs) {
                 "Couldn't find any merkle proofs for transaction with ID: $transactionId."
+            }
+
+            val topLevelMerkleProof = transactionMerkleProofs.singleOrNull {
+                it.groupIndex == TOP_LEVEL_MERKLE_PROOF_INDEX
             }
             requireNotNull(topLevelMerkleProof) {
                 "Couldn't find a top level merkle proof for transaction with ID: $transactionId."
             }
+
+            requireNotNull(privacySaltAndMetadataMap[transactionId]) {
+                "Couldn't find metadata for transaction with ID: $transactionId."
+            }
+
+            val transactionPrivacySaltAndMetadata = privacySaltAndMetadataMap[transactionId]
             requireNotNull(transactionPrivacySaltAndMetadata) {
                 "Couldn't find metadata/privacy salt for transaction with ID: $transactionId"
             }
+
+            val transactionSignatures = signaturesMap[transactionId]
             requireNotNull(transactionSignatures) {
                 "Couldn't find signatures for transaction with ID: $transactionId"
             }
