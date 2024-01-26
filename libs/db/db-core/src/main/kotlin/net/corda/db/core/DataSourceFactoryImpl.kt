@@ -2,7 +2,9 @@ package net.corda.db.core
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import com.zaxxer.hikari.metrics.micrometer.MicrometerMetricsTrackerFactory
 import com.zaxxer.hikari.util.DriverDataSource
+import io.micrometer.core.instrument.Metrics
 import java.io.Closeable
 import java.sql.Connection
 import java.time.Duration
@@ -27,9 +29,7 @@ import javax.sql.DataSource
 class DataSourceFactoryImpl(
     private val hikariDataSourceFactory: (c: HikariConfig) -> CloseableDataSource = { c ->
         val ds = HikariDataSource(c)
-        // TODO - this can be enabled when https://github.com/brettwooldridge/HikariCP/pull/1989 is released
-        //   https://r3-cev.atlassian.net/browse/CORE-7113
-        // ds.metricsTrackerFactory = MicrometerMetricsTrackerFactory(MeterFactory.registry)
+        ds.metricsTrackerFactory = MicrometerMetricsTrackerFactory(Metrics.globalRegistry)
         HikariDataSourceWrapper(ds)
     },
     private val driverDataSourceFactory:
