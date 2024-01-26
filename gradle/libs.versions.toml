@@ -10,7 +10,7 @@ javalinVersion = "4.6.8"
 jettyVersion = "9.4.53.v20231009"
 unirestVersion = "3.14.5"
 nimbusVersion = "10.8"
-swaggerVersion = "2.2.12"
+swaggerVersion = "2.2.20"
 # Please also update SWAGGERUI.version in net.corda.rest.server.impl.internal.OptionalDependency
 swaggeruiVersion = "4.18.2"
 jcipAnnotationsVersion = "1.0_2"
