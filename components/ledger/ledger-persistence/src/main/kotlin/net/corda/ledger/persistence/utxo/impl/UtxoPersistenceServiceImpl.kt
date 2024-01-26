@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 class UtxoPersistenceServiceImpl(
     private val entityManagerFactory: EntityManagerFactory,
     private val repository: UtxoRepository,
@@ -418,7 +418,6 @@ class UtxoPersistenceServiceImpl(
                     -1,
                     filteredTransaction.topLevelMerkleProof
                 )
-
 
                 // 6. Persist the merkle proof and leaf data for each component group
                 filteredTransaction.filteredComponentGroups.forEach { (groupIndex, groupData) ->
