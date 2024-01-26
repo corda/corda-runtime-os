@@ -10,13 +10,19 @@ import java.util.Properties
 import javax.sql.DataSource
 
 /**
- * Creates Hikari [DataSource] instances.
+ * Creates [DataSource] instances.
  *
  * If using OSGi, we defer to the OSGi service registry and use it to find
  * instances of [org.osgi.service.jdbc.DataSourceFactory] and use that to create the
  * [DataSource] instead.
  *
- * If not, we use Hikari, which, under the covers uses [java.sql.DriverManager].
+ * If not, we use Hikari's DriverDataSource, which, under the covers uses [java.sql.DriverManager].
+ *
+ * DataSources default to being pools but can be requested to be individual connections.
+ * In case of pooled connections, closing the pool will close all connections in the pool, closing the
+ * connection will just return the connection to the pool.
+ * In case of non-pooled connections, they will be closed immediately when a connection is closed. Closing
+ * the [CloseableDataSource] does not have any impact in this case.
  */
 class DataSourceFactoryImpl(
     private val hikariDataSourceFactory: (c: HikariConfig) -> CloseableDataSource = { c ->
