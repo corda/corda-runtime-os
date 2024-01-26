@@ -25,7 +25,7 @@ class CordaLifecycleHelper {
             "POSTGRES_USER=postgres",
             "-e",
             "POSTGRES_PASSWORD=password",
-            "postgres:latest"
+            "postgres:14.10"
         )
 
         val dockerProcessBuilder = ProcessBuilder(dockerCmdList)

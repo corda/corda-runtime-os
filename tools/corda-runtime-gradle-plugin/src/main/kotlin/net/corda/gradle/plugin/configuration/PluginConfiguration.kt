@@ -24,7 +24,7 @@ open class PluginConfiguration @Inject constructor(objects: ObjectFactory) {
     val combinedWorkerVersion: Property<String> = objects.property(String::class.java).convention("5.0.1.0")
 
     @get:Input
-    val postgresJdbcVersion: Property<String> = objects.property(String::class.java).convention("42.4.3")
+    val postgresJdbcVersion: Property<String> = objects.property(String::class.java).convention("42.6.0")
 
     @get:Input
     var cordaDbContainerName: Property<String> = objects.property(String::class.java).convention("cordaPostgres")
