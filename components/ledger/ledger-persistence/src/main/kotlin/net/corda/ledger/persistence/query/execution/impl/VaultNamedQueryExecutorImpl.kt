@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.query.execution.impl
 
+import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindWithNamedQuery
@@ -162,7 +163,17 @@ class VaultNamedQueryExecutorImpl(
             .setResults(collectedResults.map { ByteBuffer.wrap(serializationService.serialize(it).bytes) })
 
         response.resumePoint = resumePoint?.let { ByteBuffer.wrap(serializationService.serialize(it).bytes) }
-        response.metadata = KeyValuePairList(emptyList())
+
+        val useOffset = vaultNamedQuery.orderBy != null
+        response.metadata =
+            KeyValuePairList(
+                if (useOffset)
+                    listOf(
+                        KeyValuePair("numberOfRowsFromQuery", numberOfRowsReturned.toString())
+                    )
+                else
+                    emptyList()
+            )
 
         return response.build()
     }
@@ -200,6 +211,9 @@ class VaultNamedQueryExecutorImpl(
             serializationService.deserialize<ResumePoint>(request.resumePoint.array())
         }
 
+        val useOffset = vaultNamedQuery.orderBy != null
+        var currentOffset = request.offset
+
         while (filteredRawData.size < request.limit && currentRetry < RESULT_SET_FILL_RETRY_LIMIT) {
             ++currentRetry
 
@@ -207,11 +221,21 @@ class VaultNamedQueryExecutorImpl(
 
             // Fetch the state and refs for the given transaction IDs
             val rawResults = try {
-                fetchStateAndRefs(
-                    request,
-                    vaultNamedQuery.query.query,
-                    currentResumePoint
-                )
+                if (useOffset){
+                   fetchStateAndRefs(
+                       request,
+                       vaultNamedQuery.query.query,
+                       vaultNamedQuery.orderBy!!.query,
+                       currentOffset
+                   )
+                } else {
+                    fetchStateAndRefs(
+                        request,
+                        vaultNamedQuery.query.query,
+                        currentResumePoint
+                    )
+
+                }
             } catch (e: Exception) {
                 log.warn(
                     "Failed to query \"${request.queryName}\" " +
@@ -226,7 +250,7 @@ class VaultNamedQueryExecutorImpl(
                 with(rawResults) {
                     return ProcessedQueryResults(
                         results.map { it.stateAndRef },
-                        if (hasMore) results.last().resumePoint else null,
+                        if (hasMore && !useOffset) results.last().resumePoint else null,
                         results.size
                     )
                 }
@@ -251,7 +275,7 @@ class VaultNamedQueryExecutorImpl(
 
                     return ProcessedQueryResults(
                         filteredRawData.map { it.stateAndRef },
-                        if (moreResults) filteredRawData.last().resumePoint else null,
+                        if (moreResults && !useOffset) filteredRawData.last().resumePoint else null,
                         numberOfRowsFromQuery
                     )
                 }
@@ -262,7 +286,11 @@ class VaultNamedQueryExecutorImpl(
                 currentResumePoint = null
                 break
             } else {
-                currentResumePoint = rawResults.results.last().resumePoint
+                if (useOffset) {
+                    currentOffset += request.limit
+                } else {
+                    currentResumePoint = rawResults.results.last().resumePoint
+                }
             }
         }
 
@@ -272,6 +300,64 @@ class VaultNamedQueryExecutorImpl(
             numberOfRowsFromQuery
         )
     }
+
+
+    private fun fetchStateAndRefs(
+        request: FindWithNamedQuery,
+        whereJson: String?,
+        orderBy: String?,
+        offset: Int
+    ): RawQueryResults {
+        @Suppress("UNCHECKED_CAST")
+        val resultList = entityManagerFactory.transaction { em ->
+
+            val query = em.createNativeQuery(
+                """
+                    SELECT tc_output.transaction_id,
+                        tc_output.leaf_idx,
+                        tc_output_info.data as output_info_data,
+                        tc_output.data AS output_data,
+                        tx.created AS created
+                        FROM $UTXO_VISIBLE_TX_TABLE AS visible_states
+                        JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output_info
+                             ON tc_output_info.transaction_id = visible_states.transaction_id
+                             AND tc_output_info.leaf_idx = visible_states.leaf_idx
+                             AND tc_output_info.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}
+                        JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output
+                             ON tc_output_info.transaction_id = tc_output.transaction_id
+                             AND tc_output_info.leaf_idx = tc_output.leaf_idx
+                             AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
+                        JOIN $UTXO_TX_TABLE AS tx
+                             ON tc_output.transaction_id = tx.id
+                        WHERE ($whereJson)
+                        AND visible_states.created <= :$TIMESTAMP_LIMIT_PARAM_NAME
+                        ORDER BY $orderBy
+                """,
+                Tuple::class.java
+            )
+
+            request.parameters.forEach { rec ->
+                query.setParameter(rec.key, rec.value?.let { serializationService.deserialize(it.array()) })
+            }
+
+            query.firstResult = offset
+            // Getting one more than requested allows us to identify if there are more results to
+            // return in a subsequent page
+            query.maxResults = request.limit + 1
+
+            query.resultList as List<Tuple>
+        }
+
+        return if (resultList.size > request.limit) {
+            // We need to truncate the list to the number requested, but also flag that there is
+            // another page to be returned
+            RawQueryResults(resultList.subList(0, request.limit).map { RawQueryData(it) }, hasMore = true)
+        } else {
+            RawQueryResults(resultList.map { RawQueryData(it) }, hasMore = false)
+        }
+
+    }
+
 
     /**
      * A function that fetches the contract states that belong to the given transaction IDs.
