@@ -16,8 +16,10 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.configuration.StateManagerConfig
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -34,7 +36,7 @@ class TokenCacheSubscriptionHandlerImplTest {
     private val toStateManagerConfig: (Map<String, SmartConfig>) -> SmartConfig = { _ -> MINIMUM_SMART_CONFIG }
     private val stateManager = mock<StateManager>()
     private val stateManagerFactory = mock<StateManagerFactory>().apply {
-        whenever(create(any())).thenReturn(stateManager)
+        whenever(create(any(), eq(StateManagerConfig.StateType.TOKEN_POOL_CACHE))).thenReturn(stateManager)
     }
     private val tokenSelectionSyncRPCProcessor = mock<TokenSelectionSyncRPCProcessor>()
     private val tokenCacheEventProcessorFactory = mock<TokenCacheEventProcessorFactory>().apply {
@@ -75,7 +77,8 @@ class TokenCacheSubscriptionHandlerImplTest {
         val stateManagerName = LifecycleCoordinatorName("stateManager")
         val stateManager = mock<StateManager>().apply { whenever(name).thenReturn(stateManagerName) }
 
-        whenever(stateManagerFactory.create(any())).thenReturn(stateManager)
+        whenever(stateManagerFactory.create(any(), eq(StateManagerConfig.StateType.TOKEN_POOL_CACHE)))
+            .thenReturn(stateManager)
 
         context.run {
             addDependency(mediatorName)
@@ -99,7 +102,8 @@ class TokenCacheSubscriptionHandlerImplTest {
         val stateManager1 = mock<StateManager>().apply { whenever(name).thenReturn(stateManagerName) }
         val stateManager2 = mock<StateManager>().apply { whenever(name).thenReturn(stateManagerName) }
 
-        whenever(stateManagerFactory.create(any())).thenReturn(stateManager1, stateManager2)
+        whenever(stateManagerFactory.create(any(), eq(StateManagerConfig.StateType.TOKEN_POOL_CACHE)))
+            .thenReturn(stateManager1, stateManager2)
 
         context.run {
             addDependency(subName)

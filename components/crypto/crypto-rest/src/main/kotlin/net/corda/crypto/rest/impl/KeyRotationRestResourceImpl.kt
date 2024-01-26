@@ -43,6 +43,7 @@ import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.rest.response.ResponseEntity
 import net.corda.schema.Schemas.Crypto.REKEY_MESSAGE_TOPIC
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.StateManagerConfig
 import net.corda.v5.base.annotations.VisibleForTesting
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -168,7 +169,8 @@ class KeyRotationRestResourceImpl @Activate constructor(
         val stateManagerConfig = config.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)
 
         stateManagerInit?.stop()
-        stateManagerInit = stateManagerFactory.create(stateManagerConfig).also { it.start() }
+        stateManagerInit = stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION)
+            .also { it.start() }
         logger.debug("State manager created and started {}", stateManager.name)
     }
 

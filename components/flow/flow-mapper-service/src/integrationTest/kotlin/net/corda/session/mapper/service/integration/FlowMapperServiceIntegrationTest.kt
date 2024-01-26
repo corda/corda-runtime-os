@@ -51,6 +51,7 @@ import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_POLL_TIMEOUT
+import net.corda.schema.configuration.StateManagerConfig
 import net.corda.session.mapper.service.FlowMapperService
 import net.corda.session.mapper.service.state.StateMetadataKeys
 import net.corda.test.flow.util.buildSessionEvent
@@ -427,7 +428,7 @@ class FlowMapperServiceIntegrationTest {
         // flow processing time.
         val stateKey = "foo"
         val config = SmartConfigImpl.empty()
-        val stateManager = stateManagerFactory.create(config)
+        val stateManager = stateManagerFactory.create(config, StateManagerConfig.StateType.FLOW_MAPPING)
         stateManager.create(listOf(
             State(
                 stateKey,

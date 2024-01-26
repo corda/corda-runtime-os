@@ -19,6 +19,7 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
+import net.corda.schema.configuration.StateManagerConfig
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.osgi.service.component.annotations.Activate
@@ -58,7 +59,9 @@ class FlowMaintenanceImpl @Activate constructor(
             subscriptionRegistrationHandle?.close()
             stateManager?.stop()
 
-            stateManager = stateManagerFactory.create(newStateManagerConfig).also { it.start() }
+            stateManager = stateManagerFactory.create(newStateManagerConfig, StateManagerConfig.StateType.FLOW_CHECKPOINT)
+                .also { it.start() }
+
             coordinator.createManagedResource("FLOW_MAINTENANCE_SUBSCRIPTION") {
                 subscriptionFactory.createDurableSubscription(
                     SubscriptionConfig(
