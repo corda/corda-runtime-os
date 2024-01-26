@@ -28,6 +28,7 @@ import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.StateManagerConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -37,6 +38,7 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
@@ -107,7 +109,7 @@ class KeyRotationRestResourceTest {
         }
 
         stateManagerFactory = mock<StateManagerFactory> {
-            on { create(any()) } doReturn stateManager
+            on { create(any(), eq(StateManagerConfig.StateType.KEY_ROTATION)) } doReturn stateManager
         }
 
         stateManagerPublicationCount = 0
@@ -147,7 +149,7 @@ class KeyRotationRestResourceTest {
     fun `initialize creates the publisher and state manager`() {
         createKeyRotationRestResource()
         verify(publisherFactory, times(1)).createPublisher(any(), any())
-        verify(stateManagerFactory, times(1)).create(any())
+        verify(stateManagerFactory, times(1)).create(any(), eq(StateManagerConfig.StateType.KEY_ROTATION))
     }
 
     @Test

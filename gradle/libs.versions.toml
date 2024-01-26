@@ -19,8 +19,9 @@ swaggerVersion = "2.2.16"
 swaggeruiVersion = "5.10.3"
 jcipAnnotationsVersion = "1.0_2"
 pf4jVersion = "3.10.0"
-braveVersion = "5.15.0"
-zipkinVersion = "2.16.3"
+braveVersion = "6.0.0"
+zipkinReporterVersion = "3.2.1"
+zipkinCoreVersion = "2.27.1"
 
 log4jVersion = "2.22.1"
 # SLF4J cannot be ugraded to 2.x due to CorDapps requiring the 1.7 <= x < 2.0
@@ -92,7 +93,9 @@ jcip-annotations = { group = "org.apache.servicemix.bundles", name = "org.apache
 pf4j = { group = "org.pf4j", name = "pf4j", version.ref = "pf4jVersion" }
 brave-context-slf4j = { group = "io.zipkin.brave", name = "brave-context-slf4j", version.ref = "braveVersion" }
 brave-instrumentation-servlet = { group = "io.zipkin.brave", name = "brave-instrumentation-servlet", version.ref = "braveVersion" }
-zipkin-sender = { group = "io.zipkin.reporter2", name = "zipkin-sender-urlconnection", version.ref = "zipkinVersion" }
+zipkin-core = { group = "io.zipkin.zipkin2", name = "zipkin", version.ref = "zipkinCoreVersion" }
+zipkin-sender-urlconnection = { group = "io.zipkin.reporter2", name = "zipkin-sender-urlconnection", version.ref = "zipkinReporterVersion" }
+zipkin-reporter-brave = { group = "io.zipkin.reporter2", name = "zipkin-reporter-brave", version.ref = "zipkinReporterVersion" }
 jackson-annotations = { group = "com.fasterxml.jackson.core", name = "jackson-annotations", version.ref = "jacksonVersion" }
 jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jacksonVersion" }
 jackson-core = { group = "com.fasterxml.jackson.core", name = "jackson-core", version.ref = "jacksonVersion" }

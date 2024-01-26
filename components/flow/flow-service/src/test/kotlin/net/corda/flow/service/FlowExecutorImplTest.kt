@@ -24,6 +24,7 @@ import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
+import net.corda.schema.configuration.StateManagerConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -59,7 +60,7 @@ class FlowExecutorImplTest {
     @BeforeEach
     fun setup() {
         whenever(flowEventProcessorFactory.create(any())).thenReturn(flowEventProcessor)
-        whenever(stateManagerFactory.create(any())).thenReturn(stateManager)
+        whenever(stateManagerFactory.create(any(), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT))).thenReturn(stateManager)
         whenever(
             flowEventMediatorFactory.create(
                 any(),
@@ -159,7 +160,7 @@ class FlowExecutorImplTest {
                 any(),
             )
         ).thenReturn(multiSourceEventMediator2)
-        whenever(stateManagerFactory.create(any())).thenReturn(stateManager2)
+        whenever(stateManagerFactory.create(any(), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT))).thenReturn(stateManager2)
         whenever(flowExecutorCoordinator.followStatusChangesByName(any())).thenReturn(subscriptionRegistrationHandle2)
 
         flowExecutor.onConfigChange(config)
