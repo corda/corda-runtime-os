@@ -36,7 +36,7 @@ fun interface StableResultSetExecutor<R> : Serializable {
      *         context of getting a subsequent page of data.
      */
     @Suspendable
-    fun execute(serializedParameters: Map<String, ByteBuffer?>, resumePoint: ByteBuffer?): Results
+    fun execute(serializedParameters: Map<String, ByteBuffer?>, resumePoint: ByteBuffer?, offset: Int?): Results
 
-    data class Results(val serializedResults: List<ByteBuffer>, val resumePoint: ByteBuffer?)
+    data class Results(val serializedResults: List<ByteBuffer>, val resumePoint: ByteBuffer?, val numberOfRowsFromQuery: Int?)
 }

@@ -29,7 +29,7 @@ class VaultNamedParameterizedQueryImpl<T>(
     private val clock: Clock,
 ) : VaultNamedParameterizedQuery<T> {
 
-    private companion object {
+    companion object {
         const val TIMESTAMP_LIMIT_PARAM_NAME = "Corda_TimestampLimit"
     }
 
@@ -69,7 +69,7 @@ class VaultNamedParameterizedQueryImpl<T>(
             parameters,
             limit,
             resultClass
-        ) @Suspendable { serializedParameters, resumePoint ->
+        ) @Suspendable { serializedParameters, resumePoint, offset ->
             recordSuspendable(::ledgerPersistenceFlowTimer) @Suspendable {
                 wrapWithPersistenceException {
                     externalEventExecutor.execute(
@@ -78,7 +78,8 @@ class VaultNamedParameterizedQueryImpl<T>(
                             queryName,
                             serializedParameters,
                             limit,
-                            resumePoint
+                            resumePoint,
+                            offset
                         )
                     )
                 }
