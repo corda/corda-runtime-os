@@ -2,9 +2,9 @@ package net.corda.ledger.utxo.flow.impl.flows.transactiontransmission
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.flows.Payload
+import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.ledger.utxo.flow.impl.flows.backchain.InvalidBackchainException
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
-import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.utilities.trace
@@ -13,6 +13,7 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import org.slf4j.Logger
@@ -33,12 +34,15 @@ class ReceiveLedgerTransactionFlow(
     @CordaInject
     lateinit var utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory
 
+    @CordaInject
+    lateinit var serializationService: SerializationService
+
     @Suspendable
     override fun call(): UtxoLedgerTransaction {
         val wireTransaction = session.receive(WireTransaction::class.java)
-        val ledgerTransaction = utxoLedgerTransactionFactory.create(wireTransaction)
+        val wrappedUtxoWireTransaction = WrappedUtxoWireTransaction(wireTransaction, serializationService)
 
-        val transactionDependencies = ledgerTransaction.dependencies
+        val transactionDependencies = wrappedUtxoWireTransaction.dependencies
         if (transactionDependencies.isNotEmpty()) {
             try {
                 flowEngine.subFlow(TransactionBackchainResolutionFlow(transactionDependencies, session))
@@ -56,6 +60,6 @@ class ReceiveLedgerTransactionFlow(
 
         session.send(Payload.Success("Successfully received transaction."))
 
-        return ledgerTransaction
+        return utxoLedgerTransactionFactory.create(wireTransaction)
     }
 }

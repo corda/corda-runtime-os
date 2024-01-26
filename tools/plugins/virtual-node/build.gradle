@@ -24,10 +24,10 @@ dependencies {
 
     implementation project(":tools:plugins:plugins-rest")
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
-    compileOnly "org.pf4j:pf4j:$pf4jVersion"
+    compileOnly libs.pf4j
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
 
-    kapt "org.pf4j:pf4j:$pf4jVersion"
+    kapt libs.pf4j
     kapt "info.picocli:picocli:$picocliVersion"
 
     implementation "org.liquibase:liquibase-core:$liquibaseVersion"
@@ -44,7 +44,7 @@ dependencies {
     runtimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 
     testImplementation libs.bundles.test
-    testImplementation "org.pf4j:pf4j:$pf4jVersion"
+    testImplementation libs.pf4j
     testCompileOnly "net.corda.cli.host:api:$pluginHostVersion"
 }
 

@@ -49,8 +49,8 @@ dependencies {
     implementation project(':components:membership:certificates-service')
     integrationTestImplementation project(":libs:serialization:serialization-avro")
 
-    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation libs.jackson.databind
+    implementation libs.jackson.module.kotlin
 
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":components:reconciliation:reconciliation")

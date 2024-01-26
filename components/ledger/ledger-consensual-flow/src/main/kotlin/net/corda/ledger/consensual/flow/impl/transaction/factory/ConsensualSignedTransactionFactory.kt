@@ -9,7 +9,7 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
 interface ConsensualSignedTransactionFactory {
     @Suspendable
     fun create(
-        consensualTransactionBuilder: ConsensualTransactionBuilder,
+        consensualTransactionBuilder: ConsensualTransactionBuilder
     ): ConsensualSignedTransaction
 
     fun create(

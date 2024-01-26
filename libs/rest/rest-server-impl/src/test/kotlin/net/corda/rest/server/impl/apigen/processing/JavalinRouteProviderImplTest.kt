@@ -1,6 +1,7 @@
 package net.corda.rest.server.impl.apigen.processing
 
 import net.corda.rest.RestResource
+import net.corda.rest.SC_OK
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.server.impl.apigen.models.Endpoint
 import net.corda.rest.server.impl.apigen.models.EndpointMethod
@@ -39,7 +40,7 @@ class JavalinRouteProviderImplTest {
             "",
             "abc/${pathParameterStartMarker}${testEndpointName}$pathParameterEndMarker/def",
             emptyList(),
-            ResponseBody("", Unit::class.java),
+            ResponseBody("", SC_OK, Unit::class.java),
             invocationMethod,
             API_VERSIONS
         )
@@ -75,7 +76,7 @@ class JavalinRouteProviderImplTest {
             "",
             "getprotocolversion",
             emptyList(),
-            ResponseBody("", Unit::class.java),
+            ResponseBody("", SC_OK, Unit::class.java),
             invocationMethod,
             API_VERSIONS
         )

@@ -1,6 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.transaction.serializer.amqp
 
-import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
+import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionImpl
 import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow

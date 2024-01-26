@@ -95,14 +95,14 @@ class EventProcessorTest {
             ))
         }
         whenever(client.send(any())).thenThrow(CordaMessageAPIIntermittentException("baz"))
-        whenever(stateManagerHelper.failStateProcessing(any(), anyOrNull())).thenReturn(mock())
+        whenever(stateManagerHelper.failStateProcessing(any(), anyOrNull(), any())).thenReturn(mock())
 
         val input = mapOf("key" to EventProcessingInput("key", getStringRecords(1, "key"), state))
         val outputMap = eventProcessor.processEvents(input)
 
         val output = outputMap["key"]
         assertEquals(emptyList<MediatorMessage<Any>>(), output?.asyncOutputs)
-        verify(stateManagerHelper).failStateProcessing(any(), anyOrNull())
+        verify(stateManagerHelper).failStateProcessing(any(), anyOrNull(), any())
     }
 
     private fun buildStringTestConfig() = EventMediatorConfig(

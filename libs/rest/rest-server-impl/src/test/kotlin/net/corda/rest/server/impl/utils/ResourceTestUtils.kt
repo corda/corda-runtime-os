@@ -1,5 +1,6 @@
 package net.corda.rest.server.impl.utils
 
+import net.corda.rest.SC_OK
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.server.impl.apigen.models.Endpoint
 import net.corda.rest.server.impl.apigen.models.EndpointMethod
@@ -22,7 +23,7 @@ internal fun getHealthCheckApiTestResource(): Resource {
         description = "Void endpoint",
         path = "void",
         parameters = listOf(),
-        responseBody = ResponseBody(description = "", type = Void.TYPE),
+        responseBody = ResponseBody(description = "", successCode = SC_OK, type = Void.TYPE),
         invocationMethod = InvocationMethod(method = TestHealthCheckAPI::voidResponse.javaMethod!!, instance = TestHealthCheckAPIImpl()),
         apiVersions
     )
@@ -32,7 +33,7 @@ internal fun getHealthCheckApiTestResource(): Resource {
         description = "Sanity endpoint",
         path = "sanity",
         parameters = listOf(),
-        responseBody = ResponseBody(description = "", type = String::class.java),
+        responseBody = ResponseBody(description = "", successCode = SC_OK, type = String::class.java),
         invocationMethod = InvocationMethod(method = TestHealthCheckAPI::void.javaMethod!!, instance = TestHealthCheckAPIImpl()),
         apiVersions
     )
@@ -63,7 +64,7 @@ internal fun getHealthCheckApiTestResource(): Resource {
             )
 
         ),
-        responseBody = ResponseBody(description = "", type = String::class.java),
+        responseBody = ResponseBody(description = "", successCode = SC_OK, type = String::class.java),
         invocationMethod = InvocationMethod(method = TestHealthCheckAPI::hello2.javaMethod!!, instance = TestHealthCheckAPIImpl()),
         apiVersions
     )
@@ -94,7 +95,7 @@ internal fun getHealthCheckApiTestResource(): Resource {
                 default = null
             )
         ),
-        responseBody = ResponseBody(description = "", type = String::class.java),
+        responseBody = ResponseBody(description = "", successCode = SC_OK, type = String::class.java),
         invocationMethod = InvocationMethod(method = TestHealthCheckAPI::hello.javaMethod!!, instance = TestHealthCheckAPIImpl()),
         apiVersions
     )
@@ -115,7 +116,7 @@ internal fun getHealthCheckApiTestResource(): Resource {
                 default = null
             )
         ),
-        responseBody = ResponseBody(description = "", type = String::class.java),
+        responseBody = ResponseBody(description = "", successCode = SC_OK, type = String::class.java),
         invocationMethod = InvocationMethod(method = TestHealthCheckAPI::ping.javaMethod!!, instance = TestHealthCheckAPIImpl()),
         apiVersions
     )
@@ -139,6 +140,7 @@ internal fun getHealthCheckApiTestResource(): Resource {
         ),
         responseBody = ResponseBody(
             description = "Increased by one",
+            successCode = SC_OK,
             type = List::class.java,
             parameterizedTypes = listOf(GenericParameterizedType(java.lang.Double::class.java))
         ),
@@ -162,7 +164,7 @@ internal fun getHealthCheckApiTestResource(): Resource {
                 default = null
             )
         ),
-        responseBody = ResponseBody(description = "", type = Long::class.java),
+        responseBody = ResponseBody(description = "", successCode = SC_OK, type = Long::class.java),
         invocationMethod = InvocationMethod(method = TestHealthCheckAPI::plus.javaMethod!!, instance = TestHealthCheckAPIImpl()),
         apiVersions
     )
@@ -192,7 +194,7 @@ internal fun getHealthCheckApiTestResource(): Resource {
                 default = null
             )
         ),
-        responseBody = ResponseBody(description = "", type = String::class.java),
+        responseBody = ResponseBody(description = "", successCode = SC_OK, type = String::class.java),
         invocationMethod = InvocationMethod(method = TestHealthCheckAPI::bodyPlayground.javaMethod!!, instance = TestHealthCheckAPIImpl()),
         apiVersions
     )
@@ -213,7 +215,7 @@ internal fun getHealthCheckApiTestResource(): Resource {
                 default = null
             )
         ),
-        responseBody = ResponseBody(description = "", type = String::class.java),
+        responseBody = ResponseBody(description = "", successCode = SC_OK, type = String::class.java),
         invocationMethod = InvocationMethod(method = TestHealthCheckAPI::timeCall.javaMethod!!, instance = TestHealthCheckAPIImpl()),
         apiVersions
     )
