@@ -14,7 +14,7 @@ unirestVersion = "3.14.5"
 nimbusVersion = "11.9.1"
 swaggerVersion = "2.2.12"
 # Please also update SWAGGERUI.version in net.corda.rest.server.impl.internal.OptionalDependency
-swaggeruiVersion = "4.18.2"
+swaggeruiVersion = "5.10.3"
 jcipAnnotationsVersion = "1.0_2"
 pf4jVersion = "3.10.0"
 braveVersion = "5.15.0"
