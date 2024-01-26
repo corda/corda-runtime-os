@@ -4,6 +4,7 @@ import net.corda.db.core.CloseableDataSource
 import net.corda.orm.DdlManage
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
+import net.corda.utilities.debug
 import org.hibernate.cfg.AvailableSettings
 import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl
 import org.hibernate.jpa.boot.internal.PersistenceUnitInfoDescriptor
@@ -12,7 +13,6 @@ import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory
 import javax.persistence.EntityManagerFactory
 import javax.persistence.spi.PersistenceUnitInfo
-import net.corda.utilities.debug
 
 /**
  * Hibernate implementation of [EntityManagerFactoryFactory]
@@ -55,13 +55,15 @@ class EntityManagerFactoryFactoryImpl(
     override fun create(
         persistenceUnitName: String,
         entities: List<Class<*>>,
-        configuration: EntityManagerConfiguration
+        configuration: EntityManagerConfiguration,
+        defaultSchema: String?
     ): EntityManagerFactory {
         return create(
             persistenceUnitName,
             entities.map(Class<*>::getCanonicalName),
             entities.map(Class<*>::getClassLoader).distinct(),
-            configuration
+            configuration,
+            defaultSchema
         )
     }
 
@@ -70,7 +72,8 @@ class EntityManagerFactoryFactoryImpl(
         persistenceUnitName: String,
         entities: List<String>,
         classLoaders: List<ClassLoader>,
-        configuration: EntityManagerConfiguration
+        configuration: EntityManagerConfiguration,
+        defaultSchema: String?
     ): EntityManagerFactory {
         log.debug { "Creating for $persistenceUnitName" }
 
@@ -87,6 +90,7 @@ class EntityManagerFactoryFactoryImpl(
             //"hibernate.generate_statistics" to true.toString(),
             "javax.persistence.validation.mode" to "none"
         ).toProperties()
+        if(null != defaultSchema) props["hibernate.default_schema"] = defaultSchema
         props[AvailableSettings.CLASSLOADERS] = classLoaders
         props += configuration.extraProperties
 
