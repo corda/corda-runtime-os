@@ -35,6 +35,7 @@ import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.toOutbound
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionStatus
 import net.corda.p2p.linkmanager.state.SessionState
+import net.corda.utilities.Either
 import net.corda.utilities.time.Clock
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.virtualnode.HoldingIdentity
@@ -73,6 +74,22 @@ internal class StatefulSessionManagerImpl(
         wrappedMessages: Collection<T>,
         getMessage: (T) -> AuthenticatedMessageAndKey,
     ): Collection<Pair<T, SessionManager.SessionState>> {
+        val list = mutableListOf<Pair<T, SessionManager.SessionState>>()
+        var toHandle = wrappedMessages
+        var retry = 0
+        while ((toHandle.isNotEmpty()) && (retry < 10)) {
+            val replies = processOutboundMessagesWithRetries(toHandle, getMessage)
+            val passed = replies.filterIsInstance<Either.Left<Pair<T, SessionManager.SessionState>>>().map { it.a }
+            list.addAll(passed)
+            toHandle = replies.filterIsInstance<Either.Right<T>>().map { it.b }
+            retry ++;
+        }
+        return list + toHandle.map { it to CannotEstablishSession }
+    }
+    private fun <T> processOutboundMessagesWithRetries(
+        wrappedMessages: Collection<T>,
+        getMessage: (T) -> AuthenticatedMessageAndKey,
+    ): Collection<Either<Pair<T, SessionManager.SessionState>, T>> {
         val messages =
             wrappedMessages.map {
                 OutboundMessageContext(it, getMessage(it))
@@ -100,7 +117,9 @@ internal class StatefulSessionManagerImpl(
                 }
             }
 
-        val cachedSessions = getCachedOutboundSessions(keysToMessages)
+        val cachedSessions = getCachedOutboundSessions(keysToMessages).mapValues {
+            Either.Left(it.value)
+        }
 
         val keysNotInCache = (keysToMessages - cachedSessions.keys).keys
         val sessionStates =
@@ -616,34 +635,18 @@ internal class StatefulSessionManagerImpl(
     }
     private fun <T> processStateUpdates(
         resultStates: Collection<OutboundMessageResults<T>>,
-    ): Collection<Pair<T, SessionManager.SessionState>> {
+    ): Collection<Either<Pair<T, SessionManager.SessionState>, T>> {
         val updates = resultStates.mapNotNull { it.action }
         val failedUpdates = upsert(updates)
 
         return resultStates.flatMap { resultState ->
             val key = resultState.key
             if (failedUpdates.containsKey(key)) {
-                val savedState = failedUpdates[key]
-                val savedMetadata = savedState?.metadata?.toOutbound()
-                val newState = when (savedMetadata?.status) {
-                    OutboundSessionStatus.SentInitiatorHello, OutboundSessionStatus.SentInitiatorHandshake ->
-                        resultState.messages.first().sessionCounterparties()?.let {
-                            SessionAlreadyPending(it)
-                        } ?: CannotEstablishSession
-                    OutboundSessionStatus.SessionReady -> resultState.messages.first().sessionCounterparties()?.let {
-                        savedState.retrieveEstablishedSession(it)
-                    } ?: CannotEstablishSession
-                    null -> {
-                        logger.info("QQQ CannotEstablishSession?! from $key")
-                        resultStates.filter { it.key == key }.forEach {
-                            logger.info("QQQ \t $key; ${it.sessionState}; ${it.action}")
-                        }
-                        CannotEstablishSession
-                    }
+                resultState.messages.map {
+                    Either.Right(it.trace)
                 }
-                resultState.messages.map { it.trace to newState }
             } else {
-                resultState.messages.map { it.trace to resultState.sessionState }
+                resultState.messages.map { Either.Left(it.trace to resultState.sessionState) }
             }
         }
     }
