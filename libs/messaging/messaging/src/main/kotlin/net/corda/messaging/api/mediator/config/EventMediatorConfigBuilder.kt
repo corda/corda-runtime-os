@@ -27,7 +27,7 @@ class EventMediatorConfigBuilder<K: Any, S: Any, E: Any> {
     private var threadName: String? = null
     private var stateManager: StateManager? = null
     private var minGroupSize: Int? = null
-    private var idempotenceProcessor: Boolean? = null
+    private var idempotentProcessor: Boolean? = null
 
     /** Sets name for [MultiSourceEventMediator]. */
     fun name(name: String) =
@@ -76,8 +76,8 @@ class EventMediatorConfigBuilder<K: Any, S: Any, E: Any> {
         apply { this.stateManager = stateManager }
 
     /** Sets whether the pattern should save outputs for replay and duplicate detection*/
-    fun idempotenceProcessor(idempotenceProcessor: Boolean) =
-        apply { this.idempotenceProcessor = idempotenceProcessor }
+    fun idempotentProcessor(idempotentProcessor: Boolean) =
+        apply { this.idempotentProcessor = idempotentProcessor }
 
     /** Builds [EventMediatorConfig]. */
     fun build(): EventMediatorConfig<K, S, E> {
@@ -94,7 +94,7 @@ class EventMediatorConfigBuilder<K: Any, S: Any, E: Any> {
             threadName = checkNotNull(threadName) { "Thread name not set" },
             stateManager = checkNotNull(stateManager) { "State manager not set" },
             minGroupSize = checkNotNull(minGroupSize) { "Min group size not set" },
-            idempotentProcessor = checkNotNull(idempotenceProcessor) { "Idempotence for replays not set" },
+            idempotentProcessor = checkNotNull(idempotentProcessor) { "Idempotence for replays not set" },
         )
     }
 }
