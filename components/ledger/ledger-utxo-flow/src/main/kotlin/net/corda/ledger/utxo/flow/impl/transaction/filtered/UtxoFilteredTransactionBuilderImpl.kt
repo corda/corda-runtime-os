@@ -1,9 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction.filtered
 
 import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters
-import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters.AuditProof
 import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters.AuditProof.AuditProofPredicate
-import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters.SizeProof
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactory
@@ -41,7 +39,7 @@ data class UtxoFilteredTransactionBuilderImpl(
 
     @Suspendable
     override fun withSignatoriesSize(): UtxoFilteredTransactionBuilderInternal {
-        return copy(signatories = SizeProof(UtxoComponentGroup.SIGNATORIES.ordinal))
+        return copy(signatories = ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.SIGNATORIES.ordinal))
     }
 
     @Suspendable
@@ -52,7 +50,7 @@ data class UtxoFilteredTransactionBuilderImpl(
     @Suspendable
     override fun withSignatories(predicate: Predicate<PublicKey>): UtxoFilteredTransactionBuilderInternal {
         return copy(
-            signatories = AuditProof(
+            signatories = ComponentGroupFilterParameters.AuditProof(
                 UtxoComponentGroup.SIGNATORIES.ordinal,
                 PublicKey::class.java,
                 AuditProofPredicate.Content(predicate)
@@ -62,7 +60,7 @@ data class UtxoFilteredTransactionBuilderImpl(
 
     @Suspendable
     override fun withInputStatesSize(): UtxoFilteredTransactionBuilderInternal {
-        return copy(inputStates = SizeProof(UtxoComponentGroup.INPUTS.ordinal))
+        return copy(inputStates = ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.INPUTS.ordinal))
     }
 
     @Suspendable
@@ -73,7 +71,7 @@ data class UtxoFilteredTransactionBuilderImpl(
     @Suspendable
     override fun withInputStates(predicate: Predicate<StateRef>): UtxoFilteredTransactionBuilderInternal {
         return copy(
-            inputStates = AuditProof(
+            inputStates = ComponentGroupFilterParameters.AuditProof(
                 UtxoComponentGroup.INPUTS.ordinal,
                 StateRef::class.java,
                 AuditProofPredicate.Content(predicate)
@@ -83,7 +81,7 @@ data class UtxoFilteredTransactionBuilderImpl(
 
     @Suspendable
     override fun withReferenceStatesSize(): UtxoFilteredTransactionBuilderInternal {
-        return copy(referenceStates = SizeProof(UtxoComponentGroup.REFERENCES.ordinal))
+        return copy(referenceStates = ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.REFERENCES.ordinal))
     }
 
     @Suspendable
@@ -94,7 +92,7 @@ data class UtxoFilteredTransactionBuilderImpl(
     @Suspendable
     override fun withReferenceStates(predicate: Predicate<StateRef>): UtxoFilteredTransactionBuilderInternal {
         return copy(
-            referenceStates = AuditProof(
+            referenceStates = ComponentGroupFilterParameters.AuditProof(
                 UtxoComponentGroup.REFERENCES.ordinal,
                 StateRef::class.java,
                 AuditProofPredicate.Content(predicate)
@@ -104,7 +102,7 @@ data class UtxoFilteredTransactionBuilderImpl(
 
     @Suspendable
     override fun withOutputStatesSize(): UtxoFilteredTransactionBuilderInternal {
-        return copy(outputStates = SizeProof(UtxoComponentGroup.OUTPUTS.ordinal))
+        return copy(outputStates = ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.OUTPUTS.ordinal))
     }
 
     @Suspendable
@@ -115,7 +113,7 @@ data class UtxoFilteredTransactionBuilderImpl(
     @Suspendable
     override fun withOutputStates(predicate: Predicate<ContractState>): UtxoFilteredTransactionBuilderInternal {
         return copy(
-            outputStates = AuditProof(
+            outputStates = ComponentGroupFilterParameters.AuditProof(
                 UtxoComponentGroup.OUTPUTS.ordinal,
                 ContractState::class.java,
                 AuditProofPredicate.Content(predicate)
@@ -126,7 +124,7 @@ data class UtxoFilteredTransactionBuilderImpl(
     @Suspendable
     override fun withOutputStates(indexes: List<Int>): UtxoFilteredTransactionBuilderInternal {
         return copy(
-            outputStates = AuditProof(
+            outputStates = ComponentGroupFilterParameters.AuditProof(
                 UtxoComponentGroup.OUTPUTS.ordinal,
                 ContractState::class.java,
                 AuditProofPredicate.Index(indexes)
@@ -136,7 +134,7 @@ data class UtxoFilteredTransactionBuilderImpl(
 
     @Suspendable
     override fun withCommandsSize(): UtxoFilteredTransactionBuilderInternal {
-        return copy(commands = SizeProof(UtxoComponentGroup.COMMANDS.ordinal))
+        return copy(commands = ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.COMMANDS.ordinal))
     }
 
     @Suspendable
@@ -147,7 +145,7 @@ data class UtxoFilteredTransactionBuilderImpl(
     @Suspendable
     override fun withCommands(predicate: Predicate<Command>): UtxoFilteredTransactionBuilderInternal {
         return copy(
-            commands = AuditProof(
+            commands = ComponentGroupFilterParameters.AuditProof(
                 UtxoComponentGroup.COMMANDS.ordinal,
                 Command::class.java,
                 AuditProofPredicate.Content(predicate)

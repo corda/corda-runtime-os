@@ -110,7 +110,7 @@ class DbConnectionManagerImpl @Activate constructor(
         TODO("Not yet implemented")
     }
 
-    override fun createDatasource(connectionId: UUID): CloseableDataSource {
+    override fun createDatasource(connectionId: UUID, enablePool: Boolean): CloseableDataSource {
         return getOrCreateDataSource(connectionId, "")
     }
 
@@ -118,7 +118,7 @@ class DbConnectionManagerImpl @Activate constructor(
         TODO("Not yet implemented")
     }
 
-    override fun getDataSource(config: SmartConfig): CloseableDataSource {
+    override fun getDataSource(config: SmartConfig, enablePool: Boolean): CloseableDataSource {
         TODO("Not yet implemented")
     }
 
@@ -156,6 +156,7 @@ class DbConnectionManagerImpl @Activate constructor(
     }
 
     override fun create(
+        enablePool: Boolean,
         driverClass: String,
         jdbcUrl: String,
         username: String,

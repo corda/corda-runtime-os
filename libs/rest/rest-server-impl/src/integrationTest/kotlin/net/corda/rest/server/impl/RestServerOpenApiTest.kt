@@ -14,7 +14,6 @@ import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.server.impl.internal.OptionalDependency
 import net.corda.rest.server.impl.utils.compact
 import net.corda.rest.test.CalendarRestResourceImpl
-import net.corda.rest.test.NullabilityRestResourceImpl
 import net.corda.rest.test.ObjectsInJsonEndpointImpl
 import net.corda.rest.test.TestEntityRestResourceImpl
 import net.corda.rest.test.TestFileUploadImpl
@@ -57,7 +56,6 @@ class RestServerOpenApiTest : RestServerTestBase() {
                     TestHealthCheckAPIImpl(),
                     TestEntityRestResourceImpl(),
                     TestFileUploadImpl(),
-                    NullabilityRestResourceImpl(),
                     ObjectsInJsonEndpointImpl()
                 ),
                 ::securityManager,
@@ -210,35 +208,6 @@ class RestServerOpenApiTest : RestServerTestBase() {
             val schema = content.schema
             assertTrue(schema.nullable, "The schema should have the nullable property")
             assertEquals("string", schema.type)
-        }
-
-        with(openAPI.paths["/nullability/posttakesnullablereturnsnullable"]) {
-            assertNotNull(this)
-            val post = this.post
-            assertNotNull(post)
-            val postReqBody = post.requestBody
-            assertTrue(postReqBody.required)
-            val requestBodyJson = post.requestBody.content["application/json"]
-            assertNotNull(requestBodyJson)
-            val ref = requestBodyJson.schema.`$ref`
-            assertThat(ref).isEqualTo("#/components/schemas/SomeInfo")
-            val successResponse = post.responses["200"]
-            assertNotNull(successResponse)
-            val content = successResponse.content["application/json"]
-            assertNotNull(content)
-            val schema = content.schema
-            assertTrue(schema.nullable, "The schema should have the nullable property")
-        }
-
-        with(openAPI.components.schemas["SomeInfo"]) {
-            assertNotNull(this)
-            assertNull(this.nullable)
-            val idProperty = this.properties["id"]
-            assertNotNull(idProperty)
-            assertThat(idProperty.nullable).isFalse
-            val numberProperty = this.properties["number"]
-            assertNotNull(numberProperty)
-            assertThat(numberProperty.nullable).isFalse
         }
 
         with(openAPI.components.schemas["EchoParams"]) {

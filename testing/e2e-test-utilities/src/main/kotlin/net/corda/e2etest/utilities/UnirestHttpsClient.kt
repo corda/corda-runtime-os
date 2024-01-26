@@ -4,12 +4,14 @@ import kong.unirest.Headers
 import kong.unirest.MultipartBody
 import kong.unirest.Unirest
 import kong.unirest.apache.ApacheClient
+import net.corda.tracing.addTraceContextToHttpRequest
 import org.apache.http.client.config.RequestConfig
 import org.apache.http.conn.ssl.NoopHostnameVerifier
 import org.apache.http.conn.ssl.TrustAllStrategy
 import org.apache.http.impl.client.HttpClients
 import org.apache.http.ssl.SSLContexts
 import java.net.URI
+import java.net.http.HttpRequest
 import javax.net.ssl.SSLContext
 
 class UnirestHttpsClient(private val endpoint: URI, private val username: String, private val password: String)  :
@@ -39,13 +41,25 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
 
     override fun post(cmd: String, body: String): SimpleResponse {
         val url = endpoint.resolve(cmd).toURL().toString()
-
         val response = Unirest.post(url)
             .basicAuth(username, password)
             .body(body)
+            .headers(obtainTracingHeaders())
             .asString()
 
         return SimpleResponse(response.status, response.body, url, response.headers.toInternal())
+    }
+
+    private fun obtainTracingHeaders(): Map<String, String> {
+        // Capture headers into Java standard HTTP request builder to later
+        // use it with Unirest
+        val builder = HttpRequest.newBuilder(URI.create("http://localhost:1234"))
+        addTraceContextToHttpRequest(builder)
+        val headers = with(builder.build()) {
+            // Each key might have a list of values, whereas UniRest does not support that
+            headers().map().map { entry -> entry.key to entry.value.first() }.toMap()
+        }
+        return headers
     }
 
     override fun put(cmd: String, body: String): SimpleResponse {

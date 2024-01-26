@@ -1,6 +1,6 @@
 package net.corda.libs.statemanager.impl.repository.impl
 
-import net.corda.libs.statemanager.impl.model.v1.StateEntity
+import net.corda.libs.statemanager.api.State
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -35,12 +35,11 @@ class StateRepositoryImplTest {
         assertThat(failed.size).isEqualTo(3)
     }
 
-    private fun createStates(numStates: Int): Collection<StateEntity> {
+    private fun createStates(numStates: Int): Collection<State> {
         return (1..numStates).map {
-            StateEntity(
+            State(
                 "foo_$it",
-                "".toByteArray(),
-                ""
+                "".toByteArray()
             )
         }
     }

@@ -189,18 +189,9 @@ class FilteredTransactionImplIntegrationTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(
-                    0,
-                    TransactionMetadataImpl::class.java,
-                    AuditProofPredicate.Content { true }),
-                ComponentGroupFilterParameters.AuditProof(
-                    1,
-                    Any::class.java,
-                    AuditProofPredicate.Content { it is MyClassA || it is MyClassC }),
-                ComponentGroupFilterParameters.AuditProof(
-                    2,
-                    Any::class.java,
-                    AuditProofPredicate.Content { it is MyClassA || it is MyClassC }),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java, AuditProofPredicate.Content { true }),
+                ComponentGroupFilterParameters.AuditProof(1, Any::class.java, AuditProofPredicate.Content { it is MyClassA || it is MyClassC }),
+                ComponentGroupFilterParameters.AuditProof(2, Any::class.java, AuditProofPredicate.Content { it is MyClassA || it is MyClassC }),
             )
         )
 
@@ -237,14 +228,8 @@ class FilteredTransactionImplIntegrationTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(
-                    0,
-                    TransactionMetadataImpl::class.java,
-                    AuditProofPredicate.Content { true }),
-                ComponentGroupFilterParameters.AuditProof(
-                    1,
-                    Any::class.java,
-                    AuditProofPredicate.Content { it is MyClassA || it is MyClassC }),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java, AuditProofPredicate.Content { true }),
+                ComponentGroupFilterParameters.AuditProof(1, Any::class.java, AuditProofPredicate.Content { it is MyClassA || it is MyClassC }),
             )
         )
 
@@ -275,10 +260,7 @@ class FilteredTransactionImplIntegrationTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(
-                    0,
-                    TransactionMetadataImpl::class.java,
-                    AuditProofPredicate.Content { true }),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java, AuditProofPredicate.Content { true }),
                 ComponentGroupFilterParameters.SizeProof(1),
                 ComponentGroupFilterParameters.SizeProof(2),
             )

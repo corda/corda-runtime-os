@@ -16,7 +16,7 @@ The current deployment is configured to not send metadata to the database.
 
 The sending app simulator will send {{ .Values.appSimulators.sender.totalNumberOfMessages }} messages of size {{ .Values.appSimulators.sender.messageSizeBytes }} bytes, in batches of {{ .Values.appSimulators.sender.batchSize }}.
 With a delay of {{ .Values.appSimulators.sender.interBatchDelay}} between each batch.
-From identity {{ .Values.appSimulators.sender.ourX500Name }} in group {{ .Values.appSimulators.sender.ourGroupId }} to {{ .Values.appSimulators.sender.peerX500Name }} in group {{ .Values.appSimulators.sender.peerGroupId }}.
+From identities {{ .Values.appSimulators.sender.senderX500Names }} in group {{ .Values.appSimulators.sender.senderGroupId }} to {{ .Values.appSimulators.sender.peerX500Names }} in group {{ .Values.appSimulators.sender.peerGroupId }}.
 
 The sending app simulator will run until it finishes sending messages.
 {{- end }}
@@ -39,7 +39,7 @@ The current deployment is configured to not send metadata to the database.
 
 The sending app simulator will send messages of size {{ .Values.appSimulators.sender.messageSizeBytes }} bytes, in batches of {{ .Values.appSimulators.sender.batchSize }}.
 With a delay of {{ .Values.appSimulators.sender.interBatchDelay}} between each batch.
-From identity {{ .Values.appSimulators.sender.ourX500Name }} in group {{ .Values.appSimulators.sender.ourGroupId }} to {{ .Values.appSimulators.sender.peerX500Name }} in group {{ .Values.appSimulators.sender.peerGroupId }}.
+From identities {{ .Values.appSimulators.sender.senderX500Names }} in group {{ .Values.appSimulators.sender.senderGroupId }} to {{ .Values.appSimulators.sender.peerX500Names }} in group {{ .Values.appSimulators.sender.peerGroupId }}.
 
 The sending app simulator will run until explicitly stopped.
 {{- end }}

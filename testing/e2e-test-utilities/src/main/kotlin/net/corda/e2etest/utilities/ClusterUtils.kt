@@ -1,4 +1,5 @@
 @file:Suppress("TooManyFunctions")
+
 package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.module.kotlin.contains
@@ -223,25 +224,45 @@ fun ClusterInfo.whenNoKeyExists(
     }
 }
 
+/**
+ * This method triggers rotation of keys for crypto unmanaged wrapping keys.
+ * It takes 3 input parameters, the old and new KeyAlias (in string type) and the status code (Int type)
+ *   @param oldKeyAlias Old unmanaged root key alias that needs to be rotated.
+ *   @param newKeyAlias New unmanaged root key alias.
+ *   @param expectedHttpStatusCode Status code that should be displayed when the API is hit,
+ *   helps to validate both positive or negative scenarios.
+ */
 fun ClusterInfo.rotateCryptoUnmanagedWrappingKeys(
     oldKeyAlias: String,
-    newKeyAlias: String
+    newKeyAlias: String,
+    expectedHttpStatusCode: Int
 ) = cluster {
     assertWithRetry {
         command { doRotateCryptoUnmanagedWrappingKeys(oldKeyAlias, newKeyAlias) }
-        condition { it.code == ResponseCode.ACCEPTED.statusCode }
+        condition { it.code == expectedHttpStatusCode }
     }
 }
 
+/**
+ * This method fetch the status of keys for unmanaged wrapping key rotation.
+ * It takes 2 input parameters, the keyAlias (in String type) and the status code (in Int type)
+ *  @param keyAlias The root key alias of which the status of the last key rotation will be shown.
+ *  @param expectedHttpStatusCode Status code that should be displayed when the API is hit,
+ *  helps to validate both positive or negative scenarios.
+ */
 fun ClusterInfo.getStatusForUnmanagedWrappingKeysRotation(
-    requestid: String
+    keyAlias: String,
+    expectedHttpStatusCode: Int
 ) = cluster {
     assertWithRetry {
-        command { getCryptoUnmanagedWrappingKeysRotationStatus(requestid) }
-        condition { it.code == ResponseCode.OK.statusCode }
+        command { getCryptoUnmanagedWrappingKeysRotationStatus(keyAlias) }
+        condition { it.code == expectedHttpStatusCode }
     }
 }
 
+/**
+ * This method fetch the protocol version for unmanaged key Rotation.
+ */
 fun ClusterInfo.getProtocolVersionForUnmanagedKeyRotation(
 ) = cluster {
     assertWithRetry {

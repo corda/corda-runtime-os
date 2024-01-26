@@ -63,10 +63,10 @@ dependencies {
 
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     implementation "com.esotericsoftware:kryo:$kryoVersion"
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation libs.jackson.module.kotlin
 
     testImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
-    testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    testImplementation libs.jackson.module.kotlin
 
     testImplementation project(':libs:flows:session-manager-impl')
     testImplementation project(':libs:lifecycle:lifecycle-test-impl')

@@ -12,7 +12,7 @@ import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.data.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
-import net.corda.ledger.common.flow.transaction.filtered.FilteredTransactionVerificationException
+import net.corda.ledger.common.data.transaction.filtered.FilteredTransactionVerificationException
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
