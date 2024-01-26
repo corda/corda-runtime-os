@@ -175,12 +175,6 @@
           {{- include "corda.containerSecurityContext" . | nindent 10 }}
           env:
             {{- include "corda.stateManagerDatabaseBootstrapEnvironment" ( list $ $dbName $bootstrapSettings ) | nindent 12 }}
-            - name: STATE_MANAGER_DB_NAME
-              value: {{ $dbName | quote }}
-            - name: STATE_MANAGER_DB_HOST
-              value: {{ $databaseConfig.host | quote }}
-            - name: STATE_MANAGER_DB_PORT
-              value: {{ $databaseConfig.port | quote }}
             {{- include "corda.stateManagerDatabaseRuntimeEnvironment" ( list $ $dbName $stateType $workerName $databaseConfig $runtimeSettings ) | nindent 12 }}
           command: [ 'sh', '-c', '-e' ]
           args:
@@ -189,15 +183,15 @@
               set -ev
               echo 'Applying State Manager Specification for Database '{{ $dbName }}'..."
               export PGPASSWORD="${BOOT_PG_PASSWORD}"
-              find /tmp/database-{{ $workerKebabCase }}-{{ $stateTypeKebabCase }} -iname "*.sql" | xargs printf -- ' -f %s' | xargs psql -v ON_ERROR_STOP=1 -h "${STATE_MANAGER_DB_HOST}" -p "${STATE_MANAGER_DB_PORT}" -U "${BOOT_PG_USERNAME}" --dbname "${STATE_MANAGER_DB_NAME}"
+              find /tmp/database-{{ $workerKebabCase }}-{{ $stateTypeKebabCase }} -iname "*.sql" | xargs printf -- ' -f %s' | xargs psql -v ON_ERROR_STOP=1 -h "{{- required ( printf "Must specify a host for database '%s'" $dbName ) $databaseConfig.host -}}" -p "{{- $databaseConfig.port -}}" -U "${BOOT_PG_USERNAME}" --dbname "{{- $dbName -}}"
               echo 'Applying State Manager Specification for {{ $workerName }}... Done!'
 
               echo 'Creating users and granting permissions for State Manager in {{ $workerName }}...'
-              psql -v ON_ERROR_STOP=1 -h "${STATE_MANAGER_DB_HOST}" -p "${STATE_MANAGER_DB_PORT}" -U "${BOOT_PG_USERNAME}" "${STATE_MANAGER_DB_NAME}" << SQL
+              psql -v ON_ERROR_STOP=1 -h "{{- required ( printf "Must specify a host for database '%s'" $dbName ) $databaseConfig.host -}}" -p "{{- $databaseConfig.port -}}" -U "${BOOT_PG_USERNAME}" "{{- $dbName -}}" << SQL
                 DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${STATE_MANAGER_USERNAME}') THEN RAISE NOTICE 'Role "${STATE_MANAGER_USERNAME}" already exists'; ELSE CREATE USER "${STATE_MANAGER_USERNAME}" WITH ENCRYPTED PASSWORD '${STATE_MANAGER_PASSWORD}'; END IF; END \$\$;
-                GRANT USAGE ON SCHEMA STATE_MANAGER TO "${STATE_MANAGER_USERNAME}";
-                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA STATE_MANAGER TO "${STATE_MANAGER_USERNAME}";
-                GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA STATE_MANAGER TO "${STATE_MANAGER_USERNAME}";
+                GRANT USAGE ON SCHEMA "{{- $schemaName -}}" TO "${STATE_MANAGER_USERNAME}";
+                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA "{{- $schemaName -}}" TO "${STATE_MANAGER_USERNAME}";
+                GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA "{{- $schemaName -}}" TO "${STATE_MANAGER_USERNAME}";
               SQL
 
               echo 'Applying State Manager Specification for Database '{{ $dbName }}'... Done!'
