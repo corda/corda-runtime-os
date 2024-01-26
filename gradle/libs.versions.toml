@@ -3,8 +3,8 @@ kotlinVersion = "1.8.21"
 
 bouncycastleVersion = "1.77"
 hikariCpVersion = "5.1.0"
-
 jacksonVersion = "2.15.0"
+micrometerVersion = "1.11.0"
 
 # REST dependency versions
 javalinVersion = "4.6.8"
@@ -71,6 +71,8 @@ log4j-core = { group = "org.apache.logging.log4j", name = "log4j-core", version.
 log4j-layout-json = { group = "org.apache.logging.log4j", name = "log4j-layout-template-json", version.ref = "log4jVersion" }
 log4j-slf4j = { group = "org.apache.logging.log4j", name = "log4j-slf4j-impl", version.ref = "log4jVersion" }
 log4j-slf4j2 = { group = "org.apache.logging.log4j", name = "log4j-slf4j2-impl", version.ref = "log4jVersion" }
+micrometer-core = { group = "io.micrometer", name = "micrometer-core", version.ref = "micrometerVersion" }
+micrometer-registry-prometheus = { group = "io.micrometer", name = "micrometer-registry-prometheus", version.ref = "micrometerVersion" }
 mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockitoVersion" }
 mockito-kotlin = { group = "org.mockito.kotlin", name = "mockito-kotlin", version.ref = "mockitoKotlinVersion" }
 javalin = { group = "io.javalin", name = "javalin-osgi", version.ref = "javalinVersion" }

@@ -42,12 +42,12 @@ dependencies {
         }
     }
     implementation libs.jackson.databind
-    implementation ("io.micrometer:micrometer-core:$micrometerVersion") {
+    implementation (libs.micrometer.core) {
         // we don't need these in classpath, so excluding them to reduce dependencies.
         exclude group: 'org.hdrhistogram', module: 'HdrHistogram'
         exclude group: 'org.latencyutils', module: 'LatencyUtils'
     }
-    implementation "io.micrometer:micrometer-registry-prometheus:$micrometerVersion"
+    implementation libs.micrometer.registry.prometheus
 
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly project(':libs:web:web-impl')
