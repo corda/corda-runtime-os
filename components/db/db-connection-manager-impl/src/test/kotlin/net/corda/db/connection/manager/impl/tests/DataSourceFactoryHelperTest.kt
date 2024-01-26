@@ -77,6 +77,7 @@ class DataSourceFactoryHelperTest {
         dataSourceFactory.createFromConfig(fullSmartConfig)
 
         verify(dataSourceFactory).create(
+            enablePool = true,
             driverClass = driver,
             jdbcUrl = url,
             username = user,
@@ -98,6 +99,7 @@ class DataSourceFactoryHelperTest {
         dataSourceFactory.createFromConfig(minimalSmartConfig)
 
         verify(dataSourceFactory).create(
+            enablePool = true,
             JDBC_DRIVER,
             DEFAULT_JDBC_URL,
             user,
@@ -121,6 +123,7 @@ class DataSourceFactoryHelperTest {
         dataSourceFactory.createFromConfig(configWithMin)
 
         verify(dataSourceFactory).create(
+            enablePool = true,
             JDBC_DRIVER,
             DEFAULT_JDBC_URL,
             user,

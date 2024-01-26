@@ -165,7 +165,7 @@ class VirtualNodeDbImplTest {
             whenever(connection).thenReturn(sqlConnection)
         }
 
-        whenever(dbConnectionManager.getDataSource(ddlConfig)).thenReturn(dataSource)
+        whenever(dbConnectionManager.getDataSource(ddlConfig, false)).thenReturn(dataSource)
 
         val target = createVirtualNodeDb(isPlatformManagedDb = true)
         target.runCpiMigrations(dbChange, "tag")
@@ -180,7 +180,7 @@ class VirtualNodeDbImplTest {
             whenever(connection).thenReturn(sqlConnection)
         }
 
-        whenever(dbConnectionManager.getDataSource(dmlConfig)).thenReturn(dataSource)
+        whenever(dbConnectionManager.getDataSource(dmlConfig, false)).thenReturn(dataSource)
         whenever(schemaMigrator.listUnrunChangeSets(sqlConnection, dbChange)).thenReturn(listOf("Missing Changeset"))
 
         val target = createVirtualNodeDb(isPlatformManagedDb = false)
@@ -195,7 +195,7 @@ class VirtualNodeDbImplTest {
             whenever(connection).thenReturn(sqlConnection)
         }
 
-        whenever(dbConnectionManager.getDataSource(dmlConfig)).thenReturn(dataSource)
+        whenever(dbConnectionManager.getDataSource(dmlConfig, false)).thenReturn(dataSource)
         whenever(schemaMigrator.listUnrunChangeSets(sqlConnection, dbChange)).thenReturn(emptyList())
 
         val target = createVirtualNodeDb(isPlatformManagedDb = false)
@@ -209,7 +209,7 @@ class VirtualNodeDbImplTest {
             whenever(connection).thenReturn(sqlConnection)
         }
 
-        whenever(dbConnectionManager.getDataSource(dmlConfig)).thenReturn(dataSource)
+        whenever(dbConnectionManager.getDataSource(dmlConfig, false)).thenReturn(dataSource)
         whenever(schemaMigrator.listUnrunChangeSets(eq(sqlConnection), any())).thenReturn(listOf("Missing Changeset"))
 
         val target = createVirtualNodeDb(isPlatformManagedDb = false)
@@ -223,7 +223,7 @@ class VirtualNodeDbImplTest {
             whenever(connection).thenReturn(sqlConnection)
         }
 
-        whenever(dbConnectionManager.getDataSource(dmlConfig)).thenReturn(dataSource)
+        whenever(dbConnectionManager.getDataSource(dmlConfig, false)).thenReturn(dataSource)
         whenever(schemaMigrator.listUnrunChangeSets(eq(sqlConnection), any())).thenReturn(emptyList())
 
         val target = createVirtualNodeDb(isPlatformManagedDb = false)
@@ -249,7 +249,7 @@ class VirtualNodeDbImplTest {
             whenever(connection).thenReturn(sqlConnection)
         }
 
-        whenever(dbConnectionManager.getDataSource(ddlConfig)).thenReturn(dataSource)
+        whenever(dbConnectionManager.getDataSource(ddlConfig, false)).thenReturn(dataSource)
 
         val target = createVirtualNodeDb(isPlatformManagedDb = true)
         target.runDbMigration("tag")
@@ -263,7 +263,7 @@ class VirtualNodeDbImplTest {
             whenever(connection).thenReturn(sqlConnection)
         }
 
-        whenever(dbConnectionManager.getDataSource(ddlConfig)).thenReturn(dataSource)
+        whenever(dbConnectionManager.getDataSource(ddlConfig, false)).thenReturn(dataSource)
 
         val target = createVirtualNodeDb(isPlatformManagedDb = false)
         target.runDbMigration("tag")

@@ -1,7 +1,7 @@
 package net.corda.libs.statemanager.impl.factory
 
 import net.corda.db.core.CloseableDataSource
-import net.corda.db.core.HikariDataSourceFactory
+import net.corda.db.core.DataSourceFactoryImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.getIntOrDefault
 import net.corda.libs.statemanager.api.StateManager
@@ -65,7 +65,8 @@ class StateManagerFactoryImpl @Activate constructor(
                     config.getInt(StateManagerConfig.Database.JDBC_POOL_VALIDATION_TIMEOUT_SECONDS).toLong()
                         .run(Duration::ofSeconds)
 
-                dataSource = HikariDataSourceFactory().create(
+                dataSource = DataSourceFactoryImpl().create(
+                    enablePool = true,
                     username = user,
                     password = pass,
                     jdbcUrl = jdbcUrl,

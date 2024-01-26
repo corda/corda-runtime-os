@@ -30,7 +30,7 @@ internal class MigrationUtilityImpl(
         migrationChangeLogs
             .groupBy { it.id.cpkFileChecksum }
             .forEach { (cpkFileChecksum, changelogs) ->
-                dbConnectionManager.createDatasource(vaultDdlConnectionId).use {
+                dbConnectionManager.createDatasource(vaultDdlConnectionId, enablePool = false).use {
                     runCpkMigrations(it, virtualNodeShortHash, cpkFileChecksum, changelogs)
                 }
             }
@@ -45,7 +45,7 @@ internal class MigrationUtilityImpl(
             val missingCpks = mutableListOf<String>()
             cpkChangelogs.groupBy { it.id.cpkFileChecksum }.map { (_, changelogs) ->
                 val allChangeLogsForCpk = VirtualNodeDbChangeLog(changelogs)
-                dbConnectionManager.createDatasource(vaultDmlConnectionId).use { datasource ->
+                dbConnectionManager.createDatasource(vaultDmlConnectionId, enablePool = false).use { datasource ->
                     missingCpks.addAll(
                         liquibaseSchemaMigrator.listUnrunChangeSets(datasource.connection, allChangeLogsForCpk)
                     )

@@ -22,7 +22,8 @@ class HikariDataSourceFactoryTest {
             "FROM pg_stat_activity WHERE datname = '$dbName'"
 
     private val monitorPoolDelegate = lazy {
-        HikariDataSourceFactory().create(
+        DataSourceFactoryImpl().create(
+            enablePool = true,
             driverClass = "org.postgresql.Driver",
             jdbcUrl = "jdbc:postgresql://localhost:5432/$dbName",
             username = "postgres",
@@ -51,7 +52,8 @@ class HikariDataSourceFactoryTest {
         val maxConnections = 5
         val minConnections = 0
         val idleTimeout = 10.toDuration(DurationUnit.SECONDS).toJavaDuration()
-        HikariDataSourceFactory().create(
+        DataSourceFactoryImpl().create(
+            enablePool = true,
             driverClass = "org.postgresql.Driver",
             jdbcUrl = "jdbc:postgresql://localhost:5432/$dbName",
             username = "postgres",

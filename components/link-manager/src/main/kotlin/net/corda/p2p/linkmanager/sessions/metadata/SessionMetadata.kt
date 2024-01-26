@@ -81,7 +81,7 @@ internal data class OutboundSessionMetadata(
                 this.toCommonMetadata(),
                 this[SESSION_ID].toString(),
                 this[STATUS].toString().statusFromString(),
-                this[SERIAL] as Long,
+                (this[SERIAL] as Number).toLong(),
                 this[MEMBERSHIP_STATUS].toString().membershipStatusFromString(),
                 this[COMMUNICATION_WITH_MGM].toString().toBoolean(),
             )
@@ -143,8 +143,8 @@ internal data class CommonMetadata(
             return CommonMetadata(
                 HoldingIdentity(MemberX500Name.parse(this[SOURCE_VNODE].toString()), this[GROUP_ID_KEY].toString()),
                 HoldingIdentity(MemberX500Name.parse(this[DEST_VNODE].toString()), this[GROUP_ID_KEY].toString()),
-                Instant.ofEpochMilli(this[LAST_SEND_TIMESTAMP] as Long),
-                Instant.ofEpochMilli(this[EXPIRY] as Long),
+                Instant.ofEpochMilli((this[LAST_SEND_TIMESTAMP] as Number).toLong()),
+                Instant.ofEpochMilli((this[EXPIRY] as Number).toLong()),
             )
         }
     }
