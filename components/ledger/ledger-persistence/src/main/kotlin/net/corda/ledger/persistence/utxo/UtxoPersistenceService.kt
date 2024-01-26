@@ -3,10 +3,11 @@ package net.corda.ledger.persistence.utxo
 import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.persistence.common.InconsistentLedgerStateException
-import net.corda.ledger.utxo.data.transaction.MerkleProofDto
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.ContractState
@@ -76,8 +77,15 @@ interface UtxoPersistenceService {
         hashes: List<String>
     )
 
-    fun findMerkleProofs(
-        transactionId: String,
-        groupIndex: Int
-    ): List<MerkleProofDto>
+    /**
+     * Persist a list of filtered transactions to the persistence context.
+     *
+     * @param filteredTransactions The list of [FilteredTransaction]s to persist
+     * @param account The account to persist for the [FilteredTransaction]s
+     */
+    fun persistFilteredTransactions(
+        filteredTransactions: List<FilteredTransaction>,
+        signatures: List<DigitalSignatureAndMetadata>,
+        account: String
+    )
 }

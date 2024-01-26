@@ -1,5 +1,6 @@
 package net.corda.crypto.merkle.impl
 
+import net.corda.crypto.cipher.suite.merkle.MerkleProofInternal
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
@@ -22,13 +23,12 @@ import kotlin.math.min
  * data is. There will need to be at least one to cover the gap left by missing data. There never
  * needs to be more than the tree size minus the number of leaves specified.
  */
-
 class MerkleProofImpl(
     private val proofType: MerkleProofType,
     private val treeSize: Int,
     private val leaves: List<IndexedMerkleLeaf>,
     private val hashes: List<SecureHash>
-) : MerkleProof {
+) : MerkleProofInternal {
     // CORE-5111: add serialize/deserialize (and its test)
 
     override fun verify(root: SecureHash, digest: MerkleTreeHashDigest) =
@@ -304,7 +304,7 @@ class MerkleProofImpl(
      * @return A MerkelProofImpl which has the union of the leaves and the required proof hashes to be verifiable.
      */
     @Suppress("UnusedParameters")
-    fun merge(other: MerkleProofImpl, digest: MerkleTreeHashDigestProvider): MerkleProofImpl {
+    fun merge(other: MerkleProof, digest: MerkleTreeHashDigestProvider): MerkleProof {
         require(this.treeSize == other.treeSize) {
             "underlying tree sizes must match; left hand side has underlying tree "+
                 "size ${this.treeSize} and right hand side has underlying tree size ${other.treeSize}"

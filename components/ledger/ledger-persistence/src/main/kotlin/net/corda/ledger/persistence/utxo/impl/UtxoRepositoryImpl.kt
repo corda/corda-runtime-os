@@ -12,6 +12,7 @@ import net.corda.ledger.persistence.common.mapToComponentGroups
 import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.utxo.data.transaction.MerkleProofDto
+import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionDto
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByPersistence
@@ -55,6 +56,8 @@ class UtxoRepositoryImpl @Activate constructor(
 ) : UtxoRepository, UsedByPersistence {
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
+        const val TOP_LEVEL_MERKLE_PROOF_INDEX = -1
     }
 
     override fun findTransaction(
@@ -417,6 +420,50 @@ class UtxoRepositoryImpl @Activate constructor(
                     firstRow.get(7) as ByteArray
                 )
             }
+    }
+
+    override fun findFilteredTransactions(
+        entityManager: EntityManager,
+        ids: List<String>
+    ): Map<String, UtxoFilteredTransactionDto> {
+        val privacySaltAndMetadataMap = findTransactionsPrivacySaltAndMetadata(entityManager, ids)
+        val merkleProofs = findMerkleProofs(entityManager, ids)
+        val signaturesMap = ids.associateWith { findTransactionSignatures(entityManager, it) }
+
+        return ids.associateWith { transactionId ->
+
+            val transactionMerkleProofs = merkleProofs[transactionId]
+            val topLevelMerkleProof = transactionMerkleProofs?.get(TOP_LEVEL_MERKLE_PROOF_INDEX)
+            val transactionPrivacySaltAndMetadata = privacySaltAndMetadataMap[transactionId]
+            val transactionSignatures = signaturesMap[transactionId]
+
+            requireNotNull(privacySaltAndMetadataMap[transactionId]) {
+                "Couldn't find metadata for transaction with ID: $transactionId."
+            }
+            requireNotNull(transactionMerkleProofs) {
+                "Couldn't find any merkle proofs for transaction with ID: $transactionId."
+            }
+            requireNotNull(topLevelMerkleProof) {
+                "Couldn't find a top level merkle proof for transaction with ID: $transactionId."
+            }
+            requireNotNull(transactionPrivacySaltAndMetadata) {
+                "Couldn't find metadata/privacy salt for transaction with ID: $transactionId"
+            }
+            requireNotNull(transactionSignatures) {
+                "Couldn't find signatures for transaction with ID: $transactionId"
+            }
+
+            UtxoFilteredTransactionDto(
+                transactionId = transactionId,
+                topLevelMerkleProof = topLevelMerkleProof,
+                componentMerkleProofMap = transactionMerkleProofs.groupBy {
+                    it.groupIndex
+                }.filter { it.key != TOP_LEVEL_MERKLE_PROOF_INDEX },
+                privacySalt = transactionPrivacySaltAndMetadata.first,
+                metadataBytes = transactionPrivacySaltAndMetadata.second,
+                signatures = transactionSignatures
+            )
+        }
     }
 
     private fun Int.logResult(entity: String): Int {

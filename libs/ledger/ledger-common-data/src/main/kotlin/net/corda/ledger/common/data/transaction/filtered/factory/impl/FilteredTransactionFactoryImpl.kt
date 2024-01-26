@@ -1,6 +1,7 @@
 package net.corda.ledger.common.data.transaction.filtered.factory.impl
 
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
+import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters
 import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters.AuditProof
@@ -8,12 +9,15 @@ import net.corda.ledger.common.data.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.data.transaction.filtered.factory.FilteredTransactionFactory
 import net.corda.ledger.common.data.transaction.filtered.impl.FilteredTransactionImpl
-import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
+import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByFlow
+import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProviderWithSizeProofSupport
+import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -22,8 +26,8 @@ import org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Component(
-    service = [ FilteredTransactionFactory::class, SingletonSerializeAsToken::class, UsedByFlow::class ],
-    property = [ CORDA_SYSTEM_SERVICE ],
+    service = [ FilteredTransactionFactory::class, SingletonSerializeAsToken::class, UsedByFlow::class, UsedByPersistence::class ],
+    property = [ CORDA_MARKER_ONLY_SERVICE ],
     scope = PROTOTYPE,
 )
 class FilteredTransactionFactoryImpl @Activate constructor(
@@ -33,7 +37,7 @@ class FilteredTransactionFactoryImpl @Activate constructor(
     private val merkleTreeProvider: MerkleTreeProvider,
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService
-) : FilteredTransactionFactory, SingletonSerializeAsToken, UsedByFlow {
+) : FilteredTransactionFactory, SingletonSerializeAsToken, UsedByFlow, UsedByPersistence {
 
     @Suspendable
     override fun create(
@@ -53,10 +57,28 @@ class FilteredTransactionFactoryImpl @Activate constructor(
             id = transactionId,
             topLevelMerkleProof = wireTransaction.rootMerkleTree.createAuditProof(filteredComponentGroups.keys.toList()),
             filteredComponentGroups,
+            wireTransaction.privacySalt,
             jsonMarshallingService,
             merkleTreeProvider
         )
     }
+
+    override fun create(
+        transactionId: SecureHash,
+        topLevelMerkleProof: MerkleProof,
+        filteredComponentGroups: Map<Int, FilteredComponentGroup>,
+        privacySaltBytes: ByteArray
+    ): FilteredTransaction {
+        return FilteredTransactionImpl(
+            id = transactionId,
+            topLevelMerkleProof = topLevelMerkleProof,
+            filteredComponentGroups,
+            PrivacySaltImpl(privacySaltBytes),
+            jsonMarshallingService,
+            merkleTreeProvider
+        )
+    }
+
 
     private fun requireUniqueComponentGroupIndexes(componentGroupFilterParameters: List<ComponentGroupFilterParameters>) {
         val componentGroupIndexes = componentGroupFilterParameters.map { it.componentGroupIndex }

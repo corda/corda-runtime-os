@@ -174,6 +174,10 @@ class UtxoPersistenceServiceImplTest {
                 factoryRegistry,
                 DefaultContractStateVaultJsonFactoryImpl(),
                 jsonMarshallingService,
+                ctx.getSandboxSingletonService(),
+                ctx.getSandboxSingletonService(),
+                ctx.getSandboxSingletonService(),
+                ctx.getSandboxSingletonService(),
                 testClock
             )
         }

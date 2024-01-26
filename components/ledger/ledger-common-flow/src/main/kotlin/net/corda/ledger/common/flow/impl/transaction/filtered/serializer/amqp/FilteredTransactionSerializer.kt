@@ -1,6 +1,7 @@
 package net.corda.ledger.common.flow.impl.transaction.filtered.serializer.amqp
 
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
+import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.common.data.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.data.transaction.filtered.impl.FilteredTransactionImpl
@@ -49,6 +50,7 @@ class FilteredTransactionSerializer @Activate constructor(
             proxy.id,
             proxy.topLevelMerkleProof,
             proxy.filteredComponentGroups,
+            proxy.privacySalt,
             jsonMarshallingService,
             merkleTreeProvider
         )
@@ -58,5 +60,6 @@ class FilteredTransactionSerializer @Activate constructor(
 class FilteredTransactionProxy(
     val id: SecureHash,
     val topLevelMerkleProof: MerkleProof,
-    val filteredComponentGroups: Map<Int, FilteredComponentGroup>
+    val filteredComponentGroups: Map<Int, FilteredComponentGroup>,
+    val privacySalt: PrivacySalt
 )
