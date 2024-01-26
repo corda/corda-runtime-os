@@ -304,7 +304,7 @@ class MerkleProofImpl(
      * @return A MerkelProofImpl which has the union of the leaves and the required proof hashes to be verifiable.
      */
     @Suppress("UnusedParameters")
-    fun merge(other: MerkleProof, digest: MerkleTreeHashDigestProvider): MerkleProof {
+    override fun merge(other: MerkleProof, digest: MerkleTreeHashDigestProvider): MerkleProof {
         require(this.treeSize == other.treeSize) {
             "underlying tree sizes must match; left hand side has underlying tree "+
                 "size ${this.treeSize} and right hand side has underlying tree size ${other.treeSize}"
@@ -329,7 +329,8 @@ class MerkleProofImpl(
             nodeMapThis[k] = it
         }
         val nodeMapOther: MutableMap< Pair<Int, Int>, MerkleNodeInfo> = mutableMapOf()
-        val otherRoot = other.calculateRootInstrumented(digest) {
+        // maybe move calculateRootInstrumented to to MerkleProofInternal so we don't need the cast?
+        val otherRoot = (other as MerkleProofImpl).calculateRootInstrumented(digest) {
             val k = it.level to it.node.indexWithinLevel
             nodeMapOther[k] = it
         }

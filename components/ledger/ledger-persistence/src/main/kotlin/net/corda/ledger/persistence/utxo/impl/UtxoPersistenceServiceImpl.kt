@@ -3,6 +3,7 @@ package net.corda.ledger.persistence.utxo.impl
 import com.fasterxml.jackson.core.JsonProcessingException
 import net.corda.common.json.validation.JsonValidator
 import net.corda.crypto.cipher.suite.merkle.MerkleProofFactory
+import net.corda.crypto.cipher.suite.merkle.MerkleProofInternal
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.core.parseSecureHash
 import net.corda.data.membership.SignedGroupParameters

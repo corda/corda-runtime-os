@@ -42,7 +42,7 @@ class FilteredTransactionSerializer @Activate constructor(
         get() = true
 
     override fun toProxy(obj: FilteredTransaction): FilteredTransactionProxy {
-        return FilteredTransactionProxy(obj.id, obj.topLevelMerkleProof, obj.filteredComponentGroups)
+        return FilteredTransactionProxy(obj.id, obj.topLevelMerkleProof, obj.filteredComponentGroups, obj.privacySalt)
     }
 
     override fun fromProxy(proxy: FilteredTransactionProxy): FilteredTransaction {

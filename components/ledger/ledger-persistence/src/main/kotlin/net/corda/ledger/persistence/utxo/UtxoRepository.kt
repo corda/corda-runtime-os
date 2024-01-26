@@ -183,12 +183,11 @@ interface UtxoRepository {
         leafIndex: Int
     )
 
-    /** Find all the merkle proofs for a given transaction ID and component group index */
+    /** Find all the merkle proofs for a given list of transaction IDs */
     fun findMerkleProofs(
         entityManager: EntityManager,
-        transactionId: String,
-        groupIndex: Int
-    ): List<MerkleProofDto>
+        transactionIds: List<String>
+    ): Map<String, List<MerkleProofDto>>
 
     /** Find filtered transactions with the given [ids] */
     fun findFilteredTransactions(

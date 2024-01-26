@@ -1,4 +1,4 @@
-package net.corda.ledger.common.flow.impl.transaction.filtered.factory
+package net.corda.ledger.common.data.transaction.factory.test
 
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl

@@ -61,6 +61,10 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
             factoryStorage = sandbox.getSandboxSingletonService(),
             defaultContractStateVaultJsonFactory = DefaultContractStateVaultJsonFactoryImpl(),
             jsonMarshallingService = sandbox.getSandboxSingletonService(),
+            jsonValidator = sandbox.getSandboxSingletonService(),
+            merkleProofFactory = sandbox.getSandboxSingletonService(),
+            merkleTreeProvider = sandbox.getSandboxSingletonService(),
+            filteredTransactionFactory = sandbox.getSandboxSingletonService(),
             UTCClock()
         )
 
@@ -166,14 +170,6 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     persistenceService,
                     externalEventResponseFactory,
                     serializationService
-                )
-            }
-            is PersistMerkleProofIfDoesNotExist -> {
-                UtxoPersistMerkleProofIfDoesNotExistRequestHandler(
-                    req,
-                    externalEventContext,
-                    externalEventResponseFactory,
-                    persistenceService
                 )
             }
             else -> {
