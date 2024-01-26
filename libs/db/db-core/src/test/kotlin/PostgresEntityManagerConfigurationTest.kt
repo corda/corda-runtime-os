@@ -1,5 +1,5 @@
 import net.corda.db.core.DataSourceFactory
-import net.corda.db.core.createDataSource
+import net.corda.db.core.createUnpooledDataSource
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
@@ -11,10 +11,10 @@ class PostgresEntityManagerConfigurationTest {
     @Test
     fun `set default config values`() {
         val dataSourceFactory = mock<DataSourceFactory>() {
-            on { create(any(), any(), any(), any(), any(), any(),any(), any(), any(), any(), any(), any()) } doReturn (mock())
+            on { create(any(), any(), any(), any(), any(), any(), any(),any(), any(), any(), any(), any(), any()) } doReturn (mock())
         }
 
-        createDataSource(
+        createUnpooledDataSource(
             "org.postgresql.Driver",
             "jdbcUrl",
             "user",
@@ -23,6 +23,7 @@ class PostgresEntityManagerConfigurationTest {
         )
 
         verify(dataSourceFactory).create(
+            eq(false),
             eq("org.postgresql.Driver"),
             eq("jdbcUrl"),
             eq("user"),
