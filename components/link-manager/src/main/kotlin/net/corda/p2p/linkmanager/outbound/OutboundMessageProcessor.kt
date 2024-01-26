@@ -105,6 +105,7 @@ internal class OutboundMessageProcessor(
         for (event in events) {
             when (val message = event.value?.message) {
                 is AuthenticatedMessage -> {
+                    logger.info("QQQ In message: ${message.header.messageId}")
                     authenticatedMessages += TraceableItem(AuthenticatedMessageAndKey(message, event.key), event)
                     recordOutboundMessagesMetric(message)
                 }
