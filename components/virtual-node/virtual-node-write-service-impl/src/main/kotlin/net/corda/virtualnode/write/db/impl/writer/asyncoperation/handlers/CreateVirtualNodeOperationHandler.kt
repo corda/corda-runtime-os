@@ -100,7 +100,7 @@ internal class CreateVirtualNodeOperationHandler(
                 }
             }
 
-            checkSchemasArePresentOnExternalDbs(vNodeDbs.values, cpiMetadata, holdingId)
+            //checkSchemasArePresentOnExternalDbs(vNodeDbs.values, cpiMetadata, holdingId)
 
             val externalMessagingRouteConfig = externalMessagingRouteConfigGenerator.generateNewConfig(
                 holdingId,
