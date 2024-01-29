@@ -8,8 +8,13 @@ import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.KeyRotationKeyType
+import net.corda.crypto.core.KeyRotationMetadataValues
+import net.corda.crypto.core.KeyRotationRecordType
+import net.corda.crypto.core.KeyRotationStatus
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.getKeyRotationStatusRecordKey
 import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.persistence.SigningKeyMaterialInfo
 import net.corda.crypto.persistence.WrappingKeyInfo
@@ -23,9 +28,13 @@ import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.data.crypto.wire.ops.key.rotation.IndividualKeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyType
+import net.corda.data.crypto.wire.ops.key.status.ManagedKeyStatus
+import net.corda.data.crypto.wire.ops.key.status.UnmanagedKeyStatus
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.statemanager.api.STATE_TYPE
+import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -66,6 +75,9 @@ class CryptoRekeyBusProcessorTests {
     private lateinit var rewrapPublisher: Publisher
     private lateinit var config: Map<String, SmartConfig>
 
+    private lateinit var stateManager: StateManager
+    private lateinit var stateManagerCapture: KArgumentCaptor<Collection<State>>
+
     // Some default fields
     private val oldKeyAlias = "oldKeyAlias"
     private val newKeyAlias = "newKeyAlias"
@@ -85,11 +97,14 @@ class CryptoRekeyBusProcessorTests {
             TODO("Not needed")
         }
 
-        class TestCordaAvroSerializer<T : Any> : CordaAvroSerializer<T> {
+        inner class TestCordaAvroSerializer<T : Any> : CordaAvroSerializer<T> {
             override fun serialize(data: T): ByteArray? {
+                serialized.add(data)
                 return byteArrayOf(42)
             }
         }
+
+        val serialized = mutableListOf<Any>()
     }
 
     private var cordaAvroSerializationFactory = TestCordaAvroSerializationFactory()
@@ -140,7 +155,10 @@ class CryptoRekeyBusProcessorTests {
             on { publish(rewrapPublishCapture.capture()) } doReturn emptyList()
         }
 
-        val stateManager = mock<StateManager>()
+        stateManagerCapture = argumentCaptor()
+        stateManager = mock<StateManager>() {
+            on { create(stateManagerCapture.capture()) } doReturn emptySet()
+        }
 
         cryptoRekeyBusProcessor = CryptoRekeyBusProcessor(
             cryptoService, virtualNodeInfoReadService,
@@ -152,14 +170,44 @@ class CryptoRekeyBusProcessorTests {
 
     @Test
     fun `unmanaged key rotation re-wraps all the keys`() {
-        val virtualNodes = getStubVirtualNodes(listOf(tenantId1, tenantId2, tenantId3))
+        val virtualNodeTenantIds = listOf(tenantId1, tenantId2, tenantId3)
+        val virtualNodes = getStubVirtualNodes(virtualNodeTenantIds)
         whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
 
         cryptoRekeyBusProcessor.onNext(listOf(getUnmanagedKeyRotationKafkaRecord()))
 
         verify(rewrapPublisher, times(1)).publish(any())
         assertThat(rewrapPublishCapture.allValues).hasSize(1)
-        assertThat(rewrapPublishCapture.firstValue).hasSize(4) // 4 since 3 tenants plus cluster
+
+        val allTenants = virtualNodeTenantIds + CryptoTenants.CRYPTO
+        assertThat(rewrapPublishCapture.firstValue).hasSize(allTenants.size)
+
+        verify(stateManager, times(1)).delete(any())
+        verify(stateManager, times(1)).create(any())
+
+        assertThat(stateManagerCapture.firstValue).hasSize(allTenants.size)
+
+        stateManagerCapture.firstValue.forEachIndexed { index, it ->
+            assertThat(it.metadata[STATE_TYPE]).isEqualTo(UnmanagedKeyStatus::class.java.name)
+            assertThat(it.metadata[KeyRotationMetadataValues.TENANT_ID]).isEqualTo(allTenants[index])
+            assertThat(it.metadata[KeyRotationMetadataValues.STATUS_TYPE]).isEqualTo(KeyRotationRecordType.KEY_ROTATION)
+            assertThat(it.metadata[KeyRotationMetadataValues.STATUS]).isEqualTo(KeyRotationStatus.IN_PROGRESS)
+            assertThat(it.metadata[KeyRotationMetadataValues.KEY_TYPE]).isEqualTo(KeyRotationKeyType.UNMANAGED)
+
+            assertThat(it.key).isEqualTo(
+                getKeyRotationStatusRecordKey(
+                    oldKeyAlias,
+                    allTenants[index]
+                )
+            )
+
+            val unmanagedKeyStatus = (cordaAvroSerializationFactory.serialized[index] as? UnmanagedKeyStatus)
+            assertThat(unmanagedKeyStatus).isNotNull()
+            assertThat(unmanagedKeyStatus!!.newParentKeyAlias).isEqualTo(newKeyAlias)
+            assertThat(unmanagedKeyStatus.oldParentKeyAlias).isEqualTo(oldKeyAlias)
+            assertThat(unmanagedKeyStatus.total).isEqualTo(1)
+            assertThat(unmanagedKeyStatus.rotatedKeys).isEqualTo(0)
+        }
     }
 
     /**
@@ -414,6 +462,34 @@ class CryptoRekeyBusProcessorTests {
             assertThat(it.oldParentKeyAlias).isNull()
             assertThat(it.newParentKeyAlias).isNull()
             assertThat(dummyUuidsAndAliases.map { it.first }.toSet()).contains(UUID.fromString(it.keyUuid))
+        }
+
+        verify(stateManager, times(1)).delete(any())
+        verify(stateManager, times(1)).create(any())
+
+        assertThat(stateManagerCapture.firstValue).hasSize(dummyUuidsAndAliases.size)
+
+        stateManagerCapture.firstValue.forEachIndexed { index, it ->
+            assertThat(it.metadata[STATE_TYPE]).isEqualTo(ManagedKeyStatus::class.java.name)
+            assertThat(it.metadata[KeyRotationMetadataValues.TENANT_ID]).isEqualTo(tenantId)
+            assertThat(it.metadata[KeyRotationMetadataValues.STATUS_TYPE]).isEqualTo(KeyRotationRecordType.KEY_ROTATION)
+            assertThat(it.metadata[KeyRotationMetadataValues.STATUS]).isEqualTo(KeyRotationStatus.IN_PROGRESS)
+            assertThat(it.metadata[KeyRotationMetadataValues.KEY_TYPE]).isEqualTo(KeyRotationKeyType.MANAGED)
+
+            val alias = dummyUuidsAndAliases.toList()[index].second
+
+            assertThat(it.key).isEqualTo(
+                getKeyRotationStatusRecordKey(
+                    alias,
+                    tenantId
+                )
+            )
+
+            val managedKeyStatus = (cordaAvroSerializationFactory.serialized[index] as? ManagedKeyStatus)
+            assertThat(managedKeyStatus).isNotNull()
+            assertThat(managedKeyStatus!!.wrappingKeyAlias).isEqualTo(alias)
+            assertThat(managedKeyStatus.rotatedKeys).isEqualTo(0)
+            assertThat(managedKeyStatus.total).isEqualTo(1) // number of materials mocked from getKeyMaterials
         }
     }
 

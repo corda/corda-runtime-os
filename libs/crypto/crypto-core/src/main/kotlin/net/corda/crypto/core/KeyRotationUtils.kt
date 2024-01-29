@@ -8,7 +8,7 @@ object KeyRotationMetadataValues {
     const val TENANT_ID: String = "tenantId"
     const val STATUS: String = "status"
     const val STATUS_TYPE: String = "type"
-    const val KEY_TYPE: String = "type"
+    const val KEY_TYPE: String = "keyType"
 }
 
 object KeyRotationStatus {

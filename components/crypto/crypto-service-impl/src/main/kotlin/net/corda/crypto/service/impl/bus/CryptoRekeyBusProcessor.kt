@@ -185,9 +185,6 @@ class CryptoRekeyBusProcessor(
                 Instant.ofEpochMilli(timestamp)
             )
 
-            val a = managedKeyStatusSerializer.serialize(status)
-            a.hashCode()
-
             State(
                 getKeyRotationStatusRecordKey(wrappingKeyAlias, request.tenantId),
                 checkNotNull(managedKeyStatusSerializer.serialize(status)),
