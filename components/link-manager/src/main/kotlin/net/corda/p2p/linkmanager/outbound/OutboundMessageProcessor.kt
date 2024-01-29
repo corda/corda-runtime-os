@@ -279,10 +279,14 @@ internal class OutboundMessageProcessor(
         messagesWithKeys: List<TraceableItem<AuthenticatedMessageAndKey, AppMessage>>,
         isReplay: Boolean = false
     ): List<TraceableItem<List<Record<String, *>>, AppMessage>> {
+        logger.info("QQQ \t processAuthenticatedMessages messagesWithKeys.size = ${messagesWithKeys.size}")
         val validatedMessages = messagesWithKeys.map { message ->
             message to validateAndCheckIfSessionNeeded(message.item, isReplay)
         }
+        logger.info("QQQ \t\t processAuthenticatedMessages validatedMessages.size = ${validatedMessages.size}")
         val messagesWithSession = validatedMessages.mapNotNull { (message, result) ->
+            logger.info("QQQ \t\t\t processAuthenticatedMessages for " +
+                    "${message.item.message.header.messageId} - ${result.javaClass.simpleName}")
             if (result is ValidateAuthenticatedMessageResult.SessionNeeded) {
                 TraceableItem(result, message.originalRecord)
             } else {
@@ -296,6 +300,8 @@ internal class OutboundMessageProcessor(
                 null
             }
         }
+        logger.info("QQQ \t\t processAuthenticatedMessages messageWithNoSession - ${messageWithNoSession.size}")
+        logger.info("QQQ \t\t processAuthenticatedMessages messagesWithSession - ${messagesWithSession.size}")
         return messageWithNoSession + processRemoteAuthenticatedMessage(messagesWithSession, isReplay)
     }
 
@@ -401,6 +407,9 @@ internal class OutboundMessageProcessor(
         return sessionManager.processOutboundMessages(validationResults) { validationResult ->
             validationResult.item.messageWithKey
         }.map { (message, state) ->
+                logger.info("QQQ \t\t\t " +
+                        "processRemoteAuthenticatedMessage(${message.item.messageWithKey.message.header.messageId}) -" +
+                        " ${state.javaClass.simpleName}")
                 when (state) {
                 is SessionManager.SessionState.NewSessionsNeeded -> {
                     logger.trace {
