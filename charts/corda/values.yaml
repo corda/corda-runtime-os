@@ -204,8 +204,6 @@ kafka:
             name: ""
             # -- the truststore password secret key
             key: ""
-
-
   # SASL configuration for client connection to Kafka
   sasl:
     # -- SASL mechanism for client connection to Kafka
@@ -518,6 +516,7 @@ bootstrap:
             # -- the password secret key
             key: ""
 
+    # TODO-[CORE-19372]: remove 'stateManager' section.
     # State Manager DB Bootstrap Configuration
     stateManager:
       flow:
@@ -851,12 +850,30 @@ workers:
 #      keyRotation:
 #        # -- persistent storage type
 #        type: Database
-#        # Database user, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
+#        # Database user, empty values instructs the chart to use the default settings configured for the associated persistent storage
 #        username:
 #          # -- the State Manager database user
 #          value: "key_rotation_writer"
-#        # Database password, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
-#        password: null
+#          # The State Manager database username secret configuration; used in preference to value if name is set
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
+#        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
+#        password:
+#          # -- the State Manager database user
+#          value: ""
+#          # The State Manager database password secret configuration; used in preference to value if name is set
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
 #        # Connection pool configuration for the State Manager
 #        connectionPool:
 #          # -- maximum connection pool size
@@ -1053,8 +1070,26 @@ workers:
 #        username:
 #          # -- the State Manager database user
 #          value: "flow_checkpoint"
-#        # Database password, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
-#        password: null
+#          # The State Manager database username secret configuration; used in preference to value if name is set
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
+#        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
+#        password:
+#          # -- the State Manager database user
+#          value: ""
+#          # The State Manager database password secret configuration; used in preference to value if name is set
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
 #        # Connection pool configuration for the State Manager
 #        connectionPool:
 #          # -- maximum connection pool size
@@ -1198,8 +1233,26 @@ workers:
 #        username:
 #          # -- the State Manager database user
 #          value: "flow_mapper"
-#        # Database password, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
-#        password: null
+#          # The State Manager database username secret configuration; used in preference to value if name is set
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
+#        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
+#        password:
+#          # -- the State Manager database user
+#          value: ""
+#          # The State Manager database password secret configuration; used in preference to value if name is set
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
 #        # Connection pool configuration for the State Manager
 #        connectionPool:
 #          # -- maximum connection pool size
@@ -1522,8 +1575,26 @@ workers:
 #        username:
 #          # -- the State Manager database user
 #          value: "key_rotation_reader"
-#        # Database password, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
-#        password: null
+#          # The State Manager database username secret configuration; used in preference to value if name is set
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
+#        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
+#        password:
+#          # -- the State Manager database user
+#          value: ""
+#          # The State Manager database password secret configuration; used in preference to value if name is set
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
 #        # Connection pool configuration for the State Manager
 #        connectionPool:
 #          # -- maximum connection pool size
@@ -1546,8 +1617,26 @@ workers:
 #        username:
 #          # -- the State Manager database user
 #          value: "flow_status"
-#        # Database password, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
-#        password: null
+#          # The State Manager database username secret configuration; used in preference to value if name is set
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
+#        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
+#        password:
+#          # -- the State Manager database user
+#          value: ""
+#          # The State Manager database password secret configuration; used in preference to value if name is set
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
 #        # Connection pool configuration for the State Manager
 #        connectionPool:
 #          # -- maximum connection pool size
@@ -1671,7 +1760,6 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the P2P link manager worker containers
       limits: {}
-
     stateManager:
 #      # Runtime configuration settings for the State Manager used to interact with 'p2pSession' states
 #      p2pSession:
@@ -1681,8 +1769,25 @@ workers:
 #        username:
 #          # -- the State Manager database user
 #          value: "p2p_session"
-#        # Database password, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
-#        password: null
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
+#        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
+#        password:
+#          # -- the State Manager database user
+#          value: ""
+#          # The State Manager database password secret configuration; used in preference to value if name is set
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
 #        # Connection pool configuration for the State Manager
 #        connectionPool:
 #          # -- maximum connection pool size
@@ -1748,7 +1853,6 @@ workers:
           keepAliveTimeSeconds: 0
           # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
           validationTimeoutSeconds: 5
-
     # P2P link manager worker Kafka configuration
     kafka:
       # if kafka.sasl.enabled, the credentials to connect to Kafka with for the P2P link manager worker
@@ -1987,7 +2091,6 @@ workers:
       keepaliveTimeSeconds: 0
       # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
       validationTimeoutSeconds: 5
-
     stateManager:
 #      # Runtime configuration settings for the State Manager used to interact with 'tokenPoolCache' states
 #      tokenPoolCache:
@@ -1997,8 +2100,25 @@ workers:
 #        username:
 #          # -- the State Manager database user
 #          value: "token_pool_cache"
-#        # Database password, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
-#        password: null
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
+#        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
+#        password:
+#          # -- the State Manager database user
+#          value: ""
+#          # The State Manager database password secret configuration; used in preference to value if name is set
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
 #        # Connection pool configuration for the State Manager
 #        connectionPool:
 #          # -- maximum connection pool size
@@ -2064,7 +2184,6 @@ workers:
           keepAliveTimeSeconds: 0
           # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
           validationTimeoutSeconds: 5
-
     # token selection worker Kafka configuration
     kafka:
       # if kafka.sasl.enabled, the credentials to connect to Kafka with for the token selection worker
@@ -2159,7 +2278,6 @@ workers:
       keepaliveTimeSeconds: 0
       # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
       validationTimeoutSeconds: 5
-
     # uniqueness worker Kafka configuration
     kafka:
       # if kafka.sasl.enabled, the credentials to connect to Kafka with for the uniqueness worker

@@ -58,7 +58,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
-import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_BACKCHAIN_REQUIRED
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
@@ -82,6 +81,7 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidationExce
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toWire
+import net.corda.membership.lib.verifyReRegistrationChanges
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.p2p.helpers.KeySpecExtractor
 import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.spec
@@ -471,26 +471,11 @@ class DynamicMemberRegistrationService @Activate constructor(
                 optionalContext +
                 tlsSubject
 
-            previousRegistrationContext?.let { previous ->
-                verifyBackchainFlagMovement(previousRegistrationContext, newRegistrationContext)
-                val newOrChangedKeys = newRegistrationContext.filter {
-                    previous[it.key] != it.value
-                }.keys
-                val removed = previous.keys.filter {
-                    !newRegistrationContext.keys.contains(it)
-                }
-                val changed = (newOrChangedKeys + removed).filter {
-                    it.startsWith(SESSION_KEYS) ||
-                        it.startsWith(LEDGER_KEYS) ||
-                        it.startsWith(ROLES_PREFIX) ||
-                        (it.startsWith("corda.notary") && !it.endsWith("service.backchain.required"))
-                }.filter {
-                    // Just ignore the notary key ID all together. It was part of the context in 5.1 and was removed in 5.2
-                    !notaryIdRegex.matches(it)
-                }
-                require(changed.isEmpty()) {
+            previousRegistrationContext?.let {
+                val diffInvalidMsg = verifyReRegistrationChanges(previousRegistrationContext, newRegistrationContext)
+                if (!diffInvalidMsg.isNullOrEmpty()) {
                     throw InvalidMembershipRegistrationException(
-                        "Fields $changed cannot be added, removed or updated during re-registration."
+                        diffInvalidMsg
                     )
                 }
             }
@@ -822,21 +807,6 @@ class DynamicMemberRegistrationService @Activate constructor(
                 ),
                 CryptoSignatureSpec(signatureSpec, null, null),
             )
-        }
-    }
-
-    private fun verifyBackchainFlagMovement(previousContext: Map<String, String>, newContext: Map<String, String>) {
-        // This property can only be null when upgrading from 5.0/5.1, and we should move it to `true`
-        // because pre-5.2 notaries do not support optional backchain
-        // Once the flag is set it should never change during re-registrations
-        // (i.e. no true->false or false->true change allowed)
-        val previousOptionalBackchainValue = previousContext[NOTARY_SERVICE_BACKCHAIN_REQUIRED]?.toBoolean()
-        val currentOptionalBackchainValue = newContext[NOTARY_SERVICE_BACKCHAIN_REQUIRED]?.toBoolean()
-        require(
-            (previousOptionalBackchainValue == null && currentOptionalBackchainValue == true) ||
-                previousOptionalBackchainValue == currentOptionalBackchainValue
-        ) {
-            "Optional back-chain flag can only move from 'none' to 'true' during re-registration."
         }
     }
 }

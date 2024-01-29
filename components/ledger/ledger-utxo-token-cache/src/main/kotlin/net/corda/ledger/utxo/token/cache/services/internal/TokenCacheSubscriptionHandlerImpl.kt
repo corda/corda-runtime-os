@@ -17,6 +17,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.constants.WorkerRPCPaths
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.configuration.StateManagerConfig
 import net.corda.utilities.debug
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -53,7 +54,7 @@ class TokenCacheSubscriptionHandlerImpl(
 
             // Create a new state manager and the token selection rpc processor
             val messagingConfig = toStateManagerConfig(config)
-            val localStateManager = stateManagerFactory.create(messagingConfig)
+            val localStateManager = stateManagerFactory.create(messagingConfig, StateManagerConfig.StateType.TOKEN_POOL_CACHE)
             val processor = tokenCacheEventProcessorFactory.createTokenSelectionSyncRPCProcessor(localStateManager)
 
             // Create the HTTP RPC subscription

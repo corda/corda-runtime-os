@@ -8,6 +8,8 @@
 #-runjdb: 5006
 
 -runsystempackages: \
+    javax.annotation;version=3.0.0,\
+    javax.annotation.meta;version=3.0.0,\
     sun.security.x509
 
 -runrequires: \
