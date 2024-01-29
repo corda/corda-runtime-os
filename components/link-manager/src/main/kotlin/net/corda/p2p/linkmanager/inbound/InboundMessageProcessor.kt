@@ -300,7 +300,7 @@ internal class InboundMessageProcessor(
             when (val innerMessage = it.message) {
                 is HeartbeatMessage -> {
                     logger.debug { "Processing heartbeat message from session $sessionId" }
-                    recordInboundHeartbeatMessagesMetric(counterparties.counterpartyId, counterparties.ourId)
+                    recordInboundHeartbeatMessagesMetric(counterparties.counterpartyId)
                     makeAckMessageForHeartbeatMessage(counterparties, session)?.let { ack -> messages.add(ack) }
                 }
                 is AuthenticatedMessageAndKey -> {
