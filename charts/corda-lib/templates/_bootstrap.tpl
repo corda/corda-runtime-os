@@ -314,7 +314,7 @@ spec:
               find /tmp/db -iname "*.sql" | xargs printf -- ' -f %s' | xargs psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -U "${CLUSTER_PGUSER}" --dbname "${DB_CLUSTER_NAME}"
 
               echo 'Applying initial configurations'
-              (echo "SET search_path TO config;";
+              (echo "SET search_path TO ${DB_CLUSTER_SCHEMA};";
               cat /tmp/rbac/db-config.sql;
               echo ";";
               cat /tmp/vnodes/db-config.sql;
@@ -325,7 +325,7 @@ spec:
               -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -U "${CLUSTER_PGUSER}" --dbname "dbname=${DB_CLUSTER_NAME}"
 
               echo 'Applying initial RBAC configuration'
-              (echo "SET search_path TO rbac;";
+              (echo "SET search_path TO ${DB_RBAC_SCHEMA};";
               cat  /tmp/rbac-config.sql;) | psql -v ON_ERROR_STOP=1 \
               -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -U "${CLUSTER_PGUSER}" --dbname "dbname=${DB_CLUSTER_NAME}"
 
