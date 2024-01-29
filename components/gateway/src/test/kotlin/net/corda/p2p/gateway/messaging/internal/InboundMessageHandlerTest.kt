@@ -743,5 +743,7 @@ class InboundMessageHandlerTest {
 
         verify(p2pInPublisher.constructed().first())
             .publish(any())
+        verify(sessionPartitionMapper.constructed().first(), never())
+            .getPartitions(any())
     }
 }

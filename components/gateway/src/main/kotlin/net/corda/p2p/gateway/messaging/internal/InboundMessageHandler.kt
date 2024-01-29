@@ -223,23 +223,24 @@ internal class InboundMessageHandler(
             p2pInPublisher.publish(listOf(Record(LINK_IN_TOPIC, sessionId, p2pMessage)))
             return HttpResponseStatus.OK
         }
-        val partitions = sessionPartitionMapper.getPartitions(sessionId)
-        return if (partitions == null) {
-            logger.warn("No mapping for session ($sessionId), discarding the message and returning an error.")
-            HttpResponseStatus.GONE
-        } else if (partitions.isEmpty()) {
-            logger.warn("No partitions exist for session ($sessionId), discarding the message and returning an error.")
-            HttpResponseStatus.GONE
+        val record = Record(LINK_IN_TOPIC, sessionId, p2pMessage)
+        if (commonComponents.features.useStatefulSessionManager) {
+            p2pInPublisher.publish(listOf(record))
+            return HttpResponseStatus.OK
         } else {
-            val record = Record(LINK_IN_TOPIC, sessionId, p2pMessage)
-            if (commonComponents.features.useStatefulSessionManager) {
-                p2pInPublisher.publish(listOf(record))
+            val partitions = sessionPartitionMapper.getPartitions(sessionId)
+            return if (partitions == null) {
+                logger.warn("No mapping for session ($sessionId), discarding the message and returning an error.")
+                HttpResponseStatus.GONE
+            } else if (partitions.isEmpty()) {
+                logger.warn("No partitions exist for session ($sessionId), discarding the message and returning an error.")
+                HttpResponseStatus.GONE
             } else {
                 // this is simplistic (stateless) load balancing amongst the partitions owned by the LM that "hosts" the session.
                 val selectedPartition = partitions.random()
                 p2pInPublisher.publishToPartition(listOf(selectedPartition to record))
+                HttpResponseStatus.OK
             }
-            HttpResponseStatus.OK
         }
     }
 
