@@ -105,7 +105,6 @@ slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4
 slf4j-v2-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4jV2Version" }
 unirest-java = { group = "com.konghq", name = "unirest-java", version.ref = "unirestVersion"}
 unirest-objectmapper-jackson = { group = "com.konghq", name = "unirest-objectmapper-jackson", version.ref = "unirestVersion" }
-nimbus-sdk = { group = "com.nimbusds", name = "oauth2-oidc-sdk", version.ref = "nimbusVersion" }
 okio =  { group = "com.squareup.okio", name = "okio", version.ref = "okioVersion" }
 okHttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okHttpVersion" }
 swagger-core = { group = "io.swagger.core.v3", name = "swagger-core", version.ref = "swaggerVersion" }
