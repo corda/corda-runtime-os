@@ -12,6 +12,7 @@ enum class LedgerPersistenceMetricOperationName {
     PersistSignedGroupParametersIfDoNotExist,
     PersistTransaction,
     PersistTransactionIfDoesNotExist,
+    PersistTransactionSignatures,
     ResolveStateRefs,
     UpdateTransactionStatus,
     PersistMerkleProofIfDoesNotExist
