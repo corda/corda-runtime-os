@@ -1,7 +1,5 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
-import java.nio.ByteBuffer
-import java.util.UUID
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -18,6 +16,8 @@ import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.util.UUID
 
 internal class MGMRegistrationRequestHandler(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
@@ -85,7 +85,7 @@ internal class MGMRegistrationRequestHandler(
         result.find { it.registrationStatus == RegistrationStatus.APPROVED }?.let { approvedRegistration ->
             throw InvalidMembershipRegistrationException(
                 "Registration failed, there is already an approved registration for" +
-                        " ${holdingIdentity.shortHash} with id ${approvedRegistration.registrationId}."
+                    " ${holdingIdentity.shortHash} with id ${approvedRegistration.registrationId}."
             )
         }
     }
@@ -95,5 +95,4 @@ internal class MGMRegistrationRequestHandler(
     }) {
         keyValuePairListSerializer.serialize(data)
     }
-
 }

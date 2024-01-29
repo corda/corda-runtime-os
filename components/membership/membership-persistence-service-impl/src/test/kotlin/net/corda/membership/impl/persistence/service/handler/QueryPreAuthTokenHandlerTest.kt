@@ -169,7 +169,8 @@ class QueryPreAuthTokenHandlerTest {
         val captor = argumentCaptor<Predicate>()
         whenever(query.where(captor.capture())).thenReturn(query)
 
-        handler.invoke(context,
+        handler.invoke(
+            context,
             QueryPreAuthToken(null, null, emptyList())
         )
 
@@ -185,7 +186,8 @@ class QueryPreAuthTokenHandlerTest {
         val captor = argumentCaptor<Predicate>()
         whenever(query.where(captor.capture())).thenReturn(query)
 
-        handler.invoke(context,
+        handler.invoke(
+            context,
             QueryPreAuthToken(null, null, listOf(PreAuthTokenStatus.REVOKED, PreAuthTokenStatus.AUTO_INVALIDATED))
         )
 

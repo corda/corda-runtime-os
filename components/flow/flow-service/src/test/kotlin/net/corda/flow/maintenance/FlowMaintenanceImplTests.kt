@@ -13,6 +13,7 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.StateManagerConfig
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.internal.verification.Times
@@ -36,7 +37,7 @@ class FlowMaintenanceImplTests {
     }
 
     private val stateManagerFactory = mock<StateManagerFactory> {
-        on { create(any()) } doReturn (stateManager)
+        on { create(any(), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT)) } doReturn (stateManager)
     }
     private val timeoutSubscription = mock<Subscription<String, FlowTimeout>>()
     private val scheduledTaskSubscription = mock<Subscription<String, ScheduledTaskTrigger>>()
@@ -87,7 +88,7 @@ class FlowMaintenanceImplTests {
         doReturn(FlowTimeoutTaskProcessor(stateManager, flowConfig))
             .whenever(flowMaintenanceHandlersFactory).createScheduledTaskHandler(any(), any())
 
-        doReturn(TimeoutEventCleanupProcessor(mock(), stateManager, mock(), mock(), flowConfig))
+        doReturn(TimeoutEventCleanupProcessor(mock(), stateManager, mock(), mock(), mock(), flowConfig))
             .whenever(flowMaintenanceHandlersFactory).createTimeoutEventHandler(any(), any())
     }
 
@@ -112,7 +113,7 @@ class FlowMaintenanceImplTests {
             eq(messagingConfig),
             isNull()
         )
-        verify(stateManagerFactory).create(stateManagerConfig)
+        verify(stateManagerFactory).create(eq(stateManagerConfig), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT))
         verify(stateManager).start()
         verify(scheduledTaskSubscription).start()
         verify(timeoutSubscription).start()
@@ -124,7 +125,8 @@ class FlowMaintenanceImplTests {
         flowMaintenance.onConfigChange(config)
         flowMaintenance.onConfigChange(mapOf(ConfigKeys.MESSAGING_CONFIG to messagingConfig))
 
-        verify(stateManagerFactory, Times(1)).create(stateManagerConfig)
+        verify(stateManagerFactory, Times(1))
+            .create(eq(stateManagerConfig), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT))
     }
 
     @Test
@@ -132,7 +134,8 @@ class FlowMaintenanceImplTests {
         flowMaintenance.onConfigChange(config)
         flowMaintenance.onConfigChange(mapOf(ConfigKeys.STATE_MANAGER_CONFIG to mock<SmartConfig>()))
 
-        verify(stateManagerFactory, Times(1)).create(stateManagerConfig)
+        verify(stateManagerFactory, Times(1))
+            .create(eq(stateManagerConfig), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT))
     }
 
     @Test
@@ -142,7 +145,9 @@ class FlowMaintenanceImplTests {
         val newStateManager = mock<StateManager> {
             on { name } doReturn (LifecycleCoordinatorName("StateManager", "2"))
         }
-        whenever(stateManagerFactory.create(newConfig)).thenReturn(newStateManager)
+        whenever(stateManagerFactory.create(eq(newConfig), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT)))
+            .thenReturn(newStateManager)
+
         flowMaintenance.onConfigChange(
             mapOf(
                 ConfigKeys.MESSAGING_CONFIG to newConfig,
@@ -151,7 +156,7 @@ class FlowMaintenanceImplTests {
             )
         )
 
-        verify(stateManagerFactory).create(newConfig)
+        verify(stateManagerFactory).create(eq(newConfig), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT))
         verify(stateManager).stop()
         verify(lifecycleCoordinator).followStatusChangesByName(setOf(newStateManager.name))
         verify(lifecycleCoordinator, times(4)).createManagedResource(any(), any<() -> Resource>())

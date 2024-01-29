@@ -2,9 +2,6 @@ package net.corda.membership.impl.registration.dynamic.member
 
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
-import java.nio.ByteBuffer
-import java.security.PublicKey
-import java.util.UUID
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
@@ -61,7 +58,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
-import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_BACKCHAIN_REQUIRED
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
@@ -85,6 +81,7 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidationExce
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toWire
+import net.corda.membership.lib.verifyReRegistrationChanges
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.p2p.helpers.KeySpecExtractor
 import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.spec
@@ -118,6 +115,9 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.security.PublicKey
+import java.util.UUID
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
@@ -354,8 +354,8 @@ class DynamicMemberRegistrationService @Activate constructor(
                     registrationRequestSerializer.serialize(message)!!
                 ) { ek, sk ->
                     val aad = 1.toByteArray() +
-                            clock.instant().toEpochMilli().toByteArray() +
-                            keyEncodingService.encodeAsByteArray(ek)
+                        clock.instant().toEpochMilli().toByteArray() +
+                        keyEncodingService.encodeAsByteArray(ek)
                     val salt = aad + keyEncodingService.encodeAsByteArray(sk)
                     latestHeader = UnauthenticatedRegistrationRequestHeader(
                         mgm.holdingIdentity.toAvro(),
@@ -432,7 +432,6 @@ class DynamicMemberRegistrationService @Activate constructor(
             REGISTRATION_CONTEXT_FIELDS.contains(it.key)
         }.toSortedMap().toWire()
 
-
         private fun buildMemberContext(
             context: Map<String, String>,
             registrationId: UUID,
@@ -444,11 +443,11 @@ class DynamicMemberRegistrationService @Activate constructor(
             val cpi = virtualNodeInfoReadService.get(member)?.cpiIdentifier
                 ?: throw CordaRuntimeException("Could not find virtual node info for member ${member.shortHash}")
             val filteredContext = context.filterNot {
-                it.key.startsWith(LEDGER_KEYS)
-                        || it.key.startsWith(SESSION_KEYS)
-                        || it.key.startsWith(SERIAL)
-                        || notaryIdRegex.matches(it.key)
-                        || REGISTRATION_CONTEXT_FIELDS.contains(it.key)
+                it.key.startsWith(LEDGER_KEYS) ||
+                    it.key.startsWith(SESSION_KEYS) ||
+                    it.key.startsWith(SERIAL) ||
+                    notaryIdRegex.matches(it.key) ||
+                    REGISTRATION_CONTEXT_FIELDS.contains(it.key)
             }
             val tlsSubject = getTlsSubject(member)
             val sessionKeyContext = generateSessionKeyData(context, member.shortHash.value)
@@ -465,33 +464,18 @@ class DynamicMemberRegistrationService @Activate constructor(
             val roleContext = roles.toMemberInfo { notaryKeys }
             val optionalContext = mapOf(MEMBER_CPI_SIGNER_HASH to cpi.signerSummaryHash.toString())
             val newRegistrationContext = filteredContext +
-                    sessionKeyContext +
-                    ledgerKeyContext +
-                    additionalContext +
-                    roleContext +
-                    optionalContext +
-                    tlsSubject
+                sessionKeyContext +
+                ledgerKeyContext +
+                additionalContext +
+                roleContext +
+                optionalContext +
+                tlsSubject
 
-            previousRegistrationContext?.let { previous ->
-                verifyBackchainFlagMovement(previousRegistrationContext, newRegistrationContext)
-                val newOrChangedKeys = newRegistrationContext.filter {
-                    previous[it.key] != it.value
-                }.keys
-                val removed = previous.keys.filter {
-                    !newRegistrationContext.keys.contains(it)
-                }
-                val changed = (newOrChangedKeys + removed).filter {
-                    it.startsWith(SESSION_KEYS) ||
-                            it.startsWith(LEDGER_KEYS) ||
-                            it.startsWith(ROLES_PREFIX) ||
-                            (it.startsWith("corda.notary") && !it.endsWith("service.backchain.required"))
-                }.filter {
-                    // Just ignore the notary key ID all together. It was part of the context in 5.1 and was removed in 5.2
-                    !notaryIdRegex.matches(it)
-                }
-                require(changed.isEmpty()) {
+            previousRegistrationContext?.let {
+                val diffInvalidMsg = verifyReRegistrationChanges(previousRegistrationContext, newRegistrationContext)
+                if (!diffInvalidMsg.isNullOrEmpty()) {
                     throw InvalidMembershipRegistrationException(
-                        "Fields $changed cannot be added, removed or updated during re-registration."
+                        diffInvalidMsg
                     )
                 }
             }
@@ -511,8 +495,10 @@ class DynamicMemberRegistrationService @Activate constructor(
             mgmPlatformVersion: Int,
         ) {
             if ((submittedSerial > 0 || (currentSerial != null && currentSerial > 0)) && mgmPlatformVersion < 50100) {
-                throw InvalidMembershipRegistrationException("MGM is on a lower version where re-registration " +
-                        "is not supported.")
+                throw InvalidMembershipRegistrationException(
+                    "MGM is on a lower version where re-registration " +
+                        "is not supported."
+                )
             }
         }
 
@@ -522,8 +508,8 @@ class DynamicMemberRegistrationService @Activate constructor(
                     locallyHostedIdentitiesService.pollForIdentityInfo(member)
                         ?: throw CordaRuntimeException(
                             "Member $member is not locally hosted. " +
-                                    "If it had been configured, please retry the registration in a few seconds. " +
-                                    "If it had not been configured, please configure it using the network/setup API."
+                                "If it had been configured, please retry the registration in a few seconds. " +
+                                "If it had not been configured, please configure it using the network/setup API."
                         )
                 val certificate = info.tlsCertificates
                     .firstOrNull()
@@ -623,11 +609,11 @@ class DynamicMemberRegistrationService @Activate constructor(
             }
             logger.info(
                 "Signature spec for key with ID: ${key.id} was not specified. Applying default signature spec " +
-                        "for ${key.schemeCodeName}."
+                    "for ${key.schemeCodeName}."
             )
             return key.spec ?: throw IllegalArgumentException(
                 "Could not find a suitable signature spec for ${key.schemeCodeName}. " +
-                        "Specify signature spec for key with ID: ${key.id} explicitly in the context."
+                    "Specify signature spec for key with ID: ${key.id} explicitly in the context."
             )
         }
 
@@ -821,19 +807,6 @@ class DynamicMemberRegistrationService @Activate constructor(
                 ),
                 CryptoSignatureSpec(signatureSpec, null, null),
             )
-        }
-    }
-
-    private fun verifyBackchainFlagMovement(previousContext: Map<String, String>, newContext: Map<String, String>) {
-        // This property can only be null when upgrading from 5.0/5.1, and we should move it to `true`
-        // because pre-5.2 notaries do not support optional backchain
-        // Once the flag is set it should never change during re-registrations
-        // (i.e. no true->false or false->true change allowed)
-        val previousOptionalBackchainValue = previousContext[NOTARY_SERVICE_BACKCHAIN_REQUIRED]?.toBoolean()
-        val currentOptionalBackchainValue = newContext[NOTARY_SERVICE_BACKCHAIN_REQUIRED]?.toBoolean()
-        require((previousOptionalBackchainValue == null && currentOptionalBackchainValue == true)
-                || previousOptionalBackchainValue == currentOptionalBackchainValue) {
-            "Optional back-chain flag can only move from 'none' to 'true' during re-registration."
         }
     }
 }

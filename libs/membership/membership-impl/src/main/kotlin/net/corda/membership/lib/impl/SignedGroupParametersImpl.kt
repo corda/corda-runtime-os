@@ -17,8 +17,8 @@ class SignedGroupParametersImpl(
         if (other == null || other !is SignedGroupParametersImpl) return false
         if (this === other) return true
         return groupParameters.contentEquals(other.groupParameters) &&
-                mgmSignature == other.mgmSignature &&
-                mgmSignatureSpec == other.mgmSignatureSpec
+            mgmSignature == other.mgmSignature &&
+            mgmSignatureSpec == other.mgmSignatureSpec
     }
 
     override fun hashCode(): Int = Objects.hash(groupParameters, mgmSignature, mgmSignatureSpec)

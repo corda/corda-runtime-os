@@ -19,8 +19,8 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.VersionedMessageBuilder.retrieveRegistrationStatusMessage
+import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.registration.DECLINED_REASON_FOR_USER_INTERNAL_ERROR
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -111,7 +111,7 @@ internal class ApproveRegistrationHandler(
                 if (result is MembershipPersistenceResult.Failure) {
                     throw MembershipPersistenceException(
                         "Failed to update group parameters with notary information of" +
-                                " '${memberInfo.name}', which has role set to 'notary'."
+                            " '${memberInfo.name}', which has role set to 'notary'."
                     )
                 }
                 val persistedGroupParameters = result.getOrThrow()
@@ -124,7 +124,7 @@ internal class ApproveRegistrationHandler(
             val distributionAction = Record(
                 MEMBERSHIP_ACTIONS_TOPIC,
                 "${approvedMember.x500Name}-${approvedMember.groupId}",
-                 MembershipActionsRequest(DistributeMemberInfo(mgm.holdingIdentity.toAvro(), approvedMember, epoch, memberInfo.serial)),
+                MembershipActionsRequest(DistributeMemberInfo(mgm.holdingIdentity.toAvro(), approvedMember, epoch, memberInfo.serial)),
             )
 
             // Push member to member list kafka topic
@@ -160,8 +160,12 @@ internal class ApproveRegistrationHandler(
             registrationLogger.warn("Could not approve registration request.", e)
             return RegistrationHandlerResult(
                 state,
-                listOf(Record(REGISTRATION_COMMAND_TOPIC, key,
-                    RegistrationCommand(DeclineRegistration(e.message, DECLINED_REASON_FOR_USER_INTERNAL_ERROR)))
+                listOf(
+                    Record(
+                        REGISTRATION_COMMAND_TOPIC,
+                        key,
+                        RegistrationCommand(DeclineRegistration(e.message, DECLINED_REASON_FOR_USER_INTERNAL_ERROR))
+                    )
                 )
             )
         }

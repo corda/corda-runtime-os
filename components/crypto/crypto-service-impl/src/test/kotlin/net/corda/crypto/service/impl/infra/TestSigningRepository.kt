@@ -6,6 +6,7 @@ import net.corda.crypto.core.SigningKeyStatus
 import net.corda.crypto.core.publicKeyHashFromBytes
 import net.corda.crypto.core.publicKeyShortHashFromBytes
 import net.corda.crypto.persistence.SigningKeyFilterMapImpl
+import net.corda.crypto.persistence.SigningKeyMaterialInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.alias
@@ -18,12 +19,14 @@ import net.corda.crypto.softhsm.SigningRepository
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapImpl
 import net.corda.layeredpropertymap.impl.PropertyConverter
 import net.corda.v5.crypto.SecureHash
+import java.lang.IllegalStateException
 import java.security.PublicKey
 import java.time.Instant
+import java.util.UUID
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-class TestSigningRepository: SigningRepository {
+class TestSigningRepository : SigningRepository {
     private val lock = ReentrantLock()
     private val keys = mutableMapOf<ShortHash, SigningKeyInfo>()
 
@@ -81,7 +84,7 @@ class TestSigningRepository: SigningRepository {
                 false
             } else !(map.createdBefore != null && it.timestamp > map.createdBefore)
         }
-        return when(orderBy) {
+        return when (orderBy) {
             SigningKeyOrderBy.NONE -> filtered
             SigningKeyOrderBy.ID -> filtered.sortedBy { it.id.value }
             SigningKeyOrderBy.TIMESTAMP -> filtered.sortedBy { it.timestamp }
@@ -108,5 +111,13 @@ class TestSigningRepository: SigningRepository {
 
     override fun close() {
         // We do not clear keys here, since we want to be able to reuse the repository.
+    }
+
+    override fun getKeyMaterials(wrappingKeyId: UUID): Collection<SigningKeyMaterialInfo> {
+        throw IllegalStateException("Unexpected call to getKeyMaterials")
+    }
+
+    override fun saveSigningKeyMaterial(signingKeyMaterialInfo: SigningKeyMaterialInfo, wrappingKeyId: UUID) {
+        throw IllegalStateException("Unexpected call to saveSigningKeyMaterial")
     }
 }

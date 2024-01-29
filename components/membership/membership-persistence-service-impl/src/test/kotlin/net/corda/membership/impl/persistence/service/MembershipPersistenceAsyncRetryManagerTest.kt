@@ -33,12 +33,12 @@ class MembershipPersistenceAsyncRetryManagerTest {
     }
     private val coordinator = mock<LifecycleCoordinator> {
         on { createManagedResource<Publisher>(any(), any()) } doAnswer {
-            val factory = it.getArgument<()->Publisher>(1)
+            val factory = it.getArgument<() -> Publisher>(1)
             factory()
         }
         on { getManagedResource<Publisher>(any()) } doReturn publisher
     }
-    private val coordinatorFactory = mock<LifecycleCoordinatorFactory>() {
+    private val coordinatorFactory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), handler.capture()) } doReturn coordinator
     }
     private val publisherFactory = mock<PublisherFactory> {

@@ -169,7 +169,7 @@ class MGMRegistrationMemberInfoHandlerTest {
     }
     private val memberContextBytes = byteArrayOf(0)
     private val mgmContextBytes = byteArrayOf(1)
-    private val serializer= mock<CordaAvroSerializer<KeyValuePairList>> {
+    private val serializer = mock<CordaAvroSerializer<KeyValuePairList>> {
         on {
             serialize(contextCaptor.capture())
         } doReturn memberContextBytes doReturn mgmContextBytes
@@ -201,7 +201,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         on { get(eq(holdingIdentity)) } doReturn virtualNodeInfo
     }
 
-    private val membershipQueryClient = mock<MembershipQueryClient>{
+    private val membershipQueryClient = mock<MembershipQueryClient> {
         on {
             queryMemberInfo(eq(holdingIdentity), eq(setOf(holdingIdentity)), eq(listOf(MEMBER_STATUS_ACTIVE)))
         } doReturn MembershipQueryResult.Success(listOf(signedMemberInfo))
@@ -404,7 +404,8 @@ class MGMRegistrationMemberInfoHandlerTest {
     fun `expected exception thrown if member info persistence fails`() {
         whenever(
             membershipPersistenceClient.persistMemberInfo(
-                eq(holdingIdentity), eq(listOf(signedMemberInfo))
+                eq(holdingIdentity),
+                eq(listOf(signedMemberInfo))
             )
         ).doReturn(Operation(MembershipPersistenceResult.Failure("")))
 
@@ -531,7 +532,6 @@ class MGMRegistrationMemberInfoHandlerTest {
         }
     }
 
-
     @Test
     fun `session key with unsupported key scheme will cause an exception`() {
         whenever(
@@ -566,6 +566,7 @@ class MGMRegistrationMemberInfoHandlerTest {
             )
         }
     }
+
     @Test
     fun `session key with unsupported key scheme and signature spec combination will cause an exception`() {
         // this test relies on the session key scheme being mocked to be incompatible with the signature spec so this assertion verifies
@@ -578,7 +579,6 @@ class MGMRegistrationMemberInfoHandlerTest {
             )
         }
     }
-
 
     @Test
     fun `querying for mgm info is successful`() {

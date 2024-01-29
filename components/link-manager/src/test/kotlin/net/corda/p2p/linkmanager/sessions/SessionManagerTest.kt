@@ -69,7 +69,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -102,6 +101,10 @@ import net.corda.p2p.linkmanager.grouppolicy.protocolModes
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
+import net.corda.p2p.linkmanager.sessions.SessionManagerImpl.SessionHealthManager.Companion.SESSION_HEALTH_MANAGER_CLIENT_ID
+import net.corda.p2p.linkmanager.sessions.SessionManagerImpl.SessionHealthManager.SessionHealthManagerConfigChangeHandler
+import net.corda.p2p.linkmanager.sessions.SessionManagerImpl.SessionManagerConfigChangeHandler
+import org.mockito.ArgumentMatchers.anyList
 
 class SessionManagerTest {
 
@@ -115,13 +118,20 @@ class SessionManagerTest {
         val RANDOM_BYTES = ByteBuffer.wrap("some-random-data".toByteArray())
 
         private val sixDaysInMillis = 6.days.toMillis()
-        private val configWithHeartbeat = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
+        private val configWithHeartbeat = SessionManagerImpl.SessionHealthManager.SessionHealthManagerConfig(
+            true,
             Duration.ofMillis(100),
             Duration.ofMillis(500)
         )
-        private val configNoHeartbeat = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
+        private val configWithHighHeartbeatPeriod = SessionManagerImpl.SessionHealthManager.SessionHealthManagerConfig(
+            true,
             Duration.ofMillis(sixDaysInMillis),
             Duration.ofMillis(sixDaysInMillis)
+        )
+        private val configWithNoHeartbeat = SessionManagerImpl.SessionHealthManager.SessionHealthManagerConfig(
+            false,
+            Duration.ofMillis(100),
+            Duration.ofMillis(500)
         )
 
         private val keyGenerator = KeyPairGenerator.getInstance("EC", BouncyCastleProvider())
@@ -172,18 +182,16 @@ class SessionManagerTest {
         outboundSessionPool.close()
     }
 
-    private lateinit var configHandler: SessionManagerImpl.SessionManagerConfigChangeHandler
-    private lateinit var heartbeatConfigHandler: SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler
+    private lateinit var configHandler: SessionManagerConfigChangeHandler
+    private lateinit var sessionHealthManagerConfigHandler: SessionHealthManagerConfigChangeHandler
+
+    @Suppress("UNCHECKED_CAST")
     private val dominoTile = Mockito.mockConstruction(ComplexDominoTile::class.java) { mock, context ->
-        @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
-        @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleWriteLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
-        if (context.arguments()[6] is SessionManagerImpl.SessionManagerConfigChangeHandler) {
-            configHandler = context.arguments()[6] as SessionManagerImpl.SessionManagerConfigChangeHandler
-        }
-        if (context.arguments()[6] is SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler) {
-            heartbeatConfigHandler = context.arguments()[6] as SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler
+        when(val seventhArg = context.arguments()[6]) {
+            is SessionManagerConfigChangeHandler -> configHandler = seventhArg
+            is SessionHealthManagerConfigChangeHandler -> sessionHealthManagerConfigHandler = seventhArg
         }
         whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
     }
@@ -297,6 +305,7 @@ class SessionManagerTest {
         SESSIONS_PER_COUNTERPARTIES_FOR_MGM,
         RevocationCheckMode.OFF,
         SESSION_REFRESH_THRESHOLD_KEY,
+        true
     )
     private val configWithOneSessionBetweenMembers = SessionManagerImpl.SessionManagerConfig(
         MAX_MESSAGE_SIZE,
@@ -304,35 +313,61 @@ class SessionManagerTest {
         SESSIONS_PER_COUNTERPARTIES_FOR_MGM,
         RevocationCheckMode.OFF,
         SESSION_REFRESH_THRESHOLD_KEY,
+        true
+    )
+    private val configWithOneSessionBetweenMembersAndNoHeartbeats = SessionManagerImpl.SessionManagerConfig(
+        MAX_MESSAGE_SIZE,
+        1,
+        SESSIONS_PER_COUNTERPARTIES_FOR_MGM,
+        RevocationCheckMode.OFF,
+        SESSION_REFRESH_THRESHOLD_KEY,
+        false
     )
 
-    private val sessionManager = SessionManagerImpl(
-        groupPolicyProvider,
-        membershipGroupReaderProvider,
-        cryptoOpsClient,
-        pendingSessionMessageQueues,
-        mock(),
-        mock(),
-        mock(),
-        mock(),
-        mock {
-            val dominoTile = mock<SimpleDominoTile> {
-                whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-            }
-            on { it.dominoTile } doReturn dominoTile
-        },
-        linkManagerHostingMap,
-        protocolFactory,
-        mockTimeFacilitiesProvider.clock,
-        sessionReplayer,
-    ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
-        setRunning()
-        configHandler.applyNewConfiguration(
-            config,
-            null,
+    private val sessionManager = createSessionManager(mock(), config, configWithHighHeartbeatPeriod)
+
+    private fun createSessionManager(
+        resourcesHolder: ResourcesHolder = mock(),
+        sessionManagerConfig: SessionManagerImpl.SessionManagerConfig,
+        sessionHealthManagerConfig: SessionManagerImpl.SessionHealthManager.SessionHealthManagerConfig
+    ): SessionManagerImpl {
+        return SessionManagerImpl(
+            groupPolicyProvider,
+            membershipGroupReaderProvider,
+            cryptoOpsClient,
+            pendingSessionMessageQueues,
             mock(),
-        )
-        heartbeatConfigHandler.applyNewConfiguration(configNoHeartbeat, null, mock())
+            mock(),
+            mock(),
+            mock(),
+            mock {
+                val dominoTile = mock<SimpleDominoTile> {
+                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+                }
+                on { it.dominoTile } doReturn dominoTile
+            },
+            linkManagerHostingMap,
+            protocolFactory,
+            mockTimeFacilitiesProvider.clock,
+            sessionReplayer,
+        ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
+            setRunning()
+            configHandler.applyNewConfiguration(
+                sessionManagerConfig,
+                null,
+                mock(),
+            )
+            sessionHealthManagerConfigHandler.applyNewConfiguration(sessionHealthManagerConfig, null, resourcesHolder)
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun mockSessionHealthManagerPublisherAndCaptureRecords(callback: (List<Record<*, *>>) -> List<CompletableFuture<Unit>>) {
+        publisherWithDominoLogicByClientId[SESSION_HEALTH_MANAGER_CLIENT_ID]!!.forEach {
+            whenever(it.publish(any())).doAnswer { invocation ->
+                return@doAnswer callback(invocation.arguments.first() as List<Record<*, *>>)
+            }
+        }
     }
 
     private fun MessageDigest.hash(data: ByteArray): ByteArray {
@@ -367,24 +402,27 @@ class SessionManagerTest {
     }
 
     /**
-     * Send the [sessionManager] an authenticatedMessage and a [ResponderHandshakeMessage] so that it starts sending Heartbeats.
+     * Send the [sessionManager] an authenticatedMessage and a [ResponderHandshakeMessage] so that it a session is started.
      */
-    private fun startSendingHeartbeats(sessionManager: SessionManager) {
+    private fun startSession(
+        sessionManager: SessionManager,
+        localProtocolInitiator: AuthenticationProtocolInitiator = protocolInitiator
+    ) {
         val initiatorHello = mock<InitiatorHelloMessage>()
-        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
+        whenever(localProtocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
 
         whenever(outboundSessionPool.constructed().last().getNextSession(counterparties)).thenReturn(
             OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded
         )
         sessionManager.processOutboundMessages(listOf(message)) { it }
-        whenever(outboundSessionPool.constructed().last().getSession(protocolInitiator.sessionId)).thenReturn(
-            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
+        whenever(outboundSessionPool.constructed().last().getSession(localProtocolInitiator.sessionId)).thenReturn(
+            OutboundSessionPool.SessionType.PendingSession(counterparties, localProtocolInitiator)
         )
 
-        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, protocolInitiator.sessionId, 4, Instant.now().toEpochMilli())
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, localProtocolInitiator.sessionId, 4, Instant.now().toEpochMilli())
         val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
-        whenever(authenticatedSession.sessionId).doAnswer { protocolInitiator.sessionId }
-        whenever(protocolInitiator.getSession()).thenReturn(authenticatedSession)
+        whenever(authenticatedSession.sessionId).doAnswer { localProtocolInitiator.sessionId }
+        whenever(localProtocolInitiator.getSession()).thenReturn(authenticatedSession)
         sessionManager.processSessionMessages(listOf(LinkInMessage(responderHandshakeMessage))) { it }
     }
 
@@ -1634,36 +1672,10 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `when responder hello is received, the session is pending, if no response is received, the session times out`() {
+    @Suppress("MaxLineLength")
+    fun `when responder hello is received, the session is pending, if no response is received, the session times out if heartbeats are enabled`() {
         val resourceHolder = ResourcesHolder()
-        val sessionManager = SessionManagerImpl(
-            groupPolicyProvider,
-            membershipGroupReaderProvider,
-            cryptoOpsClient,
-            pendingSessionMessageQueues,
-            mock(),
-            mock(),
-            mock(),
-            mock(),
-            mock {
-                val dominoTile = mock<SimpleDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-                }
-                on { it.dominoTile } doReturn dominoTile
-            },
-            linkManagerHostingMap,
-            protocolFactory,
-            mockTimeFacilitiesProvider.clock,
-            sessionReplayer,
-        ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
-            setRunning()
-            configHandler.applyNewConfiguration(
-                configWithOneSessionBetweenMembers,
-                null,
-                mock(),
-            )
-            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourceHolder)
-        }
+        val sessionManager = createSessionManager(resourceHolder, configWithOneSessionBetweenMembers, configWithHeartbeat)
         sessionManager.start()
 
         val sessionId = "some-session"
@@ -1679,9 +1691,8 @@ class SessionManagerTest {
         val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded))
         sessionManager.processSessionMessages(listOf(LinkInMessage(responderHello))) {it}.single().second
-        assertTrue(sessionManager.processOutboundMessages(listOf(message)) { it }.single().second
-            is SessionManager.SessionState.SessionAlreadyPending
-        )
+        assertThat(sessionManager.processOutboundMessages(listOf(message)) { it }.single().second)
+            .isInstanceOf(SessionManager.SessionState.SessionAlreadyPending::class.java)
         mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.sessionTimeout.plus(5.millis))
         verify(outboundSessionPool.constructed().last()).replaceSession(counterparties, sessionId, protocolInitiator)
 
@@ -1690,35 +1701,39 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `when responder handshake is received, the session is established, if no message is sent, the session times out`() {
+    @Suppress("MaxLineLength")
+    fun `when responder hello is received, the session is pending, if no response is received, the session does not time out if heartbeats are disabled`() {
         val resourceHolder = ResourcesHolder()
-        val sessionManager = SessionManagerImpl(
-            groupPolicyProvider, membershipGroupReaderProvider,
-            cryptoOpsClient,
-            pendingSessionMessageQueues,
-            mock(),
-            mock(),
-            mock(),
-            mock(),
-            mock {
-                val dominoTile = mock<SimpleDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-                }
-                on { it.dominoTile } doReturn dominoTile
-            },
-            linkManagerHostingMap,
-            protocolFactory,
-            mockTimeFacilitiesProvider.clock,
-            sessionReplayer,
-        ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
-            setRunning()
-            configHandler.applyNewConfiguration(
-                configWithOneSessionBetweenMembers,
-                null,
-                mock(),
-            )
-            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourceHolder)
-        }
+        val sessionManager = createSessionManager(resourceHolder, configWithOneSessionBetweenMembersAndNoHeartbeats, configWithNoHeartbeat)
+        sessionManager.start()
+
+        val sessionId = "some-session"
+        whenever(outboundSessionPool.constructed().last().getSession(sessionId)).thenReturn(
+            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
+        )
+        whenever(outboundSessionPool.constructed().last().getNextSession(counterparties)).thenReturn(
+            OutboundSessionPool.SessionPoolStatus.SessionPending
+        )
+
+        val initiatorHandshakeMsg = mock<InitiatorHandshakeMessage>()
+        whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), eq(null), any())).thenReturn(initiatorHandshakeMsg)
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
+        val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded))
+        sessionManager.processSessionMessages(listOf(LinkInMessage(responderHello))) {it}.single().second
+        assertThat(sessionManager.processOutboundMessages(listOf(message)) { it }.single().second)
+            .isInstanceOf(SessionManager.SessionState.SessionAlreadyPending::class.java)
+        mockTimeFacilitiesProvider.advanceTime(configWithNoHeartbeat.sessionTimeout.plus(5.millis))
+        verify(outboundSessionPool.constructed().last(), never()).replaceSession(any(), any(), any())
+
+        sessionManager.stop()
+        resourceHolder.close()
+    }
+
+    @Test
+    @Suppress("MaxLineLength")
+    fun `when responder handshake is received, the session is established, if no message is sent, the session times out if heartbeats are enabled`() {
+        val resourceHolder = ResourcesHolder()
+        val sessionManager = createSessionManager(resourceHolder, configWithOneSessionBetweenMembers, configWithHeartbeat)
         sessionManager.start()
 
         val initiatorHello = mock<InitiatorHelloMessage>()
@@ -1763,51 +1778,57 @@ class SessionManagerTest {
     }
 
     @Test
+    @Suppress("MaxLineLength")
+    fun `when responder handshake is received, the session is established, if no message is sent, the session doesn't time out if heartbeats are disabled`() {
+        val resourceHolder = ResourcesHolder()
+        val sessionManager = createSessionManager(resourceHolder, configWithOneSessionBetweenMembersAndNoHeartbeats, configWithNoHeartbeat)
+        sessionManager.start()
+
+        val initiatorHello = mock<InitiatorHelloMessage>()
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
+        whenever(outboundSessionPool.constructed().last().getNextSession(counterparties)).thenReturn(
+            OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded
+        )
+        sessionManager.processOutboundMessages(listOf(message)) { it }
+        whenever(outboundSessionPool.constructed().last().getSession(protocolInitiator.sessionId)).thenReturn(
+            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
+        )
+        val header = CommonHeader(
+            MessageType.RESPONDER_HANDSHAKE,
+            1,
+            protocolInitiator.sessionId,
+            4,
+            Instant.now().toEpochMilli()
+        )
+        val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
+        val session = mock<Session>()
+        whenever(session.sessionId).doAnswer { protocolInitiator.sessionId }
+        whenever(protocolInitiator.getSession()).thenReturn(session)
+        sessionManager.processSessionMessages(listOf(LinkInMessage(responderHandshakeMessage))) { it }
+
+        whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
+        mockTimeFacilitiesProvider.advanceTime(configWithNoHeartbeat.sessionTimeout.plus(5.millis))
+
+        verify(outboundSessionPool.constructed().last(), never()).replaceSession(any(), any(), any(),)
+        verify(publisherWithDominoLogicByClientId["session-manager"]!!.last(), never()).publish(anyList())
+
+        sessionManager.stop()
+        resourceHolder.close()
+    }
+
+    @Test
     fun `when a responder handshake message is received, heartbeats are sent, if these are not acknowledged the session times out`() {
         val messages = mutableListOf<AuthenticatedDataMessage>()
-        fun callback(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
+        val resourcesHolder = ResourcesHolder()
+        val sessionManager = createSessionManager(resourcesHolder, configWithOneSessionBetweenMembers, configWithHeartbeat)
+        mockSessionHealthManagerPublisherAndCaptureRecords { records ->
             val record = records.single()
             assertEquals(LINK_OUT_TOPIC, record.topic)
             messages.add((record.value as LinkOutMessage).payload as AuthenticatedDataMessage)
-            return listOf(CompletableFuture.completedFuture(Unit))
-        }
-
-        val resourcesHolder = ResourcesHolder()
-        val sessionManager = SessionManagerImpl(
-            groupPolicyProvider, membershipGroupReaderProvider,
-            cryptoOpsClient,
-            pendingSessionMessageQueues,
-            mock(),
-            mock(),
-            mock(),
-            mock(),
-            mock {
-                val dominoTile = mock<SimpleDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-                }
-                on { it.dominoTile } doReturn dominoTile
-            },
-            linkManagerHostingMap,
-            protocolFactory,
-            mockTimeFacilitiesProvider.clock,
-            sessionReplayer,
-        ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
-            setRunning()
-            configHandler.applyNewConfiguration(
-                configWithOneSessionBetweenMembers,
-                null,
-                mock(),
-            )
-            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourcesHolder)
-        }
-        @Suppress("UNCHECKED_CAST")
-        publisherWithDominoLogicByClientId[SessionManagerImpl.HeartbeatManager.HEARTBEAT_MANAGER_CLIENT_ID]!!.forEach {
-            whenever(it.publish(any())).doAnswer { invocation ->
-                callback(invocation.arguments.first() as List<Record<*, *>>)
-            }
+            listOf(CompletableFuture.completedFuture(Unit))
         }
         sessionManager.start()
-        startSendingHeartbeats(sessionManager)
+        startSession(sessionManager)
 
         whenever(outboundSessionPool.constructed().last().replaceSession(eq(counterparties), eq(sessionId), any())).thenReturn(true)
         whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(mock())
@@ -1832,58 +1853,57 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `when a responder handshake message is received, heartbeats are sent, this continues if the heartbeat manager gets a new config`() {
+    @Suppress("MaxLineLength")
+    fun `when a responder handshake message is received, heartbeats are not sent, and sessions don't time out if heartbeats are disabled`() {
+        val messages = mutableListOf<AuthenticatedDataMessage>()
+        val resourcesHolder = ResourcesHolder()
+        val sessionManager = createSessionManager(
+            resourcesHolder,
+            configWithOneSessionBetweenMembersAndNoHeartbeats,
+            configWithNoHeartbeat
+        )
+        mockSessionHealthManagerPublisherAndCaptureRecords { records ->
+            val record = records.single()
+            assertEquals(LINK_OUT_TOPIC, record.topic)
+            messages.add((record.value as LinkOutMessage).payload as AuthenticatedDataMessage)
+            listOf(CompletableFuture.completedFuture(Unit))
+        }
+        sessionManager.start()
+        startSession(sessionManager)
+
+        whenever(outboundSessionPool.constructed().last().replaceSession(eq(counterparties), eq(sessionId), any())).thenReturn(true)
+        whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(mock())
+        mockTimeFacilitiesProvider.advanceTime(configWithNoHeartbeat.sessionTimeout.plus(5.millis))
+        verify(outboundSessionPool.constructed().last(), never()).replaceSession(any(), any(), any())
+        verify(publisherWithDominoLogicByClientId["session-manager"]!!.last(), never()).publish(anyList())
+
+        sessionManager.stop()
+        resourcesHolder.close()
+
+        assertThat(messages).isEmpty()
+    }
+
+    @Test
+    @Suppress("MaxLineLength")
+    fun `when a responder handshake message is received, heartbeats are sent if enabled, this continues if the heartbeat manager gets a new config with heartbeats enabled`() {
         val messages = Collections.synchronizedList(mutableListOf<AuthenticatedDataMessage>())
 
-        fun callback(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
+        val resourcesHolder = ResourcesHolder()
+        val sessionManager = createSessionManager(resourcesHolder, configWithOneSessionBetweenMembers, configWithHeartbeat)
+        mockSessionHealthManagerPublisherAndCaptureRecords { records ->
             val record = records.single()
             val message = (record.value as LinkOutMessage).payload as AuthenticatedDataMessage
             messages.add(message)
-            return listOf(CompletableFuture.completedFuture(Unit))
-        }
-
-        val resourcesHolder = ResourcesHolder()
-        val sessionManager = SessionManagerImpl(
-            groupPolicyProvider, membershipGroupReaderProvider,
-            cryptoOpsClient,
-            pendingSessionMessageQueues,
-            mock(),
-            mock(),
-            mock(),
-            mock(),
-            mock {
-                val dominoTile = mock<SimpleDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-                }
-                on { it.dominoTile } doReturn dominoTile
-            },
-            linkManagerHostingMap,
-            protocolFactory,
-            mockTimeFacilitiesProvider.clock,
-            sessionReplayer,
-        ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
-            setRunning()
-            configHandler.applyNewConfiguration(
-                configWithOneSessionBetweenMembers,
-                null,
-                mock(),
-            )
-            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
-        }
-        @Suppress("UNCHECKED_CAST")
-        publisherWithDominoLogicByClientId[SessionManagerImpl.HeartbeatManager.HEARTBEAT_MANAGER_CLIENT_ID]!!.forEach {
-            whenever(it.publish(any())).doAnswer { invocation ->
-                callback(invocation.arguments.first() as List<Record<*, *>>)
-            }
+            listOf(CompletableFuture.completedFuture(Unit))
         }
         sessionManager.start()
-        startSendingHeartbeats(sessionManager)
+        startSession(sessionManager)
 
         mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
         mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
         assertThat(messages.size).isEqualTo(2)
 
-        heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
+        sessionHealthManagerConfigHandler.applyNewConfiguration(configWithHeartbeat, configWithHeartbeat, mock())
 
         mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
         mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
@@ -1894,56 +1914,116 @@ class SessionManagerTest {
     }
 
     @Test
+    @Suppress("MaxLineLength")
+    fun `when a responder handshake message is received, heartbeats are sent if enabled, this stops if the heartbeat manager gets a new config with heartbeats disabled`() {
+        val messages = Collections.synchronizedList(mutableListOf<AuthenticatedDataMessage>())
+
+        val resourcesHolder = ResourcesHolder()
+        val sessionManager = createSessionManager(resourcesHolder, configWithOneSessionBetweenMembers, configWithHeartbeat)
+        mockSessionHealthManagerPublisherAndCaptureRecords { records ->
+            val record = records.single()
+            val message = (record.value as LinkOutMessage).payload as AuthenticatedDataMessage
+            messages.add(message)
+            listOf(CompletableFuture.completedFuture(Unit))
+        }
+        sessionManager.start()
+        startSession(sessionManager)
+
+        mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
+        mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
+        assertThat(messages.size).isEqualTo(2)
+
+        sessionHealthManagerConfigHandler.applyNewConfiguration(configWithNoHeartbeat, configWithHeartbeat, mock())
+
+        startSession(sessionManager, secondProtocolInitiator)
+        mockTimeFacilitiesProvider.advanceTime(configWithNoHeartbeat.heartbeatPeriod.plus(5.millis))
+        mockTimeFacilitiesProvider.advanceTime(configWithNoHeartbeat.heartbeatPeriod.plus(5.millis))
+        assertThat(messages.size).isEqualTo(2)
+
+        sessionManager.stop()
+        resourcesHolder.close()
+    }
+
+    @Test
+    @Suppress("MaxLineLength")
+    fun `when a responder handshake message is received, heartbeats are not sent if disabled, this continues if the heartbeat manager gets a new config with heartbeats disabled`() {
+        val messages = Collections.synchronizedList(mutableListOf<AuthenticatedDataMessage>())
+
+        val resourcesHolder = ResourcesHolder()
+        val sessionManager = createSessionManager(resourcesHolder, configWithOneSessionBetweenMembersAndNoHeartbeats, configWithNoHeartbeat)
+        mockSessionHealthManagerPublisherAndCaptureRecords { records ->
+            val record = records.single()
+            val message = (record.value as LinkOutMessage).payload as AuthenticatedDataMessage
+            messages.add(message)
+            listOf(CompletableFuture.completedFuture(Unit))
+        }
+        sessionManager.start()
+        startSession(sessionManager)
+
+        mockTimeFacilitiesProvider.advanceTime(configWithNoHeartbeat.heartbeatPeriod.plus(5.millis))
+        mockTimeFacilitiesProvider.advanceTime(configWithNoHeartbeat.heartbeatPeriod.plus(5.millis))
+        assertThat(messages).isEmpty()
+
+        sessionHealthManagerConfigHandler.applyNewConfiguration(configWithNoHeartbeat, configWithNoHeartbeat, mock())
+
+        mockTimeFacilitiesProvider.advanceTime(configWithNoHeartbeat.heartbeatPeriod.plus(5.millis))
+        mockTimeFacilitiesProvider.advanceTime(configWithNoHeartbeat.heartbeatPeriod.plus(5.millis))
+        assertThat(messages).isEmpty()
+
+        sessionManager.stop()
+        resourcesHolder.close()
+    }
+
+    @Test
+    @Suppress("MaxLineLength")
+    fun `when a responder handshake message is received, heartbeats are not sent if disabled, they start if the heartbeat manager gets a new config with heartbeats enabled`() {
+        val messages = Collections.synchronizedList(mutableListOf<AuthenticatedDataMessage>())
+
+        val resourcesHolder = ResourcesHolder()
+        val sessionManager = createSessionManager(resourcesHolder, configWithOneSessionBetweenMembersAndNoHeartbeats, configWithNoHeartbeat)
+        mockSessionHealthManagerPublisherAndCaptureRecords { records ->
+            val record = records.single()
+            val message = (record.value as LinkOutMessage).payload as AuthenticatedDataMessage
+            messages.add(message)
+            listOf(CompletableFuture.completedFuture(Unit))
+        }
+        sessionManager.start()
+        startSession(sessionManager)
+
+        mockTimeFacilitiesProvider.advanceTime(configWithNoHeartbeat.heartbeatPeriod.plus(5.millis))
+        mockTimeFacilitiesProvider.advanceTime(configWithNoHeartbeat.heartbeatPeriod.plus(5.millis))
+        assertThat(messages).isEmpty()
+
+        sessionHealthManagerConfigHandler.applyNewConfiguration(configWithHeartbeat, configWithNoHeartbeat, mock())
+
+        startSession(sessionManager, secondProtocolInitiator)
+        mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
+        mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
+        assertThat(messages).hasSize(2)
+
+        sessionManager.stop()
+        resourcesHolder.close()
+    }
+
+    @Test
     fun `when a responder handshake message is received, heartbeats are sent, this stops if the session manager gets a new config`() {
         var linkOutMessages = 0
         val resourcesHolder = ResourcesHolder()
-        fun callback(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
+
+        val sessionManager = createSessionManager(resourcesHolder, configWithOneSessionBetweenMembers, configWithHeartbeat)
+        mockSessionHealthManagerPublisherAndCaptureRecords { records ->
             for (record in records) {
                 if (record.topic == LINK_OUT_TOPIC) {
                     linkOutMessages++
                 }
             }
-            return listOf(CompletableFuture.completedFuture(Unit))
-        }
-
-        val sessionManager = SessionManagerImpl(
-            groupPolicyProvider, membershipGroupReaderProvider,
-            cryptoOpsClient,
-            pendingSessionMessageQueues,
-            mock(),
-            mock(),
-            mock(),
-            mock(),
-            mock {
-                val dominoTile = mock<SimpleDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-                }
-                on { it.dominoTile } doReturn dominoTile
-            },
-            linkManagerHostingMap,
-            protocolFactory,
-            mockTimeFacilitiesProvider.clock,
-            sessionReplayer,
-        ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
-            setRunning()
-            configHandler.applyNewConfiguration(
-                configWithOneSessionBetweenMembers,
-                null,
-                mock(),
-            )
-            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourcesHolder)
-        }
-        @Suppress("UNCHECKED_CAST")
-        publisherWithDominoLogicByClientId[SessionManagerImpl.HeartbeatManager.HEARTBEAT_MANAGER_CLIENT_ID]!!.forEach {
-            whenever(it.publish(any())).doAnswer { invocation ->
-                callback(invocation.arguments.first() as List<Record<*, *>>)
-            }
+            listOf(CompletableFuture.completedFuture(Unit))
         }
         sessionManager.start()
 
         whenever(outboundSessionPool.constructed().last().replaceSession(eq(counterparties), eq(sessionId), any())).thenReturn(true)
         whenever(outboundSessionPool.constructed().last().getAllSessionIds()).thenAnswer { (listOf(protocolInitiator.sessionId)) }
-        startSendingHeartbeats(sessionManager)
+        startSession(sessionManager)
 
         repeat(2) { mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis)) }
         assertThat(linkOutMessages).isEqualTo(2)
@@ -1956,6 +2036,7 @@ class SessionManagerTest {
                 SESSIONS_PER_COUNTERPARTIES_FOR_MGM,
                 RevocationCheckMode.OFF,
                 SESSION_REFRESH_THRESHOLD_KEY,
+                true
             ),
             resourcesHolder,
         )
@@ -1974,52 +2055,19 @@ class SessionManagerTest {
         val resourcesHolder = ResourcesHolder()
 
         val messages = Collections.synchronizedList(mutableListOf<AuthenticatedDataMessage>())
-        fun callback(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
+        val sessionManager = createSessionManager(resourcesHolder, configWithOneSessionBetweenMembers, configWithHeartbeat)
+        mockSessionHealthManagerPublisherAndCaptureRecords { records ->
             val record = records.single()
             assertEquals(LINK_OUT_TOPIC, record.topic)
             val message = (record.value as LinkOutMessage).payload as AuthenticatedDataMessage
             messages.add(message)
-            return listOf(CompletableFuture.completedFuture(Unit))
-        }
-
-        val sessionManager = SessionManagerImpl(
-            groupPolicyProvider, membershipGroupReaderProvider,
-            cryptoOpsClient,
-            pendingSessionMessageQueues,
-            mock(),
-            mock(),
-            mock(),
-            mock(),
-            mock {
-                val dominoTile = mock<SimpleDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-                }
-                on { it.dominoTile } doReturn dominoTile
-            },
-            linkManagerHostingMap,
-            protocolFactory,
-            mockTimeFacilitiesProvider.clock,
-            sessionReplayer,
-        ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
-            setRunning()
-            configHandler.applyNewConfiguration(
-                configWithOneSessionBetweenMembers,
-                null,
-                mock(),
-            )
-            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourcesHolder)
-        }
-        publisherWithDominoLogicByClientId[SessionManagerImpl.HeartbeatManager.HEARTBEAT_MANAGER_CLIENT_ID]!!.forEach {
-            whenever(it.publish(any())).doAnswer { invocation ->
-                @Suppress("UNCHECKED_CAST")
-                callback(invocation.arguments.first() as List<Record<*, *>>)
-            }
+            listOf(CompletableFuture.completedFuture(Unit))
         }
         sessionManager.start()
 
         whenever(outboundSessionPool.constructed().last().replaceSession(eq(counterparties), eq(sessionId), any())).thenReturn(true)
         whenever(outboundSessionPool.constructed().last().getAllSessionIds()).thenAnswer { (listOf(protocolInitiator.sessionId)) }
-        startSendingHeartbeats(sessionManager)
+        startSession(sessionManager)
 
         // sum of heartbeats extending over the session timeout
         val numberOfHeartbeats = configWithHeartbeat.let {
@@ -2053,41 +2101,15 @@ class SessionManagerTest {
         }
 
         val resourcesHolder = ResourcesHolder()
-        val sessionManager = SessionManagerImpl(
-            groupPolicyProvider, membershipGroupReaderProvider,
-            cryptoOpsClient,
-            pendingSessionMessageQueues,
-            mock(),
-            mock(),
-            mock(),
-            mock(),
-            mock {
-                val dominoTile = mock<SimpleDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-                }
-                on { it.dominoTile } doReturn dominoTile
-            },
-            linkManagerHostingMap,
-            protocolFactory,
-            mockTimeFacilitiesProvider.clock,
-            sessionReplayer,
-        ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
-            setRunning()
-            configHandler.applyNewConfiguration(
-                configWithOneSessionBetweenMembers,
-                null,
-                mock(),
-            )
-            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourcesHolder)
-        }
-        publisherWithDominoLogicByClientId[SessionManagerImpl.HeartbeatManager.HEARTBEAT_MANAGER_CLIENT_ID]!!.forEach {
+        val sessionManager = createSessionManager(resourcesHolder, configWithOneSessionBetweenMembers, configWithHeartbeat)
+        publisherWithDominoLogicByClientId[SESSION_HEALTH_MANAGER_CLIENT_ID]!!.forEach {
             whenever(it.publish(any())).doAnswer { publish() }
         }
         sessionManager.start()
         whenever(outboundSessionPool.constructed().last().replaceSession(eq(counterparties), eq(sessionId), any())).thenReturn(true)
         whenever(outboundSessionPool.constructed().last().getAllSessionIds()).thenAnswer { (listOf(protocolInitiator.sessionId)) }
 
-        startSendingHeartbeats(sessionManager)
+        startSession(sessionManager)
 
         repeat(3) { mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis)) }
         assertThat(sentHeartbeats).isEqualTo(3)
@@ -2143,60 +2165,26 @@ class SessionManagerTest {
 
     @Test
     fun `sessions that have been refreshed are not tracked by the heartbeat manager`() {
-        val longTimePeriodConfigWithHeartbeat = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
+        val longTimePeriodConfigWithHeartbeat = SessionManagerImpl.SessionHealthManager.SessionHealthManagerConfig(
+            true,
             Duration.ofDays(1),
             Duration.ofDays(10)
         )
         val messages = Collections.synchronizedList(mutableListOf<AuthenticatedDataMessage>())
-
-        fun callback(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
+        val resourcesHolder = ResourcesHolder()
+        val sessionManager = createSessionManager(resourcesHolder, configWithOneSessionBetweenMembers, longTimePeriodConfigWithHeartbeat)
+        mockSessionHealthManagerPublisherAndCaptureRecords { records ->
             val record = records.single()
             assertEquals(LINK_OUT_TOPIC, record.topic)
             val message = (record.value as LinkOutMessage).payload as AuthenticatedDataMessage
             messages.add(message)
-            return listOf(CompletableFuture.completedFuture(Unit))
+            listOf(CompletableFuture.completedFuture(Unit))
         }
-
-        val resourcesHolder = ResourcesHolder()
-        val sessionManager = SessionManagerImpl(
-            groupPolicyProvider, membershipGroupReaderProvider,
-            cryptoOpsClient,
-            pendingSessionMessageQueues,
-            mock(),
-            mock(),
-            mock(),
-            mock(),
-            mock {
-                val dominoTile = mock<SimpleDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-                }
-                on { it.dominoTile } doReturn dominoTile
-            },
-            linkManagerHostingMap,
-            protocolFactory,
-            mockTimeFacilitiesProvider.clock,
-            sessionReplayer,
-        ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
-            setRunning()
-            configHandler.applyNewConfiguration(
-                configWithOneSessionBetweenMembers,
-                null,
-                mock(),
-            )
-            heartbeatConfigHandler.applyNewConfiguration(longTimePeriodConfigWithHeartbeat, null, mock())
-        }
-        @Suppress("UNCHECKED_CAST")
-        publisherWithDominoLogicByClientId[SessionManagerImpl.HeartbeatManager.HEARTBEAT_MANAGER_CLIENT_ID]!!.forEach {
-            whenever(it.publish(any())).doAnswer { invocation ->
-                callback(invocation.arguments.first() as List<Record<*, *>>)
-            }
-        }
-
         val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, protocolInitiator.sessionId, 4, Instant.now().toEpochMilli())
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded))
 
         sessionManager.processSessionMessages(listOf(LinkInMessage(responderHello))) {it}
-        startSendingHeartbeats(sessionManager)
+        startSession(sessionManager)
 
 
         fun advanceTimeAndAcknowledgeMessages() {
@@ -2446,5 +2434,97 @@ class SessionManagerTest {
             eq(sixDaysInMillis / 2),
             eq(TimeUnit.MILLISECONDS)
         )
+    }
+
+    @Test
+    fun `when heartbeats are disabled and a message is sent, the session will timeout if the message is not acknowledged`() {
+        val messages = mutableListOf<AuthenticatedDataMessage>()
+        val resourcesHolder = ResourcesHolder()
+        val sessionManager = createSessionManager(
+            resourcesHolder,
+            configWithOneSessionBetweenMembersAndNoHeartbeats,
+            configWithNoHeartbeat
+        )
+        mockSessionHealthManagerPublisherAndCaptureRecords { records ->
+            val record = records.single()
+            assertEquals(LINK_OUT_TOPIC, record.topic)
+            messages.add((record.value as LinkOutMessage).payload as AuthenticatedDataMessage)
+            listOf(CompletableFuture.completedFuture(Unit))
+        }
+        sessionManager.start()
+        startSession(sessionManager)
+        mockTimeFacilitiesProvider.advanceTime(5.millis)
+        sessionManager.dataMessageSent(authenticatedSession)
+
+        mockTimeFacilitiesProvider.advanceTime(configWithNoHeartbeat.sessionTimeout.plus(5.millis))
+        verify(outboundSessionPool.constructed().last()).replaceSession(eq(counterparties), eq(sessionId), any())
+
+        sessionManager.stop()
+        resourcesHolder.close()
+
+        assertThat(messages).isEmpty()
+    }
+
+    @Test
+    fun `when heartbeats are disabled and a message is sent then acknowledged, the session will not timeout`() {
+        val messages = mutableListOf<AuthenticatedDataMessage>()
+        val resourcesHolder = ResourcesHolder()
+        val sessionManager = createSessionManager(
+            resourcesHolder,
+            configWithOneSessionBetweenMembersAndNoHeartbeats,
+            configWithNoHeartbeat
+        )
+        mockSessionHealthManagerPublisherAndCaptureRecords { records ->
+            val record = records.single()
+            assertEquals(LINK_OUT_TOPIC, record.topic)
+            messages.add((record.value as LinkOutMessage).payload as AuthenticatedDataMessage)
+            listOf(CompletableFuture.completedFuture(Unit))
+        }
+        sessionManager.start()
+        startSession(sessionManager)
+        mockTimeFacilitiesProvider.advanceTime(5.millis)
+        sessionManager.dataMessageSent(authenticatedSession)
+        mockTimeFacilitiesProvider.advanceTime(5.millis)
+        sessionManager.messageAcknowledged(authenticatedSession.sessionId)
+        mockTimeFacilitiesProvider.advanceTime(configWithNoHeartbeat.sessionTimeout.plus(5.millis))
+
+        verify(outboundSessionPool.constructed().last(), never()).replaceSession(eq(counterparties), eq(sessionId), any())
+
+        sessionManager.stop()
+        resourcesHolder.close()
+
+        assertThat(messages).isEmpty()
+    }
+
+    @Test
+    @Suppress("MaxLineLength")
+    fun `when heartbeats are disabled and a message is sent and not acknowledged, the session will timeout only after the session timeout duration has passed`() {
+        val messages = mutableListOf<AuthenticatedDataMessage>()
+        val resourcesHolder = ResourcesHolder()
+        val sessionManager = createSessionManager(
+            resourcesHolder,
+            configWithOneSessionBetweenMembersAndNoHeartbeats,
+            configWithNoHeartbeat
+        )
+        mockSessionHealthManagerPublisherAndCaptureRecords { records ->
+            val record = records.single()
+            assertEquals(LINK_OUT_TOPIC, record.topic)
+            messages.add((record.value as LinkOutMessage).payload as AuthenticatedDataMessage)
+            listOf(CompletableFuture.completedFuture(Unit))
+        }
+        sessionManager.start()
+        startSession(sessionManager)
+        mockTimeFacilitiesProvider.advanceTime(5.millis)
+        sessionManager.dataMessageSent(authenticatedSession)
+        mockTimeFacilitiesProvider.advanceTime(configWithNoHeartbeat.sessionTimeout.dividedBy(2))
+        sessionManager.messageAcknowledged(authenticatedSession.sessionId)
+        mockTimeFacilitiesProvider.advanceTime(configWithNoHeartbeat.sessionTimeout.dividedBy(2).plus(5.millis))
+
+        verify(outboundSessionPool.constructed().last(), never()).replaceSession(eq(counterparties), eq(sessionId), any())
+
+        sessionManager.stop()
+        resourcesHolder.close()
+
+        assertThat(messages).isEmpty()
     }
 }

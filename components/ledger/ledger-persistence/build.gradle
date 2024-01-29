@@ -68,7 +68,7 @@ dependencies {
     testImplementation project(":libs:application:application-impl")
 
     testRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
-    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    testRuntimeOnly libs.postgresql.jdbc
 
     // Integration test resources using cpis configuration
     cpis project(path: ':testing:cpbs:extendable-cpb', configuration: 'cordaCPB')
@@ -84,7 +84,7 @@ dependencies {
     // It's not an OSGi bundle, so you will get errors (despite Intellij appearing to allow you to use it).
 
     integrationTestImplementation libs.mockito.core
-    integrationTestImplementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
+    integrationTestImplementation(libs.jackson.module.kotlin)
 
     integrationTestImplementation project(':libs:db:db-admin-impl')
     integrationTestImplementation project(':libs:db:db-orm-impl')
@@ -108,7 +108,7 @@ dependencies {
 
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly libs.postgresql.jdbc
 }
 
 //  Copy the cpi builds declared in the cpis configuration into our resources so we find and load them

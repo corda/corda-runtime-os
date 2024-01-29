@@ -2,7 +2,7 @@ package net.corda.libs.messaging.topic.factory
 
 import com.typesafe.config.ConfigFactory
 import net.corda.db.core.InMemoryDataSourceFactory
-import net.corda.db.core.createDataSource
+import net.corda.db.core.createUnpooledDataSource
 import net.corda.db.schema.DbSchema.DB_MESSAGE_BUS
 import net.corda.libs.messaging.topic.DBTopicUtils
 import net.corda.libs.messaging.topic.utils.TopicUtils
@@ -44,7 +44,7 @@ class DBTopicUtilsFactory @Activate constructor(
         } else {
             val username = config.getString(USER)
             val pass = config.getString(PASS)
-            createDataSource(
+            createUnpooledDataSource(
                 "org.postgresql.Driver",
                 jdbcUrl,
                 username,

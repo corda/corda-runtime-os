@@ -40,6 +40,7 @@ import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.validateSchem
 import net.corda.membership.p2p.helpers.KeySpecExtractor.KeySpecType
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.HoldingIdentity
@@ -47,7 +48,6 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.security.PublicKey
-import net.corda.membership.persistence.client.MembershipQueryClient
 
 @Suppress("LongParameterList")
 internal class MGMRegistrationMemberInfoHandler(
@@ -121,10 +121,10 @@ internal class MGMRegistrationMemberInfoHandler(
                     null
                 )
             }
-            if(expectedCategory == SESSION_INIT) {
+            if (expectedCategory == SESSION_INIT) {
                 try {
                     it.validateSchemeAndSignatureSpec(signatureSpec, KeySpecType.SESSION)
-                } catch(ex: IllegalArgumentException) {
+                } catch (ex: IllegalArgumentException) {
                     throw MGMRegistrationContextValidationException(
                         "Key scheme and/or signature spec are not valid for category $SESSION_INIT.",
                         ex
@@ -136,7 +136,8 @@ internal class MGMRegistrationMemberInfoHandler(
             } catch (ex: RuntimeException) {
                 throw MGMRegistrationMemberInfoHandlingException(
                     "Could not decode public key for tenant ID: " +
-                            "$tenantId under ID: $keyId.", ex
+                        "$tenantId under ID: $keyId.",
+                    ex
                 )
             }
         } ?: throw MGMRegistrationMemberInfoHandlingException(
@@ -165,15 +166,15 @@ internal class MGMRegistrationMemberInfoHandler(
         val sessionKeys = context.filterKeys { key ->
             sessionKeyRegex.matches(key)
         }.map {
-                val keyIndex = it.key.substringAfter("$SESSION_KEYS.").substringBefore('.')
-                val signatureSpec = context[SESSION_KEYS_SIGNATURE_SPEC.format(keyIndex)]
-                getKeyFromId(it.value, holdingIdentity.shortHash.value, SESSION_INIT, signatureSpec)
-            }.flatMapIndexed { index, sessionKey ->
-                listOf(
-                    String.format(PARTY_SESSION_KEYS_PEM, index) to sessionKey.toPem(),
-                    String.format(SESSION_KEYS_HASH, index) to sessionKey.fullId(),
-                )
-            }
+            val keyIndex = it.key.substringAfter("$SESSION_KEYS.").substringBefore('.')
+            val signatureSpec = context[SESSION_KEYS_SIGNATURE_SPEC.format(keyIndex)]
+            getKeyFromId(it.value, holdingIdentity.shortHash.value, SESSION_INIT, signatureSpec)
+        }.flatMapIndexed { index, sessionKey ->
+            listOf(
+                String.format(PARTY_SESSION_KEYS_PEM, index) to sessionKey.toPem(),
+                String.format(SESSION_KEYS_HASH, index) to sessionKey.fullId(),
+            )
+        }
         val memberContext = context.filterKeys { key ->
             !keyIdList.any { keyPrefix ->
                 key.startsWith(keyPrefix)

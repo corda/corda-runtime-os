@@ -11,7 +11,9 @@ import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.type.TypeFactory
 import com.fasterxml.jackson.databind.util.LRUMap
 import com.fasterxml.jackson.databind.util.LookupCache
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import net.corda.crypto.cipher.suite.merkle.MerkleProofProvider
 import net.corda.common.json.serializers.JsonDeserializerAdaptor
 import net.corda.common.json.serializers.JsonSerializerAdaptor
 import net.corda.common.json.serializers.SerializationCustomizer
@@ -24,7 +26,9 @@ import net.corda.v5.application.marshalling.json.JsonDeserializer
 import net.corda.v5.application.marshalling.json.JsonSerializer
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
@@ -39,7 +43,11 @@ import java.util.Collections.unmodifiableMap
     service = [ JsonMarshallingService::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class ],
     scope = PROTOTYPE
 )
-class JsonMarshallingServiceImpl : JsonMarshallingService,
+class JsonMarshallingServiceImpl
+@Activate constructor(
+    @Reference(service = MerkleProofProvider::class)
+    private val merkleProofProvider: MerkleProofProvider
+) : JsonMarshallingService,
     UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken, SerializationCustomizer {
     private companion object {
         private const val INITIAL_SIZE = 16
@@ -56,6 +64,9 @@ class JsonMarshallingServiceImpl : JsonMarshallingService,
         val module = SimpleModule()
         module.addSerializer(SecureHash::class.java, SecureHashSerializer)
         module.addDeserializer(SecureHash::class.java, SecureHashDeserializer)
+        // Interoperability
+        registerModule(DigitalSignatureAndMetadataSerialisationModule(merkleProofProvider).module)
+        registerModule(JavaTimeModule())
         // Register Kotlin after resetting the AnnotationIntrospector.
         registerModule(KotlinModule.Builder().build())
         registerModule(module)

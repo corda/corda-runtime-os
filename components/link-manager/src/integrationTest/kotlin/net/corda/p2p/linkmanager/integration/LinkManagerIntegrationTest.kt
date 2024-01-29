@@ -6,12 +6,14 @@ import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.client.SessionEncryptionOpsClient
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.p2p.crypto.protocol.RevocationCheckMode
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_ENABLED_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_MESSAGE_PERIOD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER
@@ -44,6 +46,8 @@ import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
+import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.schema.configuration.StateManagerConfig
 import net.corda.test.util.eventually
 import net.corda.test.util.lifecycle.usingLifecycle
 import net.corda.utilities.seconds
@@ -104,6 +108,12 @@ class LinkManagerIntegrationTest {
 
         @InjectService(timeout = 4000)
         lateinit var  groupParametersReaderService: GroupParametersReaderService
+
+        @InjectService(timeout = 4000)
+        lateinit var sessionEncryptionOpsClient: SessionEncryptionOpsClient
+
+        @InjectService(timeout = 4000)
+        lateinit var schemaRegistry: AvroSchemaRegistry
     }
 
     private val replayPeriod = 2000
@@ -113,6 +123,7 @@ class LinkManagerIntegrationTest {
         return ConfigFactory.empty()
             .withValue(MAX_MESSAGE_SIZE_KEY, ConfigValueFactory.fromAnyRef(1000000))
             .withValue(MAX_REPLAYING_MESSAGES_PER_PEER, ConfigValueFactory.fromAnyRef(100))
+            .withValue(HEARTBEAT_ENABLED_KEY, ConfigValueFactory.fromAnyRef(true))
             .withValue(HEARTBEAT_MESSAGE_PERIOD_KEY, ConfigValueFactory.fromAnyRef(2000))
             .withValue(SESSION_TIMEOUT_KEY, ConfigValueFactory.fromAnyRef(10000))
             .withValue(SESSIONS_PER_PEER_KEY, ConfigValueFactory.fromAnyRef(null))
@@ -216,7 +227,9 @@ class LinkManagerIntegrationTest {
             membershipGroupReaderProvider,
             MembershipQueryClientStub(),
             groupParametersReaderService,
-            StateManagerFactoryStub().create(bootstrapConfig),
+            StateManagerFactoryStub().create(bootstrapConfig, StateManagerConfig.StateType.P2P_SESSION),
+            sessionEncryptionOpsClient,
+            schemaRegistry,
         )
 
         linkManager.usingLifecycle {

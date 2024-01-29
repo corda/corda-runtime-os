@@ -3,7 +3,6 @@ package net.corda.membership.lib.impl.grouppolicy.v1
 import com.fasterxml.jackson.databind.JsonNode
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
-import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PropertyKeys
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.FILE_FORMAT_VERSION
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.GROUP_ID
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.REGISTRATION_PROTOCOL
@@ -14,12 +13,13 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsPkiMode
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsPkiMode.STANDARD
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsVersion
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsVersion.VERSION_1_3
-import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.ProtocolParameters.SessionKeyPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.ProtocolParameters.SessionKeyPolicy.COMBINED
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PropertyKeys
 import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
 import net.corda.membership.lib.impl.grouppolicy.BAD_MGM_GROUP_ID_ERROR
 import net.corda.membership.lib.impl.grouppolicy.getMandatoryInt
@@ -100,7 +100,6 @@ class MGMGroupPolicyImpl(
             persistedProperties.parseList(PropertyKeys.TLS_TRUST_ROOTS, String::class.java)
         }
 
-
         override val tlsPki = TlsPkiMode.fromString(
             getPersistedString(PropertyKeys.TLS_PKI_MODE)
         ) ?: STANDARD
@@ -117,7 +116,6 @@ class MGMGroupPolicyImpl(
             getPersistedString(PropertyKeys.TLS_TYPE)
         ) ?: TlsType.ONE_WAY
 
-
         override val mgmClientCertificateSubject = getPersistedString(PropertyKeys.MGM_CLIENT_CERTIFICATE_SUBJECT)?.let {
             MemberX500Name.parse(it)
         }
@@ -129,5 +127,3 @@ class MGMGroupPolicyImpl(
         constructor() : this(emptyMap())
     }
 }
-
-

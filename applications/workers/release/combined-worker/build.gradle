@@ -49,7 +49,7 @@ dependencies {
     compileOnly "org.osgi:osgi.core"
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
-    drivers "org.postgresql:postgresql:$postgresDriverVersion"
+    drivers libs.postgresql.jdbc
 
     // Oracle isn't OSGi wrapped, but if it were, it is sufficient to just do this:
     // OSGi bundle that registers a `DataSourceFactory` on behalf of Oracle,
@@ -90,7 +90,7 @@ dependencies {
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda:corda-base'
 
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation libs.slf4j.api
 
     implementation 'net.corda:corda-config-schema'
 

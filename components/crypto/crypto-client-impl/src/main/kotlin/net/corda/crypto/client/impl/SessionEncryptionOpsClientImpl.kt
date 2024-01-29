@@ -10,7 +10,7 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -34,7 +34,7 @@ class SessionEncryptionOpsClientImpl @Activate constructor(
             LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
         ),
     ),
-    configKeys = setOf(MESSAGING_CONFIG),
+    configKeys = setOf(BOOT_CONFIG),
 ),
     SessionEncryptionOpsClient {
     override fun encryptSessionData(plainBytes: ByteArray, alias: String?): ByteArray =
@@ -54,7 +54,7 @@ class SessionEncryptionOpsClientImpl @Activate constructor(
         val ops = SessionEncryptionImpl(
             publisherFactory.createHttpRpcClient(),
             platformInfoProvider,
-            event.config.getConfig(MESSAGING_CONFIG),
+            event.config.getConfig(BOOT_CONFIG),
         )
         override val downstream = DependenciesTracker.AlwaysUp()
     }

@@ -44,7 +44,7 @@ dependencies {
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:utilities')
     implementation project(":libs:packaging:packaging-core")
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation libs.jackson.module.kotlin
 
     testImplementation 'org.osgi:osgi.core'
     testImplementation project(':libs:crypto:cipher-suite')

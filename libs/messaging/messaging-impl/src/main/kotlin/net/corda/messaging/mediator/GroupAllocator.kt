@@ -1,7 +1,6 @@
 package net.corda.messaging.mediator
 
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
-import net.corda.messaging.api.records.Record
 
 /**
  * Helper class to use in the mediator to divide polled records into groups for processing.
@@ -19,26 +18,26 @@ class GroupAllocator {
      * @return Records allocated to groups.
      */
     fun <K : Any, S : Any, E : Any> allocateGroups(
-        events: List<Record<K, E>>,
+        events: List<EventProcessingInput<K, E>>,
         config: EventMediatorConfig<K, S, E>
-    ): List<Map<K, List<Record<K, E>>>> {
+    ): List<Map<K, EventProcessingInput<K, E>>> {
+        val eventCount = events.flatMap { it.records }.size.toDouble()
         val groups = setUpGroups(config)
-        val buckets = events
-            .groupBy { it.key }.toList()
-            .sortedByDescending { it.second.size }
-        
-        buckets.forEach { (key, records) ->
-            val leastFilledGroup = groups.minByOrNull { it.values.flatten().size }
-            leastFilledGroup?.put(key, records)
+        val sortedEvents = events.sortedByDescending { it.records.size }
+        sortedEvents.forEach {
+            val leastFilledGroup = groups.minBy { group ->
+                group.flatMap { (_, input) -> input.records }.size
+            }
+            leastFilledGroup[it.key] = it
         }
-        
-        return groups.filter { it.values.isNotEmpty() }
+
+        return groups.filter { it.isNotEmpty() }
     }
 
     private fun <E : Any, S: Any, K : Any> setUpGroups(
         config: EventMediatorConfig<K, S, E>,
-    ): MutableList<MutableMap<K, List<Record<K, E>>>> {
+    ): List<MutableMap<K, EventProcessingInput<K, E>>> {
         val numGroups = config.threads
-        return MutableList(numGroups) { mutableMapOf() }
+        return List(numGroups) { mutableMapOf() }
     }
 }

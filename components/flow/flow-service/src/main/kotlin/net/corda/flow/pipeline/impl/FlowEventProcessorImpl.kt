@@ -119,8 +119,8 @@ class FlowEventProcessorImpl(
                 logger = log,
                 maxRetries = flowConfig.getLong(FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS),
                 maxTimeMillis = flowConfig.getLong(FlowConfig.PROCESSING_MAX_RETRY_WINDOW_DURATION),
-                // Exponential backoff -> 500ms, 1s, 2s, 4s, 8s, etc.
-                backoffStrategy = Exponential(base = 2.0, growthFactor = 250L),
+                // Exponential Backoff + Default maxRetryAttempts -> 1s, 2s, 4s, 8s, 16s = 31s max
+                backoffStrategy = Exponential(base = 2.0, growthFactor = 500L),
                 // Only FlowTransientException will be retried
                 shouldRetry = { _, _, t -> t is FlowTransientException },
                 onRetryAttempt = { n, d, t -> logRetryAndRollbackCheckpoint(pipeline.context.checkpoint, n, d, t) },

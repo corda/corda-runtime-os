@@ -5,6 +5,8 @@ plugins {
 
 description 'Membership schema validation library'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
@@ -14,7 +16,7 @@ dependencies {
     implementation "net.corda:corda-base"
     api "net.corda:corda-membership-schema"
 
-    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    implementation libs.jackson.databind
     implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
     constraints {
         implementation("com.ethlo.time:itu:$comEthloTimeItuVersion") {
