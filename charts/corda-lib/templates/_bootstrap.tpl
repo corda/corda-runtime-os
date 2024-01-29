@@ -316,11 +316,8 @@ spec:
               echo 'Applying initial configurations'
               (echo "SET search_path TO ${DB_CLUSTER_SCHEMA};";
               cat /tmp/rbac/db-config.sql;
-              echo ";";
               cat /tmp/vnodes/db-config.sql;
-              echo ";";
               cat /tmp/crypto/db-config.sql;
-              echo ";";
               cat /tmp/crypto-config.sql) | psql -v ON_ERROR_STOP=1 \
               -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -U "${CLUSTER_PGUSER}" --dbname "dbname=${DB_CLUSTER_NAME}"
 
