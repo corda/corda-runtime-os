@@ -1,6 +1,5 @@
 package net.corda.libs.statemanager.impl
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.utils.transaction
 import net.corda.libs.statemanager.api.IntervalFilter
@@ -14,7 +13,6 @@ import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.DE
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.FIND
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.GET
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.UPDATE
-import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.repository.StateRepository
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -36,15 +34,8 @@ class StateManagerImpl(
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(name, eventHandler)
 
     private companion object {
-        private val objectMapper = ObjectMapper()
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
-
-    private fun State.toPersistentEntity(): StateEntity =
-        StateEntity(key, value, objectMapper.writeValueAsString(metadata), version, modifiedTime)
-
-    private fun StateEntity.fromPersistentEntity() =
-        State(key, value, version, objectMapper.convertToMetadata(metadata), modifiedTime)
 
     /**
      * Internal method to retrieve states by key without recording any metrics.
@@ -54,8 +45,6 @@ class StateManagerImpl(
 
         return dataSource.connection.use { connection ->
             stateRepository.get(connection, keys)
-        }.map {
-            it.fromPersistentEntity()
         }.associateBy {
             it.key
         }
@@ -86,7 +75,7 @@ class StateManagerImpl(
 
         return metricsRecorder.recordProcessingTime(CREATE) {
             val successfulKeys = dataSource.connection.transaction { connection ->
-                stateRepository.create(connection, states.map { it.toPersistentEntity() })
+                stateRepository.create(connection, states)
             }
 
             states.map { it.key }.toSet() - successfulKeys.toSet()
@@ -107,7 +96,7 @@ class StateManagerImpl(
         return metricsRecorder.recordProcessingTime(UPDATE) {
             try {
                 val (_, failedUpdates) = dataSource.connection.transaction { conn ->
-                    stateRepository.update(conn, states.map { it.toPersistentEntity() })
+                    stateRepository.update(conn, states)
                 }
 
                 if (failedUpdates.isEmpty()) {
@@ -128,7 +117,7 @@ class StateManagerImpl(
         return metricsRecorder.recordProcessingTime(DELETE) {
             try {
                 val failedDeletes = dataSource.connection.transaction { connection ->
-                    stateRepository.delete(connection, states.map { it.toPersistentEntity() })
+                    stateRepository.delete(connection, states)
                 }
 
                 if (failedDeletes.isEmpty()) {
@@ -154,8 +143,6 @@ class StateManagerImpl(
         return metricsRecorder.recordProcessingTime(FIND) {
             dataSource.connection.use { connection ->
                 stateRepository.updatedBetween(connection, interval)
-            }.map {
-                it.fromPersistentEntity()
             }.associateBy {
                 it.key
             }
@@ -168,8 +155,6 @@ class StateManagerImpl(
         return metricsRecorder.recordProcessingTime(FIND) {
             dataSource.connection.use { connection ->
                 stateRepository.filterByAll(connection, filters)
-            }.map {
-                it.fromPersistentEntity()
             }.associateBy {
                 it.key
             }
@@ -182,8 +167,6 @@ class StateManagerImpl(
         return metricsRecorder.recordProcessingTime(FIND) {
             dataSource.connection.use { connection ->
                 stateRepository.filterByAny(connection, filters)
-            }.map {
-                it.fromPersistentEntity()
             }.associateBy {
                 it.key
             }
@@ -201,8 +184,6 @@ class StateManagerImpl(
                     intervalFilter,
                     metadataFilters
                 )
-            }.map {
-                it.fromPersistentEntity()
             }.associateBy {
                 it.key
             }
@@ -220,8 +201,6 @@ class StateManagerImpl(
                     intervalFilter,
                     metadataFilters
                 )
-            }.map {
-                it.fromPersistentEntity()
             }.associateBy {
                 it.key
             }

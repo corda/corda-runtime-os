@@ -21,6 +21,7 @@ import net.corda.serialization.checkpoint.CheckpointSerializer;
 import net.corda.v5.application.messaging.FlowSession;
 import net.corda.v5.base.types.MemberX500Name;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import java.util.HashMap;
 import java.util.Map;
@@ -107,6 +108,12 @@ public class FlowSessionImplJavaTest {
 
         @Override
         public void attemptInterrupt() {
+        }
+
+        @Nullable
+        @Override
+        public UUID getSandboxGroupId() {
+            return null;
         }
     }
 

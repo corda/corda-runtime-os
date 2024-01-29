@@ -69,7 +69,7 @@ class SQLServerHelper : ExternalDbHelper() {
             if (createSchema) {
                 logger.info("Creating schema: $schemaName".emphasise())
                 credentials = createSchemaAndLogin(
-                    net.corda.db.core.createDataSource(
+                    net.corda.db.core.createUnpooledDataSource(
                         driverClass,
                         jdbcUrl,
                         user,
@@ -85,7 +85,7 @@ class SQLServerHelper : ExternalDbHelper() {
         }
 
         logger.info("Using URL $jdbcUrl".emphasise())
-        return net.corda.db.core.createDataSource(
+        return net.corda.db.core.createUnpooledDataSource(
             driverClass,
             jdbcUrl,
             credentials.first,

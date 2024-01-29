@@ -5,6 +5,7 @@ import net.corda.libs.permissions.endpoints.v1.permission.types.BulkCreatePermis
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType
 import net.corda.rest.RestResource
+import net.corda.rest.SC_CREATED
 import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPOST
@@ -40,7 +41,8 @@ interface PermissionEndpoint : RestResource {
         virtualNode: An optional identifier of the virtual node to which the physical node permission applies
         version: The version number of the permission; a value of 0 is assigned to a newly-created permission
         updateTimestamp: The server-side timestamp showing when the permission was created
-    """
+    """,
+        successCode = SC_CREATED
     )
     fun createPermission(
         @ClientRequestBodyParameter(
@@ -108,7 +110,8 @@ interface PermissionEndpoint : RestResource {
         path = "bulk",
         description = "This method creates a set of permissions and optionally assigns them to the existing roles.",
         responseDescription = "A set of identifiers for permissions created along with role identifiers " +
-            "they were associated with."
+            "they were associated with.",
+        successCode = SC_CREATED
     )
     fun createAndAssignPermissions(
         @ClientRequestBodyParameter(

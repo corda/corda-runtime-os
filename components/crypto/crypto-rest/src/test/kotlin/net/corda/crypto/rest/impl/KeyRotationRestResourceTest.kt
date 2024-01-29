@@ -25,8 +25,10 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.rest.exception.InternalServerException
+import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.StateManagerConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -36,8 +38,10 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.time.Instant
 
 class KeyRotationRestResourceTest {
 
@@ -97,7 +101,7 @@ class KeyRotationRestResourceTest {
         }
 
         deserializer = mock<CordaAvroDeserializer<UnmanagedKeyStatus>> {
-            on { deserialize(any()) } doReturn UnmanagedKeyStatus(oldKeyAlias, 10, 5)
+            on { deserialize(any()) } doReturn UnmanagedKeyStatus(oldKeyAlias, newKeyAlias, 10, 5, Instant.now())
         }
 
         cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
@@ -105,7 +109,7 @@ class KeyRotationRestResourceTest {
         }
 
         stateManagerFactory = mock<StateManagerFactory> {
-            on { create(any()) } doReturn stateManager
+            on { create(any(), eq(StateManagerConfig.StateType.KEY_ROTATION)) } doReturn stateManager
         }
 
         stateManagerPublicationCount = 0
@@ -119,7 +123,7 @@ class KeyRotationRestResourceTest {
         verify(stateManager, times(1)).findByMetadataMatchingAll(any())
 
         assertThat(response.status).isEqualTo(KeyRotationStatus.IN_PROGRESS)
-        assertThat(response.rootKeyAlias).isEqualTo(oldKeyAlias)
+        assertThat(response.oldParentKeyAlias).isEqualTo(oldKeyAlias)
     }
 
     @Test
@@ -136,7 +140,7 @@ class KeyRotationRestResourceTest {
         val keyRotationRestResource =
             createKeyRotationRestResource(initialiseKafkaPublisher = true, initialiseStateManager = false)
         assertThrows<IllegalStateException> {
-            keyRotationRestResource.getKeyRotationStatus("")
+            keyRotationRestResource.getKeyRotationStatus(oldKeyAlias)
         }
         verify(stateManager, never()).findByMetadataMatchingAll(any())
     }
@@ -145,7 +149,7 @@ class KeyRotationRestResourceTest {
     fun `initialize creates the publisher and state manager`() {
         createKeyRotationRestResource()
         verify(publisherFactory, times(1)).createPublisher(any(), any())
-        verify(stateManagerFactory, times(1)).create(any())
+        verify(stateManagerFactory, times(1)).create(any(), eq(StateManagerConfig.StateType.KEY_ROTATION))
     }
 
     @Test
@@ -155,13 +159,12 @@ class KeyRotationRestResourceTest {
         assertThat(records.size).isEqualTo(1)
     }
 
-
     @Test
     fun `start key rotation event throws when kafka publisher is not initialised`() {
         val keyRotationRestResource =
             createKeyRotationRestResource(initialiseKafkaPublisher = false, initialiseStateManager = true)
         assertThrows<InternalServerException> {
-            keyRotationRestResource.startKeyRotation("", "")
+            keyRotationRestResource.startKeyRotation(oldKeyAlias, newKeyAlias)
         }
         verify(publishToKafka, never()).publish(any())
         assertThat(stateManagerPublicationCount).isEqualTo(0)
@@ -172,7 +175,7 @@ class KeyRotationRestResourceTest {
         val keyRotationRestResource =
             createKeyRotationRestResource(initialiseKafkaPublisher = true, initialiseStateManager = false)
         assertThrows<IllegalStateException> {
-            keyRotationRestResource.startKeyRotation("", "")
+            keyRotationRestResource.startKeyRotation(oldKeyAlias, newKeyAlias)
         }
         verify(publishToKafka, never()).publish(any())
         assertThat(stateManagerPublicationCount).isEqualTo(0)
@@ -195,6 +198,36 @@ class KeyRotationRestResourceTest {
             bringDependenciesUp()
             context.verifyIsUp<KeyRotationRestResource>()
         }
+    }
+
+    @Test
+    fun `start key rotation event throws when old key alias matches new key alias`() {
+        val keyRotationRestResource = createKeyRotationRestResource()
+        assertThrows<InvalidInputDataException> {
+            keyRotationRestResource.startKeyRotation(oldKeyAlias, oldKeyAlias)
+        }
+        verify(publishToKafka, never()).publish(any())
+        assertThat(stateManagerPublicationCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `start key rotation event throws when old key alias is empty string`() {
+        val keyRotationRestResource = createKeyRotationRestResource()
+        assertThrows<InvalidInputDataException> {
+            keyRotationRestResource.startKeyRotation("", newKeyAlias)
+        }
+        verify(publishToKafka, never()).publish(any())
+        assertThat(stateManagerPublicationCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `start key rotation event throws when new key alias is empty string`() {
+        val keyRotationRestResource = createKeyRotationRestResource()
+        assertThrows<InvalidInputDataException> {
+            keyRotationRestResource.startKeyRotation(oldKeyAlias, "")
+        }
+        verify(publishToKafka, never()).publish(any())
+        assertThat(stateManagerPublicationCount).isEqualTo(0)
     }
 
     private fun createKeyRotationRestResource(

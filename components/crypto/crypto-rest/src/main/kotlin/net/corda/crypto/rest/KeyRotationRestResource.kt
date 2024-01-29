@@ -3,6 +3,7 @@ package net.corda.crypto.rest
 import net.corda.crypto.rest.response.KeyRotationResponse
 import net.corda.crypto.rest.response.KeyRotationStatusResponse
 import net.corda.rest.RestResource
+import net.corda.rest.SC_ACCEPTED
 import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPOST
@@ -61,6 +62,7 @@ interface KeyRotationRestResource : RestResource {
         path = "unmanaged/rotation/{oldKeyAlias}",
         description = "This method enables to rotate a current wrapping key with a new wrapping key.",
         responseDescription = "Key rotation response",
+        successCode = SC_ACCEPTED,
     )
     fun startKeyRotation(
         @RestPathParameter(
@@ -73,4 +75,40 @@ interface KeyRotationRestResource : RestResource {
         )
         newKeyAlias: String,
     ): ResponseEntity<KeyRotationResponse>
+
+    /**
+     * The [getManagedKeyRotationStatus] gets the latest key rotation status for [tenantId] if one exists.
+     *
+     * @return A list of wrapping keys with the total number of signing keys needs re-wrapping
+     *        and the number of already re-wrapped keys.
+     *
+     */
+    @HttpGET(
+        path = "managed/rotation/{tenantId}",
+        description = "This method gets the status of the latest key rotation for [tenantId].",
+        responseDescription = "Number of signing keys which need rotating grouped by tenantId's wrapping keys",
+    )
+    fun getManagedKeyRotationStatus(
+        @RestPathParameter(description = "The tenantId whose wrapping keys are rotating.")
+        tenantId: String
+    ): String
+
+    /**
+     * Initiates the managed key rotation process.
+     *
+     * @param tenantId UUID of the virtual node.
+     *
+     */
+    @HttpPOST(
+        path = "managed/rotation/{tenantId}",
+        description = "This method enables to rotate all wrapping keys for tenantId.",
+        responseDescription = "Key rotation response",
+        successCode = SC_ACCEPTED,
+    )
+    fun startManagedKeyRotation(
+        @RestPathParameter(
+            description = "The tenantId whose wrapping keys are requested to be rotated."
+        )
+        tenantId: String
+    ): ResponseEntity<String>
 }

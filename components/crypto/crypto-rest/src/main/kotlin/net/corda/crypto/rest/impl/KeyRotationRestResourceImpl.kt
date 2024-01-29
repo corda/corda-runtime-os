@@ -37,11 +37,13 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.ForbiddenException
+import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.rest.response.ResponseEntity
 import net.corda.schema.Schemas.Crypto.REKEY_MESSAGE_TOPIC
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.StateManagerConfig
 import net.corda.v5.base.annotations.VisibleForTesting
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -167,12 +169,13 @@ class KeyRotationRestResourceImpl @Activate constructor(
         val stateManagerConfig = config.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)
 
         stateManagerInit?.stop()
-        stateManagerInit = stateManagerFactory.create(stateManagerConfig).also { it.start() }
+        stateManagerInit = stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION)
+            .also { it.start() }
         logger.debug("State manager created and started {}", stateManager.name)
     }
 
     override fun getKeyRotationStatus(keyAlias: String): KeyRotationStatusResponse {
-        val entries = stateManager.findByMetadataMatchingAll(
+        val records = stateManager.findByMetadataMatchingAll(
             listOf(
                 MetadataFilter(KeyRotationMetadataValues.ROOT_KEY_ALIAS, Operation.Equals, keyAlias),
                 MetadataFilter(KeyRotationMetadataValues.TYPE, Operation.Equals, KeyRotationRecordType.KEY_ROTATION)
@@ -180,12 +183,12 @@ class KeyRotationRestResourceImpl @Activate constructor(
         )
 
         // if entries are empty, there is no rootKeyAlias data stored in the state manager, so no key rotation is/was in progress
-        if (entries.isEmpty()) throw ResourceNotFoundException("No key rotation for $keyAlias is in progress.")
+        if (records.isEmpty()) throw ResourceNotFoundException("No key rotation for $keyAlias is in progress.")
 
         var lastUpdatedTimestamp = Instant.MIN
         var rotationStatus = KeyRotationStatus.DONE
         val result = mutableListOf<Pair<String, TenantIdWrappingKeysStatus>>()
-        entries.forEach {
+        records.forEach {
             val state = it.value
             val keyRotationStatus = checkNotNull(deserializer.deserialize(state.value))
             result.add(
@@ -196,9 +199,20 @@ class KeyRotationRestResourceImpl @Activate constructor(
             )
             // Get the latest modified time of all the records
             if (state.modifiedTime.isAfter(lastUpdatedTimestamp)) lastUpdatedTimestamp = state.modifiedTime
-            if (state.metadata[KeyRotationMetadataValues.STATUS] != KeyRotationStatus.DONE) rotationStatus = KeyRotationStatus.IN_PROGRESS
+            if (state.metadata[KeyRotationMetadataValues.STATUS] != KeyRotationStatus.DONE) rotationStatus =
+                KeyRotationStatus.IN_PROGRESS
         }
-        return KeyRotationStatusResponse(keyAlias, rotationStatus, lastUpdatedTimestamp, result)
+
+        // newParentKeyAlias and createdTimestamp are in all records, we just need to grab it from one
+        val deserializedValueOfOneRecord = checkNotNull(deserializer.deserialize(records.values.first().value))
+        return KeyRotationStatusResponse(
+            keyAlias,
+            deserializedValueOfOneRecord.newParentKeyAlias,
+            rotationStatus,
+            deserializedValueOfOneRecord.createdTimestamp,
+            lastUpdatedTimestamp,
+            result
+        )
     }
 
     override fun startKeyRotation(oldKeyAlias: String, newKeyAlias: String): ResponseEntity<KeyRotationResponse> {
@@ -206,7 +220,11 @@ class KeyRotationRestResourceImpl @Activate constructor(
             checkNotNull(publishToKafka)
         }
 
-        if (!hasPreviousRotationFinished(oldKeyAlias)) throw ForbiddenException("Previous key rotation for $oldKeyAlias is in progress.")
+        validateInputParams(oldKeyAlias, newKeyAlias)
+
+        if (!hasPreviousRotationFinished()) {
+            throw ForbiddenException("A key rotation operation is already ongoing, a new one cannot be started until it completes.")
+        }
 
         return doKeyRotation(
             oldKeyAlias,
@@ -215,16 +233,41 @@ class KeyRotationRestResourceImpl @Activate constructor(
         )
     }
 
-    private fun hasPreviousRotationFinished(oldKeyAlias: String): Boolean {
+    override fun getManagedKeyRotationStatus(tenantId: String): String {
+        return "Tested."
+    }
+
+    override fun startManagedKeyRotation(tenantId: String): ResponseEntity<String> {
+        return ResponseEntity.accepted("Tested.")
+    }
+
+    private fun hasPreviousRotationFinished(): Boolean {
+        // The current state of this method is to prevent any key rotations being started when any other one is in progress.
+        // Same check is done on the Crypto worker side because if user quickly issues two key rotation commands after each other,
+        // it will pass rest worker check as state manager was not yet populated.
+        // On that note, if the logic is changed here, it should also be changed to match in the Crypto worker, see [CryptoRekeyBusProcessor]
+        // for the equivalent method.
         stateManager.findByMetadataMatchingAll(
             listOf(
-                MetadataFilter(KeyRotationMetadataValues.ROOT_KEY_ALIAS, Operation.Equals, oldKeyAlias),
                 MetadataFilter(KeyRotationMetadataValues.TYPE, Operation.Equals, KeyRotationRecordType.KEY_ROTATION)
             )
         ).forEach {
             if (it.value.metadata[KeyRotationMetadataValues.STATUS] != KeyRotationStatus.DONE) return false
         }
         return true
+    }
+
+    @Suppress("ThrowsCount")
+    private fun validateInputParams(oldKeyAlias: String, newKeyAlias: String) {
+        if (oldKeyAlias == newKeyAlias) throw InvalidInputDataException(
+            "Cannot start key rotation. The old key alias must be different to the new key alias."
+        )
+        if (oldKeyAlias.isEmpty()) throw InvalidInputDataException(
+            "Cannot start key rotation. The old key alias is not specified."
+        )
+        if (newKeyAlias.isEmpty()) throw InvalidInputDataException(
+            "Cannot start key rotation. The new key alias is not specified."
+        )
     }
 }
 
@@ -251,7 +294,6 @@ fun doKeyRotation(
         KeyType.UNMANAGED,
         oldKeyAlias,
         newKeyAlias,
-        null,
         null
     )
 

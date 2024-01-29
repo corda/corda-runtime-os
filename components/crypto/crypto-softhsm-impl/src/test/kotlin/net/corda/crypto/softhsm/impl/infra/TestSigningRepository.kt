@@ -66,4 +66,8 @@ class TestSigningRepository(val tenantId: String = "test") : SigningRepository {
     override fun getKeyMaterials(wrappingKeyId: UUID): Collection<SigningKeyMaterialInfo> {
         throw IllegalStateException("Unexpected call to getKeyMaterials")
     }
+
+    override fun saveSigningKeyMaterial(signingKeyMaterialInfo: SigningKeyMaterialInfo, wrappingKeyId: UUID) {
+        throw IllegalStateException("Unexpected call to saveSigningKeyMaterial")
+    }
 }

@@ -10,6 +10,8 @@ import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.metadata
 import net.corda.messaging.api.constants.MessagingMetadataKeys.PROCESSING_FAILURE
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 
 /**
@@ -20,6 +22,9 @@ class StateManagerHelper<S : Any>(
     private val stateDeserializer: CordaAvroDeserializer<S>,
     private val mediatorStateDeserializer: CordaAvroDeserializer<MediatorState>,
 ) {
+    private companion object {
+        private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     /**
      * Creates an updated [State] or a new one if there was no previous version.
@@ -52,8 +57,14 @@ class StateManagerHelper<S : Any>(
      *
      * In the event processing failed for a non-existent state, a new state is created with the metadata key set. This
      * allows clients to detect issues with any failed processing.
+     *
+     * @param key the unique identifier of the [State] to mark as failed.
+     * @param originalState the original [State] that will me be marked as failed.
+     * @param reason the actual reason for which the [State] will be marked as a failure, for logging purposes only.
      */
-    fun failStateProcessing(key: String, originalState: State?) : State {
+    fun failStateProcessing(key: String, originalState: State?, reason: String): State {
+        logger.warn("State with key $key will be marked as failed, $reason.")
+
         val newMetadata = (originalState?.metadata?.toMutableMap() ?: mutableMapOf()).also {
             it[PROCESSING_FAILURE] = true
         }

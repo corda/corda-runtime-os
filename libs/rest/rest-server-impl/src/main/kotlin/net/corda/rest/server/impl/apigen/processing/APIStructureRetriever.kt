@@ -162,6 +162,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
                     method.retrieveParameters(),
                     ResponseBody(
                         method.responseDescription,
+                        annotation.successCode,
                         method.toClassAndParameterizedTypes().first,
                         method.toClassAndParameterizedTypes().second,
                         method.kotlinFunction?.returnType?.isMarkedNullable ?: false
@@ -214,6 +215,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
             retrieveParameters(),
             ResponseBody(
                 annotation.responseDescription,
+                annotation.successCode,
                 this.toClassAndParameterizedTypes().first,
                 this.toClassAndParameterizedTypes().second,
                 this.kotlinFunction?.returnType?.isMarkedNullable ?: false
@@ -233,6 +235,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
             retrieveParameters(),
             ResponseBody(
                 annotation.responseDescription,
+                annotation.successCode,
                 this.toClassAndParameterizedTypes().first,
                 this.toClassAndParameterizedTypes().second,
                 this.kotlinFunction?.returnType?.isMarkedNullable ?: false
@@ -244,33 +247,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
 
     private fun Method.toPOSTEndpoint(annotation: HttpPOST): Endpoint {
         log.trace { "Method \"${this.name}\" to POST endpoint." }
-        val isReturnTypeNullable = this.kotlinFunction?.returnType?.isMarkedNullable ?: false
-        val responseBody = when {
-            this.returnsDurableCursorBuilder() && !this.isFiniteDurableStreamsMethod() -> {
-                ResponseBody(
-                    annotation.responseDescription,
-                    DurableReturnResult::class.java,
-                    this.toClassAndParameterizedTypes().second,
-                    isReturnTypeNullable
-                )
-            }
-            this.isFiniteDurableStreamsMethod() -> {
-                ResponseBody(
-                    annotation.responseDescription,
-                    FiniteDurableReturnResult::class.java,
-                    this.toClassAndParameterizedTypes().second,
-                    isReturnTypeNullable
-                )
-            }
-            else -> {
-                ResponseBody(
-                    annotation.responseDescription,
-                    this.toClassAndParameterizedTypes().first,
-                    this.toClassAndParameterizedTypes().second,
-                    isReturnTypeNullable
-                )
-            }
-        }
+        val responseBody = createResponseBody(annotation.responseDescription, annotation.successCode)
 
         return Endpoint(
             EndpointMethod.POST,
@@ -284,35 +261,45 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
         ).also { log.trace { "Method \"${this.name}\" to POST endpoint completed." } }
     }
 
-    private fun Method.toPUTEndpoint(annotation: HttpPUT): Endpoint {
-        log.trace { "Method \"${this.name}\" to PUT endpoint." }
+    private fun Method.createResponseBody(responseDescription: String, successCode: Int): ResponseBody {
         val isReturnTypeNullable = this.kotlinFunction?.returnType?.isMarkedNullable ?: false
         val responseBody = when {
             this.returnsDurableCursorBuilder() && !this.isFiniteDurableStreamsMethod() -> {
                 ResponseBody(
-                    annotation.responseDescription,
+                    responseDescription,
+                    successCode,
                     DurableReturnResult::class.java,
                     this.toClassAndParameterizedTypes().second,
                     isReturnTypeNullable
                 )
             }
+
             this.isFiniteDurableStreamsMethod() -> {
                 ResponseBody(
-                    annotation.responseDescription,
+                    responseDescription,
+                    successCode,
                     FiniteDurableReturnResult::class.java,
                     this.toClassAndParameterizedTypes().second,
                     isReturnTypeNullable
                 )
             }
+
             else -> {
                 ResponseBody(
-                    annotation.responseDescription,
+                    responseDescription,
+                    successCode,
                     this.toClassAndParameterizedTypes().first,
                     this.toClassAndParameterizedTypes().second,
                     isReturnTypeNullable
                 )
             }
         }
+        return responseBody
+    }
+
+    private fun Method.toPUTEndpoint(annotation: HttpPUT): Endpoint {
+        log.trace { "Method \"${this.name}\" to PUT endpoint." }
+        val responseBody = createResponseBody(annotation.responseDescription, annotation.successCode)
 
         return Endpoint(
             EndpointMethod.PUT,
@@ -336,6 +323,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
             retrieveParameters(),
             ResponseBody(
                 annotation.responseDescription,
+                annotation.successCode,
                 this.toClassAndParameterizedTypes().first,
                 this.toClassAndParameterizedTypes().second,
                 this.kotlinFunction?.returnType?.isMarkedNullable ?: false

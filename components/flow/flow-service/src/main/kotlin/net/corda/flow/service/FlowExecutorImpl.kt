@@ -27,6 +27,7 @@ import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
+import net.corda.schema.configuration.StateManagerConfig
 import net.corda.utilities.trace
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -77,7 +78,7 @@ class FlowExecutorImpl constructor(
             multiSourceEventMediator?.close()
             stateManager?.stop()
 
-            stateManager = stateManagerFactory.create(stateManagerConfig)
+            stateManager = stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.FLOW_CHECKPOINT)
             multiSourceEventMediator = flowEventMediatorFactory.create(updatedConfigs, messagingConfig, stateManager!!)
             subscriptionRegistrationHandle = coordinator.followStatusChangesByName(
                 setOf(multiSourceEventMediator!!.subscriptionName, stateManager!!.name)

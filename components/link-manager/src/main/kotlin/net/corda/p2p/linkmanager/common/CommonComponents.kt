@@ -3,6 +3,7 @@ package net.corda.p2p.linkmanager.common
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.client.SessionEncryptionOpsClient
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -22,8 +23,10 @@ import net.corda.p2p.linkmanager.forwarding.gateway.mtls.ClientCertificatePublis
 import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
 import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueuesImpl
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
+import net.corda.p2p.linkmanager.sessions.StateConvertor
 import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl
 import net.corda.schema.Schemas
+import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.flags.Features
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -45,6 +48,8 @@ internal class CommonComponents(
     groupParametersReaderService: GroupParametersReaderService,
     clock: Clock,
     internal val stateManager: StateManager,
+    schemaRegistry: AvroSchemaRegistry,
+    sessionEncryptionOpsClient: SessionEncryptionOpsClient,
     features: Features = Features(),
 ) : LifecycleWithDominoTile {
     private companion object {
@@ -71,6 +76,27 @@ internal class CommonComponents(
     internal val sessionManager = if(features.useStatefulSessionManager) {
         StatefulSessionManagerImpl(
             lifecycleCoordinatorFactory,
+            stateManager,
+            SessionManagerImpl(
+                groupPolicyProvider,
+                membershipGroupReaderProvider,
+                cryptoOpsClient,
+                messagesPendingSession,
+                publisherFactory,
+                configurationReaderService,
+                lifecycleCoordinatorFactory,
+                messagingConfiguration,
+                inboundAssignmentListener,
+                linkManagerHostingMap,
+                clock = clock,
+                trackSessionHealthAndReplaySessionMessages = false
+            ),
+            StateConvertor(
+                schemaRegistry,
+                sessionEncryptionOpsClient,
+            ),
+            clock,
+            membershipGroupReaderProvider,
         )
     } else {
         SessionManagerImpl(
@@ -126,7 +152,8 @@ internal class CommonComponents(
         NamedLifecycle.of(virtualNodeInfoReadService),
         NamedLifecycle.of(cpiInfoReadService),
         NamedLifecycle.of(membershipQueryClient),
-        NamedLifecycle.of(groupParametersReaderService)
+        NamedLifecycle.of(groupParametersReaderService),
+        NamedLifecycle.of(sessionEncryptionOpsClient),
     ) + externalDependencies
 
     override val dominoTile = ComplexDominoTile(

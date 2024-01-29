@@ -170,7 +170,8 @@ internal class VirtualNodeWriterProcessor(
                                     "changelogs for CPK '$cpkFileChecksum' [$changeLogs]"
                             )
                             rollbackVirtualNodeDb(
-                                dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!),
+                                dbConnectionManager
+                                    .createDatasource(virtualNodeInfo.vaultDdlConnectionId!!, enablePool = false),
                                 changelogs,
                                 systemTerminatorTag
                             )
@@ -183,9 +184,10 @@ internal class VirtualNodeWriterProcessor(
 
                     changelogsToRun.forEach { (cpkFileChecksum, changelogsForThisCpk) ->
                         try {
-                            dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).use {
-                                runCpkResyncMigrations(it, cpkFileChecksum, changelogsForThisCpk)
-                            }
+                            dbConnectionManager
+                                .createDatasource(virtualNodeInfo.vaultDdlConnectionId!!, enablePool = false).use {
+                                    runCpkResyncMigrations(it, cpkFileChecksum, changelogsForThisCpk)
+                                }
                         } catch (e: Exception) {
                             val changeLogs = changelogsForThisCpk.joinToString {
                                 it.id.cpkFileChecksum.toString() + ", " + it.id.filePath

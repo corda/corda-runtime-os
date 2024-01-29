@@ -22,12 +22,12 @@ dependencies {
     implementation project(':libs:packaging:packaging-verify')
     implementation project(':libs:membership:schema-validation')
     implementation project(':libs:membership:membership-common')
-    implementation "org.pf4j:pf4j:${pf4jVersion}"
-    kapt "org.pf4j:pf4j:${pf4jVersion}"
+    implementation libs.pf4j
+    kapt libs.pf4j
 
     testImplementation libs.bundles.test
     testImplementation "net.corda.cli.host:api:$pluginHostVersion"
-    testImplementation "org.pf4j:pf4j:${pf4jVersion}"
+    testImplementation libs.pf4j
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:packaging-test-utilities")
 

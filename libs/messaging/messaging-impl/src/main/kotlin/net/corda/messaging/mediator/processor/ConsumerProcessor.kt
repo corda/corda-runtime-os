@@ -128,7 +128,11 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                     } catch (e: TimeoutException) {
                         group.mapValues { (key, input) ->
                             val oldState = input.state
-                            val state = stateManagerHelper.failStateProcessing(key.toString(), oldState)
+                            val state = stateManagerHelper.failStateProcessing(
+                                key.toString(),
+                                oldState,
+                                "timeout occurred while processing events"
+                            )
                             val stateChange = if (oldState != null) {
                                 StateChangeAndOperation.Update(state)
                             } else {
