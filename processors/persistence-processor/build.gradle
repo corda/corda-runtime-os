@@ -43,7 +43,7 @@ dependencies {
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
 
-    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    testRuntimeOnly libs.postgresql.jdbc
 
     testImplementation project(':testing:test-utilities')
 }

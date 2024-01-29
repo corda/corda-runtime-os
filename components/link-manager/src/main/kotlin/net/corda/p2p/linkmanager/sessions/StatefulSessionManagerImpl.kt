@@ -118,7 +118,7 @@ internal class StatefulSessionManagerImpl(
                         }
                     }
             } else {
-                val messagesWithoutKey = keysToMessages[null] ?: return cachedSessions.values
+                val messagesWithoutKey = keysToMessages[null] ?: return cachedSessions.values.flatten()
                 listOf(
                     OutboundMessageState(
                         null,
@@ -132,7 +132,7 @@ internal class StatefulSessionManagerImpl(
                 processOutboundMessagesState(state)
             }
 
-        return processStateUpdates(resultStates) + cachedSessions.values
+        return processStateUpdates(resultStates) + cachedSessions.values.flatten()
     }
 
     private fun <T> processOutboundMessagesState(
@@ -517,16 +517,16 @@ internal class StatefulSessionManagerImpl(
 
     private fun <T> getCachedOutboundSessions(
         messagesAndKeys: Map<String?, Collection<OutboundMessageContext<T>>>,
-    ): Map<String, Pair<T, SessionEstablished>> {
+    ): Map<String, Collection<Pair<T, SessionEstablished>>> {
         val allCached = cachedOutboundSessions.getAllPresent(messagesAndKeys.keys.filterNotNull())
-        return allCached.flatMap { entry ->
+        return allCached.mapValues { entry ->
             val contexts = messagesAndKeys[entry.key]
             val counterparties = contexts?.firstOrNull()?.let {
                 sessionManagerImpl.getSessionCounterpartiesFromMessage(it.message.message)
-            } ?: return@flatMap emptyList()
+            } ?: return@mapValues emptyList()
 
             contexts.map { context ->
-                entry.key to Pair(context.trace, SessionEstablished(entry.value.session, counterparties))
+                context.trace to SessionEstablished(entry.value.session, counterparties)
             }
         }.toMap()
     }
