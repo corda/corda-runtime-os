@@ -1,0 +1,116 @@
+{
+  "flowCheckpoint": {
+    "database": {
+      "jdbc": {
+        "driver": "org.postgresql.Driver",
+        "url": "jdbc:postgresql://localhost:5432/cordacluster?currentSchema=STATE_MANAGER"
+      },
+      "pass": "password",
+      "pool": {
+        "idleTimeoutSeconds": 120,
+        "keepAliveTimeSeconds": 0,
+        "maxLifetimeSeconds": 1800,
+        "maxSize": 5,
+        "minSize": 0,
+        "validationTimeoutSeconds": 5
+      },
+      "user": "user"
+    },
+    "type": "DATABASE"
+  },
+  "invalidType": {
+    "database": {
+      "jdbc": {
+        "driver": "org.postgresql.Driver",
+        "url": "jdbc:postgresql://localhost:5432/cordacluster?currentSchema=STATE_MANAGER"
+      },
+      "pass": "password",
+      "pool": {
+        "idleTimeoutSeconds": 120,
+        "keepAliveTimeSeconds": 0,
+        "maxLifetimeSeconds": 1800,
+        "maxSize": 5,
+        "minSize": 0,
+        "validationTimeoutSeconds": 5
+      },
+      "user": "user"
+    },
+    "type": "DATABASE"
+  },
+  "flowStatus": {
+    "database": {
+      "jdbc": {
+        "driver": "org.postgresql.Driver",
+        "url": "jdbc:postgresql://localhost:5432/cordacluster?currentSchema=STATE_MANAGER"
+      },
+      "pass": "password",
+      "pool": {
+        "idleTimeoutSeconds": 120,
+        "keepAliveTimeSeconds": 0,
+        "maxLifetimeSeconds": 1800,
+        "maxSize": 5,
+        "minSize": 0,
+        "validationTimeoutSeconds": 5
+      },
+      "user": "user"
+    },
+    "type": "DATABASE"
+  },
+  "keyRotation": {
+    "database": {
+      "jdbc": {
+        "driver": "org.postgresql.Driver",
+        "url": "jdbc:postgresql://localhost:5432/cordacluster?currentSchema=STATE_MANAGER"
+      },
+      "pass": "password",
+      "pool": {
+        "idleTimeoutSeconds": 120,
+        "keepAliveTimeSeconds": 0,
+        "maxLifetimeSeconds": 1800,
+        "maxSize": 5,
+        "minSize": 0,
+        "validationTimeoutSeconds": 5
+      },
+      "user": "user"
+    },
+    "type": "DATABASE"
+  },
+  "p2pSession": {
+    "database": {
+      "jdbc": {
+        "driver": "org.postgresql.Driver",
+        "url": "jdbc:postgresql://localhost:5432/cordacluster?currentSchema=STATE_MANAGER"
+      },
+      "pass": "password",
+      "pool": {
+        "idleTimeoutSeconds": 120,
+        "keepAliveTimeSeconds": 0,
+        "maxLifetimeSeconds": 1800,
+        "maxSize": 5,
+        "minSize": 0,
+        "validationTimeoutSeconds": 5
+      },
+      "user": "user"
+    },
+    "type": "DATABASE"
+  },
+  "tokenPoolCache": {
+    "database": {
+      "jdbc": {
+        "driver": "org.postgresql.Driver",
+        "url": "jdbc:postgresql://localhost:5432/cordacluster?currentSchema=STATE_MANAGER"
+      },
+      "pass": "password",
+      "pool": {
+        "idleTimeoutSeconds": 120,
+        "keepAliveTimeSeconds": 0,
+        "maxLifetimeSeconds": 1800,
+        "maxSize": 5,
+        "minSize": 0,
+        "validationTimeoutSeconds": 5
+      },
+      "user": "user"
+    },
+    "type": "DATABASE"
+  }
+}
