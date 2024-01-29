@@ -158,7 +158,7 @@
               JDBC_URL="jdbc:{{- $databaseConfig.type -}}://{{- required ( printf "Must specify a host for database '%s'" $dbName ) $databaseConfig.host -}}:{{- $databaseConfig.port -}}/{{- $dbName -}}"
               mkdir /tmp/database-{{ $workerKebabCase }}-{{ $stateTypeKebabCase }}
               java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
-                -s "{{ $schemaName }}" -g "{{ $schemaName }}:state_manager" \
+                -s "statemanager" -g "statemanager:{{ $schemaName }}" \
                 -u "${BOOT_PG_USERNAME}" -p "${BOOT_PG_PASSWORD}" \
                 --jdbc-url "${JDBC_URL}" \
                 -c -l /tmp/database-{{ $workerKebabCase }}-{{ $stateTypeKebabCase }}
