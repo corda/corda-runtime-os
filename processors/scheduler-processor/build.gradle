@@ -35,7 +35,7 @@ dependencies {
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly project(':libs:schema-registry:schema-registry-impl')
 
-    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    testRuntimeOnly libs.postgresql.jdbc
 
     testImplementation project(':testing:test-utilities')
 
@@ -58,6 +58,6 @@ dependencies {
     integrationTestRuntimeOnly "org.hibernate:hibernate-core:$hibernateVersion"
     integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly libs.postgresql.jdbc
     integrationTestRuntimeOnly libs.slf4j.simple
 }

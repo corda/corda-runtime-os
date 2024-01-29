@@ -100,7 +100,7 @@ dependencies {
     runtimeOnly project(':libs:schema-registry:schema-registry-impl')
     runtimeOnly project(":libs:web:web-impl")
 
-    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    testRuntimeOnly libs.postgresql.jdbc
 
     testImplementation project(':testing:test-utilities')
 }

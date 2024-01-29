@@ -31,5 +31,5 @@ dependencies {
 
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly libs.slf4j.simple
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly libs.postgresql.jdbc
 }
