@@ -21,7 +21,7 @@ jcipAnnotationsVersion = "1.0_2"
 pf4jVersion = "3.10.0"
 braveVersion = "6.0.0"
 zipkinReporterVersion = "3.2.1"
-zipkinCoreVersion = "2.27.1"
+zipkinCoreVersion = "3.0.5"
 
 log4jVersion = "2.22.1"
 # SLF4J cannot be ugraded to 2.x due to CorDapps requiring the 1.7 <= x < 2.0
