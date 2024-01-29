@@ -113,7 +113,10 @@ class CryptoRekeyBusProcessor(
                     }
 
                     if (!writeStateForUnmanagedKey(targetWrappingKeys, request, timestamp)) {
-                        logger.warn("Could not write initial state when attempting to rotate unmanaged keys for ${request.oldParentKeyAlias}.")
+                        logger.warn(
+                            "Could not write initial state when attempting to rotate unmanaged keys for " +
+                                "${request.oldParentKeyAlias}."
+                        )
                         return emptyList()
                     }
                     publishIndividualUnmanagedRewrappingRequests(targetWrappingKeys, request)
