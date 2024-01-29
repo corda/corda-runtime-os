@@ -35,27 +35,22 @@ class PostgresHelper : ExternalDbHelper() {
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
 
-        val jdbcUrlCopy = if (!schemaName.isNullOrBlank()) {
-            if (createSchema) {
-                logger.info("Creating schema: $schemaName".emphasise())
-                net.corda.db.core.createUnpooledDataSource(
-                    driverClass,
-                    jdbcUrl,
-                    user,
-                    password,
-                    maximumPoolSize = maximumPoolSize
-                ).connection.use{ conn ->
-                    conn.prepareStatement("CREATE SCHEMA IF NOT EXISTS $schemaName;").execute()
-                    conn.commit()
-                }
+        if (!schemaName.isNullOrBlank() && createSchema) {
+            logger.info("Creating schema: $schemaName".emphasise())
+            net.corda.db.core.createUnpooledDataSource(
+                driverClass,
+                jdbcUrl,
+                user,
+                password,
+                maximumPoolSize = maximumPoolSize
+            ).connection.use { conn ->
+                conn.prepareStatement("CREATE SCHEMA IF NOT EXISTS $schemaName;").execute()
+                conn.commit()
             }
+        }
 
-            // TODO this now needs tidying up
-            if (rewriteBatchedInserts) {
-                "$jdbcUrl?reWriteBatchedInserts=true"
-            } else {
-                jdbcUrl
-            }
+        val jdbcUrlCopy = if (rewriteBatchedInserts) {
+            "$jdbcUrl?reWriteBatchedInserts=true"
         } else {
             jdbcUrl
         }
