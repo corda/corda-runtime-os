@@ -744,26 +744,4 @@ class InboundMessageHandlerTest {
         verify(p2pInPublisher.constructed().first())
             .publish(any())
     }
-
-    @Test
-    fun `when useStatefulSessionManager is false, custom partitioning for inbound session messages is turned on`() {
-        whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(listOf(1, 2, 3))
-        setRunning()
-        val msgId = "msg-id"
-        val gatewayMessage = GatewayMessage(msgId, authenticatedP2PDataMessage(""))
-        whenever(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
-
-        handler.onRequest(
-            writer,
-            HttpRequest(
-                source = InetSocketAddress("www.r3.com", 1231),
-                payload = serialisedMessage,
-                destination = InetSocketAddress("www.r3.com", 344),
-            )
-
-        )
-
-        verify(p2pInPublisher.constructed().first())
-            .publishToPartition(any())
-    }
 }
