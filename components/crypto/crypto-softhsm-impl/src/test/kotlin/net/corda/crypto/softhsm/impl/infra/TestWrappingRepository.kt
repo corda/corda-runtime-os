@@ -33,7 +33,7 @@ class TestWrappingRepository(
     }
 
     override fun getKeyById(id: UUID): WrappingKeyInfo? {
-        TODO("Not needed")
+        return keys.values.first()
     }
 
     override fun findKeysWrappedByParentKey(parentKeyAlias: String): List<WrappingKeyInfo> {
