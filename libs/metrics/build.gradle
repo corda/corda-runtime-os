@@ -15,7 +15,7 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'org.slf4j:slf4j-api'
 
-    api ("io.micrometer:micrometer-core:$micrometerVersion") {
+    api(libs.micrometer.core) {
         // we don't need these in classpath, so excluding them to reduce dependencies.
         exclude group: 'org.latencyutils', module: 'LatencyUtils'
     }

@@ -77,7 +77,7 @@ dependencies {
     dbIntegrationTestRuntimeOnly project(":libs:messaging:db-message-bus-impl")
     dbIntegrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     dbIntegrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    dbIntegrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    dbIntegrationTestRuntimeOnly libs.postgresql.jdbc
 }
 
 def testingBundle = tasks.register('testingBundle', Bundle) {
