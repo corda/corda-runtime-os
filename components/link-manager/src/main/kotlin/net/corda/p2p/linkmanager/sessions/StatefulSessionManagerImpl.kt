@@ -543,7 +543,7 @@ internal class StatefulSessionManagerImpl(
         return allCached.flatMap { entry ->
             logger.info("TTT \t\t entry - ${entry.key}")
             val contexts = messagesAndKeys[entry.key]
-            logger.info("TTT \t\t context - ${contexts.size}")
+            logger.info("TTT \t\t context - ${contexts?.size}")
             val counterparties = contexts?.firstOrNull()?.let {
                 sessionManagerImpl.getSessionCounterpartiesFromMessage(it.message.message)
             } ?: return@flatMap emptyList()
