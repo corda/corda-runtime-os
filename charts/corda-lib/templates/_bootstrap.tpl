@@ -323,7 +323,7 @@ spec:
 
               echo 'Applying initial RBAC configuration'
               (echo "SET search_path TO ${DB_RBAC_SCHEMA};";
-              cat  /tmp/rbac-config.sql;) | psql -v ON_ERROR_STOP=1 \
+              cat  /tmp/rbac-config.sql) | psql -v ON_ERROR_STOP=1 \
               -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -U "${CLUSTER_PGUSER}" --dbname "dbname=${DB_CLUSTER_NAME}"
 
               echo 'Creating users and granting permissions'
