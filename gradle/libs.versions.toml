@@ -4,7 +4,7 @@ kotlinVersion = "1.8.21"
 bouncycastleVersion = "1.77"
 hikariCpVersion = "5.1.0"
 
-jacksonVersion = "2.15.0"
+jacksonVersion = "2.16.1"
 
 # REST dependency versions
 javalinVersion = "4.6.8"
