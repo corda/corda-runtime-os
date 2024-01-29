@@ -123,7 +123,11 @@ class DatabaseInstaller(
         } else {
             cfg.dataSource.connection.use { connection ->
                 connection.createStatement().use { stmt ->
-                    stmt.execute("CREATE SCHEMA IF NOT EXISTS $schemaName")
+                    val sql = """
+                        CREATE SCHEMA IF NOT EXISTS "$schemaName";
+                        SET search_path TO "$schemaName";
+                    """.trimIndent()
+                    stmt.execute(sql)
                 }
                 connection.commit()
 
