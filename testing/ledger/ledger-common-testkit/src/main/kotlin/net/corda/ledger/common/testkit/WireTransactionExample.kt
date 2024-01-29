@@ -35,7 +35,7 @@ fun WireTransactionFactory.createExample(
         List(
             (metadata as TransactionMetadataInternal).getNumberOfComponentGroups() - 1 - componentGroups.size,
         ) { emptyList() }
-    return create(allGroupLists)
+    return create(allGroupLists, getPrivacySalt())
 }
 
 @Suppress("LongParameterList")

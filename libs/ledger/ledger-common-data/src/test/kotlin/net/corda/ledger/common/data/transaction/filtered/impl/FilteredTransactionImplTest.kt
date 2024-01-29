@@ -1,4 +1,4 @@
-package net.corda.ledger.common.flow.impl.transaction.filtered
+package net.corda.ledger.common.data.transaction.filtered.impl
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
@@ -9,9 +9,9 @@ import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.crypto.merkle.impl.NonceHashDigestProvider
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
-import net.corda.ledger.common.flow.transaction.filtered.FilteredComponentGroup
-import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
-import net.corda.ledger.common.flow.transaction.filtered.FilteredTransactionVerificationException
+import net.corda.ledger.common.data.transaction.filtered.FilteredComponentGroup
+import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
+import net.corda.ledger.common.data.transaction.filtered.FilteredTransactionVerificationException
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash

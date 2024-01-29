@@ -233,9 +233,8 @@ class CryptoProcessorImpl @Activate constructor(
 
                 if (bootConfig.hasPath(StateManagerConfig.STATE_MANAGER)) {
                     val stateManagerConfig = bootConfig.getConfig(StateManagerConfig.STATE_MANAGER)
-                    stateManager = stateManagerFactory.create(stateManagerConfig).also {
-                        it.start()
-                    }
+                    stateManager = stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION)
+                        .also { it.start() }
                 }
 
                 (CryptoConsts.Categories.all - ENCRYPTION_SECRET).forEach { category ->

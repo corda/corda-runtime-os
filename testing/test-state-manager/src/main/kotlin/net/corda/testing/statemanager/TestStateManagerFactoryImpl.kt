@@ -8,6 +8,7 @@ import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.schema.configuration.StateManagerConfig
 import org.osgi.service.component.annotations.Component
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -24,7 +25,7 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
 
     private val storage = ConcurrentHashMap<String, State>()
 
-    override fun create(config: SmartConfig): StateManager {
+    override fun create(config: SmartConfig, stateType: StateManagerConfig.StateType): StateManager {
         return object : StateManager {
             override val name = LifecycleCoordinatorName("TestStateManager", UUID.randomUUID().toString())
 

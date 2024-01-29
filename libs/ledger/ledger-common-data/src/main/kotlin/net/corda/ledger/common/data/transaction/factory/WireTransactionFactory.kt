@@ -6,20 +6,9 @@ import net.corda.ledger.common.data.transaction.WireTransaction
 interface WireTransactionFactory {
 
     /**
-     * Creates a [WireTransaction] from the passed in [componentGroupLists].
-     *
-     * This should be used when constructing a new [WireTransaction].
-     *
-     * @param componentGroupLists The component groups to include.
-     *
-     * @return A [WireTransaction].
-     */
-    fun create(componentGroupLists: List<List<ByteArray>>): WireTransaction
-
-    /**
      * Creates a [WireTransaction] from the passed in [componentGroupLists] and [privacySalt].
      *
-     * This should be used when recreating an existing [WireTransaction].
+     * This can be used when creating a new [WireTransaction] or recreating an existing [WireTransaction].
      *
      * @param componentGroupLists The component groups to include.
      * @param privacySalt An existing [PrivacySalt] to create the transaction with.

@@ -1,13 +1,13 @@
-package net.corda.ledger.common.flow.impl.transaction.filtered.factory
+package net.corda.ledger.common.data.transaction.filtered.factory.impl
 
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.flow.impl.transaction.filtered.FilteredTransactionImpl
-import net.corda.ledger.common.flow.transaction.filtered.FilteredComponentGroup
-import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
-import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters
-import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters.AuditProof
-import net.corda.ledger.common.flow.transaction.filtered.factory.FilteredTransactionFactory
+import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters
+import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters.AuditProof
+import net.corda.ledger.common.data.transaction.filtered.FilteredComponentGroup
+import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
+import net.corda.ledger.common.data.transaction.filtered.factory.FilteredTransactionFactory
+import net.corda.ledger.common.data.transaction.filtered.impl.FilteredTransactionImpl
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService

@@ -83,6 +83,10 @@ class WrappingRepositoryImpl(
 
     override fun getAllKeyIds(): Set<UUID> =
         entityManagerFactory.createEntityManager().use { it ->
+            // We can have multiple key materials per signing key, all of which point to different wrapping keys with different
+            // generation numbers. So it's important to group results from this query by signing key id and then grab only the
+            // one with the highest generation number of the wrapping key. This leaves us with the single mapping of
+            // signing key <-> key material <-> wrapping key (highest generation).
             it.createQuery(
                 "SELECT s, w FROM ${SigningKeyEntity::class.java.simpleName} s, ${SigningKeyMaterialEntity::class.java.simpleName} m," +
                     " ${WrappingKeyEntity::class.java.simpleName} w " +

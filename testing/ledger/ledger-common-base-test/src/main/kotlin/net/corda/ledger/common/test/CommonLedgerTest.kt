@@ -11,18 +11,22 @@ import net.corda.flow.application.crypto.SignatureSpecServiceImpl
 import net.corda.flow.application.services.impl.FlowEngineImpl
 import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSerialization
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
+import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactoryImpl
 import net.corda.ledger.common.data.transaction.serializer.amqp.WireTransactionSerializer
 import net.corda.ledger.common.flow.impl.transaction.TransactionSignatureServiceImpl
 import net.corda.ledger.common.flow.impl.transaction.TransactionSignatureVerificationServiceImpl
 import net.corda.ledger.common.flow.impl.transaction.factory.TransactionMetadataFactoryImpl
 import net.corda.ledger.common.flow.impl.transaction.serializer.kryo.WireTransactionKryoSerializer
+import net.corda.ledger.common.flow.transaction.PrivacySaltProviderService
 import net.corda.ledger.common.testkit.FakePlatformInfoProvider
 import net.corda.ledger.common.testkit.fakePlatformInfoProvider
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
+import java.util.UUID
 
 abstract class CommonLedgerTest {
 
@@ -39,10 +43,16 @@ abstract class CommonLedgerTest {
     val jsonValidator = JsonValidatorImpl()
 
     val wireTransactionFactory = WireTransactionFactoryImpl(
-        merkleTreeProvider, digestService, jsonMarshallingService, jsonValidator, cipherSchemeMetadata
+        merkleTreeProvider, digestService, jsonMarshallingService, jsonValidator
     )
 
-    private val flowFiberService = TestFlowFiberServiceWithSerialization(currentSandboxGroupContext)
+    val flowFiberService = TestFlowFiberServiceWithSerialization(currentSandboxGroupContext)
+
+    val mockPrivacySaltProviderService = mock<PrivacySaltProviderService>().apply {
+        whenever(generatePrivacySalt()).thenAnswer {
+            PrivacySaltImpl(UUID.randomUUID().toString().toByteArray())
+        }
+    }
 
     val flowEngine = FlowEngineImpl(flowFiberService)
 

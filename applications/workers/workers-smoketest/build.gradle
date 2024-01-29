@@ -65,7 +65,7 @@ dependencies {
     upgradeTestingCpiV1 project(path: ':testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v1', configuration: 'cordaCPB')
     upgradeTestingCpiV2 project(path: ':testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v2', configuration: 'cordaCPB')
 
-    smokeTestImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    smokeTestImplementation libs.jackson.module.kotlin
     smokeTestImplementation libs.slf4j.api
 
     smokeTestImplementation project(':components:flow:flow-rest-resource-service')

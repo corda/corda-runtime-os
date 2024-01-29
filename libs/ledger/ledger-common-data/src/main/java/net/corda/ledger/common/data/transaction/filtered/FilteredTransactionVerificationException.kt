@@ -1,4 +1,4 @@
-package net.corda.ledger.common.flow.transaction.filtered
+package net.corda.ledger.common.data.transaction.filtered
 
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash

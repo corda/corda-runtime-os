@@ -2,6 +2,9 @@
 kotlinVersion = "1.8.21"
 
 bouncycastleVersion = "1.77"
+hikariCpVersion = "5.1.0"
+jacksonVersion = "2.15.0"
+micrometerVersion = "1.11.0"
 
 # REST dependency versions
 javalinVersion = "4.6.8"
@@ -9,14 +12,16 @@ javalinVersion = "4.6.8"
 # Once Javalin version is upgraded to the latest, this override may be removed.
 jettyVersion = "9.4.53.v20231009"
 unirestVersion = "3.14.5"
-nimbusVersion = "10.8"
-swaggerVersion = "2.2.12"
+nimbusVersion = "11.9.1"
+# Note: We cannot go to the higher versions as they transitively depend on SLF4J 2.X
+swaggerVersion = "2.2.16"
 # Please also update SWAGGERUI.version in net.corda.rest.server.impl.internal.OptionalDependency
-swaggeruiVersion = "4.18.2"
+swaggeruiVersion = "5.10.3"
 jcipAnnotationsVersion = "1.0_2"
 pf4jVersion = "3.10.0"
-braveVersion = "5.15.0"
-zipkinVersion = "2.16.3"
+braveVersion = "6.0.0"
+zipkinReporterVersion = "3.2.1"
+zipkinCoreVersion = "2.27.1"
 
 log4jVersion = "2.22.1"
 # SLF4J cannot be ugraded to 2.x due to CorDapps requiring the 1.7 <= x < 2.0
@@ -25,6 +30,8 @@ slf4jVersion = { strictly = "1.7.36" }
 # Since slf4jVersion is "strictly" enforced from `corda-api`, in order to override version we need to specify
 # version strictly here as well
 slf4jV2Version = { strictly = "2.0.6" }
+
+kubernetesClientVersion = "6.9.2"
 
 # Testing
 assertjVersion = "3.25.2"
@@ -46,6 +53,7 @@ testLoggerVersion = "4.0.0"
 assertj-core = { group = "org.assertj", name = "assertj-core", version.ref = "assertjVersion" }
 bouncycastle-pkix = { group = "org.bouncycastle", name = "bcpkix-jdk18on", version.ref = "bouncycastleVersion" }
 bouncycastle-prov = { group = "org.bouncycastle", name = "bcprov-jdk18on", version.ref = "bouncycastleVersion" }
+hikaricp = { group = "com.zaxxer", name = "HikariCP", version.ref = "hikariCpVersion" }
 junit = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junitVersion" }
 junit-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref = "junitVersion" }
 junit-params = { group = "org.junit.jupiter", name = "junit-jupiter-params", version.ref = "junitVersion" }
@@ -58,10 +66,13 @@ kotlin-stdlib-jdk8 = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk
 kotlin-osgi-bundle = { group = "org.jetbrains.kotlin", name = "kotlin-osgi-bundle", version.ref = "kotlinVersion" }
 kotlin-reflect= { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlinVersion" }
 kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.ref = "kotlinVersion" }
+kubernetes-client = { group = "io.fabric8", name = "kubernetes-client", version.ref = "kubernetesClientVersion" }
 log4j-core = { group = "org.apache.logging.log4j", name = "log4j-core", version.ref = "log4jVersion" }
 log4j-layout-json = { group = "org.apache.logging.log4j", name = "log4j-layout-template-json", version.ref = "log4jVersion" }
 log4j-slf4j = { group = "org.apache.logging.log4j", name = "log4j-slf4j-impl", version.ref = "log4jVersion" }
 log4j-slf4j2 = { group = "org.apache.logging.log4j", name = "log4j-slf4j2-impl", version.ref = "log4jVersion" }
+micrometer-core = { group = "io.micrometer", name = "micrometer-core", version.ref = "micrometerVersion" }
+micrometer-registry-prometheus = { group = "io.micrometer", name = "micrometer-registry-prometheus", version.ref = "micrometerVersion" }
 mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockitoVersion" }
 mockito-kotlin = { group = "org.mockito.kotlin", name = "mockito-kotlin", version.ref = "mockitoKotlinVersion" }
 javalin = { group = "io.javalin", name = "javalin-osgi", version.ref = "javalinVersion" }
@@ -84,7 +95,15 @@ jcip-annotations = { group = "org.apache.servicemix.bundles", name = "org.apache
 pf4j = { group = "org.pf4j", name = "pf4j", version.ref = "pf4jVersion" }
 brave-context-slf4j = { group = "io.zipkin.brave", name = "brave-context-slf4j", version.ref = "braveVersion" }
 brave-instrumentation-servlet = { group = "io.zipkin.brave", name = "brave-instrumentation-servlet", version.ref = "braveVersion" }
-zipkin-sender = { group = "io.zipkin.reporter2", name = "zipkin-sender-urlconnection", version.ref = "zipkinVersion" }
+zipkin-core = { group = "io.zipkin.zipkin2", name = "zipkin", version.ref = "zipkinCoreVersion" }
+zipkin-sender-urlconnection = { group = "io.zipkin.reporter2", name = "zipkin-sender-urlconnection", version.ref = "zipkinReporterVersion" }
+zipkin-reporter-brave = { group = "io.zipkin.reporter2", name = "zipkin-reporter-brave", version.ref = "zipkinReporterVersion" }
+jackson-annotations = { group = "com.fasterxml.jackson.core", name = "jackson-annotations", version.ref = "jacksonVersion" }
+jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jacksonVersion" }
+jackson-core = { group = "com.fasterxml.jackson.core", name = "jackson-core", version.ref = "jacksonVersion" }
+jackson-datatype-jsr310 = { group = "com.fasterxml.jackson.datatype", name = "jackson-datatype-jsr310", version.ref = "jacksonVersion" }
+jackson-dataformat-yaml = { group = "com.fasterxml.jackson.dataformat", name = "jackson-dataformat-yaml", version.ref = "jacksonVersion" }
+jackson-module-kotlin = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version.ref = "jacksonVersion" }
 
 gradle-enterprise = { group = "com.gradle", name = "gradle-enterprise-gradle-plugin", version.ref = "gradleEnterpriseVersion" }
 

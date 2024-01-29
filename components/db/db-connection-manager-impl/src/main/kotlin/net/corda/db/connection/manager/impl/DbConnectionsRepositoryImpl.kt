@@ -85,11 +85,12 @@ class DbConnectionsRepositoryImpl(
 
             val config = ConfigFactory.parseString(dbConfig.config)
             logger.debug("Creating DB (${dbConfig.description}) from config: $config")
-            return dataSourceFactory.createFromConfig(dbConfigFactory.create(config))
+            return dataSourceFactory.createFromConfig(
+                dbConfigFactory.create(config), enablePool = DbPrivilege.DML == privilege)
         }
     }
 
-    override fun create(connectionId: UUID): CloseableDataSource? {
+    override fun create(connectionId: UUID, enablePool: Boolean): CloseableDataSource? {
         logger.debug("Fetching DB connection for $connectionId")
         entityManagerFactory.createEntityManager().use {
             val dbConfig = it.find(DbConnectionConfig::class.java, connectionId)  ?:
@@ -97,13 +98,13 @@ class DbConnectionsRepositoryImpl(
 
             val config = ConfigFactory.parseString(dbConfig.config)
             logger.debug("Creating DB (${dbConfig.description}) from config: $config")
-            return dataSourceFactory.createFromConfig(dbConfigFactory.create(config))
+            return dataSourceFactory.createFromConfig(dbConfigFactory.create(config), enablePool)
         }
     }
 
-    override fun create(config: SmartConfig): CloseableDataSource {
+    override fun create(config: SmartConfig, enablePool: Boolean): CloseableDataSource {
         logger.debug("Creating CloseableDataSource from config: $config")
-        return dataSourceFactory.createFromConfig(dbConfigFactory.create(config))
+        return dataSourceFactory.createFromConfig(dbConfigFactory.create(config), enablePool)
     }
 
     override fun getClusterDataSource(): CloseableDataSource = clusterDataSource
