@@ -5,6 +5,7 @@ import io.javalin.core.util.Header
 import io.javalin.http.HandlerType
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.concurrent.CountDownLatch
 
@@ -17,14 +18,17 @@ class MetricsReaderMain {
         private val logger = LoggerFactory.getLogger(this::class.java)
     }
 
+    private var pos = 0
+    private val readings = mutableListOf<String>()
+
     fun start(metricsFile: String, port: Int) {
         logger.info("Starting metrics reader.")
         try {
-            val measurements = Files.readString(Paths.get(metricsFile))
+            loadMeasurements(Paths.get(metricsFile))
             server = Javalin.create()
 
             server?.addHandler(HandlerType.GET, "/metrics") { context ->
-                context.result(measurements)
+                context.result(nextReading())
                 context.header(Header.CACHE_CONTROL, "no-cache")
             }
 
@@ -34,6 +38,35 @@ class MetricsReaderMain {
             close()
         }
         shutdownListener.await()
+    }
+
+
+    private fun loadMeasurements(path: Path) {
+        Files.newBufferedReader(path).useLines {
+            var sb: StringBuilder? = null
+            it.forEach { line ->
+                if (line.startsWith("###")) {
+                    if (sb != null) {
+                        readings.add(sb.toString())
+                    }
+                    sb = StringBuilder()
+                } else {
+                    sb!!.append(line)
+                    sb!!.append(System.lineSeparator())
+                }
+            }
+
+            if(sb!!.isNotEmpty())
+                readings.add(sb.toString())
+        }
+    }
+
+    private fun nextReading(): String {
+        return readings[pos].also {
+            if (pos + 1 < readings.size) {
+                pos++
+            }
+        }
     }
 
     fun close() {

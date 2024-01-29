@@ -1,10 +1,10 @@
 package net.corda.testing.sandboxes.stresstests
 
 import io.micrometer.core.instrument.Tag
-import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
+import net.corda.testing.sandboxes.stresstests.utils.MeasurementType
 import net.corda.testing.sandboxes.stresstests.utils.StressTestType
 import net.corda.testing.sandboxes.stresstests.utils.TestBase
 import org.assertj.core.api.Assertions.assertThat
@@ -23,7 +23,6 @@ import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
@@ -39,6 +38,10 @@ class FlowSandboxStressTests : TestBase() {
         @TempDir
         testDirectory: Path
     ) {
+        noCacheMetricsWriter = Files.newBufferedWriter(Paths.get("flow_no_cache.txt"))
+        smallCacheMetricsWriter = Files.newBufferedWriter(Paths.get("flow_small_cache.txt"))
+        largeCacheMetricsWriter = Files.newBufferedWriter(Paths.get("flow_large_cache.txt"))
+
         this.bundleContext = bundleContext
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
@@ -52,10 +55,6 @@ class FlowSandboxStressTests : TestBase() {
     @EnumSource(StressTestType::class)
     @Timeout(value = 5, unit = TimeUnit.MINUTES)
     fun `create sandboxes - no cache`(testType: StressTestType) {
-        // set-up file to dump metrics in
-        val metricsFilePath = Paths.get("flow_no-cache_${testType.testName}")
-        val bw = Files.newBufferedWriter(metricsFilePath)
-
         createVnodes(testType.numSandboxes)
 
         // track evictions
@@ -66,122 +65,56 @@ class FlowSandboxStressTests : TestBase() {
         }
 
         // memory usage before creating sandboxes
-        bw.write("### Memory usage before creating sandboxes")
-        bw.newLine()
-        bw.write(getMemoryUsage())
-        bw.newLine()
+        noCacheMetricsWriter.write("### Memory usage before creating sandboxes - ${testType.testName}")
+        noCacheMetricsWriter.newLine()
+        noCacheMetricsWriter.write(getMeasurements(MeasurementType.MEMORY))
+        noCacheMetricsWriter.newLine()
 
-        vNodes.forEach {
-            var sandbox: SandboxGroupContext? = null
-            prometheusMeterRegistry.timer("flow.sandbox.create.time",
-                listOf(Tag.of("virtual.node", it.holdingIdentity.shortHash.value))).recordCallable {
-                sandbox = getOrCreateSandbox(flowSandboxService::get, it)
+        prometheusMeterRegistry.timer("flow.sandbox.create.time",
+            listOf(Tag.of("test.type", testType.name))).recordCallable {
+
+            vNodes.forEach {
+                val sandbox = getOrCreateSandbox(flowSandboxService::get, it)
+                println("Created sandbox for vNode ${it.holdingIdentity.shortHash}\n${sandbox.sandboxGroup.id}")
             }
-            println("Create sandbox for vNode ${it.holdingIdentity.shortHash} ${sandbox!!.sandboxGroup.id}")
-
-            bw.write("### Memory usage after creating sandbox with ID ${sandbox!!.sandboxGroup.id} " +
-                    "for vNode ${it.holdingIdentity.shortHash}")
-            bw.newLine()
-            bw.write(getMemoryUsage())
-            bw.newLine()
         }
+
+        noCacheMetricsWriter.write("### Memory usage after creating sandboxes - ${testType.testName}")
+        noCacheMetricsWriter.newLine()
+        noCacheMetricsWriter.write(getMeasurements(MeasurementType.MEMORY))
+        noCacheMetricsWriter.newLine()
 
         assertThat(evictions).isEqualTo(testType.numSandboxes)
 
-        // add all measurements (mostly used to get the sandbox creation times)
-        bw.write("### End of test metrics")
-        bw.newLine()
-        bw.write(prometheusMeterRegistry.scrape())
-        bw.close()
+        noCacheMetricsWriter.write("### Sandbox manipulation times - ${testType.numSandboxes}")
+        noCacheMetricsWriter.newLine()
+        noCacheMetricsWriter.write(getMeasurements(MeasurementType.SANDBOX_TIMES))
+        noCacheMetricsWriter.newLine()
     }
 
     @ParameterizedTest
     @EnumSource(StressTestType::class)
     @Timeout(value = 5, unit = TimeUnit.MINUTES) // This times out for 100 and 250 vnodes when using 1min; using 5 mins
     fun `retrieve sandboxes using large cache`(testType: StressTestType) {
-        // set-up file to dump metrics in
-        val metricsFilePath = Paths.get("flow_large-cache_${testType.testName}")
-        executeTest(metricsFilePath, 251, testType, 0)
+        createVnodes(testType.numSandboxes)
+        executeTest(largeCacheMetricsWriter,
+            SandboxGroupType.FLOW,
+            flowSandboxService::get,
+            251,
+            testType,
+            0)
     }
 
     @ParameterizedTest
     @EnumSource(StressTestType::class, names = ["ONE_HUNDRED_SANDBOXES", "TWO_HUNDRED_FIFTY_SANDBOXES"])
     @Timeout(value = 5, unit = TimeUnit.MINUTES)
     fun `retrieve sandboxes using small cache`(testType: StressTestType) {
-        // set-up file to dump metrics in
-        val metricsFilePath = Paths.get("flow_small-cache_${testType.testName}")
-        executeTest(metricsFilePath, 10, testType, testType.numSandboxes - 10)
-    }
-
-    private fun executeTest(metricsFilePath: Path, cacheSize: Long, testType: StressTestType, numberOfEvictions: Int) {
-        val bw = Files.newBufferedWriter(metricsFilePath)
-
-        //set cache size to 10
-        virtualNodeService.sandboxGroupContextComponent.resizeCache(SandboxGroupType.FLOW, cacheSize)
-
         createVnodes(testType.numSandboxes)
-
-        // track evictions
-        var evictions = 0
-        virtualNodeService.sandboxGroupContextComponent.addEvictionListener(SandboxGroupType.FLOW) {
-            evictions++
-            println("Flow sandbox for virtual node ${it.holdingIdentity.shortHash} has been evicted")
-        }
-
-        // memory usage before creating sandboxes
-        bw.write("### Memory usage before creating sandboxes")
-        bw.newLine()
-        bw.write(getMemoryUsage())
-        bw.newLine()
-
-
-        vNodes.forEach {
-            var sandbox: SandboxGroupContext? = null
-
-            prometheusMeterRegistry.timer("flow.sandbox.create.time",
-                listOf(Tag.of("virtual.node", it.holdingIdentity.shortHash.value))).recordCallable {
-                sandbox = getOrCreateSandbox(flowSandboxService::get, it)
-            }
-
-            println("Create sandbox for vNode ${it.holdingIdentity.shortHash}\n${sandbox!!.sandboxGroup.id}")
-
-            bw.write("### Memory usage after creating sandbox with ID ${sandbox!!.sandboxGroup.id} " +
-                    "for vNode ${it.holdingIdentity.shortHash}")
-            bw.newLine()
-            bw.write(getMemoryUsage())
-            bw.newLine()
-        }
-
-        assertThat(evictions).isEqualTo(numberOfEvictions)
-
-        val sandboxes = mutableSetOf<UUID>()
-        // retrieve all sandboxes from the cache
-        // go in reverse order, so we can at least get some from the cache
-        vNodes.reverse()
-        vNodes.forEach {
-            var sandbox: SandboxGroupContext? = null
-
-            prometheusMeterRegistry.timer("flow.sandbox.retrieve.time",
-                listOf(Tag.of("virtual.node", it.holdingIdentity.shortHash.value))).recordCallable {
-                sandbox = getOrCreateSandbox(flowSandboxService::get, it)
-            }
-
-            sandboxes.add(sandbox!!.sandboxGroup.id)
-            println("Retrieving sandbox ${sandbox!!.sandboxGroup.id} for virtual node ${it.holdingIdentity.shortHash}")
-
-            bw.write("### Memory usage after retrieving sandbox with ID ${sandbox!!.sandboxGroup.id} " +
-                    "for vNode ${it.holdingIdentity.shortHash}")
-            bw.newLine()
-            bw.write(getMemoryUsage())
-            bw.newLine()
-        }
-
-        assertThat(sandboxes.size).isEqualTo(testType.numSandboxes)
-
-        // add all measurements (mostly used to get the sandbox creation times)
-        bw.write("### End of test metrics")
-        bw.newLine()
-        bw.write(prometheusMeterRegistry.scrape())
-        bw.close()
+        executeTest(smallCacheMetricsWriter,
+            SandboxGroupType.FLOW,
+            flowSandboxService::get,
+            10,
+            testType,
+            testType.numSandboxes - 10)
     }
 }
