@@ -2,6 +2,7 @@ package net.corda.crypto.service.impl.bus
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.configuration.read.ConfigChangedEvent
@@ -22,11 +23,10 @@ import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.data.crypto.wire.ops.key.rotation.IndividualKeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyType
-import net.corda.data.crypto.wire.ops.key.status.ManagedKeyStatus
-import net.corda.data.crypto.wire.ops.key.status.UnmanagedKeyStatus
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.ConfigKeys
@@ -64,7 +64,6 @@ class CryptoRekeyBusProcessorTests {
     private lateinit var rewrapPublishCapture: KArgumentCaptor<List<Record<*, *>>>
     private lateinit var cryptoService: CryptoService
     private lateinit var rewrapPublisher: Publisher
-    private lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
     private lateinit var config: Map<String, SmartConfig>
 
     // Some default fields
@@ -73,6 +72,27 @@ class CryptoRekeyBusProcessorTests {
     private val tenantId = "tenantId"
 
     private val dummyUuidsAndAliases = List(4) { UUID.randomUUID().let { Pair(it, it.toString()) } }.toSet()
+
+    class TestCordaAvroSerializationFactory : CordaAvroSerializationFactory {
+        override fun <T : Any> createAvroSerializer(onError: ((ByteArray) -> Unit)?): CordaAvroSerializer<T> {
+            return TestCordaAvroSerializer()
+        }
+
+        override fun <T : Any> createAvroDeserializer(
+            onError: (ByteArray) -> Unit,
+            expectedClass: Class<T>
+        ): CordaAvroDeserializer<T> {
+            TODO("Not needed")
+        }
+
+        class TestCordaAvroSerializer<T : Any> : CordaAvroSerializer<T> {
+            override fun serialize(data: T): ByteArray? {
+                return byteArrayOf(42)
+            }
+        }
+    }
+
+    private var cordaAvroSerializationFactory = TestCordaAvroSerializationFactory()
 
     @BeforeEach
     fun setup() {
@@ -120,21 +140,12 @@ class CryptoRekeyBusProcessorTests {
             on { publish(rewrapPublishCapture.capture()) } doReturn emptyList()
         }
 
-        val unmanagedKeySerializer = mock<CordaAvroSerializer<UnmanagedKeyStatus>> {
-            on { serialize(any()) } doReturn byteArrayOf(42)
-        }
-        val managedKeySerializer = mock<CordaAvroSerializer<ManagedKeyStatus>> {
-            on { serialize(any()) } doReturn byteArrayOf(42)
-        }
-        cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
-            on { createAvroSerializer<UnmanagedKeyStatus>() } doReturn unmanagedKeySerializer
-            on { createAvroSerializer<ManagedKeyStatus>() } doReturn managedKeySerializer
-        }
+        val stateManager = mock<StateManager>()
 
         cryptoRekeyBusProcessor = CryptoRekeyBusProcessor(
             cryptoService, virtualNodeInfoReadService,
             wrappingRepositoryFactory, signingRepositoryFactory, rewrapPublisher,
-            mock(),
+            stateManager,
             cordaAvroSerializationFactory
         )
     }
@@ -200,9 +211,7 @@ class CryptoRekeyBusProcessorTests {
 
         cryptoRekeyBusProcessor.onNext(listOf(getUnmanagedKeyRotationKafkaRecord()))
 
-        verify(rewrapPublisher, times(1)).publish(any())
-        assertThat(rewrapPublishCapture.allValues).hasSize(1)
-        assertThat(rewrapPublishCapture.firstValue).hasSize(0)
+        verify(rewrapPublisher, never()).publish(any())
     }
 
     @Test
