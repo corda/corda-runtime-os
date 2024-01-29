@@ -27,10 +27,10 @@ dependencies {
     implementation libs.jackson.module.kotlin
     implementation libs.kubernetes.client
     constraints {
-        implementation("com.squareup.okio:okio:$okioVersion") {
+        implementation(libs.okio) {
             because 'kubernetes-client uses an older version of Okio library, needs to be at least 3.4.0 to avoid CVE-2023-0833.'
         }
-        implementation("com.squareup.okhttp3:okhttp:$okHttpVersion") {
+        implementation(libs.okHttp) {
             because 'kubernetes-client uses an older version of okhttp3 library, needs to be at least 4.9.2 to avoid CVE-2023-0833.'
         }
     }
