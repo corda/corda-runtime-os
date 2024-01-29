@@ -83,6 +83,8 @@ class SoftCryptoServiceRewrapTests {
         private val mockHsmAssociation = mock<HSMAssociationInfo> {
             on { masterKeyAlias } doReturn knownWrappingKeyAlias
         }
+
+        @Suppress("LongParameterList")
         private fun createCryptoService(
             wrappingRepositoryFactory: (String) -> WrappingRepository = { tenantWrappingRepository },
             schemeMetadata: CipherSchemeMetadata = defaultSchemeMetadata,
