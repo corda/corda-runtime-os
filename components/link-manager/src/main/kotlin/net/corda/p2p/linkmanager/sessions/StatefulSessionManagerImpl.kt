@@ -120,6 +120,7 @@ internal class StatefulSessionManagerImpl(
         keysNotInCache.forEach {
             logger.info("QQQ\t\t\t\t\tkeysNotInCache- $it")
         }
+        val cachedValueList = cachedSessions.values.flatten()
         val sessionStates =
             if (keysNotInCache.isNotEmpty()) {
                 stateManager.get(keysNotInCache.filterNotNull()).let { states ->
@@ -132,7 +133,7 @@ internal class StatefulSessionManagerImpl(
                     }
                 }
             } else {
-                val messagesWithoutKey = keysToMessages[null] ?: return cachedSessions.values
+                val messagesWithoutKey = keysToMessages[null] ?: return cachedValueList
                 listOf(
                     OutboundMessageState(
                         null,
@@ -159,7 +160,7 @@ internal class StatefulSessionManagerImpl(
                 logger.info("QQQ\t\t\t\t\t\tresultStates - ${it.message.message.header.messageId}")
             }
         }
-        return processStateUpdates(resultStates) + cachedSessions.values
+        return processStateUpdates(resultStates) + cachedValueList
     }
 
     private fun <T> processOutboundMessagesState(
@@ -536,28 +537,31 @@ internal class StatefulSessionManagerImpl(
 
     private fun <T> getCachedOutboundSessions(
         messagesAndKeys: Map<String?, Collection<OutboundMessageContext<T>>>,
-    ): Map<String, Pair<T, SessionEstablished>> {
+    ): Map<String, Collection<Pair<T, SessionEstablished>>> {
         logger.info("TTT getCachedOutboundSessions(${messagesAndKeys.size})")
         val allCached = cachedOutboundSessions.getAllPresent(messagesAndKeys.keys.filterNotNull())
         logger.info("TTT \t allCached - ${allCached.size}")
-        return allCached.flatMap { entry ->
+        return allCached.mapValues { entry ->
             logger.info("TTT \t\t entry - ${entry.key}")
             val contexts = messagesAndKeys[entry.key]
             logger.info("TTT \t\t context - ${contexts?.size}")
             val counterparties = contexts?.firstOrNull()?.let {
                 sessionManagerImpl.getSessionCounterpartiesFromMessage(it.message.message)
-            } ?: return@flatMap emptyList()
+            } ?: return@mapValues emptyList()
             logger.info("TTT \t\t counterparties - $counterparties")
 
             contexts.map { context ->
                 logger.info("TTT \t\t\t context - ${context.message.message.header.messageId}")
-                entry.key to Pair(context.trace, SessionEstablished(entry.value.session, counterparties))
+                context.trace to SessionEstablished(entry.value.session, counterparties)
             }
-        }.toMap().also {
+        }.also {
             logger.info("TTT Done getCachedOutboundSessions(${messagesAndKeys.size})")
             it.forEach { t, u ->
                 logger.info("TTT \t t: $t")
-                logger.info("TTT \t u: ${u.first}")
+                logger.info("TTT \t u: ${u.size}")
+                u.forEach {
+                    logger.info("TTT \t ui: $it")
+                }
             }
         }
     }
