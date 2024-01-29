@@ -305,7 +305,6 @@ internal class InboundMessageProcessor(
                 }
                 is AuthenticatedMessageAndKey -> {
                     recordInboundMessagesMetric(innerMessage.message)
-                    logger.info("QQQ Got message: ${innerMessage.message.header.messageId}")
                     checkIdentityBeforeProcessing(
                         counterparties,
                         innerMessage,

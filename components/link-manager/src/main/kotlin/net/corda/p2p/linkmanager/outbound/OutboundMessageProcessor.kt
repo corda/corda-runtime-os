@@ -100,18 +100,15 @@ internal class OutboundMessageProcessor(
     }
 
     override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<String, *>> {
-        logger.info("QQQ onNext(${events.size}) start")
         val authenticatedMessages = mutableListOf<TraceableItem<AuthenticatedMessageAndKey, AppMessage>>()
         val unauthenticatedMessages = mutableListOf<TraceableItem<OutboundUnauthenticatedMessage, AppMessage>>()
         for (event in events) {
             when (val message = event.value?.message) {
                 is AuthenticatedMessage -> {
-                    logger.info("QQQ \t In (Authenticated) message: ${message.header.messageId}")
                     authenticatedMessages += TraceableItem(AuthenticatedMessageAndKey(message, event.key), event)
                     recordOutboundMessagesMetric(message)
                 }
                 is OutboundUnauthenticatedMessage -> {
-                    logger.info("QQQ \t In (Unauthenticated) message: ${message.header.messageId}")
                     unauthenticatedMessages += TraceableItem(message, event)
                     recordOutboundMessagesMetric(message)
                 }
@@ -133,24 +130,6 @@ internal class OutboundMessageProcessor(
                 traceEventProcessing(originalRecord, tracingEventName) { result.item }
             }
         }
-
-        logger.info("QQQ onNext(${events.size}) done")
-        results.forEach {
-            val id = when (val message = it.originalRecord?.value?.message) {
-                is AuthenticatedMessage -> {
-                    message.header.messageId
-                }
-                is OutboundUnauthenticatedMessage -> {
-                    message.header.messageId
-                }
-                else -> null
-            }
-            logger.info("QQQ \t for $id")
-            it.item.forEach {
-                logger.info("QQQ \t\t sending: (${it.topic}, ${it.key}) -> ${it.value?.javaClass}")
-            }
-        }
-
         return results.map { it.item }.flatten()
     }
 
@@ -279,14 +258,10 @@ internal class OutboundMessageProcessor(
         messagesWithKeys: List<TraceableItem<AuthenticatedMessageAndKey, AppMessage>>,
         isReplay: Boolean = false
     ): List<TraceableItem<List<Record<String, *>>, AppMessage>> {
-        logger.info("QQQ \t processAuthenticatedMessages messagesWithKeys.size = ${messagesWithKeys.size}")
         val validatedMessages = messagesWithKeys.map { message ->
             message to validateAndCheckIfSessionNeeded(message.item, isReplay)
         }
-        logger.info("QQQ \t\t processAuthenticatedMessages validatedMessages.size = ${validatedMessages.size}")
         val messagesWithSession = validatedMessages.mapNotNull { (message, result) ->
-            logger.info("QQQ \t\t\t processAuthenticatedMessages for " +
-                    "${message.item.message.header.messageId} - ${result.javaClass.simpleName}")
             if (result is ValidateAuthenticatedMessageResult.SessionNeeded) {
                 TraceableItem(result, message.originalRecord)
             } else {
@@ -300,8 +275,6 @@ internal class OutboundMessageProcessor(
                 null
             }
         }
-        logger.info("QQQ \t\t processAuthenticatedMessages messageWithNoSession - ${messageWithNoSession.size}")
-        logger.info("QQQ \t\t processAuthenticatedMessages messagesWithSession - ${messagesWithSession.size}")
         return messageWithNoSession + processRemoteAuthenticatedMessage(messagesWithSession, isReplay)
     }
 
@@ -407,9 +380,6 @@ internal class OutboundMessageProcessor(
         return sessionManager.processOutboundMessages(validationResults) { validationResult ->
             validationResult.item.messageWithKey
         }.map { (message, state) ->
-                logger.info("QQQ \t\t\t " +
-                        "processRemoteAuthenticatedMessage(${message.item.messageWithKey.message.header.messageId}) -" +
-                        " ${state.javaClass.simpleName}")
                 when (state) {
                 is SessionManager.SessionState.NewSessionsNeeded -> {
                     logger.trace {
