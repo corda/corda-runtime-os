@@ -107,6 +107,7 @@ class CombinedWorker @Activate constructor(
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val DEFAULT_BOOT_STATE_MANAGER_TYPE = "DATABASE"
+        private const val MESSAGE_BUS_CONFIG_PATH_SUFFIX = "_messagebus"
     }
 
     /** Parses the arguments, then initialises and starts the processors. */
@@ -220,6 +221,10 @@ class CombinedWorker @Activate constructor(
         val tempJdbcUrl = dbConfig.getString(BOOT_JDBC_URL)
         return dbConfig
             .withValue(BOOT_JDBC_URL, fromAnyRef(tempJdbcUrl))
+            .withValue(
+                BOOT_JDBC_URL + MESSAGE_BUS_CONFIG_PATH_SUFFIX,
+                fromAnyRef(tempJdbcUrl)
+            )
     }
 
     override fun shutdown() {
