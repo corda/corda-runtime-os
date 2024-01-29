@@ -1,9 +1,4 @@
 kafka:
-  extraConfig: |-
-    authorizer.class.name=org.apache.kafka.metadata.authorizer.StandardAuthorizer
-    auto.create.topics.enable=false
-    allow.everyone.if.no.acl.found=true
-    super.users=User:controller_user
   sasl:
     client:
       users:
