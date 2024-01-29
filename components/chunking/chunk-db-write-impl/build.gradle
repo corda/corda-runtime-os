@@ -70,7 +70,7 @@ dependencies {
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
 
     testRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    testRuntimeOnly libs.postgresql.jdbc
 
     cpis project(path: ':testing:cpbs:extendable-cpb', configuration: 'cordaCPB')
 }

@@ -117,7 +117,7 @@ dependencies {
     testRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     testRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     testRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    testRuntimeOnly libs.postgresql.jdbc
 }
 
 var nonOsgiIntegrationTest = tasks.register('nonOsgiIntegrationTest', Test) {
