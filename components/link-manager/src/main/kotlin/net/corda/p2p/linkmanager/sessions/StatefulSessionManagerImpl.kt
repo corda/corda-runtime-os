@@ -73,10 +73,12 @@ internal class StatefulSessionManagerImpl(
         wrappedMessages: Collection<T>,
         getMessage: (T) -> AuthenticatedMessageAndKey,
     ): Collection<Pair<T, SessionManager.SessionState>> {
+        logger.info("QQQ\t\t\tprocessOutboundMessages(${wrappedMessages.size})")
         val messages =
             wrappedMessages.map {
                 OutboundMessageContext(it, getMessage(it))
             }
+        logger.info("QQQ\t\t\tprocessOutboundMessages messages - ${messages.size}")
         val keysToMessages =
             messages.groupBy {
                 val messageHeader = it.message.message.header
@@ -99,10 +101,25 @@ internal class StatefulSessionManagerImpl(
                     )
                 }
             }
+        logger.info("QQQ\t\t\tprocessOutboundMessages keysToMessages - ${keysToMessages.size}")
+        keysToMessages.forEach { t, u ->
+            logger.info("QQQ\t\t\t\tprocessOutboundMessages t - $t")
+            u.forEach {
+                logger.info("QQQ\t\t\t\t\tprocessOutboundMessages u - ${it.message.message.header.messageId}")
+            }
+        }
 
-        val cachedSessions = getCachedOutboundSessions(keysToMessages)
+
+        val cachedSessions = getCachedOutboundSessions(keysToMessages).also {
+            it.keys.forEach {
+                logger.info("QQQ\t\t\t\t\tcachedSessions- $it")
+            }
+        }
 
         val keysNotInCache = (keysToMessages - cachedSessions.keys).keys
+        keysNotInCache.forEach {
+            logger.info("QQQ\t\t\t\t\tkeysNotInCache- $it")
+        }
         val sessionStates =
             if (keysNotInCache.isNotEmpty()) {
                 stateManager.get(keysNotInCache.filterNotNull()).let { states ->
@@ -124,11 +141,24 @@ internal class StatefulSessionManagerImpl(
                     ),
                 )
             }
+        logger.info("QQQ\t\t\t\tsessionStates - ${sessionStates.size}")
+        sessionStates.forEach {
+            logger.info("QQQ\t\t\t\t\tstate - ${it.key}")
+            it.messages.forEach {
+                logger.info("QQQ\t\t\t\t\t\tstate - ${it.message.message.header.messageId}")
+            }
+        }
         val resultStates =
             sessionStates.flatMap { state ->
                 processOutboundMessagesState(state)
             }
-
+        logger.info("QQQ\t\t\t\tresultStates - ${resultStates.size}")
+        resultStates.forEach {
+            logger.info("QQQ\t\t\t\t\tresultStates - ${it.key}")
+            it.messages.forEach {
+                logger.info("QQQ\t\t\t\t\t\tresultStates - ${it.message.message.header.messageId}")
+            }
+        }
         return processStateUpdates(resultStates) + cachedSessions.values
     }
 
