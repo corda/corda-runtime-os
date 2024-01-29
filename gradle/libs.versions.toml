@@ -5,6 +5,8 @@ bouncycastleVersion = "1.77"
 hikariCpVersion = "5.1.0"
 jacksonVersion = "2.16.1"
 micrometerVersion = "1.11.0"
+mssqlDriverVersion = "11.2.3.jre17"
+postgresDriverVersion = "42.6.0"
 
 # REST dependency versions
 javalinVersion = "4.6.8"
@@ -55,7 +57,23 @@ testLoggerVersion = "4.0.0"
 assertj-core = { group = "org.assertj", name = "assertj-core", version.ref = "assertjVersion" }
 bouncycastle-pkix = { group = "org.bouncycastle", name = "bcpkix-jdk18on", version.ref = "bouncycastleVersion" }
 bouncycastle-prov = { group = "org.bouncycastle", name = "bcprov-jdk18on", version.ref = "bouncycastleVersion" }
+brave-context-slf4j = { group = "io.zipkin.brave", name = "brave-context-slf4j", version.ref = "braveVersion" }
+brave-instrumentation-servlet = { group = "io.zipkin.brave", name = "brave-instrumentation-servlet", version.ref = "braveVersion" }
 hikaricp = { group = "com.zaxxer", name = "HikariCP", version.ref = "hikariCpVersion" }
+jackson-annotations = { group = "com.fasterxml.jackson.core", name = "jackson-annotations", version.ref = "jacksonVersion" }
+jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jacksonVersion" }
+jackson-core = { group = "com.fasterxml.jackson.core", name = "jackson-core", version.ref = "jacksonVersion" }
+jackson-datatype-jsr310 = { group = "com.fasterxml.jackson.datatype", name = "jackson-datatype-jsr310", version.ref = "jacksonVersion" }
+jackson-dataformat-yaml = { group = "com.fasterxml.jackson.dataformat", name = "jackson-dataformat-yaml", version.ref = "jacksonVersion" }
+jackson-module-kotlin = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version.ref = "jacksonVersion" }
+javalin = { group = "io.javalin", name = "javalin-osgi", version.ref = "javalinVersion" }
+jcip-annotations = { group = "org.apache.servicemix.bundles", name = "org.apache.servicemix.bundles.jcip-annotations", version.ref = "jcipAnnotationsVersion" }
+jetty-server = { group = "org.eclipse.jetty", name = "jetty-server", version.ref = "jettyVersion" }
+jetty-xml = { group = "org.eclipse.jetty", name = "jetty-xml", version.ref = "jettyVersion" }
+jetty-websocket-servlet = { group = "org.eclipse.jetty.websocket", name = "websocket-servlet", version.ref = "jettyVersion" }
+jetty-websocket-server = { group = "org.eclipse.jetty.websocket", name = "websocket-server", version.ref = "jettyVersion" }
+jetty-websocket-client = { group = "org.eclipse.jetty.websocket", name = "websocket-client", version.ref = "jettyVersion" }
+jetty-http2-server = { group = "org.eclipse.jetty.http2", name = "http2-server", version.ref = "jettyVersion" }
 junit = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junitVersion" }
 junit-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref = "junitVersion" }
 junit-params = { group = "org.junit.jupiter", name = "junit-jupiter-params", version.ref = "junitVersion" }
@@ -77,13 +95,10 @@ micrometer-core = { group = "io.micrometer", name = "micrometer-core", version.r
 micrometer-registry-prometheus = { group = "io.micrometer", name = "micrometer-registry-prometheus", version.ref = "micrometerVersion" }
 mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockitoVersion" }
 mockito-kotlin = { group = "org.mockito.kotlin", name = "mockito-kotlin", version.ref = "mockitoKotlinVersion" }
-javalin = { group = "io.javalin", name = "javalin-osgi", version.ref = "javalinVersion" }
-jetty-server = { group = "org.eclipse.jetty", name = "jetty-server", version.ref = "jettyVersion" }
-jetty-xml = { group = "org.eclipse.jetty", name = "jetty-xml", version.ref = "jettyVersion" }
-jetty-websocket-servlet = { group = "org.eclipse.jetty.websocket", name = "websocket-servlet", version.ref = "jettyVersion" }
-jetty-websocket-server = { group = "org.eclipse.jetty.websocket", name = "websocket-server", version.ref = "jettyVersion" }
-jetty-websocket-client = { group = "org.eclipse.jetty.websocket", name = "websocket-client", version.ref = "jettyVersion" }
-jetty-http2-server = { group = "org.eclipse.jetty.http2", name = "http2-server", version.ref = "jettyVersion" }
+mssql-jdbc = { group = "com.microsoft.sqlserver", name = "mssql-jdbc", version.ref = "mssqlDriverVersion" }
+nimbus-sdk = { group = "com.nimbusds", name = "oauth2-oidc-sdk", version.ref = "nimbusVersion" }
+pf4j = { group = "org.pf4j", name = "pf4j", version.ref = "pf4jVersion" }
+postgresql-jdbc = { group = "org.postgresql", name = "postgresql", version.ref = "postgresDriverVersion" }
 slf4j-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4jVersion" }
 slf4j-jul = { group = "org.slf4j", name = "jul-to-slf4j", version.ref = "slf4jVersion" }
 slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4jVersion" }
@@ -93,22 +108,11 @@ unirest-objectmapper-jackson = { group = "com.konghq", name = "unirest-objectmap
 nimbus-sdk = { group = "com.nimbusds", name = "oauth2-oidc-sdk", version.ref = "nimbusVersion" }
 okio =  { group = "com.squareup.okio", name = "okio", version.ref = "okioVersion" }
 okHttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okHttpVersion" }
-
 swagger-core = { group = "io.swagger.core.v3", name = "swagger-core", version.ref = "swaggerVersion" }
 swagger-ui = { group = "org.webjars", name = "swagger-ui", version.ref = "swaggeruiVersion" }
-jcip-annotations = { group = "org.apache.servicemix.bundles", name = "org.apache.servicemix.bundles.jcip-annotations", version.ref = "jcipAnnotationsVersion" }
-pf4j = { group = "org.pf4j", name = "pf4j", version.ref = "pf4jVersion" }
-brave-context-slf4j = { group = "io.zipkin.brave", name = "brave-context-slf4j", version.ref = "braveVersion" }
-brave-instrumentation-servlet = { group = "io.zipkin.brave", name = "brave-instrumentation-servlet", version.ref = "braveVersion" }
 zipkin-core = { group = "io.zipkin.zipkin2", name = "zipkin", version.ref = "zipkinCoreVersion" }
 zipkin-sender-urlconnection = { group = "io.zipkin.reporter2", name = "zipkin-sender-urlconnection", version.ref = "zipkinReporterVersion" }
 zipkin-reporter-brave = { group = "io.zipkin.reporter2", name = "zipkin-reporter-brave", version.ref = "zipkinReporterVersion" }
-jackson-annotations = { group = "com.fasterxml.jackson.core", name = "jackson-annotations", version.ref = "jacksonVersion" }
-jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jacksonVersion" }
-jackson-core = { group = "com.fasterxml.jackson.core", name = "jackson-core", version.ref = "jacksonVersion" }
-jackson-datatype-jsr310 = { group = "com.fasterxml.jackson.datatype", name = "jackson-datatype-jsr310", version.ref = "jacksonVersion" }
-jackson-dataformat-yaml = { group = "com.fasterxml.jackson.dataformat", name = "jackson-dataformat-yaml", version.ref = "jacksonVersion" }
-jackson-module-kotlin = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version.ref = "jacksonVersion" }
 
 gradle-enterprise = { group = "com.gradle", name = "gradle-enterprise-gradle-plugin", version.ref = "gradleEnterpriseVersion" }
 

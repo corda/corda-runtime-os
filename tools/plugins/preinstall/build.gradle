@@ -34,7 +34,7 @@ dependencies {
             because 'kubernetes-client uses an older version of okhttp3 library, needs to be at least 4.9.2 to avoid CVE-2023-0833.'
         }
     }
-    implementation "org.postgresql:postgresql:$postgresDriverVersion"
+    implementation libs.postgresql.jdbc
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
     constraints {
         implementation("org.xerial.snappy:snappy-java:$xerialSnappyVersion") {

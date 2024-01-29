@@ -2,6 +2,7 @@ package net.corda.crypto.rest
 
 import net.corda.crypto.rest.response.KeyRotationResponse
 import net.corda.crypto.rest.response.KeyRotationStatusResponse
+import net.corda.crypto.rest.response.ManagedKeyRotationResponse
 import net.corda.rest.RestResource
 import net.corda.rest.SC_ACCEPTED
 import net.corda.rest.annotations.ClientRequestBodyParameter
@@ -11,6 +12,7 @@ import net.corda.rest.annotations.HttpRestResource
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.exception.ForbiddenException
+import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.rest.response.ResponseEntity
@@ -56,6 +58,7 @@ interface KeyRotationRestResource : RestResource {
      *
      * @throws ServiceUnavailableException If the underlying service for sending messages is not available.
      * @throws ForbiddenException If the same key rotation is already in progress.
+     * @throws InvalidInputDataException If the input parameters are invalid.
      */
 
     @HttpPOST(
@@ -98,6 +101,9 @@ interface KeyRotationRestResource : RestResource {
      *
      * @param tenantId UUID of the virtual node.
      *
+     * @throws ServiceUnavailableException If the underlying service for sending messages is not available.
+     * @throws InvalidInputDataException If the input parameter is invalid.
+     *
      */
     @HttpPOST(
         path = "managed/rotation/{tenantId}",
@@ -110,5 +116,5 @@ interface KeyRotationRestResource : RestResource {
             description = "The tenantId whose wrapping keys are requested to be rotated."
         )
         tenantId: String
-    ): ResponseEntity<String>
+    ): ResponseEntity<ManagedKeyRotationResponse>
 }
