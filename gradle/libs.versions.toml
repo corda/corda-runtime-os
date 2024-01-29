@@ -14,7 +14,7 @@ jettyVersion = "9.4.53.v20231009"
 unirestVersion = "3.14.5"
 nimbusVersion = "11.9.1"
 # Note: We cannot go to the higher versions as they transitively depend on SLF4J 2.X
-swaggerVersion = "2.2.16"
+swaggerVersion = "2.2.20"
 # Please also update SWAGGERUI.version in net.corda.rest.server.impl.internal.OptionalDependency
 swaggeruiVersion = "5.10.3"
 jcipAnnotationsVersion = "1.0_2"
