@@ -83,7 +83,7 @@ dependencies {
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
 
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly libs.postgresql.jdbc
 
     integrationTestImplementation project(":testing:db-message-bus-testkit")
     integrationTestImplementation project(":libs:web:web")

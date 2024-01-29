@@ -27,7 +27,7 @@ dependencies {
     implementation libs.jackson.module.kotlin
     implementation libs.kubernetes.client
 
-    implementation "org.postgresql:postgresql:$postgresDriverVersion"
+    implementation libs.postgresql.jdbc
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
     constraints {
         implementation("org.xerial.snappy:snappy-java:$xerialSnappyVersion") {
