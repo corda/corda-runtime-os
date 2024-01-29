@@ -16,7 +16,6 @@ kafka:
     replicaCount: 7
     startupProbe:
       enabled: true
-  replicaCount: 7
   resources:
     requests:
       memory: 780Mi
