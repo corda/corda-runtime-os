@@ -1140,7 +1140,7 @@ internal class StatefulSessionManagerImpl(
         private val ticks = ConcurrentHashMap.newKeySet<Exception>()
 
         fun start() {
-            scheduler.schedule(this, 1, TimeUnit.SECONDS)
+            scheduler.scheduleAtFixedRate(this, 1, 5, TimeUnit.SECONDS)
         }
 
         fun tick() {
