@@ -32,20 +32,20 @@ class PostgresHelper : ExternalDbHelper() {
         rewriteBatchedInserts: Boolean,
         maximumPoolSize: Int
     ): CloseableDataSource {
-        val adminUser = getAdminUser()
-        val adminPassword = getAdminPassword()
+        val user = dbUser ?: getAdminUser()
+        val password = dbPassword ?: getAdminPassword()
 
-        val adminDataSource = net.corda.db.core.createUnpooledDataSource(
-            driverClass,
-            jdbcUrl,
-            adminUser,
-            adminPassword,
-            maximumPoolSize = maximumPoolSize
-        )
-
-        var user: String? = null
-        var password: String? = null
         if (!schemaName.isNullOrBlank()) {
+            val adminUser = getAdminUser()
+            val adminPassword = getAdminPassword()
+            val adminDataSource = net.corda.db.core.createUnpooledDataSource(
+                driverClass,
+                jdbcUrl,
+                adminUser,
+                adminPassword,
+                maximumPoolSize = maximumPoolSize
+            )
+
             if (createSchema) {
                 logger.info("Creating schema: $schemaName".emphasise())
                 adminDataSource.connection.use { conn ->
@@ -58,9 +58,6 @@ class PostgresHelper : ExternalDbHelper() {
             }
 
             if (dbUser != null) {
-                password = requireNotNull(dbPassword) {
-                    "You need to define a password for user $dbUser"
-                }
                 adminDataSource.connection.use { conn ->
                     val createUserSql = """
                         CREATE USER "$dbUser" WITH PASSWORD '$password';
@@ -70,14 +67,11 @@ class PostgresHelper : ExternalDbHelper() {
                     conn.prepareStatement(createUserSql).execute()
                     conn.commit()
                 }
-                user = dbUser
             } else {
                 adminDataSource.connection.use { conn ->
-                    conn.prepareStatement("ALTER ROLE $adminUser SET search_path TO \"$schemaName\";").execute()
+                    conn.prepareStatement("ALTER ROLE $adminUser SET search_path TO public, \"$schemaName\";").execute()
                     conn.commit()
                 }
-                user = adminUser
-                password = getAdminPassword()
             }
         }
 
@@ -91,8 +85,8 @@ class PostgresHelper : ExternalDbHelper() {
         return net.corda.db.core.createUnpooledDataSource(
             driverClass,
             jdbcUrlCopy,
-            checkNotNull(user),
-            checkNotNull(password),
+            user,
+            password,
             maximumPoolSize = maximumPoolSize
         )
     }
