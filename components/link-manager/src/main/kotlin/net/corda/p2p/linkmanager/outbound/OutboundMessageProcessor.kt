@@ -45,7 +45,6 @@ import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.p2p.linkmanager.TraceableItem
 import net.corda.p2p.linkmanager.metrics.recordOutboundMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
-import net.corda.p2p.linkmanager.sessions.Ticker
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class OutboundMessageProcessor(
@@ -101,7 +100,7 @@ internal class OutboundMessageProcessor(
     }
 
     override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<String, *>> {
-        Ticker.tick()
+        logger.info("QQQ onNext")
         val authenticatedMessages = mutableListOf<TraceableItem<AuthenticatedMessageAndKey, AppMessage>>()
         val unauthenticatedMessages = mutableListOf<TraceableItem<OutboundUnauthenticatedMessage, AppMessage>>()
         for (event in events) {
@@ -124,17 +123,17 @@ internal class OutboundMessageProcessor(
         }
 
         val results = unauthenticatedMessages.map { (message, event) ->
+            logger.info("QQQ onNext 1 \t ${message.header.messageId}")
             TraceableItem(processUnauthenticatedMessage(message), event)
         } + processAuthenticatedMessages(authenticatedMessages)
 
         for (result in results) {
             result.originalRecord?.let { originalRecord ->
+                logger.info("QQQ onNext 2 \t ${result.originalRecord.key} -> ${result.item.map { it.key to it.value?.javaClass?.simpleName }}")
                 traceEventProcessing(originalRecord, tracingEventName) { result.item }
             }
         }
-        return results.map { it.item }.flatten().also {
-            Ticker.done()
-        }
+        return results.map { it.item }.flatten()
     }
 
     private fun checkSourceAndDestinationValid(
@@ -255,23 +254,22 @@ internal class OutboundMessageProcessor(
         }
     }
 
-    fun processReplayedAuthenticatedMessage(messageAndKey: AuthenticatedMessageAndKey): List<Record<String, *>> {
-        Ticker.tick()
-        return processAuthenticatedMessages(listOf(TraceableItem(messageAndKey, null)), true).flatMap { it.item }.also {
-            Ticker.done()
-        }
-    }
-
+    fun processReplayedAuthenticatedMessage(messageAndKey: AuthenticatedMessageAndKey): List<Record<String, *>> =
+        processAuthenticatedMessages(listOf(TraceableItem(messageAndKey, null)), true).flatMap { it.item }
 
     private fun processAuthenticatedMessages(
         messagesWithKeys: List<TraceableItem<AuthenticatedMessageAndKey, AppMessage>>,
         isReplay: Boolean = false
     ): List<TraceableItem<List<Record<String, *>>, AppMessage>> {
+        logger.info("QQQ processAuthenticatedMessages")
         val validatedMessages = messagesWithKeys.map { message ->
+            logger.info("QQQ A \t ${message.item.message.header.messageId}")
             message to validateAndCheckIfSessionNeeded(message.item, isReplay)
         }
         val messagesWithSession = validatedMessages.mapNotNull { (message, result) ->
             if (result is ValidateAuthenticatedMessageResult.SessionNeeded) {
+                logger.info("QQQ B \t ${message.item.message.header.messageId}, ${result.javaClass.simpleName}")
+                logger.info("QQQ B \t ${message.item.message.header.messageId}, ${result.markerRecords.map { it.key to it.value?.javaClass?.simpleName }}")
                 TraceableItem(result, message.originalRecord)
             } else {
                 null
@@ -279,6 +277,8 @@ internal class OutboundMessageProcessor(
         }
         val messageWithNoSession = validatedMessages.mapNotNull { (message, result) ->
             if (result is ValidateAuthenticatedMessageResult.NoSessionNeeded) {
+                logger.info("QQQ C \t ${message.item.message.header.messageId}, ${result.javaClass.simpleName}")
+                logger.info("QQQ C \t\t ${message.item.message.header.messageId}, ${result.records.map { it.key to it.value?.javaClass?.simpleName }}")
                 TraceableItem(result.records, message.originalRecord)
             } else {
                 null

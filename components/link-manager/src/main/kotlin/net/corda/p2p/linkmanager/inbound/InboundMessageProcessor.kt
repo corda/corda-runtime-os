@@ -36,7 +36,6 @@ import net.corda.p2p.linkmanager.metrics.recordInboundHeartbeatMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordInboundMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordInboundSessionMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
-import net.corda.p2p.linkmanager.sessions.Ticker
 import net.corda.schema.Schemas
 import net.corda.tracing.traceEventProcessing
 import net.corda.utilities.debug
@@ -63,7 +62,7 @@ internal class InboundMessageProcessor(
     }
 
     override fun onNext(events: List<EventLogRecord<String, LinkInMessage>>): List<Record<*, *>> {
-        Ticker.tick()
+        logger.info("QQQ onNext 1")
         val dataMessages = mutableListOf<SessionIdAndMessage>()
         val sessionMessages = mutableListOf<TraceableItem<LinkInMessage, LinkInMessage>>()
         val recordsForUnauthenticatedMessage = mutableListOf<TraceableItem<List<Record<String, AppMessage>>, LinkInMessage>>()
@@ -73,6 +72,7 @@ internal class InboundMessageProcessor(
             when (val payload = message?.payload) {
                 is AuthenticatedDataMessage -> {
                     payload.header.sessionId.let { sessionId ->
+                        logger.info("QQQ onNext 2 \t $sessionId")
                         dataMessages.add(
                             SessionIdAndMessage(sessionId,
                                 TraceableItem(AvroSealedClasses.DataMessage.Authenticated(payload), event)
@@ -124,8 +124,6 @@ internal class InboundMessageProcessor(
             .flatMap { traceable ->
                 traceable.originalRecord?.let { traceEventProcessing(it, tracingEventName) { traceable.item } }
                 traceable.item
-            }.also {
-                Ticker.done()
             }
     }
 
@@ -184,7 +182,11 @@ internal class InboundMessageProcessor(
     private fun processDataMessages(
         sessionIdAndMessages: List<SessionIdAndMessage>
     ): List<TraceableItem<List<Record<*, *>>, LinkInMessage>> {
+        logger.info("QQQ processDataMessages 1")
         return sessionManager.getSessionsById(sessionIdAndMessages) { it.sessionId }.mapNotNull { (sessionIdAndMessage, sessionDirection) ->
+            logger.info("QQQ processDataMessages \t 2 - sessionDirection: $sessionDirection ")
+            logger.info("QQQ processDataMessages \t 2 - sessionId: ${sessionIdAndMessage.sessionId} ")
+            logger.info("QQQ processDataMessages \t 2 - key: ${sessionIdAndMessage.message.originalRecord?.key} ")
             when (sessionDirection) {
                 is SessionManager.SessionDirection.Inbound ->
                     TraceableItem(
@@ -208,6 +210,7 @@ internal class InboundMessageProcessor(
         sessionIdAndMessage: SessionIdAndMessage,
         sessionDirection: SessionManager.SessionDirection.Inbound
     ): List<Record<*, *>> {
+        logger.info("QQQ processInboundDataMessages: ${sessionIdAndMessage.sessionId}")
         sessionManager.dataMessageReceived(
             sessionIdAndMessage.sessionId,
             sessionDirection.counterparties.counterpartyId,
@@ -219,7 +222,11 @@ internal class InboundMessageProcessor(
                 sessionDirection.session,
                 sessionIdAndMessage.sessionId,
                 sessionIdAndMessage.message.item
-            )
+            ).also {
+                it.forEach {
+                    logger.info("QQQ processInboundDataMessages \t ${it.key}, ${it.value?.javaClass?.simpleName}")
+                }
+            }
         } else {
             emptyList()
         }
@@ -238,6 +245,7 @@ internal class InboundMessageProcessor(
             )?.let {
                 when (val ack = it.ack) {
                     is AuthenticatedMessageAck -> {
+                        logger.info("QQQ Got ack for ${ack.messageId}")
                         logger.debug { "Processing ack for message ${ack.messageId} from session $sessionIdAndMessage." }
                         sessionManager.messageAcknowledged(sessionIdAndMessage.sessionId)
                         val record = makeMarkerForAckMessage(ack)

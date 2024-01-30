@@ -229,9 +229,7 @@ internal class DeliveryTracker(
             private val trackedCounterparties = ConcurrentHashMap<String, SessionManager.Counterparties>()
 
             override fun onPostCommit(updatedStates: Map<String, AuthenticatedMessageDeliveryState?>) {
-                logger.info("QQQ onPostCommit:")
                 for ((key, state) in updatedStates) {
-                    logger.info("QQQ onPostCommit \t key: $key, state: ${state!=null}")
                     if (state != null) {
                         val counterparties = counterpartiesFromState(state)
                         trackedCounterparties[key] = counterparties
@@ -244,18 +242,14 @@ internal class DeliveryTracker(
             }
 
             override fun onPartitionLost(states: Map<String, AuthenticatedMessageDeliveryState>) {
-                logger.info("QQQ onPartitionLost:")
                 for ((key, state) in states) {
-                    logger.info("QQQ onPartitionLost \t key: $key")
                     replayScheduler.removeFromReplay(key, counterpartiesFromState(state))
                     trackedCounterparties.remove(key)
                 }
             }
 
             override fun onPartitionSynced(states: Map<String, AuthenticatedMessageDeliveryState>) {
-                logger.info("QQQ onPartitionSynced:")
                 for ((key, state) in states) {
-                    logger.info("QQQ onPartitionSynced \t key: $key")
                     val sessionCounterparties = counterpartiesFromState(state)
                     trackedCounterparties[key] = sessionCounterparties
                     replayScheduler.addForReplay(state.timestamp, key, state.message, sessionCounterparties)

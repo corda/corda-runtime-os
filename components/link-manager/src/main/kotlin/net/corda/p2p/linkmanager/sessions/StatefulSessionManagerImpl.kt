@@ -73,12 +73,10 @@ internal class StatefulSessionManagerImpl(
         wrappedMessages: Collection<T>,
         getMessage: (T) -> AuthenticatedMessageAndKey,
     ): Collection<Pair<T, SessionManager.SessionState>> {
-        Ticker.tick()
         val messages =
             wrappedMessages.map {
                 OutboundMessageContext(it, getMessage(it))
             }
-        Ticker.tick()
         val keysToMessages =
             messages.groupBy {
                 val messageHeader = it.message.message.header
@@ -102,12 +100,9 @@ internal class StatefulSessionManagerImpl(
                 }
             }
 
-        Ticker.tick()
         val cachedSessions = getCachedOutboundSessions(keysToMessages)
 
-        Ticker.tick()
         val keysNotInCache = (keysToMessages - cachedSessions.keys).keys
-        Ticker.tick()
         val sessionStates =
             if (keysNotInCache.isNotEmpty()) {
                 sessionExpiryScheduler.checkStatesValidateAndRememberThem(
@@ -132,15 +127,12 @@ internal class StatefulSessionManagerImpl(
                     ),
                 )
             }
-        Ticker.tick()
         val resultStates =
             sessionStates.flatMap { state ->
                 processOutboundMessagesState(state)
             }
-        Ticker.tick()
-        return processStateUpdates(resultStates) + cachedSessions.values.flatten().also {
-            Ticker.tick()
-        }
+
+        return processStateUpdates(resultStates) + cachedSessions.values.flatten()
     }
 
     private fun <T> processOutboundMessagesState(
@@ -231,7 +223,6 @@ internal class StatefulSessionManagerImpl(
         uuids: Collection<T>,
         getSessionId: (T) -> String,
     ): Collection<Pair<T, SessionManager.SessionDirection>> {
-        Ticker.tick()
         if (uuids.isEmpty()) {
             return emptyList()
         }
@@ -239,9 +230,7 @@ internal class StatefulSessionManagerImpl(
         val allCached = traceable.mapNotNull { (key, trace) ->
             getSessionIfCached(key)?.let { key to Pair(trace, it) }
         }.toMap()
-        Ticker.tick()
         val sessionIdsNotInCache = (traceable - allCached.keys)
-        Ticker.tick()
         val inboundSessionsFromStateManager = if (sessionIdsNotInCache.isEmpty()) {
             emptyList()
         } else {
@@ -268,7 +257,6 @@ internal class StatefulSessionManagerImpl(
                     }
                 }
         }
-        Ticker.tick()
         val sessionsNotInInboundStateManager =
             (sessionIdsNotInCache.keys - inboundSessionsFromStateManager.map { it.second.session.sessionId }.toSet()).map {
                 getSessionIdFilter(it)
@@ -301,25 +289,19 @@ internal class StatefulSessionManagerImpl(
                     }
                 }
         }
-        Ticker.tick()
 
-        return (allCached.values + inboundSessionsFromStateManager + outboundSessionsFromStateManager).also {
-            Ticker.tick()
-        }
+        return allCached.values + inboundSessionsFromStateManager + outboundSessionsFromStateManager
     }
 
     override fun <T> processSessionMessages(
         wrappedMessages: Collection<T>,
         getMessage: (T) -> LinkInMessage,
     ): Collection<Pair<T, LinkOutMessage?>> {
-        Ticker.tick()
         val messages = wrappedMessages.map { it to getMessage(it) }
         val results = processInboundSessionMessages(messages) + processOutboundSessionMessages(messages)
-        Ticker.tick()
 
         val failedUpdate =
             upsert(results.mapNotNull { it.result?.stateAction }).keys
-        Ticker.tick()
 
         return results.mapNotNull { result ->
             if (failedUpdate.contains(result.result?.stateAction?.state?.key)) {
@@ -357,20 +339,16 @@ internal class StatefulSessionManagerImpl(
             }
         }.map { result ->
             result.traceable to result.result?.message
-        }.also {
-            Ticker.tick()
         }
     }
 
     override fun messageAcknowledged(sessionId: String) {
         // To be implemented in CORE-18730
-        Ticker.tick()
         return
     }
 
     override fun inboundSessionEstablished(sessionId: String) {
         // Not needed by the Stateful Session Manager
-        Ticker.tick()
         return
     }
 
@@ -379,14 +357,12 @@ internal class StatefulSessionManagerImpl(
         source: HoldingIdentity,
         destination: HoldingIdentity,
     ) {
-        Ticker.tick()
         // Not needed by the Stateful Session Manager
         return
     }
 
     override fun dataMessageSent(session: Session) {
         // Not needed by the Stateful Session Manager
-        Ticker.tick()
         return
     }
 
@@ -1095,7 +1071,6 @@ internal class StatefulSessionManagerImpl(
     private fun upsert(
         changes: Collection<StateManagerAction>,
     ): Map<String, State?> {
-        Ticker.tick()
         val updates = changes.filterIsInstance<UpdateAction>()
             .map {
                 it.state
@@ -1108,7 +1083,6 @@ internal class StatefulSessionManagerImpl(
             }.mapNotNull {
                 sessionExpiryScheduler.checkStateValidateAndRememberIt(it)
             }
-        Ticker.tick()
         val failedUpdates = if (updates.isNotEmpty()) {
             stateManager.update(updates).onEach {
                 logger.info("Failed to update the state of session with ID ${it.key}")
@@ -1116,7 +1090,6 @@ internal class StatefulSessionManagerImpl(
         } else {
             emptyMap()
         }
-        Ticker.tick()
         val failedCreates = if (creates.isNotEmpty()) {
             stateManager.create(creates).associateWith {
                 logger.info("Failed to create the state of session with ID $it")
@@ -1125,10 +1098,7 @@ internal class StatefulSessionManagerImpl(
         } else {
             emptyMap()
         }
-        Ticker.tick()
-        return (failedUpdates + failedCreates).also {
-            Ticker.tick()
-        }
+        return failedUpdates + failedCreates
     }
 
     private val sessionExpiryScheduler: SessionExpiryScheduler = SessionExpiryScheduler(

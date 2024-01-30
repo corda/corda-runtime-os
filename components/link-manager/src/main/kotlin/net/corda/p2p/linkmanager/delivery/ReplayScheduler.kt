@@ -208,7 +208,6 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
         message: M,
         counterparties: K
     ) {
-        logger.info("PPP addForReplay($messageId)", Exception("QQQ"))
         dominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("A message was added for replay before the ReplayScheduler was started.")
