@@ -45,6 +45,8 @@ import java.security.MessageDigest
 import java.time.Duration
 import java.util.Base64
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import net.corda.data.p2p.crypto.InitiatorHandshakeMessage as AvroInitiatorHandshakeMessage
 import net.corda.data.p2p.crypto.InitiatorHelloMessage as AvroInitiatorHelloMessage
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage as AvroResponderHandshakeMessage
@@ -67,6 +69,10 @@ internal class StatefulSessionManagerImpl(
         const val CACHE_SIZE = 10_000L
         val SESSION_VALIDITY_PERIOD: Duration = Duration.ofDays(7)
         val logger: Logger = LoggerFactory.getLogger(StatefulSessionManagerImpl::class.java)
+    }
+
+    private val ticker = Ticker().also {
+        it.start()
     }
 
     override fun <T> processOutboundMessages(
@@ -105,6 +111,7 @@ internal class StatefulSessionManagerImpl(
         val keysNotInCache = (keysToMessages - cachedSessions.keys).keys
         val sessionStates =
             if (keysNotInCache.isNotEmpty()) {
+                ticker.tick()
                 sessionExpiryScheduler.checkStatesValidateAndRememberThem(
                     stateManager.get(keysNotInCache.filterNotNull()),
                 )
@@ -234,6 +241,7 @@ internal class StatefulSessionManagerImpl(
         val inboundSessionsFromStateManager = if (sessionIdsNotInCache.isEmpty()) {
             emptyList()
         } else {
+            ticker.tick()
             sessionExpiryScheduler.checkStatesValidateAndRememberThem(
                 stateManager.get(sessionIdsNotInCache.keys),
             )
@@ -264,6 +272,7 @@ internal class StatefulSessionManagerImpl(
         val outboundSessionsFromStateManager = if (sessionsNotInInboundStateManager.isEmpty()) {
             emptyList()
         } else {
+            ticker.tick()
             sessionExpiryScheduler.checkStatesValidateAndRememberThem(
                 stateManager.findByMetadataMatchingAny(sessionsNotInInboundStateManager),
             )
@@ -660,6 +669,7 @@ internal class StatefulSessionManagerImpl(
         if (messageContexts.isEmpty()) {
             return emptyList()
         }
+        ticker.tick()
         val states = sessionExpiryScheduler.checkStatesValidateAndRememberThem(
             stateManager.get(messageContexts.map { it.sessionId }),
         )
@@ -1084,6 +1094,7 @@ internal class StatefulSessionManagerImpl(
                 sessionExpiryScheduler.checkStateValidateAndRememberIt(it)
             }
         val failedUpdates = if (updates.isNotEmpty()) {
+            ticker.tick()
             stateManager.update(updates).onEach {
                 logger.info("Failed to update the state of session with ID ${it.key}")
             }
@@ -1091,6 +1102,7 @@ internal class StatefulSessionManagerImpl(
             emptyMap()
         }
         val failedCreates = if (creates.isNotEmpty()) {
+            ticker.tick()
             stateManager.create(creates).associateWith {
                 logger.info("Failed to create the state of session with ID $it")
                 null
@@ -1122,4 +1134,29 @@ internal class StatefulSessionManagerImpl(
                 sessionManagerImpl.dominoTile.toNamedLifecycle(),
             ),
         )
+
+    private inner class Ticker: Runnable {
+        private val scheduler = Executors.newSingleThreadScheduledExecutor()
+        private val ticks = ConcurrentHashMap.newKeySet<Exception>()
+
+        fun start() {
+            scheduler.schedule(this, 1, TimeUnit.SECONDS)
+        }
+
+        fun tick() {
+            ticks.add(Exception("TTT"))
+        }
+
+        override fun run() {
+            logger.info("QQQ Ticker")
+            logger.info("QQQ \t cachedOutboundSessions.size: ${cachedOutboundSessions.asMap().size}")
+            logger.info("QQQ \t counterpartiesForSessionId.size: ${counterpartiesForSessionId.size}")
+            logger.info("QQQ \t cachedInboundSessions.size: ${cachedInboundSessions.asMap().size}")
+            logger.info("QQQ \t ticks.size: ${ticks.size}")
+            ticks.take(20).forEach {
+                logger.info("QQQ \t for example", it)
+            }
+            ticks.clear()
+        }
+    }
 }
