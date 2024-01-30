@@ -9,11 +9,11 @@ import net.corda.flow.rest.flowstatus.FlowStatusUpdateListener
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
@@ -23,6 +23,7 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
+import net.corda.schema.configuration.ConfigKeys
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -35,22 +36,24 @@ class DurableFlowStatusCacheServiceImpl @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = CordaAvroSerializationFactory::class)
     private val cordaSerializationFactory: CordaAvroSerializationFactory,
-    private val stateManager: StateManager
+    @Reference(service = StateManagerFactory::class)
+    private val stateManagerFactory: StateManagerFactory,
 ) : FlowStatusCacheService, DurableProcessor<FlowKey, FlowStatus> {
 
     private companion object {
-        private const val GROUP_NAME = "Flow Status Subscription"
+        private const val GROUP_NAME = "flow_status_subscription"
     }
 
     override val keyClass: Class<FlowKey> get() = FlowKey::class.java
     override val valueClass: Class<FlowStatus> get() = FlowStatus::class.java
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<FlowStatusCacheService>(::eventHandler)
-    private var subReg: RegistrationHandle? = null
 
     private var flowStatusSubscription: Subscription<FlowKey, FlowStatus>? = null
 
     private val serializer = cordaSerializationFactory.createAvroSerializer<FlowStatus> {}
+
+    private var stateManager: StateManager? = null
 
     override fun start() = lifecycleCoordinator.start()
     override fun stop() = lifecycleCoordinator.stop()
@@ -59,7 +62,11 @@ class DurableFlowStatusCacheServiceImpl @Activate constructor(
 
 
     override fun initialise(config: SmartConfig) {
-        subReg?.close()
+        val stateManagerConfig = config.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)
+
+        stateManager?.stop()
+        stateManager = stateManagerFactory.create(stateManagerConfig).also { it.start() }
+
         flowStatusSubscription?.close()
 
         flowStatusSubscription = subscriptionFactory.createDurableSubscription(
@@ -67,18 +74,12 @@ class DurableFlowStatusCacheServiceImpl @Activate constructor(
             this,
             config,
             null
-        )
-
-        subReg = lifecycleCoordinator.followStatusChangesByName(
-            setOf(flowStatusSubscription!!.subscriptionName)
-        )
-
-        flowStatusSubscription?.start()
+        ).also { it.start() }
     }
 
     override fun onNext(events: List<Record<FlowKey, FlowStatus>>): List<Record<*, *>> {
         val flowKeys = events.map { it.key.toString() }
-        val existingStates = stateManager.get(flowKeys)
+        val existingStates = stateManager!!.get(flowKeys)
         val existingKeys = existingStates.keys.toSet()
 
         val (updatedStates, newStates) = events.mapNotNull { record ->
@@ -91,8 +92,8 @@ class DurableFlowStatusCacheServiceImpl @Activate constructor(
 
         }.partition { it.key in existingKeys }
 
-        stateManager.create(newStates)
-        stateManager.update(updatedStates)
+        stateManager!!.create(newStates)
+        stateManager!!.update(updatedStates)
 
         return emptyList()
     }
@@ -120,7 +121,7 @@ class DurableFlowStatusCacheServiceImpl @Activate constructor(
             }
 
             is RegistrationStatusChangeEvent -> {
-                if (event.registration == subReg && event.status == LifecycleStatus.DOWN) {
+                if (event.status == LifecycleStatus.DOWN) {
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                 }
             }

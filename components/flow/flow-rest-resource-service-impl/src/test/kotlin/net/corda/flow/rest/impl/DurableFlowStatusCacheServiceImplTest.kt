@@ -12,6 +12,7 @@ import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
@@ -25,6 +26,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.ConfigKeys
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -43,6 +45,7 @@ class DurableFlowStatusCacheServiceImplTest {
     private val lifecycleCoordinator = lifecycleTestContext.lifecycleCoordinator
     private val lifecycleEventRegistration = mock<RegistrationHandle>()
     private val cordaSerializationFactory = mock<CordaAvroSerializationFactory>()
+    private val stateManagerFactory = mock<StateManagerFactory>()
     private val serializer = mock<CordaAvroSerializer<FlowStatus>>()
 
     private var eventHandler = mock<LifecycleEventHandler>()
@@ -50,7 +53,10 @@ class DurableFlowStatusCacheServiceImplTest {
     private val topicSubscriptionName = LifecycleCoordinatorName("Test Flow Status Subscription")
     private lateinit var flowStatusCacheService: DurableFlowStatusCacheServiceImpl
     private lateinit var stateManager: StateManager
-    private val config = mock<SmartConfig> { whenever(it.getInt(INSTANCE_ID)).thenReturn(2) }
+    private val config = mock<SmartConfig> {
+        whenever(it.getInt(INSTANCE_ID)).thenReturn(2)
+        whenever(it.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)).thenReturn(mock())
+    }
 
     companion object {
         val FLOW_KEY_1 = FlowKey("a1", HoldingIdentity("b1", "c1"))
@@ -69,12 +75,13 @@ class DurableFlowStatusCacheServiceImplTest {
         whenever(cordaSerializationFactory.createAvroSerializer<FlowStatus>(any())).thenReturn(serializer)
 
         stateManager = getMockStateManager()
+        whenever(stateManagerFactory.create(any())).thenReturn(stateManager)
 
         flowStatusCacheService = DurableFlowStatusCacheServiceImpl(
             subscriptionFactory,
             lifecycleTestContext.lifecycleCoordinatorFactory,
             cordaSerializationFactory,
-            stateManager
+            stateManagerFactory
         )
 
         eventHandler = lifecycleTestContext.getEventHandler()
@@ -107,7 +114,7 @@ class DurableFlowStatusCacheServiceImplTest {
         flowStatusCacheService.initialise(config)
 
         val expectedSubscriptionCfg = SubscriptionConfig(
-            "Flow Status Subscription",
+            "flow_status_subscription",
             Schemas.Flow.FLOW_STATUS_TOPIC
         )
 
@@ -127,21 +134,6 @@ class DurableFlowStatusCacheServiceImplTest {
         // second time around we close the existing subscription
         flowStatusCacheService.initialise(config)
         verify(topicSubscription).close()
-    }
-
-    @Test
-    fun `Test initialise registers to receive topic subscription lifecycle events`() {
-        flowStatusCacheService.initialise(config)
-
-        verify(lifecycleCoordinator).followStatusChangesByName(eq(setOf(topicSubscriptionName)))
-    }
-
-    @Test
-    fun `Test initialise closes any existing lifecycle registration handle`() {
-        flowStatusCacheService.initialise(config)
-        // second time around we close the existing subscription
-        flowStatusCacheService.initialise(config)
-        verify(lifecycleEventRegistration).close()
     }
 
     @Test
@@ -337,13 +329,9 @@ class DurableFlowStatusCacheServiceImplTest {
 
             override val isRunning = true
 
-            override fun start() {
-                TODO("Not yet implemented")
-            }
+            override fun start() { }
 
-            override fun stop() {
-                TODO("Not yet implemented")
-            }
+            override fun stop() { }
         }
     }
 }
