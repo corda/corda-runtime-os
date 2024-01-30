@@ -23,10 +23,7 @@ class DurableFlowStatusProcessor(
             val key = record.key.toString()
             val bytes = record.value?.let { serializer.serialize(it) } ?: return@mapNotNull null
 
-            existingStates[key]
-                ?.let { oldState -> oldState.copy(value = bytes, version = oldState.version + 1) }
-                ?: State(key, bytes)
-
+            existingStates[key]?.copy(value = bytes) ?: State(key, bytes)
         }.partition { it.key in existingKeys }
 
         stateManager.create(newStates)
