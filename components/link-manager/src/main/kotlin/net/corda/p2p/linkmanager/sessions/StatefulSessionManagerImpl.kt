@@ -1140,7 +1140,7 @@ internal class StatefulSessionManagerImpl(
         private val ticks = ConcurrentHashMap.newKeySet<Exception>()
 
         fun start() {
-            scheduler.scheduleAtFixedRate(this, 1, 5, TimeUnit.SECONDS)
+            scheduler.scheduleAtFixedRate(this, 10, 5, TimeUnit.MINUTES)
         }
 
         fun tick() {
@@ -1149,14 +1149,22 @@ internal class StatefulSessionManagerImpl(
 
         override fun run() {
             logger.info("QQQ Ticker")
-            logger.info("QQQ \t cachedOutboundSessions.size: ${cachedOutboundSessions.asMap().size}")
-            logger.info("QQQ \t counterpartiesForSessionId.size: ${counterpartiesForSessionId.size}")
-            logger.info("QQQ \t cachedInboundSessions.size: ${cachedInboundSessions.asMap().size}")
-            logger.info("QQQ \t ticks.size: ${ticks.size}")
-            ticks.take(20).forEach {
-                logger.info("QQQ \t for example", it)
+            if (cachedOutboundSessions.asMap().isNotEmpty()) {
+                logger.info("QQQ \t cachedOutboundSessions.size: ${cachedOutboundSessions.asMap().size}")
             }
-            ticks.clear()
+            if (counterpartiesForSessionId.isNotEmpty()) {
+                logger.info("QQQ \t counterpartiesForSessionId.size: ${counterpartiesForSessionId.size}")
+            }
+            if (cachedInboundSessions.asMap().isNotEmpty()) {
+                logger.info("QQQ \t cachedInboundSessions.size: ${cachedInboundSessions.asMap().size}")
+            }
+            if(ticks.isNotEmpty()) {
+                logger.info("QQQ \t ticks.size: ${ticks.size}")
+                ticks.take(20).forEach {
+                    logger.info("QQQ \t for example", it)
+                }
+                ticks.clear()
+            }
         }
     }
 }
