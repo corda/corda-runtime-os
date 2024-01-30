@@ -2,7 +2,6 @@ package net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers
 
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.db.connection.manager.VirtualNodeDbType
-import net.corda.db.core.DbPrivilege.DML
 import net.corda.libs.external.messaging.ExternalMessagingRouteConfigGenerator
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
@@ -158,17 +157,12 @@ internal class CreateVirtualNodeOperationHandler(
         cpiMetadata: CpiMetadata,
         holdingId: HoldingIdentity
     ) {
-        // Select externally managed VNode DBs
-        val dbaManagedDbs = vNodeDbs.filterNot {
-            it.isPlatformManagedDb || it.ddlConnectionProvided || it.dbConnections[DML] == null
-        }
-
         // Are any platform schemas missing?
-        val missingPlatformSchemas = dbaManagedDbs.filterNot { it.checkDbMigrationsArePresent() }
+        val missingPlatformSchemas = vNodeDbs.filterNot { it.checkDbMigrationsArePresent() }
             .map { it.dbType.toString() }
 
         // Are any CPI schemas missing?
-        val missingCpiSchemas = dbaManagedDbs.filter { it.dbType == VirtualNodeDbType.VAULT }
+        val missingCpiSchemas = vNodeDbs.filter { it.dbType == VirtualNodeDbType.VAULT }
             .filterNot { createVirtualNodeService.checkCpiMigrations(cpiMetadata, it, holdingId) }
             .map { cpiMetadata.cpiId.name }
 

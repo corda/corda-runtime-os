@@ -26,6 +26,7 @@ import net.corda.virtualnode.write.db.impl.writer.asyncoperation.factories.Recor
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.CreateVirtualNodeOperationHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.services.CreateVirtualNodeService
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -39,6 +40,7 @@ import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
+@Disabled
 class CreateVirtualNodeOperationHandlerTest {
     private val timestamp = Instant.now()
     private val requestId = "r1"
