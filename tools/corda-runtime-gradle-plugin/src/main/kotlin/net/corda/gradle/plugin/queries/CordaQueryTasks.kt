@@ -10,7 +10,7 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
 import javax.inject.Inject
 
-const val CLUSTER_QUERY_GROUP = "csde-queries"
+const val CLUSTER_QUERY_GROUP = "corda-runtime-plugin-queries"
 
 const val LISTVNODES_TASK_NAME = "listVNodes"
 const val LISTCPIS_TASK_NAME = "listCPIs"
@@ -25,32 +25,32 @@ fun createCordaClusterQueryTasks(project: Project, pluginConfig: PluginConfigura
 
         project.tasks.create(LISTVNODES_TASK_NAME, ListVNodes::class.java) {
             it.group = CLUSTER_QUERY_GROUP
-            it.csdeConfig.set(pluginConfig)
+            it.pluginConfig.set(pluginConfig)
         }
 
         project.tasks.create(LISTCPIS_TASK_NAME, ListCPIs::class.java) {
             it.group = CLUSTER_QUERY_GROUP
-            it.csdeConfig.set(pluginConfig)
+            it.pluginConfig.set(pluginConfig)
         }
     }
 }
 
 open class ListVNodes @Inject constructor(objects: ObjectFactory): DefaultTask() {
     @get:Input
-    val csdeConfig: Property<PluginConfiguration> = objects.property(PluginConfiguration::class.java)
+    val pluginConfig: Property<PluginConfiguration> = objects.property(PluginConfiguration::class.java)
     @TaskAction
     fun listVNodes() {
-        val pc = ProjectContext(project, csdeConfig.get())
+        val pc = ProjectContext(project, pluginConfig.get())
         CordaQueriesHelper(pc).listVNodes()
     }
 }
 
 open class ListCPIs @Inject constructor(objects: ObjectFactory): DefaultTask() {
     @get:Input
-    val csdeConfig: Property<PluginConfiguration> = objects.property(PluginConfiguration::class.java)
+    val pluginConfig: Property<PluginConfiguration> = objects.property(PluginConfiguration::class.java)
     @TaskAction
     fun listVNodes() {
-        val pc = ProjectContext(project, csdeConfig.get())
+        val pc = ProjectContext(project, pluginConfig.get())
         CordaQueriesHelper(pc).listCPIs()
     }
 }
