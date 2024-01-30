@@ -124,8 +124,8 @@ class DatabaseInstaller(
             cfg.dataSource.connection.use { connection ->
                 connection.createStatement().use { stmt ->
                     val sql = """
-                        CREATE SCHEMA IF NOT EXISTS "$schemaName";
-                        SET search_path TO "$schemaName";
+                        CREATE SCHEMA IF NOT EXISTS $schemaName;
+                        SET search_path TO $schemaName;
                     """.trimIndent()
                     stmt.execute(sql)
                 }
