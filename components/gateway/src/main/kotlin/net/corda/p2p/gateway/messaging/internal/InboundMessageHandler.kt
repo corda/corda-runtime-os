@@ -225,6 +225,7 @@ internal class InboundMessageHandler(
         }
         val record = Record(LINK_IN_TOPIC, sessionId, p2pMessage)
         if (commonComponents.features.useStatefulSessionManager) {
+            logger.info("QQQ Publishing gateway message with session id: $sessionId")
             p2pInPublisher.publish(listOf(record))
             return HttpResponseStatus.OK
         } else {

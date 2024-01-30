@@ -117,6 +117,7 @@ internal class OutboundMessageHandler(
 
             val peerMessage = event.value
             try {
+                logger.info("QQQ Gateway got message: ${event.key}")
                 sendMessage(peerMessage)
             } catch (e: IllegalArgumentException) {
                 logger.warn("Can't send message to destination ${peerMessage?.header?.address}. ${e.message}")

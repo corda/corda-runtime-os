@@ -389,6 +389,7 @@ internal class OutboundMessageProcessor(
         return sessionManager.processOutboundMessages(validationResults) { validationResult ->
             validationResult.item.messageWithKey
         }.map { (message, state) ->
+                logger.info("QQQ processRemoteAuthenticatedMessage 1 ${message.item.messageWithKey.key}, ${state.javaClass.simpleName}")
                 when (state) {
                 is SessionManager.SessionState.NewSessionsNeeded -> {
                     logger.trace {
@@ -398,6 +399,7 @@ internal class OutboundMessageProcessor(
                     TraceableItem(recordsForNewSessions(state) + message.item.markerRecords, message.originalRecord)
                 }
                 is SessionManager.SessionState.SessionEstablished -> {
+                    logger.info("QQQ processRemoteAuthenticatedMessage 1 ${message.item.messageWithKey.key}, ${state.session.sessionId}")
                     logger.trace {
                         "Session already established with ${message.item.messageWithKey.message.header.destination}. Using this to send" +
                             " outbound message."
