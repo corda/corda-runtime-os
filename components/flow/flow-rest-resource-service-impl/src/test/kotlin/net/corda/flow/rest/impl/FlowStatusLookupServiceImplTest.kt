@@ -57,7 +57,7 @@ class FlowStatusLookupServiceImplTest {
 
         whenever(cordaSerializationFactory.createAvroSerializer<FlowStatus>(any())).thenReturn(mock())
 
-        whenever(stateManagerFactory.create(any())).thenReturn(mock())
+        whenever(stateManagerFactory.create(any(), any())).thenReturn(mock())
 
         flowStatusCacheService = FlowStatusLookupServiceImpl(
             subscriptionFactory,

@@ -9,6 +9,7 @@ import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.libs.statemanager.api.StateOperationGroup
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
@@ -223,6 +224,10 @@ class DurableFlowStatusProcessorTest {
                 intervalFilter: IntervalFilter,
                 metadataFilters: Collection<MetadataFilter>
             ): Map<String, State> {
+                TODO("Not yet implemented")
+            }
+
+            override fun createOperationGroup(): StateOperationGroup {
                 TODO("Not yet implemented")
             }
 
