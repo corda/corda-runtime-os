@@ -21,6 +21,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.StateManagerConfig.StateType
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -59,7 +60,7 @@ class FlowStatusLookupServiceImpl @Activate constructor(
         val stateManagerConfig = config.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)
 
         stateManager?.stop()
-        val stateManagerNew = stateManagerFactory.create(stateManagerConfig).also { it.start() }
+        val stateManagerNew = stateManagerFactory.create(stateManagerConfig, StateType.FLOW_STATUS).also { it.start() }
         stateManager = stateManagerNew
         flowStatusSubscription?.close()
 
