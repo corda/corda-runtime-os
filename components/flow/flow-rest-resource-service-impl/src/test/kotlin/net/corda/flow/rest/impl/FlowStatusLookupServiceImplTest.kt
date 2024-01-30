@@ -1,13 +1,11 @@
 package net.corda.flow.rest.impl
 
 import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.StateManagerFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
@@ -36,11 +34,9 @@ class FlowStatusLookupServiceImplTest {
     private val lifecycleEventRegistration = mock<RegistrationHandle>()
     private val cordaSerializationFactory = mock<CordaAvroSerializationFactory>()
     private val stateManagerFactory = mock<StateManagerFactory>()
-    private val serializer = mock<CordaAvroSerializer<FlowStatus>>()
 
     private var eventHandler = mock<LifecycleEventHandler>()
     private val topicSubscription = mock<Subscription<FlowKey, FlowStatus>>()
-    private val topicSubscriptionName = LifecycleCoordinatorName("Test Flow Status Subscription")
     private lateinit var flowStatusCacheService: FlowStatusLookupServiceImpl
     private val config = mock<SmartConfig> {
         whenever(it.getInt(INSTANCE_ID)).thenReturn(2)
@@ -56,12 +52,10 @@ class FlowStatusLookupServiceImplTest {
     fun setup() {
         whenever(lifecycleCoordinator.followStatusChangesByName(any())).thenReturn(lifecycleEventRegistration)
 
-        whenever(topicSubscription.subscriptionName).thenReturn(topicSubscriptionName)
         whenever(subscriptionFactory.createDurableSubscription<FlowKey, FlowStatus>(any(), any(), any(), anyOrNull()))
             .thenReturn(topicSubscription)
 
-        whenever(serializer.serialize(any())).thenReturn("test".toByteArray())
-        whenever(cordaSerializationFactory.createAvroSerializer<FlowStatus>(any())).thenReturn(serializer)
+        whenever(cordaSerializationFactory.createAvroSerializer<FlowStatus>(any())).thenReturn(mock())
 
         whenever(stateManagerFactory.create(any())).thenReturn(mock())
 
