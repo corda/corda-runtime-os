@@ -63,6 +63,7 @@ class FilteredTransactionFactoryImpl @Activate constructor(
         )
     }
 
+    @Suspendable
     override fun create(
         transactionId: SecureHash,
         topLevelMerkleProof: MerkleProof,

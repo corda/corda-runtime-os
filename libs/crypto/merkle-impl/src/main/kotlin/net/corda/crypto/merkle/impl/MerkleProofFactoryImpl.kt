@@ -22,7 +22,6 @@ import org.osgi.service.component.annotations.ServiceScope
 class MerkleProofFactoryImpl @Activate constructor()
     : MerkleProofFactory, UsedByFlow, UsedByPersistence, SingletonSerializeAsToken {
 
-    @Suspendable
     override fun createAuditMerkleProof(
         transactionId: String,
         treeSize: Int,

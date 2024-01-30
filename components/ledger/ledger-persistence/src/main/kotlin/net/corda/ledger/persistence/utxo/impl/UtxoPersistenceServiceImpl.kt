@@ -68,6 +68,8 @@ class UtxoPersistenceServiceImpl(
 
     private companion object {
         val log: Logger = LoggerFactory.getLogger(UtxoPersistenceServiceImpl::class.java)
+
+        const val TOP_LEVEL_MERKLE_PROOF_GROUP_INDEX = -1
     }
 
     override fun findSignedTransaction(
@@ -353,22 +355,27 @@ class UtxoPersistenceServiceImpl(
     }
 
     override fun persistFilteredTransactions(
-        filteredTransactions: List<FilteredTransaction>,
-        signatures: List<DigitalSignatureAndMetadata>,
+        filteredTransactionsAndSignatures: Map<FilteredTransaction, List<DigitalSignatureAndMetadata>>,
         account: String
     ) {
         entityManagerFactory.transaction { em ->
 
-            filteredTransactions.forEach { filteredTransaction ->
+            filteredTransactionsAndSignatures.forEach { (filteredTransaction, signatures) ->
 
                 val nowUtc = utcClock.instant()
 
                 val metadata = filteredTransaction.metadata as TransactionMetadataInternal
 
-                // 1. Map metadata to a JSON format
-                val metadataBytes = jsonValidator.canonicalize(
-                    jsonMarshallingService.format(metadata)
-                ).toByteArray()
+                // 1. Get the metadata bytes from the 0th component group merkle proof and create the hash
+                val metadataBytes = filteredTransaction.filteredComponentGroups[0]
+                    ?.merkleProof
+                    ?.leaves
+                    ?.get(0)
+                    ?.leafData
+
+                requireNotNull(metadataBytes) {
+                    "Could not find metadata in the filtered transaction with id: ${filteredTransaction.id}"
+                }
 
                 val metadataHash = sandboxDigestService.hash(
                     metadataBytes,
@@ -411,12 +418,15 @@ class UtxoPersistenceServiceImpl(
                     )
                 }
 
-                // 5. Persist the top level merkle proof and its leaves data
-                persistMerkleProofAndLeavesData(
+                // 5. Persist the top level merkle proof
+                // No need to persist the leaf data as we can reconstruct that
+                repository.persistMerkleProof(
                     em,
-                    filteredTransaction.id,
-                    -1,
-                    filteredTransaction.topLevelMerkleProof
+                    filteredTransaction.id.toString(),
+                    TOP_LEVEL_MERKLE_PROOF_GROUP_INDEX,
+                    filteredTransaction.topLevelMerkleProof.treeSize,
+                    filteredTransaction.topLevelMerkleProof.leaves.map { it.index },
+                    filteredTransaction.topLevelMerkleProof.hashes.map { it.toString() }
                 )
 
                 // 6. Persist the merkle proof and leaf data for each component group
@@ -473,7 +483,18 @@ class UtxoPersistenceServiceImpl(
             val topLevelMerkleProof = merkleProofFactory.createAuditMerkleProof(
                 transactionId,
                 ftxDto.topLevelMerkleProof.treeSize,
-                ftxDto.topLevelMerkleProof.leavesWithData,
+                UtxoComponentGroup.values().associate {
+                    // Map each component group to the serialized root of the merged MP
+                    // or ByteArray(0) if we don't have data for the given component group
+                    val serializedRoot = mergedMerkleProofs[it.ordinal]?.let { mergedMerkleProof ->
+                        serializationService.serialize(
+                            mergedMerkleProof.calculateRoot(
+                                createTopLevelDigestProvider(filteredTransactionMetadata, merkleTreeProvider)
+                            )
+                        ).bytes
+                    } ?: ByteArray(0)
+                    it.ordinal to serializedRoot
+                },
                 ftxDto.topLevelMerkleProof.hashes,
                 createTopLevelDigestProvider(filteredTransactionMetadata, merkleTreeProvider)
             )

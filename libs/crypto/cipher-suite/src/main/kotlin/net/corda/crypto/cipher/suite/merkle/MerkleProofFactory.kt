@@ -23,7 +23,6 @@ interface MerkleProofFactory {
      *
      * @return The constructed Merkle proof
      */
-    @Suspendable
     fun createAuditMerkleProof(
         transactionId: String,
         treeSize: Int,
