@@ -32,7 +32,7 @@ abstract class CryptoRepositoryTest {
             "cluster" to MIGRATION_FILE_LOCATION,
             "vnode" to MIGRATION_FILE_LOCATION_VNODE,
             )
-            .map { (schemaName,migrationFile) ->
+            .map { (schemaName, migrationFile) ->
                 val dbChange = ClassloaderChangeLog(
                     linkedSetOf(
                         ClassloaderChangeLog.ChangeLogResourceFiles(
