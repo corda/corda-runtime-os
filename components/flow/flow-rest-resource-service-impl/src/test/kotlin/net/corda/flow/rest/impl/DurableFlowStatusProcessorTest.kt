@@ -12,7 +12,7 @@ import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateOperationGroup
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas
+import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -47,7 +47,7 @@ class DurableFlowStatusProcessorTest {
 
     @Test
     fun `Test onNext creates a new record in the StateManager`() {
-        val record = Record(Schemas.Flow.FLOW_STATUS_TOPIC, FlowStatusLookupServiceImplTest.FLOW_KEY_1, createFlowStatus())
+        val record = Record(FLOW_STATUS_TOPIC, FlowStatusLookupServiceImplTest.FLOW_KEY_1, createFlowStatus())
         val key = FlowStatusLookupServiceImplTest.FLOW_KEY_1.toString()
 
         flowStatusProcessor.onNext(listOf(record))
@@ -61,8 +61,8 @@ class DurableFlowStatusProcessorTest {
 
     @Test
     fun `Test onNext creates multiple records in the StateManager on different keys`() {
-        val record1 = Record(Schemas.Flow.FLOW_STATUS_TOPIC, FlowStatusLookupServiceImplTest.FLOW_KEY_1, createFlowStatus())
-        val record2 = Record(Schemas.Flow.FLOW_STATUS_TOPIC, FlowStatusLookupServiceImplTest.FLOW_KEY_2, createFlowStatus())
+        val record1 = Record(FLOW_STATUS_TOPIC, FlowStatusLookupServiceImplTest.FLOW_KEY_1, createFlowStatus())
+        val record2 = Record(FLOW_STATUS_TOPIC, FlowStatusLookupServiceImplTest.FLOW_KEY_2, createFlowStatus())
         val key1 = FlowStatusLookupServiceImplTest.FLOW_KEY_1.toString()
         val key2 = FlowStatusLookupServiceImplTest.FLOW_KEY_2.toString()
 
@@ -80,10 +80,10 @@ class DurableFlowStatusProcessorTest {
     @Test
     fun `Test onNext updates existing key if it already exists`() {
         val record1 = Record(
-            Schemas.Flow.FLOW_STATUS_TOPIC, FlowStatusLookupServiceImplTest.FLOW_KEY_1, createFlowStatus(
+            FLOW_STATUS_TOPIC, FlowStatusLookupServiceImplTest.FLOW_KEY_1, createFlowStatus(
                 FlowStates.START_REQUESTED))
         val record2 = Record(
-            Schemas.Flow.FLOW_STATUS_TOPIC, FlowStatusLookupServiceImplTest.FLOW_KEY_1, createFlowStatus(
+            FLOW_STATUS_TOPIC, FlowStatusLookupServiceImplTest.FLOW_KEY_1, createFlowStatus(
                 FlowStates.RUNNING))
         val key = FlowStatusLookupServiceImplTest.FLOW_KEY_1.toString()
 
@@ -107,12 +107,12 @@ class DurableFlowStatusProcessorTest {
     @Test
     fun `Test onNext processes a create and an update in a single call`() {
         val record1 = Record(
-            Schemas.Flow.FLOW_STATUS_TOPIC, FlowStatusLookupServiceImplTest.FLOW_KEY_1, createFlowStatus(
+            FLOW_STATUS_TOPIC, FlowStatusLookupServiceImplTest.FLOW_KEY_1, createFlowStatus(
                 FlowStates.START_REQUESTED))
         val record2 = Record(
-            Schemas.Flow.FLOW_STATUS_TOPIC, FlowStatusLookupServiceImplTest.FLOW_KEY_1, createFlowStatus(
+            FLOW_STATUS_TOPIC, FlowStatusLookupServiceImplTest.FLOW_KEY_1, createFlowStatus(
                 FlowStates.RUNNING))
-        val record3 = Record(Schemas.Flow.FLOW_STATUS_TOPIC, FlowStatusLookupServiceImplTest.FLOW_KEY_2, createFlowStatus())
+        val record3 = Record(FLOW_STATUS_TOPIC, FlowStatusLookupServiceImplTest.FLOW_KEY_2, createFlowStatus())
 
         val key1 = FlowStatusLookupServiceImplTest.FLOW_KEY_1.toString()
         val key2 = FlowStatusLookupServiceImplTest.FLOW_KEY_2.toString()

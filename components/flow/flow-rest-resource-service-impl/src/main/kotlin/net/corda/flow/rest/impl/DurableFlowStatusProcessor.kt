@@ -8,6 +8,15 @@ import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 
+/**
+ * This class is responsible for processing lists of records associated with [FlowStatus] changes read from a Kafka topic.
+ * These status changes are then persisted to a dedicated [StateManager] instance.
+ *
+ * @property stateManager The [StateManager] instance used for managing state persistence.
+ * @property serializer The [CordaAvroSerializer] used for serializing flow statuses.
+ *
+ * Implements [DurableProcessor] for processing [FlowKey] and [FlowStatus] records.
+ */
 class DurableFlowStatusProcessor(
     private val stateManager: StateManager,
     private val serializer: CordaAvroSerializer<Any>
