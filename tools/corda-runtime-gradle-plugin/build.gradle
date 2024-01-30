@@ -20,6 +20,10 @@ dependencies {
     implementation libs.unirest.java
     implementation libs.unirest.objectmapper.jackson
     testImplementation libs.bundles.test
+
+    implementation libs.unirest.java
+    implementation libs.unirest.objectmapper.jackson
+//    implementation libs.jackson.module.kotlin
 }
 
 integrationTest {
