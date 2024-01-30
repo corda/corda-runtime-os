@@ -33,21 +33,23 @@ class FakeDbConnectionManager(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private data class NamedDataSources(val id: UUID, val name: String, val dataSource: CloseableDataSource)
+    private data class NamedDataSources(val id: UUID, val persistenceUnitName: String, val schemaName: String, val dataSource: CloseableDataSource)
 
     private val dbSources: List<NamedDataSources> = connections.map {
         val source = DbUtils.getEntityManagerConfiguration(
             "fake-db-manager-db-$schemaName",
-            schemaName = "$schemaName${it.second.replace("-","")}",
-            createSchema = true).dataSource
-        NamedDataSources(it.first, it.second, source)
+            dbUser = "user_$schemaName",
+            schemaName = schemaName,
+            createSchema = true
+        ).dataSource
+        NamedDataSources(it.first, it.second, schemaName, source)
     }
 
     override fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet):
             EntityManagerFactory {
         val source = dbSources.single { it.id == connectionId }
         return emff.create(
-            source.name,
+            source.persistenceUnitName,
             entitiesSet.classes.toList(),
             DbEntityManagerConfiguration(source.dataSource),
         )
@@ -61,7 +63,11 @@ class FakeDbConnectionManager(
     }
 
     fun getDataSource(id: UUID): CloseableDataSource {
-        return dbSources.single { it.id ==  id}.dataSource
+        return dbSources.single { it.id == id }.dataSource
+    }
+
+    fun getSchemaName(id: UUID): String {
+        return dbSources.single { it.id == id }.schemaName
     }
 
     private var smartConfig: SmartConfig? = null
