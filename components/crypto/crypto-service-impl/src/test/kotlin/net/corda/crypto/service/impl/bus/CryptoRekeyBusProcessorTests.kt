@@ -47,6 +47,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.`when`
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -76,7 +77,8 @@ class CryptoRekeyBusProcessorTests {
     private lateinit var config: Map<String, SmartConfig>
 
     private lateinit var stateManager: StateManager
-    private lateinit var stateManagerCapture: KArgumentCaptor<Collection<State>>
+    private lateinit var stateManagerCreateCapture: KArgumentCaptor<Collection<State>>
+    private lateinit var stateManagerDeleteCapture: KArgumentCaptor<Collection<State>>
 
     // Some default fields
     private val oldKeyAlias = "oldKeyAlias"
@@ -155,9 +157,11 @@ class CryptoRekeyBusProcessorTests {
             on { publish(rewrapPublishCapture.capture()) } doReturn emptyList()
         }
 
-        stateManagerCapture = argumentCaptor()
+        stateManagerCreateCapture = argumentCaptor()
+        stateManagerDeleteCapture = argumentCaptor()
         stateManager = mock<StateManager>() {
-            on { create(stateManagerCapture.capture()) } doReturn emptySet()
+            on { create(stateManagerCreateCapture.capture()) } doReturn emptySet()
+            on { delete(stateManagerDeleteCapture.capture()) } doReturn emptyMap()
         }
 
         cryptoRekeyBusProcessor = CryptoRekeyBusProcessor(
@@ -169,7 +173,7 @@ class CryptoRekeyBusProcessorTests {
     }
 
     @Test
-    fun `unmanaged key rotation re-wraps all the keys`() {
+    fun `unmanaged key rotation re-wraps all the keys and writes state`() {
         val virtualNodeTenantIds = listOf(tenantId1, tenantId2, tenantId3)
         val virtualNodes = getStubVirtualNodes(virtualNodeTenantIds)
         whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
@@ -185,9 +189,9 @@ class CryptoRekeyBusProcessorTests {
         verify(stateManager, times(1)).delete(any())
         verify(stateManager, times(1)).create(any())
 
-        assertThat(stateManagerCapture.firstValue).hasSize(allTenants.size)
+        assertThat(stateManagerCreateCapture.firstValue).hasSize(allTenants.size)
 
-        stateManagerCapture.firstValue.forEachIndexed { index, it ->
+        stateManagerCreateCapture.firstValue.forEachIndexed { index, it ->
             assertThat(it.metadata[STATE_TYPE]).isEqualTo(UnmanagedKeyStatus::class.java.name)
             assertThat(it.metadata[KeyRotationMetadataValues.TENANT_ID]).isEqualTo(allTenants[index])
             assertThat(it.metadata[KeyRotationMetadataValues.STATUS_TYPE]).isEqualTo(KeyRotationRecordType.KEY_ROTATION)
@@ -208,6 +212,38 @@ class CryptoRekeyBusProcessorTests {
             assertThat(unmanagedKeyStatus.total).isEqualTo(1)
             assertThat(unmanagedKeyStatus.rotatedKeys).isEqualTo(0)
         }
+    }
+
+    @Test
+    fun `ongoing key rotation prevents another unmanaged rotation starting`() {
+        val stateMap = mapOf("key" to State(key = "key", value = byteArrayOf(42)))
+        // This mock ignores filters so will always return a state, simulating a hit for non-DONE states
+        `when`(stateManager.findByMetadataMatchingAll(any())).thenReturn(stateMap)
+
+        cryptoRekeyBusProcessor.onNext(listOf(getUnmanagedKeyRotationKafkaRecord()))
+
+        verify(rewrapPublisher, never()).publish(any())
+        verify(stateManager, never()).delete(any())
+        verify(stateManager, never()).create(any())
+    }
+
+    @Test
+    fun `unmanaged key rotation deletes any previous state`() {
+        val simulatedExistingStateMap = dummyUuidsAndAliases.map {
+            val key = getKeyRotationStatusRecordKey(
+                it.second,
+                "MyTenant"
+            )
+            Pair(key, State(key = key, value = byteArrayOf(42)))
+        }.toMap()
+
+        // first return is empty map so we pass ongoing rotation detection
+        `when`(stateManager.findByMetadataMatchingAll(any())).thenReturn(emptyMap(), simulatedExistingStateMap)
+        cryptoRekeyBusProcessor.onNext(listOf(getUnmanagedKeyRotationKafkaRecord()))
+        verify(stateManager, times(1)).delete(any())
+
+        assertThat(stateManagerDeleteCapture.firstValue.map { it.key }
+            .toSet()).isEqualTo(simulatedExistingStateMap.keys)
     }
 
     /**
@@ -447,7 +483,7 @@ class CryptoRekeyBusProcessorTests {
     }
 
     @Test
-    fun `managed key rotation issues messages to re-wrap all the keys`() {
+    fun `managed key rotation issues messages to re-wrap all the keys and writes state`() {
         val tenantId = "MyTenant"
         cryptoRekeyBusProcessor.onNext(listOf(getManagedKeyRotationKafkaRecord(tenantId = tenantId)))
 
@@ -467,9 +503,9 @@ class CryptoRekeyBusProcessorTests {
         verify(stateManager, times(1)).delete(any())
         verify(stateManager, times(1)).create(any())
 
-        assertThat(stateManagerCapture.firstValue).hasSize(dummyUuidsAndAliases.size)
+        assertThat(stateManagerCreateCapture.firstValue).hasSize(dummyUuidsAndAliases.size)
 
-        stateManagerCapture.firstValue.forEachIndexed { index, it ->
+        stateManagerCreateCapture.firstValue.forEachIndexed { index, it ->
             assertThat(it.metadata[STATE_TYPE]).isEqualTo(ManagedKeyStatus::class.java.name)
             assertThat(it.metadata[KeyRotationMetadataValues.TENANT_ID]).isEqualTo(tenantId)
             assertThat(it.metadata[KeyRotationMetadataValues.STATUS_TYPE]).isEqualTo(KeyRotationRecordType.KEY_ROTATION)
@@ -491,6 +527,38 @@ class CryptoRekeyBusProcessorTests {
             assertThat(managedKeyStatus.rotatedKeys).isEqualTo(0)
             assertThat(managedKeyStatus.total).isEqualTo(1) // number of materials mocked from getKeyMaterials
         }
+    }
+
+    @Test
+    fun `ongoing key rotation prevents another managed rotation starting`() {
+        val stateMap = mapOf("key" to State(key = "key", value = byteArrayOf(42)))
+        // This mock ignores filters so will always return states, simulating a hit for non-DONE states
+        `when`(stateManager.findByMetadataMatchingAll(any())).thenReturn(stateMap)
+        cryptoRekeyBusProcessor.onNext(listOf(getManagedKeyRotationKafkaRecord(tenantId = tenantId)))
+
+        verify(rewrapPublisher, never()).publish(any())
+        verify(stateManager, never()).delete(any())
+        verify(stateManager, never()).create(any())
+    }
+
+    @Test
+    fun `managed key rotation deletes any previous state for this tenant`() {
+        val tenantId = "MyTenant"
+        val simulatedExistingStateMap = dummyUuidsAndAliases.map {
+            val key = getKeyRotationStatusRecordKey(
+                it.second,
+                tenantId
+            )
+            Pair(key, State(key = key, value = byteArrayOf(42)))
+        }.toMap()
+
+        // first return is empty map so we pass ongoing rotation detection
+        `when`(stateManager.findByMetadataMatchingAll(any())).thenReturn(emptyMap(), simulatedExistingStateMap)
+        cryptoRekeyBusProcessor.onNext(listOf(getManagedKeyRotationKafkaRecord(tenantId = tenantId)))
+        verify(stateManager, times(1)).delete(any())
+
+        assertThat(stateManagerDeleteCapture.firstValue.map { it.key }
+            .toSet()).isEqualTo(simulatedExistingStateMap.keys)
     }
 
     private fun getManagedKeyRotationKafkaRecord(
