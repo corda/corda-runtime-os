@@ -23,7 +23,8 @@ fun <T> buildFlowEventContext(
     outputRecords: List<Record<*, *>> = emptyList(),
     flowId: String = FLOW_ID_1,
     sendToDlq: Boolean = false,
-    isRetryEvent: Boolean = false
+    isRetryEvent: Boolean = false,
+    inputRecordHash: String = UUID.randomUUID().toString()
 ): FlowEventContext<T> {
 
 
@@ -47,34 +48,7 @@ fun <T> buildFlowEventContext(
         mock(),
         mock(),
         null,
-        UUID.randomUUID().toString()
-
+        inputRecordHash
     )
 }
 
-@Suppress("LongParameterList")
-fun <T> buildFlowEventContext(
-    inputEventPayload: T,
-    config: SmartConfig = SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty()),
-    outputRecords: List<Record<*, *>> = emptyList(),
-    flowId: String = FLOW_ID_1,
-    sendToDlq: Boolean = false,
-    isRetryEvent: Boolean = false
-): FlowEventContext<T> {
-    return FlowEventContext(
-        mock(),
-        FlowEvent(flowId, inputEventPayload),
-        inputEventPayload,
-        emptyMap(),
-        config,
-        isRetryEvent,
-        outputRecords,
-        sendToDlq,
-        emptyMap(),
-        mock(),
-        mock(),
-        null,
-        UUID.randomUUID().toString()
-
-    )
-}

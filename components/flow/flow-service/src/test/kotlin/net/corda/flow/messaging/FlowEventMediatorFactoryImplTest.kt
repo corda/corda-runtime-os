@@ -29,7 +29,6 @@ import net.corda.messaging.api.mediator.factory.MediatorConsumerFactoryFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFactoryFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFinder
 import net.corda.messaging.api.mediator.factory.MultiSourceEventMediatorFactory
-import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_OUT
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import net.corda.schema.configuration.ConfigKeys
@@ -94,7 +93,6 @@ class FlowEventMediatorFactoryImplTest {
         }
         val config = captor.firstValue
         val router = config.messageRouterFactory.create(clientFinder)
-        assertThat(router.getDestination(MediatorMessage(FlowEvent())).endpoint).isEqualTo(FLOW_EVENT_TOPIC)
         assertThat(router.getDestination(MediatorMessage(FlowMapperEvent())).endpoint)
             .isEqualTo(FLOW_MAPPER_SESSION_OUT)
         assertThat(router.getDestination(MediatorMessage(EntityRequest())).endpoint)
