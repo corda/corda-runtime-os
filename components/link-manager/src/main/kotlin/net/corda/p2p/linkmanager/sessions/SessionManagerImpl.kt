@@ -1284,7 +1284,7 @@ internal class SessionManagerImpl(
         private fun tearDownOutboundSession(counterparties: SessionCounterparties, sessionId: String) {
             destroyOutboundSession(counterparties, sessionId)
             trackedOutboundSessions.remove(sessionId)
-            recordOutboundSessionTimeoutMetric(counterparties.ourId, counterparties.counterpartyId)
+            recordOutboundSessionTimeoutMetric(counterparties.ourId)
         }
 
         private fun scheduleOutboundSessionTimeout(
@@ -1323,7 +1323,7 @@ internal class SessionManagerImpl(
                 )
                 destroyInboundSession(sessionId)
                 trackedInboundSessions.remove(sessionId)
-                recordInboundSessionTimeoutMetric(source, destination)
+                recordInboundSessionTimeoutMetric(source)
             } else {
                 scheduleInboundSessionTimeout(sessionId, source, destination, Duration.ofMillis(sessionTimeoutMs - timeSinceLastReceived))
             }

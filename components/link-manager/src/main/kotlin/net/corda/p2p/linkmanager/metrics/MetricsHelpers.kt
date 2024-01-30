@@ -81,18 +81,14 @@ private fun recordInboundMessagesMetric(group: String?, subsystem: String, messa
     builder.build().increment()
 }
 
-fun recordOutboundSessionTimeoutMetric(source: HoldingIdentity, destination: HoldingIdentity) {
+fun recordOutboundSessionTimeoutMetric(source: HoldingIdentity) {
     CordaMetrics.Metric.OutboundSessionTimeoutCount.builder()
-        .withTag(CordaMetrics.Tag.SourceVirtualNode, source.x500Name.toString())
-        .withTag(CordaMetrics.Tag.DestinationVirtualNode, destination.x500Name.toString())
         .withTag(CordaMetrics.Tag.MembershipGroup, source.groupId)
         .build().increment()
 }
 
-fun recordInboundSessionTimeoutMetric(source: HoldingIdentity, destination: HoldingIdentity?) {
+fun recordInboundSessionTimeoutMetric(source: HoldingIdentity) {
     CordaMetrics.Metric.InboundSessionTimeoutCount.builder()
-        .withTag(CordaMetrics.Tag.SourceVirtualNode, source.x500Name.toString())
-        .withTag(CordaMetrics.Tag.DestinationVirtualNode, destination?.x500Name?.toString() ?: NOT_APPLICABLE_TAG_VALUE)
         .withTag(CordaMetrics.Tag.MembershipGroup, source.groupId)
         .build().increment()
 }
