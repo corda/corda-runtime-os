@@ -36,6 +36,7 @@ import net.corda.p2p.linkmanager.metrics.recordInboundHeartbeatMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordInboundMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordInboundSessionMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
+import net.corda.p2p.linkmanager.sessions.Ticker
 import net.corda.schema.Schemas
 import net.corda.tracing.traceEventProcessing
 import net.corda.utilities.debug
@@ -62,6 +63,7 @@ internal class InboundMessageProcessor(
     }
 
     override fun onNext(events: List<EventLogRecord<String, LinkInMessage>>): List<Record<*, *>> {
+        Ticker.tick()
         val dataMessages = mutableListOf<SessionIdAndMessage>()
         val sessionMessages = mutableListOf<TraceableItem<LinkInMessage, LinkInMessage>>()
         val recordsForUnauthenticatedMessage = mutableListOf<TraceableItem<List<Record<String, AppMessage>>, LinkInMessage>>()
@@ -122,6 +124,8 @@ internal class InboundMessageProcessor(
             .flatMap { traceable ->
                 traceable.originalRecord?.let { traceEventProcessing(it, tracingEventName) { traceable.item } }
                 traceable.item
+            }.also {
+                Ticker.done()
             }
     }
 

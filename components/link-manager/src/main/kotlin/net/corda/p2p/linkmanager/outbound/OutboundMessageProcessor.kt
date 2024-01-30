@@ -45,6 +45,7 @@ import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.p2p.linkmanager.TraceableItem
 import net.corda.p2p.linkmanager.metrics.recordOutboundMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
+import net.corda.p2p.linkmanager.sessions.Ticker
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class OutboundMessageProcessor(
@@ -100,6 +101,7 @@ internal class OutboundMessageProcessor(
     }
 
     override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<String, *>> {
+        Ticker.tick()
         val authenticatedMessages = mutableListOf<TraceableItem<AuthenticatedMessageAndKey, AppMessage>>()
         val unauthenticatedMessages = mutableListOf<TraceableItem<OutboundUnauthenticatedMessage, AppMessage>>()
         for (event in events) {
@@ -130,7 +132,9 @@ internal class OutboundMessageProcessor(
                 traceEventProcessing(originalRecord, tracingEventName) { result.item }
             }
         }
-        return results.map { it.item }.flatten()
+        return results.map { it.item }.flatten().also {
+            Ticker.done()
+        }
     }
 
     private fun checkSourceAndDestinationValid(
@@ -251,8 +255,13 @@ internal class OutboundMessageProcessor(
         }
     }
 
-    fun processReplayedAuthenticatedMessage(messageAndKey: AuthenticatedMessageAndKey): List<Record<String, *>> =
-        processAuthenticatedMessages(listOf(TraceableItem(messageAndKey, null)), true).flatMap { it.item }
+    fun processReplayedAuthenticatedMessage(messageAndKey: AuthenticatedMessageAndKey): List<Record<String, *>> {
+        Ticker.tick()
+        return processAuthenticatedMessages(listOf(TraceableItem(messageAndKey, null)), true).flatMap { it.item }.also {
+            Ticker.done()
+        }
+    }
+
 
     private fun processAuthenticatedMessages(
         messagesWithKeys: List<TraceableItem<AuthenticatedMessageAndKey, AppMessage>>,
