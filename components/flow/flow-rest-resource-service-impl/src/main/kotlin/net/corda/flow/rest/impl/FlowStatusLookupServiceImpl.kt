@@ -7,7 +7,6 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.rest.FlowStatusCacheService
 import net.corda.flow.rest.flowstatus.FlowStatusUpdateListener
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -17,8 +16,6 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.processor.DurableProcessor
-import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -29,7 +26,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 @Component(service = [FlowStatusCacheService::class])
-class DurableFlowStatusCacheServiceImpl @Activate constructor(
+class FlowStatusLookupServiceImpl @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -38,20 +35,17 @@ class DurableFlowStatusCacheServiceImpl @Activate constructor(
     private val cordaSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = StateManagerFactory::class)
     private val stateManagerFactory: StateManagerFactory,
-) : FlowStatusCacheService, DurableProcessor<FlowKey, FlowStatus> {
+) : FlowStatusCacheService {
 
     private companion object {
         private const val GROUP_NAME = "flow_status_subscription"
     }
 
-    override val keyClass: Class<FlowKey> get() = FlowKey::class.java
-    override val valueClass: Class<FlowStatus> get() = FlowStatus::class.java
-
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<FlowStatusCacheService>(::eventHandler)
 
     private var flowStatusSubscription: Subscription<FlowKey, FlowStatus>? = null
 
-    private val serializer = cordaSerializationFactory.createAvroSerializer<FlowStatus> {}
+    private val serializer = cordaSerializationFactory.createAvroSerializer<Any> {}
 
     private var stateManager: StateManager? = null
 
@@ -65,37 +59,16 @@ class DurableFlowStatusCacheServiceImpl @Activate constructor(
         val stateManagerConfig = config.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)
 
         stateManager?.stop()
-        stateManager = stateManagerFactory.create(stateManagerConfig).also { it.start() }
-
+        val stateManagerNew = stateManagerFactory.create(stateManagerConfig).also { it.start() }
+        stateManager = stateManagerNew
         flowStatusSubscription?.close()
 
         flowStatusSubscription = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig(GROUP_NAME, FLOW_STATUS_TOPIC),
-            this,
+            DurableFlowStatusProcessor(stateManagerNew, serializer),
             config,
             null
         ).also { it.start() }
-    }
-
-    override fun onNext(events: List<Record<FlowKey, FlowStatus>>): List<Record<*, *>> {
-        val flowKeys = events.map { it.key.toString() }
-        val existingStates = stateManager!!.get(flowKeys)
-        val existingKeys = existingStates.keys.toSet()
-
-        val (updatedStates, newStates) = events.mapNotNull { record ->
-            val key = record.key.toString()
-            val bytes = record.value?.let { serializer.serialize(it) } ?: return@mapNotNull null
-
-            existingStates[key]
-                ?.let { oldState -> oldState.copy(value = bytes, version = oldState.version + 1) }
-                ?: State(key, bytes)
-
-        }.partition { it.key in existingKeys }
-
-        stateManager!!.create(newStates)
-        stateManager!!.update(updatedStates)
-
-        return emptyList()
     }
 
     override fun getStatus(clientRequestId: String, holdingIdentity: HoldingIdentity): FlowStatus? {
