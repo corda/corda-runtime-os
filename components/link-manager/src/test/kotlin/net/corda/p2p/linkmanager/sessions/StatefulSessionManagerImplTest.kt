@@ -87,9 +87,10 @@ class StatefulSessionManagerImplTest {
                             "encryptionKeyId" to "encryptionKeyId",
                             "encryptionTenant" to "encryptionTenant",
                             "status" to "SentResponderHello",
-                            "expiry" to 1000L,
+                            "expiry" to 2000000L,
                         ),
                     )
+                    on { key } doReturn "stateKey"
                 }
                 val serialisableSessionData = mock<AuthenticatedSession>()
                 val sessionState = mock<SessionState> {
@@ -122,6 +123,8 @@ class StatefulSessionManagerImplTest {
                         "expiry" to 1000L,
                     ),
                 )
+
+                on { key } doReturn "stateKey"
             }
             val sessionIdentity = "id"
             whenever(stateManager.get(listOf(sessionIdentity))).doReturn(
@@ -203,9 +206,10 @@ class StatefulSessionManagerImplTest {
                         "groupId" to "group ID",
                         "lastSendTimestamp" to 50L,
                         "status" to "SentResponderHello",
-                        "expiry" to 1000L,
+                        "expiry" to 20000000L,
                     ),
                 )
+                on { key } doReturn "stateKey"
             }
             val sessionIdentity = "id"
             whenever(stateManager.get(listOf(sessionIdentity))).doReturn(

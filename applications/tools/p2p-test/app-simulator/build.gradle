@@ -32,7 +32,7 @@ dependencies {
     implementation libs.jackson.datatype.jsr310
     implementation libs.jackson.dataformat.yaml
     implementation libs.jackson.module.kotlin
-    implementation "org.postgresql:postgresql:$postgresDriverVersion"
+    implementation libs.postgresql.jdbc
 
     implementation project(":osgi-framework-api")
 

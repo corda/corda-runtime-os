@@ -35,6 +35,7 @@ import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.hes.core.impl.deriveDHSharedSecret
 import net.corda.crypto.impl.SignatureInstances
 import net.corda.crypto.impl.getSigningData
+import net.corda.crypto.persistence.SigningKeyMaterialInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.WrappingKeyInfo
@@ -662,7 +663,7 @@ open class SoftCryptoService(
      * @param oldWrappingKey The original wrapping key
      * @return The [UUID] of the new wrapping key
      */
-    private fun createWrappingKeyFrom(wrappingRepository: WrappingRepository, oldWrappingKey: WrappingKeyInfo): UUID {
+    private fun createWrappingKeyFrom(wrappingRepository: WrappingRepository, oldWrappingKey: WrappingKeyInfo): Pair<UUID, WrappingKey> {
         logger.trace {
             "createWrappingKeyFrom(alias=${oldWrappingKey.alias})"
         }
@@ -687,10 +688,32 @@ open class SoftCryptoService(
         }
         logger.trace("Regenerated wrapping key alias ${oldWrappingKey.alias}")
         wrappingKeyCache?.put(wrappingKeyInfo.alias, wrappingKey)
-        return wrappingKeyUUID
+        return Pair(wrappingKeyUUID, wrappingKey)
     }
 
-    override fun rewrapAllSigningKeysWrappedBy(managedWrappingKey: UUID, tenantId: String) {
-        logger.info("Attempt made to rewrap all signing keys wrapped by wrappingKey: ${managedWrappingKey} and tenant Id: ${tenantId}")
+    override fun rewrapAllSigningKeysWrappedBy(managedWrappingKeyId: UUID, tenantId: String) {
+        wrappingRepositoryFactory.create(tenantId).use { wrappingRepo ->
+            val oldWrappingKeyInfo = checkNotNull(wrappingRepo.getKeyById(managedWrappingKeyId)) {
+                "Unable to find existing wrapping key with id ${managedWrappingKeyId} for tenantId ${tenantId}"
+            }
+            val parentKey = checkNotNull(unmanagedWrappingKeys.get(oldWrappingKeyInfo.parentKeyAlias)) {
+                "Unable to find parent key ${oldWrappingKeyInfo.parentKeyAlias} in the configured unmanaged wrapping keys"
+            }
+            val wrappingKeyDecrypted = parentKey.unwrapWrappingKey(oldWrappingKeyInfo.keyMaterial)
+            val createdWrappingKey = createWrappingKeyFrom(wrappingRepo, oldWrappingKeyInfo)
+            val newWrappingUuid = createdWrappingKey.first
+            val newWrappingKeyDecrypted = createdWrappingKey.second
+            signingRepositoryFactory.getInstance(tenantId).use { signingRepo ->
+                // Get signing materials which use the old wrapping uuid, passed in as wrappingKeyUuid
+                signingRepo.getKeyMaterials(managedWrappingKeyId).forEach { oldSigningKeyMaterial ->
+                    val newSigningKeyMaterial = newWrappingKeyDecrypted.wrap(wrappingKeyDecrypted.unwrap(oldSigningKeyMaterial.keyMaterial))
+                    val newSigningKeyMaterialInfo = SigningKeyMaterialInfo(
+                        oldSigningKeyMaterial.signingKeyId,
+                        newSigningKeyMaterial
+                    )
+                    signingRepo.saveSigningKeyMaterial(newSigningKeyMaterialInfo, newWrappingUuid)
+                }
+            }
+        }
     }
 }

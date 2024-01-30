@@ -105,17 +105,20 @@ internal class StatefulSessionManagerImpl(
         val keysNotInCache = (keysToMessages - cachedSessions.keys).keys
         val sessionStates =
             if (keysNotInCache.isNotEmpty()) {
-                stateManager.get(keysNotInCache.filterNotNull()).let { states ->
-                    keysToMessages.map { (id, items) ->
-                        OutboundMessageState(
-                            id,
-                            states[id],
-                            items,
-                        )
+                sessionExpiryScheduler.checkStatesValidateAndRememberThem(
+                    stateManager.get(keysNotInCache.filterNotNull()),
+                )
+                    .let { states ->
+                        keysToMessages.map { (id, items) ->
+                            OutboundMessageState(
+                                id,
+                                states[id],
+                                items,
+                            )
+                        }
                     }
-                }
             } else {
-                val messagesWithoutKey = keysToMessages[null] ?: return cachedSessions.values
+                val messagesWithoutKey = keysToMessages[null] ?: return cachedSessions.values.flatten()
                 listOf(
                     OutboundMessageState(
                         null,
@@ -129,7 +132,7 @@ internal class StatefulSessionManagerImpl(
                 processOutboundMessagesState(state)
             }
 
-        return processStateUpdates(resultStates) + cachedSessions.values
+        return processStateUpdates(resultStates) + cachedSessions.values.flatten()
     }
 
     private fun <T> processOutboundMessagesState(
@@ -231,24 +234,28 @@ internal class StatefulSessionManagerImpl(
         val inboundSessionsFromStateManager = if (sessionIdsNotInCache.isEmpty()) {
             emptyList()
         } else {
-            stateManager.get(sessionIdsNotInCache.keys).entries.mapNotNull { (sessionId, state) ->
-                val session =
-                    stateConvertor.toCordaSessionState(
-                        state,
-                        sessionManagerImpl.revocationCheckerClient::checkRevocation,
-                    ).sessionData as? Session
-                session?.let {
-                    sessionIdsNotInCache[sessionId]?.let {
-                        val inboundSession =
-                            SessionManager.SessionDirection.Inbound(
-                                state.toCounterparties(),
-                                session,
-                            )
-                        cachedInboundSessions.put(sessionId, inboundSession)
-                        it to inboundSession
+            sessionExpiryScheduler.checkStatesValidateAndRememberThem(
+                stateManager.get(sessionIdsNotInCache.keys),
+            )
+                .entries
+                .mapNotNull { (sessionId, state) ->
+                    val session =
+                        stateConvertor.toCordaSessionState(
+                            state,
+                            sessionManagerImpl.revocationCheckerClient::checkRevocation,
+                        ).sessionData as? Session
+                    session?.let {
+                        sessionIdsNotInCache[sessionId]?.let {
+                            val inboundSession =
+                                SessionManager.SessionDirection.Inbound(
+                                    state.toCounterparties(),
+                                    session,
+                                )
+                            cachedInboundSessions.put(sessionId, inboundSession)
+                            it to inboundSession
+                        }
                     }
                 }
-            }
         }
         val sessionsNotInInboundStateManager =
             (sessionIdsNotInCache.keys - inboundSessionsFromStateManager.map { it.second.session.sessionId }.toSet()).map {
@@ -257,26 +264,30 @@ internal class StatefulSessionManagerImpl(
         val outboundSessionsFromStateManager = if (sessionsNotInInboundStateManager.isEmpty()) {
             emptyList()
         } else {
-            stateManager.findByMetadataMatchingAny(sessionsNotInInboundStateManager).entries.mapNotNull { (key, state) ->
-                val session =
-                    stateConvertor.toCordaSessionState(
-                        state,
-                        sessionManagerImpl.revocationCheckerClient::checkRevocation,
-                    ).sessionData as? Session
-                val sessionId = state.metadata.toOutbound().sessionId
-                session?.let {
-                    sessionIdsNotInCache[sessionId]?.let {
-                        val outboundSession =
-                            SessionManager.SessionDirection.Outbound(
-                                state.toCounterparties(),
-                                session,
-                            )
-                        cachedOutboundSessions.put(key, outboundSession)
-                        counterpartiesForSessionId[sessionId] = key
-                        it to outboundSession
+            sessionExpiryScheduler.checkStatesValidateAndRememberThem(
+                stateManager.findByMetadataMatchingAny(sessionsNotInInboundStateManager),
+            )
+                .entries
+                .mapNotNull { (key, state) ->
+                    val session =
+                        stateConvertor.toCordaSessionState(
+                            state,
+                            sessionManagerImpl.revocationCheckerClient::checkRevocation,
+                        ).sessionData as? Session
+                    val sessionId = state.metadata.toOutbound().sessionId
+                    session?.let {
+                        sessionIdsNotInCache[sessionId]?.let {
+                            val outboundSession =
+                                SessionManager.SessionDirection.Outbound(
+                                    state.toCounterparties(),
+                                    session,
+                                )
+                            cachedOutboundSessions.put(key, outboundSession)
+                            counterpartiesForSessionId[sessionId] = key
+                            it to outboundSession
+                        }
                     }
                 }
-            }
         }
 
         return allCached.values + inboundSessionsFromStateManager + outboundSessionsFromStateManager
@@ -506,16 +517,16 @@ internal class StatefulSessionManagerImpl(
 
     private fun <T> getCachedOutboundSessions(
         messagesAndKeys: Map<String?, Collection<OutboundMessageContext<T>>>,
-    ): Map<String, Pair<T, SessionEstablished>> {
+    ): Map<String, Collection<Pair<T, SessionEstablished>>> {
         val allCached = cachedOutboundSessions.getAllPresent(messagesAndKeys.keys.filterNotNull())
-        return allCached.flatMap { entry ->
+        return allCached.mapValues { entry ->
             val contexts = messagesAndKeys[entry.key]
             val counterparties = contexts?.firstOrNull()?.let {
                 sessionManagerImpl.getSessionCounterpartiesFromMessage(it.message.message)
-            } ?: return@flatMap emptyList()
+            } ?: return@mapValues emptyList()
 
             contexts.map { context ->
-                entry.key to Pair(context.trace, SessionEstablished(entry.value.session, counterparties))
+                context.trace to SessionEstablished(entry.value.session, counterparties)
             }
         }.toMap()
     }
@@ -649,7 +660,9 @@ internal class StatefulSessionManagerImpl(
         if (messageContexts.isEmpty()) {
             return emptyList()
         }
-        val states = stateManager.get(messageContexts.map { it.sessionId })
+        val states = sessionExpiryScheduler.checkStatesValidateAndRememberThem(
+            stateManager.get(messageContexts.map { it.sessionId }),
+        )
         return messageContexts.map {
             val state = states[it.sessionId]
             val result =
@@ -1058,8 +1071,18 @@ internal class StatefulSessionManagerImpl(
     private fun upsert(
         changes: Collection<StateManagerAction>,
     ): Map<String, State?> {
-        val updates = changes.filterIsInstance<UpdateAction>().map { it.state }
-        val creates = changes.filterIsInstance<CreateAction>().map { it.state }
+        val updates = changes.filterIsInstance<UpdateAction>()
+            .map {
+                it.state
+            }.mapNotNull {
+                sessionExpiryScheduler.checkStateValidateAndRememberIt(it)
+            }
+        val creates = changes.filterIsInstance<CreateAction>()
+            .map {
+                it.state
+            }.mapNotNull {
+                sessionExpiryScheduler.checkStateValidateAndRememberIt(it)
+            }
         val failedUpdates = if (updates.isNotEmpty()) {
             stateManager.update(updates).onEach {
                 logger.info("Failed to update the state of session with ID ${it.key}")
@@ -1077,6 +1100,12 @@ internal class StatefulSessionManagerImpl(
         }
         return failedUpdates + failedCreates
     }
+
+    private val sessionExpiryScheduler: SessionExpiryScheduler = SessionExpiryScheduler(
+        listOf(cachedInboundSessions, cachedOutboundSessions),
+        stateManager,
+        clock,
+    )
 
     override val dominoTile =
         ComplexDominoTile(

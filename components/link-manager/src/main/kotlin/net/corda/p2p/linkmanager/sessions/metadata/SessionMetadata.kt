@@ -136,7 +136,6 @@ internal data class CommonMetadata(
         private const val GROUP_ID_KEY = "groupId"
         private const val LAST_SEND_TIMESTAMP = "lastSendTimestamp"
         private const val EXPIRY = "expiry"
-        private val SESSION_EXPIRY_PERIOD: Duration = Duration.ofDays(7)
         private val MESSAGE_EXPIRY_PERIOD: Duration = Duration.ofSeconds(2L)
 
         fun Metadata.toCommonMetadata(): CommonMetadata {

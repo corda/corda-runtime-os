@@ -257,6 +257,37 @@ spec:
             {{- include "corda.restApiAdminSecretEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbUsernameEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbPasswordEnv" . | nindent 12 }}
+            {{/* Bootstrap State Manager Databases */}}
+            {{- range $stateType, $stateTypeConfig  := .Values.stateManager -}}
+            {{-   $databaseFound := false -}}
+            {{-   $connectionSettings := dict -}}
+            {{-   $storageId := $stateTypeConfig.storageId -}}
+            {{-   $storagePartition := $stateTypeConfig.partition -}}
+            {{/*  -- Ensure that every state type has an associated database storage configured */}}
+            {{-   range $.Values.databases -}}
+            {{-     if eq .name $storageId -}}
+            {{-       $databaseFound = true -}}
+            {{-       $connectionSettings = . -}}
+            {{-     end -}}
+            {{-   end -}}
+            {{-   if not $databaseFound -}}
+            {{-     fail ( printf "Undefined persistent storage '%s' detected at stateManager.%s.storageId" $storageId $stateType ) -}}
+            {{-   end -}}
+            {{/*  -- Check whether bootstrap is enabled for the database storage associated to the state type */}}
+            {{-   range $bootCredentials := $.Values.bootstrap.db.databases -}}
+            {{-     if eq .name $storageId -}}
+            {{/*        -- The database storage associated to the state type exists and is configured to be included within the bootstrap process */}}
+            {{-         range $workerName, $workerConfig := $.Values.workers -}}
+            {{-           $stateManagerSettings := ( index $workerConfig "stateManager" ) -}}
+            {{/*          -- State Manager configured for the worker, generate the required database boostrap template */}}
+            {{-           if and $stateManagerSettings ( index $stateManagerSettings $stateType ) -}}
+            {{-             include "corda.stateManagerDatabaseBootstrap" ( list $ $stateType $workerName $storagePartition $connectionSettings ( index $stateManagerSettings $stateType ) $bootCredentials ) -}}
+            {{-           end -}}
+            {{-         end -}}
+            {{-     end -}}
+            {{-   end -}}
+            {{- end }}
+            {{/* TODO-[CORE-19372]: remove the following range block */}}
             {{- range $workerName, $authConfig := .Values.bootstrap.db.stateManager -}}
             {{-   $workerConfig := (index $.Values.workers $workerName) -}}
             {{/*  No point in trying to bootstrap the State Manager for the specific worker if the host has not been configured */}}
