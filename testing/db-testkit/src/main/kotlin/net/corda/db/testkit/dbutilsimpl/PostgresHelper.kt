@@ -60,7 +60,16 @@ class PostgresHelper : ExternalDbHelper() {
             if (dbUser != null) {
                 adminDataSource.connection.use { conn ->
                     val createUserSql = """
-                        CREATE USER "$dbUser" WITH PASSWORD '$password';
+                        DO 
+                        ${'$'}${'$'} 
+                        BEGIN 
+                            IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '$dbUser') THEN 
+                                RAISE NOTICE 'Role "$dbUser" already exists'; 
+                            ELSE 
+                                CREATE USER "$dbUser" WITH PASSWORD '$password'; 
+                            END IF; 
+                        END 
+                        ${'$'}${'$'};
                         GRANT ALL ON SCHEMA "$schemaName" TO "$dbUser";
                         ALTER ROLE "$dbUser" SET search_path TO "$schemaName";
                             """.trimIndent()
