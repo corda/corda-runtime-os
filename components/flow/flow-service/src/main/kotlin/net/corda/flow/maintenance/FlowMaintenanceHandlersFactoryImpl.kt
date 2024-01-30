@@ -37,7 +37,6 @@ class FlowMaintenanceHandlersFactoryImpl @Activate constructor(
         return TimeoutEventCleanupProcessor(
             checkpointCleanupHandler,
             stateManager,
-            mediatorStateDeserializer,
             checkpointDeserializer,
             flowCheckpointFactory,
             config

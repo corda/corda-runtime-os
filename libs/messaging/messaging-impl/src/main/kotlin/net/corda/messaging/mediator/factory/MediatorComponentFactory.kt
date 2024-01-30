@@ -1,6 +1,7 @@
 package net.corda.messaging.mediator.factory
 
 import net.corda.messaging.api.mediator.MediatorConsumer
+import net.corda.messaging.api.mediator.MediatorInputService
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
@@ -15,7 +16,6 @@ import net.corda.messaging.mediator.MediatorSubscriptionState
 import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.messaging.mediator.processor.ConsumerProcessor
 import net.corda.messaging.mediator.processor.EventProcessor
-import net.corda.messaging.mediator.processor.MediatorReplayService
 import net.corda.taskmanager.TaskManager
 
 /**
@@ -29,7 +29,7 @@ class MediatorComponentFactory<K : Any, S : Any, E : Any>(
     private val messageRouterFactory: MessageRouterFactory,
     private val groupAllocator: GroupAllocator,
     private val stateManagerHelper: StateManagerHelper<S>,
-    private val mediatorReplayService: MediatorReplayService,
+    private val mediatorInputService: MediatorInputService,
 ) {
 
     /**
@@ -106,7 +106,7 @@ class MediatorComponentFactory<K : Any, S : Any, E : Any>(
         messageRouter: MessageRouter,
         mediatorSubscriptionState: MediatorSubscriptionState,
     ): ConsumerProcessor<K, S, E> {
-        val eventProcessor = EventProcessor(eventMediatorConfig, stateManagerHelper, messageRouter, mediatorReplayService)
+        val eventProcessor = EventProcessor(eventMediatorConfig, stateManagerHelper, messageRouter, mediatorInputService)
         return ConsumerProcessor(
             eventMediatorConfig,
             groupAllocator,

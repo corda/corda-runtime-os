@@ -116,7 +116,6 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         .threads(messagingConfig.getInt(MEDIATOR_PROCESSING_THREAD_POOL_SIZE))
         .threadName("flow-event-mediator")
         .stateManager(stateManager)
-        .idempotentProcessor(true)
         .minGroupSize(messagingConfig.getInt(MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT))
         .build()
 
@@ -147,8 +146,6 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
                     rpcEndpoint(VERIFICATION_WORKER_REST_ENDPOINT, VERIFICATION_PATH), SYNCHRONOUS)
                 is UniquenessCheckRequestAvro -> routeTo(rpcClient,
                     rpcEndpoint(UNIQUENESS_WORKER_REST_ENDPOINT, UNIQUENESS_PATH), SYNCHRONOUS)
-                is FlowEvent -> routeTo(messageBusClient,
-                    FLOW_EVENT_TOPIC, ASYNCHRONOUS)
                 is String -> routeTo(messageBusClient, // Handling external messaging
                     message.properties[MSG_PROP_TOPIC] as String, ASYNCHRONOUS)
                 else -> {

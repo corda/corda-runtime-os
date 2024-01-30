@@ -1,17 +1,16 @@
 package net.corda.messaging.mediator.factory
 
 import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.data.messaging.mediator.MediatorState
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.messaging.api.mediator.MediatorInputService
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.factory.MultiSourceEventMediatorFactory
 import net.corda.messaging.mediator.GroupAllocator
 import net.corda.messaging.mediator.MultiSourceEventMediatorImpl
 import net.corda.messaging.mediator.StateManagerHelper
-import net.corda.messaging.mediator.processor.MediatorReplayService
 import net.corda.taskmanager.TaskManagerFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -23,16 +22,16 @@ class MultiSourceEventMediatorFactoryImpl(
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val taskManagerFactory: TaskManagerFactory,
-    private val mediatorReplayService: MediatorReplayService
+    private val mediatorReplayService: MediatorInputService
 ) : MultiSourceEventMediatorFactory {
 
     @Activate
     constructor(
         @Reference(service = CordaAvroSerializationFactory::class) cordaAvroSerializationFactory: CordaAvroSerializationFactory,
         @Reference(service = LifecycleCoordinatorFactory::class) lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-        @Reference(service = MediatorReplayService::class) mediatorReplayService: MediatorReplayService
+        @Reference(service = MediatorInputService::class) mediatorInputService: MediatorInputService
     ) : this(
-        cordaAvroSerializationFactory, lifecycleCoordinatorFactory, TaskManagerFactory.INSTANCE, mediatorReplayService
+        cordaAvroSerializationFactory, lifecycleCoordinatorFactory, TaskManagerFactory.INSTANCE, mediatorInputService
     )
 
     override fun <K : Any, S : Any, E : Any> create(
@@ -77,11 +76,8 @@ class MultiSourceEventMediatorFactoryImpl(
         val stateDeserializer = cordaAvroSerializationFactory.createAvroDeserializer(
             {}, eventMediatorConfig.messageProcessor.stateValueClass
         )
-        val mediatorWrapperDeserializer = cordaAvroSerializationFactory.createAvroDeserializer(
-            {}, MediatorState::class.java
-        )
         return StateManagerHelper(
-            stateSerializer, stateDeserializer, mediatorWrapperDeserializer
+            stateSerializer, stateDeserializer
         )
     }
 }

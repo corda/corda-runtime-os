@@ -2,7 +2,6 @@ package net.corda.messaging.mediator
 
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
-import net.corda.data.messaging.mediator.MediatorState
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.STATE_TYPE
 import net.corda.libs.statemanager.api.State
@@ -12,7 +11,6 @@ import net.corda.messaging.api.constants.MessagingMetadataKeys.PROCESSING_FAILUR
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
 
 /**
  * Helper for working with [StateManager], used by [MultiSourceEventMediatorImpl].
@@ -20,7 +18,6 @@ import java.nio.ByteBuffer
 class StateManagerHelper<S : Any>(
     private val serializer: CordaAvroSerializer<Any>,
     private val stateDeserializer: CordaAvroDeserializer<S>,
-    private val mediatorStateDeserializer: CordaAvroDeserializer<MediatorState>,
 ) {
     private companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -37,16 +34,12 @@ class StateManagerHelper<S : Any>(
     fun createOrUpdateState(
         key: String,
         persistedState: State?,
-        mediatorState: MediatorState,
         newState: StateAndEventProcessor.State<S>?,
     ) = serialize(newState?.value)?.let { serializedValue ->
-        mediatorState.state = ByteBuffer.wrap(serializedValue)
-        val mediatorStateBytes = serializer.serialize(mediatorState)
-            ?: throw IllegalStateException("Serialized mediator state was null. This should not be possible!")
         val stateType = newState!!.value!!::class.java.name
         State(
             key,
-            mediatorStateBytes,
+            serializedValue,
             persistedState?.version ?: State.VERSION_INITIAL_VALUE,
             mergeMetadata(persistedState?.metadata, newState.metadata, stateType),
         )
@@ -90,25 +83,15 @@ class StateManagerHelper<S : Any>(
      * @param value State value.
      * @return Serialized state value.
      */
-    private fun serialize(value: Any?) =
+    private fun serialize(value: S?) =
         value?.let { serializer.serialize(it) }
 
     /**
      * Deserializes state value.
      *
-     * @param mediatorState State.
+     * @param state State.
      * @return Deserialized state value.
      */
-    fun deserializeValue(mediatorState: MediatorState?) =
-        mediatorState?.state?.let { stateDeserializer.deserialize(it.array()) }
-
-
-    /**
-     * Deserializes state value into the MediatorState.
-     *
-     * @param state State.
-     * @return Deserialized MediatorState.
-     */
-    fun deserializeMediatorState(state: State?) =
-        state?.value?.let { mediatorStateDeserializer.deserialize(it) }
+    fun deserializeValue(state: State?) =
+        state?.value?.let { stateDeserializer.deserialize(it) }
 }

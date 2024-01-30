@@ -88,7 +88,7 @@ class FlowMaintenanceImplTests {
         doReturn(FlowTimeoutTaskProcessor(stateManager, flowConfig))
             .whenever(flowMaintenanceHandlersFactory).createScheduledTaskHandler(any(), any())
 
-        doReturn(TimeoutEventCleanupProcessor(mock(), stateManager, mock(), mock(), mock(), flowConfig))
+        doReturn(TimeoutEventCleanupProcessor(mock(), stateManager, mock(), mock(), flowConfig))
             .whenever(flowMaintenanceHandlersFactory).createTimeoutEventHandler(any(), any())
     }
 

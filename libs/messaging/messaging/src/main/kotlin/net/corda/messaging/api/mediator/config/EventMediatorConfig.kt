@@ -27,8 +27,6 @@ import java.time.Duration
  * @property stateManager State manager.
  * @property minGroupSize Minimum size for group of records passed to task manager for processing in a single thread. Does not block if
  * group size is not met by polled record count.
- * @property idempotentProcessor When true all bus bound outputs are saved to the mediator state so they can be replayed if the input record
- * is detected as a replay or duplicate
  */
 data class EventMediatorConfig<K: Any, S: Any, E: Any>(
     val name: String,
@@ -41,7 +39,6 @@ data class EventMediatorConfig<K: Any, S: Any, E: Any>(
     val threadName: String,
     val stateManager: StateManager,
     val minGroupSize: Int,
-    val idempotentProcessor: Boolean,
 ) {
     /**
      * Timeout for polling consumers.

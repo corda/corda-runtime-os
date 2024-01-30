@@ -2,6 +2,7 @@ package net.corda.flow.pipeline.factory.impl
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
+import net.corda.flow.pipeline.FlowEngineReplayService
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.FlowMDCService
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
@@ -18,13 +19,14 @@ import org.osgi.service.component.annotations.ReferenceCardinality
 import org.osgi.service.component.annotations.ReferencePolicy
 
 @Component(service = [FlowEventProcessorFactory::class])
-@Suppress("Unused")
-class FlowEventProcessorFactoryImpl (
+@Suppress("Unused", "LongParameterList")
+class FlowEventProcessorFactoryImpl(
     private val flowEventPipelineFactory: FlowEventPipelineFactory,
     private val flowEventExceptionProcessor: FlowEventExceptionProcessor,
     private val flowEventContextConverter: FlowEventContextConverter,
     private val flowMDCService: FlowMDCService,
-    postProcessingHandlers: List<FlowPostProcessingHandler>
+    postProcessingHandlers: List<FlowPostProcessingHandler>,
+    private val flowEngineReplayService: FlowEngineReplayService
 ) : FlowEventProcessorFactory {
 
     // We cannot use constructor injection with DYNAMIC policy.
@@ -43,13 +45,16 @@ class FlowEventProcessorFactoryImpl (
         @Reference(service = FlowEventContextConverter::class)
         flowEventContextConverter: FlowEventContextConverter,
         @Reference(service = FlowMDCService::class)
-        flowMDCService: FlowMDCService
+        flowMDCService: FlowMDCService,
+        @Reference(service = FlowEngineReplayService::class)
+        flowEngineReplayService: FlowEngineReplayService
     ): this(
         flowEventPipelineFactory,
         flowEventExceptionProcessor,
         flowEventContextConverter,
         flowMDCService,
-        mutableListOf()
+        mutableListOf(),
+        flowEngineReplayService
     )
 
     override fun create(configs: Map<String, SmartConfig>): StateAndEventProcessor<String, Checkpoint, FlowEvent> {
@@ -59,7 +64,8 @@ class FlowEventProcessorFactoryImpl (
             flowEventContextConverter,
             configs,
             flowMDCService,
-            postProcessingHandlers
+            postProcessingHandlers,
+            flowEngineReplayService
         )
     }
 }

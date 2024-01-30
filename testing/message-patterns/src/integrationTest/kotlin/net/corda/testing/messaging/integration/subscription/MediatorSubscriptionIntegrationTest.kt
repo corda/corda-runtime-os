@@ -136,7 +136,6 @@ class MediatorSubscriptionIntegrationTest {
             .threads(THREAD_COUNT)
             .threadName("messaging-test-mediator")
             .stateManager(buildStateManager())
-            .idempotentProcessor(idempotenceEnabled)
             .minGroupSize(GROUP_SIZE)
             .build()
     }

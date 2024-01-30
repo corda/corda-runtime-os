@@ -12,11 +12,13 @@ import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.checkpoint.FlowState
+import net.corda.data.flow.state.checkpoint.SavedOutputs
 import net.corda.data.flow.state.external.ExternalEventState
 import net.corda.data.flow.state.external.ExternalEventStateStatus
 import net.corda.data.flow.state.external.ExternalEventStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.MINIMUM_SMART_CONFIG
+import net.corda.flow.pipeline.FlowEngineReplayService
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.FlowEventPipeline
 import net.corda.flow.pipeline.FlowMDCService
@@ -49,6 +51,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
+import java.util.UUID
 
 class FlowEventProcessorImplTest {
     private val payload = ExternalEventResponse()
@@ -132,12 +135,14 @@ class FlowEventProcessorImplTest {
     }
 
     private val flowEventPipelineFactory = mock<FlowEventPipelineFactory>().apply {
-        whenever(create(anyOrNull(), any(), any(), any(), any(), any())).thenReturn(flowEventPipeline)
+        whenever(create(anyOrNull(), any(), any(), any(), any(), any(), anyOrNull())).thenReturn(flowEventPipeline)
     }
 
     private val flowPostProcessingHandler1 = mock<FlowPostProcessingHandler>()
     private val flowPostProcessingHandler2 = mock<FlowPostProcessingHandler>()
     private val flowPostProcessingHandlers = listOf(flowPostProcessingHandler1, flowPostProcessingHandler2)
+
+    private val flowEngineReplayService = mock<FlowEngineReplayService>()
 
     private val processor = FlowEventProcessorImpl(
         flowEventPipelineFactory,
@@ -145,7 +150,8 @@ class FlowEventProcessorImplTest {
         flowEventContextConverter,
         mapOf(FLOW_CONFIG to MINIMUM_SMART_CONFIG),
         flowMDCService,
-        flowPostProcessingHandlers
+        flowPostProcessingHandlers,
+        flowEngineReplayService
     )
 
     @BeforeEach
@@ -157,6 +163,13 @@ class FlowEventProcessorImplTest {
         whenever(externalEventState.requestId).thenReturn("externalEventId")
         whenever(flowStartContext.requestId).thenReturn("requestId")
         whenever(flowStartContext.identity).thenReturn(aliceHoldingIdentity)
+        whenever(flowEngineReplayService.getReplayEvents(any(), anyOrNull())).thenReturn(null)
+        whenever(flowEngineReplayService.generateSavedOutputs(any(), any())).thenReturn(
+            SavedOutputs(
+                UUID.randomUUID().toString(),
+                emptyList()
+            )
+        )
     }
 
     @Test
@@ -306,7 +319,7 @@ class FlowEventProcessorImplTest {
 
         assertThat(response).isEqualTo(StateAndEventProcessor.Response(state, emptyList(), false))
         verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
-        verify(flowEventPipelineFactory, times(1)).create(any(), any(), any(), any(), any(), any())
+        verify(flowEventPipelineFactory, times(1)).create(any(), any(), any(), any(), any(), any(), anyOrNull())
     }
 
     @Test

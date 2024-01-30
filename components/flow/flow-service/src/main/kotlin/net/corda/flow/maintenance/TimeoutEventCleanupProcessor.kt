@@ -3,7 +3,6 @@ package net.corda.flow.maintenance
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.data.flow.FlowTimeout
 import net.corda.data.flow.state.checkpoint.Checkpoint
-import net.corda.data.messaging.mediator.MediatorState
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.state.impl.FlowCheckpointFactory
 import net.corda.libs.configuration.SmartConfig
@@ -17,7 +16,6 @@ import org.slf4j.LoggerFactory
 class TimeoutEventCleanupProcessor(
     private val checkpointCleanupHandler: CheckpointCleanupHandler,
     private val stateManager: StateManager,
-    private val mediatorDeserializer: CordaAvroDeserializer<MediatorState>,
     private val checkpointDeserializer: CordaAvroDeserializer<Checkpoint>,
     private val flowCheckpointFactory: FlowCheckpointFactory,
     private val config: SmartConfig
@@ -46,15 +44,14 @@ class TimeoutEventCleanupProcessor(
         val statesToRecords = stateManager.get(events.mapNotNull {
             it.value?.checkpointStateKey
         }).mapNotNull { (key, state) ->
-            mediatorDeserializer.deserialize(state.value)?.let { mediatorState ->
-                checkpointDeserializer.deserialize(mediatorState.state.array())?.let {
-                    // This should never happen as we always get 'checkpointId' + 'reason' within 'FlowTimeout' record
-                    val timeOutReason = timeOutReasonsByCheckpointId[key] ?: "Unknown"
-                    logger.info("Flow '${it.flowId}' will be timed out due to '${timeOutReason}'")
+            checkpointDeserializer.deserialize(state.value)?.let {
+                // This should never happen as we always get 'checkpointId' + 'reason' within 'FlowTimeout' record
+                val timeOutReason = timeOutReasonsByCheckpointId[key] ?: "Unknown"
+                logger.info("Flow '${it.flowId}' will be timed out due to '${timeOutReason}'")
 
-                    state to generateCleanupRecords(it, timeOutReason)
-                }
+                state to generateCleanupRecords(it, timeOutReason)
             }
+
         }.toMap()
 
         if (statesToRecords.size < events.size) {
@@ -62,7 +59,7 @@ class TimeoutEventCleanupProcessor(
                 .also {
                     logger.warn(
                         "Could not process flow timeout events for keys '${it.joinToString()}' as " +
-                            "the checkpoint did not deserialize cleanly."
+                                "the checkpoint did not deserialize cleanly."
                     )
                 }
         }

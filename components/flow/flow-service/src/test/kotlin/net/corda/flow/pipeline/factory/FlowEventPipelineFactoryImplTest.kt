@@ -96,7 +96,9 @@ class FlowEventPipelineFactoryImplTest {
             mapOf(FLOW_CONFIG to config),
             emptyMap(),
             flowEventContext.flowTraceContext,
-            0)
+            0,
+            "inputEventHash"
+        )
         assertEquals(expected.context, result.context)
     }
 }

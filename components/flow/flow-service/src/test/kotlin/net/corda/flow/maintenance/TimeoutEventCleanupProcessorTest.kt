@@ -33,7 +33,6 @@ class TimeoutEventCleanupProcessorTest {
     private val processor = TimeoutEventCleanupProcessor(
         checkpointCleanupHandler,
         stateManager,
-        mediatorDeserializer,
         checkpointCordaAvroDeserializer,
         flowCheckpointFactory,
         config
