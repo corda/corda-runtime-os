@@ -12,9 +12,17 @@ class EnvironmentSetupHelperTests {
     @TempDir
     lateinit var tempDir: Path
 
+    private val publicVersion = "5.1.0.0"
+    private val hcVersion = "5.1.0.0-HC15"
+    private val rcVersion = "5.1.0.0-RC03"
+    private val alphaVersion = "5.2.0.0-alpha-1706270718014"
+    private val betaVersion = "5.2.0.0-beta-1706271586528"
+    private val cordaArtifactoryUsername = System.getProperty("cordaArtifactoryUsername")
+    private val cordaArtifactoryPassword = System.getProperty("cordaArtifactoryPassword")
+
     @Test
     fun downloadCombinedWorkerFromGitHub() {
-        val version = "5.1.0.0"
+        val version = publicVersion
         val fileName = "corda-combined-worker-$version.jar"
         val targetFile = File("$tempDir/$fileName")
         EnvironmentSetupHelper().downloadCombinedWorker(
@@ -30,9 +38,7 @@ class EnvironmentSetupHelperTests {
 
     @Test
     fun downloadCombinedWorkerHC() {
-        val username = System.getProperty("cordaArtifactoryUsername")
-        val password = System.getProperty("cordaArtifactoryPassword")
-        val version = "5.1.0.0-HC15"
+        val version = hcVersion
         val fileName = "corda-combined-worker-$version.jar"
         val targetFile = File("$tempDir/$fileName")
         EnvironmentSetupHelper().downloadCombinedWorker(
@@ -40,17 +46,15 @@ class EnvironmentSetupHelperTests {
             version,
             "release-$version",
             targetFile.path,
-            username,
-            password
+            cordaArtifactoryUsername,
+            cordaArtifactoryPassword
         )
         assertTrue(targetFile.exists(), "The HC combined worker file should have been downloaded from Artifactory")
     }
 
     @Test
     fun downloadCombinedWorkerRC() {
-        val username = System.getProperty("cordaArtifactoryUsername")
-        val password = System.getProperty("cordaArtifactoryPassword")
-        val version = "5.1.0.0-RC03"
+        val version = rcVersion
         val fileName = "corda-combined-worker-$version.jar"
         val targetFile = File("$tempDir/$fileName")
         EnvironmentSetupHelper().downloadCombinedWorker(
@@ -58,17 +62,15 @@ class EnvironmentSetupHelperTests {
             version,
             "release-$version",
             targetFile.path,
-            username,
-            password
+            cordaArtifactoryUsername,
+            cordaArtifactoryPassword
         )
         assertTrue(targetFile.exists(), "The RC combined worker file should have been downloaded from Artifactory")
     }
 
     @Test
     fun downloadCombinedWorkerAlpha() {
-        val username = System.getProperty("cordaArtifactoryUsername")
-        val password = System.getProperty("cordaArtifactoryPassword")
-        val version = "5.2.0.0-alpha-1706270718014"
+        val version = alphaVersion
         val fileName = "corda-combined-worker-$version.jar"
         val targetFile = File("$tempDir/$fileName")
         EnvironmentSetupHelper().downloadCombinedWorker(
@@ -76,17 +78,15 @@ class EnvironmentSetupHelperTests {
             version,
             "release-$version",
             targetFile.path,
-            username,
-            password
+            cordaArtifactoryUsername,
+            cordaArtifactoryPassword
         )
         assertTrue(targetFile.exists(), "The alpha combined worker file should have been downloaded from Artifactory")
     }
 
     @Test
     fun downloadCombinedWorkerBeta() {
-        val username = System.getProperty("cordaArtifactoryUsername")
-        val password = System.getProperty("cordaArtifactoryPassword")
-        val version = "5.2.0.0-beta-1706271586528"
+        val version = betaVersion
         val fileName = "corda-combined-worker-$version.jar"
         val targetFile = File("$tempDir/$fileName")
         EnvironmentSetupHelper().downloadCombinedWorker(
@@ -94,20 +94,115 @@ class EnvironmentSetupHelperTests {
             version,
             "release-$version",
             targetFile.path,
-            username,
-            password
+            cordaArtifactoryUsername,
+            cordaArtifactoryPassword
         )
         assertTrue(targetFile.exists(), "The beta combined worker file should have been downloaded from Artifactory")
     }
 
     @Test
     fun unableToDownloadUnpublishedCombinedWorkerWithoutCredentials() {
-        val version = "5.2.0.0-beta-1706271586528"
+        val version = betaVersion
         val fileName = "corda-combined-worker-$version.jar"
         val targetFile = File("$tempDir/$fileName")
         val exception = assertThrows<CordaRuntimeGradlePluginException> {
             EnvironmentSetupHelper().downloadCombinedWorker(
                 fileName,
+                version,
+                "release-$version",
+                targetFile.path,
+                "",
+                ""
+            )
+        }
+        assertTrue(
+            exception.message!!.contains("require a username and password"),
+            "We should not be able to download an unpublished version without credentials"
+        )
+    }
+
+    @Test
+    fun downloadNotaryServerCpbFromGitHub() {
+        val version = publicVersion
+        val fileName = "notary-plugin-non-validating-server-$version-package.cpb"
+        val targetFile = File("$tempDir/$fileName")
+        EnvironmentSetupHelper().downloadNotaryCpb(
+            version,
+            "release-$version",
+            targetFile.path,
+            "",
+            ""
+        )
+        assertTrue(targetFile.exists(), "The notary server cpb file should have been downloaded from GitHub")
+    }
+
+    @Test
+    fun downloadNotaryServerCpbHC() {
+        val version = hcVersion
+        val fileName = "notary-plugin-non-validating-server-$version-package.cpb"
+        val targetFile = File("$tempDir/$fileName")
+        EnvironmentSetupHelper().downloadNotaryCpb(
+            version,
+            "release-$version",
+            targetFile.path,
+            cordaArtifactoryUsername,
+            cordaArtifactoryPassword
+        )
+        assertTrue(targetFile.exists(), "The HC notary server cpb file should have been downloaded from Artifactory")
+    }
+
+    @Test
+    fun downloadNotaryServerCpbRC() {
+        val version = rcVersion
+        val fileName = "notary-plugin-non-validating-server-$version-package.cpb"
+        val targetFile = File("$tempDir/$fileName")
+        EnvironmentSetupHelper().downloadNotaryCpb(
+            version,
+            "release-$version",
+            targetFile.path,
+            cordaArtifactoryUsername,
+            cordaArtifactoryPassword
+        )
+        assertTrue(targetFile.exists(), "The RC notary server cpb file should have been downloaded from Artifactory")
+    }
+
+    @Test
+    fun downloadNotaryServerCpbAlpha() {
+        val version = alphaVersion
+        val fileName = "notary-plugin-non-validating-server-$version-package.cpb"
+        val targetFile = File("$tempDir/$fileName")
+        EnvironmentSetupHelper().downloadNotaryCpb(
+            version,
+            "release-$version",
+            targetFile.path,
+            cordaArtifactoryUsername,
+            cordaArtifactoryPassword
+        )
+        assertTrue(targetFile.exists(), "The alpha notary server cpb file should have been downloaded from Artifactory")
+    }
+
+    @Test
+    fun downloadNotaryServerCpbBeta() {
+        val version = betaVersion
+        val fileName = "notary-plugin-non-validating-server-$version-package.cpb"
+        val targetFile = File("$tempDir/$fileName")
+        EnvironmentSetupHelper().downloadNotaryCpb(
+            version,
+            "release-$version",
+            targetFile.path,
+            cordaArtifactoryUsername,
+            cordaArtifactoryPassword
+        )
+        assertTrue(targetFile.exists(), "The beta notary server cpb file should have been downloaded from Artifactory")
+    }
+
+    @Test
+    fun unableToDownloadUnpublishedNotaryServerCpbWithoutCredentials() {
+        val version = betaVersion
+        val fileName = "notary-plugin-non-validating-server-$version-package.cpb"
+        val targetFile = File("$tempDir/$fileName")
+        val exception = assertThrows<CordaRuntimeGradlePluginException> {
+            EnvironmentSetupHelper().downloadNotaryCpb(
                 version,
                 "release-$version",
                 targetFile.path,

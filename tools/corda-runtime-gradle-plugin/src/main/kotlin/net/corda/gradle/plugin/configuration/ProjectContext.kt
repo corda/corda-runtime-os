@@ -24,11 +24,21 @@ class ProjectContext(val project: Project, pluginConfig: PluginConfiguration) {
     val cordaCliBinDir: String = pluginConfig.cordaCliBinDir.get()
     val artifactoryUsername: String = pluginConfig.artifactoryUsername.get()
     val artifactoryPassword: String = pluginConfig.artifactoryPassword.get()
+    val notaryCpiName: String = pluginConfig.notaryCpiName.get()
+    val corDappCpiName: String = pluginConfig.corDappCpiName.get()
+    val cpiUploadTimeout: Long = pluginConfig.cpiUploadTimeout.get().toLong()
+    val vnodeRegistrationTimeout: Long = pluginConfig.vnodeRegistrationTimeout.get().toLong()
+    val cordaProcessorTimeout: Long = pluginConfig.cordaProcessorTimeout.get().toLong()
+    val workflowsModuleName: String = pluginConfig.workflowsModuleName.get()
+    val networkConfigFile: String = pluginConfig.networkConfigFile.get()
+    val r3RootCertFile: String = "${project.rootDir}/${pluginConfig.r3RootCertFile.get()}"
 
     // Set Non user configurable context properties
     val javaBinDir: String = "${System.getProperty("java.home")}/bin"
     val cordaPidCache: String = "$workspaceDir/CordaPIDCache.dat"
     val jdbcDir: String = "$cordaBinDir/jdbcDrivers"
+    val notaryServiceDir: String = "$cordaBinDir/notaryServer"
+    val workflowBuildDir: String = "${project.rootDir}/${workflowsModuleName}/build"
 
     val cordaClusterHost: String = cordaClusterURL.split("://").last().split(":").first()
     val cordaClusterPort: Int = cordaClusterURL.split("://").last().split(":").last().toInt()
@@ -36,6 +46,23 @@ class ProjectContext(val project: Project, pluginConfig: PluginConfiguration) {
     val combinedWorkerFileName: String = "corda-combined-worker-$combinedWorkerVersion.jar"
     val combinedWorkerFilePath: String = "$cordaBinDir/combinedWorker/$combinedWorkerFileName"
     val cordaReleaseBranchName: String = "release-$combinedWorkerVersion"
+    val notaryVersion: String = combinedWorkerVersion
+    val notaryCpbFilePath: String = "$notaryServiceDir/notary-plugin-non-validating-server-$notaryVersion-package.cpb"
+    val notaryCpiFilePath: String = "$workflowBuildDir/$notaryCpiName-${project.version}.cpi"
+    val corDappCpbFilePath: String = "$workflowBuildDir/libs/${workflowsModuleName}-${project.version}-package.cpb"
+    val corDappCpiFilePath: String = "$workflowBuildDir/$corDappCpiName-${project.version}.cpi"
+    val corDappCpiUploadStatusFilePath: String = "$workspaceDir/corDappCpiUploadStatus.json"
+    val notaryCpiUploadStatusFilePath: String = "$workspaceDir/notaryCpiUploadStatus.json"
+
+    val networkConfig: NetworkConfig = NetworkConfig("${project.rootDir}/${networkConfigFile}")
+    val groupPolicyFilePath: String = "${project.rootDir}/$workspaceDir/GroupPolicy.json"
+    val gradleDefaultCertAlias: String = "gradle-plugin-default-key"
+    val gradleDefaultCertFilePath: String = "${project.rootDir}/config/gradle-plugin-default-key.pem"
+    val keystoreAlias: String = "my-signing-key"
+    val keystorePassword: String = "keystore password"
+    val keystoreFilePath: String = "${project.rootDir}/$workspaceDir/signingkeys.pfx"
+    val keystoreCertFilePath: String = "${project.rootDir}/$workspaceDir/signingkey1.pem"
+    val r3RootCertKeyAlias: String = "digicert-ca"
 
     val logger: Logger = project.logger
 }
