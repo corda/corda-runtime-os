@@ -9,11 +9,8 @@ import net.corda.flow.rest.flowstatus.FlowStatusUpdateListener
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
-import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.Subscription
@@ -42,7 +39,12 @@ class FlowStatusLookupServiceImpl @Activate constructor(
         private const val GROUP_NAME = "flow_status_subscription"
     }
 
-    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<FlowStatusCacheService>(::eventHandler)
+    private val lifecycleCoordinator = coordinatorFactory
+        .createCoordinator<FlowStatusCacheService> { event, coordinator ->
+            when (event) {
+                is StartEvent -> coordinator.updateStatus(LifecycleStatus.UP)
+            }
+        }
 
     private var flowStatusSubscription: Subscription<FlowKey, FlowStatus>? = null
 
@@ -86,19 +88,5 @@ class FlowStatusLookupServiceImpl @Activate constructor(
         listener: FlowStatusUpdateListener
     ): AutoCloseable {
         TODO("Not yet implemented")
-    }
-
-    private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        when (event) {
-            is StartEvent -> {
-                lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
-            }
-
-            is RegistrationStatusChangeEvent -> {
-                if (event.status == LifecycleStatus.DOWN) {
-                    coordinator.updateStatus(LifecycleStatus.DOWN)
-                }
-            }
-        }
     }
 }

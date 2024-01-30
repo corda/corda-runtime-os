@@ -9,7 +9,6 @@ import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
-import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -112,12 +111,5 @@ class FlowStatusLookupServiceImplTest {
     fun `Test on start event component status up is signaled`() {
         eventHandler.processEvent(StartEvent(), lifecycleCoordinator)
         verify(lifecycleCoordinator).updateStatus(LifecycleStatus.UP)
-    }
-
-    @Test
-    fun `Test on topic subscription going down component status down is signaled`() {
-        flowStatusCacheService.initialise(config)
-        eventHandler.processEvent(RegistrationStatusChangeEvent(lifecycleEventRegistration, LifecycleStatus.DOWN), lifecycleCoordinator)
-        verify(lifecycleCoordinator).updateStatus(LifecycleStatus.DOWN)
     }
 }
