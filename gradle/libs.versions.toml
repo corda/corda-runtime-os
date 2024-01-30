@@ -5,7 +5,7 @@ bouncycastleVersion = "1.77"
 hikariCpVersion = "5.1.0"
 jacksonVersion = "2.16.1"
 micrometerVersion = "1.12.2"
-mssqlDriverVersion = "11.2.3.jre17"
+mssqlDriverVersion = "12.3.0.jre17-preview"
 postgresDriverVersion = "42.7.1"
 
 # REST dependency versions
