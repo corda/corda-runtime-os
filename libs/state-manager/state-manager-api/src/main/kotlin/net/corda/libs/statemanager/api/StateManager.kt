@@ -183,13 +183,13 @@ interface StateManager : Lifecycle {
     ): Map<String, State>
 
     /**
-     * Create a new operation batch.
+     * Create a new operation group.
      *
-     * An operation batch can be used to logically group together a set of create, update and delete operations. These
+     * An operation group can be used to logically group together a set of create, update and delete operations. These
      * operations will use the same underlying context for communicating with the implementation backend. For example,
      * with the database backend, all these operations will be completed as part of the same database transaction.
      *
      * @return The group builder to which operations can be added.
      */
-    fun createOperationBatch(): StateOperationBatch
+    fun createOperationGroup(): StateOperationGroup
 }

@@ -3,13 +3,13 @@ package net.corda.libs.statemanager.impl
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.utils.transaction
 import net.corda.libs.statemanager.api.State
-import net.corda.libs.statemanager.api.StateOperationBatch
+import net.corda.libs.statemanager.api.StateOperationGroup
 import net.corda.libs.statemanager.impl.repository.StateRepository
 
-class StateOperationBatchImpl(
+class StateOperationGroupImpl(
     private val dataSource: CloseableDataSource,
     private val repository: StateRepository
-) : StateOperationBatch {
+) : StateOperationGroup {
 
     private val stateKeys = mutableSetOf<String>()
     private val creates = mutableListOf<State>()
@@ -17,29 +17,29 @@ class StateOperationBatchImpl(
     private val deletes = mutableListOf<State>()
     private var executed = false
 
-    override fun create(states: Collection<State>): StateOperationBatch {
+    override fun create(states: Collection<State>): StateOperationGroup {
         addToList(states, creates)
         return this
     }
 
-    override fun update(states: Collection<State>): StateOperationBatch {
+    override fun update(states: Collection<State>): StateOperationGroup {
         addToList(states, updates)
         return this
     }
 
-    override fun delete(states: Collection<State>): StateOperationBatch {
+    override fun delete(states: Collection<State>): StateOperationGroup {
         addToList(states, deletes)
         return this
     }
 
     private fun addToList(states: Collection<State>, list: MutableList<State>) {
         if (executed) {
-            throw IllegalStateException("Attempted to add states to already executed state operation batch")
+            throw IllegalStateException("Attempted to add states to already executed state operation group")
         }
         states.forEach { state ->
             if (state.key in stateKeys) {
                 throw IllegalArgumentException(
-                    "Attempted to add state with key ${state.key} more than once to the same operation batch"
+                    "Attempted to add state with key ${state.key} more than once to the same operation group"
                 )
             }
             stateKeys.add(state.key)
@@ -49,7 +49,7 @@ class StateOperationBatchImpl(
 
     override fun execute(): Map<String, State?> {
         if (executed) {
-            throw IllegalStateException("Attempted to execute a batch that has already been executed")
+            throw IllegalStateException("Attempted to execute a group that has already been executed")
         }
         return dataSource.connection.transaction { connection ->
             val createFailures = repository.create(

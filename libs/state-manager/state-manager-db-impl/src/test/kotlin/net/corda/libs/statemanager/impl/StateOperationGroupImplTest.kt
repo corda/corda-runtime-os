@@ -17,7 +17,7 @@ import org.mockito.kotlin.whenever
 import java.sql.Connection
 import java.time.Instant
 
-class StateOperationBatchImplTest {
+class StateOperationGroupImplTest {
 
     private val connection = mock<Connection>()
     private val datasource = mock<CloseableDataSource> {
@@ -30,15 +30,15 @@ class StateOperationBatchImplTest {
     private val stateThree = State("key3", "state3".toByteArray(), 3, metadata(), Instant.now())
 
     @Test
-    fun `when states are created, updated and deleted, all operations appear in the same batch`() {
+    fun `when states are created, updated and deleted, all operations appear in the same group`() {
         setUpRepository(
             listOf(stateOne.key),
             StateRepository.StateUpdateSummary(listOf(), listOf()),
             listOf(),
             listOf(stateTwo, stateThree)
         )
-        val batch = StateOperationBatchImpl(datasource, repository)
-        val failures = batch
+        val group = StateOperationGroupImpl(datasource, repository)
+        val failures = group
             .create(stateOne)
             .update(stateTwo)
             .delete(stateThree)
@@ -60,8 +60,8 @@ class StateOperationBatchImplTest {
             listOf(),
             listOf(stateOne, stateTwo, stateThree)
         )
-        val batch = StateOperationBatchImpl(datasource, repository)
-        val failures = batch
+        val group = StateOperationGroupImpl(datasource, repository)
+        val failures = group
             .create(stateOne)
             .execute()
         assertThat(failures).containsKey(stateOne.key)
@@ -80,8 +80,8 @@ class StateOperationBatchImplTest {
             listOf(),
             listOf(stateTwo, stateThree)
         )
-        val batch = StateOperationBatchImpl(datasource, repository)
-        val failures = batch
+        val group = StateOperationGroupImpl(datasource, repository)
+        val failures = group
             .update(stateTwo)
             .execute()
 
@@ -102,8 +102,8 @@ class StateOperationBatchImplTest {
             listOf(),
             listOf(stateThree)
         )
-        val batch = StateOperationBatchImpl(datasource, repository)
-        val failures = batch
+        val group = StateOperationGroupImpl(datasource, repository)
+        val failures = group
             .update(stateTwo)
             .execute()
 
@@ -124,8 +124,8 @@ class StateOperationBatchImplTest {
             listOf(stateThree.key),
             listOf(stateThree)
         )
-        val batch = StateOperationBatchImpl(datasource, repository)
-        val failures = batch
+        val group = StateOperationGroupImpl(datasource, repository)
+        val failures = group
             .delete(stateThree)
             .execute()
 
@@ -146,8 +146,8 @@ class StateOperationBatchImplTest {
             listOf(stateThree.key),
             listOf()
         )
-        val batch = StateOperationBatchImpl(datasource, repository)
-        val failures = batch
+        val group = StateOperationGroupImpl(datasource, repository)
+        val failures = group
             .delete(stateThree)
             .execute()
 
@@ -162,8 +162,8 @@ class StateOperationBatchImplTest {
     @Test
     fun `when execute is called with no states, nothing happens`() {
         setUpRepository()
-        val batch = StateOperationBatchImpl(datasource, repository)
-        val failures = batch
+        val group = StateOperationGroupImpl(datasource, repository)
+        val failures = group
             .execute()
 
         assertThat(failures).isEmpty()
@@ -176,42 +176,42 @@ class StateOperationBatchImplTest {
 
     @Test
     fun `when a state on the same key is added twice, the group builder throws an exception`() {
-        val batch = StateOperationBatchImpl(datasource, repository)
-        batch.create(stateOne)
+        val group = StateOperationGroupImpl(datasource, repository)
+        group.create(stateOne)
         assertThrows<IllegalArgumentException> {
-            batch.create(stateOne)
+            group.create(stateOne)
         }
         assertThrows<IllegalArgumentException> {
-            batch.update(stateOne)
+            group.update(stateOne)
         }
         assertThrows<IllegalArgumentException> {
-            batch.delete(stateOne)
+            group.delete(stateOne)
         }
     }
 
     @Test
     fun `when execute is invoked twice, the second attempt fails`() {
         setUpRepository()
-        val batch = StateOperationBatchImpl(datasource, repository)
-        batch.execute()
+        val group = StateOperationGroupImpl(datasource, repository)
+        group.execute()
         assertThrows<IllegalStateException> {
-            batch.execute()
+            group.execute()
         }
     }
 
     @Test
     fun `when adding states to a group builder that has already been executed, an exception is thrown`() {
         setUpRepository()
-        val batch = StateOperationBatchImpl(datasource, repository)
-        batch.execute()
+        val group = StateOperationGroupImpl(datasource, repository)
+        group.execute()
         assertThrows<IllegalStateException> {
-            batch.create(stateOne)
+            group.create(stateOne)
         }
         assertThrows<IllegalStateException> {
-            batch.update(stateOne)
+            group.update(stateOne)
         }
         assertThrows<IllegalStateException> {
-            batch.delete(stateOne)
+            group.delete(stateOne)
         }
     }
 

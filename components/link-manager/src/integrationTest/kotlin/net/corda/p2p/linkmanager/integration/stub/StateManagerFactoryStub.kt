@@ -6,7 +6,7 @@ import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
-import net.corda.libs.statemanager.api.StateOperationBatch
+import net.corda.libs.statemanager.api.StateOperationGroup
 import net.corda.lifecycle.LifecycleCoordinatorName
 
 class StateManagerFactoryStub : StateManagerFactory {
@@ -40,7 +40,7 @@ class StateManagerFactoryStub : StateManagerFactory {
                 metadataFilters: Collection<MetadataFilter>
             ): Map<String, State> = throw UnsupportedOperationException()
 
-            override fun createOperationBatch(): StateOperationBatch {
+            override fun createOperationGroup(): StateOperationGroup {
                 throw UnsupportedOperationException()
             }
 
