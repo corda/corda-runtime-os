@@ -50,7 +50,7 @@ class PostgresHelper : ExternalDbHelper() {
                 logger.info("Creating schema: $schemaName".emphasise())
                 adminDataSource.connection.use { conn ->
                     val sql = """
-                        CREATE SCHEMA IF NOT EXISTS "$schemaName";
+                        CREATE SCHEMA IF NOT EXISTS $schemaName;
                     """.trimIndent()
                     conn.prepareStatement(sql).execute()
                     conn.commit()
@@ -70,15 +70,15 @@ class PostgresHelper : ExternalDbHelper() {
                             END IF; 
                         END 
                         ${'$'}${'$'};
-                        GRANT ALL ON SCHEMA "$schemaName" TO "$dbUser";
-                        ALTER ROLE "$dbUser" SET search_path TO "$schemaName";
+                        GRANT ALL ON SCHEMA $schemaName TO "$dbUser";
+                        ALTER ROLE "$dbUser" SET search_path TO $schemaName;
                             """.trimIndent()
                     conn.prepareStatement(createUserSql).execute()
                     conn.commit()
                 }
             } else {
                 adminDataSource.connection.use { conn ->
-                    conn.prepareStatement("ALTER ROLE $adminUser SET search_path TO public, \"$schemaName\";").execute()
+                    conn.prepareStatement("ALTER ROLE $adminUser SET search_path TO public, $schemaName;").execute()
                     conn.commit()
                 }
             }
