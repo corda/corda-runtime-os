@@ -32,20 +32,52 @@ class PostgresHelper : ExternalDbHelper() {
         rewriteBatchedInserts: Boolean,
         maximumPoolSize: Int
     ): CloseableDataSource {
-        val user = dbUser ?: getAdminUser()
-        val password = dbPassword ?: getAdminPassword()
+        val adminUser = getAdminUser()
+        val adminPassword = getAdminPassword()
 
-        if (!schemaName.isNullOrBlank() && createSchema) {
-            logger.info("Creating schema: $schemaName".emphasise())
-            net.corda.db.core.createUnpooledDataSource(
-                driverClass,
-                jdbcUrl,
-                user,
-                password,
-                maximumPoolSize = maximumPoolSize
-            ).connection.use { conn ->
-                conn.prepareStatement("CREATE SCHEMA IF NOT EXISTS $schemaName;").execute()
-                conn.commit()
+        val adminDataSource = net.corda.db.core.createUnpooledDataSource(
+            driverClass,
+            jdbcUrl,
+            adminUser,
+            adminPassword,
+            maximumPoolSize = maximumPoolSize
+        )
+
+        var user: String? = null
+        var password: String? = null
+        if (!schemaName.isNullOrBlank()) {
+            if (createSchema) {
+                logger.info("Creating schema: $schemaName".emphasise())
+                adminDataSource.connection.use { conn ->
+                    val sql = """
+                        CREATE SCHEMA IF NOT EXISTS "$schemaName";
+                    """.trimIndent()
+                    conn.prepareStatement(sql).execute()
+                    conn.commit()
+                }
+            }
+
+            if (dbUser != null) {
+                password = requireNotNull(dbPassword) {
+                    "You need to define a password for user $dbUser"
+                }
+                adminDataSource.connection.use { conn ->
+                    val createUserSql = """
+                        CREATE USER "$dbUser" WITH PASSWORD '$password';
+                        GRANT ALL ON SCHEMA "$schemaName" TO "$dbUser";
+                        ALTER ROLE "$dbUser" SET search_path TO "$schemaName";
+                            """.trimIndent()
+                    conn.prepareStatement(createUserSql).execute()
+                    conn.commit()
+                }
+                user = dbUser
+            } else {
+                adminDataSource.connection.use { conn ->
+                    conn.prepareStatement("ALTER ROLE $adminUser SET search_path TO \"$schemaName\";").execute()
+                    conn.commit()
+                }
+                user = adminUser
+                password = getAdminPassword()
             }
         }
 
@@ -55,11 +87,12 @@ class PostgresHelper : ExternalDbHelper() {
             jdbcUrl
         }
         logger.info("Using URL $jdbcUrlCopy".emphasise())
+
         return net.corda.db.core.createUnpooledDataSource(
             driverClass,
             jdbcUrlCopy,
-            user,
-            password,
+            checkNotNull(user),
+            checkNotNull(password),
             maximumPoolSize = maximumPoolSize
         )
     }
