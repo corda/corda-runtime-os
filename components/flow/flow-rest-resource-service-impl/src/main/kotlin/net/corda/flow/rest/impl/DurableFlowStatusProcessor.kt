@@ -9,7 +9,7 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 
 /**
- * This class is responsible for processing lists of records associated with [FlowStatus] changes read from a Kafka topic.
+ * This class is responsible for processing batches of records associated with [FlowStatus] changes from the [flow.status] topic.
  * These status changes are then persisted to a dedicated [StateManager] instance.
  *
  * @property stateManager The [StateManager] instance used for managing state persistence.
