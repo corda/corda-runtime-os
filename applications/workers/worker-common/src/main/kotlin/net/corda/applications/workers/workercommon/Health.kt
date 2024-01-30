@@ -20,14 +20,18 @@ object Health {
     fun configure(webServer: WebServer, lifecycleRegistry: LifecycleRegistry) {
         val healthRouteHandler = WebHandler { context ->
             val unhealthyComponents = lifecycleRegistry.componentWithStatus(setOf(LifecycleStatus.ERROR))
-            val status = if (unhealthyComponents.isEmpty()) {
+            val healthy = unhealthyComponents.isEmpty()
+            logIfDifferentFromLastMessage(
+                HTTP_HEALTH_ROUTE,
+                if (healthy)
+                    "Status is healthy"
+                else
+                    "Status is unhealthy. The status of $unhealthyComponents has error."
+            )
+            val status = if (healthy) {
                 clearLastLogMessageForRoute(HTTP_HEALTH_ROUTE)
                 ResponseCode.OK
             } else {
-                logIfDifferentFromLastMessage(
-                    HTTP_HEALTH_ROUTE,
-                    "Status is unhealthy. The status of $unhealthyComponents has error."
-                )
                 ResponseCode.SERVICE_UNAVAILABLE
             }
             context.status(status)

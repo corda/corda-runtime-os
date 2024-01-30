@@ -4,9 +4,9 @@ kotlinVersion = "1.8.21"
 bouncycastleVersion = "1.77"
 hikariCpVersion = "5.1.0"
 jacksonVersion = "2.16.1"
-micrometerVersion = "1.11.0"
+micrometerVersion = "1.12.2"
 mssqlDriverVersion = "11.2.3.jre17"
-postgresDriverVersion = "42.6.0"
+postgresDriverVersion = "42.7.1"
 
 # REST dependency versions
 javalinVersion = "4.6.8"
@@ -34,6 +34,8 @@ slf4jVersion = { strictly = "1.7.36" }
 slf4jV2Version = { strictly = "2.0.6" }
 
 kubernetesClientVersion = "6.10.0"
+okioVersion = { strictly = "3.4.0" }
+okHttpVersion = { strictly = "4.9.2" }
 
 # Testing
 assertjVersion = "3.25.2"
@@ -103,6 +105,8 @@ slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4
 slf4j-v2-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4jV2Version" }
 unirest-java = { group = "com.konghq", name = "unirest-java", version.ref = "unirestVersion"}
 unirest-objectmapper-jackson = { group = "com.konghq", name = "unirest-objectmapper-jackson", version.ref = "unirestVersion" }
+okio = { group = "com.squareup.okio", name = "okio", version.ref = "okioVersion" }
+okHttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okHttpVersion" }
 swagger-core = { group = "io.swagger.core.v3", name = "swagger-core", version.ref = "swaggerVersion" }
 swagger-ui = { group = "org.webjars", name = "swagger-ui", version.ref = "swaggeruiVersion" }
 zipkin-core = { group = "io.zipkin.zipkin2", name = "zipkin", version.ref = "zipkinCoreVersion" }
