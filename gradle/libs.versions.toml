@@ -6,7 +6,7 @@ hikariCpVersion = "5.1.0"
 jacksonVersion = "2.16.1"
 micrometerVersion = "1.11.0"
 mssqlDriverVersion = "11.2.3.jre17"
-postgresDriverVersion = "42.6.0"
+postgresDriverVersion = "42.7.1"
 
 # REST dependency versions
 javalinVersion = "4.6.8"
