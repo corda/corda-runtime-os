@@ -113,7 +113,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         .messageProcessor(messageProcessor)
         .messageRouterFactory(createMessageRouterFactory(messagingConfig))
         //.threads(messagingConfig.getInt(MEDIATOR_PROCESSING_THREAD_POOL_SIZE))
-        .threads(7)
+        .threads(8)
         .threadName("flow-event-mediator")
         .stateManager(stateManager)
         .minGroupSize(messagingConfig.getInt(MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT))

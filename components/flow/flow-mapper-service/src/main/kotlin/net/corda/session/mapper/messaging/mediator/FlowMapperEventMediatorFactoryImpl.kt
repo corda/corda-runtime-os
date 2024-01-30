@@ -1,8 +1,10 @@
 package net.corda.session.mapper.messaging.mediator
 
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.FlowMapperEvent
+import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.p2p.app.AppMessage
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
@@ -83,7 +85,7 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
         .messageProcessor(messageProcessor)
         .messageRouterFactory(createMessageRouterFactory())
         //.threads(messagingConfig.getInt(MEDIATOR_PROCESSING_THREAD_POOL_SIZE))
-        .threads(7)
+        .threads(8)
         .threadName("flow-mapper-event-mediator")
         .stateManager(stateManager)
         .minGroupSize(messagingConfig.getInt(MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT))
@@ -96,10 +98,17 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
             when (val event = message.payload) {
                 is AppMessage -> routeTo(messageBusClient, P2P_OUT_TOPIC, ASYNCHRONOUS)
                 is FlowEvent -> {
-                    if (event.payload is StartFlow) {
-                        routeTo(messageBusClient, FLOW_START, ASYNCHRONOUS)
-                    } else {
-                        routeTo(messageBusClient, FLOW_SESSION, ASYNCHRONOUS)
+                    when (val flowEvent = event.payload) {
+                        is StartFlow -> routeTo(messageBusClient, FLOW_START, ASYNCHRONOUS)
+                        is SessionEvent -> {
+                            val sessionEvent = flowEvent.payload
+                            if (sessionEvent is SessionData && sessionEvent.sessionInit != null) {
+                                routeTo(messageBusClient, FLOW_START, ASYNCHRONOUS)
+                            } else {
+                                routeTo(messageBusClient, FLOW_SESSION, ASYNCHRONOUS)
+                            }
+                        }
+                        else -> routeTo(messageBusClient, FLOW_SESSION, ASYNCHRONOUS)
                     }
                 }
                 is FlowMapperEvent -> routeTo(messageBusClient, FLOW_MAPPER_SESSION_IN, ASYNCHRONOUS)
