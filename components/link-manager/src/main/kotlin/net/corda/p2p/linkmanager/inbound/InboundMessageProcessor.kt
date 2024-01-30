@@ -283,6 +283,7 @@ internal class InboundMessageProcessor(
                 "Processing message ${innerMessage.message.header.messageId} " +
                     "of type ${innerMessage.message.javaClass} from session ${session.sessionId}"
             }
+            logger.info("QQQ posting ack for ${innerMessage.message.header.messageId}")
             messages.add(Record(Schemas.P2P.P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
             makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
             sessionManager.inboundSessionEstablished(session.sessionId)
@@ -308,7 +309,9 @@ internal class InboundMessageProcessor(
         message: AvroSealedClasses.DataMessage
     ): MutableList<Record<*, *>> {
         val messages = mutableListOf<Record<*, *>>()
+        logger.info("QQQ processLinkManagerPayload for session ID: $sessionId")
         MessageConverter.extractPayload(session, sessionId, message, DataMessagePayload::fromByteBuffer)?.let {
+            logger.info("QQQ processLinkManagerPayload \t it.message: ${it.message.javaClass.simpleName}")
             when (val innerMessage = it.message) {
                 is HeartbeatMessage -> {
                     logger.debug { "Processing heartbeat message from session $sessionId" }
@@ -358,6 +361,7 @@ internal class InboundMessageProcessor(
         // We route the ACK back to the original source
         val ackDest = message.header.source.toCorda()
         val ackSource = message.header.destination.toCorda()
+        logger.info("QQQ Sending ack for ${message.header.messageId} from $ackSource to $ackDest")
         val ack = MessageConverter.linkOutMessageFromAck(
             MessageAck(AuthenticatedMessageAck(message.header.messageId)),
             ackSource,
