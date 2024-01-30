@@ -33,7 +33,12 @@ class FakeDbConnectionManager(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private data class NamedDataSources(val id: UUID, val persistenceUnitName: String, val schemaName: String, val dataSource: CloseableDataSource)
+    private data class NamedDataSources(
+        val id: UUID,
+        val persistenceUnitName: String,
+        val schemaName: String,
+        val dataSource: CloseableDataSource
+    )
 
     private val dbSources: List<NamedDataSources> = connections.map {
         val source = DbUtils.getEntityManagerConfiguration(
