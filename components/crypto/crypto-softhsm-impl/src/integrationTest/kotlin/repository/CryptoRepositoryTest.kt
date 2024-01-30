@@ -9,6 +9,7 @@ import net.corda.db.testkit.DbUtils
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import org.junit.jupiter.api.AfterAll
+import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
 @Suppress("warnings")
@@ -18,16 +19,14 @@ abstract class CryptoRepositoryTest {
     private companion object {
         private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/crypto/db.changelog-master.xml"
         private const val MIGRATION_FILE_LOCATION_VNODE = "net/corda/db/schema/vnode-crypto/db.changelog-master.xml"
-        private var char = 'A'
     }
-
-
 
     /**
      * Creates an in-memory database, applies the relevant migration scripts, and initialises
      * the entityManagerFactories.
      */
     init {
+        val schemaUniqueId = UUID.randomUUID().toString().split("-").get(0)
         dbs = mapOf(
             "cluster" to MIGRATION_FILE_LOCATION,
             "vnode" to MIGRATION_FILE_LOCATION_VNODE,
@@ -42,7 +41,7 @@ abstract class CryptoRepositoryTest {
                         )
                     )
                 )
-                val uniqueSchemaName = "$schemaName${char}"
+                val uniqueSchemaName = "${schemaName}_${schemaUniqueId}"
                 val dbConfig =
                     DbUtils.getEntityManagerConfiguration(
                         inMemoryDbName = "${this::class.java.simpleName}-$uniqueSchemaName",
@@ -63,7 +62,6 @@ abstract class CryptoRepositoryTest {
 
                 Pair(dbConfig, entityManagerFactory)
             }
-        char++
     }
 
     @Suppress("Unused")
