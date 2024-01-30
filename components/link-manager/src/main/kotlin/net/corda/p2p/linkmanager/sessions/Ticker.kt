@@ -60,7 +60,7 @@ internal object Ticker {
         }
         if (latest != null) {
             val name = "${latest.name}->${tick.name}"
-            durations.compute(name) { k, v ->
+            durations.compute(name) { _, v ->
                 if (v == null) {
                     Dur(
                         1,
