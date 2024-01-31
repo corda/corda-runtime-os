@@ -183,7 +183,6 @@ class FlowStatusLookupServiceImplTest {
 
             @BeforeEach
             fun addContent() {
-
                 val serializer = cordaSerializationFactory.createAvroSerializer<FlowStatus> {}
 
                 stateManager.create(
@@ -194,16 +193,10 @@ class FlowStatusLookupServiceImplTest {
             }
 
             @Test
-            fun `getStatus returns correct state`() {
-                val flowStatus = getStatusForFlowKey1()
-                assertEquals(flowStatus1, flowStatus)
-            }
+            fun `getStatus returns correct state`() = assertEquals(flowStatus1, getStatusForFlowKey1())
 
             @Test
-            fun `getStatus returns null for key not in state manager`() {
-                val flowStatus = getStatusForFlowKey2()
-                assertNull(flowStatus)
-            }
+            fun `getStatus returns null for key not in state manager`() = assertNull(getStatusForFlowKey2())
         }
     }
 }
