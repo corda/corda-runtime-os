@@ -216,7 +216,7 @@ class CryptoRekeyBusProcessor(
                             Operation.Equals,
                             KeyRotationKeyType.MANAGED
                         )
-                    ), "rootKeyAlias ${request.tenantId}"
+                    ), "tenantId ${request.tenantId}"
                 )
             ) {
                 return false
