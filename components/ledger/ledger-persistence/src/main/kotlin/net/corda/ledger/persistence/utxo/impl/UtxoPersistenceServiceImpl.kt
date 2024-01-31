@@ -5,17 +5,18 @@ import net.corda.common.json.validation.JsonValidator
 import net.corda.crypto.cipher.suite.merkle.MerkleProofFactory
 import net.corda.crypto.cipher.suite.merkle.MerkleProofInternal
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
+import net.corda.crypto.core.bytes
 import net.corda.crypto.core.parseSecureHash
 import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
-import net.corda.ledger.common.data.transaction.TransactionMetadataUtils.createHashDigestProvider
-import net.corda.ledger.common.data.transaction.TransactionMetadataUtils.createTopLevelDigestProvider
 import net.corda.ledger.common.data.transaction.TransactionMetadataUtils.parseMetadata
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.data.transaction.filtered.factory.FilteredTransactionFactory
+import net.corda.ledger.common.data.transaction.getComponentGroupMerkleTreeDigestProvider
+import net.corda.ledger.common.data.transaction.getRootMerkleTreeDigestProvider
 import net.corda.ledger.persistence.common.InconsistentLedgerStateException
 import net.corda.ledger.persistence.json.ContractStateVaultJsonFactoryRegistry
 import net.corda.ledger.persistence.json.DefaultContractStateVaultJsonFactory
@@ -27,6 +28,7 @@ import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
+import net.corda.ledger.utxo.data.transaction.toMerkleProof
 import net.corda.libs.packaging.hash
 import net.corda.orm.utils.transaction
 import net.corda.utilities.serialization.deserialize
@@ -63,6 +65,7 @@ class UtxoPersistenceServiceImpl(
     private val merkleProofFactory: MerkleProofFactory,
     private val merkleTreeProvider: MerkleTreeProvider,
     private val filteredTransactionFactory: FilteredTransactionFactory,
+    private val digestService: DigestService,
     private val utcClock: Clock
 ) : UtxoPersistenceService {
 
@@ -457,59 +460,82 @@ class UtxoPersistenceServiceImpl(
                 jsonMarshallingService
             )
 
-            // 2. Merge the Merkle proofs for each component group
-            val hashDigestProvider = createHashDigestProvider(filteredTransactionMetadata, merkleTreeProvider)
-            val mergedMerkleProofs = ftxDto.componentMerkleProofMap.mapValues { (_, merkleProofDtoList) ->
+            val rootDigestProvider = filteredTransactionMetadata.getRootMerkleTreeDigestProvider(merkleTreeProvider)
 
+            // 2. Merge the Merkle proofs for each component group
+            val mergedMerkleProofs = ftxDto.componentMerkleProofMap.mapValues { (componentGroupIndex, merkleProofDtoList) ->
+                val componentGroupHashDigestProvider = filteredTransactionMetadata.getComponentGroupMerkleTreeDigestProvider(
+                    ftxDto.privacySalt,
+                    componentGroupIndex,
+                    merkleTreeProvider,
+                    digestService
+                )
                 merkleProofDtoList.map { merkleProofDto ->
                     // Transform the MerkleProofDto objects to MerkleProof objects
-                    merkleProofFactory.createAuditMerkleProof(
-                        merkleProofDto.transactionId,
-                        merkleProofDto.treeSize,
-                        merkleProofDto.leavesWithData,
-                        merkleProofDto.hashes,
-                        hashDigestProvider
-                    )
+                    merkleProofDto.toMerkleProof(merkleProofFactory, componentGroupHashDigestProvider)
                 }.reduce { accumulator, merkleProof ->
                     // Then  keep merging the elements into each other
                     (accumulator as MerkleProofInternal).merge(
                         merkleProof,
-                        hashDigestProvider
+                        componentGroupHashDigestProvider
                     )
                 }
             }
 
-            // 3. Create the top level Merkle proof
-            val topLevelMerkleProof = merkleProofFactory.createAuditMerkleProof(
-                transactionId,
-                ftxDto.topLevelMerkleProof.treeSize,
-                UtxoComponentGroup.values().associate {
-                    // Map each component group to the serialized root of the merged MP
-                    // or ByteArray(0) if we don't have data for the given component group
-                    val serializedRoot = mergedMerkleProofs[it.ordinal]?.let { mergedMerkleProof ->
-                        serializationService.serialize(
-                            mergedMerkleProof.calculateRoot(
-                                createTopLevelDigestProvider(filteredTransactionMetadata, merkleTreeProvider)
-                            )
-                        ).bytes
-                    } ?: ByteArray(0)
-                    it.ordinal to serializedRoot
-                },
-                ftxDto.topLevelMerkleProof.hashes,
-                createTopLevelDigestProvider(filteredTransactionMetadata, merkleTreeProvider)
-            )
+            // 3. Calculate the root hash of each component group merkle proof
+            val calculatedComponentGroupRootsHashes = mergedMerkleProofs.map {
+                // We don't store the leaf data for top level proofs, so we need to calculate it from the
+                // existing component group proofs
+                // Map through the visible component groups and calculate the root of the given component merkle proof
+                val componentGroupHashDigestProvider = filteredTransactionMetadata.getComponentGroupMerkleTreeDigestProvider(
+                    ftxDto.privacySalt,
+                    it.key,
+                    merkleTreeProvider,
+                    digestService
+                )
 
-            // 4. Create the filtered transaction object
+                it.key to it.value.calculateRoot(componentGroupHashDigestProvider)
+            }.toMap()
+
+            // 4. Create the top level Merkle proof by merging all the top level merkle proofs together
+            val mergedTopLevelProof = ftxDto.topLevelMerkleProofs.map {
+                // Transform the MerkleProofDto objects to MerkleProof objects
+                merkleProofFactory.createAuditMerkleProof(
+                    it.treeSize,
+                    it.visibleLeaves.associateWith { componentGroupIndex ->
+
+                        // Use the already calculated component group root
+                        val componentGroupRootBytes = calculatedComponentGroupRootsHashes[componentGroupIndex]?.bytes
+
+                        // At this point we should have this available
+                        requireNotNull(componentGroupRootBytes) {
+                            "Could not find merkle proof for component group index: $componentGroupIndex"
+                        }
+
+                        componentGroupRootBytes
+                    },
+                    it.hashes,
+                    rootDigestProvider
+                )
+            }.reduce { accumulator, merkleProof ->
+                // Then  keep merging the elements into each other
+                (accumulator as MerkleProofInternal).merge(
+                    merkleProof,
+                    rootDigestProvider
+                )
+            }
+
+            // 5. Create the filtered transaction object
             val filteredTransaction = filteredTransactionFactory.create(
                 parseSecureHash(transactionId),
-                topLevelMerkleProof,
+                mergedTopLevelProof,
                 mergedMerkleProofs.map {
                     it.key to FilteredComponentGroup(it.key, it.value)
                 }.toMap(),
                 ftxDto.privacySalt.bytes
             )
 
-            // 5. Map the transaction id to the filtered transaction object and signatures
+            // 6. Map the transaction id to the filtered transaction object and signatures
             filteredTransaction.id.toString() to Pair(filteredTransaction, ftxDto.signatures)
         }.toMap()
     }
@@ -546,4 +572,6 @@ class UtxoPersistenceServiceImpl(
             )
         }
     }
+
+
 }

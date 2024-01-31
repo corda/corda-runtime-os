@@ -63,6 +63,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
             merkleProofFactory = sandbox.getSandboxSingletonService(),
             merkleTreeProvider = sandbox.getSandboxSingletonService(),
             filteredTransactionFactory = sandbox.getSandboxSingletonService(),
+            digestService = sandbox.getSandboxSingletonService(),
             UTCClock()
         )
 

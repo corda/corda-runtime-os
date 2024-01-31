@@ -178,6 +178,7 @@ class UtxoPersistenceServiceImplTest {
                 ctx.getSandboxSingletonService(),
                 ctx.getSandboxSingletonService(),
                 ctx.getSandboxSingletonService(),
+                ctx.getSandboxSingletonService(),
                 testClock
             )
         }

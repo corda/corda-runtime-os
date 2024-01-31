@@ -366,7 +366,7 @@ class UtxoRepositoryImpl @Activate constructor(
         hashes: List<String>
     ): String {
         // Generate an ID by concatenating transaction ID - group index - leaves
-        val merkleProofId = "$transactionId-$groupIndex-${leaves.joinToString(separator = ",")}"
+        val merkleProofId = "$transactionId;$groupIndex;${leaves.joinToString(separator = ",")}"
 
         entityManager.createNativeQuery(queryProvider.persistMerkleProof)
             .setParameter("merkleProofId", merkleProofId)
@@ -398,8 +398,8 @@ class UtxoRepositoryImpl @Activate constructor(
             .groupBy { tuple ->
                 // We'll have multiple rows for the same Merkle proof if it revealed more than one leaf
                 // We group the rows by the Merkle proof ID to see which are the ones that belong together
-                tuple.get(0) as String
-            }.map { (_, rows) ->
+                tuple.get(0) as String // Merkle Proof ID
+            }.map { (merkleProofId, rows) ->
                 // We can retrieve most of the properties from the first row because they will be the same for each row
                 val firstRow = rows.first()
 
@@ -413,12 +413,22 @@ class UtxoRepositoryImpl @Activate constructor(
                     (firstRow.get(4) as String).split(",")
                         .filter { it.isNotBlank() }.map { parseSecureHash(it) },
 
+                    firstRow.get(5) as ByteArray, // Privacy salt
+
                     // Each leaf will have its own row, so we need to go through each row that belongs to the Merkle proof
-                    rows.associate {
+                    rows.mapNotNull {
                         // Map the leaf index to the data we fetched from the component table
-                        (it.get(5) as Int) to (it.get(6) as ByteArray)
-                    },
-                    firstRow.get(7) as ByteArray
+                        val leafIndex = it.get(6) as? Int
+                        val leafData = it.get(7) as? ByteArray
+
+                        if (leafIndex != null && leafData != null) {
+                            leafIndex to leafData
+                        } else {
+                            null
+                        }
+                    }.toMap(),
+                    // Extract the visible leaf indices from the merkle proof ID
+                    merkleProofId.substringAfterLast(";").split(",").map { it.toInt() }
                 )
             }.groupBy {
                 // Group by transaction ID
@@ -438,14 +448,18 @@ class UtxoRepositoryImpl @Activate constructor(
 
             val transactionMerkleProofs = merkleProofs[transactionId]
             requireNotNull(transactionMerkleProofs) {
-                "Couldn't find any merkle proofs for transaction with ID: $transactionId."
+                "Couldn't find any Merkle proofs for transaction with ID: $transactionId."
             }
 
-            val topLevelMerkleProof = transactionMerkleProofs.singleOrNull {
+            val (topLevelMerkleProofs, componentGroupMerkleProofs) = transactionMerkleProofs.partition {
                 it.groupIndex == TOP_LEVEL_MERKLE_PROOF_INDEX
             }
-            requireNotNull(topLevelMerkleProof) {
-                "Couldn't find a top level merkle proof for transaction with ID: $transactionId."
+
+            require(topLevelMerkleProofs.isNotEmpty()) {
+                "Couldn't find a top level Merkle proof for transaction with ID: $transactionId."
+            }
+            require(componentGroupMerkleProofs.isNotEmpty()) {
+                "Couldn't find any component group Merkle proof for transaction with ID: $transactionId."
             }
 
             requireNotNull(privacySaltAndMetadataMap[transactionId]) {
@@ -464,10 +478,8 @@ class UtxoRepositoryImpl @Activate constructor(
 
             UtxoFilteredTransactionDto(
                 transactionId = transactionId,
-                topLevelMerkleProof = topLevelMerkleProof,
-                componentMerkleProofMap = transactionMerkleProofs.groupBy {
-                    it.groupIndex
-                }.filter { it.key != TOP_LEVEL_MERKLE_PROOF_INDEX },
+                topLevelMerkleProofs = topLevelMerkleProofs,
+                componentMerkleProofMap = componentGroupMerkleProofs.groupBy { it.groupIndex },
                 privacySalt = transactionPrivacySaltAndMetadata.first,
                 metadataBytes = transactionPrivacySaltAndMetadata.second,
                 signatures = transactionSignatures

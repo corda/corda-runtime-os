@@ -9,9 +9,11 @@ import net.corda.ledger.common.data.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.data.transaction.filtered.factory.FilteredTransactionFactory
 import net.corda.ledger.common.data.transaction.filtered.impl.FilteredTransactionImpl
+import net.corda.ledger.common.data.transaction.getComponentGroupMerkleTreeDigestProvider
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
@@ -36,7 +38,9 @@ class FilteredTransactionFactoryImpl @Activate constructor(
     @Reference(service = MerkleTreeProvider::class)
     private val merkleTreeProvider: MerkleTreeProvider,
     @Reference(service = SerializationService::class)
-    private val serializationService: SerializationService
+    private val serializationService: SerializationService,
+    @Reference(service = DigestService::class)
+    private val digestService: DigestService
 ) : FilteredTransactionFactory, SingletonSerializeAsToken, UsedByFlow, UsedByPersistence {
 
     @Suspendable
@@ -95,9 +99,11 @@ class FilteredTransactionFactoryImpl @Activate constructor(
         val componentGroupIndex = parameters.componentGroupIndex
         val componentGroup = wireTransaction.getComponentGroupList(componentGroupIndex)
 
-        val componentGroupMerkleTreeDigestProvider = wireTransaction.getComponentGroupMerkleTreeDigestProvider(
+        val componentGroupMerkleTreeDigestProvider = wireTransaction.metadata.getComponentGroupMerkleTreeDigestProvider(
             wireTransaction.privacySalt,
-            componentGroupIndex
+            componentGroupIndex,
+            merkleTreeProvider,
+            digestService
         )
         val componentGroupMerkleTreeSizeProofProvider =
             checkNotNull(componentGroupMerkleTreeDigestProvider as? MerkleTreeHashDigestProviderWithSizeProofSupport) {

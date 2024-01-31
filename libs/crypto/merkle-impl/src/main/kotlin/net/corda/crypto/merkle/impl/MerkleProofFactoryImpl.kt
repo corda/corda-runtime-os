@@ -4,7 +4,6 @@ import net.corda.crypto.cipher.suite.merkle.MerkleProofFactory
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
-import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
 import net.corda.v5.crypto.merkle.MerkleProof
@@ -23,7 +22,6 @@ class MerkleProofFactoryImpl @Activate constructor()
     : MerkleProofFactory, UsedByFlow, UsedByPersistence, SingletonSerializeAsToken {
 
     override fun createAuditMerkleProof(
-        transactionId: String,
         treeSize: Int,
         leavesIndexAndData: Map<Int, ByteArray>,
         hashes: List<SecureHash>,

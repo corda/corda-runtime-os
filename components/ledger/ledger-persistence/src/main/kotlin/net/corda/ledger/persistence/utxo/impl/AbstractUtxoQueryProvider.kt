@@ -168,24 +168,24 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
         get() = """
             SELECT
                 utmp.merkle_proof_id,
-                utc.transaction_id,
-                utc.group_idx,
+                utmp.transaction_id,
+                utmp.group_idx,
                 utmp.tree_size,
                 utmp.hashes,
+                utt.privacy_salt,
                 utc.leaf_idx,
-                utc.data,
-                utt.privacy_salt
-            FROM {h-schema}utxo_transaction_merkle_proof utmp
-            JOIN {h-schema}utxo_transaction_component utc
+                utc.data
+            FROM utxo_transaction_merkle_proof utmp
+            JOIN utxo_transaction utt
+                ON utt.id = utmp.transaction_id
+            LEFT JOIN utxo_transaction_component utc
                 ON utc.transaction_id = utmp.transaction_id
                 AND utc.group_idx = utmp.group_idx
-            JOIN {h-schema}utxo_transaction utt
-                ON utt.id = utmp.transaction_id
-            WHERE utmp.transaction_id IN (:transactionIds)
-            AND utc.leaf_idx IN (
-                SELECT utmpl.leaf_index
-                FROM {h-schema}utxo_transaction_merkle_proof_leaves utmpl
-                WHERE utmpl.merkle_proof_id = utmp.merkle_proof_id
-            )"""
+                AND utc.leaf_idx IN (
+                	SELECT utmpl.leaf_index
+                	FROM utxo_transaction_merkle_proof_leaves utmpl
+                	WHERE utmpl.merkle_proof_id = utmp.merkle_proof_id
+            	)
+            WHERE utmp.transaction_id IN (:transactionIds)"""
             .trimIndent()
 }
