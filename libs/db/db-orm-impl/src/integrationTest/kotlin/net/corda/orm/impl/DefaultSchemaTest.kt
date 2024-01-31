@@ -42,7 +42,14 @@ class DefaultSchemaTest {
                 r.getString(1)
             }
         }
-
         assertThat(fetch).isEqualTo("Fred")
+
+        // also check we can use a JQL query without specifying schema
+        val queryResult = emf.createEntityManager().use {
+            it.createQuery("select o.name from Owner as o where o.id = :id")
+                .setParameter("id", ownerId)
+                .resultList.first()
+        }
+        assertThat(queryResult).isEqualTo("Fred")
     }
 }
