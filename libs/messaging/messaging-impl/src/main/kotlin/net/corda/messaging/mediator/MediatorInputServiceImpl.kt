@@ -25,5 +25,4 @@ class MediatorInputServiceImpl @Activate constructor(
     }
 
     private fun serialize(value: Any?) = value?.let { serializer.serialize(it) }
-
 }
