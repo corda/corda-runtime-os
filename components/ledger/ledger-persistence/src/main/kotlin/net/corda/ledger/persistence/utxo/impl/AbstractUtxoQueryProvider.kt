@@ -131,14 +131,15 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
      * - Group Index
      * - Revealed leaf indices joined to a string
      *
-     * The indices that the Merkle proof reveals are stored in a join-table. That's the reason we need a sub-query
-     * to fetch the relevant indices from the other table.
+     * The indices that the Merkle proof reveals are stored in a join-table keyed on the Merkle proof ID.
+     * That's the reason we need a sub-query to fetch the relevant indices from the other table.
      *
      * This query will return a result set with the following column structure:
      *
-     * | transaction_id | group_idx | tree_size | leaf_idx | data  | hashes |
+     * | merkle_proof_id | transaction_id | group_idx | tree_size | hashes | privacy_salt | leaf_index  | data |
      *
      * A row will be returned for each revealed leaf containing the data from the component table.
+     * If the data couldn't be found in the component table then the data field will be `null` beause of the LEFT JOIN.
      *
      * For example if we have the following Merkle tree:
      *
@@ -159,10 +160,10 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
      * If we persist a Merkle proof that contains L1 and L3 data then retrieve it from the store, then we'll
      * get the following result set:
      *
-     * | merkle_proof_id     | transaction_id | group_idx | tree_size | leaf_idx | data  | hashes |
-     * |---------------------|----------------|-----------|-----------|----------|-------|--------|
-     * | SHA-256D:11111-8-13 | SHA-256:11111  | 8         | 4         | 1        | bytes | H0,H2  |
-     * | SHA-256D:11111-8-13 | SHA-256:11111  | 8         | 4         | 3        | bytes | H0,H2  |
+     * | merkle_proof_id      | transaction_id | group_idx | tree_size | hashes       | privacy_salt  | leaf_idx | data |
+     * |----------------------|----------------|-----------|-----------|--------------|---------------|----------|------|
+     * | SHA-256D:11111;8;1,3 | SHA-256:11111  | 8         | 4         | H0,H2        | bytes         | 1        |bytes |
+     * | SHA-256D:11111;8;1,3 | SHA-256:11111  | 8         | 4         | H0,H2        | bytes         | 3        |bytes |
      */
     override val findMerkleProofs: String
         get() = """
