@@ -342,7 +342,10 @@ class PersistenceExceptionTests {
 
         val cl = ClassloaderChangeLog(linkedSetOf(vnodeVaultSchema, sandboxedSchema))
         val ds = dbConnectionManager.getDataSource(virtualNodeInfo.vaultDmlConnectionId)
+        val schemaName = dbConnectionManager.getSchemaName(virtualNodeInfo.vaultDmlConnectionId)
         ds.connection.use {
+            it.prepareStatement("SET search_path TO $schemaName;").execute()
+            it.commit()
             lbm.updateDb(it, cl)
         }
     }
