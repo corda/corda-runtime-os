@@ -66,12 +66,12 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.subscription.SubscriptionBase
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
@@ -233,8 +233,9 @@ class CryptoProcessorImpl @Activate constructor(
 
                 if (bootConfig.hasPath(StateManagerConfig.STATE_MANAGER)) {
                     val stateManagerConfig = bootConfig.getConfig(StateManagerConfig.STATE_MANAGER)
-                    stateManager = stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION)
-                        .also { it.start() }
+                    stateManager =
+                        stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION)
+                            .also { it.start() }
                 }
 
                 (CryptoConsts.Categories.all - ENCRYPTION_SECRET).forEach { category ->
@@ -374,7 +375,7 @@ class CryptoProcessorImpl @Activate constructor(
             coordinator, messagingConfig, wrappingRepositoryFactory,
             stateManager, cordaAvroSerializationFactory
         )
-        createRewrapSubscription(coordinator, messagingConfig, stateManager,  cordaAvroSerializationFactory)
+        createRewrapSubscription(coordinator, messagingConfig, stateManager, cordaAvroSerializationFactory)
         createSessionEncryptionSubscription(coordinator, retryingConfig)
         createSessionDecryptionSubscription(coordinator, retryingConfig)
     }
@@ -386,29 +387,39 @@ class CryptoProcessorImpl @Activate constructor(
         stateManager: StateManager?,
         cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     ) {
-        val publisherConfig = PublisherConfig("RekeyBusProcessor", false)
-        val rekeyPublisher = publisherFactory.createPublisher(publisherConfig, messagingConfig)
-        val rekeyProcessor = CryptoRekeyBusProcessor(
-            cryptoService,
-            virtualNodeInfoReadService,
-            wrappingRepositoryFactory,
-            rekeyPublisher,
-            stateManager,
-            cordaAvroSerializationFactory,
-        )
-
         val rekeyGroupName = "crypto.key.rotation.ops"
+        val publisherConfig = PublisherConfig("RekeyBusProcessor", false)
         coordinator.createManagedResource(REKEY_SUBSCRIPTION) {
-            subscriptionFactory.createDurableSubscription(
-                subscriptionConfig = SubscriptionConfig(
-                    groupName = rekeyGroupName,
-                    eventTopic = Schemas.Crypto.REKEY_MESSAGE_TOPIC
-                ),
-                processor = rekeyProcessor,
-                messagingConfig = messagingConfig,
-                partitionAssignmentListener = null
-            ).also {
-                it.start()
+            // We have two dependent resources, the publisher and the subscription, so combine into one managed resource
+            object : Resource {
+                val rekeyPublisher = publisherFactory.createPublisher(publisherConfig, messagingConfig)
+
+                val rekeyProcessor = CryptoRekeyBusProcessor(
+                    cryptoService,
+                    virtualNodeInfoReadService,
+                    wrappingRepositoryFactory,
+                    rekeyPublisher,
+                    stateManager,
+                    cordaAvroSerializationFactory,
+                )
+
+                val subscription = subscriptionFactory.createDurableSubscription(
+                    subscriptionConfig = SubscriptionConfig(
+                        groupName = rekeyGroupName,
+                        eventTopic = Schemas.Crypto.REKEY_MESSAGE_TOPIC
+                    ),
+                    processor = rekeyProcessor,
+                    messagingConfig = messagingConfig,
+                    partitionAssignmentListener = null
+                ).also {
+                    it.start()
+                }
+
+                override fun close() {
+                    // close dependent resources in reverse order
+                    subscription.close()
+                    rekeyPublisher.close()
+                }
             }
         }
     }
@@ -434,8 +445,6 @@ class CryptoProcessorImpl @Activate constructor(
                 it.start()
             }
         }
-        logger.trace("Starting processing on $rewrapGroupName ${Schemas.Crypto.REWRAP_MESSAGE_TOPIC}")
-        coordinator.getManagedResource<SubscriptionBase>(REWRAP_SUBSCRIPTION)!!.start()
     }
 
     private fun createFlowOpsSubscription(
