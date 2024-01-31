@@ -27,7 +27,7 @@ class CordaLifeCycleTasksTest : FunctionalBaseTest() {
         runBlocking {
             val job = GlobalScope.launch {
                 delay(50000)
-                result = executeWithRunner(STOP_CORDA_TASK_NAME)
+                result = executeWithRunner(START_CORDA_TASK_NAME)
             }
             job.join()
             result.task(":$STOP_CORDA_TASK_NAME")!!.assertTaskSucceeded()
