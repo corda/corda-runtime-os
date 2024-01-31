@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 import java.nio.ByteBuffer
 import java.sql.Connection
-import java.sql.Timestamp
 import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.Query
