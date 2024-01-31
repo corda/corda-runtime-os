@@ -62,7 +62,6 @@ internal class InboundMessageProcessor(
     }
 
     override fun onNext(events: List<EventLogRecord<String, LinkInMessage>>): List<Record<*, *>> {
-        logger.info("QQQ onNext 1")
         val dataMessages = mutableListOf<SessionIdAndMessage>()
         val sessionMessages = mutableListOf<TraceableItem<LinkInMessage, LinkInMessage>>()
         val recordsForUnauthenticatedMessage = mutableListOf<TraceableItem<List<Record<String, AppMessage>>, LinkInMessage>>()
@@ -72,7 +71,6 @@ internal class InboundMessageProcessor(
             when (val payload = message?.payload) {
                 is AuthenticatedDataMessage -> {
                     payload.header.sessionId.let { sessionId ->
-                        logger.info("QQQ onNext 2 \t $sessionId")
                         dataMessages.add(
                             SessionIdAndMessage(sessionId,
                                 TraceableItem(AvroSealedClasses.DataMessage.Authenticated(payload), event)
@@ -133,26 +131,6 @@ internal class InboundMessageProcessor(
         val responses = sessionManager.processSessionMessages(messages) { message ->
             message.item
         }
-        responses.also {
-            if (it.size != messages.size) {
-                logger.info("TTT processSessionMessages(${messages.size}) != ${it.size}")
-            }
-            val sent = messages.toSet()
-            val returned = it.map { it.first }.toSet()
-            if (sent != returned) {
-                logger.info("TTT processSessionMessages sent != returned")
-                sent.forEach { s ->
-                    if (!returned.contains(s)) {
-                        logger.info("TTT processSessionMessages missing s $s")
-                    }
-                }
-                returned.forEach { r ->
-                    if (!sent.contains(r)) {
-                        logger.info("TTT processSessionMessages missing r $r")
-                    }
-                }
-            }
-        }
         return responses.map { (traceableMessage, response) ->
             if (response != null) {
                 when (val payload = response.payload) {
@@ -202,32 +180,7 @@ internal class InboundMessageProcessor(
     private fun processDataMessages(
         sessionIdAndMessages: List<SessionIdAndMessage>
     ): List<TraceableItem<List<Record<*, *>>, LinkInMessage>> {
-        logger.info("QQQ processDataMessages 1")
-        return sessionManager.getSessionsById(sessionIdAndMessages) { it.sessionId }
-            .also {
-                if (it.size != sessionIdAndMessages.size) {
-                    logger.info("TTT processDataMessages(${sessionIdAndMessages.size}) != ${it.size}")
-                }
-                val sent = sessionIdAndMessages.toSet()
-                val returned = it.map { it.first }.toSet()
-                if (sent != returned) {
-                    logger.info("TTT processDataMessages sent != returned")
-                    sent.forEach { s ->
-                        if (!returned.contains(s)) {
-                            logger.info("TTT processDataMessages missing s ${s.message.originalRecord?.key} (${s.sessionId}")
-                        }
-                    }
-                    returned.forEach { r ->
-                        if (!sent.contains(r)) {
-                            logger.info("TTT processDataMessages missing r $r")
-                        }
-                    }
-                }
-            }
-            .mapNotNull { (sessionIdAndMessage, sessionDirection) ->
-            logger.info("QQQ processDataMessages \t 2 - sessionDirection: $sessionDirection ")
-            logger.info("QQQ processDataMessages \t 2 - sessionId: ${sessionIdAndMessage.sessionId} ")
-            logger.info("QQQ processDataMessages \t 2 - key: ${sessionIdAndMessage.message.originalRecord?.key} ")
+        return sessionManager.getSessionsById(sessionIdAndMessages) { it.sessionId }.mapNotNull { (sessionIdAndMessage, sessionDirection) ->
             when (sessionDirection) {
                 is SessionManager.SessionDirection.Inbound ->
                     TraceableItem(
@@ -251,7 +204,6 @@ internal class InboundMessageProcessor(
         sessionIdAndMessage: SessionIdAndMessage,
         sessionDirection: SessionManager.SessionDirection.Inbound
     ): List<Record<*, *>> {
-        logger.info("QQQ processInboundDataMessages: ${sessionIdAndMessage.sessionId}")
         sessionManager.dataMessageReceived(
             sessionIdAndMessage.sessionId,
             sessionDirection.counterparties.counterpartyId,
@@ -263,11 +215,7 @@ internal class InboundMessageProcessor(
                 sessionDirection.session,
                 sessionIdAndMessage.sessionId,
                 sessionIdAndMessage.message.item
-            ).also {
-                it.forEach {
-                    logger.info("QQQ processInboundDataMessages \t ${it.key}, ${it.value?.javaClass?.simpleName}")
-                }
-            }
+            )
         } else {
             emptyList()
         }
@@ -286,7 +234,6 @@ internal class InboundMessageProcessor(
             )?.let {
                 when (val ack = it.ack) {
                     is AuthenticatedMessageAck -> {
-                        logger.info("QQQ Got ack for ${ack.messageId}")
                         logger.debug { "Processing ack for message ${ack.messageId} from session $sessionIdAndMessage." }
                         sessionManager.messageAcknowledged(sessionIdAndMessage.sessionId)
                         val record = makeMarkerForAckMessage(ack)
@@ -324,7 +271,6 @@ internal class InboundMessageProcessor(
                 "Processing message ${innerMessage.message.header.messageId} " +
                     "of type ${innerMessage.message.javaClass} from session ${session.sessionId}"
             }
-            logger.info("QQQ posting ack for ${innerMessage.message.header.messageId}")
             messages.add(Record(Schemas.P2P.P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
             makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
             sessionManager.inboundSessionEstablished(session.sessionId)
@@ -350,9 +296,7 @@ internal class InboundMessageProcessor(
         message: AvroSealedClasses.DataMessage
     ): MutableList<Record<*, *>> {
         val messages = mutableListOf<Record<*, *>>()
-        logger.info("QQQ processLinkManagerPayload for session ID: $sessionId")
         MessageConverter.extractPayload(session, sessionId, message, DataMessagePayload::fromByteBuffer)?.let {
-            logger.info("QQQ processLinkManagerPayload \t it.message: ${it.message.javaClass.simpleName}")
             when (val innerMessage = it.message) {
                 is HeartbeatMessage -> {
                     logger.debug { "Processing heartbeat message from session $sessionId" }
@@ -402,7 +346,6 @@ internal class InboundMessageProcessor(
         // We route the ACK back to the original source
         val ackDest = message.header.source.toCorda()
         val ackSource = message.header.destination.toCorda()
-        logger.info("QQQ Sending ack for ${message.header.messageId} from $ackSource to $ackDest")
         val ack = MessageConverter.linkOutMessageFromAck(
             MessageAck(AuthenticatedMessageAck(message.header.messageId)),
             ackSource,

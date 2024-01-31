@@ -100,7 +100,6 @@ internal class OutboundMessageProcessor(
     }
 
     override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<String, *>> {
-        logger.info("QQQ onNext")
         val authenticatedMessages = mutableListOf<TraceableItem<AuthenticatedMessageAndKey, AppMessage>>()
         val unauthenticatedMessages = mutableListOf<TraceableItem<OutboundUnauthenticatedMessage, AppMessage>>()
         for (event in events) {
@@ -123,13 +122,11 @@ internal class OutboundMessageProcessor(
         }
 
         val results = unauthenticatedMessages.map { (message, event) ->
-            logger.info("QQQ onNext 1 \t ${message.header.messageId}")
             TraceableItem(processUnauthenticatedMessage(message), event)
         } + processAuthenticatedMessages(authenticatedMessages)
 
         for (result in results) {
             result.originalRecord?.let { originalRecord ->
-                logger.info("QQQ onNext 2 \t ${result.originalRecord.key} -> ${result.item.map { it.key to it.value?.javaClass?.simpleName }}")
                 traceEventProcessing(originalRecord, tracingEventName) { result.item }
             }
         }
@@ -261,15 +258,11 @@ internal class OutboundMessageProcessor(
         messagesWithKeys: List<TraceableItem<AuthenticatedMessageAndKey, AppMessage>>,
         isReplay: Boolean = false
     ): List<TraceableItem<List<Record<String, *>>, AppMessage>> {
-        logger.info("QQQ processAuthenticatedMessages")
         val validatedMessages = messagesWithKeys.map { message ->
-            logger.info("QQQ A \t ${message.item.message.header.messageId}")
             message to validateAndCheckIfSessionNeeded(message.item, isReplay)
         }
         val messagesWithSession = validatedMessages.mapNotNull { (message, result) ->
             if (result is ValidateAuthenticatedMessageResult.SessionNeeded) {
-                logger.info("QQQ B \t ${message.item.message.header.messageId}, ${result.javaClass.simpleName}")
-                logger.info("QQQ B \t ${message.item.message.header.messageId}, ${result.markerRecords.map { it.key to it.value?.javaClass?.simpleName }}")
                 TraceableItem(result, message.originalRecord)
             } else {
                 null
@@ -277,8 +270,6 @@ internal class OutboundMessageProcessor(
         }
         val messageWithNoSession = validatedMessages.mapNotNull { (message, result) ->
             if (result is ValidateAuthenticatedMessageResult.NoSessionNeeded) {
-                logger.info("QQQ C \t ${message.item.message.header.messageId}, ${result.javaClass.simpleName}")
-                logger.info("QQQ C \t\t ${message.item.message.header.messageId}, ${result.records.map { it.key to it.value?.javaClass?.simpleName }}")
                 TraceableItem(result.records, message.originalRecord)
             } else {
                 null
@@ -388,32 +379,7 @@ internal class OutboundMessageProcessor(
     ): List<TraceableItem<List<Record<String, *>>, AppMessage>> {
         return sessionManager.processOutboundMessages(validationResults) { validationResult ->
             validationResult.item.messageWithKey
-        }.also {
-
-            val returned = it.map {
-                it.first
-            }.toSet()
-            val sent = validationResults.toSet()
-            if (it.size != validationResults.size) {
-                logger.info("TTT processRemoteAuthenticatedMessage(${validationResults.size}) != ${it.size}")
-                logger.info("TTT processRemoteAuthenticatedMessage returned.size: ${returned.size}")
-                logger.info("TTT processRemoteAuthenticatedMessage sent.size: ${sent.size}")
-            }
-            if (sent != returned) {
-                logger.info("TTT processRemoteAuthenticatedMessage sent != returned")
-                sent.forEach { s ->
-                    if (!returned.contains(s)) {
-                        logger.info("TTT processRemoteAuthenticatedMessage missing s $s")
-                    }
-                }
-                returned.forEach { r ->
-                    if (!sent.contains(r)) {
-                        logger.info("TTT processRemoteAuthenticatedMessage missing r $r")
-                    }
-                }
-            }
         }.map { (message, state) ->
-                logger.info("QQQ processRemoteAuthenticatedMessage 1 ${message.item.messageWithKey.key}, ${state.javaClass.simpleName}")
                 when (state) {
                 is SessionManager.SessionState.NewSessionsNeeded -> {
                     logger.trace {
@@ -423,7 +389,6 @@ internal class OutboundMessageProcessor(
                     TraceableItem(recordsForNewSessions(state) + message.item.markerRecords, message.originalRecord)
                 }
                 is SessionManager.SessionState.SessionEstablished -> {
-                    logger.info("QQQ processRemoteAuthenticatedMessage 1 ${message.item.messageWithKey.key}, ${state.session.sessionId}")
                     logger.trace {
                         "Session already established with ${message.item.messageWithKey.message.header.destination}. Using this to send" +
                             " outbound message."
