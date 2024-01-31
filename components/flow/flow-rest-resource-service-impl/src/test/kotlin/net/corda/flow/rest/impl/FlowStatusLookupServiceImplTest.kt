@@ -157,6 +157,7 @@ class FlowStatusLookupServiceImplTest {
         }
 
         private fun getStatusForFlowKey1() = flowStatusCacheService.getStatus(FLOW_KEY_1.id, FLOW_KEY_1.identity)
+        private fun getStatusForFlowKey2() = flowStatusCacheService.getStatus(FLOW_KEY_2.id, FLOW_KEY_2.identity)
 
         @Nested
         inner class StateManagerIsEmpty {
@@ -179,18 +180,6 @@ class FlowStatusLookupServiceImplTest {
                 Instant.EPOCH,
                 Instant.EPOCH
             )
-            private val flowStatus2 = FlowStatus(
-                FLOW_KEY_2,
-                FlowInitiatorType.RPC,
-                FLOW_KEY_2.id,
-                "FlowClassName",
-                FlowStates.START_REQUESTED,
-                null,
-                null,
-                null,
-                Instant.EPOCH,
-                Instant.EPOCH
-            )
 
             @BeforeEach
             fun addContent() {
@@ -200,7 +189,6 @@ class FlowStatusLookupServiceImplTest {
                 stateManager.create(
                     listOf(
                         State(FLOW_KEY_1.toString(), serializer.serialize(flowStatus1)!!),
-                        State(FLOW_KEY_2.toString(), serializer.serialize(flowStatus2)!!)
                     )
                 )
             }
@@ -209,6 +197,12 @@ class FlowStatusLookupServiceImplTest {
             fun `getStatus returns correct state`() {
                 val flowStatus = getStatusForFlowKey1()
                 assertEquals(flowStatus1, flowStatus)
+            }
+
+            @Test
+            fun `getStatus returns null for key not in state manager`() {
+                val flowStatus = getStatusForFlowKey2()
+                assertNull(flowStatus)
             }
         }
     }
