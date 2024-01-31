@@ -84,7 +84,6 @@ class FlowStatusLookupServiceImplTest {
         val FLOW_KEY_2 = FlowKey("a2", HoldingIdentity("b1", "c1"))
     }
 
-
     @BeforeEach
     fun setup() {
         whenever(lifecycleCoordinator.followStatusChangesByName(any())).thenReturn(lifecycleEventRegistration)
@@ -117,6 +116,33 @@ class FlowStatusLookupServiceImplTest {
     }
 
     @Test
+    fun `Test initialise creates new topic subscription and starts it`() {
+        flowStatusCacheService.initialise(config)
+
+        val expectedSubscriptionCfg = SubscriptionConfig(
+            "flow_status_subscription",
+            Schemas.Flow.FLOW_STATUS_TOPIC
+        )
+
+        verify(subscriptionFactory).createDurableSubscription(
+            eq(expectedSubscriptionCfg),
+            any<DurableFlowStatusProcessor>(),
+            same(config),
+            same(null)
+        )
+
+        verify(topicSubscription).start()
+    }
+
+    @Test
+    fun `Test initialise closes any existing topic subscription`() {
+        flowStatusCacheService.initialise(config)
+        // second time around we close the existing subscription
+        flowStatusCacheService.initialise(config)
+        verify(topicSubscription).close()
+    }
+
+    @Test
     fun `Test on start event component status up is signaled`() {
         eventHandler.processEvent(StartEvent(), lifecycleCoordinator)
         verify(lifecycleCoordinator).updateStatus(LifecycleStatus.UP)
@@ -128,30 +154,6 @@ class FlowStatusLookupServiceImplTest {
         @BeforeEach
         fun prepareFlowStatusCacheService() {
             flowStatusCacheService.initialise(config)
-        }
-
-        @Test
-        fun `Test initialise creates new topic subscription and starts it`() {
-            val expectedSubscriptionCfg = SubscriptionConfig(
-                "flow_status_subscription",
-                Schemas.Flow.FLOW_STATUS_TOPIC
-            )
-
-            verify(subscriptionFactory).createDurableSubscription(
-                eq(expectedSubscriptionCfg),
-                any<DurableFlowStatusProcessor>(),
-                same(config),
-                same(null)
-            )
-
-            verify(topicSubscription).start()
-        }
-
-        @Test
-        fun `Test initialise closes any existing topic subscription`() {
-            // second time around we close the existing subscription
-            flowStatusCacheService.initialise(config)
-            verify(topicSubscription).close()
         }
 
         private fun getStatusForFlowKey1() = flowStatusCacheService.getStatus(FLOW_KEY_1.id, FLOW_KEY_1.identity)
