@@ -26,7 +26,7 @@ class HttpRpcClientImpl(
 
     private companion object {
         val logger = LoggerFactory.getLogger(HttpRpcClient::class.java)
-        const val MAX_RETRIES = 3
+        const val MAX_RETRIES = 30
         val TIMEOUT = Duration.ofSeconds(30)
         val INITIAL_DELAY = Duration.ofMillis(100)
         const val DELAY_INCREASE_FACTOR = 2L
