@@ -15,9 +15,8 @@ const val CLUSTER_QUERY_GROUP = "corda-runtime-plugin-queries"
 const val LISTVNODES_TASK_NAME = "listVNodes"
 const val LISTCPIS_TASK_NAME = "listCPIs"
 
-
 /**
- * Creates the gradle helper tasks in the csde-queries group
+ * Creates the gradle helper tasks in the corda-runtime-plugin-queries group
  */
 fun createCordaClusterQueryTasks(project: Project, pluginConfig: PluginConfiguration) {
 

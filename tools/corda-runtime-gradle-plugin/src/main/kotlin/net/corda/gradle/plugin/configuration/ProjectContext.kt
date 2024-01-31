@@ -5,7 +5,7 @@ import org.gradle.api.logging.Logger
 
 /**
  * Class which holds all the context properties for the gradle build. This is split between:
- * - Properties which are obtained from the csde block in the csde build.gralde file
+ * - Properties which are obtained from the cordaRuntimeGradlePlugin block in the build.gradle file
  * - The network config
  * - Properties which are non-configurable by the user
  * A version of this class will typically be passed to each of the helper classes.

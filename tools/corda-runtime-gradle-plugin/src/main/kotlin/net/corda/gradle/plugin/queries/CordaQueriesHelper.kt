@@ -6,7 +6,7 @@ import net.corda.gradle.plugin.getExistingNodes
 import net.corda.gradle.plugin.getUploadedCpis
 
 /**
- * Provides the functionality to query the corda cluster used in the csde-queries group of tasks
+ * Provides the functionality to query the corda cluster used in the corda-runtime-plugin-queries group of tasks
  */
 class CordaQueriesHelper(val pc: ProjectContext) {
 
