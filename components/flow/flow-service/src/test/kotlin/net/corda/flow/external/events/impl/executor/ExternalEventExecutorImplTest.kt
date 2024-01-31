@@ -5,10 +5,12 @@ import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.services.MockFlowFiberService
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.serialization.SerializedBytes
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -24,7 +26,12 @@ class ExternalEventExecutorImplTest {
 
     private val capturedArguments = mutableListOf<FlowIORequest.ExternalEvent>()
     private val mockFactoryClass = mock<ExternalEventFactory<Any,Any,Any>>()::class.java
-    private val mockParams = mutableMapOf("test" to "parameters")
+
+
+    @CordaSerializable
+    data class Mock(val map: Map<String, String>)
+
+    private val mockParams = Mock(mutableMapOf("test" to "parameters"))
 
     companion object {
         const val testFlowId: String = "static_flow_id"
@@ -67,7 +74,7 @@ class ExternalEventExecutorImplTest {
 
         val expectedRequest = FlowIORequest.ExternalEvent(
             // This is hardcoded, but should be deterministic!
-            "df51d2f3-e328-33cc-a7ae-dead51ebc1b3",
+            "0f8cf797-10dd-3b35-94b3-aedb8cb67429",
             mockFactoryClass, mockParams, contextProperties
         )
 
@@ -75,6 +82,11 @@ class ExternalEventExecutorImplTest {
 
         assertEquals(1, capturedArguments.size)
         assertEquals(expectedRequest, capturedArguments[0])
+    }
+
+    @Test
+    fun `Suspending with parameters which are not serializable produces error`() {
+        assertThrows<IllegalStateException> { externalEventExecutorImpl.execute(mockFactoryClass, mutableMapOf("key" to "value")) }
     }
 
     @Test
@@ -89,7 +101,7 @@ class ExternalEventExecutorImplTest {
     @Test
     fun `Suspending with different parameters produces a different requestID`() {
         externalEventExecutorImpl.execute(mockFactoryClass, mockParams)
-        externalEventExecutorImpl.execute(mockFactoryClass, mockParams + mapOf("additional" to "data"))
+        externalEventExecutorImpl.execute(mockFactoryClass, Mock(mapOf("additional" to "data")))
 
         assertEquals(2, capturedArguments.size)
         assertNotEquals(capturedArguments[0].requestId, capturedArguments[1].requestId)
