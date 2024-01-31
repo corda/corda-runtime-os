@@ -5,12 +5,7 @@ import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
-import net.corda.libs.statemanager.api.IntervalFilter
-import net.corda.libs.statemanager.api.MetadataFilter
-import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
-import net.corda.libs.statemanager.api.StateOperationGroup
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import org.assertj.core.api.Assertions.assertThat
@@ -19,7 +14,6 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.time.Instant
 
 class DurableFlowStatusProcessorTest {
     private lateinit var flowStatusProcessor: DurableFlowStatusProcessor

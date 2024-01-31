@@ -1,8 +1,5 @@
 package net.corda.flow.rest.impl
 
-import net.corda.data.flow.FlowInitiatorType
-import net.corda.data.flow.output.FlowStates
-import net.corda.data.flow.output.FlowStatus
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
