@@ -626,7 +626,8 @@ class UtxoPersistenceServiceImplTest {
 
         assertNotNull(filteredTransaction)
 
-        assertThat(filteredTransaction!!.metadata).isEqualTo(ftx.metadata)
+        assertThat(filteredTransaction!!.id).isEqualTo(ftx.id)
+        assertThat(filteredTransaction.metadata).isEqualTo(ftx.metadata)
         assertThat(filteredTransaction.privacySalt).isEqualTo(ftx.privacySalt)
         assertThat(filteredTransaction.filteredComponentGroups).isEqualTo(ftx.filteredComponentGroups)
         assertThat(filteredTransaction.topLevelMerkleProof).isEqualTo(ftx.topLevelMerkleProof)
