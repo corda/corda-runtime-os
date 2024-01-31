@@ -9,9 +9,6 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.rest.FlowStatusCacheService
 import net.corda.flow.rest.flowstatus.FlowStatusUpdateListener
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.statemanager.api.State
-import net.corda.libs.statemanager.api.StateManager
-import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -26,15 +23,12 @@ import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
-import net.corda.schema.configuration.ConfigKeys
-import net.corda.schema.configuration.StateManagerConfig.StateType.FLOW_STATUS
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
-import java.util.*
+import java.util.LinkedList
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReadWriteLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
@@ -45,9 +39,7 @@ class FlowStatusCacheServiceImpl @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
-    private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = StateManagerFactory::class)
-    private val stateManagerFactory: StateManagerFactory
+    private val coordinatorFactory: LifecycleCoordinatorFactory
 ) : FlowStatusCacheService, CompactedProcessor<FlowKey, FlowStatus> {
 
     private companion object {
@@ -55,7 +47,7 @@ class FlowStatusCacheServiceImpl @Activate constructor(
     }
 
     private var flowStatusSubscription: CompactedSubscription<FlowKey, FlowStatus>? = null
-    private lateinit var cache: StateManager
+    private val cache = ConcurrentHashMap<FlowKey, FlowStatus>()
 
     private val lock: ReadWriteLock = ReentrantReadWriteLock()
     private val statusListenersPerFlowKey: Multimap<FlowKey, FlowStatusUpdateListener> =
@@ -89,31 +81,24 @@ class FlowStatusCacheServiceImpl @Activate constructor(
         subReg = lifecycleCoordinator.followStatusChangesByName(setOf(flowStatusSubscription!!.subscriptionName))
 
         flowStatusSubscription?.start()
-
-        cache = stateManagerFactory.create(config.getConfig(ConfigKeys.STATE_MANAGER_CONFIG), FLOW_STATUS).also {
-            it.start()
-        }
     }
 
     override fun getStatus(clientRequestId: String, holdingIdentity: HoldingIdentity): FlowStatus? {
-        return cache.get(listOf(FlowKey(clientRequestId, holdingIdentity).toString())).values.singleOrNull()?.let { (FlowStatus.fromByteBuffer(ByteBuffer.wrap(it.value))) }
+        return cache[FlowKey(clientRequestId, holdingIdentity)]
     }
 
     override fun getStatusesPerIdentity(holdingIdentity: HoldingIdentity): List<FlowStatus> {
-        TODO()
-//        return cache.entries.filter { it.key.identity == holdingIdentity }.map {
-//            it.value
-//        }
+        return cache.entries.filter { it.key.identity == holdingIdentity }.map {
+            it.value
+        }
     }
 
     override fun onSnapshot(currentData: Map<FlowKey, FlowStatus>) {
-        val states = currentData
+        cache.clear()
+
+        currentData
             .filter { it.value.initiatorType == FlowInitiatorType.RPC }
-            .map { State(it.key.toString(), it.value.toByteBuffer().array()) }
-
-        val failedStates = cache.create(states)
-
-        assert(failedStates.isEmpty()) { "Failed to save states to state manager" }
+            .forEach { cache[it.key] = it.value }
 
         lifecycleCoordinator.postCustomEventToFollowers(CacheLoadCompleteEvent())
     }
@@ -127,13 +112,12 @@ class FlowStatusCacheServiceImpl @Activate constructor(
             val flowKey = newRecord.key
             val flowStatus = newRecord.value
             if (flowStatus == null) {
-                cache.delete(cache.get(listOf(flowKey.toString())).values)
+                cache.remove(flowKey)
                 lock.writeLock().withLock { statusListenersPerFlowKey.removeAll(flowKey) }.map {
                     it.close("Flow status removed from cache when null flow status received.")
                 }
             } else {
-                cache.update(cache.get(listOf(flowKey.toString()))
-                    .map { (key, _) -> State(key, flowStatus.toByteBuffer().array()) })
+                cache[flowKey] = flowStatus
                 updateAllStatusListenersForFlowKey(flowKey, flowStatus)
             }
         } catch (ex: Exception) {
@@ -160,7 +144,7 @@ class FlowStatusCacheServiceImpl @Activate constructor(
 
         // If the status is already known for a particular flow - deliver it to the listener
         // This can be the case when flow is already completed.
-        cache.get(listOf(flowKey.toString())).values.singleOrNull()?.let { listener.updateReceived(FlowStatus.fromByteBuffer(ByteBuffer.wrap(it.value))) }
+        cache[flowKey]?.let { listener.updateReceived(it) }
         return AutoCloseable { unregisterFlowStatusListener(clientRequestId, holdingIdentity, listener) }
     }
 
