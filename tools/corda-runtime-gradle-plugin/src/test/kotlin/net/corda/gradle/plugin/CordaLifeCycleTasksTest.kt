@@ -45,7 +45,7 @@ class CordaLifeCycleTasksTest : FunctionalBaseTest() {
     @EnabledIfEnvironmentVariable(named = "CI", matches = "true", disabledReason = "Docker is expected to be running in local env")
     fun shouldFailToStartCordaOnCiWithoutDocker() {
         appendCordaRuntimeGradlePluginExtension()
-        val result = executeWithRunner(START_CORDA_TASK_NAME)
+        val result = executeAndFailWithRunner(START_CORDA_TASK_NAME)
         assertTrue(result.output.contains(CordaRuntimeGradlePluginException::class.java.name))
         assertTrue(result.output.contains("Cannot connect to the Docker daemon"))
     }
@@ -59,7 +59,7 @@ class CordaLifeCycleTasksTest : FunctionalBaseTest() {
     fun shouldFailToStopCorda() {
         assertTrue(executeAndFailWithRunner(STOP_CORDA_TASK_NAME).output.contains(CordaRuntimeGradlePluginException::class.java.name))
         assertTrue(
-            Files.notExists(Path.of(projectDir.absolutePath + "/CordaPIDCache.dat")),
+            Files.notExists(Path.of(projectDir.absolutePath + "/workspace/CordaPIDCache.dat")),
             "The process cache file is present but should be missing"
         )
     }
