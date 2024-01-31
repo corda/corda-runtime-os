@@ -10,6 +10,7 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.LoggingUtils.emphasise
 import org.slf4j.LoggerFactory
 import java.io.StringWriter
+import java.sql.SQLSyntaxErrorException
 import javax.persistence.EntityManagerFactory
 
 /**
@@ -125,10 +126,26 @@ class DatabaseInstaller(
                 connection.createStatement().use { stmt ->
                     val sql = """
                         CREATE SCHEMA IF NOT EXISTS $schemaName;
-                        SET search_path TO $schemaName;
                     """.trimIndent()
                     stmt.execute(sql)
                 }
+
+                val isPostgres = connection.createStatement().use { stmt ->
+                    try {
+                        !stmt.executeQuery("SELECT 1 WHERE version() LIKE 'PostgreSQL%'").isBeforeFirst
+                    }
+                    catch (e: SQLSyntaxErrorException) {
+                        false
+                    }
+                }
+
+                if (isPostgres)
+                    connection.createStatement().use { stmt ->
+                        val sql = """
+                            SET search_path TO $schemaName END;
+                        """.trimIndent()
+                        stmt.execute(sql)
+                    }
                 connection.commit()
 
                 StringWriter().use { writer ->
