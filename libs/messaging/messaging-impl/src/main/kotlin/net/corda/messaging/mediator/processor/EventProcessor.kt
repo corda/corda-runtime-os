@@ -4,6 +4,7 @@ import net.corda.libs.statemanager.api.State
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorInputService
 import net.corda.messaging.api.mediator.MediatorInputService.Companion.INPUT_HASH_HEADER
+import net.corda.messaging.api.mediator.MediatorInputService.Companion.SYNC_RESPONSE_HEADER
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
@@ -161,7 +162,9 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                     Record(
                         "",
                         key,
-                        reply.payload
+                        reply.payload,
+                        0,
+                        listOf(Pair(SYNC_RESPONSE_HEADER, "true"))
                     ),
                     message.properties
                 )

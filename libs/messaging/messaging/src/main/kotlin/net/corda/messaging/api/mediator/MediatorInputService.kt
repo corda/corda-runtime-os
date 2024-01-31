@@ -7,6 +7,7 @@ interface MediatorInputService {
 
     companion object {
         const val INPUT_HASH_HEADER = "InputHash"
+        const val SYNC_RESPONSE_HEADER = "SyncResponse"
     }
 
     /**

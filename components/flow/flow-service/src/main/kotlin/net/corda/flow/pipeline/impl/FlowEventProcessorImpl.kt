@@ -17,6 +17,7 @@ import net.corda.flow.pipeline.handlers.FlowPostProcessingHandler
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.mediator.MediatorInputService.Companion.INPUT_HASH_HEADER
+import net.corda.messaging.api.mediator.MediatorInputService.Companion.SYNC_RESPONSE_HEADER
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
@@ -91,7 +92,7 @@ class FlowEventProcessorImpl(
         }
 
         val inputEventHash = getInputEventHash(event)
-        if (inputEventHash != null) {
+        if (inputEventHash != null && !isSyncResponse(event)) {
             flowEngineReplayService.getReplayEvents(inputEventHash, state?.value)?.let { replays ->
                 log.debug { "Detected input event that has been processed previously for hash :$inputEventHash" }
                 return StateAndEventProcessor.Response(state, replays)
@@ -178,6 +179,9 @@ class FlowEventProcessorImpl(
 
     private fun getInputEventHash(event: Record<String, FlowEvent>) =
         event.headers.find { it.first == INPUT_HASH_HEADER }?.second
+
+    private fun isSyncResponse(event: Record<String, FlowEvent>) =
+        event.headers.find { it.first == SYNC_RESPONSE_HEADER }?.second == "true"
 
     /**
      * Executed within the [tryWithBackoff] function whenever a retry attempt is about to be made.
