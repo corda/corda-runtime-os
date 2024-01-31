@@ -1,4 +1,4 @@
-package net.corda.gradle.plugin
+package net.corda.gradle.plugin.cordalifecycle
 
 //import net.corda.craft5.annotations.TestSuite
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -6,10 +6,8 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import net.corda.gradle.plugin.FunctionalBaseTest
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
-import net.corda.gradle.plugin.cordalifecycle.START_CORDA_TASK_NAME
-import net.corda.gradle.plugin.cordalifecycle.STOP_CORDA_TASK_NAME
-import net.corda.gradle.plugin.cordalifecycle.CLUSTER_TASKS_GROUP
 
 import org.gradle.testkit.runner.BuildResult
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -51,7 +49,7 @@ class CordaLifeCycleTasksTest : FunctionalBaseTest() {
     }
 
     @Test
-    fun shouldContainCordaRuntimePluginTasks() {
+    fun shouldContainSupportingTasks() {
         assertNotNull(executeWithRunner("tasks", "--group", CLUSTER_TASKS_GROUP).tasks)
     }
 
