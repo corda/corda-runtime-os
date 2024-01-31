@@ -106,15 +106,15 @@ internal class StatefulSessionManagerImpl(
         val cachedSessions = getCachedOutboundSessions(keysToMessages)
         logger.info("YYY \t cachedSessions: ${cachedSessions.values.flatten().size}")
 
-        val keysNotInCache = (keysToMessages - cachedSessions.keys).keys
+        val keysNotInCache = (keysToMessages - cachedSessions.keys)
         logger.info("YYY \t keysNotInCache: ${keysNotInCache.size}")
         val sessionStates =
             if (keysNotInCache.isNotEmpty()) {
                 sessionExpiryScheduler.checkStatesValidateAndRememberThem(
-                    stateManager.get(keysNotInCache.filterNotNull()),
+                    stateManager.get(keysNotInCache.keys.filterNotNull()),
                 )
                     .let { states ->
-                        keysToMessages.map { (id, items) ->
+                        keysNotInCache.map { (id, items) ->
                             OutboundMessageState(
                                 id,
                                 states[id],
