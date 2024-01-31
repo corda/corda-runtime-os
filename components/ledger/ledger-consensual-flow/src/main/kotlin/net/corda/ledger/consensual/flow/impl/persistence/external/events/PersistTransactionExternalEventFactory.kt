@@ -2,6 +2,7 @@ package net.corda.ledger.consensual.flow.impl.persistence.external.events
 
 import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.flow.external.events.factory.ExternalEventFactory
+import net.corda.v5.base.annotations.CordaSerializable
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import java.nio.ByteBuffer
@@ -19,4 +20,5 @@ class PersistTransactionExternalEventFactory :
     }
 }
 
+@CordaSerializable
 data class PersistTransactionParameters(val transaction: ByteBuffer, val transactionStatus: String)

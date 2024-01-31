@@ -8,6 +8,7 @@ import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.persistence.query.OffsetResultSetExecutor
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Component
 
@@ -38,4 +39,5 @@ class FindAllExternalEventFactory: ExternalEventFactory<FindAllParameters, Entit
     }
 }
 
+@CordaSerializable
 data class FindAllParameters(val entityClass: Class<*>, val offset: Int, val limit: Int)

@@ -55,7 +55,7 @@ class FlowCheckpointImpl(
     }
 
     private var deleted = false
-    private val ledgerSaltIncrementor = AtomicInteger(0)
+    private val atomicCounter = AtomicInteger(0)
 
     private val flowInitialisedOnCreation = checkpoint.flowState != null
 
@@ -148,8 +148,8 @@ class FlowCheckpointImpl(
         get() = checkNotNull(flowStateManager)
         { "Attempt to access context before flow state has been created" }.suspendCount
 
-    override val ledgerSaltCounter: Int
-        get() = ledgerSaltIncrementor.getAndIncrement()
+    override val counter: Int
+        get() = atomicCounter.getAndIncrement()
 
     override fun initFlowState(flowStartContext: FlowStartContext, cpkFileHashes: Set<SecureHash>) {
         if (flowStateManager != null) {

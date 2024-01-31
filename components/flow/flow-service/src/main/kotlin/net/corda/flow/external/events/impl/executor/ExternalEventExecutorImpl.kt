@@ -1,5 +1,6 @@
 package net.corda.flow.external.events.impl.executor
 
+import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.fiber.FlowFiber
@@ -10,14 +11,14 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.io.ByteArrayOutputStream
-import java.io.ObjectOutputStream
 import java.util.UUID
 
 @Component(service = [ExternalEventExecutor::class, SingletonSerializeAsToken::class])
 class ExternalEventExecutorImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)
-    private val flowFiberService: FlowFiberService
+    private val flowFiberService: FlowFiberService,
+    @Reference(service = SerializationServiceInternal::class)
+    private val serializationService: SerializationServiceInternal
 ) : ExternalEventExecutor, SingletonSerializeAsToken {
 
     @Suspendable
@@ -51,12 +52,7 @@ class ExternalEventExecutorImpl @Activate constructor(
         }
 
     private fun <PARAMETERS : Any> deterministicUUID(parameters: PARAMETERS): UUID {
-        val byteArrayOutputStream = ByteArrayOutputStream()
-        ObjectOutputStream(byteArrayOutputStream).use {
-            it.writeObject(parameters)
-            it.flush()
-        }
-        return UUID.nameUUIDFromBytes(byteArrayOutputStream.toByteArray())
+        return UUID.nameUUIDFromBytes(serializationService.serialize(parameters).bytes)
     }
 
     private fun generateRequestId(uuid: UUID, flowFiber: FlowFiber): String {

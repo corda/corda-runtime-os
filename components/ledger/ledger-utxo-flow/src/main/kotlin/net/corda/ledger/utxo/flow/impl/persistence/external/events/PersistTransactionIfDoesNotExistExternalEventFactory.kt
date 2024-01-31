@@ -3,6 +3,7 @@ package net.corda.ledger.utxo.flow.impl.persistence.external.events
 import net.corda.data.ledger.persistence.PersistTransactionIfDoesNotExist
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.v5.base.annotations.CordaSerializable
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import java.nio.ByteBuffer
@@ -20,4 +21,5 @@ class PersistTransactionIfDoesNotExistExternalEventFactory :
     }
 }
 
+@CordaSerializable
 data class PersistTransactionIfDoesNotExistParameters(val transaction: ByteBuffer, val transactionStatus: TransactionStatus)

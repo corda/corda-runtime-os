@@ -1,14 +1,17 @@
 package net.corda.flow.external.events.impl.executor
 
 import net.corda.data.flow.event.external.ExternalEventResponse
+import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.services.MockFlowFiberService
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.v5.serialization.SerializedBytes
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.whenever
 import java.util.UUID
@@ -16,6 +19,7 @@ import kotlin.test.assertNotEquals
 
 class ExternalEventExecutorImplTest {
     private lateinit var mockFlowFiberService: MockFlowFiberService
+    private lateinit var serializationService: SerializationServiceInternal
     private lateinit var externalEventExecutorImpl: ExternalEventExecutorImpl
 
     private val capturedArguments = mutableListOf<FlowIORequest.ExternalEvent>()
@@ -38,6 +42,11 @@ class ExternalEventExecutorImplTest {
         mockFlowFiberService = MockFlowFiberService()
         whenever(mockFlowFiberService.flowCheckpoint.flowId).thenReturn(flowId)
         whenever(mockFlowFiberService.flowCheckpoint.suspendCount).thenReturn(suspendCount)
+        serializationService = mock<SerializationServiceInternal?>().apply {
+            whenever(serialize<Any>(anyOrNull())).doAnswer{ inv ->
+                SerializedBytes { inv.getArgument<Any>(0).toString().toByteArray() }
+            }
+        }
 
         // Capture arguments (ArgumentCaptor doesn't play nice with suspending functions)
         doAnswer { invocation ->
@@ -46,7 +55,7 @@ class ExternalEventExecutorImplTest {
             return@doAnswer mock<ExternalEventResponse>()
         }.`when`(mockFlowFiberService.flowFiber).suspend<ExternalEventResponse>(any())
 
-        externalEventExecutorImpl = ExternalEventExecutorImpl(mockFlowFiberService)
+        externalEventExecutorImpl = ExternalEventExecutorImpl(mockFlowFiberService, serializationService)
     }
 
     @Test
@@ -58,7 +67,7 @@ class ExternalEventExecutorImplTest {
 
         val expectedRequest = FlowIORequest.ExternalEvent(
             // This is hardcoded, but should be deterministic!
-            "73d97917-686e-3311-af45-63a2d42aa786",
+            "df51d2f3-e328-33cc-a7ae-dead51ebc1b3",
             mockFactoryClass, mockParams, contextProperties
         )
 
@@ -85,7 +94,6 @@ class ExternalEventExecutorImplTest {
         assertEquals(2, capturedArguments.size)
         assertNotEquals(capturedArguments[0].requestId, capturedArguments[1].requestId)
     }
-
 
     @Test
     fun `Suspending with a different flowId produces a different requestID`() {

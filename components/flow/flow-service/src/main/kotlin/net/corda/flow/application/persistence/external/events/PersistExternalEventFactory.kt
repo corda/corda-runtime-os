@@ -1,9 +1,10 @@
 package net.corda.flow.application.persistence.external.events
 
-import java.nio.ByteBuffer
 import net.corda.data.persistence.PersistEntities
 import net.corda.flow.external.events.factory.ExternalEventFactory
+import net.corda.v5.base.annotations.CordaSerializable
 import org.osgi.service.component.annotations.Component
+import java.nio.ByteBuffer
 
 @Component(service = [ExternalEventFactory::class])
 class PersistExternalEventFactory : AbstractPersistenceExternalEventFactory<PersistParameters>() {
@@ -13,4 +14,5 @@ class PersistExternalEventFactory : AbstractPersistenceExternalEventFactory<Pers
     }
 }
 
+@CordaSerializable
 data class PersistParameters(val serializedEntities: List<ByteBuffer>)

@@ -1,9 +1,10 @@
 package net.corda.flow.application.persistence.external.events
 
-import java.nio.ByteBuffer
 import net.corda.data.persistence.MergeEntities
 import net.corda.flow.external.events.factory.ExternalEventFactory
+import net.corda.v5.base.annotations.CordaSerializable
 import org.osgi.service.component.annotations.Component
+import java.nio.ByteBuffer
 
 @Component(service = [ExternalEventFactory::class])
 class MergeExternalEventFactory : AbstractPersistenceExternalEventFactory<MergeParameters>() {
@@ -13,4 +14,5 @@ class MergeExternalEventFactory : AbstractPersistenceExternalEventFactory<MergeP
     }
 }
 
+@CordaSerializable
 data class MergeParameters(val serializedEntities: List<ByteBuffer>)

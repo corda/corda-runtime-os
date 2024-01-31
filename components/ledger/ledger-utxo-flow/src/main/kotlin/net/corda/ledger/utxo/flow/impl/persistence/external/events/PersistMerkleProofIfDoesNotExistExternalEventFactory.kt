@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.flow.impl.persistence.external.events
 
 import net.corda.data.ledger.persistence.PersistMerkleProofIfDoesNotExist
 import net.corda.flow.external.events.factory.ExternalEventFactory
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.merkle.MerkleProof
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -25,6 +26,7 @@ class PersistMerkleProofIfDoesNotExistExternalEventFactory :
     }
 }
 
+@CordaSerializable
 data class PersistMerkleProofIfDoesNotExistParameters(
     val transactionId: String,
     val groupId: Int,
