@@ -39,7 +39,7 @@ abstract class FunctionalBaseTest {
             """
             cordaRuntimeGradlePlugin {
                 cordaClusterURL = "https://$restHostnameWithPort"
-                cordaRpcUser = "admin"
+                cordaRestUser = "admin"
                 cordaRpcPasswd ="admin"
                 combinedWorkerVersion = "5.0.1.0"
                 postgresJdbcVersion = "42.4.3"

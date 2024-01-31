@@ -83,7 +83,7 @@ fun getExistingNodes(pc: ProjectContext) : List<VirtualNodeInfoDTO> {
     mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 
     val response: HttpResponse<JsonNode> = Unirest.get(pc.cordaClusterURL + "/api/v1/virtualnode")
-        .basicAuth(pc.cordaRpcUser, pc.cordaRpcPassword)
+        .basicAuth(pc.cordaRestUser, pc.cordaRestPassword)
         .asJson()
 
     if (response.status != HttpURLConnection.HTTP_OK) {
@@ -104,7 +104,7 @@ fun getUploadedCpis(pc: ProjectContext): List<CpiMetadataDTO> {
     mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 
     val response: HttpResponse<JsonNode> = Unirest.get(pc.cordaClusterURL + "/api/v1/cpi")
-        .basicAuth(pc.cordaRpcUser, pc.cordaRpcPassword)
+        .basicAuth(pc.cordaRestUser, pc.cordaRestPassword)
         .asJson()
 
     if (response.status != HttpURLConnection.HTTP_OK) {

@@ -29,8 +29,8 @@ class DeployCpiHelper {
 
     fun uploadCertificate(
         cordaClusterURL: String,
-        cordaRpcUser: String,
-        cordaRpcPassword: String,
+        cordaRestUser: String,
+        cordaRestPassword: String,
         certAlias: String,
         certFilePath: String
     ) {
@@ -38,7 +38,7 @@ class DeployCpiHelper {
         val response = Unirest.put(cordaClusterURL + "/api/v1/certificates/cluster/code-signer")
             .field("alias", certAlias)
             .field("certificate", File(certFilePath))
-            .basicAuth(cordaRpcUser, cordaRpcPassword)
+            .basicAuth(cordaRestUser, cordaRestPassword)
             .asJson()
 
         // Note, api returns a 204 success code
@@ -52,8 +52,8 @@ class DeployCpiHelper {
     @Suppress("LongParameterList")
     fun uploadCpi(
         cordaClusterURL: String,
-        cordaRpcUser: String,
-        cordaRpcPassword: String,
+        cordaRestUser: String,
+        cordaRestPassword: String,
         cpiFilePath: String,
         cpiName: String,
         cpiVersion: String,
@@ -63,20 +63,20 @@ class DeployCpiHelper {
 
         val response = if (cpiPreviouslyUploaded(
                     cordaClusterURL,
-                    cordaRpcUser,
-                    cordaRpcPassword,
+                    cordaRestUser,
+                    cordaRestPassword,
                     cpiName,
                     cpiVersion
                 )
             ) {
             Unirest.post("$cordaClusterURL/api/v1/maintenance/virtualnode/forcecpiupload/")
                 .field("upload", File(cpiFilePath))
-                .basicAuth(cordaRpcUser, cordaRpcPassword)
+                .basicAuth(cordaRestUser, cordaRestPassword)
                 .asJson()
         } else {
             Unirest.post(cordaClusterURL + "/api/v1/cpi/")
                 .field("upload", File(cpiFilePath))
-                .basicAuth(cordaRpcUser, cordaRpcPassword)
+                .basicAuth(cordaRestUser, cordaRestPassword)
                 .asJson()
         }
         if (response.status != HttpURLConnection.HTTP_OK) {
@@ -91,8 +91,8 @@ class DeployCpiHelper {
 
         val cpiUploadStatus = pollForCpiUpload(
             cordaClusterURL,
-            cordaRpcUser,
-            cordaRpcPassword,
+            cordaRestUser,
+            cordaRestPassword,
             requestId,
             cpiUploadTimeout
         )
@@ -105,13 +105,13 @@ class DeployCpiHelper {
      */
     private fun cpiPreviouslyUploaded(
         cordaClusterURL: String,
-        cordaRpcUser: String,
-        cordaRpcPassword: String,
+        cordaRestUser: String,
+        cordaRestPassword: String,
         cpiName: String, cpiVersion: String
     ): Boolean {
 
         val response: HttpResponse<JsonNode> = Unirest.get("$cordaClusterURL/api/v1/cpi")
-            .basicAuth(cordaRpcUser, cordaRpcPassword)
+            .basicAuth(cordaRestUser, cordaRestPassword)
             .asJson()
 
         if (response.status != HttpURLConnection.HTTP_OK) {
@@ -136,8 +136,8 @@ class DeployCpiHelper {
      */
     private fun pollForCpiUpload(
         cordaClusterURL: String,
-        cordaRpcUser: String,
-        cordaRpcPassword: String,
+        cordaRestUser: String,
+        cordaRestPassword: String,
         id: String,
         cpiUploadTimeout: Long
     ): CpiUploadStatus {
@@ -145,8 +145,8 @@ class DeployCpiHelper {
         retry(timeout = Duration.ofMillis(cpiUploadTimeout)) {
             cpiUploadStatus = checkCpiUploadStatus(
                 cordaClusterURL,
-                cordaRpcUser,
-                cordaRpcPassword,
+                cordaRestUser,
+                cordaRestPassword,
                 id
             )
         }
@@ -158,13 +158,13 @@ class DeployCpiHelper {
      */
     private fun checkCpiUploadStatus(
         cordaClusterURL: String,
-        cordaRpcUser: String,
-        cordaRpcPassword: String,
+        cordaRestUser: String,
+        cordaRestPassword: String,
         id: String
     ): CpiUploadStatus {
         var cpiUploadStatus = CpiUploadStatus()
         Unirest.get(cordaClusterURL + "/api/v1/cpi/status/$id")
-            .basicAuth(cordaRpcUser, cordaRpcPassword)
+            .basicAuth(cordaRestUser, cordaRestPassword)
             .asJson()
             .ifSuccess { response ->
                 cpiUploadStatus = mapper.readValue(response.body.toString(), CpiUploadStatus::class.java)
