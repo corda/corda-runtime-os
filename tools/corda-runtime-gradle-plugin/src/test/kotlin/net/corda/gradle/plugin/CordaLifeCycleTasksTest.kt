@@ -25,9 +25,6 @@ class CordaLifeCycleTasksTest : FunctionalBaseTest() {
         appendCordaRuntimeGradlePluginExtension()
         lateinit var result: BuildResult
         runBlocking {
-            GlobalScope.launch {
-                executeWithRunner(START_CORDA_TASK_NAME)
-            }
             val job = GlobalScope.launch {
                 delay(50000)
                 result = executeWithRunner(STOP_CORDA_TASK_NAME)
