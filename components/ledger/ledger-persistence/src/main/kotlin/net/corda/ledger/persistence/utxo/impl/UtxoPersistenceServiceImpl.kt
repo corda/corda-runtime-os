@@ -37,6 +37,7 @@ import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
@@ -445,7 +446,8 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
-    private fun findFilteredTransactions(
+    @VisibleForTesting
+    internal fun findFilteredTransactions(
         ids: List<String>
     ): Map<String, Pair<FilteredTransaction, List<DigitalSignatureAndMetadata>>> {
         return entityManagerFactory.transaction { em ->
@@ -472,7 +474,15 @@ class UtxoPersistenceServiceImpl(
                 )
                 merkleProofDtoList.map { merkleProofDto ->
                     // Transform the MerkleProofDto objects to MerkleProof objects
-                    merkleProofDto.toMerkleProof(merkleProofFactory, componentGroupHashDigestProvider)
+                    // If the merkle proof is metadata, we need to add the bytes because it's not part of the component table
+                    val merkleProofDtoOverride = if (merkleProofDto.groupIndex == 0) {
+                        merkleProofDto.copy(leavesWithData = mapOf(0 to ftxDto.metadataBytes))
+                    } else merkleProofDto
+
+                    merkleProofDtoOverride.toMerkleProof(
+                        merkleProofFactory,
+                        componentGroupHashDigestProvider
+                    )
                 }.reduce { accumulator, merkleProof ->
                     // Then  keep merging the elements into each other
                     (accumulator as MerkleProofInternal).merge(
