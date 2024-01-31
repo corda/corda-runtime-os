@@ -40,7 +40,7 @@ open class ListVNodes @Inject constructor(objects: ObjectFactory): DefaultTask()
     @TaskAction
     fun listVNodes() {
         val pc = ProjectContext(project, pluginConfig.get())
-        CordaQueriesHelper(pc).listVNodes()
+        QueriesHelper(pc).listVNodes()
     }
 }
 
@@ -50,6 +50,6 @@ open class ListCPIs @Inject constructor(objects: ObjectFactory): DefaultTask() {
     @TaskAction
     fun listVNodes() {
         val pc = ProjectContext(project, pluginConfig.get())
-        CordaQueriesHelper(pc).listCPIs()
+        QueriesHelper(pc).listCPIs()
     }
 }

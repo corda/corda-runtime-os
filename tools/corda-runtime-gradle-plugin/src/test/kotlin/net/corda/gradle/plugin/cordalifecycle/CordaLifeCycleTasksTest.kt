@@ -1,6 +1,5 @@
 package net.corda.gradle.plugin.cordalifecycle
 
-//import net.corda.craft5.annotations.TestSuite
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
@@ -8,7 +7,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import net.corda.gradle.plugin.FunctionalBaseTest
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
-
 import org.gradle.testkit.runner.BuildResult
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -18,7 +16,6 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
 import java.nio.file.Files
 import java.nio.file.Path
 
-//@TestSuite
 class CordaLifeCycleTasksTest : FunctionalBaseTest() {
     @OptIn(DelicateCoroutinesApi::class)
     @Test

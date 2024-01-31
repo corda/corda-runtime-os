@@ -1,6 +1,5 @@
 package net.corda.gradle.plugin
 
-//import net.corda.craft5.corda.cli.CordaCli
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.BuildTask
 import org.gradle.testkit.runner.GradleRunner
@@ -17,13 +16,7 @@ abstract class FunctionalBaseTest {
     lateinit var projectDir: File
     private lateinit var buildFile: File
 
-    companion object {
-//        @BeforeAll
-//        @JvmStatic
-//        fun beforeAll(cordaCli: CordaCli) {
-//            cordaCli.execAndWait("") // Install the Corda CLI if needed
-//        }
-    }
+    protected val restHostnameWithPort = "localhost:8888"
 
     @BeforeEach
     fun setup() {
@@ -45,7 +38,7 @@ abstract class FunctionalBaseTest {
         buildFile.appendText(
             """
             cordaRuntimeGradlePlugin {
-                cordaClusterURL = "https://localhost:8888"
+                cordaClusterURL = "https://$restHostnameWithPort"
                 cordaRpcUser = "admin"
                 cordaRpcPasswd ="admin"
                 combinedWorkerVersion = "5.0.0.0-Iguana1.0"
