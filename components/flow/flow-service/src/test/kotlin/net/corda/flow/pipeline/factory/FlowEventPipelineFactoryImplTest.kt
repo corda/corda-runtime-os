@@ -34,7 +34,8 @@ class FlowEventPipelineFactoryImplTest {
     private val checkpoint = Checkpoint()
     private val flowCheckpoint = mock<FlowCheckpoint>()
     private val flowRunner = mock<FlowRunner>()
-    private val flowEventContext = buildFlowEventContext(checkpoint = flowCheckpoint, inputEventPayload = flowEvent.payload, inputRecordHash = inputHash)
+    private val flowEventContext =
+        buildFlowEventContext(checkpoint = flowCheckpoint, inputEventPayload = flowEvent.payload, inputRecordHash = inputHash)
     private val flowMetrics = flowEventContext.flowMetrics
     private val flowMetricsFactory = mock<FlowMetricsFactory>().apply {
         whenever(create(any(), any())).thenReturn(flowMetrics)
