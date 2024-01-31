@@ -6,6 +6,7 @@ import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.crypto.core.CryptoService
 import net.corda.data.crypto.wire.ops.key.rotation.IndividualKeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyType
+import net.corda.data.crypto.wire.ops.key.status.ManagedKeyStatus
 import net.corda.data.crypto.wire.ops.key.status.UnmanagedKeyStatus
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
@@ -27,12 +28,13 @@ class CryptoRewrapBusProcessorTests {
         private val tenantId = UUID.randomUUID().toString()
         private const val OLD_PARENT_KEY_ALIAS = "alias1"
         private const val NEW_PARENT_KEY_ALIAS = "alias2"
+        private const val WRAPPING_KEY_ALIAS = "alias"
     }
 
-    private val serializer = mock<CordaAvroSerializer<UnmanagedKeyStatus>> {
+    private val unmanagedSerializer = mock<CordaAvroSerializer<UnmanagedKeyStatus>> {
         on { serialize(any()) } doReturn byteArrayOf(42)
     }
-    private val deserializer = mock<CordaAvroDeserializer<UnmanagedKeyStatus>> {
+    private val unmanagedDeserializer = mock<CordaAvroDeserializer<UnmanagedKeyStatus>> {
         on { deserialize(any()) } doReturn UnmanagedKeyStatus(
             OLD_PARENT_KEY_ALIAS,
             NEW_PARENT_KEY_ALIAS,
@@ -42,9 +44,25 @@ class CryptoRewrapBusProcessorTests {
             Instant.now()
         )
     }
-    private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
-        on { createAvroSerializer<UnmanagedKeyStatus>() } doReturn serializer
-        on { createAvroDeserializer<UnmanagedKeyStatus>(any(), any()) } doReturn deserializer
+    private val unmanagedCordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
+        on { createAvroSerializer<UnmanagedKeyStatus>() } doReturn unmanagedSerializer
+        on { createAvroDeserializer<UnmanagedKeyStatus>(any(), any()) } doReturn unmanagedDeserializer
+    }
+
+    private val managedSerializer = mock<CordaAvroSerializer<ManagedKeyStatus>> {
+        on { serialize(any()) } doReturn byteArrayOf(42)
+    }
+    private val managedDeserializer = mock<CordaAvroDeserializer<ManagedKeyStatus>> {
+        on { deserialize(any()) } doReturn ManagedKeyStatus(
+            WRAPPING_KEY_ALIAS,
+            10,
+            5,
+            Instant.now()
+        )
+    }
+    private val managedCordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
+        on { createAvroSerializer<ManagedKeyStatus>() } doReturn managedSerializer
+        on { createAvroDeserializer<ManagedKeyStatus>(any(), any()) } doReturn managedDeserializer
     }
 
     private val cryptoService: CryptoService = mock<CryptoService> { }
@@ -59,15 +77,21 @@ class CryptoRewrapBusProcessorTests {
         )
     }
 
-    private val cryptoRewrapBusProcessor = CryptoRewrapBusProcessor(
+    private val unmanagedCryptoRewrapBusProcessor = CryptoRewrapBusProcessor(
         cryptoService,
         stateManager,
-        cordaAvroSerializationFactory
+        unmanagedCordaAvroSerializationFactory
+    )
+
+    private val managedCryptoRewrapBusProcessor = CryptoRewrapBusProcessor(
+        cryptoService,
+        stateManager,
+        managedCordaAvroSerializationFactory
     )
 
     @Test
     fun `unmanaged rewrap calls rewrapWrappingKey in crypto service`() {
-        cryptoRewrapBusProcessor.onNext(
+        unmanagedCryptoRewrapBusProcessor.onNext(
             listOf(
                 Record(
                     "TBC",
@@ -91,7 +115,7 @@ class CryptoRewrapBusProcessorTests {
     @Test
     fun `unmanaged rewrap with null tenant Id should be ignored`() {
         assertTrue(
-            cryptoRewrapBusProcessor.onNext(
+            unmanagedCryptoRewrapBusProcessor.onNext(
                 listOf(
                     Record(
                         "TBC",
@@ -117,7 +141,7 @@ class CryptoRewrapBusProcessorTests {
     @Test
     fun `unmanaged rewrap with empty tenant Id should be ignored`() {
         assertTrue(
-            cryptoRewrapBusProcessor.onNext(
+            unmanagedCryptoRewrapBusProcessor.onNext(
                 listOf(
                     Record(
                         "TBC",
@@ -143,7 +167,7 @@ class CryptoRewrapBusProcessorTests {
     @Test
     fun `unmanaged rewrap with null old parent alias should be ignored`() {
         assertTrue(
-            cryptoRewrapBusProcessor.onNext(
+            unmanagedCryptoRewrapBusProcessor.onNext(
                 listOf(
                     Record(
                         "TBC",
@@ -169,7 +193,7 @@ class CryptoRewrapBusProcessorTests {
     @Test
     fun `unmanaged rewrap with empty old parent alias should be ignored`() {
         assertTrue(
-            cryptoRewrapBusProcessor.onNext(
+            unmanagedCryptoRewrapBusProcessor.onNext(
                 listOf(
                     Record(
                         "TBC",
@@ -195,7 +219,7 @@ class CryptoRewrapBusProcessorTests {
     @Test
     fun `unmanaged rewrap with null new parent alias should be ignored`() {
         assertTrue(
-            cryptoRewrapBusProcessor.onNext(
+            unmanagedCryptoRewrapBusProcessor.onNext(
                 listOf(
                     Record(
                         "TBC",
@@ -221,7 +245,7 @@ class CryptoRewrapBusProcessorTests {
     @Test
     fun `unmanaged rewrap with empty new parent alias should be ignored`() {
         assertTrue(
-            cryptoRewrapBusProcessor.onNext(
+            unmanagedCryptoRewrapBusProcessor.onNext(
                 listOf(
                     Record(
                         "TBC",
@@ -247,7 +271,7 @@ class CryptoRewrapBusProcessorTests {
     @Test
     fun `unmanaged rewrap with null target alias should be ignored`() {
         assertTrue(
-            cryptoRewrapBusProcessor.onNext(
+            unmanagedCryptoRewrapBusProcessor.onNext(
                 listOf(
                     Record(
                         "TBC",
@@ -273,7 +297,7 @@ class CryptoRewrapBusProcessorTests {
     @Test
     fun `unmanaged rewrap with empty target alias should be ignored`() {
         assertTrue(
-            cryptoRewrapBusProcessor.onNext(
+            unmanagedCryptoRewrapBusProcessor.onNext(
                 listOf(
                     Record(
                         "TBC",
@@ -299,7 +323,7 @@ class CryptoRewrapBusProcessorTests {
     @Test
     fun `unmanaged rewrap with key uuid set should be ignored`() {
         assertTrue(
-            cryptoRewrapBusProcessor.onNext(
+            unmanagedCryptoRewrapBusProcessor.onNext(
                 listOf(
                     Record(
                         "TBC",
@@ -325,7 +349,7 @@ class CryptoRewrapBusProcessorTests {
     @Test
     fun `managed rewrap calls rewrapAllSigningKeysWrappedBy in crypto service`() {
         val uuid = UUID.randomUUID()
-        cryptoRewrapBusProcessor.onNext(
+        managedCryptoRewrapBusProcessor.onNext(
             listOf(
                 Record(
                     "TBC",
@@ -348,7 +372,7 @@ class CryptoRewrapBusProcessorTests {
     @Test
     fun `managed rewrap with null tenant Id should be ignored`() {
         assertTrue(
-            cryptoRewrapBusProcessor.onNext(
+            managedCryptoRewrapBusProcessor.onNext(
                 listOf(
                     Record(
                         "TBC",
@@ -374,7 +398,7 @@ class CryptoRewrapBusProcessorTests {
     @Test
     fun `managed rewrap with empty tenant Id should be ignored`() {
         assertTrue(
-            cryptoRewrapBusProcessor.onNext(
+            managedCryptoRewrapBusProcessor.onNext(
                 listOf(
                     Record(
                         "TBC",
@@ -400,7 +424,7 @@ class CryptoRewrapBusProcessorTests {
     @Test
     fun `managed rewrap with old parent key alias set should be ignored`() {
         assertTrue(
-            cryptoRewrapBusProcessor.onNext(
+            managedCryptoRewrapBusProcessor.onNext(
                 listOf(
                     Record(
                         "TBC",
@@ -426,7 +450,7 @@ class CryptoRewrapBusProcessorTests {
     @Test
     fun `managed rewrap with new parent key alias set should be ignored`() {
         assertTrue(
-            cryptoRewrapBusProcessor.onNext(
+            managedCryptoRewrapBusProcessor.onNext(
                 listOf(
                     Record(
                         "TBC",
@@ -452,7 +476,7 @@ class CryptoRewrapBusProcessorTests {
     @Test
     fun `managed rewrap with target key alias set should be ignored`() {
         assertTrue(
-            cryptoRewrapBusProcessor.onNext(
+            managedCryptoRewrapBusProcessor.onNext(
                 listOf(
                     Record(
                         "TBC",
@@ -478,7 +502,7 @@ class CryptoRewrapBusProcessorTests {
     @Test
     fun `managed rewrap with null uuid should be ignored`() {
         assertTrue(
-            cryptoRewrapBusProcessor.onNext(
+            managedCryptoRewrapBusProcessor.onNext(
                 listOf(
                     Record(
                         "TBC",
@@ -504,7 +528,7 @@ class CryptoRewrapBusProcessorTests {
     @Test
     fun `managed rewrap with empty uuid should be ignored`() {
         assertTrue(
-            cryptoRewrapBusProcessor.onNext(
+            managedCryptoRewrapBusProcessor.onNext(
                 listOf(
                     Record(
                         "TBC",
@@ -530,7 +554,7 @@ class CryptoRewrapBusProcessorTests {
     @Test
     fun `managed rewrap with invalid uuid should be ignored`() {
         assertTrue(
-            cryptoRewrapBusProcessor.onNext(
+            managedCryptoRewrapBusProcessor.onNext(
                 listOf(
                     Record(
                         "TBC",

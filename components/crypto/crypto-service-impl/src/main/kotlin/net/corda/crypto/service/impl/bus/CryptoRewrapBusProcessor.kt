@@ -7,6 +7,7 @@ import net.corda.crypto.core.KeyRotationStatus
 import net.corda.crypto.core.getKeyRotationStatusRecordKey
 import net.corda.data.crypto.wire.ops.key.rotation.IndividualKeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyType
+import net.corda.data.crypto.wire.ops.key.status.ManagedKeyStatus
 import net.corda.data.crypto.wire.ops.key.status.UnmanagedKeyStatus
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.STATE_TYPE
@@ -42,8 +43,11 @@ class CryptoRewrapBusProcessor(
         .withTag(CordaMetrics.Tag.OperationName, REWRAP_KEYS_OPERATION_NAME)
         .build()
 
-    private val deserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, UnmanagedKeyStatus::class.java)
-    private val serializer = cordaAvroSerializationFactory.createAvroSerializer<UnmanagedKeyStatus>()
+    private val unmanagedDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, UnmanagedKeyStatus::class.java)
+    private val unmanagedSerializer = cordaAvroSerializationFactory.createAvroSerializer<UnmanagedKeyStatus>()
+
+    private val managedDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, ManagedKeyStatus::class.java)
+    private val managedSerializer = cordaAvroSerializationFactory.createAvroSerializer<ManagedKeyStatus>()
 
     override fun onNext(events: List<Record<String, IndividualKeyRotationRequest>>): List<Record<*, *>> {
         checkNotNull(stateManager) { "State manager is not initialised, cannot proceed with key rotation." }
@@ -97,7 +101,7 @@ class CryptoRewrapBusProcessor(
                         return emptyList()
                     }
                     if (request.keyUuid.isNullOrEmpty()) {
-                        logger.info("keyUuid missing from unmanaged IndividualKeyRotationRequest, ignoring.")
+                        logger.info("keyUuid missing from managed IndividualKeyRotationRequest, ignoring.")
                         return emptyList()
                     }
                     val uuid = try {
@@ -124,6 +128,62 @@ class CryptoRewrapBusProcessor(
         stateManager: StateManager,
         request: IndividualKeyRotationRequest
     ) {
+        // Once re-wrap is done, we can update the state manager
+        var statusUpdated = false
+
+        while (!statusUpdated) {
+            // we defined the key to be unique to avoid table search through state manager
+            val tenantIdWrappingKeysRecords =
+                stateManager.get(
+                    listOf(
+                        getKeyRotationStatusRecordKey(
+                            request.keyUuid,
+                            request.tenantId
+                        )
+                    )
+                )
+            require(tenantIdWrappingKeysRecords.size == 1) {
+                "Found none or more than 1 ${request.tenantId} record " +
+                        "in the database for rootKeyAlias ${request.oldParentKeyAlias}. Found records $tenantIdWrappingKeysRecords."
+            }
+
+            tenantIdWrappingKeysRecords.forEach { (_, state) ->
+                logger.debug(
+                    "Updating state manager record for tenantId ${state.metadata[KeyRotationMetadataValues.TENANT_ID]} " +
+                            "after re-wrapping ${request.targetKeyAlias}."
+                )
+                val deserializedStatus = checkNotNull(managedDeserializer.deserialize(state.value))
+                val newValue =
+                    checkNotNull(
+                        managedSerializer.serialize(
+                            ManagedKeyStatus(
+                                deserializedStatus.wrappingKeyAlias,
+                                deserializedStatus.total,
+                                deserializedStatus.rotatedKeys,
+                                deserializedStatus.createdTimestamp
+                            )
+                        )
+                    )
+                // Update status to Done if all keys for the tenant have been rotated
+                val newMetadata = if (deserializedStatus.total == deserializedStatus.rotatedKeys + 1) {
+                    mergeMetadata(
+                        state.metadata,
+                        Metadata(mapOf(KeyRotationMetadataValues.STATUS to KeyRotationStatus.DONE)),
+                        state.metadata[STATE_TYPE].toString()
+                    )
+                } else {
+                    state.metadata
+                }
+                val failedToUpdate =
+                    stateManager.update(listOf(State(state.key, newValue, state.version, newMetadata)))
+                if (failedToUpdate.isNotEmpty()) {
+                    logger.debug("Failed to update following states ${failedToUpdate.keys}, retrying.")
+                } else {
+                    statusUpdated = true
+                }
+            }
+        }
+
         logger.debug("Update state manager ${stateManager.name} for managed key rotation tenantId: ${request.tenantId}.")
     }
 
@@ -155,10 +215,10 @@ class CryptoRewrapBusProcessor(
                     "Updating state manager record for tenantId ${state.metadata[KeyRotationMetadataValues.TENANT_ID]} " +
                         "after re-wrapping ${request.targetKeyAlias}."
                 )
-                val deserializedStatus = checkNotNull(deserializer.deserialize(state.value))
+                val deserializedStatus = checkNotNull(unmanagedDeserializer.deserialize(state.value))
                 val newValue =
                     checkNotNull(
-                        serializer.serialize(
+                        unmanagedSerializer.serialize(
                             UnmanagedKeyStatus(
                                 deserializedStatus.oldParentKeyAlias,
                                 deserializedStatus.newParentKeyAlias,
