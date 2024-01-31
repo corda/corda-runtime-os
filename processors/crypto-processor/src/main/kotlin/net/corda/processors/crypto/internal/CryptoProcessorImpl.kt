@@ -41,7 +41,9 @@ import net.corda.crypto.service.impl.bus.HSMRegistrationBusProcessor
 import net.corda.crypto.service.impl.rpc.CryptoFlowOpsProcessor
 import net.corda.crypto.service.impl.rpc.SessionDecryptionProcessor
 import net.corda.crypto.service.impl.rpc.SessionEncryptionProcessor
+import net.corda.crypto.softhsm.SigningRepositoryFactory
 import net.corda.crypto.softhsm.TenantInfoService
+import net.corda.crypto.softhsm.WrappingRepositoryFactory
 import net.corda.crypto.softhsm.impl.HSMRepositoryImpl
 import net.corda.crypto.softhsm.impl.ShortHashCacheKey
 import net.corda.crypto.softhsm.impl.SigningRepositoryImpl
@@ -366,15 +368,29 @@ class CryptoProcessorImpl @Activate constructor(
                 tenantId = tenantId
             )
         }
+        val signingRepositoryFactory = { tenantId: String ->
+            SigningRepositoryImpl(
+                entityManagerFactory = getEntityManagerFactory(
+                    tenantId = tenantId,
+                    dbConnectionManager = dbConnectionManager,
+                    virtualNodeInfoReadService = virtualNodeInfoReadService,
+                    jpaEntitiesRegistry = jpaEntitiesRegistry
+                ),
+                tenantId = tenantId,
+                keyEncodingService = schemeMetadata,
+                digestService = digestService,
+                layeredPropertyMapFactory = layeredPropertyMapFactory
+            )
+        }
 
         createFlowOpsSubscription(coordinator, retryingConfig)
         createRpcOpsSubscription(coordinator, messagingConfig, retryingConfig)
         createHsmRegSubscription(coordinator, messagingConfig, retryingConfig)
         createRekeySubscription(
-            coordinator, messagingConfig, wrappingRepositoryFactory,
+            coordinator, messagingConfig, wrappingRepositoryFactory, signingRepositoryFactory,
             stateManager, cordaAvroSerializationFactory
         )
-        createRewrapSubscription(coordinator, messagingConfig, stateManager,  cordaAvroSerializationFactory)
+        createRewrapSubscription(coordinator, messagingConfig, stateManager, cordaAvroSerializationFactory)
         createSessionEncryptionSubscription(coordinator, retryingConfig)
         createSessionDecryptionSubscription(coordinator, retryingConfig)
     }
@@ -382,7 +398,8 @@ class CryptoProcessorImpl @Activate constructor(
     private fun createRekeySubscription(
         coordinator: LifecycleCoordinator,
         messagingConfig: SmartConfig,
-        wrappingRepositoryFactory: (String) -> WrappingRepositoryImpl,
+        wrappingRepositoryFactory: WrappingRepositoryFactory,
+        signingRepositoryFactory: SigningRepositoryFactory,
         stateManager: StateManager?,
         cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     ) {
@@ -392,6 +409,7 @@ class CryptoProcessorImpl @Activate constructor(
             cryptoService,
             virtualNodeInfoReadService,
             wrappingRepositoryFactory,
+            signingRepositoryFactory,
             rekeyPublisher,
             stateManager,
             cordaAvroSerializationFactory,
