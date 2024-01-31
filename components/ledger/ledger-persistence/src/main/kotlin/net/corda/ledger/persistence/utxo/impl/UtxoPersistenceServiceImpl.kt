@@ -41,6 +41,7 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
 import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.ContractState
@@ -465,6 +466,8 @@ class UtxoPersistenceServiceImpl(
             val rootDigestProvider = filteredTransactionMetadata.getRootMerkleTreeDigestProvider(merkleTreeProvider)
 
             // 2. Merge the Merkle proofs for each component group
+            val componentDigestProviders = mutableMapOf<Int, MerkleTreeHashDigestProvider>()
+
             val mergedMerkleProofs = ftxDto.componentMerkleProofMap.mapValues { (componentGroupIndex, merkleProofDtoList) ->
                 val componentGroupHashDigestProvider = filteredTransactionMetadata.getComponentGroupMerkleTreeDigestProvider(
                     ftxDto.privacySalt,
@@ -472,6 +475,7 @@ class UtxoPersistenceServiceImpl(
                     merkleTreeProvider,
                     digestService
                 )
+                componentDigestProviders[componentGroupIndex] = componentGroupHashDigestProvider
                 merkleProofDtoList.map { merkleProofDto ->
                     // Transform the MerkleProofDto objects to MerkleProof objects
                     // If the merkle proof is metadata, we need to add the bytes because it's not part of the component table
@@ -493,18 +497,17 @@ class UtxoPersistenceServiceImpl(
             }
 
             // 3. Calculate the root hash of each component group merkle proof
-            val calculatedComponentGroupRootsHashes = mergedMerkleProofs.map {
+            val calculatedComponentGroupRootsHashes = mergedMerkleProofs.map { (componentGroupIndex, merkleProof) ->
                 // We don't store the leaf data for top level proofs, so we need to calculate it from the
                 // existing component group proofs
                 // Map through the visible component groups and calculate the root of the given component merkle proof
-                val componentGroupHashDigestProvider = filteredTransactionMetadata.getComponentGroupMerkleTreeDigestProvider(
-                    ftxDto.privacySalt,
-                    it.key,
-                    merkleTreeProvider,
-                    digestService
-                )
+                val componentGroupHashDigestProvider = componentDigestProviders[componentGroupIndex]
 
-                it.key to it.value.calculateRoot(componentGroupHashDigestProvider)
+                requireNotNull(componentGroupHashDigestProvider) {
+                    "Could not find hash digest provider for $componentGroupIndex"
+                }
+
+                componentGroupIndex to merkleProof.calculateRoot(componentGroupHashDigestProvider)
             }.toMap()
 
             // 4. Create the top level Merkle proof by merging all the top level merkle proofs together
