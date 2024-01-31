@@ -69,7 +69,12 @@ class RestWorker @Activate constructor(
         val params = getParams(args, RestWorkerParams())
         params.validate()
         if (printHelpOrVersion(params.defaultParams, RestWorker::class.java, shutDownService)) return
-        Metrics.configure(webServer, this.javaClass.simpleName)
+        Metrics.configure(
+            webServer,
+            this.javaClass.simpleName,
+            params.defaultParams.metricsKeepNames?.toRegex(),
+            params.defaultParams.metricsDropLabels?.toRegex()
+        )
         Health.configure(webServer, lifecycleRegistry)
 
         configureTracing("REST Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)

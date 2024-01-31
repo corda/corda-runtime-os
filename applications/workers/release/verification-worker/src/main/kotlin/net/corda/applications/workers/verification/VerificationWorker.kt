@@ -66,7 +66,12 @@ class VerificationWorker @Activate constructor(
 
         val params = getParams(args, VerificationWorkerParams())
         if (printHelpOrVersion(params.defaultParams, VerificationWorker::class.java, shutDownService)) return
-        Metrics.configure(webServer, this.javaClass.simpleName)
+        Metrics.configure(
+            webServer,
+            this.javaClass.simpleName,
+            params.defaultParams.metricsKeepNames?.toRegex(),
+            params.defaultParams.metricsDropLabels?.toRegex()
+        )
         Health.configure(webServer, lifecycleRegistry)
 
         configureTracing("Verification Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)

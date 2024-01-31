@@ -71,7 +71,12 @@ class CryptoWorker @Activate constructor(
         if (params.hsmId.isBlank()) {
             throw IllegalStateException("Please specify which HSM the worker must handle, like --hsm-id SOFT")
         }
-        Metrics.configure(webServer, this.javaClass.simpleName)
+        Metrics.configure(
+            webServer,
+            this.javaClass.simpleName,
+            params.defaultParams.metricsKeepNames?.toRegex(),
+            params.defaultParams.metricsDropLabels?.toRegex()
+        )
         Health.configure(webServer, lifecycleRegistry)
 
         configureTracing("Crypto Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
