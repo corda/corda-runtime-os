@@ -53,6 +53,9 @@ class StatefulSessionManagerImplTest {
     }
 
     private val manager = StatefulSessionManagerImpl(
+        mock(),
+        mock(),
+        mock(),
         coordinatorFactory,
         stateManager,
         sessionManagerImpl,
@@ -120,7 +123,7 @@ class StatefulSessionManagerImplTest {
                         "groupId" to "group ID",
                         "lastSendTimestamp" to 50L,
                         "status" to "SentResponderHello",
-                        "expiry" to 1000L,
+                        "expiry" to 2000000L,
                     ),
                 )
 

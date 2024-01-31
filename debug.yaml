@@ -47,3 +47,8 @@ workers:
 #      suspend: true
 #    logging:
 #      level: "debug"
+#  p2pLinkManager:
+#    replicaCount: 1
+#    debug:
+#      enabled: true
+#      suspend: true

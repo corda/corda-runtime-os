@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager.sessions
 
 import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata.Companion.toCommonMetadata
@@ -13,22 +14,81 @@ import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import net.corda.cache.caffeine.CacheFactoryImpl
+import net.corda.p2p.crypto.protocol.api.Session
+import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 
 internal class SessionExpiryScheduler(
-    private val caches: Collection<Cache<String, *>>,
     private val stateManager: StateManager,
     private val clock: Clock,
+    private val eventPublisher: StatefulSessionEventPublisher,
     private val scheduler: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(),
     private val noiseFactory: Random = Random(),
 ) {
+    private companion object {
+        const val CACHE_SIZE = 10_000L
+    }
     private val tasks = ConcurrentHashMap<String, SavedState>()
 
-    private data class SavedState(
+    data class SavedState(
         val expiry: Instant,
         val future: Future<*>,
     )
 
-    fun checkStateValidateAndRememberIt(state: State): State? {
+    private val cachedInboundSessions: Cache<String, SessionManager.SessionDirection.Inbound> =
+        CacheFactoryImpl().build(
+            "P2P-inbound-sessions-cache",
+            Caffeine.newBuilder().maximumSize(CACHE_SIZE).evictionListener { key, _, _ ->
+                key?.let { removeFromScheduler(it) }
+            },
+        )
+
+    private val counterpartiesForSessionId = ConcurrentHashMap<String, String>()
+
+    private val cachedOutboundSessions: Cache<String, SessionManager.SessionDirection.Outbound> =
+        CacheFactoryImpl().build(
+            "P2P-outbound-sessions-cache",
+            Caffeine.newBuilder()
+                .maximumSize(CACHE_SIZE)
+                .removalListener<String?, SessionManager.SessionDirection.Outbound?> { _, session, _ ->
+                    session?.session?.let {
+                        counterpartiesForSessionId.remove(it.sessionId)
+                    }
+                }.evictionListener { key, _, _ ->
+                    key?.let { removeFromScheduler(it) }
+                },
+        )
+
+    fun putOutboundSession(key: String, counterparties: SessionManager.Counterparties, session: Session) {
+        cachedOutboundSessions.put(
+            key,
+            SessionManager.SessionDirection.Outbound(
+                counterparties,
+                session,
+            ),
+        )
+        counterpartiesForSessionId[session.sessionId] = key
+    }
+
+    fun getAllPresentOutboundSessions(keys: Iterable<String>): Map<String, SessionManager.SessionDirection.Outbound> {
+        return cachedOutboundSessions.getAllPresent(keys)
+    }
+
+    fun getSessionIfCached(sessionID: String): SessionManager.SessionDirection? =
+        cachedInboundSessions.getIfPresent(sessionID) ?: counterpartiesForSessionId[sessionID]?.let {
+            cachedOutboundSessions.getIfPresent(it)
+        }
+
+    fun putInboundSession(sessionID: String, session: SessionManager.SessionDirection.Inbound) {
+        cachedInboundSessions.put(sessionID, session)
+    }
+
+    fun invalidate(key: String) {
+        cachedInboundSessions.invalidate(key)
+        cachedOutboundSessions.invalidate(key)
+    }
+
+    fun validateStateAndScheduleExpiry(state: State): State? {
         val now = clock.instant()
         val expiry = state.metadata.toCommonMetadata().expiry
         val noise = Duration.of(
@@ -54,20 +114,26 @@ internal class SessionExpiryScheduler(
             state
         }
     }
-    fun checkStatesValidateAndRememberThem(states: Map<String, State>): Map<String, State> {
+    fun validateStatesAndScheduleExpiry(states: Map<String, State>): Map<String, State> {
         return states.mapNotNull { (key, state) ->
-            checkStateValidateAndRememberIt(state)?.let {
+            validateStateAndScheduleExpiry(state)?.let {
                 key to it
             }
         }.toMap()
     }
 
+    fun removeFromScheduler(key: String) {
+        tasks.compute(key) { _, currentValue ->
+            currentValue?.future?.cancel(false)
+            null
+        }
+    }
+
     private fun forgetState(state: State) {
         val key = state.key
         stateManager.delete(listOf(state))
-        caches.forEach {
-            it.invalidate(key)
-        }
+        invalidate(key)
+        eventPublisher.sessionDeleted(key)
         tasks.remove(key)
     }
 }
