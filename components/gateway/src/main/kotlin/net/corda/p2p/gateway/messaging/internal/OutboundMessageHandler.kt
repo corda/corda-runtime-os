@@ -160,6 +160,7 @@ internal class OutboundMessageHandler(
 
 
         val messageId = UUID.randomUUID().toString()
+        logger.info("QQQ Sending Gateway message: $messageId")
         val gatewayMessage = GatewayMessage(messageId, peerMessage.payload)
         val expectedX500Name = if (NetworkType.CORDA_4 == peerMessage.header.destinationNetworkType) {
             X500Name(peerMessage.header.destinationIdentity.x500Name)

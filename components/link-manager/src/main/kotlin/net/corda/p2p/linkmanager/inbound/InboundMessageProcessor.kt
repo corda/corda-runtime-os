@@ -133,6 +133,26 @@ internal class InboundMessageProcessor(
         val responses = sessionManager.processSessionMessages(messages) { message ->
             message.item
         }
+        responses.also {
+            if (it.size != messages.size) {
+                logger.info("TTT processSessionMessages(${messages.size}) != ${it.size}")
+            }
+            val sent = messages.toSet()
+            val returned = it.map { it.first }.toSet()
+            if (sent != returned) {
+                logger.info("TTT processSessionMessages sent != returned")
+                sent.forEach { s ->
+                    if (!returned.contains(s)) {
+                        logger.info("TTT processSessionMessages missing s $s")
+                    }
+                }
+                returned.forEach { r ->
+                    if (!sent.contains(r)) {
+                        logger.info("TTT processSessionMessages missing r $r")
+                    }
+                }
+            }
+        }
         return responses.map { (traceableMessage, response) ->
             if (response != null) {
                 when (val payload = response.payload) {
@@ -183,7 +203,28 @@ internal class InboundMessageProcessor(
         sessionIdAndMessages: List<SessionIdAndMessage>
     ): List<TraceableItem<List<Record<*, *>>, LinkInMessage>> {
         logger.info("QQQ processDataMessages 1")
-        return sessionManager.getSessionsById(sessionIdAndMessages) { it.sessionId }.mapNotNull { (sessionIdAndMessage, sessionDirection) ->
+        return sessionManager.getSessionsById(sessionIdAndMessages) { it.sessionId }
+            .also {
+                if (it.size != sessionIdAndMessages.size) {
+                    logger.info("TTT processDataMessages(${sessionIdAndMessages.size}) != ${it.size}")
+                }
+                val sent = sessionIdAndMessages.toSet()
+                val returned = it.map { it.first }.toSet()
+                if (sent != returned) {
+                    logger.info("TTT processDataMessages sent != returned")
+                    sent.forEach { s ->
+                        if (!returned.contains(s)) {
+                            logger.info("TTT processDataMessages missing s $s")
+                        }
+                    }
+                    returned.forEach { r ->
+                        if (!sent.contains(r)) {
+                            logger.info("TTT processDataMessages missing r $r")
+                        }
+                    }
+                }
+            }
+            .mapNotNull { (sessionIdAndMessage, sessionDirection) ->
             logger.info("QQQ processDataMessages \t 2 - sessionDirection: $sessionDirection ")
             logger.info("QQQ processDataMessages \t 2 - sessionId: ${sessionIdAndMessage.sessionId} ")
             logger.info("QQQ processDataMessages \t 2 - key: ${sessionIdAndMessage.message.originalRecord?.key} ")

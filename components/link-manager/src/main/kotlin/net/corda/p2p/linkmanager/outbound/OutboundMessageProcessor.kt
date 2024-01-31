@@ -388,6 +388,28 @@ internal class OutboundMessageProcessor(
     ): List<TraceableItem<List<Record<String, *>>, AppMessage>> {
         return sessionManager.processOutboundMessages(validationResults) { validationResult ->
             validationResult.item.messageWithKey
+        }.also {
+            if (it.size != validationResults.size) {
+                logger.info("TTT processRemoteAuthenticatedMessage(${validationResults.size}) != ${it.size}")
+            }
+
+            val returned = it.map {
+                it.first
+            }.toSet()
+            val sent = validationResults.toSet()
+            if (sent != returned) {
+                logger.info("TTT processRemoteAuthenticatedMessage sent != returned")
+                sent.forEach { s ->
+                    if (!returned.contains(s)) {
+                        logger.info("TTT processRemoteAuthenticatedMessage missing s $s")
+                    }
+                }
+                returned.forEach { r ->
+                    if (!sent.contains(r)) {
+                        logger.info("TTT processRemoteAuthenticatedMessage missing r $r")
+                    }
+                }
+            }
         }.map { (message, state) ->
                 logger.info("QQQ processRemoteAuthenticatedMessage 1 ${message.item.messageWithKey.key}, ${state.javaClass.simpleName}")
                 when (state) {
