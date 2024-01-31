@@ -41,31 +41,21 @@ class FlowStatusLookupServiceImplTest {
     private val lifecycleTestContext = LifecycleTestContext()
     private val lifecycleCoordinator = lifecycleTestContext.lifecycleCoordinator
     private val lifecycleEventRegistration = mock<RegistrationHandle>()
-    private val cordaSerializationFactory: CordaAvroSerializationFactory = object : CordaAvroSerializationFactory {
-        override fun <T : Any> createAvroSerializer(onError: ((ByteArray) -> Unit)?): CordaAvroSerializer<T> {
-            return object : CordaAvroSerializer<T> {
-                override fun serialize(data: T): ByteArray? {
-                    if (data is FlowStatus)
-                        return data.toByteBuffer().array()
-                    else
-                        throw NotImplementedError()
-                }
-            }
-        }
+    class TestSerializer<T> : CordaAvroSerializer<T> {
+        override fun serialize(data: T): ByteArray = if (data is FlowStatus)
+            data.toByteBuffer().array()
+        else
+            throw NotImplementedError()
+    }
+    class TestDeserializer<T> : CordaAvroDeserializer<T> {
+        @Suppress("UNCHECKED_CAST")
+        override fun deserialize(data: ByteArray): T? = FlowStatus.fromByteBuffer(ByteBuffer.wrap(data)) as? T
 
-        override fun <T : Any> createAvroDeserializer(
-            onError: (ByteArray) -> Unit,
-            expectedClass: Class<T>
-        ): CordaAvroDeserializer<T> {
-            return object : CordaAvroDeserializer<T> {
-                override fun deserialize(data: ByteArray): T? {
-                    @Suppress("UNCHECKED_CAST")
-                    return FlowStatus.fromByteBuffer(ByteBuffer.wrap(data)) as? T
-                }
+    }
 
-            }
-        }
-
+    private val cordaSerializationFactory: CordaAvroSerializationFactory = mock {
+        whenever(it.createAvroSerializer<Any>(any())).thenReturn(TestSerializer())
+        whenever(it.createAvroDeserializer<Any>(any(), any())).thenReturn(TestDeserializer())
     }
 
     private val stateManagerFactory = mock<StateManagerFactory>()
