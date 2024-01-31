@@ -561,17 +561,6 @@ metadata:
 spec:
   podMetricsEndpoints:
   - port: monitor
-    metricRelabelings:
-    {{- with .Values.metrics.podMonitor.keepNames }}
-    - sourceLabels:
-      - "__name__"
-      regex: {{ join "|" . | quote }}
-      action: "keep"
-    {{- end }}
-    {{- with .Values.metrics.podMonitor.dropLabels }}
-    - regex: {{ join "|" . | quote }}
-      action: "labeldrop"
-    {{- end }}
   jobLabel: {{ $.Release.Name }}-{{ include "corda.name" . }}
   selector:
     matchLabels:
