@@ -96,6 +96,7 @@ class DatabaseInstaller(
      *
      * @return [EntityManagerFactory] that can be used to access the database.
      */
+    @Suppress("NestedBlockDepth")
     fun setupDatabase(
         cfg: EntityManagerConfiguration,
         resourceSubPath: String,
