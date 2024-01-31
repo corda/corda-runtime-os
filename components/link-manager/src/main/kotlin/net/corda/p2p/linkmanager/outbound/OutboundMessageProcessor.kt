@@ -81,7 +81,7 @@ internal class OutboundMessageProcessor(
                 emptyList()
             } else {
                 state.messages.forEach {
-                    recordOutboundSessionMessagesMetric(state.sessionCounterparties.ourId, state.sessionCounterparties.counterpartyId)
+                    recordOutboundSessionMessagesMetric(state.sessionCounterparties.ourId)
                 }
                 state.messages.flatMap {
                     listOf(

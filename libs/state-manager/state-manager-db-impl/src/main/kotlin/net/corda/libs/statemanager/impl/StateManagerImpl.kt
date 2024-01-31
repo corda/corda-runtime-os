@@ -6,6 +6,7 @@ import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.libs.statemanager.api.StateOperationGroup
 import net.corda.libs.statemanager.impl.lifecycle.CheckConnectionEventHandler
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorder
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.CREATE
@@ -137,6 +138,10 @@ class StateManagerImpl(
                 throw e
             }
         }
+    }
+
+    override fun createOperationGroup(): StateOperationGroup {
+        return StateOperationGroupImpl(dataSource, stateRepository)
     }
 
     override fun updatedBetween(interval: IntervalFilter): Map<String, State> {

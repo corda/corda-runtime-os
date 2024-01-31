@@ -797,11 +797,6 @@ object CordaMetrics {
         SourceVirtualNode("virtualnode.source"),
 
         /**
-         * The destination virtual node in peer-to-peer communication.
-         */
-        DestinationVirtualNode("virtualnode.destination"),
-
-        /**
          * The ledger type.
          */
         LedgerType("ledger.type"),
