@@ -34,6 +34,7 @@ class CordaLifecycleHelper {
         return dockerProcess
     }
 
+    @Suppress("ForbiddenComment")
     fun waitForContainerStatus(containerName: String) {
         val dockerStatusCmd = listOf(
             "docker",
