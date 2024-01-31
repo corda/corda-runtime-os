@@ -52,11 +52,11 @@ class ExternalEventExecutorImpl @Activate constructor(
 
     private fun <PARAMETERS : Any> deterministicUUID(parameters: PARAMETERS): UUID {
         val byteArrayOutputStream = ByteArrayOutputStream()
-        val objectOutputStream = ObjectOutputStream(byteArrayOutputStream)
-        objectOutputStream.writeObject(parameters)
-        objectOutputStream.flush()
-        val result = byteArrayOutputStream.toByteArray()
-        return UUID.nameUUIDFromBytes(result)
+        ObjectOutputStream(byteArrayOutputStream).use {
+            it.writeObject(parameters)
+            it.flush()
+        }
+        return UUID.nameUUIDFromBytes(byteArrayOutputStream.toByteArray())
     }
 
     private fun generateRequestId(uuid: UUID, flowFiber: FlowFiber): String {
