@@ -173,12 +173,12 @@ class DurableFlowStatusProcessorTest {
 
                 states.forEach { state ->
                     val currentState = stateStore[state.key]
-                    if (currentState == null || currentState.version + 1 != state.version) {
+                    if (currentState == null || currentState.version != state.version) {
                         // State does not exist or version mismatch
                         failedUpdates[state.key] = currentState
                     } else {
                         // Optimistic locking condition met
-                        val updatedState = state.copy(modifiedTime = Instant.now())
+                        val updatedState = state.copy(version = currentState.version + 1, modifiedTime = Instant.now())
                         stateStore[state.key] = updatedState
                     }
                 }
