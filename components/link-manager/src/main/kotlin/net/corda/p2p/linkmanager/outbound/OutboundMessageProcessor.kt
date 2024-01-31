@@ -389,14 +389,16 @@ internal class OutboundMessageProcessor(
         return sessionManager.processOutboundMessages(validationResults) { validationResult ->
             validationResult.item.messageWithKey
         }.also {
-            if (it.size != validationResults.size) {
-                logger.info("TTT processRemoteAuthenticatedMessage(${validationResults.size}) != ${it.size}")
-            }
 
             val returned = it.map {
                 it.first
             }.toSet()
             val sent = validationResults.toSet()
+            if (it.size != validationResults.size) {
+                logger.info("TTT processRemoteAuthenticatedMessage(${validationResults.size}) != ${it.size}")
+                logger.info("TTT processRemoteAuthenticatedMessage returned.size: ${returned.size}")
+                logger.info("TTT processRemoteAuthenticatedMessage sent.size: ${sent.size}")
+            }
             if (sent != returned) {
                 logger.info("TTT processRemoteAuthenticatedMessage sent != returned")
                 sent.forEach { s ->
