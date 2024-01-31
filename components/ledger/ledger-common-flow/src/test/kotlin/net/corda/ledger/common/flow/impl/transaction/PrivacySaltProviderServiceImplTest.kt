@@ -18,7 +18,7 @@ internal class PrivacySaltProviderServiceImplTest : CommonLedgerTest() {
 
         whenever(checkpoint.flowId).thenReturn(flowId)
         whenever(checkpoint.suspendCount).thenReturn(suspendCount)
-        whenever(checkpoint.ledgerSaltCounter).thenReturn(ledgerSaltCounter)
+        whenever(checkpoint.counter).thenReturn(ledgerSaltCounter)
     }
 
     @Test
@@ -58,7 +58,7 @@ internal class PrivacySaltProviderServiceImplTest : CommonLedgerTest() {
 
         val ledgerSaltCounter = 2
         val checkpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
-        whenever(checkpoint.ledgerSaltCounter).thenReturn(ledgerSaltCounter)
+        whenever(checkpoint.counter).thenReturn(ledgerSaltCounter)
 
         val transaction2 = privacySaltProviderService.generatePrivacySalt()
         Assertions.assertThat(transaction1).isNotEqualTo(transaction2)

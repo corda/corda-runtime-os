@@ -10,7 +10,6 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.nio.ByteBuffer
 import java.util.UUID
 
 @Component(service = [ExternalEventExecutor::class, SingletonSerializeAsToken::class])
@@ -24,15 +23,11 @@ class ExternalEventExecutorImpl @Activate constructor(
         factoryClass: Class<out ExternalEventFactory<PARAMETERS, RESPONSE, RESUME>>,
         parameters: PARAMETERS
     ): RESUME {
-        // `requestId` is a deterministic ID per event which allows us to achieve idempotency by de-duplicating events processing;
-        //  A deterministic ID is required so that events replayed from the flow engine won't be reprocessed on the consumer-side.
-        val uuid = deterministicUUID(parameters)
-
         @Suppress("unchecked_cast")
         return with(flowFiberService.getExecutingFiber()) {
             suspend(
                 FlowIORequest.ExternalEvent(
-                    generateRequestId(uuid, this),
+                    generateRequestId( this),
                     factoryClass,
                     parameters,
                     externalContext(this)
@@ -49,24 +44,17 @@ class ExternalEventExecutorImpl @Activate constructor(
             )
         }
 
-    private fun <PARAMETERS : Any> deterministicUUID(parameters: PARAMETERS): UUID {
-        // A UUID based on the entropy of the hashcode isn't as robust as serializing the object,
-        // but we can't guarantee that [PARAMETERS] is a serializable type.
-        val byteBuffer = ByteBuffer.wrap(ByteArray(8))
-        byteBuffer.putLong(0, parameters.hashCode().toLong())
-        return UUID.nameUUIDFromBytes(byteBuffer.array())
-    }
-
-    private fun generateRequestId(uuid: UUID, flowFiber: FlowFiber): String {
+    private fun generateRequestId(flowFiber: FlowFiber): String {
         val flowCheckpoint = flowFiber
             .getExecutionContext()
             .flowCheckpoint
 
         val flowId = flowCheckpoint.flowId
         val suspendCount = flowCheckpoint.suspendCount
+        val counter = flowCheckpoint.counter
 
         return UUID
-            .nameUUIDFromBytes("$flowId-$uuid-$suspendCount".toByteArray())
+            .nameUUIDFromBytes("$flowId-$suspendCount-$counter".toByteArray())
             .toString()
     }
 }

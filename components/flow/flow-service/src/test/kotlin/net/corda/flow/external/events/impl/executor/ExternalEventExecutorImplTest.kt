@@ -33,11 +33,13 @@ class ExternalEventExecutorImplTest {
 
     private fun initializeMocks(
         flowId: String = testFlowId,
-        suspendCount: Int = 1
+        suspendCount: Int = 1,
+        counter: Int = 1
     ) {
         mockFlowFiberService = MockFlowFiberService()
         whenever(mockFlowFiberService.flowCheckpoint.flowId).thenReturn(flowId)
         whenever(mockFlowFiberService.flowCheckpoint.suspendCount).thenReturn(suspendCount)
+        whenever(mockFlowFiberService.flowCheckpoint.counter).thenReturn(counter)
 
         // Capture arguments (ArgumentCaptor doesn't play nice with suspending functions)
         doAnswer { invocation ->
@@ -58,7 +60,7 @@ class ExternalEventExecutorImplTest {
 
         val expectedRequest = FlowIORequest.ExternalEvent(
             // This is hardcoded, but should be deterministic!
-            "26ec4282-eebc-358d-9ac3-6e32ca1b103b",
+            "5d6010d4-b4b8-31ee-ae36-5771f68a8ca4",
             mockFactoryClass, mockParams, contextProperties
         )
 
@@ -69,7 +71,7 @@ class ExternalEventExecutorImplTest {
     }
 
     @Test
-    fun `Suspending with the same parameters, flowId, and suspensionCount produces the same requestID`() {
+    fun `Suspending with the same counter, flowId, and suspensionCount produces the same requestID`() {
         externalEventExecutorImpl.execute(mockFactoryClass, mockParams)
         externalEventExecutorImpl.execute(mockFactoryClass, mockParams)
 
@@ -78,14 +80,14 @@ class ExternalEventExecutorImplTest {
     }
 
     @Test
-    fun `Suspending with different parameters produces a different requestID`() {
+    fun `Suspending with different counter produces a different requestID`() {
         externalEventExecutorImpl.execute(mockFactoryClass, mockParams)
-        externalEventExecutorImpl.execute(mockFactoryClass, mockParams + mapOf("additional" to "data"))
+        whenever(mockFlowFiberService.flowCheckpoint.counter).thenReturn(2)
+        externalEventExecutorImpl.execute(mockFactoryClass, mockParams)
 
         assertEquals(2, capturedArguments.size)
         assertNotEquals(capturedArguments[0].requestId, capturedArguments[1].requestId)
     }
-
 
     @Test
     fun `Suspending with a different flowId produces a different requestID`() {
