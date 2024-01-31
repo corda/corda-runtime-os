@@ -36,7 +36,7 @@ class ProjectContext(val project: Project, pluginConfig: PluginConfiguration) {
 
     // Set Non user configurable context properties
     val javaBinDir: String = "${System.getProperty("java.home")}/bin"
-    val cordaPidCache: String = "$workspaceDir/CordaPIDCache.dat"
+    val cordaPidCache: String = "${project.rootDir}/$workspaceDir/CordaPIDCache.dat"
     val jdbcDir: String = "$cordaBinDir/jdbcDrivers"
     val notaryServiceDir: String = "$cordaBinDir/notaryServer"
     val workflowBuildDir: String = "${project.rootDir}/${workflowsModuleName}/build"
