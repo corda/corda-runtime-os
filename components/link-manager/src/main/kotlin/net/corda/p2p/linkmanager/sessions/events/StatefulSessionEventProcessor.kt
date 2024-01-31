@@ -59,10 +59,10 @@ internal class StatefulSessionEventProcessor(
             val sessionEvent = event.value
             when (val type = sessionEvent?.type) {
                 is SessionCreated -> {
-                    logger.info("Received ${type.direction} session created event. ")
                     sessionCreated(type.direction, type.stateManagerKey)
                 }
                 is SessionDeleted -> {
+                    logger.info("Received a session deletion event for session with key ${type.stateManagerKey}.")
                     sessionExpiryScheduler.removeFromScheduler(type.stateManagerKey)
                     sessionExpiryScheduler.invalidate(type.stateManagerKey)
                 }
@@ -84,7 +84,7 @@ internal class StatefulSessionEventProcessor(
                     sessionManagerImpl.revocationCheckerClient::checkRevocation,
                 ).sessionData as? Session
             if (session == null) {
-                logger.warn("")
+                logger.warn("Received a $direction session created event for $key but no session exists in the state manager")
                 return
             }
             val metadata = state.metadata.toCommonMetadata()
@@ -92,12 +92,16 @@ internal class StatefulSessionEventProcessor(
 
             when (direction) {
                 SessionDirection.INBOUND -> {
+                    logger.info("Received an inbound session creation event for session between (local=${counterparties.ourId} and " +
+                            "remote=${counterparties.counterpartyId}) for sessionId = ${session.sessionId}.")
                     sessionExpiryScheduler.putInboundSession(
                         key,
                         SessionManager.SessionDirection.Inbound(counterparties, session)
                     )
                 }
                 SessionDirection.OUTBOUND -> {
+                    logger.info("Received an outbound session creation event for session between (local=${counterparties.ourId} and " +
+                            "remote=${counterparties.counterpartyId}) for sessionId = ${session.sessionId}.")
                     sessionExpiryScheduler.putOutboundSession(
                         key,
                         counterparties,
