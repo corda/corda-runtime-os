@@ -60,7 +60,7 @@ class TestInitialConfigPluginDb {
             "'connection name'," +
                 " 'DML'," +
                 " 'Setup Script',"
-        ).endsWith("Z', 0)\n")
+        ).endsWith("Z', 0);\n")
     }
 
     @Test
@@ -130,7 +130,7 @@ class TestInitialConfigPluginDb {
             "'connection name'," +
                     " 'DML'," +
                     " 'Setup Script',"
-        ).endsWith("Z', 0)\n")
+        ).endsWith("Z', 0);\n")
     }
 
     @Test
