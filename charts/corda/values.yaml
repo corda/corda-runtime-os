@@ -96,9 +96,7 @@ metrics:
     - "jvm_.*"
     - "process_cpu_usage"
   # -- A list of regular expressions for labels that Corda should drop across all metrics; if empty, all labels are kept
-  dropLabels:
-    - "virtualnode_destination"
-    - "virtualnode_source"
+  dropLabels: []
   # -- Pod monitor configuration for scraping metrics. Please note that the corresponding CRD must exist in the environment
   podMonitor:
     # -- Enable pod monitor creation to identify endpoints to scrape
