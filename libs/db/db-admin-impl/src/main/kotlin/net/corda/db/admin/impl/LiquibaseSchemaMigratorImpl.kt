@@ -12,9 +12,10 @@ import net.corda.db.admin.DbChange
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory
+import java.io.File
 import java.io.Writer
 import java.sql.Connection
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -79,7 +80,7 @@ class LiquibaseSchemaMigratorImpl(
     }
 
     override fun createUpdateSqlOffline(dbChange: DbChange, offlineDbDirPathString: String, sql: Writer) {
-        processOffline(dbChange, offlineDbDirPathString, sql, DEFAULT_DB_SCHEMA)
+        processOffline(dbChange, offlineDbDirPathString, sql)
     }
 
     override fun listUnrunChangeSets(datasource: Connection, dbChange: DbChange): List<String> {
@@ -136,18 +137,11 @@ class LiquibaseSchemaMigratorImpl(
         dbChange: DbChange,
         offlineDbDirPathString: String,
         sql: Writer,
-        liquibaseSchemaName: String
     ) {
         liquibaseAccessLock.withLock {
             val offlineChangeLogFileName = offlineDbDirPathString + "/changelog-${UUID.randomUUID()}.xml"
             val url = "offline:postgresql?changeLogFile=$offlineChangeLogFileName&outputLiquibaseSql=all"
             val database = databaseFactoryOffline(url, StreamResourceAccessor(offlineChangeLogFileName, dbChange))
-
-            // only set the schema if it's not specified as the default
-            if (liquibaseSchemaName != DEFAULT_DB_SCHEMA) {
-                log.info("Setting liquibaseSchemaName to $liquibaseSchemaName")
-                database.liquibaseSchemaName = liquibaseSchemaName
-            }
 
             val lb = liquibaseFactory(
                 offlineChangeLogFileName,
@@ -157,6 +151,8 @@ class LiquibaseSchemaMigratorImpl(
 
             log.info("Retrieving ${database.databaseProductName} DB Schema")
             lb.update(null, Contexts(), sql)
+
+            File(offlineChangeLogFileName).delete()
         }
     }
 
