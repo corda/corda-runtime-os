@@ -73,10 +73,12 @@ internal class StatefulSessionManagerImpl(
         wrappedMessages: Collection<T>,
         getMessage: (T) -> AuthenticatedMessageAndKey,
     ): Collection<Pair<T, SessionManager.SessionState>> {
+        logger.info("YYY processOutboundMessages(${wrappedMessages.size})")
         val messages =
             wrappedMessages.map {
                 OutboundMessageContext(it, getMessage(it))
             }
+        logger.info("YYY \t messages: ${messages.size}")
         val keysToMessages =
             messages.groupBy {
                 val messageHeader = it.message.message.header
@@ -99,10 +101,13 @@ internal class StatefulSessionManagerImpl(
                     )
                 }
             }
+        logger.info("YYY \t keysToMessages: ${keysToMessages.values.flatten().size}")
 
         val cachedSessions = getCachedOutboundSessions(keysToMessages)
+        logger.info("YYY \t cachedSessions: ${cachedSessions.values.flatten().size}")
 
         val keysNotInCache = (keysToMessages - cachedSessions.keys).keys
+        logger.info("YYY \t keysNotInCache: ${keysNotInCache.size}")
         val sessionStates =
             if (keysNotInCache.isNotEmpty()) {
                 sessionExpiryScheduler.checkStatesValidateAndRememberThem(
@@ -118,6 +123,7 @@ internal class StatefulSessionManagerImpl(
                         }
                     }
             } else {
+                logger.info("YYY \t keysToMessages[null]: ${keysToMessages[null]?.size}")
                 val messagesWithoutKey = keysToMessages[null] ?: return cachedSessions.values.flatten()
                 listOf(
                     OutboundMessageState(
@@ -131,6 +137,7 @@ internal class StatefulSessionManagerImpl(
             sessionStates.flatMap { state ->
                 processOutboundMessagesState(state)
             }
+        logger.info("YYY \t resultStates: ${resultStates.flatMap { it.messages }.size}")
 
         return processStateUpdates(resultStates) + cachedSessions.values.flatten()
     }
