@@ -52,7 +52,7 @@ class VirtualNodeDbFactoryImplTest {
 
     private val JDBC_URL = "jdbc:url"
     private val virtualNodesDbAdmin = mock<VirtualNodesDbAdmin> {
-        on { createJdbcUrl(any()) } doReturn JDBC_URL
+        on { getJdbcUrl() } doReturn JDBC_URL
     }
     private val schemaMigrator = mock<LiquibaseSchemaMigrator>()
 

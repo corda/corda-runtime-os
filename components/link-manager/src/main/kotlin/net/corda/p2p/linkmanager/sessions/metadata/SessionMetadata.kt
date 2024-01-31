@@ -8,8 +8,6 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import java.time.Duration
 import java.time.Instant
-import net.corda.libs.statemanager.api.State
-import net.corda.p2p.linkmanager.sessions.SessionManager
 
 internal enum class OutboundSessionStatus {
     SentInitiatorHello,

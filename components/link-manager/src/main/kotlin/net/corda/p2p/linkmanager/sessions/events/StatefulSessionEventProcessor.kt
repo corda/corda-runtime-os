@@ -25,6 +25,7 @@ import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata.Companion.toCo
 import net.corda.schema.Schemas
 import org.slf4j.LoggerFactory
 
+@Suppress("LongParameterList")
 internal class StatefulSessionEventProcessor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,

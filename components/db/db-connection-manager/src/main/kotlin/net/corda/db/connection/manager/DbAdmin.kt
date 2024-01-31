@@ -75,6 +75,7 @@ abstract class DbAdmin {
             GRANT $user TO current_user;
             GRANT USAGE ON SCHEMA $schemaName to $user;
             $permissions TO $user;
+            ALTER ROLE "$user" SET search_path TO $schemaName;
             """.trimIndent()
 
         withDbConnection { connection ->
@@ -140,12 +141,5 @@ abstract class DbAdmin {
         }
     }
 
-    /**
-     * Configure JDBC URL to use given DB schema
-     *
-     * @param jdbcUrl JDBC URL
-     * @param schemaName Schema name
-     * @return JDBC URL configured to use given DB schema
-     */
-    fun createJdbcUrl(schemaName: String) = "$jdbcRootUrl?currentSchema=$schemaName"
+    fun getJdbcUrl() = jdbcRootUrl
 }

@@ -6,6 +6,7 @@ import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
+import net.corda.libs.statemanager.api.StateOperationGroup
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.schema.configuration.StateManagerConfig
 
@@ -39,6 +40,10 @@ class StateManagerFactoryStub : StateManagerFactory {
                 intervalFilter: IntervalFilter,
                 metadataFilters: Collection<MetadataFilter>
             ): Map<String, State> = throw UnsupportedOperationException()
+
+            override fun createOperationGroup(): StateOperationGroup {
+                throw UnsupportedOperationException()
+            }
 
             override val isRunning: Boolean
                 get() = true
