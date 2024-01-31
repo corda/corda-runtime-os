@@ -51,8 +51,6 @@ class ExternalEventExecutorImpl @Activate constructor(
         }
 
     private fun <PARAMETERS : Any> deterministicUUID(parameters: PARAMETERS): UUID {
-        // A UUID based on the entropy of the hashcode isn't as robust as serializing the object,
-        // but we can't guarantee that [PARAMETERS] is a serializable type.
         val byteArrayOutputStream = ByteArrayOutputStream()
         val objectOutputStream = ObjectOutputStream(byteArrayOutputStream)
         objectOutputStream.writeObject(parameters)
