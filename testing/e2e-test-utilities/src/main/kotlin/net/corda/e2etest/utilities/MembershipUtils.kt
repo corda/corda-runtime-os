@@ -1,6 +1,7 @@
 package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import kong.unirest.json.JSONObject
 import net.corda.e2etest.utilities.types.GroupPolicyFactory
 import net.corda.e2etest.utilities.types.NetworkOnboardingMetadata
 import net.corda.e2etest.utilities.types.jsonToMemberList
@@ -141,6 +142,37 @@ fun NetworkOnboardingMetadata.reregisterMember(
     return copy(
         registrationContext = newContext,
         registrationId = clusterInfo.register(holdingId, newContext, waitForApproval)
+    )
+}
+
+
+@Suppress("unused")
+        /**
+         * Register a member who has registered previously using the [ClusterInfo] and registration context from
+         * the previous registration for the cluster connection details and for the member identifier.
+         * Should be mainly used in upgrade scenarios where we cannot re-use the onboarding metadata.
+         */
+fun ClusterInfo.reregisterMember(
+    holdingId: String,
+    x500Name: String,
+    registrationContext: Map<String, String>,
+    contextToMerge: Map<String, String?> = emptyMap(),
+    waitForApproval: Boolean = true
+): NetworkOnboardingMetadata {
+    val newContext = registrationContext.toMutableMap()
+    contextToMerge.forEach {
+        if (it.value == null) {
+            newContext.remove(it.key)
+        } else {
+            newContext[it.key] = it.value!!
+        }
+    }
+    return NetworkOnboardingMetadata(
+        holdingId,
+        x500Name,
+        this.register(holdingId, newContext, waitForApproval),
+        newContext,
+        this,
     )
 }
 
@@ -288,6 +320,40 @@ fun ClusterInfo.waitForRegistrationStatus(
         }
     }
 }
+
+@Suppress("unused")
+fun ClusterInfo.getRegistrationContext(
+    holdingIdentityShortHash: String,
+    registrationId: String?,
+) = cluster {
+        var response: SimpleResponse? = null
+        assertWithRetryIgnoringExceptions {
+            // Use a fairly long timeout here to give plenty of time for the other side to respond. Longer
+            // term this should be changed to not use the RPC message pattern and have the information available in a
+            // cache on the REST worker, but for now this will have to suffice.
+            timeout(3.minutes)
+            interval(5.seconds)
+            command {
+                if (registrationId != null) {
+                    getRegistrationStatus(holdingIdentityShortHash, registrationId)
+                } else {
+                    getRegistrationStatus(holdingIdentityShortHash)
+                }
+            }
+            condition {
+                response = it
+                it.code == ResponseCode.OK.statusCode
+            }
+            failMessage("Registration was not completed for $holdingIdentityShortHash")
+        }
+        val context = if (registrationId != null) {
+            response?.toJson()?.get("memberInfoSubmitted")?.textValue()
+        } else {
+            response?.toJson()?.firstOrNull()?.get("memberInfoSubmitted")?.textValue()
+        }
+        val contextMap = JSONObject(context)
+        return@cluster contextMap.toMap()
+    }
 
 /**
  * Register a member as part of a static network.
