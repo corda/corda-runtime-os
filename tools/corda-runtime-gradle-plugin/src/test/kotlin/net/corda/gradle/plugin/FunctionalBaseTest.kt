@@ -41,7 +41,7 @@ abstract class FunctionalBaseTest {
                 cordaClusterURL = "https://$restHostnameWithPort"
                 cordaRpcUser = "admin"
                 cordaRpcPasswd ="admin"
-                combinedWorkerVersion = "5.0.0.0-Iguana1.0"
+                combinedWorkerVersion = "5.0.1.0"
                 postgresJdbcVersion = "42.4.3"
                 cordaDbContainerName = "corda-runtime-gradle-plugin-postgresql"
                 networkConfigFile = "config/static-network-config.json"
