@@ -10,7 +10,8 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.nio.ByteBuffer
+import java.io.ByteArrayOutputStream
+import java.io.ObjectOutputStream
 import java.util.UUID
 
 @Component(service = [ExternalEventExecutor::class, SingletonSerializeAsToken::class])
@@ -52,9 +53,12 @@ class ExternalEventExecutorImpl @Activate constructor(
     private fun <PARAMETERS : Any> deterministicUUID(parameters: PARAMETERS): UUID {
         // A UUID based on the entropy of the hashcode isn't as robust as serializing the object,
         // but we can't guarantee that [PARAMETERS] is a serializable type.
-        val byteBuffer = ByteBuffer.wrap(ByteArray(8))
-        byteBuffer.putLong(0, parameters.hashCode().toLong())
-        return UUID.nameUUIDFromBytes(byteBuffer.array())
+        val byteArrayOutputStream = ByteArrayOutputStream()
+        val objectOutputStream = ObjectOutputStream(byteArrayOutputStream)
+        objectOutputStream.writeObject(parameters)
+        objectOutputStream.flush()
+        val result = byteArrayOutputStream.toByteArray()
+        return UUID.nameUUIDFromBytes(result)
     }
 
     private fun generateRequestId(uuid: UUID, flowFiber: FlowFiber): String {
