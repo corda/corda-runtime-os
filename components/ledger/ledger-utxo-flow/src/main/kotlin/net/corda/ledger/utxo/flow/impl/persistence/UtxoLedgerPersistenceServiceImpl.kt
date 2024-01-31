@@ -259,11 +259,17 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun persistTransactionSignatures(id: SecureHash, startingIndex: Int, signatures: List<DigitalSignatureAndMetadata>) {
-        return recordSuspendable({ ledgerPersistenceFlowTimer(LedgerPersistenceMetricOperationName.PersistTransactionSignatures) }) @Suspendable {
+        return recordSuspendable(
+            { ledgerPersistenceFlowTimer(LedgerPersistenceMetricOperationName.PersistTransactionSignatures) }
+        ) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     PersistTransactionSignaturesExternalEventFactory::class.java,
-                    PersistTransactionSignaturesParameters(id.toString(), startingIndex, signatures.map { serializationService.serialize(it).bytes })
+                    PersistTransactionSignaturesParameters(
+                        id.toString(),
+                        startingIndex,
+                        signatures.map { serializationService.serialize(it).bytes }
+                    )
                 )
             }
         }
