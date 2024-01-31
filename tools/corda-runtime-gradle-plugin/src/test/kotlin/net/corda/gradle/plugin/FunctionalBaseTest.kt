@@ -44,6 +44,14 @@ abstract class FunctionalBaseTest {
                 combinedWorkerVersion = "5.0.0.0-Iguana1.0"
                 postgresJdbcVersion = "42.4.3"
                 cordaDbContainerName = "corda-runtime-gradle-plugin-postgresql"
+                networkConfigFile = "config/static-network-config.json"
+                r3RootCertFile = "config/r3-ca-key.pem"
+                corDappCpiName = "MyCorDapp"
+                notaryCpiName = "NotaryServer"
+                workflowsModuleName = "workflowsModule"
+                cordaRuntimePluginWorkspaceDir = "workspace"
+                cordaProcessorTimeout = "-1"
+                vnodeRegistrationTimeout = "30000"
             }
             repositories {
                 mavenCentral()
