@@ -35,6 +35,8 @@ class FlowStatusLookupServiceImpl @Activate constructor(
     private val stateManagerFactory: StateManagerFactory,
 ) : FlowStatusCacheService {
 
+    private val flowStatusCacheServiceImpl = FlowStatusCacheServiceImpl(subscriptionFactory, coordinatorFactory)
+
     private companion object {
         private const val GROUP_NAME = "flow_status_subscription"
     }
@@ -75,11 +77,11 @@ class FlowStatusLookupServiceImpl @Activate constructor(
     }
 
     override fun getStatus(clientRequestId: String, holdingIdentity: HoldingIdentity): FlowStatus? {
-        TODO("Not yet implemented")
+        return flowStatusCacheServiceImpl.getStatus(clientRequestId, holdingIdentity)
     }
 
     override fun getStatusesPerIdentity(holdingIdentity: HoldingIdentity): List<FlowStatus> {
-        TODO("Not yet implemented")
+        return flowStatusCacheServiceImpl.getStatusesPerIdentity(holdingIdentity)
     }
 
     override fun registerFlowStatusListener(
@@ -87,6 +89,6 @@ class FlowStatusLookupServiceImpl @Activate constructor(
         holdingIdentity: HoldingIdentity,
         listener: FlowStatusUpdateListener
     ): AutoCloseable {
-        TODO("Not yet implemented")
+        return registerFlowStatusListener(clientRequestId, holdingIdentity, listener)
     }
 }

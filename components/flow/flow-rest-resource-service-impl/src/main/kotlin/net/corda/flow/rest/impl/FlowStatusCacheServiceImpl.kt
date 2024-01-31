@@ -24,22 +24,16 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import net.corda.virtualnode.toCorda
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.util.LinkedList
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReadWriteLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.withLock
 
-@Component(service = [FlowStatusCacheService::class], enabled = false)
-class FlowStatusCacheServiceImpl @Activate constructor(
-    @Reference(service = SubscriptionFactory::class)
+class FlowStatusCacheServiceImpl(
     private val subscriptionFactory: SubscriptionFactory,
-    @Reference(service = LifecycleCoordinatorFactory::class)
-    private val coordinatorFactory: LifecycleCoordinatorFactory
+    coordinatorFactory: LifecycleCoordinatorFactory
 ) : FlowStatusCacheService, CompactedProcessor<FlowKey, FlowStatus> {
 
     private companion object {
