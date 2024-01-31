@@ -214,7 +214,7 @@ internal class InboundMessageProcessor(
                     logger.info("TTT processDataMessages sent != returned")
                     sent.forEach { s ->
                         if (!returned.contains(s)) {
-                            logger.info("TTT processDataMessages missing s $s")
+                            logger.info("TTT processDataMessages missing s ${s.message.originalRecord?.key} (${s.sessionId}")
                         }
                     }
                     returned.forEach { r ->

@@ -226,9 +226,11 @@ internal class StatefulSessionManagerImpl(
         if (uuids.isEmpty()) {
             return emptyList()
         }
-        val traceable = uuids.associateBy { getSessionId(it) }
-        val allCached = traceable.mapNotNull { (key, trace) ->
-            getSessionIfCached(key)?.let { key to Pair(trace, it) }
+        val traceable = uuids.groupBy { getSessionId(it) }
+        val allCached = traceable.mapNotNull { (key, traces) ->
+            getSessionIfCached(key)?.let { sessionDirection ->
+                key to (traces to sessionDirection)
+            }
         }.toMap()
         val sessionIdsNotInCache = (traceable - allCached.keys)
         val inboundSessionsFromStateManager = if (sessionIdsNotInCache.isEmpty()) {
@@ -245,14 +247,14 @@ internal class StatefulSessionManagerImpl(
                             sessionManagerImpl.revocationCheckerClient::checkRevocation,
                         ).sessionData as? Session
                     session?.let {
-                        sessionIdsNotInCache[sessionId]?.let {
+                        sessionIdsNotInCache[sessionId]?.let { traceables ->
                             val inboundSession =
                                 SessionManager.SessionDirection.Inbound(
                                     state.toCounterparties(),
                                     session,
                                 )
                             cachedInboundSessions.put(sessionId, inboundSession)
-                            it to inboundSession
+                            traceables to inboundSession
                         }
                     }
                 }
@@ -290,7 +292,11 @@ internal class StatefulSessionManagerImpl(
                 }
         }
 
-        return allCached.values + inboundSessionsFromStateManager + outboundSessionsFromStateManager
+        return (allCached.values + inboundSessionsFromStateManager + outboundSessionsFromStateManager).flatMap {  (traceables, direction) ->
+            traceables.map {
+                it to direction
+            }
+        }
     }
 
     override fun <T> processSessionMessages(
