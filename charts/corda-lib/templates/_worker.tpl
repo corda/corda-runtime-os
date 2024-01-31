@@ -158,7 +158,12 @@ spec:
       serviceAccountName: {{ . }}
       {{- end }}
       {{- include "corda.topologySpreadConstraints" $ | indent 6 }}
-      {{- include "corda.affinity" (list $ ( include "corda.workerComponent" $worker ) ) | indent 6 }}
+      {{- include "corda.affinity" (list $ ( include "corda.workerComponent" $worker ) ) | indent 6 -}}
+      {{- $stateManagerV2 := include "corda.sm.required" ( list $ . ) -}}
+      {{- if eq $stateManagerV2 "true" }}
+      initContainers:
+      {{-   include "corda.sm.db.runtimeConfigurationContainer" ( list $ $worker . )  | indent 8 -}}
+      {{- end }}
       containers:
       - name: {{ $workerName | quote }}
         image: {{ include "corda.workerImage" ( list $ . ) }}
@@ -270,6 +275,7 @@ spec:
         {{- if $optionalArgs.clusterDbAccess }}
         {{- include "corda.clusterDbEnv" $ | nindent 10 }}
         {{- end }}
+        {{/* TODO-[CORE-19372]: remove */}}
         {{- if $optionalArgs.stateManagerDbAccess }}
         {{- include "corda.stateManagerDbEnv" ( list $ . $worker ) | nindent 10 }}
         {{- end }}
@@ -317,6 +323,7 @@ spec:
           - "-ddatabase.pool.keepaliveTimeSeconds={{ .clusterDbConnectionPool.keepaliveTimeSeconds }}"
           - "-ddatabase.pool.validationTimeoutSeconds={{ .clusterDbConnectionPool.validationTimeoutSeconds }}"
           {{- end }}
+          {{/* TODO-[CORE-19372]: remove */}}
           {{- if $optionalArgs.stateManagerDbAccess }}
           - "--stateManager"
           - "type=DATABASE"
@@ -364,6 +371,10 @@ spec:
           {{- end }}
           {{- range $i, $arg := $optionalArgs.additionalWorkerArgs }}
           - {{ $arg | quote }}
+          {{- end -}}
+          {{- $stateManagerV2 := include "corda.sm.required" ( list $ . ) -}}
+          {{- if eq $stateManagerV2 "true" }}
+          {{-   include "corda.sm.runtimeConfigurationParameters" . | nindent 10 -}}
           {{- end }}
         volumeMounts:
           - mountPath: "/tmp"
@@ -457,8 +468,12 @@ spec:
           hostPath:
             path: {{ $.Values.dumpHostPath }}/{{ $.Release.Namespace }}/
             type: DirectoryOrCreate
-        {{- end }}
-        {{- include "corda.log4jVolume" $ | nindent 8 }}
+        {{- end -}}
+        {{- $stateManagerV2 := include "corda.sm.required" ( list $ . ) -}}
+        {{- if eq $stateManagerV2 "true" }}
+        {{-   include "corda.sm.runtimeCredentialVolumes" ( list $ $worker . )  | nindent 8 -}}
+        {{- end -}}
+        {{- include "corda.log4jVolume" $ | nindent 8 -}}
       {{- with $.Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
