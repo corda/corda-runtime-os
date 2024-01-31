@@ -34,8 +34,6 @@ class VNodeHelper {
         vNode: VNode,
         cpiUploadStatusFilePath: String
     ) {
-
-        //pc.logger.quiet("Creating virtual node for: ${vNode.x500Name}")
         val cpiCheckSum = getCpiCheckSum(cpiUploadStatusFilePath)
 
         if (!checkCpiUploaded(
@@ -54,8 +52,6 @@ class VNodeHelper {
         if (response.status != HttpURLConnection.HTTP_ACCEPTED) {
             throw CordaRuntimeGradlePluginException("Creation of virtual node failed with response status: ${response.status}")
         }
-
-
     }
 
     /**

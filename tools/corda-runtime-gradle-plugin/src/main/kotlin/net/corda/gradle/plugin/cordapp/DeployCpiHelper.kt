@@ -74,16 +74,12 @@ class DeployCpiHelper {
                 .basicAuth(cordaRpcUser, cordaRpcPassword)
                 .asJson()
         } else {
-            //pc.logger.quiet("Uploading Cpi '$cpiName' for the first time.")
-
             Unirest.post(cordaClusterURL + "/api/v1/cpi/")
                 .field("upload", File(cpiFilePath))
                 .basicAuth(cordaRpcUser, cordaRpcPassword)
                 .asJson()
         }
-        if (response.status == HttpURLConnection.HTTP_OK) {
-            //pc.logger.quiet("Cpi upload requested for cpi '$cpiName'.")
-        } else {
+        if (response.status != HttpURLConnection.HTTP_OK) {
             throw CordaRuntimeGradlePluginException("Failed to request upload of cpi: '$cpiName'.")
         }
 
@@ -154,7 +150,6 @@ class DeployCpiHelper {
                 id
             )
         }
-        //pc.logger.quiet("Cpi upload request $id successful.")
         return cpiUploadStatus
     }
 
