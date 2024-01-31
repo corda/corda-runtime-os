@@ -6,6 +6,7 @@ import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationResult
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
@@ -59,6 +60,7 @@ class TransactionVerificationExternalEventFactory(
     }
 }
 
+@CordaSerializable
 data class TransactionVerificationParameters(
     val transaction: ByteBuffer,
     val cpkMetadata: List<CordaPackageSummary>
