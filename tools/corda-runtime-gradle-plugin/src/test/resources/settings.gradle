@@ -1,0 +1,26 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+        maven {
+            url "https://software.r3.com/artifactory/engineering-tools-maven"
+            credentials {
+                username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+            }
+            content {
+                includeGroupByRegex 'com\\.r3\\.internal(\\..*)?'
+            }
+        }
+        mavenLocal()
+    }
+
+    plugins {
+        id 'org.jetbrains.kotlin.jvm' version '1.7.21'
+        id 'com.gradle.plugin-publish' version '0.21.0'
+        id 'com.r3.internal.gradle.plugins.r3Publish' version '1.+'
+        id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish' version '1.+'
+    }
+}
+
+rootProject.name = 'csde-gradle-plugin'

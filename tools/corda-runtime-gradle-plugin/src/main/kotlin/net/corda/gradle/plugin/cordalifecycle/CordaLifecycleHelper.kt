@@ -48,7 +48,11 @@ class CordaLifecycleHelper {
 
         var containerStatus: String
         retry {
+            // TODO: printlns
+            println("Retrying postgres container status; ${dockerProcess.exitValue()}")
             containerStatus = dockerProcess.inputStream.bufferedReader().use { it.readText() }
+            println("Container status:")
+            println(containerStatus)
             isContainerRunning(containerName, containerStatus)
         }
     }

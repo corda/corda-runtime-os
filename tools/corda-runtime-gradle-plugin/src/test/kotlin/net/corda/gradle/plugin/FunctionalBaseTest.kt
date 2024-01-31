@@ -50,7 +50,7 @@ abstract class FunctionalBaseTest {
                 cordaRpcPasswd ="admin"
                 combinedWorkerVersion = "5.0.0.0-Iguana1.0"
                 postgresJdbcVersion = "42.4.3"
-                cordaDbContainerName = "CSDEpostgresql"
+                cordaDbContainerName = "corda-runtime-gradle-plugin-postgresql"
             }
             repositories {
                 mavenCentral()
