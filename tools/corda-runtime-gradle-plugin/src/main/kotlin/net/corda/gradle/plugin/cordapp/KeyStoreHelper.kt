@@ -2,6 +2,10 @@ package net.corda.gradle.plugin.cordapp
 
 class KeyStoreHelper {
 
+    private val aliasFlag = "-alias"
+    private val keystoreFlag = "-keystore"
+    private val storepassFlag = "-storepass"
+
     fun generateKeyPair(
         javaBinDir: String,
         keystoreAlias: String,
@@ -11,11 +15,11 @@ class KeyStoreHelper {
         val cmdList = listOf(
             "$javaBinDir/keytool",
             "-genkeypair",
-            "-alias",
+            aliasFlag,
             keystoreAlias,
-            "-keystore",
+            keystoreFlag,
             keystoreFilePath,
-            "-storepass",
+            storepassFlag,
             keystorePassword,
             "-dname",
             "CN=CPI Example - My Signing Key, O=CorpOrgCorp, L=London, C=GB",
@@ -33,19 +37,19 @@ class KeyStoreHelper {
         javaBinDir: String,
         keystorePassword: String,
         keystoreFilePath: String,
-        alias: String,
+        aliasValue: String,
         fileName: String
     ) {
         val cmdList = listOf(
             "$javaBinDir/keytool",
             "-importcert",
-            "-keystore",
+            keystoreFlag,
             keystoreFilePath,
-            "-storepass",
+            storepassFlag,
             keystorePassword,
             "-noprompt",
-            "-alias",
-            alias,
+            aliasFlag,
+            aliasValue,
             "-file",
             fileName
         )
@@ -60,14 +64,14 @@ class KeyStoreHelper {
     ) {
 
         val cmdList = listOf(
-            javaBinDir + "/keytool",
+            "$javaBinDir/keytool",
             "-exportcert",
             "-rfc",
-            "-alias",
+            aliasFlag,
             keystoreAlias,
-            "-keystore",
+            keystoreFlag,
             keystoreFilePath,
-            "-storepass",
+            storepassFlag,
             "keystore password",
             "-file",
             keystoreCertFilePath
