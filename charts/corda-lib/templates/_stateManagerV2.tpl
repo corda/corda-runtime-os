@@ -192,6 +192,7 @@
                 GRANT USAGE ON SCHEMA "{{- $schemaName -}}" TO "${STATE_MANAGER_USERNAME}";
                 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA "{{- $schemaName -}}" TO "${STATE_MANAGER_USERNAME}";
                 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA "{{- $schemaName -}}" TO "${STATE_MANAGER_USERNAME}";
+                ALTER ROLE "${STATE_MANAGER_USERNAME}" SET search_path TO "{{- $schemaName -}}";
               SQL
 
               echo 'Applying State Manager Specification for Database '{{ $dbName }}'... Done!'

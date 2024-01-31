@@ -1,6 +1,5 @@
 package net.corda.metrics
 
-import io.micrometer.core.instrument.Tag as micrometerTag
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.DistributionSummary
 import io.micrometer.core.instrument.Gauge
@@ -19,6 +18,7 @@ import java.nio.file.Path
 import java.util.function.Supplier
 import java.util.function.ToDoubleFunction
 import java.util.function.ToLongFunction
+import io.micrometer.core.instrument.Tag as micrometerTag
 
 
 object CordaMetrics {
@@ -797,11 +797,6 @@ object CordaMetrics {
         SourceVirtualNode("virtualnode.source"),
 
         /**
-         * The destination virtual node in peer-to-peer communication.
-         */
-        DestinationVirtualNode("virtualnode.destination"),
-
-        /**
          * The ledger type.
          */
         LedgerType("ledger.type"),
@@ -937,9 +932,11 @@ object CordaMetrics {
      *
      * @param workerType Type of Worker, will be tagged to each metric.
      * @param registry Registry instance
+     * @param keepNames Regular expression of metric names to keep
+     * @param dropLabels Regular expression of metric labels to drop
      */
-    fun configure(workerType: String, registry: MeterRegistry) {
-        this.registry.add(registry).config()
+    fun configure(workerType: String, registry: MeterRegistry, keepNames: Regex?, dropLabels: Regex?) {
+        val config = this.registry.add(registry).config()
             .commonTags(Tag.WorkerType.value, workerType)
             .meterFilter(object : MeterFilter {
                 override fun map(id: Meter.Id): Meter.Id {
@@ -957,6 +954,20 @@ object CordaMetrics {
                     }
                 }
             })
+        if (keepNames != null) {
+            config.meterFilter(MeterFilter.denyUnless {
+                registry.config().namingConvention().name(it.name, it.type, it.baseUnit).matches(keepNames)
+            })
+        }
+        if (dropLabels != null) {
+            config.meterFilter(object : MeterFilter {
+                override fun map(id: Meter.Id): Meter.Id {
+                    return id.replaceTags(id.tags.filter {
+                        !registry.config().namingConvention().tagKey(it.key).matches(dropLabels)
+                    })
+                }
+            })
+        }
     }
 
     private fun timer(name: String, tags: Iterable<micrometerTag>): Timer {
