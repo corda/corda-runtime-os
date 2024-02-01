@@ -97,8 +97,8 @@ internal class MGMRegistrationContextValidator(
         val diff = ((newMemberContext.entries - lastMemberContext.entries) + (lastMemberContext.entries - newMemberContext.entries))
             .filterNot {
                 it.key.startsWith(MemberInfoExtension.ENDPOINTS) ||
-                        it.key.startsWith(MemberInfoExtension.PLATFORM_VERSION) ||
-                        it.key.startsWith(MemberInfoExtension.SOFTWARE_VERSION)
+                    it.key.startsWith(MemberInfoExtension.PLATFORM_VERSION) ||
+                    it.key.startsWith(MemberInfoExtension.SOFTWARE_VERSION)
             }
         if (diff.isNotEmpty()) {
             throw MGMRegistrationContextValidationException(
