@@ -72,7 +72,7 @@ open class UtxoFilteredTransactionTestBase {
         jsonMarshallingService,
         merkleTreeProvider,
         serializationService,
-        mock()
+        DigestServiceImpl(PlatformDigestServiceImpl(CipherSchemeMetadataImpl()), null)
     )
 
     @BeforeEach
