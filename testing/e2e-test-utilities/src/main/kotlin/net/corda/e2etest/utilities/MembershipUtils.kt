@@ -1,7 +1,6 @@
 package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import kong.unirest.json.JSONObject
 import net.corda.e2etest.utilities.types.GroupPolicyFactory
 import net.corda.e2etest.utilities.types.NetworkOnboardingMetadata
 import net.corda.e2etest.utilities.types.jsonToMemberList
