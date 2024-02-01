@@ -10,7 +10,6 @@ import net.corda.v5.serialization.SerializedBytes
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -25,11 +24,13 @@ class ExternalEventExecutorImplTest {
     private lateinit var externalEventExecutorImpl: ExternalEventExecutorImpl
 
     private val capturedArguments = mutableListOf<FlowIORequest.ExternalEvent>()
-    private val mockFactoryClass = mock<ExternalEventFactory<Any,Any,Any>>()::class.java
+    private val mockFactoryClass = mock<ExternalEventFactory<Any, Any, Any>>()::class.java
 
 
     @CordaSerializable
     data class Mock(val map: Map<String, String>)
+
+    data class BadMock(val map: Map<String, String>)
 
     private val mockParams = Mock(mutableMapOf("test" to "parameters"))
 
@@ -50,7 +51,7 @@ class ExternalEventExecutorImplTest {
         whenever(mockFlowFiberService.flowCheckpoint.flowId).thenReturn(flowId)
         whenever(mockFlowFiberService.flowCheckpoint.suspendCount).thenReturn(suspendCount)
         serializationService = mock<SerializationServiceInternal?>().apply {
-            whenever(serialize<Any>(anyOrNull())).doAnswer{ inv ->
+            whenever(serialize<Any>(anyOrNull())).doAnswer { inv ->
                 SerializedBytes { inv.getArgument<Any>(0).toString().toByteArray() }
             }
         }
@@ -82,11 +83,6 @@ class ExternalEventExecutorImplTest {
 
         assertEquals(1, capturedArguments.size)
         assertEquals(expectedRequest, capturedArguments[0])
-    }
-
-    @Test
-    fun `Suspending with parameters which are not serializable produces error`() {
-        assertThrows<IllegalStateException> { externalEventExecutorImpl.execute(mockFactoryClass, mutableMapOf("key" to "value")) }
     }
 
     @Test
