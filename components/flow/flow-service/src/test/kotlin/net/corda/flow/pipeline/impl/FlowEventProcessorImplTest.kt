@@ -374,6 +374,6 @@ class FlowEventProcessorImplTest {
     }
 
     private fun getFlowEventRecord(flowEvent: FlowEvent?): Record<String, FlowEvent> {
-        return Record(FLOW_SESSION, flowKey, flowEvent, 0, listOf(Pair(INPUT_HASH_HEADER, "1124")))
+        return Record(FLOW_SESSION, flowKey, flowEvent, 0, listOf(Pair(INPUT_HASH_HEADER, UUID.randomUUID().toString())))
     }
 }

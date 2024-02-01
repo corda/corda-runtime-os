@@ -53,6 +53,7 @@ import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
+import net.corda.messaging.api.mediator.MediatorInputService
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
@@ -288,12 +289,13 @@ class FlowServiceTestContext @Activate constructor(
             sessionId,
             initiatingIdentity,
             initiatedIdentity,
-            SessionCounterpartyInfoRequest(SessionInit.newBuilder()
-                .setFlowId(flowId)
-                .setCpiId(cpiId)
-                .setContextPlatformProperties(emptyKeyValuePairList())
-                .setContextUserProperties(emptyKeyValuePairList())
-                .build()
+            SessionCounterpartyInfoRequest(
+                SessionInit.newBuilder()
+                    .setFlowId(flowId)
+                    .setCpiId(cpiId)
+                    .setContextPlatformProperties(emptyKeyValuePairList())
+                    .setContextUserProperties(emptyKeyValuePairList())
+                    .build()
             ),
             null,
             getContextSessionProps(protocol, requireClose)
@@ -424,12 +426,12 @@ class FlowServiceTestContext @Activate constructor(
     }
 
     override fun resetFlowFiberCache() {
-    ALL_TEST_VIRTUAL_NODES.forEach {
-        flowFiberCache.remove(
-            VirtualNodeContext(it.toCorda(), setOf(CPK1_CHECKSUM), FLOW, null)
-        )
+        ALL_TEST_VIRTUAL_NODES.forEach {
+            flowFiberCache.remove(
+                VirtualNodeContext(it.toCorda(), setOf(CPK1_CHECKSUM), FLOW, null)
+            )
+        }
     }
-}
 
     fun clearTestRuns() {
         testRuns.clear()
@@ -508,13 +510,21 @@ class FlowServiceTestContext @Activate constructor(
     private fun getFlowEventProcessor(): StateAndEventProcessor<String, Checkpoint, FlowEvent> {
         val cfg = ConfigFactory.parseMap(testConfig)
         return eventProcessorFactory.create(
-            mapOf(FLOW_CONFIG to SmartConfigFactory.createWithoutSecurityServices()
-                .create(cfg))
+            mapOf(
+                FLOW_CONFIG to SmartConfigFactory.createWithoutSecurityServices()
+                    .create(cfg)
+            )
         )
     }
 
     private fun createFlowEventRecord(key: String, payload: Any): Record<String, FlowEvent> {
-        return Record(FLOW_SESSION, key, FlowEvent(key, payload))
+        return Record(
+            FLOW_SESSION,
+            key,
+            FlowEvent(key, payload),
+            0,
+            listOf(Pair(MediatorInputService.INPUT_HASH_HEADER, UUID.randomUUID().toString()))
+        )
     }
 
     private fun getCpiIdentifier(cpiId: String): CpiIdentifier {
@@ -543,7 +553,7 @@ class FlowServiceTestContext @Activate constructor(
 
         return object : FlowIoRequestSetup {
 
-            override fun suspendsWith(flowIoRequest: FlowIORequest<*>) : FlowIoRequestSetup {
+            override fun suspendsWith(flowIoRequest: FlowIORequest<*>): FlowIoRequestSetup {
                 testRun.ioRequests.add(
                     FlowIORequest.FlowSuspended(
                         ByteBuffer.wrap(byteArrayOf()),
@@ -554,12 +564,12 @@ class FlowServiceTestContext @Activate constructor(
                 return this
             }
 
-            override fun completedSuccessfullyWith(result: String?) : FlowIoRequestSetup {
+            override fun completedSuccessfullyWith(result: String?): FlowIoRequestSetup {
                 testRun.ioRequests.add(FlowIORequest.FlowFinished(result))
                 return this
             }
 
-            override fun completedWithError(exception: Exception) : FlowIoRequestSetup {
+            override fun completedWithError(exception: Exception): FlowIoRequestSetup {
                 testRun.ioRequests.add(FlowIORequest.FlowFailed(exception))
                 return this
             }
