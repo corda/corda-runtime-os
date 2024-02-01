@@ -272,7 +272,7 @@ class UtxoPersistenceServiceImplTest {
             createTransactionEntity(entityFactory, transaction1, status = VERIFIED).also { em.persist(it) }
             createTransactionEntity(entityFactory, transaction2, status = VERIFIED).also { em.persist(it) }
 
-            repository.persistVisibleTransactionOutput(
+            repository.persistVisibleTransactionOutputs(
                 em,
                 transaction1.id.toString(),
                 UtxoComponentGroup.OUTPUTS.ordinal,
@@ -283,7 +283,7 @@ class UtxoPersistenceServiceImplTest {
                 customRepresentation = CustomRepresentation("{}")
             )
 
-            repository.persistVisibleTransactionOutput(
+            repository.persistVisibleTransactionOutputs(
                 em,
                 transaction2.id.toString(),
                 UtxoComponentGroup.OUTPUTS.ordinal,
@@ -294,7 +294,7 @@ class UtxoPersistenceServiceImplTest {
                 customRepresentation = CustomRepresentation("{}")
             )
 
-            repository.persistVisibleTransactionOutput(
+            repository.persistVisibleTransactionOutputs(
                 em,
                 transaction2.id.toString(),
                 UtxoComponentGroup.OUTPUTS.ordinal,

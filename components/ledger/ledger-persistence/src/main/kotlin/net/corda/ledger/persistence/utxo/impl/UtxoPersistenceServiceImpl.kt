@@ -152,35 +152,64 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
-//    override fun persistTransaction(transaction: UtxoTransactionReader, utxoTokenMap: Map<StateRef, UtxoToken>): List<CordaPackageSummary> {
-//        entityManagerFactory.transaction { em ->
-//            return persistTransaction(em, transaction, utxoTokenMap)
-//        }
-//    }
-
     private fun hash(data: ByteArray) = sandboxDigestService.hash(data, DigestAlgorithmName.SHA2_256).toString()
 
     override fun persistTransaction(transaction: UtxoTransactionReader, utxoTokenMap: Map<StateRef, UtxoToken>): List<CordaPackageSummary> {
+        return persistTransaction(
+            { block -> entityManagerFactory.transaction { em -> block(em) } },
+            transaction,
+            utxoTokenMap
+        )
+    }
+
+    override fun persistTransactionIfDoesNotExist(transaction: UtxoTransactionReader): Pair<String?, List<CordaPackageSummary>> {
+        entityManagerFactory.transaction { em ->
+            val transactionIdString = transaction.id.toString()
+
+            val status = repository.findTransactionStatus(em, transactionIdString)
+
+            if (status != null) {
+                return status to emptyList()
+            }
+
+            val cpkDetails = persistTransaction({ block -> block(em) }, transaction, emptyMap())
+
+            return null to cpkDetails
+        }
+    }
+
+    private fun persistTransaction(
+        optionalTransactionBlock: ((EntityManager) -> Unit) -> Unit,
+        transaction: UtxoTransactionReader,
+        utxoTokenMap: Map<StateRef, UtxoToken>
+    ): List<CordaPackageSummary> {
         val nowUtc = utcClock.instant()
         val transactionIdString = transaction.id.toString()
-
-        log.info("persistTransaction (id = $transactionIdString, status = ${transaction.status}, nowUtc = $nowUtc, visible state indexes = ${transaction.visibleStatesIndexes})")
 
         val metadataBytes = transaction.rawGroupLists[0][0]
         val metadataHash = sandboxDigestService.hash(metadataBytes, DigestAlgorithmName.SHA2_256).toString()
 
         val metadata = transaction.metadata
 
-//        val visibleTransactionOutputs = transaction.getVisibleStates().entries.map { (stateIndex, stateAndRef) ->
-//            VisibleTransactionOutputData(
-//            stateIndex,
-//            stateAndRef.state.contractState::class.java.canonicalName,
-//            CustomRepresentation(extractJsonDataFromState(stateAndRef)),
-//            utxoTokenMap[stateAndRef.ref]
-//            )
-//        }
+        val visibleTransactionOutputs = transaction.getVisibleStates().entries.map { (stateIndex, stateAndRef) ->
+            UtxoRepository.VisibleTransactionOutput(
+                stateIndex,
+                stateAndRef.state.contractState::class.java.canonicalName,
+                CustomRepresentation(extractJsonDataFromState(stateAndRef)),
+                utxoTokenMap[stateAndRef.ref],
+                stateAndRef.state.notaryName.toString()
+            )
+        }
 
-        entityManagerFactory.transaction { em ->
+        val transactionSignatures = transaction.signatures.mapIndexed { index, signature ->
+            UtxoRepository.TransactionSignature(
+                index,
+                serializationService.serialize(signature).bytes,
+                signature.by
+            )
+        }
+
+        optionalTransactionBlock { em ->
 
             repository.persistTransactionMetadata(
                 em,
@@ -208,51 +237,22 @@ class UtxoPersistenceServiceImpl(
                 this::hash
             )
 
-            // Insert inputs data
-            transaction.getConsumedStateRefs().forEachIndexed { index, input ->
-                repository.persistTransactionSource(
-                    em,
-                    transactionIdString,
-                    UtxoComponentGroup.INPUTS.ordinal,
-                    index,
-                    input.transactionId.toString(),
-                    input.index
-                )
+            val consumedTransactionSources = transaction.getConsumedStateRefs().mapIndexed { index, input ->
+                UtxoRepository.TransactionSource(UtxoComponentGroup.INPUTS, index, input.transactionId.toString(), input.index)
             }
 
-            // Insert reference data
-            transaction.getReferenceStateRefs().forEachIndexed { index, reference ->
-                repository.persistTransactionSource(
-                    em,
-                    transactionIdString,
-                    UtxoComponentGroup.REFERENCES.ordinal,
-                    index,
-                    reference.transactionId.toString(),
-                    reference.index
-                )
+            val referenceTransactionSources = transaction.getReferenceStateRefs().mapIndexed { index, input ->
+                UtxoRepository.TransactionSource(UtxoComponentGroup.REFERENCES, index, input.transactionId.toString(), input.index)
             }
 
-            // Insert outputs data
-            transaction.getVisibleStates().entries.forEach { (stateIndex, stateAndRef) ->
-                val utxoToken = utxoTokenMap[stateAndRef.ref]
-                repository.persistVisibleTransactionOutput(
-                    em,
-                    transactionIdString,
-                    UtxoComponentGroup.OUTPUTS.ordinal,
-                    stateIndex,
-                    stateAndRef.state.contractState::class.java.canonicalName,
-                    nowUtc,
-                    consumed = false,
-                    CustomRepresentation(extractJsonDataFromState(stateAndRef)),
-                    utxoToken?.poolKey?.tokenType,
-                    utxoToken?.poolKey?.issuerHash?.toString(),
-                    stateAndRef.state.notaryName.toString(),
-                    utxoToken?.poolKey?.symbol,
-                    utxoToken?.filterFields?.tag,
-                    utxoToken?.filterFields?.ownerHash?.toString(),
-                    utxoToken?.amount
-                )
-            }
+            repository.persistTransactionSources(em, transactionIdString, consumedTransactionSources + referenceTransactionSources)
+
+            repository.persistVisibleTransactionOutputs(
+                em,
+                transactionIdString,
+                nowUtc,
+                visibleTransactionOutputs
+            )
 
             // Mark inputs as consumed
             if (transaction.status == TransactionStatus.VERIFIED) {
@@ -267,226 +267,34 @@ class UtxoPersistenceServiceImpl(
             }
 
             // Insert the Transactions signatures
-            transaction.signatures.forEachIndexed { index, digitalSignatureAndMetadata ->
-                repository.persistTransactionSignature(
-                    em,
-                    transactionIdString,
-                    index,
-                    digitalSignatureAndMetadata,
-                    nowUtc
-                )
-            }
-        }
-        return emptyList()
-    }
-
-//    private data class VisibleTransactionOutputData(
-//        val stateIndex: Int,
-//        val className: String,
-//        val customRepresentation: CustomRepresentation,
-//        val token: UtxoToken?
-//    )
-
-    private fun persistTransaction(
-        em: EntityManager,
-        transaction: UtxoTransactionReader,
-        utxoTokenMap: Map<StateRef, UtxoToken> = emptyMap(),
-        nowUtc: Instant
-    ): List<CordaPackageSummary> {
-//        val nowUtc = utcClock.instant()
-        val transactionIdString = transaction.id.toString()
-
-        val metadataBytes = transaction.rawGroupLists[0][0]
-        val metadataHash = sandboxDigestService.hash(metadataBytes, DigestAlgorithmName.SHA2_256).toString()
-
-        var startTime = System.nanoTime()
-        val metadata = transaction.metadata
-        repository.persistTransactionMetadata(
-            em,
-            metadataHash,
-            metadataBytes,
-            requireNotNull(metadata.getMembershipGroupParametersHash()) { "Metadata without membership group parameters hash" },
-            requireNotNull(metadata.getCpiMetadata()) { "Metadata without CPI metadata" }.fileChecksum
-        )
-
-        CordaMetrics.Metric.Ledger.PersistenceTxExecutionTime
-            .builder().withTag(CordaMetrics.Tag.OperationName, "metadata")
-            .build().record(Duration.ofNanos(System.nanoTime() - startTime))
-
-        startTime = System.nanoTime()
-        // Insert the Transaction
-        repository.persistTransaction(
-            em,
-            transactionIdString,
-            transaction.privacySalt.bytes,
-            transaction.account,
-            nowUtc,
-            transaction.status,
-            metadataHash,
-            false
-        )
-
-        CordaMetrics.Metric.Ledger.PersistenceTxExecutionTime
-            .builder().withTag(CordaMetrics.Tag.OperationName, "transaction")
-            .build().record(Duration.ofNanos(System.nanoTime() - startTime))
-
-        startTime = System.nanoTime()
-        // Insert the Transactions components
-//        transaction.rawGroupLists.mapIndexed { groupIndex, leaves ->
-//            leaves.mapIndexed { leafIndex, data ->
-//                repository.persistTransactionComponentLeaf(
-//                    em,
-//                    transactionIdString,
-//                    groupIndex,
-//                    leafIndex,
-//                    data,
-//                    sandboxDigestService.hash(data, DigestAlgorithmName.SHA2_256).toString()
-//                )
-//            }
-//        }
-
-        repository.persistTransactionComponents(
-            em,
-            transactionIdString,
-            transaction.rawGroupLists,
-            this::hash
-        )
-
-        CordaMetrics.Metric.Ledger.PersistenceTxExecutionTime
-            .builder().withTag(CordaMetrics.Tag.OperationName, "componentLeaves")
-            .build().record(Duration.ofNanos(System.nanoTime() - startTime))
-
-        startTime = System.nanoTime()
-        // Insert inputs data
-        transaction.getConsumedStateRefs().forEachIndexed { index, input ->
-            repository.persistTransactionSource(
+            repository.persistTransactionSignatures(
                 em,
                 transactionIdString,
-                UtxoComponentGroup.INPUTS.ordinal,
-                index,
-                input.transactionId.toString(),
-                input.index
-            )
-        }
-        CordaMetrics.Metric.Ledger.PersistenceTxExecutionTime
-            .builder().withTag(CordaMetrics.Tag.OperationName, "consumedState")
-            .build().record(Duration.ofNanos(System.nanoTime() - startTime))
-
-        startTime = System.nanoTime()
-        // Insert reference data
-        transaction.getReferenceStateRefs().forEachIndexed { index, reference ->
-            repository.persistTransactionSource(
-                em,
-                transactionIdString,
-                UtxoComponentGroup.REFERENCES.ordinal,
-                index,
-                reference.transactionId.toString(),
-                reference.index
-            )
-        }
-        CordaMetrics.Metric.Ledger.PersistenceTxExecutionTime
-            .builder().withTag(CordaMetrics.Tag.OperationName, "referenceState")
-            .build().record(Duration.ofNanos(System.nanoTime() - startTime))
-
-        startTime = System.nanoTime()
-        // Insert outputs data
-        transaction.getVisibleStates().entries.forEach { (stateIndex, stateAndRef) ->
-            val utxoToken = utxoTokenMap[stateAndRef.ref]
-            repository.persistVisibleTransactionOutput(
-                em,
-                transactionIdString,
-                UtxoComponentGroup.OUTPUTS.ordinal,
-                stateIndex,
-                stateAndRef.state.contractState::class.java.canonicalName,
-                nowUtc,
-                consumed = false,
-                CustomRepresentation(extractJsonDataFromState(stateAndRef)),
-                utxoToken?.poolKey?.tokenType,
-                utxoToken?.poolKey?.issuerHash?.toString(),
-                stateAndRef.state.notaryName.toString(),
-                utxoToken?.poolKey?.symbol,
-                utxoToken?.filterFields?.tag,
-                utxoToken?.filterFields?.ownerHash?.toString(),
-                utxoToken?.amount
-            )
-        }
-        CordaMetrics.Metric.Ledger.PersistenceTxExecutionTime
-            .builder().withTag(CordaMetrics.Tag.OperationName, "visibleStates")
-            .build().record(Duration.ofNanos(System.nanoTime() - startTime))
-
-        // Mark inputs as consumed
-        if (transaction.status == TransactionStatus.VERIFIED) {
-            startTime = System.nanoTime()
-            val inputStateRefs = transaction.getConsumedStateRefs()
-            if (inputStateRefs.isNotEmpty()) {
-                repository.markTransactionVisibleStatesConsumed(
-                    em,
-                    inputStateRefs,
-                    nowUtc
-                )
-            }
-            CordaMetrics.Metric.Ledger.PersistenceTxExecutionTime
-                .builder().withTag(CordaMetrics.Tag.OperationName, "statesConsumed")
-                .build().record(Duration.ofNanos(System.nanoTime() - startTime))
-        }
-
-        startTime = System.nanoTime()
-        // Insert the Transactions signatures
-        transaction.signatures.forEachIndexed { index, digitalSignatureAndMetadata ->
-            repository.persistTransactionSignature(
-                em,
-                transactionIdString,
-                index,
-                digitalSignatureAndMetadata,
+                transactionSignatures,
                 nowUtc
             )
         }
-        CordaMetrics.Metric.Ledger.PersistenceTxExecutionTime
-            .builder().withTag(CordaMetrics.Tag.OperationName, "signatures")
-            .build().record(Duration.ofNanos(System.nanoTime() - startTime))
+
         return emptyList()
     }
 
-    override fun persistTransactionIfDoesNotExist(transaction: UtxoTransactionReader): Pair<String?, List<CordaPackageSummary>> {
-        entityManagerFactory.transaction { em ->
-            val transactionIdString = transaction.id.toString()
-
-            val status = repository.findTransactionStatus(em, transactionIdString)
-
-            if (status != null) {
-                return status to emptyList()
-            }
-
-            val nowUtc = utcClock.instant()
-
-            log.info("persistTransactionIfDoesNotExist (id = $transactionIdString, status = ${transaction.status}, nowUtc = $nowUtc)")
-
-            val cpkDetails = persistTransaction(em, transaction, emptyMap(), nowUtc)
-
-            return null to cpkDetails
-        }
-    }
-
     override fun persistTransactionSignatures(id: String, signatures: List<ByteArray>, startingIndex: Int) {
-        val nowUtc = utcClock.instant()
-        val digitalSignatureAndMetadatas = signatures.map {
-            serializationService.deserialize<DigitalSignatureAndMetadata>(it)
+        val transactionSignatures = signatures.mapIndexed { index, bytes ->
+            val signature = serializationService.deserialize<DigitalSignatureAndMetadata>(bytes)
+            UtxoRepository.TransactionSignature(
+                startingIndex + index,
+                serializationService.serialize(signature).bytes,
+                signature.by
+            )
         }
+
         entityManagerFactory.transaction { em ->
-            val startTime = System.nanoTime()
-            // Insert the Transactions signatures
-            digitalSignatureAndMetadatas.forEachIndexed { index, digitalSignatureAndMetadata ->
-                repository.persistTransactionSignature(
-                    em,
-                    id,
-                    startingIndex + index,
-                    digitalSignatureAndMetadata,
-                    nowUtc
-                )
-            }
-            CordaMetrics.Metric.Ledger.PersistenceTxExecutionTime
-                .builder().withTag(CordaMetrics.Tag.OperationName, "signatures")
-                .build().record(Duration.ofNanos(System.nanoTime() - startTime))
+            repository.persistTransactionSignatures(
+                em,
+                id,
+                transactionSignatures,
+                utcClock.instant()
+            )
         }
     }
 

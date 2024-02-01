@@ -49,7 +49,7 @@ class UtxoPersistenceServiceImplTest {
 
     private val mockRepository = mock<UtxoRepository> {
         on {
-            persistVisibleTransactionOutput(
+            persistVisibleTransactionOutputs(
                 any(), any(), any(), any(), any(), any(), any(), any(),
                 anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()
             )

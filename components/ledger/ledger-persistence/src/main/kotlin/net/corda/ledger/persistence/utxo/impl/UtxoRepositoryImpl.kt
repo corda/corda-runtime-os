@@ -13,6 +13,7 @@ import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.utxo.data.transaction.MerkleProofDto
 import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionDto
+import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByPersistence
@@ -31,6 +32,8 @@ import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 import java.nio.ByteBuffer
 import java.sql.Connection
+import java.sql.Timestamp
+import java.sql.Types
 import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.Query
@@ -211,22 +214,44 @@ class UtxoRepositoryImpl @Activate constructor(
             .logResult("transaction metadata [$hash]")
     }
 
-    override fun persistTransactionSource(
+    override fun persistTransactionSources(
         entityManager: EntityManager,
         transactionId: String,
-        groupIndex: Int,
-        leafIndex: Int,
-        sourceStateTransactionId: String,
-        sourceStateIndex: Int
+        transactionSources: List<UtxoRepository.TransactionSource>
     ) {
-        entityManager.createNativeQuery(queryProvider.persistTransactionSource)
-            .setParameter("transactionId", transactionId)
-            .setParameter("groupIndex", groupIndex)
-            .setParameter("leafIndex", leafIndex)
-            .setParameter("sourceStateTransactionId", sourceStateTransactionId)
-            .setParameter("sourceStateIndex", sourceStateIndex)
-            .executeUpdate()
-            .logResult("transaction source [$transactionId, $groupIndex, $leafIndex]")
+        val totalBatchSize = transactionSources.size
+
+        if (totalBatchSize == 0) return
+
+        var index = 1
+
+        entityManager.connection { connection ->
+            connection.prepareStatement(createTransactionSourceInsertBatchStatement(totalBatchSize)).use { statement ->
+                transactionSources.forEach { transactionSource ->
+                    statement.setString(index++, transactionId)
+                    statement.setInt(index++, transactionSource.group.ordinal)
+                    statement.setInt(index++, transactionSource.index)
+                    statement.setString(index++, transactionSource.sourceTransactionId)
+                    statement.setInt(index++, transactionSource.sourceIndex)
+                }
+                statement.executeUpdate()
+                    .logResult(
+                        "transaction source [$transactionId, ${
+                            transactionSources.map { transactionSource ->
+                                "(${transactionSource.group.ordinal}, ${transactionSource.index})"
+                            }
+                        }]"
+                    )
+            }
+        }
+    }
+
+    private fun createTransactionSourceInsertBatchStatement(size: Int): String {
+        return """
+            INSERT INTO utxo_transaction_sources(transaction_id, group_idx, leaf_idx, source_state_transaction_id, source_state_idx)
+            VALUES ${List(size) { "(?, ?, ?, ?, ?)"}.joinToString(",")}
+            ON CONFLICT DO NOTHING
+        """.trimIndent()
     }
 
 //    override fun persistTransactionComponents(
@@ -275,6 +300,9 @@ class UtxoRepositoryImpl @Activate constructor(
         fun isMetadata(groupIndex: Int, leafIndex: Int) = groupIndex == 0 && leafIndex == 0
 
         val totalBatchSize = components.sumOf { group -> group.size } - 1
+
+        if (totalBatchSize == 0) return
+
         var index = 1
 
         entityManager.connection { connection ->
@@ -297,16 +325,6 @@ class UtxoRepositoryImpl @Activate constructor(
     }
 
     private fun createComponentInsertBatchStatement(size: Int): String {
-//        """
-//            INSERT INTO utxo_transaction_component(transaction_id, group_idx, leaf_idx, data, hash)
-//                VALUES (?, ?, ?, ?, ?)
-//            ON CONFLICT DO NOTHING"""
-//        """
-//            WITH data (transaction_id, group_idx, leaf_idx, data, hash) as (
-//                VALUES ${List(size) { "(?, ?, ?, ?, ?)"}.joinToString(",")}
-//            )
-//            INSERT INTO utxo_transaction_component
-//        """.trimIndent()
         return """
             INSERT INTO utxo_transaction_component(transaction_id, group_idx, leaf_idx, data, hash)
             VALUES ${List(size) { "(?, ?, ?, ?, ?)"}.joinToString(",")}
@@ -321,60 +339,108 @@ class UtxoRepositoryImpl @Activate constructor(
         }
     }
 
-    override fun persistVisibleTransactionOutput(
+    override fun persistVisibleTransactionOutputs(
         entityManager: EntityManager,
         transactionId: String,
-        groupIndex: Int,
-        leafIndex: Int,
-        type: String,
         timestamp: Instant,
-        consumed: Boolean,
-        customRepresentation: CustomRepresentation,
-        tokenType: String?,
-        tokenIssuerHash: String?,
-        tokenNotaryX500Name: String?,
-        tokenSymbol: String?,
-        tokenTag: String?,
-        tokenOwnerHash: String?,
-        tokenAmount: BigDecimal?
+        visibleTransactionOutputs: List<UtxoRepository.VisibleTransactionOutput>
     ) {
-        entityManager.createNativeQuery(queryProvider.persistVisibleTransactionOutput(consumed))
-            .setParameter("transactionId", transactionId)
-            .setParameter("groupIndex", groupIndex)
-            .setParameter("leafIndex", leafIndex)
-            .setParameter("type", type)
-            .setParameter("tokenType", tokenType)
-            .setParameter("tokenIssuerHash", tokenIssuerHash)
-            .setParameter("tokenNotaryX500Name", tokenNotaryX500Name)
-            .setParameter("tokenSymbol", tokenSymbol)
-            .setParameter("tokenTag", tokenTag)
-            .setParameter("tokenOwnerHash", tokenOwnerHash)
-            // This is a workaround for avoiding error when tokenAmount is null, see:
-            // https://stackoverflow.com/questions/53648865/postgresql-spring-data-jpa-integer-null-interpreted-as-bytea
-            .setParameter("tokenAmount", BigDecimal.ZERO)
-            .setParameter("tokenAmount", tokenAmount)
-            .setParameter("createdAt", timestamp)
-            .setParameter("customRepresentation", customRepresentation.json)
-            .run { if (consumed) setParameter("consumedAt", timestamp) else this }
-            .executeUpdate()
-            .logResult("transaction output [$transactionId, $leafIndex]")
+        val totalBatchSize = visibleTransactionOutputs.size
+
+        if (totalBatchSize == 0) return
+
+        var index = 1
+
+        entityManager.connection { connection ->
+            connection.prepareStatement(createVisibleTransactionOutputInsertBatchStatement(totalBatchSize)).use { statement ->
+                statement.run {
+                    visibleTransactionOutputs.forEach { visibleTransactionOutput ->
+                        setString(index++, transactionId)
+                        setInt(index++, UtxoComponentGroup.OUTPUTS.ordinal)
+                        setInt(index++, visibleTransactionOutput.stateIndex)
+                        setString(index++, visibleTransactionOutput.className)
+                        setString(index++, visibleTransactionOutput.token?.poolKey?.tokenType)
+                        setString(index++, visibleTransactionOutput.token?.poolKey?.issuerHash?.toString())
+                        setString(index++, visibleTransactionOutput.notaryName)
+                        setString(index++, visibleTransactionOutput.token?.poolKey?.symbol)
+                        setString(index++, visibleTransactionOutput.token?.filterFields?.tag)
+                        setString(index++, visibleTransactionOutput.token?.filterFields?.ownerHash?.toString())
+
+                        // This is a workaround for avoiding error when tokenAmount is null, see:
+                        // https://stackoverflow.com/questions/53648865/postgresql-spring-data-jpa-integer-null-interpreted-as-bytea
+                        if (visibleTransactionOutput.token != null) {
+                            setBigDecimal(index++, visibleTransactionOutput.token.amount)
+                        } else {
+                            setNull(index++, Types.NUMERIC)
+                        }
+
+                        setTimestamp(index++, Timestamp.from(timestamp))
+                        setNull(index++, Types.TIMESTAMP)
+                        setString(index++, visibleTransactionOutput.customRepresentation.json)
+                    }
+                    executeUpdate()
+                        .logResult("transaction output [$transactionId, ${visibleTransactionOutputs.map { it.stateIndex }}]")
+                }
+            }
+        }
     }
 
-    override fun persistTransactionSignature(
+    private fun createVisibleTransactionOutputInsertBatchStatement(size: Int): String {
+//        """INSERT INTO {h-schema}utxo_visible_transaction_output(
+//                transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,
+//                token_symbol, token_tag, token_owner_hash, token_amount, created, consumed, custom_representation)
+//            VALUES(
+//                :transactionId, :groupIndex, :leafIndex, :type, :tokenType, :tokenIssuerHash, :tokenNotaryX500Name,
+//                :tokenSymbol, :tokenTag, :tokenOwnerHash, :tokenAmount, :createdAt,
+//                ${if (consumed) ":consumedAt" else "null"},
+//                CAST(:customRepresentation as JSONB)
+//            ) ON CONFLICT DO NOTHING"""
+//            .trimIndent()
+        return """
+            INSERT INTO utxo_visible_transaction_output(
+                transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,
+                token_symbol, token_tag, token_owner_hash, token_amount, created, consumed, custom_representation
+            )
+            VALUES ${List(size) { "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CAST(? as JSONB))"}.joinToString(",")}
+            ON CONFLICT DO NOTHING
+        """.trimIndent()
+    }
+
+    override fun persistTransactionSignatures(
         entityManager: EntityManager,
         transactionId: String,
-        index: Int,
-        signature: DigitalSignatureAndMetadata,
+        signatures: List<UtxoRepository.TransactionSignature>,
         timestamp: Instant
     ) {
-        entityManager.createNativeQuery(queryProvider.persistTransactionSignature)
-            .setParameter("transactionId", transactionId)
-            .setParameter("signatureIdx", index)
-            .setParameter("signature", serializationService.serialize(signature).bytes)
-            .setParameter("publicKeyHash", signature.by.toString())
-            .setParameter("createdAt", timestamp)
-            .executeUpdate()
-            .logResult("transaction signature [$transactionId, $index]")
+        val totalBatchSize = signatures.size
+
+        if (totalBatchSize == 0) return
+
+        var index = 1
+
+        entityManager.connection { connection ->
+            connection.prepareStatement(createTransactionSignaturesInsertBatchStatement(totalBatchSize)).use { statement ->
+                statement.run {
+                    signatures.forEach { signature ->
+                        setString(index++, transactionId)
+                        setInt(index++, signature.index)
+                        setBytes(index++, signature.signatureBytes)
+                        setString(index++, signature.publicKeyHash.toString())
+                        setTimestamp(index++, Timestamp.from(timestamp))
+                    }
+                    executeUpdate()
+                        .logResult("transaction signature [$transactionId, ${signatures.map { it.index }}]")
+                }
+            }
+        }
+    }
+
+    private fun createTransactionSignaturesInsertBatchStatement(size: Int): String {
+        return """
+            INSERT INTO utxo_transaction_signature(transaction_id, signature_idx, signature, pub_key_hash, created)
+            VALUES ${List(size) { "(?, ?, ?, ?, ?)"}.joinToString(",")}
+            ON CONFLICT DO NOTHING
+        """.trimIndent()
     }
 
     override fun updateTransactionStatus(

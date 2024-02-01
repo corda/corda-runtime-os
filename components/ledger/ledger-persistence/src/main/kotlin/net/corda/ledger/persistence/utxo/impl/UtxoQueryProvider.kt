@@ -73,7 +73,7 @@ interface UtxoQueryProvider {
 
     /**
      * @param consumed Whether the persisted states have been consumed.
-     * @property persistVisibleTransactionOutput SQL text for [UtxoRepositoryImpl.persistVisibleTransactionOutput].
+     * @property persistVisibleTransactionOutput SQL text for [UtxoRepositoryImpl.persistVisibleTransactionOutputs].
      */
     fun persistVisibleTransactionOutput(consumed: Boolean): String
 

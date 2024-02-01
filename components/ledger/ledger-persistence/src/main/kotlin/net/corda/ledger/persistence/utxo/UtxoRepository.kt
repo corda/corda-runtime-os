@@ -5,11 +5,12 @@ import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.data.transaction.MerkleProofDto
 import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionDto
+import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef
-import java.math.BigDecimal
+import net.corda.v5.ledger.utxo.observer.UtxoToken
 import java.time.Instant
 import javax.persistence.EntityManager
 
@@ -88,13 +89,17 @@ interface UtxoRepository {
 
     /** Persists transaction source (operation is idempotent) */
     @Suppress("LongParameterList")
-    fun persistTransactionSource(
+    fun persistTransactionSources(
         entityManager: EntityManager,
         transactionId: String,
-        groupIndex: Int,
-        leafIndex: Int,
-        sourceStateTransactionId: String,
-        sourceStateIndex: Int
+        transactionSources: List<TransactionSource>
+    )
+
+    data class TransactionSource(
+        val group: UtxoComponentGroup,
+        val index: Int,
+        val sourceTransactionId: String,
+        val sourceIndex: Int
     )
 
     /** Persists transaction component leaf [data] (operation is idempotent) */
@@ -117,32 +122,30 @@ interface UtxoRepository {
 
     /** Persists transaction output (operation is idempotent) */
     @Suppress("LongParameterList")
-    fun persistVisibleTransactionOutput(
+    fun persistVisibleTransactionOutputs(
         entityManager: EntityManager,
         transactionId: String,
-        groupIndex: Int,
-        leafIndex: Int,
-        type: String,
         timestamp: Instant,
-        consumed: Boolean,
-        customRepresentation: CustomRepresentation,
-        tokenType: String? = null,
-        tokenIssuerHash: String? = null,
-        tokenNotaryX500Name: String? = null,
-        tokenSymbol: String? = null,
-        tokenTag: String? = null,
-        tokenOwnerHash: String? = null,
-        tokenAmount: BigDecimal? = null
+        visibleTransactionOutputs: List<VisibleTransactionOutput>
+    )
+
+    data class VisibleTransactionOutput(
+        val stateIndex: Int,
+        val className: String,
+        val customRepresentation: CustomRepresentation,
+        val token: UtxoToken?,
+        val notaryName: String,
     )
 
     /** Persists transaction [signature] (operation is idempotent) */
-    fun persistTransactionSignature(
+    fun persistTransactionSignatures(
         entityManager: EntityManager,
         transactionId: String,
-        index: Int,
-        signature: DigitalSignatureAndMetadata,
+        signatures: List<TransactionSignature>,
         timestamp: Instant
     )
+
+    data class TransactionSignature(val index: Int, val signatureBytes: ByteArray, val publicKeyHash: SecureHash)
 
     /**
      * Updates transaction [transactionStatus]. There is only one status per transaction. In case that status already
