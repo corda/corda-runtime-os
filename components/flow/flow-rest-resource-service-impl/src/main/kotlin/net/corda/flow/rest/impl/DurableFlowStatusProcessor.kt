@@ -36,10 +36,11 @@ class DurableFlowStatusProcessor(
 
         val (updatedStates, newStates) = events.mapNotNull { record ->
             val key = record.key.toString()
-            val bytes = record.value?.let { serializer.serialize(it) } ?: return@mapNotNull null
+            val value = record.value ?: return@mapNotNull null
+            val bytes = serializer.serialize(value) ?: return@mapNotNull null
 
             val state = existingStates[key]
-            val metadata = state?.metadata.withHoldingIdentityAndStatus(record.key.identity, record.value?.flowStatus)
+            val metadata = state?.metadata.withHoldingIdentityAndStatus(record.key.identity, value.flowStatus)
 
             state?.copy(value = bytes, metadata = metadata) ?: State(key, bytes, metadata = metadata)
         }.partition { it.key in existingKeys }
@@ -50,10 +51,10 @@ class DurableFlowStatusProcessor(
         return emptyList()
     }
 
-    private fun Metadata?.withHoldingIdentityAndStatus(holdingIdentity: HoldingIdentity, flowStatus: FlowStates?): Metadata {
+    private fun Metadata?.withHoldingIdentityAndStatus(holdingIdentity: HoldingIdentity, flowStatus: FlowStates): Metadata {
         val metadata = this?.toMutableMap() ?: mutableMapOf()
         metadata[HOLDING_IDENTITY_METADATA_KEY] = holdingIdentity.toString()
-        metadata[FLOW_STATUS_METADATA_KEY] = flowStatus?.name ?: ""
+        metadata[FLOW_STATUS_METADATA_KEY] = flowStatus.name
         return Metadata(metadata)
     }
 }
