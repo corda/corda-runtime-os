@@ -16,7 +16,7 @@ dependencies {
     implementation libs.jackson.databind
     implementation libs.jackson.datatype.jsr310
     implementation libs.jackson.module.kotlin
-    implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
+    implementation libs.caffeine
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"

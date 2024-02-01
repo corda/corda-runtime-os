@@ -43,7 +43,7 @@ class TestWrappingRepository(
     override fun close() {
     }
 
-    override fun getAllKeyIds(): Set<UUID> {
+    override fun getAllKeyIdsAndAliases(): Set<Pair<UUID, String>> {
         TODO("Not needed")
     }
 }
