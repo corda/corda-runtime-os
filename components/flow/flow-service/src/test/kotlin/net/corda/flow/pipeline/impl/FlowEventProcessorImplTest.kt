@@ -33,6 +33,7 @@ import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
 import net.corda.flow.pipeline.handlers.FlowPostProcessingHandler
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
+import net.corda.messaging.api.mediator.MediatorInputService.Companion.INPUT_HASH_HEADER
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
@@ -373,6 +374,6 @@ class FlowEventProcessorImplTest {
     }
 
     private fun getFlowEventRecord(flowEvent: FlowEvent?): Record<String, FlowEvent> {
-        return Record(FLOW_SESSION, flowKey, flowEvent)
+        return Record(FLOW_SESSION, flowKey, flowEvent, 0, listOf(Pair(INPUT_HASH_HEADER, "1124")))
     }
 }
