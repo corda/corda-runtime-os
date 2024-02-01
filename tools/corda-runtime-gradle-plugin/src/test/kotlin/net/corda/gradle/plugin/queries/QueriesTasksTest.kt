@@ -1,8 +1,14 @@
 package net.corda.gradle.plugin.queries
 
 import net.corda.gradle.plugin.FunctionalBaseTest
-import net.corda.gradle.plugin.dtos.*
-import org.junit.jupiter.api.Assertions.*
+import net.corda.gradle.plugin.dtos.CpiIdentifierDTO
+import net.corda.gradle.plugin.dtos.CpiMetadataDTO
+import net.corda.gradle.plugin.dtos.GetCPIsResponseDTO
+import net.corda.gradle.plugin.dtos.HoldingIdentityDTO
+import net.corda.gradle.plugin.dtos.VirtualNodeInfoDTO
+import net.corda.gradle.plugin.dtos.VirtualNodesDTO
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertAll
 
