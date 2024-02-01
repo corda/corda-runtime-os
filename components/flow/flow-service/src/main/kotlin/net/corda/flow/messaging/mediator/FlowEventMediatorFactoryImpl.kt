@@ -121,32 +121,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
                 FLOW_SESSION,
                 CONSUMER_GROUP,
                 messagingConfig,
-            ),
-            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_SESSION,
-                CONSUMER_GROUP,
-                messagingConfig,
-            ),
-            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_SESSION,
-                CONSUMER_GROUP,
-                messagingConfig,
-            ),
-            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_SESSION,
-                CONSUMER_GROUP,
-                messagingConfig,
-            ),
-            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_SESSION,
-                CONSUMER_GROUP,
-                messagingConfig,
-            ),
-            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_SESSION,
-                CONSUMER_GROUP,
-                messagingConfig,
-            ),
+            )
         )
         .clientFactories(
             messagingClientFactoryFactory.createMessageBusClientFactory(
@@ -159,7 +134,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         )
         .messageProcessor(messageProcessor)
         .messageRouterFactory(createMessageRouterFactory(messagingConfig))
-        .threads(64) // messagingConfig.getInt(MEDIATOR_PROCESSING_THREAD_POOL_SIZE)
+        .threads(16) // messagingConfig.getInt(MEDIATOR_PROCESSING_THREAD_POOL_SIZE)
         .threadName("flow-event-mediator")
         .stateManager(stateManager)
         .minGroupSize(messagingConfig.getInt(MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT))
