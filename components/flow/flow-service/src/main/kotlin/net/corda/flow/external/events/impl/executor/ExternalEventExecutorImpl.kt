@@ -6,7 +6,6 @@ import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -27,9 +26,6 @@ class ExternalEventExecutorImpl @Activate constructor(
         factoryClass: Class<out ExternalEventFactory<PARAMETERS, RESPONSE, RESUME>>,
         parameters: PARAMETERS
     ): RESUME {
-        check(parameters.javaClass.annotations.any { it is CordaSerializable }) {
-            "Input parameters class must have @CordaSerializable annotation"
-        }
         // `requestId` is a deterministic ID per event which allows us to achieve idempotency by de-duplicating events processing;
         //  A deterministic ID is required so that events replayed from the flow engine won't be reprocessed on the consumer-side.
         val uuid = deterministicUUID(parameters)
