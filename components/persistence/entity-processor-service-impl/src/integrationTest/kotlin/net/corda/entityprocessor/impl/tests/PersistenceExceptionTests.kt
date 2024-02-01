@@ -21,6 +21,7 @@ import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getDogClass
 import net.corda.db.schema.DbSchema
+import net.corda.db.testkit.DbUtils
 import net.corda.entityprocessor.impl.internal.EntityRequestProcessor
 import net.corda.entityprocessor.impl.tests.helpers.assertEventResponseWithoutError
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
@@ -342,7 +343,12 @@ class PersistenceExceptionTests {
 
         val cl = ClassloaderChangeLog(linkedSetOf(vnodeVaultSchema, sandboxedSchema))
         val ds = dbConnectionManager.getDataSource(virtualNodeInfo.vaultDmlConnectionId)
+        val schemaName = dbConnectionManager.getSchemaName(virtualNodeInfo.vaultDmlConnectionId)
         ds.connection.use {
+            if(!DbUtils.isInMemory) {
+                it.prepareStatement("SET search_path TO $schemaName;").execute()
+                it.commit()
+            }
             lbm.updateDb(it, cl)
         }
     }

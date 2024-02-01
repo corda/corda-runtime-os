@@ -4,15 +4,18 @@ package net.corda.crypto.service.impl.bus
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.KeyRotationKeyType
 import net.corda.crypto.core.KeyRotationMetadataValues
 import net.corda.crypto.core.KeyRotationRecordType
 import net.corda.crypto.core.KeyRotationStatus
 import net.corda.crypto.core.getKeyRotationStatusRecordKey
 import net.corda.crypto.persistence.WrappingKeyInfo
+import net.corda.crypto.softhsm.SigningRepositoryFactory
 import net.corda.crypto.softhsm.WrappingRepositoryFactory
 import net.corda.data.crypto.wire.ops.key.rotation.IndividualKeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyType
+import net.corda.data.crypto.wire.ops.key.status.ManagedKeyStatus
 import net.corda.data.crypto.wire.ops.key.status.UnmanagedKeyStatus
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.MetadataFilter
@@ -38,9 +41,10 @@ class CryptoRekeyBusProcessor(
     val cryptoService: CryptoService,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val wrappingRepositoryFactory: WrappingRepositoryFactory,
+    private val signingRepositoryFactory: SigningRepositoryFactory,
     private val rekeyPublisher: Publisher,
     private val stateManagerInit: StateManager?,
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) : DurableProcessor<String, KeyRotationRequest> {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -48,7 +52,8 @@ class CryptoRekeyBusProcessor(
 
     override val keyClass: Class<String> = String::class.java
     override val valueClass = KeyRotationRequest::class.java
-    private val serializer = cordaAvroSerializationFactory.createAvroSerializer<UnmanagedKeyStatus>()
+    private val unmanagedKeyStatusSerializer = cordaAvroSerializationFactory.createAvroSerializer<UnmanagedKeyStatus>()
+    private val managedKeyStatusSerializer = cordaAvroSerializationFactory.createAvroSerializer<ManagedKeyStatus>()
     private val stateManager: StateManager
         get() = checkNotNull(stateManagerInit) {
             "State manager for key rotation is not initialised."
@@ -102,51 +107,18 @@ class CryptoRekeyBusProcessor(
                         }
                     }.flatten()
 
-                    // First update state manager, then publish re-wrap messages, so the state manager db is already populated
-                    val records = mutableListOf<State>()
-
-                    // Group by tenantId/vNode
-                    targetWrappingKeys.groupBy { it.first }.forEach { (tenantId, wrappingKeys) ->
-                        logger.debug("Grouping wrapping keys by vNode/tenantId $tenantId")
-                        val status = UnmanagedKeyStatus(
-                            request.oldParentKeyAlias,
-                            request.newParentKeyAlias,
-                            wrappingKeys.size,
-                            0,
-                            Instant.ofEpochMilli(timestamp)
-                        )
-                        records.add(
-                            State(
-                                // key is set as a unique string to prevent table search in re-wrap bus processor
-                                getKeyRotationStatusRecordKey(request.oldParentKeyAlias, tenantId),
-                                checkNotNull(serializer.serialize(status)),
-                                1,
-                                Metadata(
-                                    mapOf(
-                                        KeyRotationMetadataValues.ROOT_KEY_ALIAS to request.oldParentKeyAlias,
-                                        KeyRotationMetadataValues.TENANT_ID to tenantId,
-                                        KeyRotationMetadataValues.TYPE to KeyRotationRecordType.KEY_ROTATION,
-                                        KeyRotationMetadataValues.STATUS to KeyRotationStatus.IN_PROGRESS,
-                                        STATE_TYPE to status::class.java.name
-                                    )
-                                )
-                            )
-                        )
+                    if (targetWrappingKeys.none()) {
+                        logger.info("No unmanaged keys to rotate for ${request.oldParentKeyAlias}.")
+                        return emptyList()
                     }
 
-                    // Only delete previous key rotation status if we are actually going to rotate something
-                    // If we can't delete previous records, we won't start new key rotation
-                    try {
-                        if (records.isNotEmpty()) deleteStateManagerRecords(request.oldParentKeyAlias)
-                    } catch (e: IllegalStateException) {
-                        logger.error(
-                            "Unable to delete previous key rotation records. " +
-                                "Cannot start new key rotation for ${request.oldParentKeyAlias}."
+                    if (!writeStateForUnmanagedKey(targetWrappingKeys, request, timestamp)) {
+                        logger.warn(
+                            "Could not write initial state when attempting to rotate unmanaged keys for " +
+                                "${request.oldParentKeyAlias}."
                         )
                         return emptyList()
                     }
-                    stateManager.create(records)
-
                     publishIndividualUnmanagedRewrappingRequests(targetWrappingKeys, request)
                 }
 
@@ -164,9 +136,24 @@ class CryptoRekeyBusProcessor(
                         return emptyList()
                     }
 
-                    wrappingRepositoryFactory.create(request.tenantId).use { wrappingRepo ->
-                        publishIndividualManagedRewrappingRequests(wrappingRepo.getAllKeyIds(), request)
+                    val allKeyIdsAndAliases = wrappingRepositoryFactory.create(request.tenantId).use { wrappingRepo ->
+                        wrappingRepo.getAllKeyIdsAndAliases()
                     }
+
+                    if (allKeyIdsAndAliases.isEmpty()) {
+                        logger.info("No managed keys to rotate for ${request.tenantId}.")
+                        return emptyList()
+                    }
+
+                    if (!writeStateForManagedKey(allKeyIdsAndAliases, request.tenantId, request, timestamp)) {
+                        logger.warn("Could not write initial state when attempting to rotate managed keys for ${request.tenantId}.")
+                        return emptyList()
+                    }
+
+                    publishIndividualManagedRewrappingRequests(
+                        allKeyIdsAndAliases.map { it.first }.toSet(),
+                        request
+                    )
                 }
 
                 else -> logger.info("Invalid KeyRotationRequest message, ignoring.")
@@ -174,6 +161,135 @@ class CryptoRekeyBusProcessor(
         }
 
         return emptyList()
+    }
+
+    /**
+     * @return false if there was a problem writing state which should abort key rotation
+     */
+    private fun writeStateForManagedKey(
+        allKeyIdsAndAliases: Set<Pair<UUID, String>>,
+        tenantId: String,
+        request: KeyRotationRequest,
+        timestamp: Long
+    ): Boolean {
+        val records = allKeyIdsAndAliases.map {
+            val totalNumberOfKeys = signingRepositoryFactory.getInstance(tenantId).use { signingRepository ->
+                signingRepository.getKeyMaterials(it.first).size
+            }
+
+            val wrappingKeyAlias = it.second
+            val status = ManagedKeyStatus(
+                wrappingKeyAlias,
+                totalNumberOfKeys,
+                0,
+                Instant.ofEpochMilli(timestamp)
+            )
+
+            State(
+                getKeyRotationStatusRecordKey(wrappingKeyAlias, request.tenantId),
+                checkNotNull(managedKeyStatusSerializer.serialize(status)),
+                1,
+                Metadata(
+                    mapOf(
+                        KeyRotationMetadataValues.TENANT_ID to request.tenantId,
+                        KeyRotationMetadataValues.STATUS_TYPE to KeyRotationRecordType.KEY_ROTATION,
+                        KeyRotationMetadataValues.STATUS to KeyRotationStatus.IN_PROGRESS,
+                        KeyRotationMetadataValues.KEY_TYPE to KeyRotationKeyType.MANAGED,
+                        STATE_TYPE to status::class.java.name
+                    )
+                )
+            )
+        }
+
+        // Only delete previous key rotation status if we are actually going to rotate something
+        // If we can't delete previous records, we won't start new key rotation
+        if (records.isNotEmpty()) {
+            if (!deleteStateManagerRecords(
+                    listOf(
+                        MetadataFilter(
+                            KeyRotationMetadataValues.TENANT_ID,
+                            Operation.Equals,
+                            request.tenantId
+                        ),
+                        MetadataFilter(
+                            KeyRotationMetadataValues.KEY_TYPE,
+                            Operation.Equals,
+                            KeyRotationKeyType.MANAGED
+                        )
+                    ), "tenantId ${request.tenantId}"
+                )
+            ) {
+                return false
+            }
+            stateManager.create(records)
+        }
+        return true
+    }
+
+    /**
+     * @return false if there was a problem writing state which should abort key rotation
+     */
+    private fun writeStateForUnmanagedKey(
+        targetWrappingKeys: Sequence<Pair<String, WrappingKeyInfo>>,
+        request: KeyRotationRequest,
+        timestamp: Long
+    ): Boolean {
+        // First update state manager, then publish re-wrap messages, so the state manager db is already populated
+        val records = mutableListOf<State>()
+
+        // Group by tenantId/vNode
+        targetWrappingKeys.groupBy { it.first }.forEach { (tenantId, wrappingKeys) ->
+            logger.debug("Grouping wrapping keys by vNode/tenantId $tenantId")
+            val status = UnmanagedKeyStatus(
+                request.oldParentKeyAlias,
+                request.newParentKeyAlias,
+                tenantId,
+                wrappingKeys.size,
+                0,
+                Instant.ofEpochMilli(timestamp)
+            )
+            records.add(
+                State(
+                    // key is set as a unique string to prevent table search in re-wrap bus processor
+                    getKeyRotationStatusRecordKey(request.oldParentKeyAlias, tenantId),
+                    checkNotNull(unmanagedKeyStatusSerializer.serialize(status)),
+                    1,
+                    Metadata(
+                        mapOf(
+                            KeyRotationMetadataValues.ROOT_KEY_ALIAS to request.oldParentKeyAlias,
+                            KeyRotationMetadataValues.STATUS_TYPE to KeyRotationRecordType.KEY_ROTATION,
+                            KeyRotationMetadataValues.STATUS to KeyRotationStatus.IN_PROGRESS,
+                            KeyRotationMetadataValues.KEY_TYPE to KeyRotationKeyType.UNMANAGED,
+                            STATE_TYPE to status::class.java.name
+                        )
+                    )
+                )
+            )
+        }
+
+        // Only delete previous key rotation status if we are actually going to rotate something
+        // If we can't delete previous records, we won't start new key rotation
+        if (records.isNotEmpty()) {
+            if (!deleteStateManagerRecords(
+                    listOf(
+                        MetadataFilter(
+                            KeyRotationMetadataValues.ROOT_KEY_ALIAS,
+                            Operation.Equals,
+                            request.oldParentKeyAlias
+                        ),
+                        MetadataFilter(
+                            KeyRotationMetadataValues.KEY_TYPE,
+                            Operation.Equals,
+                            KeyRotationKeyType.UNMANAGED
+                        )
+                    ), "rootKeyAlias ${request.oldParentKeyAlias}"
+                )
+            ) {
+                return false
+            }
+            stateManager.create(records)
+        }
+        return true
     }
 
     private fun publishIndividualUnmanagedRewrappingRequests(
@@ -230,7 +346,11 @@ class CryptoRekeyBusProcessor(
         // for the equivalent method.
         stateManager.findByMetadataMatchingAll(
             listOf(
-                MetadataFilter(KeyRotationMetadataValues.TYPE, Operation.Equals, KeyRotationRecordType.KEY_ROTATION)
+                MetadataFilter(
+                    KeyRotationMetadataValues.STATUS_TYPE,
+                    Operation.Equals,
+                    KeyRotationRecordType.KEY_ROTATION
+                )
             )
         ).forEach {
             if (it.value.metadata[KeyRotationMetadataValues.STATUS] != KeyRotationStatus.DONE) return false
@@ -238,28 +358,34 @@ class CryptoRekeyBusProcessor(
         return true
     }
 
-    private fun deleteStateManagerRecords(oldParentKeyAlias: String) {
+    /**
+     * @return false if records were failed to be deleted
+     */
+    private fun deleteStateManagerRecords(filters: Collection<MetadataFilter>, reason: String): Boolean {
         var recordsDeleted = false
         var retries = 10
         while (!recordsDeleted) {
-            if (retries == 0) throw IllegalStateException("Cannot delete previous key rotation records. Cannot proceed with key rotation.")
+            if (retries == 0) return false
             val toDelete = stateManager.findByMetadataMatchingAll(
-                listOf(
-                    MetadataFilter(KeyRotationMetadataValues.ROOT_KEY_ALIAS, Operation.Equals, oldParentKeyAlias),
-                    MetadataFilter(KeyRotationMetadataValues.TYPE, Operation.Equals, KeyRotationRecordType.KEY_ROTATION)
-                )
+                filters +
+                    MetadataFilter(
+                        KeyRotationMetadataValues.STATUS_TYPE,
+                        Operation.Equals,
+                        KeyRotationRecordType.KEY_ROTATION
+                    )
             )
-            logger.info("Deleting following records ${toDelete.keys} for previous key rotation for rootKeyAlias $oldParentKeyAlias.")
+            logger.info("Deleting following records ${toDelete.keys} for previous key rotation for ${reason}.")
             val failedToDelete = stateManager.delete(toDelete.values)
             if (failedToDelete.isNotEmpty()) {
-                logger.warn(
+                logger.info(
                     "Failed to delete following states " +
-                        "${failedToDelete.keys} from the state manager for rootKeyAlias $oldParentKeyAlias, retrying."
+                        "${failedToDelete.keys} from the state manager for ${reason}, retrying."
                 )
                 retries--
             } else {
                 recordsDeleted = true
             }
         }
+        return true
     }
 }

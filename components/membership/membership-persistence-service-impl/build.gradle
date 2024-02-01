@@ -52,7 +52,7 @@ dependencies {
     integrationTestImplementation project(':libs:layered-property-map')
     integrationTestImplementation project(':libs:messaging:topic-admin')
     integrationTestImplementation project(':testing:message-patterns')
-    integrationTestImplementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+    integrationTestImplementation libs.kafka.client
 
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
