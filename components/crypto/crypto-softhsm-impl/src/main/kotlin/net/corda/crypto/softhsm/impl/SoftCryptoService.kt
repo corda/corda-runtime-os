@@ -401,7 +401,7 @@ open class SoftCryptoService(
                 } catch (ex: Exception) {
                     throw IllegalStateException(
                         "Could not decrypt wrapping key with alias: ${wrappingKeyInfo.alias} with parent key: " +
-                            "${wrappingKeyInfo.parentKeyAlias} because ${ex.message}, so could not be added to cache."
+                            "${wrappingKeyInfo.parentKeyAlias} because ${ex.message}."
                     )
                 }
             } ?: run {
