@@ -12,7 +12,7 @@ class QueriesTasksTest : FunctionalBaseTest() {
     }
 
     @Test
-    fun listVNodesFailsNoConnection() {
+    fun listVNodesFailsConnectionRefused() {
         appendCordaRuntimeGradlePluginExtension()
         val result = executeAndFailWithRunner(LISTVNODES_TASK_NAME)
         assertTrue(result.output.contains("Connect to $restHostnameWithPort"))
@@ -20,7 +20,7 @@ class QueriesTasksTest : FunctionalBaseTest() {
     }
 
     @Test
-    fun listCPIsFailsNoConnection() {
+    fun listCPIsFailsConnectionRefused() {
         appendCordaRuntimeGradlePluginExtension()
         val result = executeAndFailWithRunner(LISTCPIS_TASK_NAME)
         assertTrue(result.output.contains("Connect to $restHostnameWithPort"))

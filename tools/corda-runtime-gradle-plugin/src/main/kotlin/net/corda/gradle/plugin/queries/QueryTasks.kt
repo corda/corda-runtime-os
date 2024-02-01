@@ -10,8 +10,9 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
 import javax.inject.Inject
 
-const val CLUSTER_QUERY_GROUP = "corda-runtime-plugin-queries"
+// Tasks related to querying a running Corda instance
 
+const val CLUSTER_QUERY_GROUP = "corda-runtime-plugin-queries"
 const val LISTVNODES_TASK_NAME = "listVNodes"
 const val LISTCPIS_TASK_NAME = "listCPIs"
 
@@ -19,9 +20,7 @@ const val LISTCPIS_TASK_NAME = "listCPIs"
  * Creates the gradle helper tasks in the corda-runtime-plugin-queries group
  */
 fun createCordaClusterQueryTasks(project: Project, pluginConfig: PluginConfiguration) {
-
     project.afterEvaluate {
-
         project.tasks.create(LISTVNODES_TASK_NAME, ListVNodes::class.java) {
             it.group = CLUSTER_QUERY_GROUP
             it.pluginConfig.set(pluginConfig)
@@ -40,7 +39,7 @@ open class ListVNodes @Inject constructor(objects: ObjectFactory): DefaultTask()
     @TaskAction
     fun listVNodes() {
         val pc = ProjectContext(project, pluginConfig.get())
-        QueriesHelper(pc).listVNodes()
+        QueryTasksImpl(pc).listVNodes()
     }
 }
 
@@ -50,6 +49,6 @@ open class ListCPIs @Inject constructor(objects: ObjectFactory): DefaultTask() {
     @TaskAction
     fun listVNodes() {
         val pc = ProjectContext(project, pluginConfig.get())
-        QueriesHelper(pc).listCPIs()
+        QueryTasksImpl(pc).listCPIs()
     }
 }

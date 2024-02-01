@@ -8,7 +8,7 @@ import net.corda.gradle.plugin.getUploadedCpis
 /**
  * Provides the functionality to query the corda cluster used in the corda-runtime-plugin-queries group of tasks
  */
-class QueriesHelper(val pc: ProjectContext) {
+class QueryTasksImpl(val pc: ProjectContext) {
 
     init {
         Unirest.config().verifySsl(false)
