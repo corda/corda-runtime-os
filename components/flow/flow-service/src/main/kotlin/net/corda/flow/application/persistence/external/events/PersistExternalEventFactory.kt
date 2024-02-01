@@ -5,7 +5,6 @@ import net.corda.flow.application.persistence.toByteBuffers
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.v5.base.annotations.CordaSerializable
 import org.osgi.service.component.annotations.Component
-import java.nio.ByteBuffer
 
 @Component(service = [ExternalEventFactory::class])
 class PersistExternalEventFactory : AbstractPersistenceExternalEventFactory<PersistParameters>() {

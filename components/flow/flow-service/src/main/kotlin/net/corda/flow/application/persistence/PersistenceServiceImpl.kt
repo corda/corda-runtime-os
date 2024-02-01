@@ -1,6 +1,5 @@
 package net.corda.flow.application.persistence
 
-import java.nio.ByteBuffer
 import net.corda.flow.application.persistence.external.events.FindExternalEventFactory
 import net.corda.flow.application.persistence.external.events.FindParameters
 import net.corda.flow.application.persistence.external.events.MergeExternalEventFactory
