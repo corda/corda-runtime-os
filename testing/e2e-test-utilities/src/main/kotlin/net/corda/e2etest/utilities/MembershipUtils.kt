@@ -347,9 +347,9 @@ fun ClusterInfo.getRegistrationContext(
             failMessage("Registration was not completed for $holdingIdentityShortHash")
         }
         val context = if (registrationId != null) {
-            response?.toJson()?.get("memberInfoSubmitted")?.textValue()
+            response?.toJson()?.get("memberInfoSubmitted")?.get("data")?.textValue()
         } else {
-            response?.toJson()?.firstOrNull()?.get("memberInfoSubmitted")?.textValue()
+            response?.toJson()?.firstOrNull()?.get("memberInfoSubmitted")?.get("data")?.textValue()
         }
         val contextMap = JSONObject(context)
         return@cluster contextMap.toMap()
