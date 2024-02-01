@@ -380,28 +380,40 @@ open class SoftCryptoService(
         tenantId: String,
         alias: String,
         throwOnFailure: Boolean
-    ) = wrappingRepositoryFactory.create(tenantId).use { it.findKey(alias) }?.let { wrappingKeyInfo ->
-        check(wrappingKeyInfo.encodingVersion == WRAPPING_KEY_ENCODING_VERSION) {
-            "Unknown wrapping key encoding. Expected to be $WRAPPING_KEY_ENCODING_VERSION"
-        }
-        unmanagedWrappingKeys.get(wrappingKeyInfo.parentKeyAlias)?.let { parentKey ->
-            // TODO remove this restriction? Different levels of wrapping key could sensibly use different algorithms
-            require(parentKey.algorithm == wrappingKeyInfo.algorithmName) {
-                "Expected algorithm is ${parentKey.algorithm} but was ${wrappingKeyInfo.algorithmName}"
+    ) = wrappingRepositoryFactory.create(tenantId)
+        .use {
+            recoverable("getWrappingKeyFromRepository findKey") {
+                it.findKey(alias)
             }
-            parentKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial).also {
-                wrappingKeyCache?.put(alias, it)
+        }?.let { wrappingKeyInfo ->
+            check(wrappingKeyInfo.encodingVersion == WRAPPING_KEY_ENCODING_VERSION) {
+                "Unknown wrapping key encoding. Expected to be $WRAPPING_KEY_ENCODING_VERSION"
+            }
+            unmanagedWrappingKeys.get(wrappingKeyInfo.parentKeyAlias)?.let { parentKey ->
+                // TODO remove this restriction? Different levels of wrapping key could sensibly use different algorithms
+                check(parentKey.algorithm == wrappingKeyInfo.algorithmName) {
+                    "Expected algorithm is ${parentKey.algorithm} but was ${wrappingKeyInfo.algorithmName}"
+                }
+                try {
+                    parentKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial).also {
+                        wrappingKeyCache?.put(alias, it)
+                    }
+                } catch (ex: Exception) {
+                    throw IllegalStateException(
+                        "Could not decrypt wrapping key with alias: ${wrappingKeyInfo.alias} with parent key: " +
+                            "${wrappingKeyInfo.parentKeyAlias} because ${ex.message}, so could not be added to cache."
+                    )
+                }
+            } ?: run {
+                val msg = "Unknown parent key ${wrappingKeyInfo.parentKeyAlias} for $alias"
+                if (throwOnFailure) {
+                    throw IllegalStateException(msg)
+                } else {
+                    logger.info(msg)
+                    null
+                }
             }
         } ?: run {
-            val msg = "Unknown parent key ${wrappingKeyInfo.parentKeyAlias} for $alias"
-            if (throwOnFailure) {
-                throw IllegalStateException(msg)
-            } else {
-                logger.info(msg)
-                null
-            }
-        }
-    } ?: run {
         val msg = "Wrapping key with alias $alias not found"
         if (throwOnFailure) {
             throw IllegalStateException(msg)
