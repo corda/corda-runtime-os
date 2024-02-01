@@ -110,20 +110,21 @@ class SandboxGroupContextComponentImpl @Activate constructor(
             is StartEvent -> onStart(coordinator)
             is StopEvent -> onStop()
             is RegistrationStatusChangeEvent -> onRegistrationChangeEvent(event, coordinator)
-            is ConfigChangedEvent -> onConfigChangeEvent(event, coordinator)
+            is ConfigChangedEvent -> onConfigChangeEvent(coordinator)
         }
     }
 
-    private fun onConfigChangeEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        val config = event.config.getConfig(ConfigKeys.SANDBOX_CONFIG)
+    @Suppress("UnusedParameters")
+    private fun onConfigChangeEvent( coordinator: LifecycleCoordinator) {
+        //val config = event.config.getConfig(ConfigKeys.SANDBOX_CONFIG)
 
         SandboxGroupType.values().forEach {
-            val cacheSize = try {
+            val cacheSize = 1L /* try {
                 config.getConfig(it.name.lowercase()).getLong(ConfigKeys.SANDBOX_CACHE_SIZE)
             } catch (e: ConfigException.Missing) {
                 SANDBOX_CACHE_SIZE_DEFAULT
             }
-
+*/
             logger.info("Re-creating Sandbox ${it.name} cache with size: {}", cacheSize)
             resizeCache(it, cacheSize)
         }

@@ -45,10 +45,6 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     private val eventProcessor: EventProcessor<K, S, E>,
     private val stateManagerHelper: StateManagerHelper<S>
 ) {
-    private companion object {
-        private const val EVENT_PROCESSING_TIMEOUT_MILLIS = 120000L // 120 seconds
-    }
-
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.name}")
 
     private val metrics = EventMediatorMetrics(config.name)
@@ -123,8 +119,14 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                     Pair(future, group)
                 }.map { (future, group) ->
                     try {
-                        future.getOrThrow(config.processorTimeout)
+                        val start = System.nanoTime()
+                        future.getOrThrow(Duration.ofMillis(config.processorTimeout)).also {
+                            val end = System.nanoTime()
+                            val rt = end-start
+                            log.info("processEvents took ${rt/1.0e6}ms")
+                        }
                     } catch (e: TimeoutException) {
+                        log.error("timeout in mediator $group")
                         group.mapValues { (key, input) ->
                             val oldState = input.state
                             val state = stateManagerHelper.failStateProcessing(

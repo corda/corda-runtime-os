@@ -18,13 +18,13 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 
 internal class SandboxGroupContextCacheImpl private constructor(
-    override val capacities: Map<SandboxGroupType, Long>,
+    override val capacities: MutableMap<SandboxGroupType, Long>,
     private val evictionListeners: Map<SandboxGroupType, MutableSet<EvictionListener>>,
     private val expiryQueue: ReferenceQueue<SandboxGroupContextWrapper>,
     private val toBeClosed: MutableSet<ToBeClosed>
 ) : SandboxGroupContextCache {
     constructor(capacities: Long) : this(
-        capacities = SandboxGroupType.values().associateWith { capacities },
+        capacities = SandboxGroupType.values().associateWith { capacities }.toMutableMap(),
         evictionListeners = SandboxGroupType.values().associateWith { linkedSetOf<EvictionListener>() },
         expiryQueue = ReferenceQueue<SandboxGroupContextWrapper>(),
         toBeClosed = ConcurrentHashMap.newKeySet()
@@ -88,30 +88,36 @@ internal class SandboxGroupContextCacheImpl private constructor(
     private fun buildSandboxGroupTypeCache(
         type: SandboxGroupType,
         capacity: Long
-    ): Cache<VirtualNodeContext, SandboxGroupContextWrapper> = CacheFactoryImpl().buildNonAsync(
-        "sandbox-cache-${type}",
-        Caffeine.newBuilder()
-            .maximumSize(capacity)
-            // Add the wrapped [CloseableSandboxGroupContext] to the internal [expiryQueue],
-            // so it is only closed once it's safe to do so (i.e. wrapping [SandboxGroupContextWrapper]
-            // is not referenced anymore).
-            .removalListener { key, context, cause ->
-                purgeExpiryQueue()
-                key ?: return@removalListener
-                (context?.wrappedSandboxGroupContext as? AutoCloseable)?.also { autoCloseable ->
-                    toBeClosed += ToBeClosed(key, context.completion, autoCloseable, context, expiryQueue)
-                    onEviction(key)
-                }
+    ): Cache<VirtualNodeContext, SandboxGroupContextWrapper>  {
+        logger.info("Set sandbox cache capacity to $capacity")
 
-                logger.info(
-                    "Evicting {} sandbox for {} holdingId {} [{}]",
-                    key.sandboxGroupType,
-                    key.holdingIdentity.x500Name,
-                    key.holdingIdentity.shortHash,
-                    cause.name
-                )
-            }
-    )
+        return CacheFactoryImpl().buildNonAsync(
+            "sandbox-cache-${type}",
+            Caffeine.newBuilder()
+                .maximumSize(capacity)
+                // Add the wrapped [CloseableSandboxGroupContext] to the internal [expiryQueue],
+                // so it is only closed once it's safe to do so (i.e. wrapping [SandboxGroupContextWrapper]
+                // is not referenced anymore).
+                .removalListener { key, context, cause ->
+                    purgeExpiryQueue()
+                    key ?: return@removalListener
+                    (context?.wrappedSandboxGroupContext as? AutoCloseable)?.also { autoCloseable ->
+                        toBeClosed += ToBeClosed(key, context.completion, autoCloseable, context, expiryQueue)
+                        onEviction(key)
+                    }
+
+                    logger.info(
+                        "Evicting {} sandbox for {} holdingId {} [{}]",
+                        key.sandboxGroupType,
+                        key.holdingIdentity.x500Name,
+                        key.holdingIdentity.shortHash,
+                        cause.name
+                    )
+                })
+
+    }
+
+
 
     /**
      * Creates the cache for the given [sandboxGroupType] with [newCapacity] maximum size, if not created yet.
@@ -125,6 +131,7 @@ internal class SandboxGroupContextCacheImpl private constructor(
         sandboxCache.policy().eviction().ifPresent {
             it.maximum = newCapacity
         }
+        capacities[sandboxGroupType] = newCapacity
     }
 
     /**
@@ -146,6 +153,7 @@ internal class SandboxGroupContextCacheImpl private constructor(
         // Close the wrapped [CloseableSandboxGroupContext] for every [SandboxGroupContextWrapper]
         // that has already been garbage-collected.
         while (true) {
+            logger.info("to be purged queue size is ${toBeClosed.size}")
             val head = expiryQueue.poll() as? ToBeClosed ?: break
             val vnc = head.cacheKey
 
