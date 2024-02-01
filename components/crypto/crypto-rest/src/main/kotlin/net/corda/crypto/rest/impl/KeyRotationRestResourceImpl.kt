@@ -308,7 +308,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
     }
 
     private fun getLatestTimestamp(records: Collection<State>): Instant {
-        return records.sortedWith(compareBy { it.modifiedTime }).first().modifiedTime
+        return records.maxBy { it.modifiedTime }.modifiedTime
     }
 
     private fun hasPreviousRotationFinished(): Boolean {
