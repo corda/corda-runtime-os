@@ -24,6 +24,9 @@ open class PluginConfiguration @Inject constructor(objects: ObjectFactory) {
     val combinedWorkerVersion: Property<String> = objects.property(String::class.java).convention("5.2.0.0")
 
     @get:Input
+    val notaryVersion: Property<String> = objects.property(String::class.java).convention("5.2.0.0")
+
+    @get:Input
     val postgresJdbcVersion: Property<String> = objects.property(String::class.java).convention("42.7.1")
 
     @get:Input

@@ -8,6 +8,7 @@ Add the following extension properties
 ```groovy
     cordaRuntimeGradlePlugin {
         combinedWorkerVersion = "5.2.0.0"
+        notaryVersion = "5.2.0.0"
         postgresJdbcVersion = "42.7.1"
         notaryCpiName = "NotaryServer"
         corDappCpiName = "MyCorDapp"
