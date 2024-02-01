@@ -114,6 +114,7 @@ class PermissionUserManagerImplTest {
         rbacConfig = mock()
         whenever(rbacConfig.getInt(ConfigKeys.RBAC_USER_PASSWORD_CHANGE_EXPIRY)).thenReturn(30)
         whenever(rbacConfig.getInt(ConfigKeys.RBAC_ADMIN_PASSWORD_CHANGE_EXPIRY)).thenReturn(7)
+        whenever(rbacConfig.getInt(ConfigKeys.RBAC_PASSWORD_LENGTH_LIMIT)).thenReturn(100)
 
         manager = PermissionUserManagerImpl(
             restConfig, rbacConfig, rpcSender, permissionManagementCacheRef,
@@ -250,7 +251,7 @@ class PermissionUserManagerImplTest {
             manager.changeUserPasswordSelf(changeUserPasswordDto)
         }
 
-        assertEquals("New password must be different from current one.", exception.message)
+        assertEquals("New password must be different from the current one.", exception.message)
     }
 
     @Test
@@ -262,7 +263,19 @@ class PermissionUserManagerImplTest {
             manager.changeUserPasswordOther(changeUserPasswordDto)
         }
 
-        assertEquals("New password must be different from current one.", exception.message)
+        assertEquals("New password must be different from the current one.", exception.message)
+    }
+
+    @Test
+    fun `changeUserPasswordOther fails if the new password is too long`() {
+        whenever(permissionManagementCache.getUser("loginname123")).thenReturn(avroUser)
+
+        val veryLongString = "abc".repeat(1000)
+        val exception = assertThrows<IllegalArgumentException> {
+            manager.changeUserPasswordOther(changeUserPasswordDto.copy(newPassword = veryLongString))
+        }
+
+        assertEquals("Password exceed current length limit of 100.", exception.message)
     }
 
     @Test

@@ -109,8 +109,12 @@ class UserEndpointImpl @Activate constructor(
     override fun createUser(createUserType: CreateUserType): ResponseEntity<UserResponseType> {
         val principal = getRestThreadLocalContext()
 
-        val createUserResult = withPermissionManager(permissionManagementService.permissionManager, logger) {
-            createUser(createUserType.convertToDto(principal))
+        val createUserResult = try {
+            withPermissionManager(permissionManagementService.permissionManager, logger) {
+                createUser(createUserType.convertToDto(principal))
+            }
+        } catch (e: IllegalArgumentException) {
+            throw InvalidInputDataException(e.message ?: "Invalid argument in request.")
         }
 
         return ResponseEntity.created(createUserResult.convertToEndpointType())
