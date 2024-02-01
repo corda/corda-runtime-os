@@ -6065,34 +6065,118 @@
         "type" : "object",
         "properties" : {
           "cryptoDdlConnection" : {
-            "type" : "string",
+            "description" : "Can be any value - string, number, boolean, array or object.",
             "nullable" : true,
-            "example" : "string"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
+            "anyOf" : [ {
+              "type" : "string"
+            }, {
+              "type" : "number"
+            }, {
+              "type" : "integer",
+              "format" : "int32"
+            }, {
+              "type" : "boolean"
+            }, {
+              "type" : "array"
+            }, {
+              "type" : "object"
+            } ]
           },
           "cryptoDmlConnection" : {
-            "type" : "string",
+            "description" : "Can be any value - string, number, boolean, array or object.",
             "nullable" : true,
-            "example" : "string"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
+            "anyOf" : [ {
+              "type" : "string"
+            }, {
+              "type" : "number"
+            }, {
+              "type" : "integer",
+              "format" : "int32"
+            }, {
+              "type" : "boolean"
+            }, {
+              "type" : "array"
+            }, {
+              "type" : "object"
+            } ]
           },
           "uniquenessDdlConnection" : {
-            "type" : "string",
+            "description" : "Can be any value - string, number, boolean, array or object.",
             "nullable" : true,
-            "example" : "string"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
+            "anyOf" : [ {
+              "type" : "string"
+            }, {
+              "type" : "number"
+            }, {
+              "type" : "integer",
+              "format" : "int32"
+            }, {
+              "type" : "boolean"
+            }, {
+              "type" : "array"
+            }, {
+              "type" : "object"
+            } ]
           },
           "uniquenessDmlConnection" : {
-            "type" : "string",
+            "description" : "Can be any value - string, number, boolean, array or object.",
             "nullable" : true,
-            "example" : "string"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
+            "anyOf" : [ {
+              "type" : "string"
+            }, {
+              "type" : "number"
+            }, {
+              "type" : "integer",
+              "format" : "int32"
+            }, {
+              "type" : "boolean"
+            }, {
+              "type" : "array"
+            }, {
+              "type" : "object"
+            } ]
           },
           "vaultDdlConnection" : {
-            "type" : "string",
+            "description" : "Can be any value - string, number, boolean, array or object.",
             "nullable" : true,
-            "example" : "string"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
+            "anyOf" : [ {
+              "type" : "string"
+            }, {
+              "type" : "number"
+            }, {
+              "type" : "integer",
+              "format" : "int32"
+            }, {
+              "type" : "boolean"
+            }, {
+              "type" : "array"
+            }, {
+              "type" : "object"
+            } ]
           },
           "vaultDmlConnection" : {
-            "type" : "string",
+            "description" : "Can be any value - string, number, boolean, array or object.",
             "nullable" : true,
-            "example" : "string"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
+            "anyOf" : [ {
+              "type" : "string"
+            }, {
+              "type" : "number"
+            }, {
+              "type" : "integer",
+              "format" : "int32"
+            }, {
+              "type" : "boolean"
+            }, {
+              "type" : "array"
+            }, {
+              "type" : "object"
+            } ]
           }
         },
         "description" : "Details of the virtual node to be updated"
