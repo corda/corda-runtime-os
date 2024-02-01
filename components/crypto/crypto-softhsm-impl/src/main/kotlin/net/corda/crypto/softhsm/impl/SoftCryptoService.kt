@@ -418,7 +418,7 @@ open class SoftCryptoService(
         if (throwOnFailure) {
             throw IllegalStateException(msg)
         } else {
-            logger.info(msg)
+            logger.debug(msg)
             null
         }
     }
