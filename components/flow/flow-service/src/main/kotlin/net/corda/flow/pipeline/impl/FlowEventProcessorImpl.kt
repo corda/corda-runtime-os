@@ -92,7 +92,7 @@ class FlowEventProcessorImpl(
         }
 
         val inputEventHash = getInputEventHash(event)
-        if (inputEventHash != null && !isSyncResponse(event)) {
+        if (!isSyncResponse(event)) {
             flowEngineReplayService.getReplayEvents(inputEventHash, state?.value)?.let { replays ->
                 log.debug { "Detected input event that has been processed previously for hash :$inputEventHash" }
                 return StateAndEventProcessor.Response(state, replays)
@@ -178,7 +178,8 @@ class FlowEventProcessorImpl(
     }
 
     private fun getInputEventHash(event: Record<String, FlowEvent>) =
-        event.headers.find { it.first == INPUT_HASH_HEADER }?.second
+        event.headers.find { it.first == INPUT_HASH_HEADER }?.second ?: throw IllegalStateException("Record with key ${event.key} is " +
+                "missing expected record header '$INPUT_HASH_HEADER'")
 
     private fun isSyncResponse(event: Record<String, FlowEvent>) =
         event.headers.find { it.first == SYNC_RESPONSE_HEADER }?.second == "true"
