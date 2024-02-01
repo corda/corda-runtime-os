@@ -36,6 +36,8 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_ASYNC_REQUEST_TOPIC
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
 import net.corda.schema.configuration.VirtualNodeDatasourceConfig
+import net.corda.utilities.PathProvider
+import net.corda.utilities.TempPathProvider
 import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.write.db.impl.VirtualNodesDbAdmin
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationHandler
@@ -68,10 +70,12 @@ internal class VirtualNodeWriterFactory(
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     private val cpkDbChangeLogRepository: CpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository(),
+    private val tempPathProvider: PathProvider = TempPathProvider(),
 ) {
 
     companion object {
         private const val ASYNC_OPERATION_GROUP = "virtual.node.async.operation.group"
+        private const val OFFLINE_DB_DIR = "offline-db"
     }
 
     /**
@@ -84,10 +88,11 @@ internal class VirtualNodeWriterFactory(
     fun create(
         messagingConfig: SmartConfig,
         externalMsgConfig: SmartConfig,
-        vnodeDatasourceConfig: SmartConfig
+        vnodeDatasourceConfig: SmartConfig,
+        bootConfig: SmartConfig,
     ): VirtualNodeWriter {
         val publisher = createPublisher(messagingConfig)
-        val rpcSubscription = createRPCSubscription(messagingConfig, publisher)
+        val rpcSubscription = createRPCSubscription(messagingConfig, bootConfig, publisher)
         val asyncOperationSubscription =
             createAsyncOperationSubscription(messagingConfig, externalMsgConfig, vnodeDatasourceConfig, publisher)
         return VirtualNodeWriter(rpcSubscription, asyncOperationSubscription, publisher)
@@ -210,6 +215,7 @@ internal class VirtualNodeWriterFactory(
      */
     private fun createRPCSubscription(
         messagingConfig: SmartConfig,
+        bootConfig: SmartConfig,
         vNodePublisher: Publisher,
     ): RPCSubscription<VirtualNodeManagementRequest, VirtualNodeManagementResponse> {
         val rpcConfig = RPCConfig(
@@ -229,7 +235,9 @@ internal class VirtualNodeWriterFactory(
         val virtualNodeOperationStatusHandler =
             VirtualNodeOperationStatusHandler(dbConnectionManager, virtualNodeRepository)
 
+        val offlineDbDir = tempPathProvider.getOrCreate(bootConfig, OFFLINE_DB_DIR)
         val virtualNodeSchemaHandler = VirtualNodeSchemaHandler(
+            offlineDbDir,
             dbConnectionManager,
             schemaMigrator,
             virtualNodeRepository

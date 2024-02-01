@@ -17,12 +17,14 @@ import net.corda.orm.utils.transaction
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbException
 import java.io.StringWriter
+import java.nio.file.Path
 import java.sql.Connection
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
 
 internal class VirtualNodeSchemaHandler(
+    private val offlineDbDir: Path,
     private val dbConnectionManager: DbConnectionManager,
     private val schemaMigrator: LiquibaseSchemaMigrator,
     private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl(),
@@ -33,50 +35,48 @@ internal class VirtualNodeSchemaHandler(
         virtualNodeSchemaRequest: VirtualNodeSchemaRequest,
         respFuture: CompletableFuture<VirtualNodeManagementResponse>
     ) {
-        dbConnectionManager.getClusterDataSource().connection.use { connection ->
-            val sql = when (virtualNodeSchemaRequest.dbType) {
-                DbTypes.CRYPTO, DbTypes.UNIQUENESS -> {
-                    val changelog = getChangelog(virtualNodeSchemaRequest.dbType)
-                    buildSqlWithStringWriter(connection, changelog)
-                }
-
-                DbTypes.VAULT -> {
-                    if (virtualNodeSchemaRequest.virtualNodeShortHash == null && virtualNodeSchemaRequest.cpiChecksum != null) {
-                        val changeLog = getChangelog(virtualNodeSchemaRequest.dbType)
-                        dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction { em ->
-                            val cpkChangeLog = getCpkChangelog(em, virtualNodeSchemaRequest.cpiChecksum)
-                            buildSqlWithStringWriter(connection, changeLog) + buildSqlWithStringWriter(
-                                connection, cpkChangeLog
-                            )
-                        }
-                    } else if (virtualNodeSchemaRequest.virtualNodeShortHash != null && virtualNodeSchemaRequest.cpiChecksum != null) {
-                        dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction { em ->
-                            val virtualNodeInfo = virtualNodeRepository.find(
-                                em, ShortHash.parse(virtualNodeSchemaRequest.virtualNodeShortHash)
-                            ) ?: throw VirtualNodeDbException("Unable to fetch virtual node info")
-
-                            val cpkChangeLog = getCpkChangelog(em, virtualNodeSchemaRequest.cpiChecksum)
-                            val connectionVNodeVault =
-                                dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).connection
-                            buildSqlWithStringWriter(
-                                connectionVNodeVault,
-                                cpkChangeLog
-                            )
-                        }
-                    } else {
-                        throw IllegalArgumentException("Illegal argument combination for VirtualNodeSchemaRequest")
-                    }
-                }
-
-                else -> throw IllegalArgumentException("Cannot use dbType that does not exist: ${virtualNodeSchemaRequest.dbType}")
+        val sql = when (virtualNodeSchemaRequest.dbType) {
+            DbTypes.CRYPTO, DbTypes.UNIQUENESS -> {
+                val changelog = getChangelog(virtualNodeSchemaRequest.dbType)
+                buildSqlWithStringWriter(changelog)
             }
-            respFuture.complete(
-                VirtualNodeManagementResponse(
-                    instant,
-                    VirtualNodeSchemaResponse(sql)
-                )
-            )
+
+            DbTypes.VAULT -> {
+                if (virtualNodeSchemaRequest.virtualNodeShortHash == null && virtualNodeSchemaRequest.cpiChecksum != null) {
+                    val changeLog = getChangelog(virtualNodeSchemaRequest.dbType)
+                    dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction { em ->
+                        val cpkChangeLog = getCpkChangelog(em, virtualNodeSchemaRequest.cpiChecksum)
+                        buildSqlWithStringWriter(changeLog) + buildSqlWithStringWriter(
+                            cpkChangeLog
+                        )
+                    }
+                } else if (virtualNodeSchemaRequest.virtualNodeShortHash != null && virtualNodeSchemaRequest.cpiChecksum != null) {
+                    dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction { em ->
+                        val virtualNodeInfo = virtualNodeRepository.find(
+                            em, ShortHash.parse(virtualNodeSchemaRequest.virtualNodeShortHash)
+                        ) ?: throw VirtualNodeDbException("Unable to fetch virtual node info")
+
+                        val cpkChangeLog = getCpkChangelog(em, virtualNodeSchemaRequest.cpiChecksum)
+                        val connectionVNodeVault =
+                            dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).connection
+                        buildSqlWithStringWriter(
+                            cpkChangeLog,
+                            connectionVNodeVault
+                        )
+                    }
+                } else {
+                    throw IllegalArgumentException("Illegal argument combination for VirtualNodeSchemaRequest")
+                }
+            }
+
+            else -> throw IllegalArgumentException("Cannot use dbType that does not exist: ${virtualNodeSchemaRequest.dbType}")
         }
+        respFuture.complete(
+            VirtualNodeManagementResponse(
+                instant,
+                VirtualNodeSchemaResponse(sql)
+            )
+        )
     }
 
     private fun dbTypesToString(dbType: DbTypes): String {
@@ -109,12 +109,20 @@ internal class VirtualNodeSchemaHandler(
     }
 
     private fun buildSqlWithStringWriter(
-        connection: Connection,
-        dbChange: DbChange
+        dbChange: DbChange,
+        connection: Connection? = null
     ): String {
         StringWriter().use { writer ->
-            schemaMigrator.createUpdateSql(connection, dbChange, writer)
-            return writer.toString()
+            if (connection == null) {
+                val offlineDbDirPathString = offlineDbDir.toString()
+                schemaMigrator.createUpdateSqlOffline(dbChange, offlineDbDirPathString, writer)
+            } else {
+                schemaMigrator.createUpdateSql(connection, dbChange, writer)
+            }
+            return writer.toString().replace(
+                "CREATE TABLE databasechangelog",
+                "CREATE TABLE IF NOT EXISTS databasechangelog"
+            )
         }
     }
 }

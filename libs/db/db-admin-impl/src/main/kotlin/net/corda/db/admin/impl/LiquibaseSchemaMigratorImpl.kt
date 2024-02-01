@@ -5,12 +5,14 @@ import liquibase.LabelExpression
 import liquibase.Liquibase
 import liquibase.database.Database
 import liquibase.database.DatabaseFactory
+import liquibase.database.OfflineConnection
 import liquibase.database.jvm.JdbcConnection
 import liquibase.resource.ResourceAccessor
 import net.corda.db.admin.DbChange
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory
+import java.io.File
 import java.io.Writer
 import java.sql.Connection
 import java.util.UUID
@@ -29,6 +31,12 @@ class LiquibaseSchemaMigratorImpl(
             DatabaseFactory
                 .getInstance()
                 .findCorrectDatabaseImplementation(JdbcConnection(connection))
+        },
+    private val databaseFactoryOffline: (url: String, resourceAccessor: ResourceAccessor) -> Database =
+        { url, resourceAccessor ->
+            DatabaseFactory
+                .getInstance()
+                .findCorrectDatabaseImplementation(OfflineConnection(url, resourceAccessor))
         }
 ) : LiquibaseSchemaMigrator {
     companion object {
@@ -69,6 +77,10 @@ class LiquibaseSchemaMigratorImpl(
 
     override fun createUpdateSql(datasource: Connection, dbChange: DbChange, controlTablesSchema: String, sql: Writer) {
         process(datasource, dbChange, sql, controlTablesSchema)
+    }
+
+    override fun createUpdateSqlOffline(dbChange: DbChange, offlineDbDirPathString: String, sql: Writer) {
+        processOffline(dbChange, offlineDbDirPathString, sql)
     }
 
     override fun listUnrunChangeSets(datasource: Connection, dbChange: DbChange): List<String> {
@@ -118,6 +130,29 @@ class LiquibaseSchemaMigratorImpl(
                 lb.update(tag, Contexts(), sql)
             }
             log.info("${database.connection.catalog} DB schema update complete")
+        }
+    }
+
+    private fun processOffline(
+        dbChange: DbChange,
+        offlineDbDirPathString: String,
+        sql: Writer,
+    ) {
+        liquibaseAccessLock.withLock {
+            val offlineChangeLogFileName = offlineDbDirPathString + "/changelog-${UUID.randomUUID()}.xml"
+            val url = "offline:postgresql?changeLogFile=$offlineChangeLogFileName&outputLiquibaseSql=all"
+            val database = databaseFactoryOffline(url, StreamResourceAccessor(offlineChangeLogFileName, dbChange))
+
+            val lb = liquibaseFactory(
+                offlineChangeLogFileName,
+                StreamResourceAccessor(offlineChangeLogFileName, dbChange),
+                database
+            )
+
+            log.info("Retrieving ${database.databaseProductName} DB Schema")
+            lb.update(null, Contexts(), sql)
+
+            File(offlineChangeLogFileName).delete()
         }
     }
 

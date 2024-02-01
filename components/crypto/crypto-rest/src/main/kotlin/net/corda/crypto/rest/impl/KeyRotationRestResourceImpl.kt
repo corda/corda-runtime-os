@@ -195,11 +195,11 @@ class KeyRotationRestResourceImpl @Activate constructor(
         val result = mutableListOf<Pair<String, TenantIdWrappingKeysStatus>>()
         records.forEach {
             val state = it.value
-            val keyRotationStatus = checkNotNull(deserializer.deserialize(state.value))
+            val unmanagedKeyRotationStatus = checkNotNull(deserializer.deserialize(state.value))
             result.add(
-                state.metadata[KeyRotationMetadataValues.TENANT_ID].toString() to TenantIdWrappingKeysStatus(
-                    keyRotationStatus.total,
-                    keyRotationStatus.rotatedKeys
+                unmanagedKeyRotationStatus.tenantId to TenantIdWrappingKeysStatus(
+                    unmanagedKeyRotationStatus.total,
+                    unmanagedKeyRotationStatus.rotatedKeys
                 )
             )
             // Get the latest modified time of all the records
