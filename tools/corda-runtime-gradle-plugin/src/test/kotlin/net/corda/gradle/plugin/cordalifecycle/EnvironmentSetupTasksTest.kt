@@ -2,7 +2,6 @@ package net.corda.gradle.plugin.cordalifecycle
 
 import net.corda.gradle.plugin.FunctionalBaseTest
 import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
 class EnvironmentSetupTasksTest : FunctionalBaseTest() {
@@ -12,11 +11,10 @@ class EnvironmentSetupTasksTest : FunctionalBaseTest() {
     }
 
     @Test
-    @Disabled
     fun shouldDownloadNotaryCPB() {
         appendCordaRuntimeGradlePluginExtension()
-//        executeWithRunner(GET_NOTARY_SERVER_CPB_TASK_NAME)
-//            .task(":$GET_NOTARY_SERVER_CPB_TASK_NAME")!!.assertTaskSucceeded()
+        executeWithRunner(GET_NOTARY_SERVER_CPB_TASK_NAME)
+            .task(":$GET_NOTARY_SERVER_CPB_TASK_NAME")!!.assertTaskSucceeded()
     }
 
     @Test
