@@ -1,5 +1,8 @@
 package net.corda.processors.rest
 
+import net.corda.data.flow.output.FlowStates
+import net.corda.data.rest.ExecuteFlowStatusCleanup
+import net.corda.data.rest.FlowStatusRecord
 import net.corda.data.scheduler.ScheduledTaskTrigger
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.IntervalFilter
@@ -24,6 +27,8 @@ class FlowStatusCleanupProcessor (
 ) : DurableProcessor<String, ScheduledTaskTrigger> {
     companion object {
         private val logger = LoggerFactory.getLogger(FlowStatusCleanupProcessor::class.java)
+        private val TERMINAL_STATES = setOf(FlowStates.COMPLETED, FlowStates.FAILED, FlowStates.KILLED)
+        private const val FLOW_STATUS_METADATA_KEY = "flowStatus"
         private const val BATCH_SIZE = 200
     }
 
@@ -35,15 +40,16 @@ class FlowStatusCleanupProcessor (
         return events.lastOrNull { it.key == SCHEDULE_TASK_NAME_FLOW_STATUS_CLEANUP }?.value?.let { trigger ->
             logger.trace { "Processing flow status cleanup trigger scheduled at ${trigger.timestamp}" }
 
-            staleFlowStatuses()
-                .map{ it.key }
-                .chunked(batchSize) { batch -> Record(REST_FLOW_STATUS_CLEANUP_TOPIC, UUID.randomUUID(), batch) }
+            getStaleFlowStatuses()
+                .map{ FlowStatusRecord(it.key, it.value.version) }
+                .chunked(batchSize)
+                .map { Record(REST_FLOW_STATUS_CLEANUP_TOPIC, UUID.randomUUID(), ExecuteFlowStatusCleanup(it)) }
         } ?: emptyList()
     }
 
-    private fun staleFlowStatuses() =
+    private fun getStaleFlowStatuses() =
         stateManager.findUpdatedBetweenWithMetadataMatchingAny(
             IntervalFilter(Instant.EPOCH, now().minusMillis(cleanupTimeMilliseconds)),
-            listOf(MetadataFilter("PLACEHOLDER awaiting CORE-19440", Operation.Equals, true))
+            TERMINAL_STATES.map { MetadataFilter(FLOW_STATUS_METADATA_KEY, Operation.Equals, it.name) }
         )
 }
