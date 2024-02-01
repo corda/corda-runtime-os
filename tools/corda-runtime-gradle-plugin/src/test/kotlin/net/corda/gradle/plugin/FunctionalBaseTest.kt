@@ -62,6 +62,7 @@ abstract class FunctionalBaseTest : Javalin() {
                 cordaRestUser = "admin"
                 cordaRpcPasswd ="admin"
                 combinedWorkerVersion = "5.0.1.0"
+                notaryVersion = "5.0.1.0"
                 postgresJdbcVersion = "42.4.3"
                 cordaDbContainerName = "corda-runtime-gradle-plugin-postgresql"
                 networkConfigFile = "config/static-network-config.json"
