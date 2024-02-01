@@ -103,7 +103,7 @@ class KeyRotationRestResourceTest {
         }
 
         deserializer = mock<CordaAvroDeserializer<UnmanagedKeyStatus>> {
-            on { deserialize(any()) } doReturn UnmanagedKeyStatus(oldKeyAlias, newKeyAlias, 10, 5, Instant.now())
+            on { deserialize(any()) } doReturn UnmanagedKeyStatus(oldKeyAlias, newKeyAlias, tenantId, 10, 5, Instant.now())
         }
 
         cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {

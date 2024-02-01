@@ -243,6 +243,7 @@ class CryptoRekeyBusProcessor(
             val status = UnmanagedKeyStatus(
                 request.oldParentKeyAlias,
                 request.newParentKeyAlias,
+                tenantId,
                 wrappingKeys.size,
                 0,
                 Instant.ofEpochMilli(timestamp)
@@ -256,7 +257,6 @@ class CryptoRekeyBusProcessor(
                     Metadata(
                         mapOf(
                             KeyRotationMetadataValues.ROOT_KEY_ALIAS to request.oldParentKeyAlias,
-                            KeyRotationMetadataValues.TENANT_ID to tenantId,
                             KeyRotationMetadataValues.STATUS_TYPE to KeyRotationRecordType.KEY_ROTATION,
                             KeyRotationMetadataValues.STATUS to KeyRotationStatus.IN_PROGRESS,
                             KeyRotationMetadataValues.KEY_TYPE to KeyRotationKeyType.UNMANAGED,
