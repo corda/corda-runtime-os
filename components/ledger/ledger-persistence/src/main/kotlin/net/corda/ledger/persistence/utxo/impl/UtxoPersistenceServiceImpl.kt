@@ -22,6 +22,7 @@ import net.corda.orm.utils.transaction
 import net.corda.utilities.serialization.deserialize
 import net.corda.utilities.time.Clock
 import net.corda.v5.application.crypto.DigestService
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -38,7 +39,7 @@ import org.slf4j.LoggerFactory
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 class UtxoPersistenceServiceImpl(
     private val entityManagerFactory: EntityManagerFactory,
     private val repository: UtxoRepository,
@@ -261,6 +262,25 @@ class UtxoPersistenceServiceImpl(
             val cpkDetails = persistTransaction(em, transaction)
 
             return null to cpkDetails
+        }
+    }
+
+    override fun persistTransactionSignatures(id: String, signatures: List<ByteArray>, startingIndex: Int) {
+        val nowUtc = utcClock.instant()
+        val digitalSignatureAndMetadatas = signatures.map {
+            serializationService.deserialize<DigitalSignatureAndMetadata>(it)
+        }
+        entityManagerFactory.transaction { em ->
+            // Insert the Transactions signatures
+            digitalSignatureAndMetadatas.forEachIndexed { index, digitalSignatureAndMetadata ->
+                repository.persistTransactionSignature(
+                    em,
+                    id,
+                    startingIndex + index,
+                    digitalSignatureAndMetadata,
+                    nowUtc
+                )
+            }
         }
     }
 
