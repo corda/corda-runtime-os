@@ -326,24 +326,19 @@ fun ClusterInfo.getRegistrationContext(
     holdingIdentityShortHash: String,
     registrationId: String?,
 ) = cluster {
-        val response =
-                if (registrationId != null) {
-                    getRegistrationStatus(holdingIdentityShortHash, registrationId)
-                } else {
-                    getRegistrationStatus(holdingIdentityShortHash)
-                }
-        if (response.code == ResponseCode.OK.statusCode) {
-            val context = if (registrationId != null) {
-                response.toJson().get("memberInfoSubmitted")?.get("data")?.textValue()
+    assertWithRetryIgnoringExceptions {
+        timeout(15.seconds)
+        interval(1.seconds)
+        command {
+            if (registrationId != null) {
+                getRegistrationStatus(holdingIdentityShortHash, registrationId)
             } else {
-                response.toJson().firstOrNull()?.get("memberInfoSubmitted")?.get("data")?.textValue()
+                getRegistrationStatus(holdingIdentityShortHash)
             }
-            val contextMap = JSONObject(context)
-            return@cluster contextMap.toMap()
-        } else {
-            return@cluster emptyMap()
         }
+        condition { it.code == ResponseCode.OK.statusCode }
     }
+}
 
 /**
  * Register a member as part of a static network.
