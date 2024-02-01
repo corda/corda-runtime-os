@@ -49,7 +49,7 @@ abstract class FunctionalBaseTest : Javalin() {
 
             """.trimIndent()
         )
-        val sourceConfigFolder = File("src/test/resources/")
+        val sourceConfigFolder = File("src/integrationTest/resources/")
         val targetConfigFolder = File("$projectDir/")
         sourceConfigFolder.absoluteFile.copyRecursively(targetConfigFolder)
     }
