@@ -5,6 +5,7 @@ import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
+import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
@@ -39,6 +40,9 @@ class DurableFlowStatusProcessorTest {
         assertThat(flowStatusProcessor.valueClass).isEqualTo(FlowStatus::class.java)
     }
 
+    private val flowKey1Identity = FlowStatusLookupServiceImplTest.FLOW_KEY_1.identity.toString()
+    private val flowKey2Identity = FlowStatusLookupServiceImplTest.FLOW_KEY_2.identity.toString()
+
     @Test
     fun `Test onNext creates a new record in the StateManager`() {
         val record = Record(FLOW_STATUS_TOPIC, FlowStatusLookupServiceImplTest.FLOW_KEY_1, createFlowStatus())
@@ -51,6 +55,7 @@ class DurableFlowStatusProcessorTest {
         assertThat(result.size).isEqualTo(1)
         assertThat(result.containsKey(key)).isTrue()
         assertThat(result[key]?.version).isEqualTo(0)
+        assertThat(result[key].holdingIdentityFromMetadata()).isEqualTo(flowKey1Identity)
     }
 
     @Test
@@ -68,7 +73,9 @@ class DurableFlowStatusProcessorTest {
         assertThat(result.containsKey(key1)).isTrue()
         assertThat(result.containsKey(key2)).isTrue()
         assertThat(result[key1]?.version).isEqualTo(0)
+        assertThat(result[key1].holdingIdentityFromMetadata()).isEqualTo(flowKey1Identity)
         assertThat(result[key2]?.version).isEqualTo(0)
+        assertThat(result[key2].holdingIdentityFromMetadata()).isEqualTo(flowKey2Identity)
     }
 
     @Test
@@ -88,6 +95,7 @@ class DurableFlowStatusProcessorTest {
         assertThat(result1.size).isEqualTo(1)
         assertThat(result1.containsKey(key)).isTrue()
         assertThat(result1[key]?.version).isEqualTo(0)
+        assertThat(result1[key].holdingIdentityFromMetadata()).isEqualTo(flowKey1Identity)
 
         flowStatusProcessor.onNext(listOf(record2))
 
@@ -96,6 +104,7 @@ class DurableFlowStatusProcessorTest {
         assertThat(result2.size).isEqualTo(1)
         assertThat(result2.containsKey(key)).isTrue()
         assertThat(result2[key]?.version).isEqualTo(1)
+        assertThat(result2[key].holdingIdentityFromMetadata()).isEqualTo(flowKey1Identity)
     }
 
     @Test
@@ -119,6 +128,7 @@ class DurableFlowStatusProcessorTest {
         assertThat(result1.size).isEqualTo(1)
         assertThat(result1.containsKey(key1)).isTrue()
         assertThat(result1[key1]?.version).isEqualTo(0)
+        assertThat(result1[key1].holdingIdentityFromMetadata()).isEqualTo(flowKey1Identity)
 
         // Persist a new record, and update our first
         flowStatusProcessor.onNext(listOf(record2, record3))
@@ -130,11 +140,15 @@ class DurableFlowStatusProcessorTest {
         // Assert that our record on FLOW_KEY_1 has incremented its version
         assertThat(result2.containsKey(key1)).isTrue()
         assertThat(result2[key1]?.version).isEqualTo(1)
+        assertThat(result2[key1].holdingIdentityFromMetadata()).isEqualTo(flowKey1Identity)
 
         // And that our record on FLOW_KEY_1 has been created
         assertThat(result2.containsKey(key2)).isTrue()
         assertThat(result2[key2]?.version).isEqualTo(0)
+        assertThat(result2[key2].holdingIdentityFromMetadata()).isEqualTo(flowKey2Identity)
     }
+
+    private fun State?.holdingIdentityFromMetadata() = this?.metadata?.get(HOLDING_IDENTITY_METADATA_KEY)
 
     private fun createFlowStatus(flowStatus: FlowStates = FlowStates.START_REQUESTED) =
         FlowStatus().apply { initiatorType = FlowInitiatorType.RPC; this.flowStatus = flowStatus }
