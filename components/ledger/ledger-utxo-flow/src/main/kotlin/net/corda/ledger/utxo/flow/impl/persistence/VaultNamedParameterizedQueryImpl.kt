@@ -9,10 +9,10 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.VaultNamedQue
 import net.corda.metrics.CordaMetrics
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.utilities.time.Clock
+import net.corda.utilities.toByteArrays
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.query.VaultNamedParameterizedQuery
-import java.lang.UnsupportedOperationException
 import java.time.Instant
 
 // TODO CORE-12032 use delegation to create this class
@@ -76,9 +76,9 @@ class VaultNamedParameterizedQueryImpl<T>(
                         VaultNamedQueryExternalEventFactory::class.java,
                         VaultNamedQueryEventParams(
                             queryName,
-                            serializedParameters,
+                            serializedParameters.toByteArrays(),
                             limit,
-                            resumePoint
+                            resumePoint?.array()
                         )
                     )
                 }

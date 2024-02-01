@@ -2,7 +2,7 @@ package net.corda.flow.application.persistence.query
 
 import net.corda.flow.application.persistence.external.events.NamedQueryExternalEventFactory
 import net.corda.flow.application.persistence.external.events.NamedQueryParameters
-import net.corda.flow.application.persistence.toByteArrays
+import net.corda.utilities.toByteArrays
 import net.corda.flow.application.persistence.wrapWithPersistenceException
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.persistence.query.ResultSetFactory

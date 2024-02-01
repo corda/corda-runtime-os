@@ -4,8 +4,8 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindWithNamedQuery
-import net.corda.flow.application.persistence.toByteArrays
-import net.corda.flow.application.persistence.toByteBuffers
+import net.corda.utilities.toByteArrays
+import net.corda.utilities.toByteBuffers
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.persistence.query.OffsetResultSetExecutor
