@@ -75,9 +75,9 @@ interface WrappingRepository : Closeable {
     fun getKeyById(id: UUID): WrappingKeyInfo?
 
     /**
-     * Get all wrapping key Ids in the database for the tenant to which this [WrappingRepository] is bound.
+     * Get all wrapping key Ids and aliases in the database for the tenant to which this [WrappingRepository] is bound.
      *
-     * @return A set of wrapping key UUIDs
+     * @return A set of wrapping key UUIDs and aliases as a Pair
      */
-    fun getAllKeyIds(): Set<UUID>
+    fun getAllKeyIdsAndAliases(): Set<Pair<UUID, String>>
 }

@@ -33,11 +33,11 @@ class PostgresDbSetup(
         // It is mandatory to supply a schema name in this list so the Db migration step can always set a valid schema
         // search path, which is required for the public schema too. For the public schema use "PUBLIC".
         private val changelogFiles: Map<String, String> = mapOf(
-            "net/corda/db/schema/config/db.changelog-master.xml" to "CONFIG",
-            "net/corda/db/schema/messagebus/db.changelog-master.xml" to "MESSAGEBUS",
-            "net/corda/db/schema/rbac/db.changelog-master.xml" to "RBAC",
-            "net/corda/db/schema/crypto/db.changelog-master.xml" to "CRYPTO",
-            "net/corda/db/schema/statemanager/db.changelog-master.xml" to "STATE_MANAGER",
+            "net/corda/db/schema/config/db.changelog-master.xml" to "config",
+            "net/corda/db/schema/messagebus/db.changelog-master.xml" to "messagebus",
+            "net/corda/db/schema/rbac/db.changelog-master.xml" to "rbac",
+            "net/corda/db/schema/crypto/db.changelog-master.xml" to "crypto",
+            "net/corda/db/schema/statemanager/db.changelog-master.xml" to "state_manager",
         )
 
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -78,7 +78,7 @@ class PostgresDbSetup(
                     CordaDb.RBAC.persistenceUnitName,
                     "rbac_user_$dbName",
                     "rbac_password",
-                    "$dbUrl?currentSchema=RBAC",
+                    dbUrl,
                     DbPrivilege.DML
                 ).toInsertStatement()
             )
@@ -87,7 +87,7 @@ class PostgresDbSetup(
                     CordaDb.Crypto.persistenceUnitName,
                     "crypto_user_$dbName",
                     "crypto_password",
-                    "$dbUrl?currentSchema=CRYPTO",
+                    dbUrl,
                     DbPrivilege.DML
                 ).toInsertStatement()
             )
@@ -115,7 +115,7 @@ class PostgresDbSetup(
     private fun configConnection() =
         OSGiDataSourceFactory.create(
             DB_DRIVER,
-            "$dbAdminUrl&currentSchema=CONFIG",
+            dbAdminUrl,
             dbAdmin,
             dbAdminPassword
         ).connection
@@ -123,13 +123,13 @@ class PostgresDbSetup(
     private fun messageBusConnection() =
         OSGiDataSourceFactory.create(
             DB_DRIVER,
-            "$dbAdminUrl&currentSchema=MESSAGEBUS",
+            dbAdminUrl,
             dbAdmin,
             dbAdminPassword
         ).connection.also { it.autoCommit = false }
 
     private fun rbacConnection() =
-        OSGiDataSourceFactory.create(DB_DRIVER, "$dbAdminUrl&currentSchema=RBAC", dbAdmin, dbAdminPassword).connection
+        OSGiDataSourceFactory.create(DB_DRIVER,  dbAdminUrl, dbAdmin, dbAdminPassword).connection
 
     private fun dbInitialised(): Boolean {
         superUserConnection()
@@ -150,6 +150,7 @@ class PostgresDbSetup(
         log.info("Create user $dbAdmin in $dbName in $dbSuperUserUrl.")
         superUserConnection()
             .use { connection ->
+                val schemata = changelogFiles.values.joinToString(separator = ", ")
                 connection.createStatement().execute(
                     // NOTE: this is different to the cli as this is set up to be using the official postgres image
                     //   instead of the Bitnami. The official image doesn't already have the "user" user.
@@ -158,6 +159,7 @@ class PostgresDbSetup(
                         ALTER ROLE "$dbAdmin" NOSUPERUSER CREATEDB CREATEROLE INHERIT LOGIN;
                         ALTER DATABASE "$dbName" OWNER TO "$dbAdmin";
                         ALTER SCHEMA public OWNER TO "$dbAdmin";
+                        ALTER ROLE "$dbAdmin" SET search_path TO $schemata;
                     """.trimIndent()
                 )
             }
@@ -202,14 +204,16 @@ class PostgresDbSetup(
 
     private fun createDbUsersAndGrants() {
         val sql = """
-            CREATE SCHEMA IF NOT EXISTS CRYPTO;
+            CREATE SCHEMA IF NOT EXISTS crypto;
             
             CREATE USER rbac_user_$dbName WITH ENCRYPTED PASSWORD 'rbac_password';
-            GRANT USAGE ON SCHEMA RBAC to rbac_user_$dbName;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA RBAC to rbac_user_$dbName;
+            GRANT USAGE ON SCHEMA rbac to rbac_user_$dbName;
+            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA rbac to rbac_user_$dbName;
+            ALTER ROLE "rbac_user_$dbName" SET search_path TO rbac;
             CREATE USER crypto_user_$dbName WITH ENCRYPTED PASSWORD 'crypto_password';
-            GRANT USAGE ON SCHEMA CRYPTO to crypto_user_$dbName;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA CRYPTO to crypto_user_$dbName;
+            GRANT USAGE ON SCHEMA crypto to crypto_user_$dbName;
+            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA crypto to crypto_user_$dbName;
+            ALTER ROLE "crypto_user_$dbName" SET search_path TO crypto;
         """.trimIndent()
 
         adminConnection()

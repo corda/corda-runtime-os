@@ -179,7 +179,11 @@ class KeyRotationRestResourceImpl @Activate constructor(
         val records = stateManager.findByMetadataMatchingAll(
             listOf(
                 MetadataFilter(KeyRotationMetadataValues.ROOT_KEY_ALIAS, Operation.Equals, keyAlias),
-                MetadataFilter(KeyRotationMetadataValues.TYPE, Operation.Equals, KeyRotationRecordType.KEY_ROTATION)
+                MetadataFilter(
+                    KeyRotationMetadataValues.STATUS_TYPE,
+                    Operation.Equals,
+                    KeyRotationRecordType.KEY_ROTATION
+                )
             )
         )
 
@@ -191,11 +195,11 @@ class KeyRotationRestResourceImpl @Activate constructor(
         val result = mutableListOf<Pair<String, TenantIdWrappingKeysStatus>>()
         records.forEach {
             val state = it.value
-            val keyRotationStatus = checkNotNull(deserializer.deserialize(state.value))
+            val unmanagedKeyRotationStatus = checkNotNull(deserializer.deserialize(state.value))
             result.add(
-                state.metadata[KeyRotationMetadataValues.TENANT_ID].toString() to TenantIdWrappingKeysStatus(
-                    keyRotationStatus.total,
-                    keyRotationStatus.rotatedKeys
+                unmanagedKeyRotationStatus.tenantId to TenantIdWrappingKeysStatus(
+                    unmanagedKeyRotationStatus.total,
+                    unmanagedKeyRotationStatus.rotatedKeys
                 )
             )
             // Get the latest modified time of all the records
@@ -261,7 +265,11 @@ class KeyRotationRestResourceImpl @Activate constructor(
         // for the equivalent method.
         stateManager.findByMetadataMatchingAll(
             listOf(
-                MetadataFilter(KeyRotationMetadataValues.TYPE, Operation.Equals, KeyRotationRecordType.KEY_ROTATION)
+                MetadataFilter(
+                    KeyRotationMetadataValues.STATUS_TYPE,
+                    Operation.Equals,
+                    KeyRotationRecordType.KEY_ROTATION
+                )
             )
         ).forEach {
             if (it.value.metadata[KeyRotationMetadataValues.STATUS] != KeyRotationStatus.DONE) return false

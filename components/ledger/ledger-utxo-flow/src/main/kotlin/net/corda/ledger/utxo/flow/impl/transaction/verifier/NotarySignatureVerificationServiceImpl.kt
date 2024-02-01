@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.sandbox.type.UsedByFlow
+import net.corda.sandbox.type.UsedByVerification
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.KeyUtils
@@ -18,13 +19,22 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.PublicKey
 
 @Component(
-    service = [NotarySignatureVerificationService::class, NotarySignatureVerificationServiceInternal::class, UsedByFlow::class],
+    service = [
+        NotarySignatureVerificationService::class,
+        NotarySignatureVerificationServiceInternal::class,
+        UsedByFlow::class,
+        UsedByVerification::class
+    ],
     scope = PROTOTYPE
 )
 class NotarySignatureVerificationServiceImpl @Activate constructor(
     @Reference(service = TransactionSignatureService::class)
     private val transactionSignatureService: TransactionSignatureService
-) : NotarySignatureVerificationService, NotarySignatureVerificationServiceInternal, UsedByFlow, SingletonSerializeAsToken {
+) : NotarySignatureVerificationService,
+    NotarySignatureVerificationServiceInternal,
+    UsedByFlow,
+    UsedByVerification,
+    SingletonSerializeAsToken {
     override fun verifyNotarySignatures(
         transaction: TransactionWithMetadata,
         notaryKey: PublicKey,

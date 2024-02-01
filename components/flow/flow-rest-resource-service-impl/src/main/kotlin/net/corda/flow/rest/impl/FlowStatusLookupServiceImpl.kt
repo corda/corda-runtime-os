@@ -49,6 +49,7 @@ class FlowStatusLookupServiceImpl @Activate constructor(
     private var flowStatusSubscription: Subscription<FlowKey, FlowStatus>? = null
 
     private val serializer = cordaSerializationFactory.createAvroSerializer<Any> {}
+    private val deSerializer = cordaSerializationFactory.createAvroDeserializer({}, FlowStatus::class.java)
 
     private var stateManager: StateManager? = null
 
@@ -75,7 +76,18 @@ class FlowStatusLookupServiceImpl @Activate constructor(
     }
 
     override fun getStatus(clientRequestId: String, holdingIdentity: HoldingIdentity): FlowStatus? {
-        TODO("Not yet implemented")
+
+        val flowKey = FlowKey(clientRequestId, holdingIdentity)
+        val flowKeys = listOf(flowKey.toString())
+
+        return requireNotNull(stateManager) { "stateManager is null" }
+            .get(flowKeys)
+            .asSequence()
+            .map { it.value }
+            .firstOrNull()
+            ?.let { state ->
+                deSerializer.deserialize(state.value)
+            }
     }
 
     override fun getStatusesPerIdentity(holdingIdentity: HoldingIdentity): List<FlowStatus> {
