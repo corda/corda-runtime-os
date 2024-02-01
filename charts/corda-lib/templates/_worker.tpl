@@ -351,6 +351,12 @@ spec:
           {{- if $.Values.tracing.samplesPerSecond }}
           - "--trace-samples-per-second={{ $.Values.tracing.samplesPerSecond }}"
           {{- end }}
+          {{- with $.Values.metrics.keepNames }}
+          - "--metrics-keep-names={{ join "|" . }}"
+          {{- end }}
+          {{- with $.Values.metrics.dropLabels }}
+          - "--metrics-drop-labels={{ join "|" . }}"
+          {{- end }}
           {{- if $optionalArgs.servicesAccessed }}
           {{- range $worker := $optionalArgs.servicesAccessed }}
           - "--serviceEndpoint={{ include "corda.getWorkerEndpoint" (dict "context" $ "worker" $worker) }}"

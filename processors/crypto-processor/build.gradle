@@ -48,7 +48,7 @@ dependencies {
     implementation project(':libs:serialization:serialization-avro')
     runtimeOnly project(':libs:state-manager:state-manager-db-impl')
 
-    implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
+    implementation libs.caffeine
 
     integrationTestImplementation project(':components:crypto:crypto-client')
     integrationTestImplementation project(":components:crypto:crypto-client-hsm")

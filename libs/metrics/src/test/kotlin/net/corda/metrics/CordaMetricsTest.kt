@@ -24,7 +24,12 @@ class CordaMetricsTest {
 
     @BeforeEach
     fun setup() {
-        CordaMetrics.configure(meterSourceName, registry)
+        CordaMetrics.configure(
+            meterSourceName,
+            registry,
+            "corda_p2p_session_(inbound|outbound)|corda_membership_memberlist_cache_size".toRegex(),
+            "virtualnode_source".toRegex()
+        )
         assertThat(CordaMetrics.registry.registries).hasSize(1)
     }
 
@@ -132,5 +137,24 @@ class CordaMetricsTest {
         assertThat(meter.id.name).isEqualTo("corda.${CordaMetrics.Metric.HttpRequestTime.metricsName}")
         assertThat(meter.id.tags.map { Pair(it.key, it.value) })
             .contains(Pair(CordaMetrics.Tag.WorkerType.value, meterSourceName))
+    }
+
+    @Test
+    fun `metric not matching keep names is filtered out`() {
+        CordaMetrics.Metric.HttpRequestTime.builder().build()
+        assertThat(CordaMetrics.registry.meters)
+            .hasSize(0)
+    }
+
+    @Test
+    fun `dropped tags are filtered out`() {
+        val meter = CordaMetrics.Metric.HttpRequestTime
+            .builder()
+            .withTag(CordaMetrics.Tag.UriPath, "/hello")
+            .withTag(CordaMetrics.Tag.SourceVirtualNode, "abc")
+            .build()
+        assertThat(meter.id.tags.map { Pair(it.key, it.value) })
+            .contains(Pair(CordaMetrics.Tag.UriPath.value, "/hello"))
+            .doesNotContain(Pair(CordaMetrics.Tag.SourceVirtualNode.value, "abc"))
     }
 }
