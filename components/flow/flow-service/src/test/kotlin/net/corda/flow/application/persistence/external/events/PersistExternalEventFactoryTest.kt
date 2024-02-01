@@ -26,7 +26,7 @@ class PersistExternalEventFactoryTest {
         val externalEventRecord = PersistExternalEventFactory().createExternalEvent(
             checkpoint,
             externalEventContext,
-            PersistParameters(listOf(ByteBuffer.wrap(byteArrayOf(1))))
+            PersistParameters(listOf(byteArrayOf(1)))
         )
         assertNull(externalEventRecord.key)
         assertEquals(

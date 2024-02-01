@@ -26,7 +26,7 @@ class MergeExternalEventFactoryTest {
         val externalEventRecord = MergeExternalEventFactory().createExternalEvent(
             checkpoint,
             externalEventContext,
-            MergeParameters(listOf(ByteBuffer.wrap(byteArrayOf(1))))
+            MergeParameters(listOf(byteArrayOf(1)))
         )
         assertNull(externalEventRecord.key)
         assertEquals(

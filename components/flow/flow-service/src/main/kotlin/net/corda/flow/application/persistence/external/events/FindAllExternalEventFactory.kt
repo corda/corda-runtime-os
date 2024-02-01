@@ -4,6 +4,7 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindAll
+import net.corda.flow.application.persistence.toByteArrays
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.persistence.query.OffsetResultSetExecutor
@@ -33,7 +34,7 @@ class FindAllExternalEventFactory: ExternalEventFactory<FindAllParameters, Entit
 
     override fun resumeWith(checkpoint: FlowCheckpoint, response: EntityResponse): OffsetResultSetExecutor.Results {
         return OffsetResultSetExecutor.Results(
-            serializedResults = response.results,
+            serializedResults = response.results.toByteArrays(),
             numberOfRowsFromQuery = response.metadata.items.single { it.key == "numberOfRowsFromQuery" }.value.toInt()
         )
     }

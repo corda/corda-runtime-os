@@ -27,5 +27,8 @@ inline fun <T> wrapWithPersistenceException(function: () -> T): T {
 
 
 fun List<ByteArray>.toByteBuffers() = this.map { ByteBuffer.wrap(it) }
+fun List<ByteBuffer>.toByteArrays() = this.map { it.array()}
 
 fun Map<String, ByteArray?>.toByteBuffers() = this.mapValues { value -> value.value?.let { ByteBuffer.wrap(value.value) }  }
+
+fun Map<String, ByteBuffer?>.toByteArrays() = this.mapValues { value -> value.value?.array() }

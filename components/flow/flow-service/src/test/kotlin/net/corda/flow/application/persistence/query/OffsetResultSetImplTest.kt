@@ -23,8 +23,8 @@ class OffsetResultSetImplTest {
         val serializedParameters = mapOf<String, ByteBuffer>("1" to ByteBuffer.wrap(byteArrayOf(1, 2, 3, 4)))
         val resultExecutorResults = OffsetResultSetExecutor.Results(
             listOf(
-                ByteBuffer.wrap(byteArrayOf(5, 6, 7, 8)),
-                ByteBuffer.wrap(byteArrayOf(5, 6, 7, 8))
+                byteArrayOf(5, 6, 7, 8),
+                byteArrayOf(5, 6, 7, 8)
             ),
             LIMIT
         )
@@ -74,7 +74,7 @@ class OffsetResultSetImplTest {
     fun `hasNext returns false when the number of rows returned from next is less than the limit`() {
         whenever(resultSetExecutor.execute(serializedParameters, OFFSET)).thenReturn(resultExecutorResults.copy(
             serializedResults = listOf(
-                ByteBuffer.wrap(byteArrayOf(5, 6, 7, 8))
+                byteArrayOf(5, 6, 7, 8)
             ),
             numberOfRowsFromQuery = 12) // Let's say we filtered out 11
         )
@@ -120,7 +120,7 @@ class OffsetResultSetImplTest {
     fun `next throws exception when hasNext returns false`() {
         whenever(resultSetExecutor.execute(serializedParameters, OFFSET)).thenReturn(resultExecutorResults.copy(
             serializedResults = listOf(
-                ByteBuffer.wrap(byteArrayOf(5, 6, 7, 8))
+                byteArrayOf(5, 6, 7, 8)
             ),
             numberOfRowsFromQuery = 1
         ))
