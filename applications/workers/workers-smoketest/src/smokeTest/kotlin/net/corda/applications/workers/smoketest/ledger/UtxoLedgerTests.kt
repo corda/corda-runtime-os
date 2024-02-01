@@ -61,7 +61,7 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
     private val bobX500 = "CN=Bob-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
     private val charlieX500 = "CN=Charlie-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
     private val notaryX500 = "CN=Notary-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
-    private val extraParties = 20
+    private val extraParties = 50
     private val extraPartiesX500 = (0 until extraParties).map { "CN=Extra-${it}-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB" }
 
     private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, groupId)
@@ -159,7 +159,7 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
         var currentTransactionId = checkNotNull(utxoFlowResult.flowResult)
         var message = input
         var prevInput = ""
-        val constant = false // if true, keep the number of participants at 4, if false add one on each evolution
+        val constant = true // if true, keep the number of participants at 4, if false add one on each evolution
         for (stage in 1 until extraParties) {
             val start = Instant.now()
             val evolvedMessage = "evolved input $stage"

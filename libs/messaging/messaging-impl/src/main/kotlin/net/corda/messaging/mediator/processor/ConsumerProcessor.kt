@@ -121,8 +121,14 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                     Pair(future, group)
                 }.map { (future, group) ->
                     try {
-                        future.getOrThrow(config.processorTimeout)
+                        val start = System.nanoTime()
+                        future.getOrThrow(Duration.ofMillis(config.processorTimeout)).also {
+                            val end = System.nanoTime()
+                            val rt = end-start
+                            log.info("processEvents took ${rt/1.0e6}ms")
+                        }
                     } catch (e: TimeoutException) {
+                        log.error("timeout in mediator $group")
                         metrics.consumerProcessorFailureCounter.increment(group.keys.size.toDouble())
                         group.mapValues { (key, input) ->
                             val oldState = input.state
