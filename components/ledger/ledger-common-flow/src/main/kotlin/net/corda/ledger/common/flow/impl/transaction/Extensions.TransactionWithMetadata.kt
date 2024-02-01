@@ -32,10 +32,14 @@ fun TransactionWithMetadata.getBatchSignatureMetadataSettings(): Map<String, Str
 )
 
 fun List<TransactionWithMetadata>.confirmHashPrefixesAreDifferent() {
-    require(this.none { it.metadata.batchMerkleTreeDigestOptionsLeafPrefix contentEquals it.metadata.rootMerkleTreeDigestOptionsLeafPrefix }) {
+    require(
+        this.none { it.metadata.batchMerkleTreeDigestOptionsLeafPrefix contentEquals it.metadata.rootMerkleTreeDigestOptionsLeafPrefix }
+    ) {
         "The transaction can be batch signed only if the leaf prefixes for its root and the batch tree are different."
     }
-    require(this.none { it.metadata.batchMerkleTreeDigestOptionsNodePrefix contentEquals it.metadata.rootMerkleTreeDigestOptionsNodePrefix }) {
+    require(
+        this.none { it.metadata.batchMerkleTreeDigestOptionsNodePrefix contentEquals it.metadata.rootMerkleTreeDigestOptionsNodePrefix }
+    ) {
         "The transaction can be batch signed only if the node prefixes for its root and the batch tree are different."
     }
 }

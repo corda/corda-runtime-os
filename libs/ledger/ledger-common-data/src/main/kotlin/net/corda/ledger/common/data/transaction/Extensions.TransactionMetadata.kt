@@ -1,3 +1,5 @@
+@file:Suppress("MatchingDeclarationName")
+
 package net.corda.ledger.common.data.transaction
 
 import net.corda.common.json.validation.JsonValidator
@@ -27,7 +29,7 @@ object TransactionMetadataUtils {
 
         check(metadata.digestSettings == WireTransactionDigestSettings.defaultValues) {
             "Only the default digest settings are acceptable now! ${metadata.digestSettings} vs " +
-                    "${WireTransactionDigestSettings.defaultValues}"
+                "${WireTransactionDigestSettings.defaultValues}"
         }
         return metadata
     }
@@ -153,6 +155,6 @@ fun TransactionMetadata.getComponentGroupMerkleTreeDigestProvider(
         componentMerkleTreeDigestAlgorithmName,
         mapOf(
             HashDigestConstants.HASH_DIGEST_PROVIDER_ENTROPY_OPTION to
-                    getComponentGroupEntropy(privacySalt, componentGroupIndex.toByteArray(), digestService)
+                getComponentGroupEntropy(privacySalt, componentGroupIndex.toByteArray(), digestService)
         )
     )

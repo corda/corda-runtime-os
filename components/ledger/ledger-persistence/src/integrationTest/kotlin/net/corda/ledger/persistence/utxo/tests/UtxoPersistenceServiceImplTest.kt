@@ -640,6 +640,7 @@ class UtxoPersistenceServiceImplTest {
             ftx.filteredComponentGroups[UtxoComponentGroup.OUTPUTS_INFO.ordinal]?.merkleProof
         )
     }
+
     @Suppress("LongParameterList")
     private fun createUtxoTokenMap(
         transactionReader: TestUtxoTransactionReader,

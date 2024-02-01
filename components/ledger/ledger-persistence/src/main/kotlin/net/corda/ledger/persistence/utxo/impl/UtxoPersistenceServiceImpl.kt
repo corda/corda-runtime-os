@@ -481,7 +481,9 @@ class UtxoPersistenceServiceImpl(
                     // If the merkle proof is metadata, we need to add the bytes because it's not part of the component table
                     val merkleProofDtoOverride = if (merkleProofDto.groupIndex == 0) {
                         merkleProofDto.copy(leavesWithData = mapOf(0 to ftxDto.metadataBytes))
-                    } else merkleProofDto
+                    } else {
+                        merkleProofDto
+                    }
 
                     merkleProofDtoOverride.toMerkleProof(
                         merkleProofFactory,
@@ -585,6 +587,4 @@ class UtxoPersistenceServiceImpl(
             )
         }
     }
-
-
 }
