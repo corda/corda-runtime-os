@@ -275,7 +275,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         )
     }
 
-    private fun serialize(payload: Any) = ByteBuffer.wrap(serializationService.serialize(payload).bytes)
+    private fun serialize(payload: Any) = serializationService.serialize(payload).bytes
 
     private fun ledgerPersistenceFlowTimer(operationName: LedgerPersistenceMetricOperationName): Timer {
         return CordaMetrics.Metric.Ledger.PersistenceFlowTime

@@ -17,9 +17,9 @@ class PersistTransactionIfDoesNotExistExternalEventFactory :
     constructor(clock: Clock) : super(clock)
 
     override fun createRequest(parameters: PersistTransactionIfDoesNotExistParameters): Any {
-        return PersistTransactionIfDoesNotExist(parameters.transaction, parameters.transactionStatus.value)
+        return PersistTransactionIfDoesNotExist(ByteBuffer.wrap(parameters.transaction), parameters.transactionStatus.value)
     }
 }
 
 @CordaSerializable
-data class PersistTransactionIfDoesNotExistParameters(val transaction: ByteBuffer, val transactionStatus: TransactionStatus)
+data class PersistTransactionIfDoesNotExistParameters(val transaction: ByteArray, val transactionStatus: TransactionStatus)
