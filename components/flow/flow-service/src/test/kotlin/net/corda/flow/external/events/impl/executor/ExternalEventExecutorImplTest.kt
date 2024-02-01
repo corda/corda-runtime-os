@@ -30,8 +30,6 @@ class ExternalEventExecutorImplTest {
     @CordaSerializable
     data class Mock(val map: Map<String, String>)
 
-    data class BadMock(val map: Map<String, String>)
-
     private val mockParams = Mock(mutableMapOf("test" to "parameters"))
 
     companion object {
