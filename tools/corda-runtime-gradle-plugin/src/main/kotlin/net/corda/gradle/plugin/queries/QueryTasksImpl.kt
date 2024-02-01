@@ -1,9 +1,16 @@
 package net.corda.gradle.plugin.queries
 
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import kong.unirest.HttpResponse
+import kong.unirest.JsonNode
 import kong.unirest.Unirest
 import net.corda.gradle.plugin.configuration.ProjectContext
+import net.corda.gradle.plugin.dtos.CpiMetadataDTO
+import net.corda.gradle.plugin.dtos.GetCPIsResponseDTO
+import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
 import net.corda.gradle.plugin.getExistingNodes
-import net.corda.gradle.plugin.getUploadedCpis
+import java.net.HttpURLConnection
 
 /**
  * Provides the functionality to query the corda cluster used in the corda-runtime-plugin-queries group of tasks
@@ -51,6 +58,26 @@ class QueryTasksImpl(val pc: ProjectContext) {
             val cpiVersion = it.id?.cpiVersion?.padEnd(cpiVersionPadding)
             val cpiChecksum = it.cpiFileChecksum?.padEnd(cpiChecksumPadding)
             pc.logger.quiet(cpiName + cpiVersion + cpiChecksum)
+        }
+    }
+
+    private fun getUploadedCpis(pc: ProjectContext): List<CpiMetadataDTO> {
+        Unirest.config().verifySsl(false)
+        val mapper = ObjectMapper()
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+
+        val response: HttpResponse<JsonNode> = Unirest.get(pc.cordaClusterURL + "/api/v1/cpi")
+            .basicAuth(pc.cordaRpcUser, pc.cordaRpcPassword)
+            .asJson()
+
+        if (response.status != HttpURLConnection.HTTP_OK) {
+            throw CordaRuntimeGradlePluginException("Failed to get Existing Cpis, response status: " + response.status)
+        }
+
+        return try {
+            mapper.readValue(response.body.toString(), GetCPIsResponseDTO::class.java).cpis!!
+        } catch (e: Exception) {
+            throw CordaRuntimeGradlePluginException("Failed to get Existing vNodes with exception: $e")
         }
     }
 }
