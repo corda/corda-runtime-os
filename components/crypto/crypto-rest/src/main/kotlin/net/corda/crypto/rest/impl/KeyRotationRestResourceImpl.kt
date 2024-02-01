@@ -179,7 +179,11 @@ class KeyRotationRestResourceImpl @Activate constructor(
         val records = stateManager.findByMetadataMatchingAll(
             listOf(
                 MetadataFilter(KeyRotationMetadataValues.ROOT_KEY_ALIAS, Operation.Equals, keyAlias),
-                MetadataFilter(KeyRotationMetadataValues.TYPE, Operation.Equals, KeyRotationRecordType.KEY_ROTATION)
+                MetadataFilter(
+                    KeyRotationMetadataValues.STATUS_TYPE,
+                    Operation.Equals,
+                    KeyRotationRecordType.KEY_ROTATION
+                )
             )
         )
 
@@ -261,7 +265,11 @@ class KeyRotationRestResourceImpl @Activate constructor(
         // for the equivalent method.
         stateManager.findByMetadataMatchingAll(
             listOf(
-                MetadataFilter(KeyRotationMetadataValues.TYPE, Operation.Equals, KeyRotationRecordType.KEY_ROTATION)
+                MetadataFilter(
+                    KeyRotationMetadataValues.STATUS_TYPE,
+                    Operation.Equals,
+                    KeyRotationRecordType.KEY_ROTATION
+                )
             )
         ).forEach {
             if (it.value.metadata[KeyRotationMetadataValues.STATUS] != KeyRotationStatus.DONE) return false

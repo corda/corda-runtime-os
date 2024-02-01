@@ -221,6 +221,7 @@ jdbc:{{- include "corda.clusterDbType" $ -}}://{{- $.Values.db.cluster.host -}}:
                 GRANT USAGE ON SCHEMA STATE_MANAGER TO "${STATE_MANAGER_USERNAME}";
                 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA STATE_MANAGER TO "${STATE_MANAGER_USERNAME}";
                 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA STATE_MANAGER TO "${STATE_MANAGER_USERNAME}";
+                ALTER ROLE "${STATE_MANAGER_USERNAME}" SET search_path TO STATE_MANAGER;
               SQL
 
               echo 'Creating users and granting permissions for State Manager in {{ $workerName }}... Done!'

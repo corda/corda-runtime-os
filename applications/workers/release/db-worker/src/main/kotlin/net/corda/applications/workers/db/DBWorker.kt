@@ -69,7 +69,12 @@ class DBWorker @Activate constructor(
         val params = getParams(args, DBWorkerParams())
 
         if (printHelpOrVersion(params.defaultParams, DBWorker::class.java, shutDownService)) return
-        Metrics.configure(webServer, this.javaClass.simpleName)
+        Metrics.configure(
+            webServer,
+            this.javaClass.simpleName,
+            params.defaultParams.metricsKeepNames?.toRegex(),
+            params.defaultParams.metricsDropLabels?.toRegex()
+        )
         Health.configure(webServer, lifecycleRegistry)
 
         configureTracing("DB Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)

@@ -70,7 +70,12 @@ class FlowWorker @Activate constructor(
         val params = getParams(args, FlowWorkerParams())
 
         if (printHelpOrVersion(params.defaultParams, FlowWorker::class.java, shutDownService)) return
-        Metrics.configure(webServer, this.javaClass.simpleName)
+        Metrics.configure(
+            webServer,
+            this.javaClass.simpleName,
+            params.defaultParams.metricsKeepNames?.toRegex(),
+            params.defaultParams.metricsDropLabels?.toRegex()
+        )
         Health.configure(webServer, lifecycleRegistry)
 
         configureTracing("Flow Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
