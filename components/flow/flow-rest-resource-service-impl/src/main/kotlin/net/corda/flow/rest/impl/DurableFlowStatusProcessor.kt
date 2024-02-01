@@ -2,6 +2,7 @@ package net.corda.flow.rest.impl
 
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.flow.FlowKey
+import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.statemanager.api.Metadata
@@ -11,6 +12,7 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 
 const val HOLDING_IDENTITY_METADATA_KEY = "holdingIdentity"
+const val FLOW_STATUS_METADATA_KEY = "flowStatus"
 
 /**
  * This class is responsible for processing batches of records associated with [FlowStatus] changes from the [flow.status] topic.
@@ -37,7 +39,7 @@ class DurableFlowStatusProcessor(
             val bytes = record.value?.let { serializer.serialize(it) } ?: return@mapNotNull null
 
             val state = existingStates[key]
-            val metadata = state?.metadata.withHoldingIdentity(record.key.identity)
+            val metadata = state?.metadata.withHoldingIdentityAndStatus(record.key.identity, record.value?.flowStatus)
 
             state?.copy(value = bytes, metadata = metadata) ?: State(key, bytes, metadata = metadata)
         }.partition { it.key in existingKeys }
@@ -48,9 +50,10 @@ class DurableFlowStatusProcessor(
         return emptyList()
     }
 
-    private fun Metadata?.withHoldingIdentity(holdingIdentity: HoldingIdentity): Metadata {
+    private fun Metadata?.withHoldingIdentityAndStatus(holdingIdentity: HoldingIdentity, flowStatus: FlowStates?): Metadata {
         val metadata = this?.toMutableMap() ?: mutableMapOf()
         metadata[HOLDING_IDENTITY_METADATA_KEY] = holdingIdentity.toString()
+        metadata[FLOW_STATUS_METADATA_KEY] = flowStatus?.name ?: ""
         return Metadata(metadata)
     }
 }
