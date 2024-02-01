@@ -11,6 +11,7 @@ import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.GroupAllocator
 import net.corda.messaging.mediator.MediatorState
+import net.corda.messaging.mediator.MessageBusConsumer
 import net.corda.messaging.mediator.MultiSourceEventMediatorImpl
 import net.corda.messaging.mediator.metrics.EventMediatorMetrics
 import net.corda.messaging.utils.toRecord
@@ -42,7 +43,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
 ) {
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.name}")
 
-    private val metrics = EventMediatorMetrics(config.name)
+    private val metrics = EventMediatorMetrics()
 
     private val pollTimeout = config.pollTimeout
 
@@ -95,14 +96,21 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      * @param consumer message bus consumer
      */
     private fun pollAndProcessEvents(consumer: MediatorConsumer<K, E>) {
-        val messages = consumer.poll(pollTimeout)
         val startTimestamp = System.nanoTime()
+        val topic = (consumer as MessageBusConsumer).topic
+        val messages = consumer.poll(pollTimeout)
+        metrics.timer(topic, "POLL").record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
+
         val polledRecords = messages.map { it.toRecord() }
         if (messages.isNotEmpty()) {
+            metrics.recordPollSize(topic, messages.size)
             var groups = groupAllocator.allocateGroups(polledRecords, config)
+            val loadStartTimestamp = System.nanoTime()
             var statesToProcess = stateManager.get(messages.map { it.key.toString() }.distinct())
+            metrics.timer(topic, "LOAD").record(System.nanoTime() - loadStartTimestamp, TimeUnit.NANOSECONDS)
 
             while (groups.isNotEmpty()) {
+                val groupStartTimestamp = System.nanoTime()
                 // Process each group on a thread
                 val outputs = groups.filter {
                     it.isNotEmpty()
@@ -117,17 +125,18 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 }.mapKeys {
                     it.toString()
                 }
+                metrics.timer(topic, "GROUP").record(System.nanoTime() - groupStartTimestamp, TimeUnit.NANOSECONDS)
 
                 // Persist state changes, send async outputs and setup to reprocess states that fail to persist
-                val failedStates = processOutputs(outputs)
+                val failedStates = processOutputs(outputs, topic)
                 statesToProcess = failedStates
                 groups = assignNewGroupsForFailedStates(failedStates, polledRecords)
             }
-            metrics.commitTimer.recordCallable {
+            metrics.timer(topic, "COMMIT").recordCallable {
                 consumer.syncCommitOffsets()
             }
+            metrics.timer(topic, "PROCESS").record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
         }
-        metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
     }
 
     /**
@@ -136,7 +145,9 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      * Will send any asynchronous outputs back to the bus for states which saved successfully.
      * @return a map of all the states that failed to save by their keys.
      */
-    private fun processOutputs(outputs: Map<String, EventProcessingOutput>): Map<String, State> {
+    private fun processOutputs(outputs: Map<String, EventProcessingOutput>, topic: String): Map<String, State> {
+        val persistStartTimestamp = System.nanoTime()
+
         val statesToCreate = mutableListOf<State>()
         val statesToUpdate = mutableListOf<State>()
         val statesToDelete = mutableListOf<State>()
@@ -148,16 +159,30 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 is StateChangeAndOperation.Noop -> {} // Do nothing.
             }
         }
+        val t1 = System.nanoTime()
         val failedToCreateKeys = stateManager.create(statesToCreate)
+        val t2 = System.nanoTime()
         val failedToCreate = stateManager.get(failedToCreateKeys)
+        val t3 = System.nanoTime()
         val failedToDelete = stateManager.delete(statesToDelete)
+        val t4 = System.nanoTime()
         val failedToUpdate = stateManager.update(statesToUpdate)
+        val t5 = System.nanoTime()
         val failedToUpdateOptimisticLockFailure = failedToUpdate.mapNotNull { (key, value) ->
             value?.let { key to it }
         }.toMap()
+        val endTime = System.nanoTime()
+        metrics.timer(topic, "PERSIST").record(endTime - persistStartTimestamp, TimeUnit.NANOSECONDS)
+        metrics.timer(topic, "PERSIST_CREATE").record(t2 - t1, TimeUnit.NANOSECONDS)
+        metrics.timer(topic, "PERSIST_GET").record(t3 - t2, TimeUnit.NANOSECONDS)
+        metrics.timer(topic, "PERSIST_DELETE").record(t4 - t3, TimeUnit.NANOSECONDS)
+        metrics.timer(topic, "PERSIST_UPDATE").record(t5 - t4, TimeUnit.NANOSECONDS)
+
+        val sendStartTimestamp = System.nanoTime()
         val failedKeys = failedToCreate.keys + failedToDelete.keys + failedToUpdate.keys
         val outputsToSend = (outputs - failedKeys).values.flatMap { it.asyncOutputs }
         sendAsynchronousEvents(outputsToSend)
+        metrics.timer(topic, "SEND_ASYNC").record(System.nanoTime() - sendStartTimestamp, TimeUnit.NANOSECONDS)
 
         return failedToCreate + failedToDelete + failedToUpdateOptimisticLockFailure
     }

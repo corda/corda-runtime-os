@@ -635,10 +635,14 @@ object CordaMetrics {
              */
             object MessageProcessorTime : Metric<Timer>("messaging.processor.time", CordaMetrics::timer)
 
+            object MediatorTime : Metric<Timer>("mediator.time", CordaMetrics::timer)
+
             /**
              * The size of batches of messages received in polls from the message bus by consumers.
              */
             object ConsumerBatchSize : Metric<DistributionSummary>("consumer.batch.size", Metrics::summary)
+
+            object ConsumerPollSize : Metric<DistributionSummary>("consumer.poll.size", Metrics::summary)
 
             /**
              * The time taken to commit a processed batch of messages back to the bus.

@@ -10,7 +10,7 @@ import java.time.Duration
  * Message bus consumer that reads messages from configured topic.
  */
 class MessageBusConsumer<K: Any, V: Any>(
-    private val topic: String,
+    val topic: String,
     private val consumer: CordaConsumer<K, V>,
 ): MediatorConsumer<K, V> {
     override fun subscribe() = consumer.subscribe(topic)
