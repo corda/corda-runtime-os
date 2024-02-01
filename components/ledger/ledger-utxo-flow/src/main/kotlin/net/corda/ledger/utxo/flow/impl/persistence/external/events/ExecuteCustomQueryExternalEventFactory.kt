@@ -9,6 +9,7 @@ import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.persistence.query.StableResultSetExecutor
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.utilities.toByteBuffers
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Component
@@ -34,7 +35,7 @@ class VaultNamedQueryExternalEventFactory(
                 .setRequest(
                     FindWithNamedQuery(
                         parameters.queryName,
-                        parameters.queryParameters.mapValues { value -> value.value?.let { ByteBuffer.wrap(value.value) }  },
+                        parameters.queryParameters.toByteBuffers(),
                         0,
                         parameters.limit,
                         parameters.resumePoint?.let { ByteBuffer.wrap(it) }
