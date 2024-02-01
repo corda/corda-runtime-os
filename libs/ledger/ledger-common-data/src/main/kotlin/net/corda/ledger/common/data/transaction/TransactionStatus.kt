@@ -1,7 +1,9 @@
 package net.corda.ledger.common.data.transaction
 
+import net.corda.v5.base.annotations.CordaSerializable
 import java.security.InvalidParameterException
 
+@CordaSerializable
 enum class TransactionStatus(val value: String) {
     INVALID("I"),
     UNVERIFIED("U"),

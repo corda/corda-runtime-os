@@ -36,7 +36,7 @@ class TransactionVerificationExternalEventFactory(
             payload = TransactionVerificationRequestAvro.newBuilder()
                 .setTimestamp(clock.instant())
                 .setHoldingIdentity(checkpoint.holdingIdentity.toAvro())
-                .setTransaction(parameters.transaction)
+                .setTransaction(ByteBuffer.wrap(parameters.transaction))
                 .setCpkMetadata(parameters.cpkMetadata.map(CordaPackageSummary::toAvro))
                 .setFlowExternalEventContext(flowExternalEventContext)
                 .build()
@@ -62,7 +62,7 @@ class TransactionVerificationExternalEventFactory(
 
 @CordaSerializable
 data class TransactionVerificationParameters(
-    val transaction: ByteBuffer,
+    val transaction: ByteArray,
     val cpkMetadata: List<CordaPackageSummary>
 )
 

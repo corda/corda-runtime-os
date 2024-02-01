@@ -8,6 +8,7 @@ import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.uniqueness.datamodel.common.toUniquenessResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Component
 import java.time.Instant
@@ -47,6 +48,7 @@ class UniquenessCheckExternalEventFactory :
     )
 }
 
+@CordaSerializable
 data class UniquenessCheckExternalEventParams(
     val txId: String,
     val originatorX500Name: String,

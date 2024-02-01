@@ -16,9 +16,9 @@ class PersistTransactionExternalEventFactory :
     constructor(clock: Clock) : super(clock)
 
     override fun createRequest(parameters: PersistTransactionParameters): Any {
-        return PersistTransaction(parameters.transaction, parameters.transactionStatus, emptyList())
+        return PersistTransaction(ByteBuffer.wrap(parameters.transaction), parameters.transactionStatus, emptyList())
     }
 }
 
 @CordaSerializable
-data class PersistTransactionParameters(val transaction: ByteBuffer, val transactionStatus: String)
+data class PersistTransactionParameters(val transaction: ByteArray, val transactionStatus: String)
