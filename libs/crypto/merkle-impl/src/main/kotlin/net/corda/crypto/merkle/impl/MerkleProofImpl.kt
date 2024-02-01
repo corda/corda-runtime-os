@@ -249,18 +249,7 @@ class MerkleProofImpl(
         return nodeHashes.single().hash
     }
 
-    /**
-     *
-     * Work out a Merkle proof with specified leaves.
-     *
-     * Throws IllegalArgumentException if some requested leaf indices are not available in the source proof,
-     * or if no leaf indices are requested.
-     *
-     * @param digest the digest algorithm of this Merkle proof.
-     * @param leafIndices indices  of the known leaves to include in the output proof
-     * @return A new Merkle proof covering the specified leaves.
-     */
-    fun subset(digest: MerkleTreeHashDigest, leafIndices: List<Int>): MerkleProofImpl {
+    override fun subset(digest: MerkleTreeHashDigest, leafIndices: List<Int>): MerkleProofImpl {
         val outLeaves = leaves.filter { it.index in leafIndices }
         require(outLeaves.size == leafIndices.size) { "some leaves are not available in input proof"}
         require(outLeaves.isNotEmpty()) { "output proof must have at least one known leaf"}
@@ -296,16 +285,8 @@ class MerkleProofImpl(
         return MerkleProofImpl(proofType, treeSize, outLeaves, outHashes)
     }
 
-    /**
-     *
-     * Derive a proof that merges this proof with another.
-     *
-     * @param other Another proof to consider, which must be for the same Merkle tree.
-     * @param digest A hash digest provider, which must be compatible with this and the `other` proof.
-     * @return A MerkelProofImpl which has the union of the leaves and the required proof hashes to be verifiable.
-     */
     @Suppress("UnusedParameters")
-    override fun merge(other: MerkleProof, digest: MerkleTreeHashDigestProvider): MerkleProof {
+    override fun merge(other: MerkleProof, digest: MerkleTreeHashDigestProvider): MerkleProofInternal {
         require(this.treeSize == other.treeSize) {
             "underlying tree sizes must match; left hand side has underlying tree "+
                 "size ${this.treeSize} and right hand side has underlying tree size ${other.treeSize}"
@@ -411,7 +392,7 @@ class MerkleProofImpl(
 
     override fun getHashes() = hashes
 
-    fun render(digest: MerkleTreeHashDigest): String {
+    override fun render(digest: MerkleTreeHashDigest): String {
         val nodeLabels: MutableMap<Pair<Int,Int>, String> = mutableMapOf()
         val treeDepth = MerkleTreeImpl.treeDepth(treeSize)         // initialised to the depth of tree we should
         for(x in 0..treeDepth)
