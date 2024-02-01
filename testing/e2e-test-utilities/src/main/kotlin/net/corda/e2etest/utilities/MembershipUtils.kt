@@ -326,33 +326,23 @@ fun ClusterInfo.getRegistrationContext(
     holdingIdentityShortHash: String,
     registrationId: String?,
 ) = cluster {
-        var response: SimpleResponse? = null
-        assertWithRetryIgnoringExceptions {
-            // Use a fairly long timeout here to give plenty of time for the other side to respond. Longer
-            // term this should be changed to not use the RPC message pattern and have the information available in a
-            // cache on the REST worker, but for now this will have to suffice.
-            timeout(3.minutes)
-            interval(5.seconds)
-            command {
+        val response =
                 if (registrationId != null) {
                     getRegistrationStatus(holdingIdentityShortHash, registrationId)
                 } else {
                     getRegistrationStatus(holdingIdentityShortHash)
                 }
+        if (response.code == ResponseCode.OK.statusCode) {
+            val context = if (registrationId != null) {
+                response.toJson().get("memberInfoSubmitted")?.get("data")?.textValue()
+            } else {
+                response.toJson().firstOrNull()?.get("memberInfoSubmitted")?.get("data")?.textValue()
             }
-            condition {
-                response = it
-                it.code == ResponseCode.OK.statusCode
-            }
-            failMessage("Registration was not completed for $holdingIdentityShortHash")
-        }
-        val context = if (registrationId != null) {
-            response?.toJson()?.get("memberInfoSubmitted")?.get("data")?.textValue()
+            val contextMap = JSONObject(context)
+            return@cluster contextMap.toMap()
         } else {
-            response?.toJson()?.firstOrNull()?.get("memberInfoSubmitted")?.get("data")?.textValue()
+            return@cluster emptyMap()
         }
-        val contextMap = JSONObject(context)
-        return@cluster contextMap.toMap()
     }
 
 /**
