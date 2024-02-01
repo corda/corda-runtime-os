@@ -13,20 +13,20 @@ import javax.inject.Inject
 // Tasks related to querying a running Corda instance
 
 const val CLUSTER_QUERY_GROUP = "corda-runtime-plugin-queries"
-const val LISTVNODES_TASK_NAME = "listVNodes"
-const val LISTCPIS_TASK_NAME = "listCPIs"
+const val LIST_VNODES_TASK_NAME = "listVNodes"
+const val LIST_CPIS_TASK_NAME = "listCPIs"
 
 /**
  * Creates the gradle helper tasks in the corda-runtime-plugin-queries group
  */
 fun createCordaClusterQueryTasks(project: Project, pluginConfig: PluginConfiguration) {
     project.afterEvaluate {
-        project.tasks.create(LISTVNODES_TASK_NAME, ListVNodes::class.java) {
+        project.tasks.create(LIST_VNODES_TASK_NAME, ListVNodes::class.java) {
             it.group = CLUSTER_QUERY_GROUP
             it.pluginConfig.set(pluginConfig)
         }
 
-        project.tasks.create(LISTCPIS_TASK_NAME, ListCPIs::class.java) {
+        project.tasks.create(LIST_CPIS_TASK_NAME, ListCPIs::class.java) {
             it.group = CLUSTER_QUERY_GROUP
             it.pluginConfig.set(pluginConfig)
         }

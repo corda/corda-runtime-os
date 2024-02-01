@@ -1,22 +1,42 @@
 package net.corda.gradle.plugin
 
+import io.javalin.Javalin
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.BuildTask
 import org.gradle.testkit.runner.GradleRunner
 import org.gradle.testkit.runner.TaskOutcome
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
 
 // https://docs.gradle.org/current/userguide/test_kit.html
-abstract class FunctionalBaseTest {
+abstract class FunctionalBaseTest : Javalin() {
 
     @field:TempDir
     lateinit var projectDir: File
     private lateinit var buildFile: File
 
-    protected val restHostnameWithPort = "localhost:8888"
+    protected var restHostname = "localhost"
+    protected var restPort = 8888
+    protected val restHostnameWithPort get() = "$restHostname:$restPort"
+
+    protected lateinit var app: Javalin
+
+    protected fun startMockedApp() {
+        app.start(restHostname, restPort)
+    }
+
+    @BeforeEach
+    fun createMockedApp() {
+        app = create()
+    }
+
+    @AfterEach
+    fun stopMockedApp() {
+        if (::app.isInitialized) app.stop()
+    }
 
     @BeforeEach
     fun setup() {
@@ -34,11 +54,11 @@ abstract class FunctionalBaseTest {
         sourceConfigFolder.absoluteFile.copyRecursively(targetConfigFolder)
     }
 
-    fun appendCordaRuntimeGradlePluginExtension() {
+    fun appendCordaRuntimeGradlePluginExtension(restProtocol: String = "https") {
         buildFile.appendText(
             """
             cordaRuntimeGradlePlugin {
-                cordaClusterURL = "https://$restHostnameWithPort"
+                cordaClusterURL = "$restProtocol://$restHostnameWithPort"
                 cordaRestUser = "admin"
                 cordaRpcPasswd ="admin"
                 combinedWorkerVersion = "5.0.1.0"
