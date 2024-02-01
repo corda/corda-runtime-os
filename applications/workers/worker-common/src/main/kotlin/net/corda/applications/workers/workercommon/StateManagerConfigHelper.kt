@@ -11,6 +11,7 @@ import java.lang.IllegalArgumentException
 object StateManagerConfigHelper {
 
     private const val DEFAULT_TYPE = "DATABASE"
+    private const val DEFAULT_SCHEMA = "STATE_MANAGER"
     internal const val DEFAULT_DRIVER = "org.postgresql.Driver"
     internal const val DEFAULT_JDBC_POOL_MIN_SIZE = 0
     internal const val DEFAULT_JDBC_POOL_MAX_SIZE = 5
@@ -64,9 +65,11 @@ object StateManagerConfigHelper {
         )
 
     private fun createClusterConfig(config: Config): Config {
+        // if cluster JDBC url contains currentSchema, remove it and add state manager default schema
+        val jdbcUrl = config.getString(BootConfig.BOOT_JDBC_URL).split("?currentSchema").first()
         return ConfigFactory.parseMap(
             mapOf(
-                StateManagerConfig.Database.JDBC_URL to config.getString(BootConfig.BOOT_JDBC_URL),
+                StateManagerConfig.Database.JDBC_URL to "$jdbcUrl?currentSchema=$DEFAULT_SCHEMA",
                 StateManagerConfig.Database.JDBC_USER to config.getString(BootConfig.BOOT_JDBC_USER),
                 StateManagerConfig.Database.JDBC_PASS to config.getString(BootConfig.BOOT_JDBC_PASS),
             )

@@ -35,62 +35,30 @@ class PostgresHelper : ExternalDbHelper() {
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
 
-        if (!schemaName.isNullOrBlank()) {
-            val adminUser = getAdminUser()
-            val adminPassword = getAdminPassword()
-            val adminDataSource = net.corda.db.core.createUnpooledDataSource(
-                driverClass,
-                jdbcUrl,
-                adminUser,
-                adminPassword,
-                maximumPoolSize = maximumPoolSize
-            )
-
+        val jdbcUrlCopy = if (!schemaName.isNullOrBlank()) {
             if (createSchema) {
                 logger.info("Creating schema: $schemaName".emphasise())
-                adminDataSource.connection.use { conn ->
-                    val sql = """
-                        CREATE SCHEMA IF NOT EXISTS $schemaName;
-                    """.trimIndent()
-                    conn.prepareStatement(sql).execute()
+                net.corda.db.core.createUnpooledDataSource(
+                    driverClass,
+                    jdbcUrl,
+                    user,
+                    password,
+                    maximumPoolSize = maximumPoolSize
+                ).connection.use{ conn ->
+                    conn.prepareStatement("CREATE SCHEMA IF NOT EXISTS $schemaName;").execute()
                     conn.commit()
                 }
             }
 
-            if (dbUser != null) {
-                adminDataSource.connection.use { conn ->
-                    val createUserSql = """
-                        DO 
-                        ${'$'}${'$'} 
-                        BEGIN 
-                            IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '$dbUser') THEN 
-                                RAISE NOTICE 'Role "$dbUser" already exists'; 
-                            ELSE 
-                                CREATE USER "$dbUser" WITH PASSWORD '$password'; 
-                            END IF; 
-                        END 
-                        ${'$'}${'$'};
-                        GRANT ALL ON SCHEMA $schemaName TO "$dbUser";
-                        ALTER ROLE "$dbUser" SET search_path TO $schemaName;
-                            """.trimIndent()
-                    conn.prepareStatement(createUserSql).execute()
-                    conn.commit()
-                }
+            if (rewriteBatchedInserts) {
+                "$jdbcUrl?currentSchema=$schemaName&reWriteBatchedInserts=true"
             } else {
-                adminDataSource.connection.use { conn ->
-                    conn.prepareStatement("ALTER ROLE $adminUser SET search_path TO public, $schemaName;").execute()
-                    conn.commit()
-                }
+                "$jdbcUrl?currentSchema=$schemaName"
             }
-        }
-
-        val jdbcUrlCopy = if (rewriteBatchedInserts) {
-            "$jdbcUrl?reWriteBatchedInserts=true"
         } else {
             jdbcUrl
         }
         logger.info("Using URL $jdbcUrlCopy".emphasise())
-
         return net.corda.db.core.createUnpooledDataSource(
             driverClass,
             jdbcUrlCopy,
@@ -100,6 +68,7 @@ class PostgresHelper : ExternalDbHelper() {
         )
     }
 
+
     override fun createConfig(
         inMemoryDbName: String,
         dbUser: String?,
@@ -108,9 +77,15 @@ class PostgresHelper : ExternalDbHelper() {
     ): Config {
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
+        val currentJdbcUrl = if (!schemaName.isNullOrBlank()) {
+            "$jdbcUrl?currentSchema=$schemaName"
+        } else {
+            jdbcUrl
+        }
         return ConfigFactory.empty()
-            .withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcUrl))
+            .withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(currentJdbcUrl))
             .withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(user))
             .withValue(DatabaseConfig.DB_PASS, ConfigValueFactory.fromAnyRef(password))
     }
+
 }

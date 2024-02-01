@@ -41,7 +41,7 @@ class StateManagerConfigHelperTest {
         SoftAssertions.assertSoftly { softly ->
             StateManagerConfig.StateType.values().map { type ->
                 assertStateType(softly, smConfig, type,
-                    url = "url", user = "user", pass = "pass")
+                    url = "url?currentSchema=STATE_MANAGER", user = "user", pass = "pass")
             }
         }
     }

@@ -167,7 +167,7 @@ spec:
               java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar initial-config create-db-config \
                 -u "${RBAC_DB_USER_USERNAME}" -p "${RBAC_DB_USER_PASSWORD}" \
                 --name "corda-rbac" \
-                --jdbc-url "${JDBC_URL}" \
+                --jdbc-url "${JDBC_URL}?currentSchema=${DB_RBAC_SCHEMA}" \
                 --jdbc-pool-max-size {{ .Values.bootstrap.db.rbac.dbConnectionPool.maxSize | quote }} \
               {{- if not ( kindIs "invalid" .Values.bootstrap.db.rbac.dbConnectionPool.minSize ) }}
                 --jdbc-pool-min-size {{ .Values.bootstrap.db.rbac.dbConnectionPool.minSize | quote }}
@@ -209,7 +209,7 @@ spec:
               java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar initial-config create-db-config \
                 -u "${CRYPTO_DB_USER_USERNAME}" -p "${CRYPTO_DB_USER_PASSWORD}" \
                 --name "corda-crypto" \
-                --jdbc-url "${JDBC_URL}" \
+                --jdbc-url "${JDBC_URL}?currentSchema=${DB_CRYPTO_SCHEMA}" \
                 --jdbc-pool-max-size {{ .Values.bootstrap.db.crypto.dbConnectionPool.maxSize | quote }} \
               {{- if not ( kindIs "invalid" .Values.bootstrap.db.crypto.dbConnectionPool.minSize ) }}
                 --jdbc-pool-min-size {{ .Values.bootstrap.db.crypto.dbConnectionPool.minSize | quote }}
@@ -314,32 +314,22 @@ spec:
               find /tmp/db -iname "*.sql" | xargs printf -- ' -f %s' | xargs psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -U "${CLUSTER_PGUSER}" --dbname "${DB_CLUSTER_NAME}"
 
               echo 'Applying initial configurations'
-              (echo "SET search_path TO ${DB_CLUSTER_SCHEMA};";
-              cat /tmp/rbac/db-config.sql;
-              cat /tmp/vnodes/db-config.sql;
-              cat /tmp/crypto/db-config.sql;
-              cat /tmp/crypto-config.sql) | psql -v ON_ERROR_STOP=1 \
-              -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -U "${CLUSTER_PGUSER}" --dbname "dbname=${DB_CLUSTER_NAME}"
+              psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -U "${CLUSTER_PGUSER}" -f /tmp/rbac/db-config.sql -f /tmp/vnodes/db-config.sql -f /tmp/crypto/db-config.sql -f /tmp/crypto-config.sql --dbname "dbname=${DB_CLUSTER_NAME} options=--search_path=${DB_CLUSTER_SCHEMA}"
 
               echo 'Applying initial RBAC configuration'
-              (echo "SET search_path TO ${DB_RBAC_SCHEMA};";
-              cat  /tmp/rbac-config.sql) | psql -v ON_ERROR_STOP=1 \
-              -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -U "${CLUSTER_PGUSER}" --dbname "dbname=${DB_CLUSTER_NAME}"
+              psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -U "${CLUSTER_PGUSER}" -f /tmp/rbac-config.sql --dbname "dbname=${DB_CLUSTER_NAME} options=--search_path=${DB_RBAC_SCHEMA}"
 
               echo 'Creating users and granting permissions'
               psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -U "${CLUSTER_PGUSER}" "${DB_CLUSTER_NAME}" << SQL
                 GRANT USAGE ON SCHEMA ${DB_CLUSTER_SCHEMA} TO "${DB_CLUSTER_USERNAME}";
                 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${DB_CLUSTER_SCHEMA} TO "${DB_CLUSTER_USERNAME}";
                 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA ${DB_CLUSTER_SCHEMA} TO "${DB_CLUSTER_USERNAME}";
-                ALTER ROLE "${DB_CLUSTER_USERNAME}" SET search_path TO ${DB_CLUSTER_SCHEMA};
                 DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${RBAC_DB_USER_USERNAME}') THEN RAISE NOTICE 'Role "${RBAC_DB_USER_USERNAME}" already exists'; ELSE CREATE USER "${RBAC_DB_USER_USERNAME}" WITH ENCRYPTED PASSWORD '${RBAC_DB_USER_PASSWORD}'; END IF; END \$\$;
                 GRANT USAGE ON SCHEMA ${DB_RBAC_SCHEMA} TO "$RBAC_DB_USER_USERNAME";
                 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${DB_RBAC_SCHEMA} TO "$RBAC_DB_USER_USERNAME";
-                ALTER ROLE "${RBAC_DB_USER_USERNAME}" SET search_path TO ${DB_RBAC_SCHEMA};
                 DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${CRYPTO_DB_USER_USERNAME}') THEN RAISE NOTICE 'Role "${CRYPTO_DB_USER_USERNAME}" already exists'; ELSE CREATE USER "${CRYPTO_DB_USER_USERNAME}" WITH ENCRYPTED PASSWORD '$CRYPTO_DB_USER_PASSWORD'; END IF; END \$\$;
                 GRANT USAGE ON SCHEMA ${DB_CRYPTO_SCHEMA} TO "${CRYPTO_DB_USER_USERNAME}";
                 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${DB_CRYPTO_SCHEMA} TO "${CRYPTO_DB_USER_USERNAME}";
-                ALTER ROLE "${CRYPTO_DB_USER_USERNAME}" SET search_path TO ${DB_CRYPTO_SCHEMA};
               SQL
 
               echo 'DB Bootstrapped'

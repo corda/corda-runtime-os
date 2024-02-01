@@ -6,14 +6,11 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
-import net.corda.db.admin.impl.ClassloaderChangeLog
-import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.connection.manager.DBConfigurationException
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
-import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
-import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
+import net.corda.db.testkit.TestDbInfo
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.AutoTickTestClock
@@ -64,10 +61,7 @@ import kotlin.test.assertEquals
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class UniquenessCheckerImplDBIntegrationTests {
 
-    private val clusterDbConfig = DbUtils.getEntityManagerConfiguration(
-        inMemoryDbName = "clusterdb",
-        showSql = false
-    )
+    private val clusterDbConfig = DbUtils.getEntityManagerConfiguration("clusterdb")
 
     private val baseTime: Instant = Instant.EPOCH
 
@@ -163,75 +157,30 @@ class UniquenessCheckerImplDBIntegrationTests {
      * Creates an in-memory database and applies the relevant migration scripts
      */
     init {
-        val persistenceUnitName = "uniq_test_default"
         // Each DB uses both a different db name and schema name, as HSQLDB does not appear to
         // respect schema name
-
-        // Create users and schemas
-        val defaultEMConfig = DbUtils.getEntityManagerConfiguration(
-            dbUser = "user_$defaultHoldingIdentityDbName",
-            schemaName = defaultHoldingIdentityDbName,
-            createSchema = true,
-            showSql = false,
-            rewriteBatchedInserts = true,
+        defaultHoldingIdentityDb = JPABackingStoreTestUtilities.setupUniquenessDatabase(
+            TestDbInfo(
+                "uniq_test_default",
+                defaultHoldingIdentityDbName,
+                rewriteBatchedInserts = true
+            )
         )
 
-        val bobEMConfig = DbUtils.getEntityManagerConfiguration(
-            dbUser = "user_$bobHoldingIdentityDbName",
-            schemaName = bobHoldingIdentityDbName,
-            createSchema = true,
-            showSql = false,
-            rewriteBatchedInserts = true,
+        bobHoldingIdentityDb =  JPABackingStoreTestUtilities.setupUniquenessDatabase(
+            TestDbInfo(
+                "uniq_test_bob",
+                bobHoldingIdentityDbName,
+                rewriteBatchedInserts = true
+            )
         )
 
-        val charlieEMConfig = DbUtils.getEntityManagerConfiguration(
-            dbUser = "user_$charlieHoldingIdentityDbName",
-            schemaName = charlieHoldingIdentityDbName,
-            createSchema = true,
-            showSql = false,
-            rewriteBatchedInserts = true,
-        )
-
-        // Populate schemas with tables
-        val resourceSubPath = "vnode-uniqueness"
-        val uniquenessSchema = ClassloaderChangeLog.ChangeLogResourceFiles(
-            DbSchema::class.java.packageName,
-            listOf("net/corda/db/schema/$resourceSubPath/db.changelog-master.xml"),
-            DbSchema::class.java.classLoader
-        )
-
-        val lbm = LiquibaseSchemaMigratorImpl()
-        val cl = ClassloaderChangeLog(linkedSetOf(uniquenessSchema))
-        listOf(
-            Pair(defaultEMConfig.dataSource, defaultHoldingIdentityDbName),
-            Pair(bobEMConfig.dataSource, bobHoldingIdentityDbName),
-            Pair(charlieEMConfig.dataSource, charlieHoldingIdentityDbName)
-        ).forEach { (ds, schemaName) ->
-            ds.connection.use {
-                it.prepareStatement("SET search_path TO $schemaName;").execute()
-                it.commit()
-                lbm.updateDb(it, cl)
-            }
-        }
-
-        val emff = EntityManagerFactoryFactoryImpl()
-        val jpaBackingStoreEntities = JPABackingStoreTestUtilities.getJPABackingStoreEntities().toList()
-        defaultHoldingIdentityDb = emff.create(
-            persistenceUnitName,
-            jpaBackingStoreEntities,
-            defaultEMConfig
-        )
-
-        bobHoldingIdentityDb = emff.create(
-            persistenceUnitName,
-            jpaBackingStoreEntities,
-            bobEMConfig
-        )
-
-        charlieHoldingIdentityDb = emff.create(
-            persistenceUnitName,
-            jpaBackingStoreEntities,
-            charlieEMConfig
+        charlieHoldingIdentityDb = JPABackingStoreTestUtilities.setupUniquenessDatabase(
+            TestDbInfo(
+                "uniq_test_charlie",
+                charlieHoldingIdentityDbName,
+                rewriteBatchedInserts = true
+            )
         )
     }
 

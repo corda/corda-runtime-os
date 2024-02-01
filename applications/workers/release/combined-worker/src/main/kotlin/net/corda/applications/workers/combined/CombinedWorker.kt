@@ -108,6 +108,8 @@ class CombinedWorker @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val DEFAULT_BOOT_STATE_MANAGER_TYPE = "DATABASE"
         private const val MESSAGE_BUS_CONFIG_PATH_SUFFIX = "_messagebus"
+        private const val MESSAGEBUS_SCHEMA_NAME = "MESSAGEBUS"
+        private const val CONFIG_SCHEMA_NAME = "CONFIG"
     }
 
     /** Parses the arguments, then initialises and starts the processors. */
@@ -219,16 +221,17 @@ class CombinedWorker @Activate constructor(
     }
 
     /**
-     * Sets the JDBC URL (as schema agnostic). It is the DB users responsibility to have set their search_path context
-     * to be able to see whichever schema they need to see.
+     * Combined worker parameter for JDBC URL should be the schemaless database URL because the combined worker sets up
+     * schemas itself. However, Corda processors all expect the JDBC URL in the config to point to the config schema
+     * directly, so the name of that schema must be added to the params that are used to create the config.
      */
     private fun prepareDbConfig(dbConfig: Config): Config {
         val tempJdbcUrl = dbConfig.getString(BOOT_JDBC_URL)
         return dbConfig
-            .withValue(BOOT_JDBC_URL, fromAnyRef(tempJdbcUrl))
+            .withValue(BOOT_JDBC_URL, fromAnyRef("$tempJdbcUrl?currentSchema=$CONFIG_SCHEMA_NAME"))
             .withValue(
                 BOOT_JDBC_URL + MESSAGE_BUS_CONFIG_PATH_SUFFIX,
-                fromAnyRef(tempJdbcUrl)
+                fromAnyRef("$tempJdbcUrl?currentSchema=$MESSAGEBUS_SCHEMA_NAME")
             )
     }
 

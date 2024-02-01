@@ -3,16 +3,13 @@ package repository
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
-import net.corda.db.core.utils.transaction
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import org.junit.jupiter.api.AfterAll
-import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
-@Suppress("warnings")
 abstract class CryptoRepositoryTest {
     private val dbs: List<Pair<EntityManagerConfiguration, EntityManagerFactory>>
 
@@ -26,33 +23,28 @@ abstract class CryptoRepositoryTest {
      * the entityManagerFactories.
      */
     init {
-        val schemaUniqueId = UUID.randomUUID().toString().split("-").get(0)
         dbs = mapOf(
             "cluster" to MIGRATION_FILE_LOCATION,
             "vnode" to MIGRATION_FILE_LOCATION_VNODE,
             )
-            .map { (schemaName, migrationFile) ->
+            .map { (k,v) ->
                 val dbChange = ClassloaderChangeLog(
                     linkedSetOf(
                         ClassloaderChangeLog.ChangeLogResourceFiles(
                             DbSchema::class.java.packageName,
-                            listOf(migrationFile),
+                            listOf(v),
                             DbSchema::class.java.classLoader
                         )
                     )
                 )
-                val uniqueSchemaName = "${schemaName}_${schemaUniqueId}"
                 val dbConfig =
                     DbUtils.getEntityManagerConfiguration(
-                        inMemoryDbName = "${this::class.java.simpleName}-$uniqueSchemaName",
-                        dbUser = "user-$uniqueSchemaName",
-                        dbPassword = "123",
-                        schemaName = uniqueSchemaName,
+                        inMemoryDbName = "${this::class.java.simpleName}-$k",
+                        schemaName = k,
                         createSchema = true
                     )
-                dbConfig.dataSource.connection.transaction { connection ->
-                    connection.prepareStatement("SET search_path TO \"$uniqueSchemaName\";").execute()
-                    LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange, uniqueSchemaName)
+                dbConfig.dataSource.connection.use { connection ->
+                    LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange)
                 }
                 val entityManagerFactory = EntityManagerFactoryFactoryImpl().create(
                     this::class.java.simpleName,

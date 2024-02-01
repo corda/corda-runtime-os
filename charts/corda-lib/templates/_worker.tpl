@@ -306,7 +306,7 @@ spec:
           {{- if $optionalArgs.clusterDbAccess }}
           - "-ddatabase.user=$(DB_CLUSTER_USERNAME)"
           - "-ddatabase.pass=$(DB_CLUSTER_PASSWORD)"
-          - "-ddatabase.jdbc.url=jdbc:postgresql://{{ required "Must specify db.cluster.host" $.Values.db.cluster.host }}:{{ $.Values.db.cluster.port }}/{{ $.Values.db.cluster.database }}"
+          - "-ddatabase.jdbc.url=jdbc:postgresql://{{ required "Must specify db.cluster.host" $.Values.db.cluster.host }}:{{ $.Values.db.cluster.port }}/{{ $.Values.db.cluster.database }}?currentSchema={{ $.Values.db.cluster.schema }}"
           - "-ddatabase.jdbc.directory=/opt/jdbc-driver"
           - "-ddatabase.pool.max_size={{ .clusterDbConnectionPool.maxSize }}"
           {{- if .clusterDbConnectionPool.minSize }}
@@ -325,7 +325,7 @@ spec:
           - "--stateManager"
           - "database.pass=$(STATE_MANAGER_PASSWORD)"
           - "--stateManager"
-          - "database.jdbc.url={{- include "corda.stateManagerJdbcUrl" ( list $ . ) -}}"
+          - "database.jdbc.url={{- include "corda.stateManagerJdbcUrl" ( list $ . ) -}}?currentSchema=STATE_MANAGER"
           - "--stateManager"
           - "database.jdbc.directory=/opt/jdbc-driver"
           - "--stateManager"
