@@ -79,4 +79,6 @@ interface UtxoPersistenceService {
         filteredTransactionsAndSignatures: Map<FilteredTransaction, List<DigitalSignatureAndMetadata>>,
         account: String
     )
+
+    fun persistTransactionSignatures(id: String, signatures: List<ByteArray>, startingIndex: Int)
 }

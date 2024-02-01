@@ -288,6 +288,25 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
+    override fun persistTransactionSignatures(id: String, signatures: List<ByteArray>, startingIndex: Int) {
+        val nowUtc = utcClock.instant()
+        val digitalSignatureAndMetadatas = signatures.map {
+            serializationService.deserialize<DigitalSignatureAndMetadata>(it)
+        }
+        entityManagerFactory.transaction { em ->
+            // Insert the Transactions signatures
+            digitalSignatureAndMetadatas.forEachIndexed { index, digitalSignatureAndMetadata ->
+                repository.persistTransactionSignature(
+                    em,
+                    id,
+                    startingIndex + index,
+                    digitalSignatureAndMetadata,
+                    nowUtc
+                )
+            }
+        }
+    }
+
     override fun updateStatus(id: String, transactionStatus: TransactionStatus) {
         entityManagerFactory.transaction { em ->
             repository.updateTransactionStatus(em, id, transactionStatus, utcClock.instant())
