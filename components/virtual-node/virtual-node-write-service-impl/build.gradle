@@ -57,6 +57,6 @@ dependencies {
     testImplementation project(':testing:test-utilities')
 
     testRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    testRuntimeOnly libs.postgresql.jdbc
     testRuntimeOnly libs.slf4j.simple
 }

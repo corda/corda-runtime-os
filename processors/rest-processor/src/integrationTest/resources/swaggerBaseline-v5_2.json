@@ -4411,9 +4411,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "type" : "string",
-                  "nullable" : false,
-                  "example" : "No example available for this type"
+                  "$ref" : "#/components/schemas/ManagedKeyRotationResponse"
                 }
               }
             }
@@ -5432,6 +5430,22 @@
               },
               "example" : "No example available for this type"
             }
+          }
+        }
+      },
+      "ManagedKeyRotationResponse" : {
+        "required" : [ "requestId", "tenantId" ],
+        "type" : "object",
+        "properties" : {
+          "requestId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "tenantId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
           }
         }
       },

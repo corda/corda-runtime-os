@@ -34,7 +34,7 @@ dependencies {
     implementation project(":libs:utilities")
 
 
-    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    testRuntimeOnly libs.postgresql.jdbc
 
     integrationTestImplementation project(":testing:db-testkit")
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"

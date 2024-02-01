@@ -9,6 +9,4 @@ metrics:
     labels:
       release: observability
     keepNames: [ ]
-    dropLabels:
-      - "virtualnode_destination"
-      - "virtualnode_source"
+    dropLabels: []
