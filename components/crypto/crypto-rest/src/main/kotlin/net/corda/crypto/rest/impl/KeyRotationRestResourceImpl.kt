@@ -273,6 +273,10 @@ class KeyRotationRestResourceImpl @Activate constructor(
             "Cannot start key rotation. TenantId is not specified."
         )
 
+        if (!hasPreviousRotationFinished()) {
+            throw ForbiddenException("A key rotation operation is already ongoing, a new one cannot be started until it completes.")
+        }
+
         return doManagedKeyRotation(
             tenantId,
             publishRequests = { publishToKafka!!.publish(it) }

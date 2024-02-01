@@ -31,7 +31,6 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.StateManagerConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.never
@@ -231,7 +230,6 @@ class KeyRotationRestResourceTest {
         assertThat(stateManagerPublicationCount).isEqualTo(0)
     }
 
-    @Disabled("Managed key rotation does not yet use state manager to check the status of previous key rotations.")
     @Test
     fun `start managed key rotation event throws when state manager is not initialised`() {
         val keyRotationRestResource =
