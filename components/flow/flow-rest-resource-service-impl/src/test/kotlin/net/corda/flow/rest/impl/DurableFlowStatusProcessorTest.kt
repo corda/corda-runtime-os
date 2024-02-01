@@ -5,12 +5,7 @@ import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
-import net.corda.libs.statemanager.api.IntervalFilter
-import net.corda.libs.statemanager.api.MetadataFilter
-import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
-import net.corda.libs.statemanager.api.StateOperationGroup
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import org.assertj.core.api.Assertions.assertThat
@@ -19,7 +14,6 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.time.Instant
 
 class DurableFlowStatusProcessorTest {
     private lateinit var flowStatusProcessor: DurableFlowStatusProcessor
@@ -144,98 +138,4 @@ class DurableFlowStatusProcessorTest {
 
     private fun createFlowStatus(flowStatus: FlowStates = FlowStates.START_REQUESTED) =
         FlowStatus().apply { initiatorType = FlowInitiatorType.RPC; this.flowStatus = flowStatus }
-
-    private fun getMockStateManager(): StateManager {
-        return object : StateManager {
-            private val stateStore = mutableMapOf<String, State>()
-            override val name = LifecycleCoordinatorName("MockStateManager")
-
-            override fun create(states: Collection<State>): Set<String> {
-                val failedKeys = mutableSetOf<String>()
-
-                states.forEach { state ->
-                    if (state.key in stateStore) {
-                        failedKeys.add(state.key)
-                    } else {
-                        stateStore[state.key] = state.copy(modifiedTime = Instant.now())
-                    }
-                }
-
-                return failedKeys
-            }
-
-            override fun get(keys: Collection<String>): Map<String, State> {
-                return keys.mapNotNull { key -> stateStore[key]?.let { key to it } }.toMap()
-            }
-
-            override fun update(states: Collection<State>): Map<String, State?> {
-                val failedUpdates = mutableMapOf<String, State?>()
-
-                states.forEach { state ->
-                    val currentState = stateStore[state.key]
-                    if (currentState == null || currentState.version != state.version) {
-                        // State does not exist or version mismatch
-                        failedUpdates[state.key] = currentState
-                    } else {
-                        // Optimistic locking condition met
-                        val updatedState = state.copy(version = currentState.version + 1, modifiedTime = Instant.now())
-                        stateStore[state.key] = updatedState
-                    }
-                }
-
-                return failedUpdates
-            }
-
-            override fun delete(states: Collection<State>): Map<String, State> {
-                val failedDeletion = mutableMapOf<String, State>()
-
-                states.forEach { state ->
-                    val currentState = stateStore[state.key]
-                    if (currentState != null && currentState.version == state.version) {
-                        stateStore.remove(state.key)
-                    } else {
-                        currentState?.let { failedDeletion[state.key] = currentState }
-                    }
-                }
-
-                return failedDeletion
-            }
-
-            override fun updatedBetween(interval: IntervalFilter): Map<String, State> {
-                TODO("Not yet implemented")
-            }
-
-            override fun findByMetadataMatchingAll(filters: Collection<MetadataFilter>): Map<String, State> {
-                TODO("Not yet implemented")
-            }
-
-            override fun findByMetadataMatchingAny(filters: Collection<MetadataFilter>): Map<String, State> {
-                TODO("Not yet implemented")
-            }
-
-            override fun findUpdatedBetweenWithMetadataMatchingAll(
-                intervalFilter: IntervalFilter,
-                metadataFilters: Collection<MetadataFilter>
-            ): Map<String, State> {
-                TODO("Not yet implemented")
-            }
-
-            override fun findUpdatedBetweenWithMetadataMatchingAny(
-                intervalFilter: IntervalFilter,
-                metadataFilters: Collection<MetadataFilter>
-            ): Map<String, State> {
-                TODO("Not yet implemented")
-            }
-
-            override fun createOperationGroup(): StateOperationGroup {
-                TODO("Not yet implemented")
-            }
-
-            override val isRunning = true
-
-            override fun start() { }
-
-            override fun stop() { }
-        }
-    }
 }
