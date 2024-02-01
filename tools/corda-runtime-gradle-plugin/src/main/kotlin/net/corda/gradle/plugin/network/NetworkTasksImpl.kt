@@ -32,8 +32,8 @@ class NetworkTasksImpl(var pc: ProjectContext) {
 
             VNodeHelper().createVNode(
                 pc.cordaClusterURL,
-                pc.cordaRestUser,
-                pc.cordaRestPassword,
+                pc.cordaRpcUser,
+                pc.cordaRpcPassword,
                 it,
                 cpiUploadFilePath
             )
@@ -72,16 +72,16 @@ class NetworkTasksImpl(var pc: ProjectContext) {
 
             if (!helper.checkVNodeIsRegistered(
                     pc.cordaClusterURL,
-                    pc.cordaRestUser,
-                    pc.cordaRestPassword,
+                    pc.cordaRpcUser,
+                    pc.cordaRpcPassword,
                     shortHash
                 )
             ) {
                 pc.logger.quiet("Registering vNode: ${vn.x500Name} with shortHash: $shortHash")
                 helper.registerVNode(
                     pc.cordaClusterURL,
-                    pc.cordaRestUser,
-                    pc.cordaRestPassword,
+                    pc.cordaRpcUser,
+                    pc.cordaRpcPassword,
                     vn,
                     shortHash,
                     pc.vnodeRegistrationTimeout
