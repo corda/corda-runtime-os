@@ -12,6 +12,7 @@ import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
+import net.corda.ledger.utxo.data.transaction.MerkleProofDto
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
@@ -331,6 +332,38 @@ class UtxoPersistenceServiceImpl(
                     utcClock.instant()
                 )
             }
+        }
+    }
+
+    override fun persistMerkleProof(
+        transactionId: String,
+        groupIndex: Int,
+        treeSize: Int,
+        leaves: List<Int>,
+        hashes: List<String>
+    ) {
+        return entityManagerFactory.transaction { em ->
+            val persistedMerkleProofId = repository.persistMerkleProof(
+                em,
+                transactionId,
+                groupIndex,
+                treeSize,
+                leaves,
+                hashes
+            )
+
+            leaves.forEach { leafIndex ->
+                repository.persistMerkleProofLeaf(em, persistedMerkleProofId, leafIndex)
+            }
+        }
+    }
+
+    override fun findMerkleProofs(
+        transactionId: String,
+        groupIndex: Int
+    ): List<MerkleProofDto> {
+        return entityManagerFactory.transaction { em ->
+            repository.findMerkleProofs(em, transactionId, groupIndex)
         }
     }
 }

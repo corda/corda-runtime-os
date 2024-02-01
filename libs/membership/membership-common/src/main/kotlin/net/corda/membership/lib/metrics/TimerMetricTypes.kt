@@ -12,7 +12,7 @@ import net.corda.metrics.CordaMetrics.NOT_APPLICABLE_TAG_VALUE
 import net.corda.virtualnode.toCorda
 
 enum class TimerMetricTypes {
-    REGISTRATION, SYNC, ACTIONS, PERSISTENCE_HANDLER, PERSISTENCE_TRANSACTION;
+    REGISTRATION, SYNC, ACTIONS, PERSISTENCE_HANDLER, PERSISTENCE_TRANSACTION
 }
 
 fun getTimerMetric(

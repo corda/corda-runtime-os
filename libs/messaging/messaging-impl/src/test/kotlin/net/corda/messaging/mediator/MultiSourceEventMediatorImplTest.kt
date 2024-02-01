@@ -23,13 +23,13 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class MultiSourceEventMediatorImplTest {
 
-    private val mediatorState = spy(MediatorState(AtomicBoolean(false), AtomicBoolean(false)))
+    private val mediatorSubscriptionState = spy(MediatorSubscriptionState(AtomicBoolean(false), AtomicBoolean(false)))
     private val messagingClient = mock<MessagingClient>()
     private val consumerProcessor = mock<ConsumerProcessor<Any, Any, Any>>()
     private val mediatorComponentFactory = mock<MediatorComponentFactory<Any, Any, Any>>().apply {
         whenever(createClients(any())).thenReturn(listOf(messagingClient))
         whenever(createRouter(any())).thenReturn(mock())
-        whenever(createConsumerProcessor(any(), any(), any(), eq(mediatorState))).thenReturn(consumerProcessor)
+        whenever(createConsumerProcessor(any(), any(), any(), eq(mediatorSubscriptionState))).thenReturn(consumerProcessor)
     }
     private val lifecycleCoordinator = mock<LifecycleCoordinator>()
     private val taskManager = mock<TaskManager>().apply {
@@ -76,6 +76,6 @@ class MultiSourceEventMediatorImplTest {
 
         mediator.close()
         verify(lifecycleCoordinator).close()
-        verify(mediatorState).stop()
+        verify(mediatorSubscriptionState).stop()
     }
 }

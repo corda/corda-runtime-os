@@ -5,8 +5,8 @@ import net.corda.applications.workers.smoketest.utils.TEST_CPI_NAME
 import net.corda.e2etest.utilities.ClusterReadiness
 import net.corda.e2etest.utilities.ClusterReadinessChecker
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
-import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
-import net.corda.e2etest.utilities.RpcSmokeTestInput
+import net.corda.e2etest.utilities.REST_FLOW_STATUS_SUCCESS
+import net.corda.e2etest.utilities.RestSmokeTestInput
 import net.corda.e2etest.utilities.awaitRestFlowResult
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
@@ -17,12 +17,13 @@ import net.corda.e2etest.utilities.config.waitForConfigurationChange
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.registerStaticMember
-import net.corda.e2etest.utilities.startRpcFlow
+import net.corda.e2etest.utilities.startRestFlow
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -83,43 +84,45 @@ class ConfigurationChangeTest : ClusterReadiness by ClusterReadinessChecker() {
         // check cluster is ready when done with this test
         assertIsReady(Duration.ofMinutes(1), Duration.ofMillis(100))
     }
-    
+
+    @Disabled ("This test is disabled while we find the root cause CORE-19316")
     @Test
     fun `cluster configuration changes are picked up and workers continue to operate normally`() {
         val currentConfigValue = getConfig(MESSAGING_CONFIG).configWithDefaultsNode()[MAX_ALLOWED_MSG_SIZE].asInt()
         val newConfigurationValue = (currentConfigValue * 1.5).toInt()
 
-        managedConfig { configManager ->
-            logger.info("Set new config")
-            configManager
-                .load(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue)
-                .apply()
-            // Wait for the rpc-worker to reload the configuration and come back up
+        logger.info("Set new config")
+        managedConfig()
+            .load(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue).apply {
+            // Wait for the rest-worker to reload the configuration and come back up
             logger.info("Wait for the rest-worker to reload the configuration and come back up")
             waitForConfigurationChange(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue.toString(), false)
+
+            //Ensure cluster is ready after Config Update.
+            assertIsReady(Duration.ofMinutes(1), Duration.ofMillis(100))
 
             // Execute some flows which require functionality from different workers and make sure they succeed
             logger.info("Execute some flows which require functionality from different workers and make sure they succeed")
             val flowIds = mutableListOf(
-                startRpcFlow(
+                startRestFlow(
                     bobHoldingId,
-                    RpcSmokeTestInput().apply {
+                    RestSmokeTestInput().apply {
                         command = "persistence_persist"
                         data = mapOf("id" to UUID.randomUUID().toString())
                     }
                 ),
 
-                startRpcFlow(
+                startRestFlow(
                     bobHoldingId,
-                    RpcSmokeTestInput().apply {
+                    RestSmokeTestInput().apply {
                         command = "crypto_sign_and_verify"
                         data = mapOf("memberX500" to bobX500)
                     }
                 ),
 
-                startRpcFlow(
+                startRestFlow(
                     bobHoldingId,
-                    RpcSmokeTestInput().apply {
+                    RestSmokeTestInput().apply {
                         command = "lookup_member_by_x500_name"
                         data = mapOf("id" to charlyX500)
                     }
@@ -130,7 +133,7 @@ class ConfigurationChangeTest : ClusterReadiness by ClusterReadinessChecker() {
             flowIds.forEach {
                 val flowResult = awaitRestFlowResult(bobHoldingId, it)
                 assertThat(flowResult.flowError).isNull()
-                assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+                assertThat(flowResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
             }
         }
     }

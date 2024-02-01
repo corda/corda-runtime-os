@@ -23,6 +23,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.configuration.StateManagerConfig
 import net.corda.testing.messaging.integration.IntegrationTestProperties.Companion.TEST_CONFIG
 import net.corda.testing.messaging.integration.TopicTemplates.Companion.MEDIATOR_TOPIC1
 import net.corda.testing.messaging.integration.TopicTemplates.Companion.MEDIATOR_TOPIC1_OUTPUT
@@ -92,7 +93,7 @@ class MediatorSubscriptionIntegrationTest {
     }
 
     private fun buildStateManager(): StateManager {
-        return stateManagerFactory.create(SmartConfigImpl.empty())
+        return stateManagerFactory.create(SmartConfigImpl.empty(), StateManagerConfig.StateType.FLOW_CHECKPOINT)
     }
 
     private fun buildBuilder(

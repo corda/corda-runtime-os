@@ -58,7 +58,8 @@ class RestResourceLifecycleHandlerTest {
     @Test
     fun `registration status UP sets coordinator status to UP`() {
         registrationRestResourceLifecycleHandler.processEvent(
-            RegistrationStatusChangeEvent(registrationHandle, LifecycleStatus.UP), coordinator
+            RegistrationStatusChangeEvent(registrationHandle, LifecycleStatus.UP),
+            coordinator
         )
         verify(activate).invoke(any())
     }
@@ -67,7 +68,8 @@ class RestResourceLifecycleHandlerTest {
     fun `registration status DOWN sets coordinator status to DOWN`() {
         registrationRestResourceLifecycleHandler.processEvent(StartEvent(), coordinator)
         registrationRestResourceLifecycleHandler.processEvent(
-            RegistrationStatusChangeEvent(registrationHandle, LifecycleStatus.DOWN), coordinator
+            RegistrationStatusChangeEvent(registrationHandle, LifecycleStatus.DOWN),
+            coordinator
         )
 
         verify(deactivate).invoke(any())
@@ -76,7 +78,8 @@ class RestResourceLifecycleHandlerTest {
     @Test
     fun `registration status ERROR sets coordinator status to DOWN`() {
         registrationRestResourceLifecycleHandler.processEvent(
-            RegistrationStatusChangeEvent(mock(), LifecycleStatus.ERROR), coordinator
+            RegistrationStatusChangeEvent(mock(), LifecycleStatus.ERROR),
+            coordinator
         )
 
         verify(deactivate).invoke(any())

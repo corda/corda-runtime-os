@@ -5,6 +5,8 @@ plugins {
 
 description 'Group Parameters Writer Service'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 

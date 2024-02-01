@@ -67,6 +67,7 @@ class DefaultWorkerParams(healthPortOverride: Int = WORKER_SERVER_PORT) {
             "defaults to 1 sample per second. Set to \"unlimited\" to record all samples"])
     var traceSamplesPerSecond: String? = null
 
+    // todo CORE-19372 remove this CLI arg, it will be replaced with config file
     @Option(
         names = ["--${BootConfig.BOOT_STATE_MANAGER}"],
         description = ["Configuration for the state manager."]

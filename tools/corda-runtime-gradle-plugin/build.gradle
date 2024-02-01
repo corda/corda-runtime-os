@@ -1,0 +1,49 @@
+plugins {
+    id 'java-gradle-plugin'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'org.jetbrains.kotlin.jvm'
+}
+
+ext {
+    releasable = true
+}
+
+group 'net.corda.gradle.plugin'
+description 'A Gradle plugin that wraps a subset of the SDK functions to facilitate their use in developer and CI scenarios.'
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    api libs.junit.api
+    testImplementation libs.bundles.test
+}
+
+integrationTest {
+    systemProperty 'cordaArtifactoryUsername', findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+    systemProperty 'cordaArtifactoryPassword', findProperty('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+}
+
+gradlePlugin {
+    plugins {
+        cordaRuntimeGradlePlugin {
+            id = 'net.corda.gradle.plugin'
+            implementationClass = 'net.corda.gradle.plugin.CordaRuntimeGradlePlugin'
+            displayName = 'corda-runtime-gradle-plugin'
+        }
+    }
+    automatedPublishing = true
+}
+
+publishing {
+    publications {
+        configureEach {
+            pom {
+                name = 'corda-runtime-gradle-plugin'
+                description = 'A Gradle plugin that wraps a subset of the SDK functions to facilitate their use in developer and CI scenarios.'
+            }
+        }
+    }
+}

@@ -119,4 +119,69 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
             WHERE id = :transactionId 
             AND (status = :newStatus OR status = '$UNVERIFIED')"""
             .trimIndent()
+
+    /**
+     * This query will join the Merkle proof table and the component group table together to find the leaf data the
+     * Merkle proof has revealed.
+     *
+     * Each Merkle proof has an ID created by concatenating the following properties:
+     * - Transaction ID
+     * - Group Index
+     * - Revealed leaf indices joined to a string
+     *
+     * The indices that the Merkle proof reveals are stored in a join-table. That's the reason we need a sub-query
+     * to fetch the relevant indices from the other table.
+     *
+     * This query will return a result set with the following column structure:
+     *
+     * | transaction_id | group_idx | tree_size | leaf_idx | data  | hashes |
+     *
+     * A row will be returned for each revealed leaf containing the data from the component table.
+     *
+     * For example if we have the following Merkle tree:
+     *
+     *              COMPONENT GROUP ROOT
+     *                     /    \
+     *                    /      \
+     *                   /        \
+     *                  /          \
+     *                 /            \
+     *               H01            H23
+     *              / \             / \
+     *             /   \           /   \
+     *            /     \         /     \
+     *           H0     H1       H2     H3
+     *           |      |        |      |
+     *          L0     L1       L2     L3
+     *
+     * If we persist a Merkle proof that contains L1 and L3 data then retrieve it from the store, then we'll
+     * get the following result set:
+     *
+     * | merkle_proof_id     | transaction_id | group_idx | tree_size | leaf_idx | data  | hashes |
+     * |---------------------|----------------|-----------|-----------|----------|-------|--------|
+     * | SHA-256D:11111-8-13 | SHA-256:11111  | 8         | 4         | 1        | bytes | H0,H2  |
+     * | SHA-256D:11111-8-13 | SHA-256:11111  | 8         | 4         | 3        | bytes | H0,H2  |
+     */
+    override val findMerkleProofs: String
+        get() = """
+            SELECT
+                utmp.merkle_proof_id,
+                utc.transaction_id,
+                utc.group_idx,
+                utmp.tree_size,
+                utmp.hashes,
+                utc.leaf_idx,
+                utc.data,
+                utt.privacy_salt
+            FROM {h-schema}utxo_transaction_merkle_proof utmp
+            JOIN {h-schema}utxo_transaction_component utc
+                ON utc.transaction_id = utmp.transaction_id
+                AND utc.group_idx = utmp.group_idx
+            JOIN {h-schema}utxo_transaction_merkle_proof_leaves utmpl
+                ON utmpl.merkle_proof_id = utmp.merkle_proof_id
+            JOIN {h-schema}utxo_transaction utt
+                ON utt.id = utmp.transaction_id
+            WHERE utmp.transaction_id = :transactionId
+                AND utmp.group_idx = :groupIndex"""
+            .trimIndent()
 }

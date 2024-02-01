@@ -11,10 +11,11 @@ import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.mediator.GroupAllocator
-import net.corda.messaging.mediator.MediatorState
+import net.corda.messaging.mediator.MediatorSubscriptionState
 import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.messaging.mediator.processor.ConsumerProcessor
 import net.corda.messaging.mediator.processor.EventProcessor
+import net.corda.messaging.mediator.processor.MediatorReplayService
 import net.corda.taskmanager.TaskManager
 
 /**
@@ -27,7 +28,8 @@ class MediatorComponentFactory<K : Any, S : Any, E : Any>(
     private val clientFactories: Collection<MessagingClientFactory>,
     private val messageRouterFactory: MessageRouterFactory,
     private val groupAllocator: GroupAllocator,
-    private val stateManagerHelper: StateManagerHelper<S>
+    private val stateManagerHelper: StateManagerHelper<S>,
+    private val mediatorReplayService: MediatorReplayService,
 ) {
 
     /**
@@ -95,16 +97,24 @@ class MediatorComponentFactory<K : Any, S : Any, E : Any>(
      * @param eventMediatorConfig contains details of the mediators config
      * @param taskManager used to launch concurrent tasks
      * @param messageRouter Required by messaging clients to route records to the correct destination
-     * @param mediatorState shared state to track the mediators processing status
+     * @param mediatorSubscriptionState shared state to track the mediators processing status
      * @return A consumer processor
      */
     fun createConsumerProcessor(
         eventMediatorConfig: EventMediatorConfig<K, S, E>,
         taskManager: TaskManager,
         messageRouter: MessageRouter,
-        mediatorState: MediatorState,
+        mediatorSubscriptionState: MediatorSubscriptionState,
     ): ConsumerProcessor<K, S, E> {
-        val eventProcessor = EventProcessor(eventMediatorConfig, stateManagerHelper, messageRouter)
-        return ConsumerProcessor(eventMediatorConfig, groupAllocator, taskManager, messageRouter, mediatorState, eventProcessor)
+        val eventProcessor = EventProcessor(eventMediatorConfig, stateManagerHelper, messageRouter, mediatorReplayService)
+        return ConsumerProcessor(
+            eventMediatorConfig,
+            groupAllocator,
+            taskManager,
+            messageRouter,
+            mediatorSubscriptionState,
+            eventProcessor,
+            stateManagerHelper
+        )
     }
 }

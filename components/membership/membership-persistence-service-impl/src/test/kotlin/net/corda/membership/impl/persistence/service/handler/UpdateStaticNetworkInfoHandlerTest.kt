@@ -49,9 +49,12 @@ class UpdateStaticNetworkInfoHandlerTest {
     private val existingDeserializedParams = KeyValuePairList(
         listOf(
             KeyValuePair(EPOCH_KEY, "1"),
-            KeyValuePair(MODIFIED_TIME_KEY, clock.apply {
-                setTime(Instant.ofEpochSecond(100))
-            }.instant().toString())
+            KeyValuePair(
+                MODIFIED_TIME_KEY,
+                clock.apply {
+                    setTime(Instant.ofEpochSecond(100))
+                }.instant().toString()
+            )
         )
     )
     private val groupId = UUID(0, 1).toString()
@@ -68,9 +71,12 @@ class UpdateStaticNetworkInfoHandlerTest {
     private val proposedDeserializedParams = KeyValuePairList(
         listOf(
             KeyValuePair(EPOCH_KEY, "2"),
-            KeyValuePair(MODIFIED_TIME_KEY, clock.apply {
-                setTime(Instant.ofEpochSecond(200))
-            }.instant().toString())
+            KeyValuePair(
+                MODIFIED_TIME_KEY,
+                clock.apply {
+                    setTime(Instant.ofEpochSecond(200))
+                }.instant().toString()
+            )
         )
     )
 
@@ -78,9 +84,12 @@ class UpdateStaticNetworkInfoHandlerTest {
     private val proposedUnchangedDeserializedParams = KeyValuePairList(
         listOf(
             KeyValuePair(EPOCH_KEY, "1"),
-            KeyValuePair(MODIFIED_TIME_KEY, clock.apply {
-                setTime(Instant.ofEpochSecond(200))
-            }.instant().toString())
+            KeyValuePair(
+                MODIFIED_TIME_KEY,
+                clock.apply {
+                    setTime(Instant.ofEpochSecond(200))
+                }.instant().toString()
+            )
         )
     )
 
@@ -141,7 +150,6 @@ class UpdateStaticNetworkInfoHandlerTest {
         assertThat(persistedEntity.groupId).isEqualTo(result.info.groupId)
         assertThat(persistedEntity.groupParameters).isEqualTo(proposedSerializedParams)
         assertThat(persistedEntity.version).isEqualTo(result.info.version)
-
     }
 
     @Test
@@ -205,7 +213,6 @@ class UpdateStaticNetworkInfoHandlerTest {
 
         verify(entityManager, never()).merge(any<StaticNetworkInfoEntity>())
         verify(entityManager, never()).flush()
-
     }
 
     @Test
@@ -237,6 +244,5 @@ class UpdateStaticNetworkInfoHandlerTest {
 
         verify(entityManager, never()).merge(any<StaticNetworkInfoEntity>())
         verify(entityManager, never()).flush()
-
     }
 }

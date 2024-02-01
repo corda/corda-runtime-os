@@ -4,12 +4,12 @@ import net.corda.applications.workers.smoketest.utils.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.utils.TEST_CPI_NAME
 import net.corda.e2etest.utilities.ClusterReadiness
 import net.corda.e2etest.utilities.ClusterReadinessChecker
-import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
+import net.corda.e2etest.utilities.REST_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.awaitRestFlowResult
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
-import net.corda.e2etest.utilities.startRpcFlow
+import net.corda.e2etest.utilities.startRestFlow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertAll
 import org.junit.jupiter.api.BeforeAll
@@ -58,12 +58,12 @@ class AmqpSerializationTests : ClusterReadiness by ClusterReadinessChecker() {
     @Test
     fun `Serialize and deserialize a Pair`() {
 
-        val requestId = startRpcFlow(bobHoldingId, emptyMap(), AmqpSerializationTestFlow)
+        val requestId = startRestFlow(bobHoldingId, emptyMap(), AmqpSerializationTestFlow)
         val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
 
         assertAll(
             { assertThat(flowResult.flowError).isNull() },
-            { assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS) },
+            { assertThat(flowResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS) },
             { assertThat(flowResult.json!!.textValue()).isEqualTo("SerializableClass(pair=(A, B))") },
         )
     }

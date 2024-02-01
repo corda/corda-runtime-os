@@ -10,6 +10,7 @@ interface EndpointInfoFactory {
     companion object {
         const val DEFAULT_PROTOCOL_VERSION = 1
     }
+
     /**
      * The [create] method allows you to create an instance of [EndpointInfo] using the specified URL string and
      * protocol version.

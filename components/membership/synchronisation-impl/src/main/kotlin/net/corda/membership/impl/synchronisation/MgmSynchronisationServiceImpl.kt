@@ -1,12 +1,12 @@
 package net.corda.membership.impl.synchronisation
 
-import net.corda.crypto.core.toCorda
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.crypto.core.toCorda
 import net.corda.data.membership.command.synchronisation.mgm.ProcessSyncRequest
 import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage
@@ -98,7 +98,8 @@ class MgmSynchronisationServiceImpl internal constructor(
     }
 
     @Suppress("LongParameterList")
-    @Activate constructor(
+    @Activate
+    constructor(
         @Reference(service = LifecycleCoordinatorFactory::class)
         coordinatorFactory: LifecycleCoordinatorFactory,
         @Reference(service = ConfigurationReadService::class)
@@ -247,7 +248,7 @@ class MgmSynchronisationServiceImpl internal constructor(
             )
         }
 
-        private fun compareHashes(memberHashSeenByMember: SecureHash, requester: SelfSignedMemberInfo):  Boolean {
+        private fun compareHashes(memberHashSeenByMember: SecureHash, requester: SelfSignedMemberInfo): Boolean {
             val memberHashSeenByMgm = calculateHash(requester)
             if (memberHashSeenByMember != memberHashSeenByMgm) {
                 return false

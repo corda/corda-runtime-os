@@ -1,6 +1,7 @@
 package net.corda.messaging.mediator.processor
 
 import net.corda.libs.statemanager.api.State
+import net.corda.messaging.api.constants.MessagingMetadataKeys.PROCESSING_FAILURE
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorConsumer
 import net.corda.messaging.api.mediator.MediatorMessage
@@ -10,16 +11,20 @@ import net.corda.messaging.api.mediator.config.MediatorConsumerConfig
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.GroupAllocator
-import net.corda.messaging.mediator.MediatorState
+import net.corda.messaging.mediator.MediatorSubscriptionState
 import net.corda.messaging.mediator.MessageBusConsumer
 import net.corda.messaging.mediator.MultiSourceEventMediatorImpl
+import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.messaging.mediator.metrics.EventMediatorMetrics
 import net.corda.messaging.utils.toRecord
 import net.corda.taskmanager.TaskManager
+import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.time.Duration
 import java.util.concurrent.CompletionException
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 /**
  * Class to construct a message bus consumer and begin processing its subscribed topic(s).
@@ -38,9 +43,14 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     private val groupAllocator: GroupAllocator,
     private val taskManager: TaskManager,
     private val messageRouter: MessageRouter,
-    private val mediatorState: MediatorState,
-    private val eventProcessor: EventProcessor<K, S, E>
+    private val mediatorSubscriptionState: MediatorSubscriptionState,
+    private val eventProcessor: EventProcessor<K, S, E>,
+    private val stateManagerHelper: StateManagerHelper<S>
 ) {
+    private companion object {
+        private const val EVENT_PROCESSING_TIMEOUT_MILLIS = 30000L // 30 seconds
+    }
+
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.name}")
 
     private val metrics = EventMediatorMetrics()
@@ -57,7 +67,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     fun processTopic(consumerFactory: MediatorConsumerFactory, consumerConfig: MediatorConsumerConfig<K, E>) {
         var attempts = 0
         var consumer: MediatorConsumer<K, E>? = null
-        while (!mediatorState.stopped()) {
+        while (!mediatorSubscriptionState.stopped()) {
             attempts++
             try {
                 if (consumer == null) {
@@ -100,14 +110,14 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val topic = (consumer as MessageBusConsumer).topic
         val messages = consumer.poll(pollTimeout)
         metrics.timer(topic, "POLL").record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
-
-        val polledRecords = messages.map { it.toRecord() }
+        val polledRecords = messages.map { it.toRecord() }.groupBy { it.key }
         if (messages.isNotEmpty()) {
             metrics.recordPollSize(topic, messages.size)
-            var groups = groupAllocator.allocateGroups(polledRecords, config)
             val loadStartTimestamp = System.nanoTime()
-            var statesToProcess = stateManager.get(messages.map { it.key.toString() }.distinct())
+            val states = stateManager.get(polledRecords.keys.map { it.toString() })
             metrics.timer(topic, "LOAD").record(System.nanoTime() - loadStartTimestamp, TimeUnit.NANOSECONDS)
+            val inputs = generateInputs(states.values, polledRecords)
+            var groups = groupAllocator.allocateGroups(inputs, config)
 
             while (groups.isNotEmpty()) {
                 val groupStartTimestamp = System.nanoTime()
@@ -115,11 +125,29 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 val outputs = groups.filter {
                     it.isNotEmpty()
                 }.map { group ->
-                    taskManager.executeShortRunningTask {
-                        eventProcessor.processEvents(group, statesToProcess)
+                    val future = taskManager.executeShortRunningTask {
+                        eventProcessor.processEvents(group)
                     }
-                }.map {
-                    it.join()
+                    Pair(future, group)
+                }.map { (future, group) ->
+                    try {
+                        future.getOrThrow(Duration.ofMillis(EVENT_PROCESSING_TIMEOUT_MILLIS))
+                    } catch (e: TimeoutException) {
+                        group.mapValues { (key, input) ->
+                            val oldState = input.state
+                            val state = stateManagerHelper.failStateProcessing(
+                                key.toString(),
+                                oldState,
+                                "timeout occurred while processing events"
+                            )
+                            val stateChange = if (oldState != null) {
+                                StateChangeAndOperation.Update(state)
+                            } else {
+                                StateChangeAndOperation.Create(state)
+                            }
+                            EventProcessingOutput(listOf(), stateChange)
+                        }
+                    }
                 }.fold(mapOf<K, EventProcessingOutput>()) { acc, cur ->
                     acc + cur
                 }.mapKeys {
@@ -129,13 +157,37 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
 
                 // Persist state changes, send async outputs and setup to reprocess states that fail to persist
                 val failedStates = processOutputs(outputs, topic)
-                statesToProcess = failedStates
-                groups = assignNewGroupsForFailedStates(failedStates, polledRecords)
+                val failedRecords = polledRecords.filter { (key, _) ->
+                    key.toString() in failedStates
+                }
+                groups = groupAllocator.allocateGroups(generateInputs(failedStates.values, failedRecords), config)
             }
             metrics.timer(topic, "COMMIT").recordCallable {
                 consumer.syncCommitOffsets()
             }
             metrics.timer(topic, "PROCESS").record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
+        }
+    }
+
+    /**
+     * Generates inputs for a round of event processing.
+     *
+     * The input records must be the set of records that should be processed.
+     */
+    private fun generateInputs(states: Collection<State>, records: Map<K, List<Record<K, E>>>) : List<EventProcessingInput<K, E>> {
+        val (runningStates, failedStates) = states.partition {
+            it.metadata[PROCESSING_FAILURE] != true
+        }
+        if (failedStates.isNotEmpty()) {
+            log.info("Not processing ${failedStates.size} states as processing has previously failed.")
+        }
+        val failedKeys = failedStates.map { it.key }.toSet()
+        val recordsToProcess = records.filter { (key, _) ->
+            !failedKeys.contains(key.toString())
+        }
+        val stateMap = runningStates.associateBy { it.key }
+        return recordsToProcess.map { (key, value) ->
+            EventProcessingInput(key, value, stateMap[key.toString()])
         }
     }
 
@@ -185,18 +237,6 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         metrics.timer(topic, "SEND_ASYNC").record(System.nanoTime() - sendStartTimestamp, TimeUnit.NANOSECONDS)
 
         return failedToCreate + failedToDelete + failedToUpdateOptimisticLockFailure
-    }
-
-    /**
-     * Set processing groups for states that failed to save.
-     */
-    private fun assignNewGroupsForFailedStates(
-        retrievedStates: Map<String, State>,
-        polledEvents: List<Record<K, E>>
-    ) = if (retrievedStates.isNotEmpty()) {
-        groupAllocator.allocateGroups(polledEvents.filter { retrievedStates.containsKey(it.key.toString()) }, config)
-    } else {
-        listOf()
     }
 
     /**

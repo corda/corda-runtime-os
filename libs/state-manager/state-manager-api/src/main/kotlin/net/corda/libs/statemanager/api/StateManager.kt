@@ -55,7 +55,20 @@ interface StateManager : Lifecycle {
      * is only returned to the caller once all updatable [states] have been updated and replicas of the underlying
      * persistent storage, if any, are synced.
      *
-     * @param states Collection of states to be updated.
+     * Typical usage is to get some states, e.g. using `findByMetadataMatchingAll`, then make changes to the
+     * state content while leaving the version number alone, then try calling `update`.  If the result is non-empty,
+     * see if the update you wanted has already been made, and if not sleep for a random time, try the update again.
+     *
+     * If we have `X` and `Y` trying to update the same state and `Y` wins the race, and:
+     *
+     * - `X` and `Y` are doing different things, then `X` needs to remake its change and try again.
+     * - `X` and `Y` are doing the same thing, then `X` can check and move on. You may not want to sleep
+     *    before rechecking the first time around if this is the common case.
+     *
+     * @param states Collection of states to be updated. Each state record has a version field; it should be the
+     *      version currently in the database. The State Manager will increment the version it stores by one
+     *      if the update succeeds; calling code must not change the version.
+     *
      * @return Map with the most up-to-date version of the states, associated by key for easier access, that failed
      *      the optimistic locking check. If this state failed to be updated because the key was deleted the key is
      *      associated with null.

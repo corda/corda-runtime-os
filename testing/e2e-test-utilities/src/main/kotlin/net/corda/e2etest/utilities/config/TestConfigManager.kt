@@ -1,6 +1,6 @@
 package net.corda.e2etest.utilities.config
 
-interface TestConfigManager: AutoCloseable {
+interface TestConfigManager {
     /**
      * Loads a new configuration into the [TestConfigManager]. Configs are not applied to a cluster until [apply]
      * is called, so [load] only stages changes.
@@ -31,12 +31,9 @@ interface TestConfigManager: AutoCloseable {
 
     /**
      * Using the cluster REST API, push all currently loaded configurations and wait for the new config to become
-     * visible.
+     * visible. Then run block, revert the configuration change and return the result of block.
      */
-    fun apply(): TestConfigManager
+    fun <T> apply(block: () -> T): T
 
-    /**
-     * Revert any changed configurations back to their original version before applying any changes.
-     */
-    fun revert(): TestConfigManager
+    fun <T> applyWithoutRevert(block: () -> T): T
 }

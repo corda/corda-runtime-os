@@ -13,8 +13,8 @@ import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.v2.RegistrationStatus
-import net.corda.data.membership.p2p.v2.SetOwnRegistrationStatus
 import net.corda.data.membership.p2p.VerificationResponse
+import net.corda.data.membership.p2p.v2.SetOwnRegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.state.CompletedCommandMetadata
 import net.corda.data.membership.state.RegistrationState
@@ -207,8 +207,8 @@ class ProcessMemberVerificationResponseHandlerTest {
             .anyMatch {
                 val value = it.value
                 it.key == expectedRegistrationTopicKey &&
-                        value is RegistrationCommand &&
-                        value.command is ApproveRegistration
+                    value is RegistrationCommand &&
+                    value.command is ApproveRegistration
             }
 
         assertUpdatedState(result)
@@ -350,7 +350,7 @@ class ProcessMemberVerificationResponseHandlerTest {
             token: String = preAuthToken.toString()
         ) {
             val context = registrationContextKeyValues +
-                    KeyValuePair(PRE_AUTH_TOKEN, token)
+                KeyValuePair(PRE_AUTH_TOKEN, token)
             whenever(registrationContext.items).doReturn(context)
         }
 
@@ -573,7 +573,8 @@ class ProcessMemberVerificationResponseHandlerTest {
         regState: RegistrationState? = state,
         regCommand: Any = command
     ) = processMemberVerificationResponseHandler.invoke(
-        regState, Record(TOPIC, "${member.x500Name}-${member.groupId}", RegistrationCommand(regCommand))
+        regState,
+        Record(TOPIC, "${member.x500Name}-${member.groupId}", RegistrationCommand(regCommand))
     )
 
     private fun mockApprovalRules(
@@ -649,7 +650,7 @@ class ProcessMemberVerificationResponseHandlerTest {
             on { mgmProvidedContext } doReturn mgmContext
             on { platformVersion } doReturn 50100
         }
-        if(memberStatus == MEMBER_STATUS_ACTIVE) {
+        if (memberStatus == MEMBER_STATUS_ACTIVE) {
             whenever(groupReader.lookup(this.member.toCorda().x500Name)).doReturn(member)
         } else {
             whenever(groupReader.lookup(this.member.toCorda().x500Name, MembershipStatusFilter.PENDING)).doReturn(member)

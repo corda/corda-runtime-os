@@ -9,6 +9,7 @@ import net.corda.messaging.api.exception.CordaHTTPServerTransientException
 import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
+import net.corda.metrics.CordaMetrics
 import net.corda.rest.ResponseCode
 import net.corda.web.api.Endpoint
 import net.corda.web.api.HTTPMethod
@@ -16,7 +17,8 @@ import net.corda.web.api.WebContext
 import net.corda.web.api.WebHandler
 import net.corda.web.api.WebServer
 import org.slf4j.LoggerFactory
-import java.util.*
+import java.time.Duration
+import java.util.UUID
 
 /**
  * HTTP-based implementation of a RPCSubscription that processes requests synchronously.
@@ -65,6 +67,8 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
 
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        const val SUCCESS: String = "SUCCESS"
+        const val FAILED: String = "FAILED"
     }
 
     private fun registerEndpoint(
@@ -74,6 +78,7 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         val server = webServer
 
         val webHandler = WebHandler { context ->
+            val startTime = System.nanoTime()
             val payload = cordaAvroDeserializer.deserialize(context.bodyAsBytes())
 
             if (payload == null) {
@@ -86,6 +91,7 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             val response = try {
                 processor.process(payload)
             } catch (ex: Exception) {
+                recordMetric(rpcEndpoint, FAILED, startTime)
                 return@WebHandler handleProcessorException(endpoint, ex, context)
             }
 
@@ -96,13 +102,16 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                 val serializedResponse = cordaAvroSerializer.serialize(response)
                 if (serializedResponse != null) {
                     context.result(serializedResponse)
+                    recordMetric(rpcEndpoint, SUCCESS, startTime)
                 } else {
                     val errorMsg = "Response Payload cannot be serialised: ${response.javaClass.name}"
                     log.warn(errorMsg)
                     context.result(errorMsg)
                     context.status(ResponseCode.INTERNAL_SERVER_ERROR)
+                    recordMetric(rpcEndpoint, FAILED, startTime)
                 }
             }
+            
             context
         }
 
@@ -134,5 +143,17 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             }
         }
         return context
+    }
+
+    private fun recordMetric(
+        rpcEndpoint: String,
+        status: String,
+        startTime: Long
+    ) {
+        CordaMetrics.Metric.Messaging.HTTPRPCProcessingTime.builder()
+            .withTag(CordaMetrics.Tag.HttpRequestUri, rpcEndpoint)
+            .withTag(CordaMetrics.Tag.OperationStatus, status)
+            .build()
+            .record(Duration.ofNanos(System.nanoTime() - startTime))
     }
 }

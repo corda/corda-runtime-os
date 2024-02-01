@@ -7,26 +7,21 @@ description 'E2E test utilities'
 
 dependencies {
     constraints {
-        implementation('org.slf4j:slf4j-api') {
-            version {
-                strictly slf4jVersion
-            }
-        }
+        implementation(libs.slf4j.api)
     }
 
     api libs.jetty.websocket.client
 
     implementation "net.corda:corda-config-schema:$cordaApiVersion"
 
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
-    implementation "com.konghq:unirest-java:$unirestVersion"
+    implementation libs.jackson.module.kotlin
+    implementation libs.jackson.datatype.jsr310
+    implementation libs.unirest.java
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "org.apache.commons:commons-text:$commonsTextVersion"
     implementation libs.assertj.core
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinCoroutinesVersion"
     implementation libs.junit.api
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
     implementation project(':components:flow:flow-rest-resource-service')
     implementation project(':libs:crypto:certificate-generation')
@@ -35,4 +30,7 @@ dependencies {
     implementation project(':tools:plugins:package')
     implementation project(":testing:packaging-test-utilities")
     implementation project(':testing:test-utilities')
+
+    implementation project(':libs:tracing')
+    runtimeOnly project(':libs:tracing-impl')
 }

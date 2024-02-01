@@ -4,6 +4,7 @@ import net.corda.common.json.validation.JsonValidator
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
+import net.corda.ledger.common.flow.transaction.PrivacySaltProviderService
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
 import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
@@ -50,6 +51,8 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
     private val jsonMarshallingService: JsonMarshallingService,
     @Reference(service = JsonValidator::class, scope = PROTOTYPE_REQUIRED)
     private val jsonValidator: JsonValidator,
+    @Reference(service = PrivacySaltProviderService::class)
+    private val privacySaltProviderService: PrivacySaltProviderService
 ) : ConsensualSignedTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
 
     /**
@@ -63,7 +66,9 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
         verifyMetadata(metadata)
         val metadataBytes = serializeMetadata(metadata)
         val componentGroups = calculateComponentGroups(consensualTransactionBuilder, metadataBytes)
-        val wireTransaction = wireTransactionFactory.create(componentGroups)
+
+        val privacySalt = privacySaltProviderService.generatePrivacySalt()
+        val wireTransaction = wireTransactionFactory.create(componentGroups, privacySalt)
 
         verifyTransaction(wireTransaction)
 

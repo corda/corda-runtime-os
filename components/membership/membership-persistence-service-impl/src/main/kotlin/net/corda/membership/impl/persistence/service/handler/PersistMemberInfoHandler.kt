@@ -1,6 +1,5 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import javax.persistence.LockModeType
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.db.request.MembershipRequestContext
@@ -14,6 +13,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
 import net.corda.virtualnode.toCorda
+import javax.persistence.LockModeType
 
 internal class PersistMemberInfoHandler(
     persistenceHandlerServices: PersistenceHandlerServices
@@ -40,7 +40,7 @@ internal class PersistMemberInfoHandler(
                     val newMemberInfo = memberInfoFactory.createMemberInfo(it)
                     logger.info(
                         "Persisting member information representing ${newMemberInfo.name} as viewed " +
-                                "by ${context.holdingIdentity.x500Name} in group ${context.holdingIdentity.groupId}."
+                            "by ${context.holdingIdentity.x500Name} in group ${context.holdingIdentity.groupId}."
                     )
                     val oldMemberInfo = em.find(
                         MemberInfoEntity::class.java,
@@ -51,8 +51,8 @@ internal class PersistMemberInfoHandler(
                         ),
                         LockModeType.PESSIMISTIC_WRITE
                     )
-                    val newPendingVersion = newMemberInfo.status == MEMBER_STATUS_PENDING
-                            && oldMemberInfo?.status == MEMBER_STATUS_PENDING
+                    val newPendingVersion = newMemberInfo.status == MEMBER_STATUS_PENDING &&
+                        oldMemberInfo?.status == MEMBER_STATUS_PENDING
                     if (!newPendingVersion && oldMemberInfo?.serialNumber == newMemberInfo.serial) {
                         val currentMemberContext = deserialize(oldMemberInfo.memberContext)
                         val currentMgmContext = deserialize(oldMemberInfo.mgmContext)
@@ -61,7 +61,7 @@ internal class PersistMemberInfoHandler(
                         if (currentMemberContext.items != updatedMemberContext.items) {
                             throw MembershipPersistenceException(
                                 "Cannot update member info with same serial number " +
-                                        "(${newMemberInfo.serial}): member context differs from original."
+                                    "(${newMemberInfo.serial}): member context differs from original."
                             )
                         }
                         if (currentMgmContext.toMap().removeTime() != updatedMGMContext.toMap()
@@ -69,7 +69,7 @@ internal class PersistMemberInfoHandler(
                         ) {
                             throw MembershipPersistenceException(
                                 "Cannot update member info with same serial number " +
-                                        "(${newMemberInfo.serial}): mgm context differs from original."
+                                    "(${newMemberInfo.serial}): mgm context differs from original."
                             )
                         }
                         return@forEach

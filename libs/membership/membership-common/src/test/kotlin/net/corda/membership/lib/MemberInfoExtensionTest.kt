@@ -139,7 +139,6 @@ class MemberInfoExtensionTest {
             assertThat(result).isFalse
         }
 
-
         @Test
         fun `Member is notary if one of the roles set is a notary role`() {
             whenever(memberContext.entries).doReturn(

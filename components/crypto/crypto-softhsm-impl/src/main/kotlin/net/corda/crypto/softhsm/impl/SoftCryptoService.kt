@@ -35,6 +35,7 @@ import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.hes.core.impl.deriveDHSharedSecret
 import net.corda.crypto.impl.SignatureInstances
 import net.corda.crypto.impl.getSigningData
+import net.corda.crypto.persistence.SigningKeyMaterialInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.WrappingKeyInfo
@@ -42,6 +43,7 @@ import net.corda.crypto.softhsm.SigningRepositoryFactory
 import net.corda.crypto.softhsm.TenantInfoService
 import net.corda.crypto.softhsm.WrappingRepositoryFactory
 import net.corda.crypto.softhsm.deriveSupportedSchemes
+import net.corda.crypto.softhsm.WrappingRepository
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import net.corda.utilities.trace
@@ -56,6 +58,7 @@ import java.security.PrivateKey
 import java.security.Provider
 import java.security.PublicKey
 import java.time.Duration
+import java.util.UUID
 import javax.crypto.Cipher
 import javax.persistence.PersistenceException
 
@@ -120,10 +123,10 @@ open class SoftCryptoService(
      * that includes a description of what was being done. The set of exceptions that are to
      * be wrapped is controlled by the `isRecoverable` extensions function. The idea is that
      * we let the callers know when it is worth trying again.
-     * 
+     *
      * @param description A message describing what the block will do
      * @param block A callback to be executed
-     * 
+     *
      * @return The result of the callback.
      */
     private fun <R> recoverable(description: String, block: () -> R) = try {
@@ -282,7 +285,7 @@ open class SoftCryptoService(
                     keyScheme = scheme,
                     category = category
                 )
-                repo.savePrivateKey(saveContext) 
+                repo.savePrivateKey(saveContext)
             }
         }
     }
@@ -314,7 +317,13 @@ open class SoftCryptoService(
         logger.debug { "sign(tenant=$tenantId, publicKey=${record.data.id})" }
         val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
         val spec =
-            SigningWrappedSpec(getKeySpec(record, publicKey, tenantId), record.publicKey, scheme, signatureSpec, record.data.category)
+            SigningWrappedSpec(
+                getKeySpec(record, publicKey, tenantId),
+                record.publicKey,
+                scheme,
+                signatureSpec,
+                record.data.category
+            )
         val signedBytes = sign(spec, data, context + mapOf(CRYPTO_TENANT_ID to tenantId))
         return DigitalSignatureWithKey(record.publicKey, signedBytes)
     }
@@ -497,11 +506,10 @@ open class SoftCryptoService(
     ) {
         logger.debug {
             "createWrappingKey(hsmId=$hsmId,masterKeyAlias=$masterKeyAlias,failIfExists=$failIfExists," +
-                    "onBehalf=${context[CRYPTO_TENANT_ID]})"
+                "onBehalf=${context[CRYPTO_TENANT_ID]})"
         }
         createWrappingKey(masterKeyAlias, failIfExists, context)
     }
-
 
 
     override fun deriveSharedSecret(
@@ -582,6 +590,7 @@ open class SoftCryptoService(
 
         return OwnedKeyRecord(publicKey, signingKeyInfo)
     }
+
     @Suppress("ThrowsCount")
     private fun getKeySpec(
         record: OwnedKeyRecord,
@@ -589,7 +598,7 @@ open class SoftCryptoService(
         tenantId: String,
     ): KeyMaterialSpec {
         val keyMaterial: ByteArray = record.data.keyMaterial
-        val masterKeyAlias = record.data.wrappingKeyAlias 
+        val masterKeyAlias = record.data.wrappingKeyAlias
         val encodingVersion = record.data.encodingVersion ?: throw IllegalStateException(
             "The encoding version for public key ${publicKey.publicKeyId()} of tenant $tenantId must be specified, but is null"
         )
@@ -618,19 +627,22 @@ open class SoftCryptoService(
                     }
                     val newGeneration = wrappingKeyInfo.generation + 1
                     oldParentKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial).also { wrappingKey ->
-                        logger.trace { "Should decrypt key material in row $id with alias $targetAlias using " +
-                                "${wrappingKeyInfo.parentKeyAlias} and encrypt key material using $newParentKeyAlias" }
+                        logger.trace {
+                            "Should decrypt key material in row $id with alias $targetAlias using " +
+                                "${wrappingKeyInfo.parentKeyAlias} and encrypt key material using $newParentKeyAlias"
+                        }
                         val wrappedWithNewKey = newParentKey.wrap(wrappingKey)
                         val newInfo = wrappingKeyInfo.copy(
                             keyMaterial = wrappedWithNewKey,
                             parentKeyAlias = newParentKeyAlias,
-                            generation = newGeneration)
+                            generation = newGeneration
+                        )
                         check(newInfo.alias == wrappingKeyInfo.alias)
                         wrappingRepo.saveKeyWithId(newInfo, id)
                     }
                     return newGeneration
                 } catch (e: PersistenceException) {
-                    if (e.cause?.message?.contains("ConstraintViolationException") != true)  throw e
+                    if (e.cause?.message?.contains("ConstraintViolationException") != true) throw e
                     // we lost a race updating the generation number, and we
                     // don't know if the other update rewrapped as we are trying to do
                     // so retry
@@ -644,5 +656,64 @@ open class SoftCryptoService(
     override fun close() {
     }
 
-}
+    /**
+     * Create a new wrapping key based on an existing key with the same alias and an incremented generation number
+     *
+     * @param wrappingRepository The WrappingRepository the new key will be saved in
+     * @param oldWrappingKey The original wrapping key
+     * @return The [UUID] of the new wrapping key
+     */
+    private fun createWrappingKeyFrom(wrappingRepository: WrappingRepository, oldWrappingKey: WrappingKeyInfo): Pair<UUID, WrappingKey> {
+        logger.trace {
+            "createWrappingKeyFrom(alias=${oldWrappingKey.alias})"
+        }
+        val wrappingKey =
+            recoverable("createWrappingKeyFrom generate wrapping key") { wrappingKeyFactory(schemeMetadata) }
+        val parentKeyAlias = oldWrappingKey.parentKeyAlias
+        val parentKey = checkNotNull(unmanagedWrappingKeys[parentKeyAlias])
+        { "No wrapping key $parentKeyAlias found" }
+        val wrappingKeyEncrypted = recoverable("wrap") { parentKey.wrap(wrappingKey) }
+        val wrappingKeyInfo =
+            WrappingKeyInfo(
+                oldWrappingKey.encodingVersion,
+                wrappingKey.algorithm,
+                wrappingKeyEncrypted,
+                oldWrappingKey.generation + 1,
+                parentKeyAlias,
+                oldWrappingKey.alias
+            )
+        val wrappingKeyUUID = UUID.randomUUID()
+        recoverable("createWrappingKeyFrom save key") {
+            wrappingRepository.saveKeyWithId(wrappingKeyInfo, wrappingKeyUUID)
+        }
+        logger.trace("Regenerated wrapping key alias ${oldWrappingKey.alias}")
+        wrappingKeyCache?.put(wrappingKeyInfo.alias, wrappingKey)
+        return Pair(wrappingKeyUUID, wrappingKey)
+    }
 
+    override fun rewrapAllSigningKeysWrappedBy(managedWrappingKeyId: UUID, tenantId: String) {
+        wrappingRepositoryFactory.create(tenantId).use { wrappingRepo ->
+            val oldWrappingKeyInfo = checkNotNull(wrappingRepo.getKeyById(managedWrappingKeyId)) {
+                "Unable to find existing wrapping key with id ${managedWrappingKeyId} for tenantId ${tenantId}"
+            }
+            val parentKey = checkNotNull(unmanagedWrappingKeys.get(oldWrappingKeyInfo.parentKeyAlias)) {
+                "Unable to find parent key ${oldWrappingKeyInfo.parentKeyAlias} in the configured unmanaged wrapping keys"
+            }
+            val wrappingKeyDecrypted = parentKey.unwrapWrappingKey(oldWrappingKeyInfo.keyMaterial)
+            val createdWrappingKey = createWrappingKeyFrom(wrappingRepo, oldWrappingKeyInfo)
+            val newWrappingUuid = createdWrappingKey.first
+            val newWrappingKeyDecrypted = createdWrappingKey.second
+            signingRepositoryFactory.getInstance(tenantId).use { signingRepo ->
+                // Get signing materials which use the old wrapping uuid, passed in as wrappingKeyUuid
+                signingRepo.getKeyMaterials(managedWrappingKeyId).forEach { oldSigningKeyMaterial ->
+                    val newSigningKeyMaterial = newWrappingKeyDecrypted.wrap(wrappingKeyDecrypted.unwrap(oldSigningKeyMaterial.keyMaterial))
+                    val newSigningKeyMaterialInfo = SigningKeyMaterialInfo(
+                        oldSigningKeyMaterial.signingKeyId,
+                        newSigningKeyMaterial
+                    )
+                    signingRepo.saveSigningKeyMaterial(newSigningKeyMaterialInfo, newWrappingUuid)
+                }
+            }
+        }
+    }
+}

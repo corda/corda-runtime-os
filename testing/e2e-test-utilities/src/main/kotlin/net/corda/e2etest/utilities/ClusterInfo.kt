@@ -109,3 +109,21 @@ object ClusterCInfo : ClusterInfo() {
 object ClusterDInfo : ClusterInfo() {
     override val id = "D"
 }
+
+internal enum class TlsType(
+    val groupPolicyMame: String,
+    val configName: String,
+) {
+    ONE_WAY("OneWay", "ONE_WAY"),
+    MUTUAL("Mutual", "MUTUAL");
+
+    companion object {
+        val type by lazy {
+            if (System.getenv("CORDA_E2E_TEST_TLS_TYPE") != null) {
+                MUTUAL
+            } else {
+                ONE_WAY
+            }
+        }
+    }
+}

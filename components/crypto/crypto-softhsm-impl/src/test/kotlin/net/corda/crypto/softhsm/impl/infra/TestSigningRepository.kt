@@ -5,14 +5,17 @@ import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.core.SigningKeyStatus
 import net.corda.crypto.core.publicKeyHashFromBytes
 import net.corda.crypto.core.publicKeyShortHashFromBytes
+import net.corda.crypto.persistence.SigningKeyMaterialInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.softhsm.SigningRepository
 import net.corda.v5.crypto.SecureHash
+import java.lang.IllegalStateException
 import java.security.PublicKey
 import java.time.Instant
+import java.util.UUID
 
-class TestSigningRepository(val tenantId: String="test") : SigningRepository {
+class TestSigningRepository(val tenantId: String = "test") : SigningRepository {
     private val keys = mutableMapOf<ShortHash, SigningKeyInfo>()
 
     override fun savePrivateKey(context: SigningWrappedKeySaveContext): SigningKeyInfo {
@@ -58,5 +61,13 @@ class TestSigningRepository(val tenantId: String="test") : SigningRepository {
 
     override fun close() {
 
+    }
+
+    override fun getKeyMaterials(wrappingKeyId: UUID): Collection<SigningKeyMaterialInfo> {
+        throw IllegalStateException("Unexpected call to getKeyMaterials")
+    }
+
+    override fun saveSigningKeyMaterial(signingKeyMaterialInfo: SigningKeyMaterialInfo, wrappingKeyId: UUID) {
+        throw IllegalStateException("Unexpected call to saveSigningKeyMaterial")
     }
 }

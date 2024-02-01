@@ -1,5 +1,6 @@
 package net.corda.metrics
 
+import io.micrometer.core.instrument.Tag as micrometerTag
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.DistributionSummary
 import io.micrometer.core.instrument.Gauge
@@ -18,7 +19,6 @@ import java.nio.file.Path
 import java.util.function.Supplier
 import java.util.function.ToDoubleFunction
 import java.util.function.ToLongFunction
-import io.micrometer.core.instrument.Tag as micrometerTag
 
 
 object CordaMetrics {
@@ -685,6 +685,10 @@ object CordaMetrics {
              */
             object HTTPRPCResponseSize : Metric<DistributionSummary>("rpc.http.response.size", Metrics::summary)
 
+            /**
+             * Record how long a HTTP RPC call from the messaging library takes to process on the server side
+             */
+            object HTTPRPCProcessingTime : Metric<Timer>("rpc.http.processing.time", CordaMetrics::timer)
         }
 
         object TaskManager {
@@ -697,6 +701,15 @@ object CordaMetrics {
              * The number of live tasks running or scheduled in the task manager.
              */
             class LiveTasks(computation: Supplier<Number>) : ComputedValue<Nothing>("taskmanager.live.tasks", computation)
+        }
+
+        object StateManger {
+            private const val PREFIX = "state.manager"
+
+            /**
+             * Time taken to execute a specific State Manager operation.
+             */
+            object ExecutionTime : Metric<Timer>("$PREFIX.execution.time", CordaMetrics::timer)
         }
     }
 
