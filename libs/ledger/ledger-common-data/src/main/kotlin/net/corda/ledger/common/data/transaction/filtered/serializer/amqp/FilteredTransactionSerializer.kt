@@ -1,4 +1,4 @@
-package net.corda.ledger.common.flow.impl.transaction.filtered.serializer.amqp
+package net.corda.ledger.common.data.transaction.filtered.serializer.amqp
 
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.ledger.common.data.transaction.PrivacySalt
