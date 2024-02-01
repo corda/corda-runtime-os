@@ -67,5 +67,5 @@ class ResolveStateRefsExternalEventFactory(
 
 @CordaSerializable
 data class ResolveStateRefsParameters(
-    val stateRefs: Iterable<StateRef>
+    val stateRefs: List<StateRef>
 )

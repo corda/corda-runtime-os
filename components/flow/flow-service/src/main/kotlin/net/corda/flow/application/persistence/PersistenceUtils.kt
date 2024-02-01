@@ -3,6 +3,7 @@ package net.corda.flow.application.persistence
 import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import java.nio.ByteBuffer
 
 /**
  * Catch a [CordaRuntimeException] thrown by [function] and rethrow as a [CordaPersistenceException].
@@ -23,3 +24,8 @@ inline fun <T> wrapWithPersistenceException(function: () -> T): T {
         throw CordaPersistenceException(e.message ?: "Exception occurred when executing persistence operation", e)
     }
 }
+
+
+fun List<ByteArray>.toByteBuffers() = this.map { ByteBuffer.wrap(it) }
+
+fun Map<String, ByteArray?>.toByteBuffers() = this.mapValues { value -> value.value?.let { ByteBuffer.wrap(value.value) }  }

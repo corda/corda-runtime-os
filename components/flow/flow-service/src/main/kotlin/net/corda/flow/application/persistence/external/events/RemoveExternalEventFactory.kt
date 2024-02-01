@@ -1,6 +1,7 @@
 package net.corda.flow.application.persistence.external.events
 
 import net.corda.data.persistence.DeleteEntities
+import net.corda.flow.application.persistence.toByteBuffers
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.v5.base.annotations.CordaSerializable
 import org.osgi.service.component.annotations.Component
@@ -10,9 +11,9 @@ import java.nio.ByteBuffer
 class RemoveExternalEventFactory : AbstractPersistenceExternalEventFactory<RemoveParameters>() {
 
     override fun createRequest(parameters: RemoveParameters): Any {
-        return DeleteEntities(parameters.serializedEntities)
+        return DeleteEntities(parameters.serializedEntities.toByteBuffers())
     }
 }
 
 @CordaSerializable
-data class RemoveParameters(val serializedEntities: List<ByteBuffer>)
+data class RemoveParameters(val serializedEntities: List<ByteArray>)
