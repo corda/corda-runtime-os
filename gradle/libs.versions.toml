@@ -2,9 +2,11 @@
 kotlinVersion = "1.8.21"
 
 bouncycastleVersion = "1.77"
+caffeineVersion = "3.1.6"
 hikariCpVersion = "5.1.0"
 jacksonVersion = "2.16.1"
 micrometerVersion = "1.12.2"
+kafkaClientVersion = "3.6.1_1"
 mssqlDriverVersion = "11.2.3.jre17"
 postgresDriverVersion = "42.7.1"
 
@@ -59,6 +61,7 @@ bouncycastle-pkix = { group = "org.bouncycastle", name = "bcpkix-jdk18on", versi
 bouncycastle-prov = { group = "org.bouncycastle", name = "bcprov-jdk18on", version.ref = "bouncycastleVersion" }
 brave-context-slf4j = { group = "io.zipkin.brave", name = "brave-context-slf4j", version.ref = "braveVersion" }
 brave-instrumentation-servlet = { group = "io.zipkin.brave", name = "brave-instrumentation-servlet", version.ref = "braveVersion" }
+caffeine = { group = "com.github.ben-manes.caffeine", name = "caffeine", version.ref = "caffeineVersion" }
 hikaricp = { group = "com.zaxxer", name = "HikariCP", version.ref = "hikariCpVersion" }
 jackson-annotations = { group = "com.fasterxml.jackson.core", name = "jackson-annotations", version.ref = "jacksonVersion" }
 jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jacksonVersion" }
@@ -79,6 +82,7 @@ junit-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.r
 junit-params = { group = "org.junit.jupiter", name = "junit-jupiter-params", version.ref = "junitVersion" }
 junit-engine = { group = "org.junit.jupiter", name = "junit-jupiter-engine", version.ref = "junitVersion" }
 junit-platform = { group = "org.junit.platform", name = "junit-platform-launcher" }
+kafka-client = { group = "org.apache.servicemix.bundles", name = "org.apache.servicemix.bundles.kafka-clients", version.ref = "kafkaClientVersion" }
 kotlin-stdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version.ref = "kotlinVersion" }
 kotlin-stdlib-common = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib-common", version.ref = "kotlinVersion" }
 kotlin-stdlib-jdk7 = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk7", version.ref = "kotlinVersion" }

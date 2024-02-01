@@ -11,6 +11,7 @@ import net.corda.data.ledger.persistence.PersistMerkleProofIfDoesNotExist
 import net.corda.data.ledger.persistence.PersistSignedGroupParametersIfDoNotExist
 import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.data.ledger.persistence.PersistTransactionIfDoesNotExist
+import net.corda.data.ledger.persistence.PersistTransactionSignatures
 import net.corda.data.ledger.persistence.ResolveStateRefs
 import net.corda.data.ledger.persistence.UpdateTransactionStatus
 import net.corda.data.persistence.FindWithNamedQuery
@@ -30,6 +31,7 @@ import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistMerkle
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistSignedGroupParametersIfDoNotExistRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistTransactionIfDoesNotExistRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistTransactionRequestHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistTransactionSignaturesRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoResolveStateRefsRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoUpdateTransactionStatusRequestHandler
 import net.corda.persistence.common.ResponseFactory
@@ -125,6 +127,14 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     externalEventResponseFactory,
                     serializationService,
                     persistenceService
+                )
+            }
+            is PersistTransactionSignatures -> {
+                UtxoPersistTransactionSignaturesRequestHandler(
+                    req,
+                    externalEventContext,
+                    persistenceService,
+                    externalEventResponseFactory
                 )
             }
             is UpdateTransactionStatus -> {
