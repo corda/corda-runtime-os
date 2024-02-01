@@ -41,10 +41,10 @@ data class ManagedKeyRotationStatusResponse(
 )
 
 /**
- * The key rotation status for wrapping keys per particular tenantId.
+ * The key rotation status for wrapping or signing key.
  *
- * @param total Total number of wrapping keys that will be rotated for particular tenantId.
- * @param rotatedKeys The number of wrapping keys already rotated for particular tenantId.
+ * @param total Total number of keys that will be rotated.
+ * @param rotatedKeys The number of keys already rotated.
  */
 
 data class RotatedKeysStatus(
