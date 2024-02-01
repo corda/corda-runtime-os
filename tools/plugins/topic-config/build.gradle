@@ -23,14 +23,7 @@ dependencies {
 
     compileOnly platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-topic-schema:$cordaApiVersion"
-    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
-    constraints {
-        implementation(libs.slf4j.v2.api)
-        implementation("org.xerial.snappy:snappy-java:$xerialSnappyVersion") {
-            because 'Kafka Client uses an older version of Snappy library which is exposed to CVE-2023-34455. ' +
-                    'This might be resolved in the future versions of Kafka Client.'
-        }
-    }
+    implementation libs.kafka.client
 
     testImplementation libs.bundles.test
     testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
@@ -38,7 +31,7 @@ dependencies {
     testImplementation "net.corda.cli.host:api:$pluginHostVersion"
     testImplementation libs.jackson.module.kotlin
     testImplementation libs.jackson.dataformat.yaml
-    testImplementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+    testImplementation libs.kafka.client
 }
 
 cliPlugin {
