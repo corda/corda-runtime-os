@@ -103,7 +103,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     ): Pair<StateAndEventProcessor.State<S>?, List<MediatorMessage<Any>>> {
         var processorStateUpdated = processorState
         val newAsyncOutputs = mutableListOf<MediatorMessage<Any>>()
-        val consumerInputHash = mediatorInputService.getHash(consumerInputEvent).toString()
+        val consumerInputHash = mediatorInputService.getHash(consumerInputEvent)
         val queue = ArrayDeque(listOf(consumerInputEvent))
         while (queue.isNotEmpty()) {
             val event = getNextEvent(queue, consumerInputHash)

@@ -16,12 +16,12 @@ class MediatorInputServiceImpl @Activate constructor(
 ): MediatorInputService {
     private val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
 
-    override fun <K : Any, E : Any> getHash(inputEvent: Record<K, E>): UUID {
+    override fun <K : Any, E : Any> getHash(inputEvent: Record<K, E>): String {
         val recordValueBytes = serialize(inputEvent.value)
         check(recordValueBytes != null) {
             "Input record key and value bytes should not be null"
         }
-        return UUID.nameUUIDFromBytes(recordValueBytes.sha256Bytes())
+        return UUID.nameUUIDFromBytes(recordValueBytes.sha256Bytes()).toString()
     }
 
     private fun serialize(value: Any?) = value?.let { serializer.serialize(it) }

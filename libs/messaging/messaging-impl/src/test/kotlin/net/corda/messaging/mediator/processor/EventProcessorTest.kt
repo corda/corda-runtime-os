@@ -50,7 +50,7 @@ class EventProcessorTest {
         stateManagerHelper = mock()
         mediatorInputService = mock<MediatorInputService>().apply {
             whenever(getHash<String, String>(anyOrNull())).thenAnswer {
-                UUID.randomUUID()
+                UUID.randomUUID().toString()
             }
         }
         messageRouter = mock()

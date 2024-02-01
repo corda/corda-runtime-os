@@ -1,7 +1,6 @@
 package net.corda.messaging.api.mediator
 
 import net.corda.messaging.api.records.Record
-import java.util.UUID
 
 interface MediatorInputService {
 
@@ -13,7 +12,7 @@ interface MediatorInputService {
     /**
      * Generate a unique SHA256 hash, converted to a UUID, for the consumer input record.
      * @param inputEvent The consumer input event polled from the bus
-     * @return A hash of the input event as bytes, converted a UUID
+     * @return A hash of the input event as bytes, converted to UUID String
      */
-    fun <K : Any, E : Any> getHash(inputEvent: Record<K, E>): UUID
+    fun <K : Any, E : Any> getHash(inputEvent: Record<K, E>): String
 }
