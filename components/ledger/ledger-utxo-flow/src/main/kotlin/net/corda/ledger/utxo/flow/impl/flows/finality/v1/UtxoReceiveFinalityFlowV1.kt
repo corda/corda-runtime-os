@@ -168,13 +168,6 @@ class UtxoReceiveFinalityFlowV1(
         }
     }
 
-    private data class InitialTransactionPayload(
-        val initialTransaction: UtxoSignedTransactionInternal,
-        val transferAdditionalSignatures: Boolean,
-        val inputStateAndRefs: List<StateAndRef<*>>,
-        val referenceStateAndRefs: List<StateAndRef<*>>
-    )
-
     @Suspendable
     private fun verifyDependencies(
         filteredTransactionsAndSignatures: List<FilteredTransactionAndSignatures>,
@@ -309,12 +302,6 @@ class UtxoReceiveFinalityFlowV1(
         return transaction to Payload.Success(mySignatures)
     }
 
-    private data class TransactionAndReceivedSignatures(
-        val transaction: UtxoSignedTransactionInternal,
-        val indexOfNewSignatures: Int,
-        val orderedNewSignatures: List<DigitalSignatureAndMetadata>
-    )
-
     @Suspendable
     private fun receiveSignaturesAndAddToTransaction(transaction: UtxoSignedTransactionInternal): TransactionAndReceivedSignatures {
         val initialSignaturesSize = transaction.signatures.size
@@ -398,4 +385,17 @@ class UtxoReceiveFinalityFlowV1(
             log.debug("Recorded transaction with all parties' and the notary's signature ${notarizedTransaction.id}")
         }
     }
+
+    private data class InitialTransactionPayload(
+        val initialTransaction: UtxoSignedTransactionInternal,
+        val transferAdditionalSignatures: Boolean,
+        val inputStateAndRefs: List<StateAndRef<*>>,
+        val referenceStateAndRefs: List<StateAndRef<*>>
+    )
+
+    private data class TransactionAndReceivedSignatures(
+        val transaction: UtxoSignedTransactionInternal,
+        val indexOfNewSignatures: Int,
+        val orderedNewSignatures: List<DigitalSignatureAndMetadata>
+    )
 }

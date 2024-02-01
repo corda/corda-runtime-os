@@ -271,7 +271,6 @@ class UtxoPersistenceServiceImpl(
             serializationService.deserialize<DigitalSignatureAndMetadata>(it)
         }
         entityManagerFactory.transaction { em ->
-            System.nanoTime()
             // Insert the Transactions signatures
             digitalSignatureAndMetadatas.forEachIndexed { index, digitalSignatureAndMetadata ->
                 repository.persistTransactionSignature(

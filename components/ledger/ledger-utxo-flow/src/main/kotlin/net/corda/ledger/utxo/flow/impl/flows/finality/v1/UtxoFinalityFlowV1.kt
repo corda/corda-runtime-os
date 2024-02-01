@@ -94,7 +94,7 @@ class UtxoFinalityFlowV1(
         sendTransactionAndDependenciesToCounterparties(transferAdditionalSignatures)
         val (transaction, signaturesReceivedFromSessions, startingIndex, signatures) = receiveSignaturesAndAddToTransaction()
         verifyAllReceivedSignatures(transaction, signaturesReceivedFromSessions)
-        persistTransactionWithCounterpartySignatures(transaction.id, startingIndex, signatures)
+        persistCounterpartySignatures(transaction.id, startingIndex, signatures)
 
         if (transferAdditionalSignatures) {
             sendUnseenSignaturesToCounterparties(transaction, signaturesReceivedFromSessions)
@@ -185,13 +185,6 @@ class UtxoFinalityFlowV1(
         }
     }
 
-    private data class TransactionAndReceivedSignatures(
-        val transaction: UtxoSignedTransactionInternal,
-        val sessionsToSignatures: Map<FlowSession, List<DigitalSignatureAndMetadata>>,
-        val indexOfNewSignatures: Int,
-        val orderedNewSignatures: List<DigitalSignatureAndMetadata>
-    )
-
     @Suppress("MaxLineLength")
     @Suspendable
     private fun receiveSignaturesAndAddToTransaction(): TransactionAndReceivedSignatures {
@@ -273,7 +266,7 @@ class UtxoFinalityFlowV1(
     }
 
     @Suspendable
-    private fun persistTransactionWithCounterpartySignatures(
+    private fun persistCounterpartySignatures(
         id: SecureHash,
         startingIndex: Int,
         signatures: List<DigitalSignatureAndMetadata>
@@ -411,4 +404,11 @@ class UtxoFinalityFlowV1(
     private fun sendNotarySignaturesToCounterparties(notarySignatures: List<DigitalSignatureAndMetadata>) {
         flowMessaging.sendAll(Payload.Success(notarySignatures), sessions.toSet())
     }
+
+    private data class TransactionAndReceivedSignatures(
+        val transaction: UtxoSignedTransactionInternal,
+        val sessionsToSignatures: Map<FlowSession, List<DigitalSignatureAndMetadata>>,
+        val indexOfNewSignatures: Int,
+        val orderedNewSignatures: List<DigitalSignatureAndMetadata>
+    )
 }
