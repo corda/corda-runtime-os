@@ -8,16 +8,19 @@ import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.schema.Schemas.Rest.REST_FLOW_STATUS_CLEANUP_TOPIC
+import net.corda.schema.Schemas.ScheduledTask.SCHEDULE_TASK_NAME_FLOW_STATUS_CLEANUP
+import net.corda.schema.configuration.ConfigKeys.REST_FLOW_STATUS_CLEANUP_TIME_MS
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.UUID
 
 class FlowStatusCleanupProcessor (
+    config: SmartConfig,
     private val stateManager: StateManager,
     private val now: () -> Instant = Instant::now,
     private val batchSize: Int = BATCH_SIZE,
-    config: SmartConfig
 ) : DurableProcessor<String, ScheduledTaskTrigger> {
     companion object {
         private val logger = LoggerFactory.getLogger(FlowStatusCleanupProcessor::class.java)
@@ -26,31 +29,21 @@ class FlowStatusCleanupProcessor (
 
     override val keyClass: Class<String> = String::class.java
     override val valueClass: Class<ScheduledTaskTrigger> = ScheduledTaskTrigger::class.java
-    private val cleanupTimeMilliseconds = 604800000
+    private val cleanupTimeMilliseconds = config.getLong(REST_FLOW_STATUS_CLEANUP_TIME_MS)
 
     override fun onNext(events: List<Record<String, ScheduledTaskTrigger>>): List<Record<*, *>> {
-        return events.lastOrNull {
-            it.key == "flow-status-cleanup" // replace with const CORE-19490
-        }?.value?.let { trigger ->
-            logger.trace { "Processing trigger scheduled at ${trigger.timestamp}" }
-            val statesToCleanup = staleFlowStatuses().map{ it.key }
+        return events.lastOrNull { it.key == SCHEDULE_TASK_NAME_FLOW_STATUS_CLEANUP }?.value?.let { trigger ->
+            logger.trace { "Processing flow status cleanup trigger scheduled at ${trigger.timestamp}" }
 
-            if (statesToCleanup.isEmpty()) {
-                logger.trace { "No FlowStatus records to clean up" }
-                emptyList()
-            } else {
-                logger.trace { "Triggering cleanup of ${statesToCleanup.size} FlowStatus records" }
-
-                statesToCleanup.chunked(batchSize) { batch ->
-                    Record("rest.flow.status.cleanup", UUID.randomUUID(), batch) // replace topic with const CORE-19490
-                }
-            }
+            staleFlowStatuses()
+                .map{ it.key }
+                .chunked(batchSize) { batch -> Record(REST_FLOW_STATUS_CLEANUP_TOPIC, UUID.randomUUID(), batch) }
         } ?: emptyList()
     }
 
     private fun staleFlowStatuses() =
-        stateManager.findUpdatedBetweenWithMetadataFilter(
-            IntervalFilter(Instant.EPOCH, now().minusMillis(cleanupTimeMilliseconds.toLong())),
-            MetadataFilter("PLACEHOLDER awaiting CORE-19440", Operation.Equals, true)
+        stateManager.findUpdatedBetweenWithMetadataMatchingAny(
+            IntervalFilter(Instant.EPOCH, now().minusMillis(cleanupTimeMilliseconds)),
+            listOf(MetadataFilter("PLACEHOLDER awaiting CORE-19440", Operation.Equals, true))
         )
 }
