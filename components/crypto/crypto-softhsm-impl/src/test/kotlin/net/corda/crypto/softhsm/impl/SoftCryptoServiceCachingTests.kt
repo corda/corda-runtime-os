@@ -25,7 +25,11 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import org.mockito.kotlin.any
+import org.mockito.kotlin.clearInvocations
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import java.security.KeyPairGenerator
 import java.security.Provider
 import java.util.UUID
@@ -231,7 +235,6 @@ class SoftCryptoServiceCachingTests {
             wrappingKeyCache = wrappingKeyCache,
             privateKeyCache = makePrivateKeyCache(),
             shortHashCache = makeShortHashCache()
-
         )
 
         // starting fresh, all 3 aliases are missing from both store and cache
@@ -273,5 +276,47 @@ class SoftCryptoServiceCachingTests {
         assertNotNull(countingWrappingRepository.findKey(alias))
         assertNull(countingWrappingRepository.findKey(unknownAlias))
         assertNull(countingWrappingRepository.findKey(cacheAlias))
+    }
+
+    @Test
+    fun `key which was found rather than created is cached`() {
+        val schemeMetadata = CipherSchemeMetadataImpl()
+        val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
+        val wrappingKeyCache = makeWrappingKeyCache()
+        val alias = "myAlias"
+
+        // Crypto service checks for valid decryptable key material before adding to the cache, because the cache holds already
+        // decrypted wrapping keys. So here we wrap the existing rootWrappingKey with itself to achieve this, even though it's
+        // not a sensible real world scenario. It makes the dummyKeyMaterial decryptable with the root key which is all that matters.
+        val dummyKeyMaterial = rootWrappingKey.wrap(rootWrappingKey)
+
+        val wrappingRepository = mock<WrappingRepository>() {
+            // parentKeyAlias and algorithmName correspond to rootWrappingKey
+            on { findKey(alias) }.thenReturn(WrappingKeyInfo(1, "AES", dummyKeyMaterial, 1, "root", ""))
+        }
+
+        val myCryptoService = makeSoftCryptoService(
+            wrappingRepository = wrappingRepository,
+            schemeMetadata = schemeMetadata,
+            rootWrappingKey = rootWrappingKey,
+            wrappingKeyCache = wrappingKeyCache,
+            privateKeyCache = makePrivateKeyCache(),
+            shortHashCache = makeShortHashCache()
+        )
+
+        myCryptoService.createWrappingKey(alias, false, mapOf())
+
+        verify(wrappingRepository).findKey(alias)
+        verify(wrappingRepository, never()).saveKey(any()) // double check we didn't take the path of saving the key
+        clearInvocations(wrappingRepository)
+
+        assertNotNull(wrappingKeyCache.getIfPresent(alias))
+
+        // Next time round, we should never touch the db
+        myCryptoService.createWrappingKey(alias, false, mapOf())
+        verify(wrappingRepository, never()).findKey(alias)
+        verify(wrappingRepository, never()).saveKey(any())
+
+        assertNotNull(wrappingKeyCache.getIfPresent(alias))
     }
 }
