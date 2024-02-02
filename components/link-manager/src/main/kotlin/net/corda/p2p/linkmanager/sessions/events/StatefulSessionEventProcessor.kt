@@ -85,7 +85,7 @@ internal class StatefulSessionEventProcessor(
                     sessionManagerImpl.revocationCheckerClient::checkRevocation,
                 ).sessionData as? Session
             if (session == null) {
-                logger.warn("Received a $direction session created event for $key but no session exists in the state manager")
+                logger.warn("Received a $direction session created event for $key but could not deserialize the session.")
                 return
             }
             val metadata = state.metadata.toCommonMetadata()
