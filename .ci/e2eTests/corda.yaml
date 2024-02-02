@@ -7,49 +7,6 @@ bootstrap:
         valueFrom:
           secretKeyRef:
             key: "postgres-password"
-    stateManager:
-      flow:
-        username:
-          value: "state-manager-user"
-        password:
-          valueFrom:
-            secretKeyRef:
-              key: "password"
-      flowMapper:
-        username:
-          value: "state-manager-user"
-        password:
-          valueFrom:
-            secretKeyRef:
-              key: "password"
-      tokenSelection:
-        username:
-          value: "state-manager-user"
-        password:
-          valueFrom:
-            secretKeyRef:
-              key: "password"
-      crypto:
-        username:
-          value: "state-manager-user"
-        password:
-          valueFrom:
-            secretKeyRef:
-              key: "password"
-      rest:
-        username:
-          value: "state-manager-user"
-        password:
-          valueFrom:
-            secretKeyRef:
-              key: "password"
-      p2pLinkManager:
-        username:
-          value: "state-manager-user"
-        password:
-          valueFrom:
-            secretKeyRef:
-              key: "password"
   kafka:
     sasl:
       username:
@@ -96,15 +53,6 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "crypto"
-    stateManager:
-      db:
-        name: state-manager
-        username:
-          value: "state-manager-user"
-        password:
-          valueFrom:
-            secretKeyRef:
-              key: "password"
   db:
     kafka:
       sasl:
@@ -125,15 +73,6 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "flow"
-    stateManager:
-      db:
-        name: state-manager
-        username:
-          value: "state-manager-user"
-        password:
-          valueFrom:
-            secretKeyRef:
-              key: "password"
   flowMapper:
     kafka:
       sasl:
@@ -144,15 +83,6 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "flowMapper"
-    stateManager:
-      db:
-        name: state-manager
-        username:
-          value: "state-manager-user"
-        password:
-          valueFrom:
-            secretKeyRef:
-              key: "password"
   verification:
     kafka:
       sasl:
@@ -193,15 +123,6 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "p2pLinkManager"
-    stateManager:
-      db:
-        name: state-manager
-        username:
-          value: "state-manager-user"
-        password:
-          valueFrom:
-            secretKeyRef:
-              key: "password"
   persistence:
     kafka:
       sasl:
@@ -222,15 +143,6 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "tokenSelection"
-    stateManager:
-      db:
-        name: state-manager
-        username:
-          value: "state-manager-user"
-        password:
-          valueFrom:
-            secretKeyRef:
-              key: "password"
   rest:
     kafka:
       sasl:
@@ -241,15 +153,6 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "rest"
-    stateManager:
-      db:
-        name: state-manager
-        username:
-          value: "state-manager-user"
-        password:
-          valueFrom:
-            secretKeyRef:
-              key: "password"
   uniqueness:
     kafka:
       sasl:
