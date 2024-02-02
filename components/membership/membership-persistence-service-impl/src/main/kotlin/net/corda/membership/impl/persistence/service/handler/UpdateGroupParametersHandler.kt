@@ -40,7 +40,8 @@ internal class UpdateGroupParametersHandler(
     private fun Map<String, String>.toKeyValuePairs() = entries.map { KeyValuePair(it.key, it.value) }
 
     override fun invoke(
-        context: MembershipRequestContext, request: UpdateGroupParameters
+        context: MembershipRequestContext,
+        request: UpdateGroupParameters
     ): PersistGroupParametersResponse {
         val persistedGroupParameters = transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             val criteriaBuilder = em.criteriaBuilder

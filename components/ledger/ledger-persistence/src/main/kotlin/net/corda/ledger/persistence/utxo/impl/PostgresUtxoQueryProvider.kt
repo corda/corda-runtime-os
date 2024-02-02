@@ -20,8 +20,8 @@ class PostgresUtxoQueryProvider @Activate constructor(
 
     override val persistTransaction: String
         get() = """
-            INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash)
-                VALUES (:id, :privacySalt, :accountId, :createdAt, :status, :updatedAt, :metadataHash)
+            INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
+                VALUES (:id, :privacySalt, :accountId, :createdAt, :status, :updatedAt, :metadataHash, :isFiltered)
             ON CONFLICT(id) DO
                 UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated
             WHERE utxo_transaction.status in (EXCLUDED.status, '$UNVERIFIED', '$DRAFT')"""
@@ -78,6 +78,24 @@ class PostgresUtxoQueryProvider @Activate constructor(
                 hash, parameters, signature_public_key, signature_content, signature_spec, created)
             VALUES (
                 :hash, :parameters, :signature_public_key, :signature_content, :signature_spec, :createdAt)
+            ON CONFLICT DO NOTHING"""
+            .trimIndent()
+
+    override val persistMerkleProof: String
+        get() = """
+            INSERT INTO {h-schema}utxo_transaction_merkle_proof(
+                merkle_proof_id, transaction_id, group_idx, tree_size, hashes)
+            VALUES (
+                :merkleProofId, :transactionId, :groupIndex, :treeSize, :hashes)
+            ON CONFLICT DO NOTHING"""
+            .trimIndent()
+
+    override val persistMerkleProofLeaf: String
+        get() = """
+            INSERT INTO {h-schema}utxo_transaction_merkle_proof_leaves(
+                merkle_proof_id, leaf_index)
+            VALUES (
+                :merkleProofId, :leafIndex)
             ON CONFLICT DO NOTHING"""
             .trimIndent()
 }

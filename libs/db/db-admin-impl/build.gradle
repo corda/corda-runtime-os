@@ -27,10 +27,10 @@ dependencies {
     runtimeOnly "commons-beanutils:commons-beanutils:$beanutilsVersion"
 
 
-    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    testRuntimeOnly libs.slf4j.simple
 
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    integrationTestRuntimeOnly libs.slf4j.simple
 
     integrationTestImplementation project(":libs:db:db-core")
 }

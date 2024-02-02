@@ -7,7 +7,9 @@ import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
+import net.corda.libs.statemanager.api.StateOperationGroup
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.schema.configuration.StateManagerConfig
 import org.osgi.service.component.annotations.Component
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -27,7 +29,7 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
         fun clear() = storage.clear()
     }
 
-    override fun create(config: SmartConfig): StateManager {
+    override fun create(config: SmartConfig, stateType: StateManagerConfig.StateType): StateManager {
         return object : StateManager {
             override val name = LifecycleCoordinatorName("MockStateManager", UUID.randomUUID().toString())
 
@@ -69,6 +71,10 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
                     }
                     output
                 }.associateBy { it.key }
+            }
+
+            override fun createOperationGroup(): StateOperationGroup {
+                TODO("Not yet implemented")
             }
 
             override fun updatedBetween(interval: IntervalFilter): Map<String, State> {

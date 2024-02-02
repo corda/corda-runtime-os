@@ -11,5 +11,5 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-application"
     implementation 'net.corda:corda-base'
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation libs.jackson.module.kotlin
 }

@@ -98,13 +98,8 @@ internal class SandboxServiceImpl @Activate constructor(
         }
     }
 
-    override fun createSandboxGroup(cpks: Iterable<Cpk>, securityDomain: String) =
-        createSandboxes(cpks, securityDomain, startBundles = true)
-
-    override fun createSandboxGroupWithoutStarting(cpks: Iterable<Cpk>, securityDomain: String) =
-        createSandboxes(cpks, securityDomain, startBundles = false)
-
     override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) = bundleLock.withLock {
+        logger.info("Uninstalling bundles for SandboxGroup ${sandboxGroup.id}")
         (sandboxGroup as SandboxGroupInternal).also { sandboxGroupInternal ->
             sandboxGroupInternal.cpkSandboxes.forEach { sandbox ->
                 val unloaded = sandbox.unload()
@@ -184,16 +179,11 @@ internal class SandboxServiceImpl @Activate constructor(
     }
 
     /**
-     * Creates a [SandboxGroup] in the [securityDomain], containing a [Sandbox] for each of the [cpks]. On the first
-     * run, also initialises a public sandbox. [startBundles] controls whether the CPK bundles are also started.
+     * Creates a [SandboxGroup] in the [securityDomain], containing a [Sandbox] for each of the [cpks].
      *
      * Grants each sandbox visibility of the public sandboxes and of the other sandboxes in the group.
      */
-    private fun createSandboxes(
-        cpks: Iterable<Cpk>,
-        securityDomain: String,
-        startBundles: Boolean
-    ): SandboxGroup = bundleLock.withLock {
+    override fun createSandboxGroup(cpks: Iterable<Cpk>, securityDomain: String): SandboxGroup = bundleLock.withLock {
         sandboxForbidsThat(securityDomain.contains('/')) {
             "Security domain cannot contain a '/' character."
         }
@@ -269,11 +259,7 @@ internal class SandboxServiceImpl @Activate constructor(
             throw ex
         }
 
-        // We only start the bundles once all the CPKs' bundles have been installed and sandboxed, since there are
-        // likely dependencies between the CPKs' bundles.
-        if (startBundles) {
-            startBundles(bundles)
-        }
+        startBundles(bundles)
 
         val sandboxGroup = SandboxGroupImpl(
             id = UUID.randomUUID(),
@@ -286,6 +272,8 @@ internal class SandboxServiceImpl @Activate constructor(
         bundles.forEach { bundle ->
             bundleIdToSandboxGroup[bundle.bundleId] = sandboxGroup
         }
+
+        logger.info("Installed bundles for SandboxGroup ${sandboxGroup.id}")
 
         return sandboxGroup
     }

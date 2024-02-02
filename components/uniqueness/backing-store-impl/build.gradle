@@ -72,13 +72,13 @@ dependencies {
     integrationTestImplementation project(':testing:db-testkit')
 
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly libs.postgresql.jdbc
 
-    backingStoreBenchmarkRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    backingStoreBenchmarkRuntimeOnly libs.log4j.slf4j
 
     // For JSON serialization to DB
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    implementation libs.jackson.module.kotlin
+    implementation libs.jackson.datatype.jsr310
 }
 
 tasks.named('jar', Jar) {

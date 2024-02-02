@@ -3,9 +3,11 @@ package net.corda.ledger.persistence.utxo
 import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.persistence.common.InconsistentLedgerStateException
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.ContractState
@@ -66,4 +68,17 @@ interface UtxoPersistenceService {
     fun findSignedGroupParameters(hash: String): SignedGroupParameters?
 
     fun persistSignedGroupParametersIfDoNotExist(signedGroupParameters: SignedGroupParameters)
+
+    /**
+     * Persist a list of filtered transactions to the persistence context.
+     *
+     * @param filteredTransactionsAndSignatures The list of [FilteredTransaction]s to persist and their signature list
+     * @param account The account to persist for the [FilteredTransaction]s
+     */
+    fun persistFilteredTransactions(
+        filteredTransactionsAndSignatures: Map<FilteredTransaction, List<DigitalSignatureAndMetadata>>,
+        account: String
+    )
+
+    fun persistTransactionSignatures(id: String, signatures: List<ByteArray>, startingIndex: Int)
 }

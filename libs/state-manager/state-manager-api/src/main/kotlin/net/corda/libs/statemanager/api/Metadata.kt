@@ -1,6 +1,13 @@
 package net.corda.libs.statemanager.api
 
 /**
+ * Metadata key used to store the actual State Type, if relevant.
+ *
+ * TODO-[CORE-16416]: remove once Isolated State Managers per State Type has been implemented.
+ */
+const val STATE_TYPE = "state.type"
+
+/**
  * Map that allows only primitive types to be used as values.
  */
 class Metadata(
@@ -15,10 +22,12 @@ class Metadata(
             Boolean::class.java,
             java.lang.Boolean::class.java,
         )
+
         private fun isPrimitiveOrBoxedValue(value: Any): Boolean {
             return supportedType.any { it.isAssignableFrom(value.javaClass) }
         }
     }
+
     init {
         map.filter { kvp -> !isPrimitiveOrBoxedValue(kvp.value) }.takeIf { it.isNotEmpty() }?.also { kvp ->
             val invalidPairs = kvp.entries.joinToString { "${it.key}/${it.value::class.java.name}" }
@@ -40,6 +49,8 @@ class Metadata(
     override fun hashCode(): Int {
         return map.hashCode()
     }
+
+    fun containsKeyWithValue(key: String, value: Any) = map.containsKey(key) && map[key] == value
 }
 
 fun metadata(): Metadata = Metadata()

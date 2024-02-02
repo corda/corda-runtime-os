@@ -48,7 +48,7 @@ dependencies {
     implementation project(':libs:serialization:serialization-avro')
     runtimeOnly project(':libs:state-manager:state-manager-db-impl')
 
-    implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
+    implementation libs.caffeine
 
     integrationTestImplementation project(':components:crypto:crypto-client')
     integrationTestImplementation project(":components:crypto:crypto-client-hsm")
@@ -83,7 +83,7 @@ dependencies {
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
 
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly libs.postgresql.jdbc
 
     integrationTestImplementation project(":testing:db-message-bus-testkit")
     integrationTestImplementation project(":libs:web:web")
@@ -92,7 +92,7 @@ dependencies {
     integrationTestRuntimeOnly project(":components:crypto:crypto-client-hsm-impl")
     integrationTestRuntimeOnly project(":components:crypto:crypto-hes-core-impl")
     integrationTestRuntimeOnly project(":components:crypto:crypto-hes-impl")
-    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    integrationTestRuntimeOnly libs.slf4j.simple
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
 
     integrationTestRuntimeOnly "org.hibernate:hibernate-core:$hibernateVersion"

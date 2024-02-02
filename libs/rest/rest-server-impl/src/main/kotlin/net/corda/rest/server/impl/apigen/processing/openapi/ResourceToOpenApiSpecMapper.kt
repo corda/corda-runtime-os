@@ -155,9 +155,11 @@ private fun List<EndpointParameter>.toMediaType(
             )
         )
     } else {
+        // The case of a single parameter which is not a reference to a complex type
         MediaType().schema(
             Schema<Any>().properties(this.toProperties(schemaModelProvider))
                 .type(DataType.OBJECT.toString().lowercase())
+                .required(with(this.first()) { if (required) listOf(name) else null })
         )
     }
 }
@@ -186,7 +188,7 @@ internal fun Endpoint.toOperation(path: String, schemaModelProvider: SchemaModel
         .responses(
             ApiResponses()
                 .addApiResponse(
-                    HttpStatus.OK_200.toString(),
+                    this.responseBody.successCode.toString(),
                     ApiResponse().withResponseBodyFrom(this, schemaModelProvider)
                 )
                 .addApiResponse(HttpStatus.UNAUTHORIZED_401.toString(), ApiResponse().description("Unauthorized"))

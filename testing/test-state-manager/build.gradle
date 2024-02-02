@@ -1,0 +1,22 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.common-publishing'
+}
+
+description 'State Manager Test library'
+
+
+dependencies {
+    compileOnly 'org.osgi:osgi.core'
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+
+    implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:state-manager:state-manager-api")
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-base"
+    implementation libs.typesafe.config
+}

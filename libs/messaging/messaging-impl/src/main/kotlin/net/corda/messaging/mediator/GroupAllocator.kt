@@ -1,7 +1,7 @@
 package net.corda.messaging.mediator
 
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
-import net.corda.messaging.api.records.Record
+import net.corda.messaging.mediator.processor.EventProcessingInput
 import kotlin.math.ceil
 import kotlin.math.min
 
@@ -21,31 +21,31 @@ class GroupAllocator {
      * @return Records allocated to groups.
      */
     fun <K : Any, S : Any, E : Any> allocateGroups(
-        events: List<Record<K, E>>,
+        events: List<EventProcessingInput<K, E>>,
         config: EventMediatorConfig<K, S, E>
-    ): List<Map<K, List<Record<K, E>>>> {
-        val groups = setUpGroups(config, events)
-        val buckets = events
-            .groupBy { it.key }.toList()
-            .sortedByDescending { it.second.size }
-        
-        buckets.forEach { (key, records) ->
-            val leastFilledGroup = groups.minByOrNull { it.values.flatten().size }
-            leastFilledGroup?.put(key, records)
+    ): List<Map<K, EventProcessingInput<K, E>>> {
+        val eventCount = events.flatMap { it.records }.size.toDouble()
+        val groups = setUpGroups(config, eventCount)
+        val sortedEvents = events.sortedByDescending { it.records.size }
+        sortedEvents.forEach {
+            val leastFilledGroup = groups.minBy { group ->
+                group.flatMap { (_, input) -> input.records }.size
+            }
+            leastFilledGroup[it.key] = it
         }
-        
-        return groups.filter { it.values.isNotEmpty() }
+
+        return groups.filter { it.isNotEmpty() }
     }
 
     private fun <E : Any, S: Any, K : Any> setUpGroups(
         config: EventMediatorConfig<K, S, E>,
-        events: List<Record<K, E>>
-    ): MutableList<MutableMap<K, List<Record<K, E>>>> {
+        events: Double
+    ): List<MutableMap<K, EventProcessingInput<K, E>>> {
         val numGroups = min(
-            ceil(events.size.toDouble() / config.minGroupSize).toInt(),
+            ceil(events / config.minGroupSize).toInt(),
             config.threads
         )
-        
-        return MutableList(numGroups) { mutableMapOf() }
+
+        return List(numGroups) { mutableMapOf() }
     }
 }

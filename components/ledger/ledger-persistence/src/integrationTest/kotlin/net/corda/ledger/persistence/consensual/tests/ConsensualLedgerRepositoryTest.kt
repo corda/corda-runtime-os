@@ -383,7 +383,14 @@ class ConsensualLedgerRepositoryTest {
         val componentGroupLists: List<List<ByteArray>> = listOf(
             listOf(jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetadata)).toByteArray()),
             listOf("group2_component1".toByteArray()),
-            listOf("group3_component1".toByteArray())
+            listOf("group3_component1".toByteArray()),
+            listOf("group4_component1".toByteArray()),
+            listOf("group5_component1".toByteArray()),
+            listOf("group6_component1".toByteArray()),
+            listOf("group7_component1".toByteArray()),
+            listOf("group8_component1".toByteArray()),
+            listOf("group9_component1".toByteArray()),
+            listOf("group10_component1".toByteArray())
         )
         val wireTransaction = wireTransactionFactory.create(
             componentGroupLists,

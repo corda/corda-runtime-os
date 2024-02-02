@@ -5,6 +5,8 @@ plugins {
 
 description 'P2P cryptographic library for session authentication'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
 

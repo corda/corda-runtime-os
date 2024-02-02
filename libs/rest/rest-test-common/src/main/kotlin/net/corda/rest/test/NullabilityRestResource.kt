@@ -12,25 +12,31 @@ interface NullabilityRestResource : RestResource {
 
     @HttpPOST(path = "postTakesNullableReturnsNullable")
     fun postTakesNullableReturnsNullable(
-        @ClientRequestBodyParameter(name = "someInfo")
-        someInfo: SomeInfo?
+        @ClientRequestBodyParameter
+        optionalSomeInfo: SomeInfo?
     ): SomeInfo?
 
     @HttpPOST(path = "postTakesInfoReturnsNullable")
     fun postTakesInfoReturnsNullable(
-        @ClientRequestBodyParameter(name = "someInfo")
-        someInfo: SomeInfo
+        @ClientRequestBodyParameter
+        requiredSomeInfo: SomeInfo
     ): SomeInfo?
 
     @HttpPOST(path = "postTakesNullableReturnsInfo")
     fun postTakesNullableReturnsInfo(
-        @ClientRequestBodyParameter(name = "someInfo")
-        someInfo: SomeInfo?
+        @ClientRequestBodyParameter
+        optionalSomeInfo: SomeInfo?
     ): SomeInfo
 
     @HttpPOST(path = "postTakesNullableStringReturnsNullableString")
     fun postTakesNullableStringReturnsNullableString(
-        @ClientRequestBodyParameter(name = "input")
-        input: String?
+        @ClientRequestBodyParameter
+        optionalString: String?
+    ): String?
+
+    @HttpPOST(path = "postTakesRequiredStringReturnsNullableString")
+    fun postTakesRequiredStringReturnsNullableString(
+        @ClientRequestBodyParameter(name = "requiredString1")
+        requiredString: String
     ): String?
 }

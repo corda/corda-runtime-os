@@ -3,7 +3,6 @@ package net.corda.ledger.common.data.transaction.factory
 import com.fasterxml.jackson.databind.JsonMappingException
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.test.CommonLedgerTest
-import net.corda.ledger.common.testkit.getPrivacySalt
 import net.corda.ledger.common.testkit.transactionMetadataExample
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -13,14 +12,15 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
     private val metadata = transactionMetadataExample()
     private val metadataJson = jsonMarshallingService.format(metadata)
     private val canonicalJson = jsonValidator.canonicalize(metadataJson)
-    private val privacySalt = getPrivacySalt()
+    private val privacySalt = mockPrivacySaltProviderService.generatePrivacySalt()
 
     @Test
     fun `Creating a very simple WireTransaction`() {
+        val componentGroupLists = (1..10).map {
+            listOf(canonicalJson.toByteArray())
+        }
         wireTransactionFactory.create(
-            listOf(
-                listOf(canonicalJson.toByteArray()),
-            ),
+            componentGroupLists,
             privacySalt
         )
     }
@@ -132,10 +132,11 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
         )
         val metadataJson = jsonMarshallingService.format(metadata)
         val canonicalJson = jsonValidator.canonicalize(metadataJson)
+        val componentGroupLists = (1..10).map {
+            listOf(canonicalJson.toByteArray())
+        }
         wireTransactionFactory.create(
-            listOf(
-                listOf(canonicalJson.toByteArray()),
-            ),
+            componentGroupLists,
             privacySalt
         )
     }
@@ -169,10 +170,11 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
         )
         val metadataJson = jsonMarshallingService.format(metadata)
         val canonicalJson = jsonValidator.canonicalize(metadataJson)
+        val componentGroupLists = (1..10).map {
+            listOf(canonicalJson.toByteArray())
+        }
         wireTransactionFactory.create(
-            listOf(
-                listOf(canonicalJson.toByteArray()),
-            ),
+            componentGroupLists,
             privacySalt
         )
     }

@@ -14,14 +14,17 @@ import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.metadata
 import net.corda.libs.statemanager.impl.StateManagerImpl
-import net.corda.libs.statemanager.impl.convertToMetadata
-import net.corda.libs.statemanager.impl.model.v1.StateEntity
-import net.corda.libs.statemanager.impl.model.v1.resultSetAsStateEntityCollection
+import net.corda.libs.statemanager.impl.metrics.MetricsRecorder
+import net.corda.libs.statemanager.impl.metrics.MetricsRecorderImpl
+import net.corda.libs.statemanager.impl.model.v1.resultSetAsStateCollection
 import net.corda.libs.statemanager.impl.repository.impl.PostgresQueryProvider
 import net.corda.libs.statemanager.impl.repository.impl.StateRepositoryImpl
 import net.corda.libs.statemanager.impl.tests.MultiThreadedTestHelper.runMultiThreadedOptimisticLockingTest
 import net.corda.libs.statemanager.impl.tests.MultiThreadedTestHelper.updateStateObjects
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.metrics.CordaMetrics
+import net.corda.test.util.metrics.CORDA_METRICS_LOCK
+import net.corda.test.util.metrics.EachTestCordaMetrics
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.AfterAll
@@ -31,6 +34,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.extension.RegisterExtension
+import org.junit.jupiter.api.parallel.ResourceLock
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.kotlin.mock
@@ -40,9 +45,17 @@ import java.util.concurrent.CountDownLatch
 
 // TODO-[CORE-16663]: make database provider pluggable
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@ResourceLock(CORDA_METRICS_LOCK)
 class StateManagerIntegrationTest {
+    private val objectMapper = ObjectMapper()
+    private val testUniqueId = UUID.randomUUID()
+    private val queryProvider = PostgresQueryProvider()
     private val maxConcurrentThreadJdbcConnections = 10
     private val dataSource = DbUtils.createDataSource(maximumPoolSize = maxConcurrentThreadJdbcConnections)
+
+    @RegisterExtension
+    @Suppress("unused")
+    private val metrics = EachTestCordaMetrics(testUniqueId.toString())
 
     init {
         val dbChange = ClassloaderChangeLog(
@@ -59,14 +72,11 @@ class StateManagerIntegrationTest {
         }
     }
 
-    private val objectMapper = ObjectMapper()
-    private val testUniqueId = UUID.randomUUID()
-    private val queryProvider = PostgresQueryProvider()
-
     private val stateManager: StateManager = StateManagerImpl(
         lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>(),
         dataSource = dataSource,
-        stateRepository = StateRepositoryImpl(queryProvider)
+        stateRepository = StateRepositoryImpl(queryProvider),
+        metricsRecorder = MetricsRecorderImpl()
     )
 
     private fun cleanStates() = dataSource.connection.transaction {
@@ -89,14 +99,15 @@ class StateManagerIntegrationTest {
     ) = indexRange.forEach { i ->
         dataSource.connection.transaction { connection ->
             val key = buildStateKey(i)
-            val stateEntity =
-                StateEntity(key, stateContent(i, key).toByteArray(), metadataContent(i, key), version(i, key))
+            val value = stateContent(i, key).toByteArray()
+            val versionNumber = version(i, key)
+            val metadata = metadataContent(i, key)
 
             connection.prepareStatement(queryProvider.createStates(1)).use {
-                it.setString(1, stateEntity.key)
-                it.setBytes(2, stateEntity.value)
-                it.setInt(3, stateEntity.version)
-                it.setString(4, stateEntity.metadata)
+                it.setString(1, key)
+                it.setBytes(2, value)
+                it.setInt(3, versionNumber)
+                it.setString(4, metadata)
                 it.execute()
             }
         }
@@ -114,7 +125,7 @@ class StateManagerIntegrationTest {
                 .prepareStatement(queryProvider.findStatesByKey(1))
                 .use {
                     it.setString(1, key)
-                    it.executeQuery().resultSetAsStateEntityCollection()
+                    it.executeQuery().resultSetAsStateCollection(objectMapper)
                 }.elementAt(0)
 
             assertSoftly {
@@ -122,7 +133,7 @@ class StateManagerIntegrationTest {
                 it.assertThat(loadedEntity.modifiedTime).isNotNull
                 it.assertThat(loadedEntity.version).isEqualTo(version(i, key))
                 it.assertThat(loadedEntity.value).isEqualTo((stateContent(i, key).toByteArray()))
-                it.assertThat(objectMapper.convertToMetadata(loadedEntity.metadata))
+                it.assertThat(loadedEntity.metadata)
                     .containsExactlyInAnyOrderEntriesOf(metadataContent(i, key))
             }
         }
@@ -134,7 +145,7 @@ class StateManagerIntegrationTest {
                 .use {
                     it.setString(1, startEntityKey)
                     it.setString(2, finishEntityKey)
-                    it.executeQuery().resultSetAsStateEntityCollection()
+                    it.executeQuery().resultSetAsStateCollection(objectMapper)
                 }.sortedBy {
                     it.modifiedTime
                 }
@@ -143,6 +154,35 @@ class StateManagerIntegrationTest {
                 loadedEntities.elementAt(0).modifiedTime,
                 loadedEntities.elementAt(1).modifiedTime
             )
+        }
+    }
+
+    private fun verifyHistogramSnapshotValues(
+        operation: MetricsRecorder.OperationType,
+        samples: Long = 1,
+        minTotalTime: Double = 0.0
+    ) {
+        val meter = CordaMetrics.registry
+            .find("corda.${CordaMetrics.Metric.StateManger.ExecutionTime.metricsName}")
+            .tag(CordaMetrics.Tag.WorkerType.value, testUniqueId.toString())
+            .tag(CordaMetrics.Tag.OperationName.value, operation.toString())
+
+        val timer = meter.timer()
+        assertThat(timer)
+            .withFailMessage("Meter for StateManager operation $operation does not exist")
+            .isNotNull
+
+        val metricId = timer!!.id
+        timer.takeSnapshot().also {
+            val count = it.count()
+            assertThat(count)
+                .withFailMessage("Expected count for $metricId to have count $samples but was $count")
+                .isEqualTo(samples)
+
+            val totalTime = it.total()
+            assertThat(totalTime)
+                .withFailMessage("Expected totalTime for $metricId to be greater or equal than $minTotalTime but was $totalTime")
+                .isGreaterThanOrEqualTo(minTotalTime)
         }
     }
 
@@ -161,6 +201,8 @@ class StateManagerIntegrationTest {
             { i, _ -> "simpleState_$i" },
             { _, _ -> metadata() }
         )
+
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.CREATE, 1)
     }
 
     @ValueSource(ints = [1, 10])
@@ -184,6 +226,8 @@ class StateManagerIntegrationTest {
             { i, _ -> "customState_$i" },
             { i, _ -> metadata("key1" to "value$i", "key2" to i) }
         )
+
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.CREATE, 1)
     }
 
     @Test
@@ -213,6 +257,8 @@ class StateManagerIntegrationTest {
             { i, _ -> "newState_$i" },
             { _, _ -> metadata() }
         )
+
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.CREATE, 1)
     }
 
     @ValueSource(ints = [1, 10])
@@ -242,6 +288,8 @@ class StateManagerIntegrationTest {
                     .containsExactlyInAnyOrderEntriesOf(mutableMapOf("k1" to "v$i", "k2" to i))
             }
         }
+
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.GET, 1)
     }
 
     @ValueSource(ints = [1, 5, 10, 20, 50])
@@ -269,6 +317,8 @@ class StateManagerIntegrationTest {
             { i, _ -> "state_$i$i" },
             { _, _ -> metadata("updatedK2" to "updatedV2") }
         )
+
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.UPDATE, 1)
     }
 
     @Test
@@ -319,6 +369,9 @@ class StateManagerIntegrationTest {
             { _, key -> if (conflictingKeys.contains(key)) "a_$key" else "b_$key" },
             { _, key -> if (conflictingKeys.contains(key)) metadata("a" to key) else metadata("b" to key) },
         )
+
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.GET, 1)
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.UPDATE, 2)
     }
 
     @Suppress("SpreadOperator")
@@ -356,6 +409,9 @@ class StateManagerIntegrationTest {
         assertThat(actualFailedKeys)
             .containsExactlyInAnyOrder(*expectedFailedKeys.toTypedArray())
             .withFailMessage("Expected one failure for every state shared between another thread")
+
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.GET, 1)
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.UPDATE, numThreads.toLong())
     }
 
     @Suppress("SpreadOperator")
@@ -404,6 +460,10 @@ class StateManagerIntegrationTest {
         assertThat(allFailedUpdates + allFailedDeletes)
             .containsExactlyInAnyOrder(*expectedFailedKeys.toTypedArray())
             .withFailMessage("Expected one failure for every state shared between another thread")
+
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.GET, 1)
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.UPDATE, numThreads.toLong())
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.DELETE, numThreads.toLong())
     }
 
     @ValueSource(ints = [1, 5, 10, 20, 50])
@@ -424,6 +484,9 @@ class StateManagerIntegrationTest {
         assertThat(stateManager.get(statesToDelete.map { it.key })).hasSize(stateCount)
         stateManager.delete(statesToDelete)
         assertThat(stateManager.get(statesToDelete.map { it.key })).isEmpty()
+
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.GET, 2)
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.DELETE, 1)
     }
 
     @Test
@@ -435,6 +498,53 @@ class StateManagerIntegrationTest {
         assertThat(stateManager.get(statesToDelete.map { it.key })).isEmpty()
         val failed = stateManager.delete(statesToDelete)
         assertThat(failed).isEmpty()
+
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.GET, 1)
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.DELETE, 1)
+    }
+
+    @Test
+    fun `batch operations perform all requested changes when executed`() {
+        val statesToCreate = (1..5).map {
+            State(buildStateKey(it), "".toByteArray())
+        }
+        persistStateEntities(
+            (6..15),
+            { _, _ -> State.VERSION_INITIAL_VALUE },
+            { i, _ -> "existingState_$i" },
+            { _, _ -> "{}" }
+        )
+        softlyAssertPersistedStateEntities(
+            (6..15),
+            { _, _ -> State.VERSION_INITIAL_VALUE },
+            { i, _ -> "existingState_$i" },
+            { _, _ -> metadata() }
+        )
+        val statesToUpdate = (6..10).map {
+            State(buildStateKey(it), "".toByteArray(), version = State.VERSION_INITIAL_VALUE)
+        }
+        val statesToDelete = (11..15).map {
+            State(buildStateKey(it), "".toByteArray(), version = State.VERSION_INITIAL_VALUE)
+        }
+        val batch = stateManager.createOperationGroup()
+        val failures = batch
+            .create(statesToCreate)
+            .update(statesToUpdate)
+            .delete(statesToDelete)
+            .execute()
+        assertThat(failures).isEmpty()
+        softlyAssertPersistedStateEntities(
+            (1..5),
+            { _, _ -> State.VERSION_INITIAL_VALUE },
+            { _, _ -> "" },
+            { _, _ -> metadata() }
+        )
+        softlyAssertPersistedStateEntities(
+            (6..10),
+            { _, _ -> 1 },
+            { _, _ -> "" },
+            { _, _ -> metadata() }
+        )
     }
 
     @Test
@@ -482,6 +592,10 @@ class StateManagerIntegrationTest {
             { _, key -> "u1_$key" },
             { _, key -> metadata("u1" to key) },
         )
+
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.GET, 1)
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.UPDATE, 1)
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.DELETE, 1)
     }
 
     @Test
@@ -555,6 +669,9 @@ class StateManagerIntegrationTest {
                 it.assertThat(loadedState.metadata).containsExactlyInAnyOrderEntriesOf(mutableMapOf("k1" to "v$i"))
             }
         }
+
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.FIND, 2)
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.UPDATE, 1)
     }
 
     @Test
@@ -585,6 +702,8 @@ class StateManagerIntegrationTest {
         assertThat(stateManager.findByMetadata(MetadataFilter("boolean", Operation.NotEquals, true))).hasSize(count / 2)
         assertThat(stateManager.findByMetadata(MetadataFilter("boolean", Operation.GreaterThan, false))).hasSize(count / 2)
         assertThat(stateManager.findByMetadata(MetadataFilter("boolean", Operation.LesserThan, false))).isEmpty()
+
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.FIND, 12)
     }
 
     @Test
@@ -637,6 +756,8 @@ class StateManagerIntegrationTest {
                 )
             )
         ).isEmpty()
+
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.FIND, 4)
     }
 
     @Test
@@ -695,6 +816,8 @@ class StateManagerIntegrationTest {
                 )
             )
         ).isEmpty()
+
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.FIND, 5)
     }
 
     @Test
@@ -744,6 +867,8 @@ class StateManagerIntegrationTest {
                 MetadataFilter("number", Operation.LesserThan, count)
             )
         ).isEmpty()
+
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.FIND, 5)
     }
 
     @Test
@@ -818,6 +943,8 @@ class StateManagerIntegrationTest {
                 )
             )
         ).hasSize(half)
+
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.FIND, 5)
     }
 
     @Test
@@ -879,6 +1006,8 @@ class StateManagerIntegrationTest {
                 )
             )
         ).isEmpty()
+
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.FIND, 4)
     }
 
     @AfterEach

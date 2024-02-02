@@ -26,12 +26,14 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKey
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
 import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import net.corda.v5.membership.NotaryInfo
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.security.PrivilegedExceptionAction
@@ -89,10 +91,10 @@ class UtxoFinalityFlowV1(
         // Initial verifications passed, the transaction can be saved in the database.
         persistUnverifiedTransaction()
 
-        sendTransactionAndBackchainToCounterparties(transferAdditionalSignatures)
-        val (transaction, signaturesReceivedFromSessions) = receiveSignaturesAndAddToTransaction()
+        sendTransactionAndDependenciesToCounterparties(transferAdditionalSignatures)
+        val (transaction, signaturesReceivedFromSessions, startingIndex, signatures) = receiveSignaturesAndAddToTransaction()
         verifyAllReceivedSignatures(transaction, signaturesReceivedFromSessions)
-        persistTransactionWithCounterpartySignatures(transaction)
+        persistCounterpartySignatures(transaction.id, startingIndex, signatures)
 
         if (transferAdditionalSignatures) {
             sendUnseenSignaturesToCounterparties(transaction, signaturesReceivedFromSessions)
@@ -111,13 +113,22 @@ class UtxoFinalityFlowV1(
         log.debug { "Recorded transaction with initial signatures $transactionId" }
     }
 
+    // Send initialTransaction, transferAdditionalSignatures, and filteredTransactionsAndSignatures
+    // to counterparties. filteredTransactionsAndSignatures will be null if the backchain is required since
+    // we don't need to send dependency payload to check.
     @Suspendable
-    private fun sendTransactionAndBackchainToCounterparties(transferAdditionalSignatures: Boolean) {
-        flowMessaging.sendAll(FinalityPayload(initialTransaction, transferAdditionalSignatures), sessions.toSet())
-
+    private fun sendTransactionAndDependenciesToCounterparties(transferAdditionalSignatures: Boolean) {
         val notaryInfo = requireNotNull(notaryLookup.lookup(initialTransaction.notaryName)) {
             "Notary ${initialTransaction.notaryName} does not exist in the network"
         }
+
+        val filteredTransactionsAndSignatures = createFilteredTransactionsAndSignatures(notaryInfo)
+
+        flowMessaging.sendAll(
+            FinalityPayload(initialTransaction, transferAdditionalSignatures, filteredTransactionsAndSignatures),
+            sessions.toSet()
+        )
+
         if (notaryInfo.isBackchainRequired) {
             sessions.forEach {
                 if (initialTransaction.dependencies.isNotEmpty()) {
@@ -128,8 +139,13 @@ class UtxoFinalityFlowV1(
                     }
                 }
             }
-        } else {
-            val filteredTransactionsAndSignatures = initialTransaction
+        }
+    }
+
+    @Suspendable
+    private fun createFilteredTransactionsAndSignatures(notaryInfo: NotaryInfo): List<FilteredTransactionAndSignatures>? {
+        return if (!notaryInfo.isBackchainRequired) {
+            initialTransaction
                 .let { it.inputStateRefs + it.referenceStateRefs }
                 .groupBy { stateRef -> stateRef.transactionId }
                 .mapValues { (_, stateRefs) -> stateRefs.map { stateRef -> stateRef.index } }
@@ -164,13 +180,14 @@ class UtxoFinalityFlowV1(
                         dependency.signatures.filter { newTxNotaryKeyIds.contains(it.by) }
                     )
                 }
-            flowMessaging.sendAll(filteredTransactionsAndSignatures, sessions.toSet())
+        } else {
+            null
         }
     }
 
     @Suppress("MaxLineLength")
     @Suspendable
-    private fun receiveSignaturesAndAddToTransaction(): Pair<UtxoSignedTransactionInternal, Map<FlowSession, List<DigitalSignatureAndMetadata>>> {
+    private fun receiveSignaturesAndAddToTransaction(): TransactionAndReceivedSignatures {
         val signaturesPayloads = try {
             flowMessaging.receiveAllMap(
                 sessions.associateWith { Payload::class.java }
@@ -210,7 +227,14 @@ class UtxoFinalityFlowV1(
             session to signatures
         }.toMap()
 
-        return transaction to signaturesReceivedFromSessions
+        val initialSignaturesSize = initialTransaction.signatures.size
+
+        return TransactionAndReceivedSignatures(
+            transaction,
+            signaturesReceivedFromSessions,
+            initialSignaturesSize,
+            transaction.signatures.drop(initialSignaturesSize)
+        )
     }
 
     @Suspendable
@@ -242,8 +266,12 @@ class UtxoFinalityFlowV1(
     }
 
     @Suspendable
-    private fun persistTransactionWithCounterpartySignatures(transaction: UtxoSignedTransactionInternal) {
-        persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
+    private fun persistCounterpartySignatures(
+        id: SecureHash,
+        startingIndex: Int,
+        signatures: List<DigitalSignatureAndMetadata>
+    ) {
+        persistenceService.persistTransactionSignatures(id, startingIndex, signatures)
         log.debug { "Recorded transaction with all parties' signatures $transactionId" }
     }
 
@@ -376,4 +404,11 @@ class UtxoFinalityFlowV1(
     private fun sendNotarySignaturesToCounterparties(notarySignatures: List<DigitalSignatureAndMetadata>) {
         flowMessaging.sendAll(Payload.Success(notarySignatures), sessions.toSet())
     }
+
+    private data class TransactionAndReceivedSignatures(
+        val transaction: UtxoSignedTransactionInternal,
+        val sessionsToSignatures: Map<FlowSession, List<DigitalSignatureAndMetadata>>,
+        val indexOfNewSignatures: Int,
+        val orderedNewSignatures: List<DigitalSignatureAndMetadata>
+    )
 }

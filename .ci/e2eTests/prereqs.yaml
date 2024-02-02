@@ -1,18 +1,17 @@
 kafka:
-  auth:
-    sasl:
-      jaas:
-        clientUsers:
-          - "bootstrap"
-          - "crypto"
-          - "db"
-          - "flow"
-          - "flowMapper"
-          - "verification"
-          - "membership"
-          - "p2pGateway"
-          - "p2pLinkManager"
-          - "persistence"
-          - "tokenSelection"
-          - "rest"
-          - "uniqueness"
+  sasl:
+    client:
+      users:
+        - "bootstrap"
+        - "crypto"
+        - "db"
+        - "flow"
+        - "flowMapper"
+        - "verification"
+        - "membership"
+        - "p2pGateway"
+        - "p2pLinkManager"
+        - "persistence"
+        - "tokenSelection"
+        - "rest"
+        - "uniqueness" 

@@ -68,7 +68,8 @@ internal class MembershipPersistenceOperationImpl<T>(
                         "Request ID in the response received does not match what was sent in the request.",
                     ),
                 )
-            } else if (context.requestTimestamp > response.context.responseTimestamp) {
+                // Allow for a tolerance of 120 seconds to account for clock synchronisation gaps between workers.
+            } else if (context.requestTimestamp > response.context.responseTimestamp.plusSeconds(120)) {
                 Either.Right(
                     MembershipPersistenceResult.Failure(
                         "Response timestamp is before the request timestamp.",

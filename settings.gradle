@@ -36,18 +36,30 @@ pluginManagement {
             }
         }
     }
+
+    // Manually parse the Toml file to workaround issues with version catalog
+    // not supporting direct use in settings.gradle
+    def tomlFile = new File(rootDir, 'gradle/libs.versions.toml')
+    def tomlContent = tomlFile.text
+    def extractVersion = { String name ->
+        def pattern = java.util.regex.Pattern.compile("${name}\\s*=\\s*\"([^\"]+)\"")
+        def matcher = pattern.matcher(tomlContent)
+        if (matcher.find()) {
+            return matcher.group(1)
+        } else {
+            return null
+        }
+    }
+
+    def gradleEnterpriseVersion = extractVersion('gradleEnterpriseVersion')
+    def gradleDataPluginVersion = extractVersion('gradleDataVersion')
+
     plugins {
         id 'com.gradle.enterprise' version gradleEnterpriseVersion
-        id 'com.gradle.common-custom-user-data-gradle-plugin' version gradleDataPlugin
+        id 'com.gradle.common-custom-user-data-gradle-plugin' version gradleDataPluginVersion
         id 'net.corda.cordapp.cordapp-configuration' version cordaApiVersion
         id 'net.corda.plugins.cordapp-cpk2' version cordaGradlePluginsVersion
         id 'net.corda.plugins.cordapp-cpb2' version cordaGradlePluginsVersion
-        id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
-        id 'com.github.ben-manes.versions' version dependencyCheckVersion
-        id "com.jfrog.artifactory" version artifactoryPluginVersion
-        id 'io.snyk.gradle.plugin.snykplugin' version snykVersion
-        id 'org.jetbrains.dokka' version dokkaVersion
-        id "org.cyclonedx.bom" version cyclonedxVersion
     }
 }
 
@@ -455,12 +467,14 @@ include 'testing:sandbox-stresstests'
 include 'testing:sandboxes-testkit'
 include 'testing:security-manager-utilities'
 include 'testing:test-serialization'
+include 'testing:test-state-manager'
 include 'testing:test-utilities'
 include 'testing:uniqueness:backing-store-fake'
 include 'testing:uniqueness:uniqueness-utilities'
 include 'testing:cpi-info-read-service-fake'
 include 'testing:virtual-node-info-read-service-fake'
 include 'testing:group-policy-test-common'
+include 'tools:corda-runtime-gradle-plugin'
 include 'tools:plugins:plugins-rest'
 include 'tools:plugins:db-config'
 include 'tools:plugins:initial-config'

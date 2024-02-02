@@ -1,9 +1,10 @@
 package net.corda.libs.statemanager.impl.repository.impl
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
-import net.corda.libs.statemanager.impl.model.v1.StateEntity
-import net.corda.libs.statemanager.impl.model.v1.resultSetAsStateEntityCollection
+import net.corda.libs.statemanager.api.State
+import net.corda.libs.statemanager.impl.model.v1.resultSetAsStateCollection
 import net.corda.libs.statemanager.impl.repository.StateRepository
 import java.sql.Connection
 import java.sql.Timestamp
@@ -12,9 +13,10 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
 
     private companion object {
         private const val CREATE_RESULT_COLUMN_INDEX = 1
+        private val objectMapper = ObjectMapper()
     }
 
-    override fun create(connection: Connection, states: Collection<StateEntity>): Collection<String> {
+    override fun create(connection: Connection, states: Collection<State>): Collection<String> {
         if (states.isEmpty()) return emptySet()
         return connection.prepareStatement(queryProvider.createStates(states.size)).use { statement ->
             val indices = generateSequence(1) { it + 1 }.iterator()
@@ -22,7 +24,7 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
                 statement.setString(indices.next(), state.key)
                 statement.setBytes(indices.next(), state.value)
                 statement.setInt(indices.next(), state.version)
-                statement.setString(indices.next(), state.metadata)
+                statement.setString(indices.next(), objectMapper.writeValueAsString(state.metadata))
             }
             statement.execute()
             val results = statement.resultSet
@@ -34,16 +36,18 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
         }
     }
 
-    override fun get(connection: Connection, keys: Collection<String>) =
-        connection.prepareStatement(queryProvider.findStatesByKey(keys.size)).use {
+    override fun get(connection: Connection, keys: Collection<String>): Collection<State> {
+        if (keys.isEmpty()) return emptySet()
+        return connection.prepareStatement(queryProvider.findStatesByKey(keys.size)).use {
             keys.forEachIndexed { index, key ->
                 it.setString(index + 1, key)
             }
 
-            it.executeQuery().resultSetAsStateEntityCollection()
+            it.executeQuery().resultSetAsStateCollection(objectMapper)
         }
+    }
 
-    override fun update(connection: Connection, states: List<StateEntity>): StateRepository.StateUpdateSummary {
+    override fun update(connection: Connection, states: Collection<State>): StateRepository.StateUpdateSummary {
         if (states.isEmpty()) return StateRepository.StateUpdateSummary(emptyList(), emptyList())
         val indices = generateSequence(1) { it + 1 }.iterator()
         val updatedKeys = mutableListOf<String>()
@@ -51,7 +55,7 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
             states.forEach { state ->
                 stmt.setString(indices.next(), state.key)
                 stmt.setBytes(indices.next(), state.value)
-                stmt.setString(indices.next(), state.metadata)
+                stmt.setString(indices.next(), objectMapper.writeValueAsString(state.metadata))
                 stmt.setInt(indices.next(), state.version)
             }
             stmt.execute()
@@ -66,7 +70,8 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
         )
     }
 
-    override fun delete(connection: Connection, states: Collection<StateEntity>): Collection<String> {
+    override fun delete(connection: Connection, states: Collection<State>): Collection<String> {
+        if (states.isEmpty()) return emptySet()
         return connection.prepareStatement(queryProvider.deleteStatesByKey).use { statement ->
             // The actual state order doesn't matter, but we must ensure that the states are iterated over in the same
             // order when examining the result as when the statements were generated.
@@ -89,21 +94,21 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
         }
     }
 
-    override fun updatedBetween(connection: Connection, interval: IntervalFilter): Collection<StateEntity> =
+    override fun updatedBetween(connection: Connection, interval: IntervalFilter): Collection<State> =
         connection.prepareStatement(queryProvider.findStatesUpdatedBetween).use {
             it.setTimestamp(1, Timestamp.from(interval.start))
             it.setTimestamp(2, Timestamp.from(interval.finish))
-            it.executeQuery().resultSetAsStateEntityCollection()
+            it.executeQuery().resultSetAsStateCollection(objectMapper)
         }
 
     override fun filterByAll(connection: Connection, filters: Collection<MetadataFilter>) =
         connection.prepareStatement(queryProvider.findStatesByMetadataMatchingAll(filters)).use {
-            it.executeQuery().resultSetAsStateEntityCollection()
+            it.executeQuery().resultSetAsStateCollection(objectMapper)
         }
 
     override fun filterByAny(connection: Connection, filters: Collection<MetadataFilter>) =
         connection.prepareStatement(queryProvider.findStatesByMetadataMatchingAny(filters)).use {
-            it.executeQuery().resultSetAsStateEntityCollection()
+            it.executeQuery().resultSetAsStateCollection(objectMapper)
         }
 
     override fun filterByUpdatedBetweenWithMetadataMatchingAll(
@@ -113,7 +118,7 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
     ) = connection.prepareStatement(queryProvider.findStatesUpdatedBetweenWithMetadataMatchingAll(filters)).use {
         it.setTimestamp(1, Timestamp.from(interval.start))
         it.setTimestamp(2, Timestamp.from(interval.finish))
-        it.executeQuery().resultSetAsStateEntityCollection()
+        it.executeQuery().resultSetAsStateCollection(objectMapper)
     }
 
     override fun filterByUpdatedBetweenWithMetadataMatchingAny(
@@ -123,6 +128,6 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
     ) = connection.prepareStatement(queryProvider.findStatesUpdatedBetweenWithMetadataMatchingAny(filters)).use {
         it.setTimestamp(1, Timestamp.from(interval.start))
         it.setTimestamp(2, Timestamp.from(interval.finish))
-        it.executeQuery().resultSetAsStateEntityCollection()
+        it.executeQuery().resultSetAsStateCollection(objectMapper)
     }
 }

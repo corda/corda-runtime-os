@@ -14,7 +14,7 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "net.corda:corda-base"
     implementation 'net.corda:corda-config-schema'
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
 
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")

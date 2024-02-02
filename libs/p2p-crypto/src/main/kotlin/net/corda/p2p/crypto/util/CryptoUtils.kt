@@ -28,12 +28,14 @@ internal fun Cipher.decrypt(aad: ByteArray, tag: ByteArray, nonce: ByteArray, ci
 }
 
 /**
- * @return  (in this order) the encrypted data and the authentication tag
+ * @return (in this order) the encrypted data and the authentication tag
  */
-internal fun Cipher.encryptWithAssociatedData(aad: ByteArray,
-                                     nonce: ByteArray,
-                                     plaintext: ByteArray,
-                                     secretKey: SecretKey): Pair<ByteArray, ByteArray> {
+internal fun Cipher.encryptWithAssociatedData(
+    aad: ByteArray,
+    nonce: ByteArray,
+    plaintext: ByteArray,
+    secretKey: SecretKey,
+): Pair<ByteArray, ByteArray> {
     synchronized(this) {
         this.init(Cipher.ENCRYPT_MODE, secretKey, GCMParameterSpec(128, nonce))
         this.updateAAD(aad)
@@ -55,7 +57,7 @@ internal fun Signature.verify(publicKey: PublicKey, data: ByteArray, signature: 
 /**
  * @return the shared secret key as a byte array.
  */
-internal fun KeyAgreement.perform(privateKey: PrivateKey, publicKey: PublicKey): ByteArray  {
+internal fun KeyAgreement.perform(privateKey: PrivateKey, publicKey: PublicKey): ByteArray {
     synchronized(this) {
         this.init(privateKey)
         this.doPhase(publicKey, true)
@@ -91,9 +93,8 @@ internal fun HKDFBytesGenerator.generateKey(salt: ByteArray, inputKeyMaterial: B
 }
 
 internal fun MessageDigest.convertToBCDigest(): Digest {
-    return when(this.algorithm) {
+    return when (this.algorithm) {
         HASH_ALGO -> SHA256Digest()
         else -> throw UnsupportedOperationException("Conversion not supported for algorithm: ${this.algorithm}")
     }
 }
-

@@ -3,7 +3,6 @@ package net.corda.flow.state
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.external.ExternalEventState
 import net.corda.data.flow.state.session.SessionState
@@ -12,7 +11,6 @@ import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import java.nio.ByteBuffer
-import java.time.Instant
 
 /**
  * The FlowCheckpoint provides an API for managing the checkpoint during the processing of a flow.
@@ -43,14 +41,6 @@ interface FlowCheckpoint : NonSerializable {
 
     val doesExist: Boolean
 
-    val currentRetryCount: Int
-
-    val firstFailureTimestamp: Instant?
-
-    val inRetryState: Boolean
-
-    val retryEvent: FlowEvent
-
     val pendingPlatformError: ExceptionEnvelope?
 
     val flowContext: FlowContext
@@ -62,6 +52,13 @@ interface FlowCheckpoint : NonSerializable {
     val isCompleted: Boolean
 
     val suspendCount: Int
+
+    /**
+     * In memory counter used to generate unique and deterministic inputs into ledger PrivacySalts
+     * when multiple transactions are created within a single suspension.
+     * This is not saved to the AVRO object. It only needs to be unique per suspension.
+     */
+    val ledgerSaltCounter: Int
 
     fun initFlowState(flowStartContext: FlowStartContext, cpkFileHashes: Set<SecureHash>)
 
@@ -75,13 +72,7 @@ interface FlowCheckpoint : NonSerializable {
 
     fun rollback()
 
-    fun markForRetry(flowEvent: FlowEvent, exception: Exception)
-
-    fun markRetrySuccess()
-
     fun clearPendingPlatformError()
-
-    fun setFlowSleepDuration(sleepTimeMs: Int)
 
     fun setPendingPlatformError(type: String, message: String)
 

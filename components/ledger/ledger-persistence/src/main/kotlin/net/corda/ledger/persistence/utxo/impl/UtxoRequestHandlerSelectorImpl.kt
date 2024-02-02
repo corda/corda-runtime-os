@@ -10,6 +10,7 @@ import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.data.ledger.persistence.PersistSignedGroupParametersIfDoNotExist
 import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.data.ledger.persistence.PersistTransactionIfDoesNotExist
+import net.corda.data.ledger.persistence.PersistTransactionSignatures
 import net.corda.data.ledger.persistence.ResolveStateRefs
 import net.corda.data.ledger.persistence.UpdateTransactionStatus
 import net.corda.data.persistence.FindWithNamedQuery
@@ -28,6 +29,7 @@ import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindUnconsume
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistSignedGroupParametersIfDoNotExistRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistTransactionIfDoesNotExistRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistTransactionRequestHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistTransactionSignaturesRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoResolveStateRefsRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoUpdateTransactionStatusRequestHandler
 import net.corda.persistence.common.ResponseFactory
@@ -59,6 +61,11 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
             factoryStorage = sandbox.getSandboxSingletonService(),
             defaultContractStateVaultJsonFactory = DefaultContractStateVaultJsonFactoryImpl(),
             jsonMarshallingService = sandbox.getSandboxSingletonService(),
+            jsonValidator = sandbox.getSandboxSingletonService(),
+            merkleProofFactory = sandbox.getSandboxSingletonService(),
+            merkleTreeProvider = sandbox.getSandboxSingletonService(),
+            filteredTransactionFactory = sandbox.getSandboxSingletonService(),
+            digestService = sandbox.getSandboxSingletonService(),
             UTCClock()
         )
 
@@ -123,6 +130,14 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     externalEventResponseFactory,
                     serializationService,
                     persistenceService
+                )
+            }
+            is PersistTransactionSignatures -> {
+                UtxoPersistTransactionSignaturesRequestHandler(
+                    req,
+                    externalEventContext,
+                    persistenceService,
+                    externalEventResponseFactory
                 )
             }
             is UpdateTransactionStatus -> {

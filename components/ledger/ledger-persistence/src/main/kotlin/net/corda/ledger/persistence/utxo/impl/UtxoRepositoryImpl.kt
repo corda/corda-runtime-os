@@ -11,6 +11,8 @@ import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.persistence.common.mapToComponentGroups
 import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoRepository
+import net.corda.ledger.utxo.data.transaction.MerkleProofDto
+import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionDto
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByPersistence
@@ -32,13 +34,13 @@ import javax.persistence.EntityManager
 import javax.persistence.Query
 import javax.persistence.Tuple
 
-@Suppress("TooManyFunctions")
 /**
  * Reads and writes ledger transaction data to and from the virtual node vault database.
  * The component only exists to be created inside a PERSISTENCE sandbox. We denote it
  * as "corda.marker.only" to force the sandbox to create it, despite it implementing
  * only the [UsedByPersistence] marker interface.
  */
+@Suppress("TooManyFunctions")
 @Component(
     service = [ UtxoRepository::class, UsedByPersistence::class ],
     property = [ CORDA_MARKER_ONLY_SERVICE ],
@@ -54,13 +56,16 @@ class UtxoRepositoryImpl @Activate constructor(
 ) : UtxoRepository, UsedByPersistence {
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
+        const val TOP_LEVEL_MERKLE_PROOF_INDEX = -1
     }
 
     override fun findTransaction(
         entityManager: EntityManager,
         id: String
     ): SignedTransactionContainer? {
-        val (privacySalt, metadataBytes) = findTransactionPrivacySaltAndMetadata(entityManager, id) ?: return null
+        val (privacySalt, metadataBytes) = findTransactionsPrivacySaltAndMetadata(entityManager, listOf(id))[id]
+            ?: return null
         val wireTransaction = wireTransactionFactory.create(
             mapOf(0 to listOf(metadataBytes)) + findTransactionComponentLeafs(entityManager, id),
             privacySalt
@@ -81,15 +86,15 @@ class UtxoRepositoryImpl @Activate constructor(
             .associate { r -> parseSecureHash(r.get(0) as String) to r.get(1) as String }
     }
 
-    private fun findTransactionPrivacySaltAndMetadata(
+    private fun findTransactionsPrivacySaltAndMetadata(
         entityManager: EntityManager,
-        transactionId: String
-    ): Pair<PrivacySaltImpl, ByteArray>? {
-        return entityManager.createNativeQuery(queryProvider.findTransactionPrivacySaltAndMetadata, Tuple::class.java)
-            .setParameter("transactionId", transactionId)
-            .resultListAsTuples()
-            .map { r -> Pair(PrivacySaltImpl(r.get(0) as ByteArray), r.get(1) as ByteArray) }
-            .firstOrNull()
+        transactionIds: List<String>
+    ): Map<String, Pair<PrivacySaltImpl, ByteArray>?> {
+        return entityManager.createNativeQuery(queryProvider.findTransactionsPrivacySaltAndMetadata, Tuple::class.java)
+            .setParameter("transactionIds", transactionIds)
+            .resultListAsTuples().associate { r ->
+                r.get(0) as String to Pair(PrivacySaltImpl(r.get(1) as ByteArray), r.get(2) as ByteArray)
+            }
     }
 
     override fun findTransactionComponentLeafs(
@@ -171,7 +176,8 @@ class UtxoRepositoryImpl @Activate constructor(
         account: String,
         timestamp: Instant,
         status: TransactionStatus,
-        metadataHash: String
+        metadataHash: String,
+        isFiltered: Boolean
     ) {
         entityManager.createNativeQuery(queryProvider.persistTransaction)
             .setParameter("id", id)
@@ -181,6 +187,7 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("status", status.value)
             .setParameter("updatedAt", timestamp)
             .setParameter("metadataHash", metadataHash)
+            .setParameter("isFiltered", isFiltered)
             .executeUpdate()
             .logResult("transaction [$id]")
     }
@@ -348,6 +355,136 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("createdAt", timestamp)
             .executeUpdate()
             .logResult("signed group parameters [$hash]")
+    }
+
+    override fun persistMerkleProof(
+        entityManager: EntityManager,
+        transactionId: String,
+        groupIndex: Int,
+        treeSize: Int,
+        leaves: List<Int>,
+        hashes: List<String>
+    ): String {
+        // Generate an ID by concatenating transaction ID - group index - leaves
+        val merkleProofId = "$transactionId;$groupIndex;${leaves.joinToString(separator = ",")}"
+
+        entityManager.createNativeQuery(queryProvider.persistMerkleProof)
+            .setParameter("merkleProofId", merkleProofId)
+            .setParameter("transactionId", transactionId)
+            .setParameter("groupIndex", groupIndex)
+            .setParameter("treeSize", treeSize)
+            .setParameter("hashes", hashes.joinToString(","))
+            .executeUpdate()
+            .logResult("merkle proof for transaction: $transactionId")
+
+        return merkleProofId
+    }
+
+    override fun persistMerkleProofLeaf(entityManager: EntityManager, merkleProofId: String, leafIndex: Int) {
+        entityManager.createNativeQuery(queryProvider.persistMerkleProofLeaf)
+            .setParameter("merkleProofId", merkleProofId)
+            .setParameter("leafIndex", leafIndex)
+            .executeUpdate()
+            .logResult("merkle proof leaf for merkle proof: $merkleProofId")
+    }
+
+    override fun findMerkleProofs(
+        entityManager: EntityManager,
+        transactionIds: List<String>
+    ): Map<String, List<MerkleProofDto>> {
+        return entityManager.createNativeQuery(queryProvider.findMerkleProofs, Tuple::class.java)
+            .setParameter("transactionIds", transactionIds)
+            .resultListAsTuples()
+            .groupBy { tuple ->
+                // We'll have multiple rows for the same Merkle proof if it revealed more than one leaf
+                // We group the rows by the Merkle proof ID to see which are the ones that belong together
+                tuple.get(0) as String // Merkle Proof ID
+            }.map { (merkleProofId, rows) ->
+                // We can retrieve most of the properties from the first row because they will be the same for each row
+                val firstRow = rows.first()
+
+                MerkleProofDto(
+                    firstRow.get(1) as String, // Transaction ID
+                    firstRow.get(2) as Int, // Group index
+                    firstRow.get(3) as Int, // Tree size
+
+                    // We store the hashes as a comma separated string, so we need to split it and parse into SecureHash
+                    // we filter out the blank ones just in case
+                    (firstRow.get(4) as String).split(",")
+                        .filter { it.isNotBlank() }.map { parseSecureHash(it) },
+
+                    firstRow.get(5) as ByteArray, // Privacy salt
+
+                    // Each leaf will have its own row, so we need to go through each row that belongs to the Merkle proof
+                    rows.mapNotNull {
+                        // Map the leaf index to the data we fetched from the component table
+                        val leafIndex = it.get(6) as? Int
+                        val leafData = it.get(7) as? ByteArray
+
+                        if (leafIndex != null && leafData != null) {
+                            leafIndex to leafData
+                        } else {
+                            null
+                        }
+                    }.toMap(),
+                    // Extract the visible leaf indices from the merkle proof ID
+                    merkleProofId.substringAfterLast(";").split(",").map { it.toInt() }
+                )
+            }.groupBy {
+                // Group by transaction ID
+                it.transactionId
+            }
+    }
+
+    override fun findFilteredTransactions(
+        entityManager: EntityManager,
+        ids: List<String>
+    ): Map<String, UtxoFilteredTransactionDto> {
+        val privacySaltAndMetadataMap = findTransactionsPrivacySaltAndMetadata(entityManager, ids)
+        val merkleProofs = findMerkleProofs(entityManager, ids)
+        val signaturesMap = ids.associateWith { findTransactionSignatures(entityManager, it) }
+
+        return ids.associateWith { transactionId ->
+
+            val transactionMerkleProofs = merkleProofs[transactionId]
+            requireNotNull(transactionMerkleProofs) {
+                "Couldn't find any Merkle proofs for transaction with ID: $transactionId."
+            }
+
+            val (topLevelMerkleProofs, componentGroupMerkleProofs) = transactionMerkleProofs.partition {
+                it.groupIndex == TOP_LEVEL_MERKLE_PROOF_INDEX
+            }
+
+            require(topLevelMerkleProofs.isNotEmpty()) {
+                "Couldn't find a top level Merkle proof for transaction with ID: $transactionId."
+            }
+            require(componentGroupMerkleProofs.isNotEmpty()) {
+                "Couldn't find any component group Merkle proof for transaction with ID: $transactionId."
+            }
+
+            requireNotNull(privacySaltAndMetadataMap[transactionId]) {
+                "Couldn't find metadata for transaction with ID: $transactionId."
+            }
+
+            val transactionPrivacySaltAndMetadata = privacySaltAndMetadataMap[transactionId]
+            requireNotNull(transactionPrivacySaltAndMetadata) {
+                "Couldn't find metadata/privacy salt for transaction with ID: $transactionId"
+            }
+
+            val transactionSignatures = signaturesMap[transactionId]
+            requireNotNull(transactionSignatures) {
+                "Couldn't find signatures for transaction with ID: $transactionId"
+            }
+
+            UtxoFilteredTransactionDto(
+                transactionId = transactionId,
+                topLevelMerkleProofs = topLevelMerkleProofs,
+                componentMerkleProofMap = componentGroupMerkleProofs.groupBy { it.groupIndex },
+                privacySalt = transactionPrivacySaltAndMetadata.first,
+                metadataBytes = transactionPrivacySaltAndMetadata.second,
+                signatures = transactionSignatures
+            )
+        }
     }
 
     private fun Int.logResult(entity: String): Int {

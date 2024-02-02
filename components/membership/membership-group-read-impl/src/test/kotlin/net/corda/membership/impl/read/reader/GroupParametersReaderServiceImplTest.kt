@@ -342,7 +342,8 @@ class GroupParametersReaderServiceImplTest {
                     ConfigKeys.BOOT_CONFIG to testConfig,
                     ConfigKeys.MESSAGING_CONFIG to testConfig
                 )
-            ), coordinator
+            ),
+            coordinator
         )
     }
 }

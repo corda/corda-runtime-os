@@ -33,7 +33,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.stream.Stream
 
-
 @Component(service = [GroupParametersReaderService::class])
 class GroupParametersReaderServiceImpl internal constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,

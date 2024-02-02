@@ -19,8 +19,8 @@ dependencies {
     implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:utilities')
 
-    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.jackson.databind
+    implementation libs.typesafe.config
     implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
     constraints {
         implementation("com.ethlo.time:itu:$comEthloTimeItuVersion") {

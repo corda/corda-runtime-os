@@ -7,7 +7,6 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.checkpoint.FlowState
 import net.corda.data.flow.state.external.ExternalEventState
@@ -21,13 +20,12 @@ import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import java.nio.ByteBuffer
-import java.time.Instant
+import java.util.concurrent.atomic.AtomicInteger
 
 @Suppress("TooManyFunctions")
 class FlowCheckpointImpl(
     private val checkpoint: Checkpoint,
     private val config: SmartConfig,
-    instantProvider: () -> Instant
 ) : FlowCheckpoint {
 
     /**
@@ -50,20 +48,20 @@ class FlowCheckpointImpl(
         val objectMapper = ObjectMapper().registerKotlinModule()
     }
 
-    private val pipelineStateManager = PipelineStateManager(checkpoint.pipelineState, config, instantProvider)
+    private val pipelineStateManager = PipelineStateManager(checkpoint.pipelineState)
     private var flowStateManager = checkpoint.flowState?.let(::FlowStateManager)
     private var nullableFlowStack: FlowStackImpl? = checkpoint.flowState?.let {
         FlowStackImpl(it.flowStackItems)
     }
 
     private var deleted = false
+    private val ledgerSaltIncrementor = AtomicInteger(0)
 
     private val flowInitialisedOnCreation = checkpoint.flowState != null
 
-    // The checkpoint is live if it is not marked deleted and there is either some flow state, or a retry is currently
-    // occurring (for example, if a transient failure has happened while processing a start event).
+    // The checkpoint is live if it is not marked deleted and there is some flow state.
     private val checkpointLive: Boolean
-        get() = !deleted && (flowStateManager != null || inRetryState)
+        get() = !deleted && (flowStateManager != null)
 
     override val flowId: String
         get() = checkpoint.flowId
@@ -127,20 +125,8 @@ class FlowCheckpointImpl(
     override val doesExist: Boolean
         get() = flowStateManager != null && !deleted
 
-    override val currentRetryCount: Int
-        get() = pipelineStateManager.retryCount
-
-    override val firstFailureTimestamp: Instant?
-        get() = pipelineStateManager.firstFailureTimestamp
-
-    override val inRetryState: Boolean
-        get() = pipelineStateManager.retryState != null
-
     override val cpkFileHashes: Set<SecureHash>
         get() = pipelineStateManager.cpkFileHashes
-
-    override val retryEvent: FlowEvent
-        get() = pipelineStateManager.retryEvent
 
     override val pendingPlatformError: ExceptionEnvelope?
         get() = checkpoint.pipelineState.pendingPlatformError
@@ -156,18 +142,21 @@ class FlowCheckpointImpl(
         get() = checkpoint.initialPlatformVersion
 
     override val isCompleted: Boolean
-
         get() = deleted
+
     override val suspendCount: Int
         get() = checkNotNull(flowStateManager)
         { "Attempt to access context before flow state has been created" }.suspendCount
+
+    override val ledgerSaltCounter: Int
+        get() = ledgerSaltIncrementor.getAndIncrement()
 
     override fun initFlowState(flowStartContext: FlowStartContext, cpkFileHashes: Set<SecureHash>) {
         if (flowStateManager != null) {
             val key = flowStartContext.statusKey
             throw IllegalStateException(
                 "Found existing checkpoint while starting to start a new flow." +
-                        " Flow ID='${flowId}' FlowKey='${key.id}-${key.identity.x500Name}."
+                    " Flow ID='${flowId}' FlowKey='${key.id}-${key.identity.x500Name}."
             )
         }
 
@@ -224,20 +213,8 @@ class FlowCheckpointImpl(
         }
     }
 
-    override fun markForRetry(flowEvent: FlowEvent, exception: Exception) {
-        pipelineStateManager.retry(flowEvent, exception)
-    }
-
-    override fun markRetrySuccess() {
-        pipelineStateManager.markRetrySuccess()
-    }
-
     override fun clearPendingPlatformError() {
         pipelineStateManager.clearPendingPlatformError()
-    }
-
-    override fun setFlowSleepDuration(sleepTimeMs: Int) {
-        pipelineStateManager.setFlowSleepDuration(sleepTimeMs)
     }
 
     override fun setPendingPlatformError(type: String, message: String) {

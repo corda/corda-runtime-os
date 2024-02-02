@@ -39,7 +39,7 @@ dependencies {
     implementation project(':libs:external-messaging')
     implementation project(':libs:tracing')
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
     implementation 'javax.persistence:javax.persistence-api'
     implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-base'
@@ -57,6 +57,6 @@ dependencies {
     testImplementation project(':testing:test-utilities')
 
     testRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
-    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    testRuntimeOnly libs.postgresql.jdbc
+    testRuntimeOnly libs.slf4j.simple
 }

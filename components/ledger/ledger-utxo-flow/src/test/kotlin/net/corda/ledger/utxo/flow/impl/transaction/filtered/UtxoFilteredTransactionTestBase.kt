@@ -5,14 +5,15 @@ import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.common.json.validation.impl.JsonValidatorImpl
+import net.corda.crypto.cipher.suite.merkle.MerkleProofProvider
 import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.flow.impl.transaction.filtered.factory.FilteredTransactionFactoryImpl
-import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
-import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters
-import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters.AuditProof.AuditProofPredicate
+import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters
+import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters.AuditProof.AuditProofPredicate
+import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
+import net.corda.ledger.common.data.transaction.filtered.factory.impl.FilteredTransactionFactoryImpl
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
@@ -62,7 +63,7 @@ open class UtxoFilteredTransactionTestBase {
 
     val digestService =
         DigestServiceImpl(PlatformDigestServiceImpl(CipherSchemeMetadataImpl()), null)
-    protected val jsonMarshallingService = JsonMarshallingServiceImpl()
+    protected val jsonMarshallingService = JsonMarshallingServiceImpl(mock<MerkleProofProvider> {})
     protected val jsonValidator = JsonValidatorImpl()
     protected val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
     val serializationService = mock<SerializationService>()
@@ -70,7 +71,8 @@ open class UtxoFilteredTransactionTestBase {
     protected val filteredTransactionFactory = FilteredTransactionFactoryImpl(
         jsonMarshallingService,
         merkleTreeProvider,
-        serializationService
+        serializationService,
+        DigestServiceImpl(PlatformDigestServiceImpl(CipherSchemeMetadataImpl()), null)
     )
 
     @BeforeEach

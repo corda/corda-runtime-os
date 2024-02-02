@@ -647,7 +647,14 @@ class CryptoOperationsTests {
             factory.cryptoService.createWrappingKey("", true, mapOf())
         }
         assertThrows<java.lang.IllegalStateException> {
-            factory.cryptoService.generateKeyPair(tenantId, LEDGER, "key1", null, rsaScheme, mapOf("parentKeyAlias" to ""))
+            factory.cryptoService.generateKeyPair(
+                tenantId,
+                LEDGER,
+                "key1",
+                null,
+                rsaScheme,
+                mapOf("parentKeyAlias" to "")
+            )
         }
     }
 
@@ -655,18 +662,25 @@ class CryptoOperationsTests {
     fun `high level generateKeyPair should throw IllegalStateException when wrapping key is not found`() {
         val alias = UUID.randomUUID().toString()
         val rsaScheme = schemeMetadata.findKeyScheme(RSA_CODE_NAME)
-        val e= assertThrows<IllegalStateException> {
-            factory.cryptoService.generateKeyPair(tenantId, LEDGER, "key1", null, rsaScheme, mapOf("parentKeyAlias" to alias))
+        val e = assertThrows<IllegalStateException> {
+            factory.cryptoService.generateKeyPair(
+                tenantId,
+                LEDGER,
+                "key1",
+                null,
+                rsaScheme,
+                mapOf("parentKeyAlias" to alias)
+            )
         }
         assertThat(e.message).contains("Wrapping key with alias $alias not found")
     }
 
 
-    private fun testWithBadWrappingKeyInfo(info: (TestServicesFactory) -> WrappingKeyInfo): java.lang.IllegalArgumentException {
+    private fun testWithBadWrappingKeyInfo(info: (TestServicesFactory) -> WrappingKeyInfo): IllegalStateException {
         val myFactory = TestServicesFactory()
         val rsaScheme = myFactory.schemeMetadata.findKeyScheme(RSA_CODE_NAME)
         myFactory.wrappingRepository.saveKey(info(myFactory))
-        return assertThrows<java.lang.IllegalArgumentException> {
+        return assertThrows<IllegalStateException> {
             myFactory.cryptoService.generateKeyPair(
                 tenantId,
                 LEDGER,
@@ -679,8 +693,8 @@ class CryptoOperationsTests {
     }
 
     @Test
-    fun `generateKeyPair should throw IllegalArgumentException when key algorithm does not match master key`() {
-        val e= testWithBadWrappingKeyInfo {
+    fun `generateKeyPair should throw IllegalStateException when key algorithm does not match master key`() {
+        val e = testWithBadWrappingKeyInfo {
             WrappingKeyInfo(
                 WRAPPING_KEY_ENCODING_VERSION,
                 it.rootWrappingKey.algorithm + "!",
@@ -694,13 +708,13 @@ class CryptoOperationsTests {
     }
 
     @Test
-    fun `generateKeyPair should throw IllegalArgumentException when encoding version is not recognised`() {
-        val e= testWithBadWrappingKeyInfo {
+    fun `generateKeyPair should throw IllegalStateException when encoding version is not recognised`() {
+        val e = testWithBadWrappingKeyInfo {
             WrappingKeyInfo(
-            WRAPPING_KEY_ENCODING_VERSION + 1,
-            it.secondLevelWrappingKey.algorithm,
-            it.rootWrappingKey.wrap(it.secondLevelWrappingKey),
-            1, "root", "key1"
+                WRAPPING_KEY_ENCODING_VERSION + 1,
+                it.secondLevelWrappingKey.algorithm,
+                it.rootWrappingKey.wrap(it.secondLevelWrappingKey),
+                1, "root", "key1"
             )
         }
         assertThat(e.message).contains("Unknown wrapping key encoding. Expected to be 1")

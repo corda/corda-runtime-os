@@ -127,15 +127,17 @@ internal class InboundMessageProcessor(
 
     private fun processSessionMessages(messages: List<TraceableItem<LinkInMessage, LinkInMessage>>):
             List<TraceableItem<List<Record<String, *>>, LinkInMessage>> {
-        recordInboundSessionMessagesMetric()
-        val responses = sessionManager.processSessionMessages(messages) {message -> message.item}
+        recordInboundSessionMessagesMetric(messages.size)
+        val responses = sessionManager.processSessionMessages(messages) { message ->
+            message.item
+        }
         return responses.map { (traceableMessage, response) ->
             if (response != null) {
                 when (val payload = response.payload) {
                     is ResponderHelloMessage -> {
                         val partitionsAssigned = inboundAssignmentListener.getCurrentlyAssignedPartitions()
                         if (partitionsAssigned.isNotEmpty()) {
-                            recordOutboundSessionMessagesMetric(response.header.sourceIdentity, response.header.destinationIdentity)
+                            recordOutboundSessionMessagesMetric(response.header.sourceIdentity)
                             TraceableItem(
                                 listOf(
                                     Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response),
@@ -157,7 +159,7 @@ internal class InboundMessageProcessor(
                         }
                     }
                     else -> {
-                        recordOutboundSessionMessagesMetric(response.header.sourceIdentity, response.header.destinationIdentity)
+                        recordOutboundSessionMessagesMetric(response.header.sourceIdentity)
                         TraceableItem(
                             listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response)),
                             traceableMessage.originalRecord
@@ -298,7 +300,7 @@ internal class InboundMessageProcessor(
             when (val innerMessage = it.message) {
                 is HeartbeatMessage -> {
                     logger.debug { "Processing heartbeat message from session $sessionId" }
-                    recordInboundHeartbeatMessagesMetric(counterparties.counterpartyId, counterparties.ourId)
+                    recordInboundHeartbeatMessagesMetric(counterparties.counterpartyId)
                     makeAckMessageForHeartbeatMessage(counterparties, session)?.let { ack -> messages.add(ack) }
                 }
                 is AuthenticatedMessageAndKey -> {

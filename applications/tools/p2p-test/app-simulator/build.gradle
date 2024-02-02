@@ -6,6 +6,8 @@ plugins {
 
 description "P2P Testing tools - Application-level simulator"
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "org.osgi:osgi.core"
@@ -16,7 +18,7 @@ dependencies {
     implementation "net.corda:corda-avro-schema:$cordaApiVersion"
     implementation "net.corda:corda-config-schema:$cordaApiVersion"
     implementation "net.corda:corda-topic-schema:$cordaApiVersion"
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
     implementation "info.picocli:picocli:$picocliVersion"
     implementation "org.slf4j:slf4j-api"
     implementation "net.corda:corda-base"
@@ -27,14 +29,14 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(':libs:rest:rest')
     implementation project(":libs:utilities")
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
-    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    implementation "org.postgresql:postgresql:$postgresDriverVersion"
+    implementation libs.jackson.datatype.jsr310
+    implementation libs.jackson.dataformat.yaml
+    implementation libs.jackson.module.kotlin
+    implementation libs.postgresql.jdbc
 
     implementation project(":osgi-framework-api")
 
-    runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    runtimeOnly libs.log4j.slf4j
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"

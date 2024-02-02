@@ -3,10 +3,12 @@ package net.corda.crypto.softhsm
 import java.security.PublicKey
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.SigningKeyInfo
+import net.corda.crypto.persistence.SigningKeyMaterialInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.v5.crypto.SecureHash
 import java.io.Closeable
+import java.util.UUID
 
 /**
  * Crypto JPA repository
@@ -32,7 +34,7 @@ interface SigningRepository : Closeable {
     fun findKey(publicKey: PublicKey): SigningKeyInfo?
 
     /**
-     * Returns list of keys satisfying the filter condition. All filter values are combined as AND.
+     * Returns collection of keys satisfying the filter condition. All filter values are combined as AND.
      *
      * @param skip the response paging information, number of records to skip.
      * @param take the response paging information, number of records to return, the actual number may be less than
@@ -68,4 +70,21 @@ interface SigningRepository : Closeable {
      */
     fun lookupByPublicKeyHashes(fullKeyIds: Set<SecureHash>): Collection<SigningKeyInfo>
 
+    /**
+     * Returns collection of key materials which are wrapped with a specific wrapping key.
+     *
+     * @param wrappingKeyId the id of the wrapping key of the key materials
+     *
+     * @return a collection of all key materials all wrapped with the specified wrapping key
+     */
+    fun getKeyMaterials(wrappingKeyId: UUID): Collection<SigningKeyMaterialInfo>
+
+    /**
+     * Saves a signing key material entity to the database after being rewrapped.
+     * Note: This is not for use when creating new keys, [savePrivateKey] includes that functionality.
+     *
+     * @param signingKeyMaterialInfo The signing key material to be saved to the database
+     * @param wrappingKeyId The UUID of the wrapping key
+     */
+    fun saveSigningKeyMaterial(signingKeyMaterialInfo: SigningKeyMaterialInfo, wrappingKeyId: UUID)
 }

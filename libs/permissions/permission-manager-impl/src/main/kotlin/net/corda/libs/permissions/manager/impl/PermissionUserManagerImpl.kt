@@ -42,9 +42,11 @@ class PermissionUserManagerImpl(
     private val writerTimeout = restConfig.getEndpointTimeout()
     private val selfUserPasswordExpiryDays = rbacConfig.getInt(ConfigKeys.RBAC_USER_PASSWORD_CHANGE_EXPIRY)
     private val otherUserPasswordExpiryDays = rbacConfig.getInt(ConfigKeys.RBAC_ADMIN_PASSWORD_CHANGE_EXPIRY)
+    private val passwordLengthLimit = rbacConfig.getInt(ConfigKeys.RBAC_PASSWORD_LENGTH_LIMIT)
 
     override fun createUser(createUserRequestDto: CreateUserRequestDto): UserResponseDto {
         val saltAndHash = createUserRequestDto.initialPassword?.let {
+            checkLength(it)
             passwordService.saltAndHash(it)
         }
 
@@ -104,20 +106,33 @@ class PermissionUserManagerImpl(
         return result.convertToResponseDto()
     }
 
+    @Suppress("ThrowsCount")
     private fun validatePasswordAndGetHash(username: String, newPassword: String): PasswordHash {
+        if (newPassword.isBlank()) {
+            throw IllegalArgumentException("The passphrase must not be blank string.")
+        }
+
+        checkLength(newPassword)
+
         val permissionManagementCache = checkNotNull(permissionManagementCacheRef.get()) {
             "Permission management cache is null."
         }
         val cachedUser: User = permissionManagementCache.getUser(username)
-            ?: throw IllegalStateException("Could not find user with username $username")
+            ?: throw NoSuchElementException("Could not find user with username $username")
 
-        val saltAndHash = passwordService.saltAndHash(newPassword)
+        val cachedPasswordHash = PasswordHash(cachedUser.saltValue, cachedUser.hashedPassword)
 
-        if (saltAndHash.value == cachedUser.hashedPassword) {
-            throw IllegalArgumentException("New password must be different from current one.")
+        if (passwordService.verifies(newPassword, cachedPasswordHash)) {
+            throw IllegalArgumentException("New password must be different from the current one.")
         }
 
-        return saltAndHash
+        return passwordService.saltAndHash(newPassword)
+    }
+
+    private fun checkLength(password: String) {
+        if (password.length > passwordLengthLimit) {
+            throw IllegalArgumentException("Password exceed current length limit of $passwordLengthLimit.")
+        }
     }
 
     override fun addRoleToUser(addRoleToUserRequestDto: AddRoleToUserRequestDto): UserResponseDto {

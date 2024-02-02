@@ -17,18 +17,18 @@ plugins {
     alias libs.plugins.kotlin.jvm apply false
     alias libs.plugins.kotlin.allopen apply false
     alias libs.plugins.kotlin.jpa apply false
-    id 'io.gitlab.arturbosch.detekt' apply false
+    alias libs.plugins.detekt apply false
     id 'biz.aQute.bnd.builder' apply false
-    id 'com.adarshr.test-logger' version '4.0.0' apply false
-    id 'io.snyk.gradle.plugin.snykplugin'
+    alias libs.plugins.test.logger apply false
+    alias libs.plugins.snyk
     id 'idea'
     id 'application'
     id 'net.corda.cordapp.cordapp-configuration'
     id 'corda.root-publish'
     id 'jacoco'
-    id 'com.github.ben-manes.versions' // discover possible dependency version upgrades
-    id 'org.jetbrains.dokka' apply false
-    id 'org.cyclonedx.bom' apply false
+    alias libs.plugins.dependency.check.versions // discover possible dependency version upgrades
+    alias libs.plugins.dokka apply false
+    alias libs.plugins.cyclonedx.bom apply false
 }
 
 tasks.named("wrapper") {

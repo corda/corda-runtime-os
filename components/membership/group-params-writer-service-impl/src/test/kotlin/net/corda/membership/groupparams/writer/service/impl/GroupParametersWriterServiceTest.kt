@@ -222,7 +222,7 @@ class GroupParametersWriterServiceTest {
             verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
 
             with(configCaptor.firstValue) {
-                assertThat(clientId).isEqualTo("group-parameters-writer-service")
+                assertThat(clientId).startsWith("group-parameters-writer-service")
             }
 
             postConfigChangedEvent()
@@ -235,7 +235,7 @@ class GroupParametersWriterServiceTest {
             verify(coordinator, times(2)).updateStatus(eq(LifecycleStatus.UP), any())
 
             postStopEvent()
-            verify(mockPublisher, times(3)).close()
+            verify(mockPublisher, times(2)).close()
         }
 
         @Test
@@ -245,8 +245,6 @@ class GroupParametersWriterServiceTest {
             val ex2 = assertThrows<IllegalStateException> { writerService.remove(viewOwner) }
             assertThat(ex2.message).contains("inactive")
         }
-
-
     }
 
     @Nested

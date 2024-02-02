@@ -57,7 +57,7 @@ dependencies {
     integrationTestImplementation libs.junit
     integrationTestRuntimeOnly libs.junit.engine
     integrationTestRuntimeOnly libs.junit.platform
-    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    integrationTestRuntimeOnly libs.slf4j.simple
 }
 
 def jar = tasks.named('jar', Jar) {

@@ -8,6 +8,7 @@ import net.corda.flow.external.events.responses.factory.ExternalEventResponseFac
 import net.corda.ledger.utxo.token.cache.converters.EntityConverter
 import net.corda.ledger.utxo.token.cache.converters.EventConverter
 import net.corda.ledger.utxo.token.cache.entities.TokenEvent
+import net.corda.messaging.api.exception.CordaHTTPServerTransientException
 import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.utilities.debug
 import org.slf4j.Logger
@@ -67,19 +68,18 @@ class TokenSelectionSyncRPCProcessor(
                 if (stateWriteSuccess) {
                     responseEvent
                 } else {
-                    externalEventResponseFactory.transientError(
-                        tokenEvent,
+                    throw CordaHTTPServerTransientException(
+                        tokenEvent.externalEventRequestId,
                         IllegalStateException("Failed to save state, version out of sync, please retry.")
                     )
                 }
+            } catch (e: CordaHTTPServerTransientException) {
+                throw e
             } catch (exception: Exception) {
                 externalEventResponseFactory.platformError(tokenEvent, exception)
             }
         }
     }
-
-    private fun ExternalEventResponseFactory.transientError(tokenEvent: TokenEvent, exception: Exception) =
-        transientError(createExternalEventContext(tokenEvent), exception).value
 
     private fun ExternalEventResponseFactory.platformError(tokenEvent: TokenEvent, exception: Exception) =
         platformError(createExternalEventContext(tokenEvent), exception).value

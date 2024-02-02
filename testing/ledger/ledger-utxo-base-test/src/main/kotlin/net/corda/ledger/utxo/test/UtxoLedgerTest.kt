@@ -3,12 +3,12 @@ package net.corda.ledger.utxo.test
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
-import net.corda.ledger.common.flow.impl.transaction.filtered.factory.FilteredTransactionFactoryImpl
+import net.corda.ledger.common.data.transaction.filtered.factory.impl.FilteredTransactionFactoryImpl
 import net.corda.ledger.common.test.CommonLedgerTest
 import net.corda.ledger.common.testkit.anotherPublicKeyExample
-import net.corda.ledger.common.testkit.fakeTransactionSignatureService
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerServiceImpl
+import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
@@ -18,12 +18,11 @@ import net.corda.ledger.utxo.flow.impl.transaction.factory.impl.UtxoSignedTransa
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactoryImpl
 import net.corda.ledger.utxo.flow.impl.transaction.serializer.amqp.UtxoSignedTransactionSerializer
 import net.corda.ledger.utxo.flow.impl.transaction.serializer.kryo.UtxoSignedTransactionKryoSerializer
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.NotarySignatureVerificationServiceInternal
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.ledger.utxo.testkit.anotherNotaryX500Name
 import net.corda.ledger.utxo.testkit.getUtxoSignedTransactionExample
 import net.corda.ledger.utxo.testkit.notaryX500Name
-import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
-import net.corda.ledger.utxo.flow.impl.transaction.verifier.NotarySignatureVerificationServiceInternal
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.membership.NotaryInfo
@@ -63,7 +62,8 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         FilteredTransactionFactoryImpl(
             jsonMarshallingService,
             merkleTreeProvider,
-            serializationServiceWithWireTx
+            serializationServiceWithWireTx,
+            mock()
         ), serializationServiceWithWireTx
     )
     private val utxoLedgerTransactionFactory = UtxoLedgerTransactionFactoryImpl(
@@ -77,7 +77,7 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         jsonMarshallingService,
         jsonValidator,
         serializationServiceNullCfg,
-        fakeTransactionSignatureService(),
+        transactionSignatureService,
         transactionMetadataFactory,
         wireTransactionFactory,
         utxoLedgerTransactionFactory,
@@ -85,7 +85,8 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         mockUtxoLedgerGroupParametersPersistenceService,
         mockGroupParametersLookup,
         mockSignedGroupParametersVerifier,
-        mockNotarySignatureVerificationService
+        mockNotarySignatureVerificationService,
+        mockPrivacySaltProviderService
     )
     val utxoLedgerService = UtxoLedgerServiceImpl(
         utxoFilteredTransactionFactory,
@@ -101,14 +102,14 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
     )
     val utxoSignedTransactionKryoSerializer = UtxoSignedTransactionKryoSerializer(
         serializationServiceWithWireTx,
-        fakeTransactionSignatureService(),
+        transactionSignatureService,
         utxoLedgerTransactionFactory,
         mockNotarySignatureVerificationService
     )
     val utxoSignedTransactionAMQPSerializer =
         UtxoSignedTransactionSerializer(
             serializationServiceNullCfg,
-            fakeTransactionSignatureService(),
+            transactionSignatureService,
             utxoLedgerTransactionFactory,
             mockNotarySignatureVerificationService
         )
@@ -118,7 +119,7 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         serializationServiceWithWireTx,
         jsonMarshallingService,
         jsonValidator,
-        fakeTransactionSignatureService(),
+        transactionSignatureService,
         mockNotarySignatureVerificationService,
         utxoLedgerTransactionFactory
     )

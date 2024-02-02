@@ -18,8 +18,8 @@ dependencies {
     implementation "net.corda:corda-topic-schema"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation libs.typesafe.config
+    implementation libs.slf4j.api
 }
 
 description "Dummy link Manager Component"

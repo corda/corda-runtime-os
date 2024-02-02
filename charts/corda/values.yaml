@@ -72,39 +72,37 @@ logging:
 metrics:
   # -- enable scraping of worker metrics through Prometheus annotations
   scrape: true
+  # -- A list of regular expressions for the names of metrics that Corda should keep; if empty, all metrics are kept
+  keepNames:
+    - "corda_rpc_http_response_time_seconds_(count|sum|max)"
+    - "corda_token_selection_execution_time_seconds_(count|sum|max)"
+    - "corda_token_selection_db_execution_time_seconds_(count|sum|max)"
+    - "corda_flow_execution_time_seconds_(count|sum|max)"
+    - "corda_http_server_request_time_seconds_(count|sum|max)"
+    - "corda_p2p_gateway_inbound_request_time_seconds_(count|sum|max)"
+    - "corda_p2p_gateway_outbound_request_time_seconds_(count|sum|max)"
+    - "corda_p2p_gateway_outbound_tls_connections_total"
+    - "corda_p2p_message_outbound_total"
+    - "corda_p2p_message_outbound_replayed_total"
+    - "corda_p2p_message_outbound_latency_seconds_(count|sum|max)"
+    - "corda_p2p_message_inbound_total"
+    - "corda_p2p_session_outbound_total"
+    - "corda_p2p_session_inbound_total"
+    - "corda_membership_actions_handler_time_seconds_(count|sum|max)"
+    - "corda_consumer_poll_time_seconds_(count|sum|max)"
+    - "corda_messaging_commit_time_seconds_(count|sum|max)"
+    - "corda_messaging_processor_time_seconds_(count|sum|max)"
+    - "corda_taskmanager_.*"
+    - "jvm_.*"
+    - "process_cpu_usage"
+  # -- A list of regular expressions for labels that Corda should drop across all metrics; if empty, all labels are kept
+  dropLabels: []
   # -- Pod monitor configuration for scraping metrics. Please note that the corresponding CRD must exist in the environment
   podMonitor:
     # -- Enable pod monitor creation to identify endpoints to scrape
     enabled: false
     # -- Labels that can be used so PodMonitor is discovered by Prometheus
     labels: {}
-    # -- A list of regular expressions for the names of metrics that Prometheus should keep; if empty, all metrics are kept
-    keepNames:
-      - "corda_rpc_http_response_time_seconds_(count|sum|max)"
-      - "corda_token_selection_execution_time_seconds_(count|sum|max)"
-      - "corda_token_selection_db_execution_time_seconds_(count|sum|max)"
-      - "corda_flow_execution_time_seconds_(count|sum|max)"
-      - "corda_http_server_request_time_seconds_(count|sum|max)"
-      - "corda_p2p_gateway_inbound_request_time_seconds_(count|sum|max)"
-      - "corda_p2p_gateway_outbound_request_time_seconds_(count|sum|max)"
-      - "corda_p2p_gateway_outbound_tls_connections_total"
-      - "corda_p2p_message_outbound_total"
-      - "corda_p2p_message_outbound_replayed_total"
-      - "corda_p2p_message_outbound_latency_seconds_(count|sum|max)"
-      - "corda_p2p_message_inbound_total"
-      - "corda_p2p_session_outbound_total"
-      - "corda_p2p_session_inbound_total"
-      - "corda_membership_actions_handler_time_seconds_(count|sum|max)"
-      - "corda_consumer_poll_time_seconds_(count|sum|max)"
-      - "corda_messaging_commit_time_seconds_(count|sum|max)"
-      - "corda_messaging_processor_time_seconds_(count|sum|max)"
-      - "corda_taskmanager_.*"
-      - "jvm_.*"
-      - "process_cpu_usage"
-    # -- A list of regular expressions for labels that Prometheus should drop across all metrics; if empty, all labels are kept
-    dropLabels:
-      - "virtualnode_destination"
-      - "virtualnode_source"
 
 # Distributed tracing configuration
 tracing:
@@ -204,8 +202,6 @@ kafka:
             name: ""
             # -- the truststore password secret key
             key: ""
-
-
   # SASL configuration for client connection to Kafka
   sasl:
     # -- SASL mechanism for client connection to Kafka
@@ -236,6 +232,92 @@ kafka:
           name: ""
           # -- the default SASL password secret key  for client connection to Kafka
           key: ""
+
+# List of databases used by the Platform
+databases:
+  # The default database configuration
+  - name: default
+    # -- the default database host (required)
+    host: null
+    # -- the default database port
+    port: 5432
+    # -- the default database type
+    type: "postgresql"
+    # The default database user configuration
+    username:
+      # -- the default database user
+      value: ""
+      # The default database user secret configuration; used in preference to value if name is set
+      valueFrom:
+        # The default database user secret key reference
+        secretKeyRef:
+          # -- the default database user secret name
+          name: ""
+          # -- the default database user secret key
+          key: ""
+    # The default database password configuration
+    password:
+      # -- the default database password
+      value: ""
+      # The default database password secret configuration; used in preference to value if name is set
+      valueFrom:
+        # The default database password secret key reference
+        secretKeyRef:
+          # -- the default database password secret name
+          name: ""
+          # -- the default database password secret key
+          key: ""
+
+# Persistent Storage configuration to be used by each State type known by the Platform
+stateManager:
+  # Persistent storage configuration for the 'flowCheckpoint' state type
+  flowCheckpoint:
+    # -- persistent storage type
+    type: Database
+    # -- name of the persistent storage to use. When using 'Database' as the type, an element with the given id should exist under the databases section
+    storageId: "default"
+    # -- name of the partition to use. When using 'Database' as the type, the 'partition' represents the name of the database schema
+    partition: "sm_flow_checkpoint"
+  # Persistent storage configuration for the 'flowMapping' state type
+  flowMapping:
+    # -- persistent storage type
+    type: Database
+    # -- name of the persistent storage to use. When using 'Database' as the type, an element with the given id should exist under the databases section
+    storageId: "default"
+    # -- name of the partition to use. When using 'Database' as the type, the 'partition' represents the name of the database schema
+    partition: "sm_flow_mapping"
+  # Persistent storage configuration for the 'flowStatus' state type
+  flowStatus:
+    # -- persistent storage type
+    type: Database
+    # -- name of the persistent storage to use. When using 'Database' as the type, an element with the given id should exist under the databases section
+    storageId: "default"
+    # -- name of the partition to use. When using 'Database' as the type, the 'partition' represents the name of the database schema
+    partition: "sm_flow_status"
+  # Persistent storage configuration for the 'keyRotation' state type
+  keyRotation:
+    # -- persistent storage type
+    type: Database
+    # -- name of the persistent storage to use. When using 'Database' as the type, an element with the given id should exist under the databases section
+    storageId: "default"
+    # -- name of the partition to use. When using 'Database' as the type, the 'partition' represents the name of the database schema
+    partition: "sm_key_rotation"
+  # Persistent storage configuration for the 'p2pSession' state type
+  p2pSession:
+    # -- persistent storage type
+    type: Database
+    # -- name of the persistent storage to use. When using 'Database' as the type, an element with the given id should exist under the databases section
+    storageId: "default"
+    # -- name of the partition to use. When using 'Database' as the type, the 'partition' represents the name of the database schema
+    partition: "sm_p2p_session"
+  # Persistent storage configuration for the 'tokenPoolCache' state type
+  tokenPoolCache:
+    # -- persistent storage type
+    type: Database
+    # -- name of the persistent storage to use. When using 'Database' as the type, an element with the given id should exist under the databases section
+    storageId: "default"
+    # -- name of the partition to use. When using 'Database' as the type, the 'partition' represents the name of the database schema
+    partition: "sm_token_pool_cache"
 
 # Configuration for cluster bootstrap
 bootstrap:
@@ -281,6 +363,43 @@ bootstrap:
   db:
     # -- Indicates whether DB bootstrap is enabled as part of installation
     enabled: true
+
+    # Image containing DB client, used to set up the DB
+    clientImage:
+      # -- registry for image containing a db client, used to set up the db
+      registry: ""
+      # -- repository for image containing a db client, used to set up the db
+      repository: postgres
+      # -- tag for image containing a db client, used to set up the db
+      tag: "14.4"
+
+    # Administrator credentials per database to use when creating required runtime permissions
+    databases:
+      - name: default
+        # The bootstrap default database user configuration
+        username:
+          # -- the bootstrap default database user
+          value: ""
+          # The bootstrap default database user secret configuration; used in preference to value if name is set
+          valueFrom:
+            # The bootstrap default database user secret key reference
+            secretKeyRef:
+              # -- the bootstrap default database user secret name
+              name: ""
+              # -- the bootstrap default database user secret key
+              key: ""
+        # The bootstrap default database password configuration
+        password:
+          # -- the bootstrap default database password
+          value: ""
+          # The bootstrap default database password secret configuration; used in preference to value if name is set
+          valueFrom:
+            # The bootstrap default database password secret key reference
+            secretKeyRef:
+              # -- the bootstrap default database password secret name
+              name: ""
+              # -- the bootstrap default database password secret key
+              key: ""
 
     # Bootstrap cluster database configuration
     cluster:
@@ -395,6 +514,7 @@ bootstrap:
             # -- the password secret key
             key: ""
 
+    # TODO-[CORE-19372]: remove 'stateManager' section.
     # State Manager DB Bootstrap Configuration
     stateManager:
       flow:
@@ -547,14 +667,6 @@ bootstrap:
               name: ""
               # -- the password secret key
               key: ""
-    # Image containing DB client, used to set up the DB
-    clientImage:
-      # -- registry for image containing a db client, used to set up the db
-      registry: ""
-      # -- repository for image containing a db client, used to set up the db
-      repository: postgres
-      # -- tag for image containing a db client, used to set up the db
-      tag: "14.4"
 
   # Configuration for RBAC roles bootstrap
   rbac:
@@ -732,7 +844,50 @@ workers:
               # -- the crypto worker SASL password secret key for client connection to Kafka
               key: ""
     stateManager:
-      # Type of State Manager
+#      # Runtime configuration settings for the State Manager used to interact with 'KeyRotation' states
+#      keyRotation:
+#        # -- persistent storage type
+#        type: Database
+#        # Database user, empty values instructs the chart to use the default settings configured for the associated persistent storage
+#        username:
+#          # -- the State Manager database user
+#          value: "key_rotation_writer"
+#          # The State Manager database username secret configuration; used in preference to value if name is set
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
+#        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
+#        password:
+#          # -- the State Manager database user
+#          value: ""
+#          # The State Manager database password secret configuration; used in preference to value if name is set
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
+#        # Connection pool configuration for the State Manager
+#        connectionPool:
+#          # -- maximum connection pool size
+#          maxSize: 5
+#          # -- minimum connection pool size; null value means pool's min size will default to pool's max size value
+#          minSize: null
+#          # -- maximum time (in seconds) a connection can stay idle in the pool; a value of 0 means that idle connections are never removed from the pool
+#          idleTimeoutSeconds: 120
+#          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; if a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+#          maxLifetimeSeconds: 1800
+#          # -- interval time (in seconds) in which connections will be tested for aliveness; connections which are no longer alive are removed from the pool; a value of 0 means this check is disabled
+#          keepAliveTimeSeconds: 0
+#          # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+#          validationTimeoutSeconds: 5
+# TODO-[CORE-19372]: remove children and uncomment above 'keyRotation' section.
+      # -- type of State Manager
       type: DATABASE
       # State Manager database configuration
       db:
@@ -782,6 +937,7 @@ workers:
           keepAliveTimeSeconds: 0
           # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
           validationTimeoutSeconds: 5
+
   # DB worker configuration
   db:
     # DB worker image configuration
@@ -904,6 +1060,49 @@ workers:
     verifyInstrumentation: false
     # Flow Worker State Manager configuration
     stateManager:
+#      # Runtime configuration settings for the State Manager used to interact with 'flowCheckpoint' states
+#      flowCheckpoint:
+#        # -- persistent storage type
+#        type: Database
+#        # Database user, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
+#        username:
+#          # -- the State Manager database user
+#          value: "flow_checkpoint"
+#          # The State Manager database username secret configuration; used in preference to value if name is set
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
+#        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
+#        password:
+#          # -- the State Manager database user
+#          value: ""
+#          # The State Manager database password secret configuration; used in preference to value if name is set
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
+#        # Connection pool configuration for the State Manager
+#        connectionPool:
+#          # -- maximum connection pool size
+#          maxSize: 5
+#          # -- minimum connection pool size; null value means pool's min size will default to pool's max size value
+#          minSize: null
+#          # -- maximum time (in seconds) a connection can stay idle in the pool; a value of 0 means that idle connections are never removed from the pool
+#          idleTimeoutSeconds: 120
+#          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; if a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+#          maxLifetimeSeconds: 1800
+#          # -- interval time (in seconds) in which connections will be tested for aliveness; connections which are no longer alive are removed from the pool; a value of 0 means this check is disabled
+#          keepAliveTimeSeconds: 0
+#          # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+#          validationTimeoutSeconds: 5
+#      TODO-[CORE-19372]: remove children and uncomment above 'flowCheckpoint' section
       # Type of State Manager
       type: DATABASE
       # State Manager database configuration
@@ -1024,6 +1223,49 @@ workers:
     verifyInstrumentation: false
     # Flow Mapper Worker State Manager configuration
     stateManager:
+#      # Runtime configuration settings for the State Manager used to interact with 'flowMapping' states
+#      flowMapping:
+#        # -- persistent storage type
+#        type: Database
+#        # Database user, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
+#        username:
+#          # -- the State Manager database user
+#          value: "flow_mapper"
+#          # The State Manager database username secret configuration; used in preference to value if name is set
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
+#        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
+#        password:
+#          # -- the State Manager database user
+#          value: ""
+#          # The State Manager database password secret configuration; used in preference to value if name is set
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
+#        # Connection pool configuration for the State Manager
+#        connectionPool:
+#          # -- maximum connection pool size
+#          maxSize: 5
+#          # -- minimum connection pool size; null value means pool's min size will default to pool's max size value
+#          minSize: null
+#          # -- maximum time (in seconds) a connection can stay idle in the pool; a value of 0 means that idle connections are never removed from the pool
+#          idleTimeoutSeconds: 120
+#          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; if a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+#          maxLifetimeSeconds: 1800
+#          # -- interval time (in seconds) in which connections will be tested for aliveness; connections which are no longer alive are removed from the pool; a value of 0 means this check is disabled
+#          keepAliveTimeSeconds: 0
+#          # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+#          validationTimeoutSeconds: 5
+#      TODO-[CORE-19372]: remove children and uncomment above 'flowMapping' section
       # Type of State Manager
       type: DATABASE
       # State Manager database configuration
@@ -1323,6 +1565,91 @@ workers:
               # -- the REST worker SASL password secret key for client connection to Kafka
               key: ""
     stateManager:
+#      # Runtime configuration settings for the State Manager used to interact with 'keyRotation' states
+#      keyRotation:
+#        # -- persistent storage type
+#        type: Database
+#        # Database user, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
+#        username:
+#          # -- the State Manager database user
+#          value: "key_rotation_reader"
+#          # The State Manager database username secret configuration; used in preference to value if name is set
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
+#        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
+#        password:
+#          # -- the State Manager database user
+#          value: ""
+#          # The State Manager database password secret configuration; used in preference to value if name is set
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
+#        # Connection pool configuration for the State Manager
+#        connectionPool:
+#          # -- maximum connection pool size
+#          maxSize: 5
+#          # -- minimum connection pool size; null value means pool's min size will default to pool's max size value
+#          minSize: null
+#          # -- maximum time (in seconds) a connection can stay idle in the pool; a value of 0 means that idle connections are never removed from the pool
+#          idleTimeoutSeconds: 120
+#          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; if a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+#          maxLifetimeSeconds: 1800
+#          # -- interval time (in seconds) in which connections will be tested for aliveness; connections which are no longer alive are removed from the pool; a value of 0 means this check is disabled
+#          keepAliveTimeSeconds: 0
+#          # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+#          validationTimeoutSeconds: 5
+#      # Runtime configuration settings for the State Manager used to interact with 'flowStatus' states
+#      flowStatus:
+#        # -- persistent storage type
+#        type: Database
+#        # Database user, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
+#        username:
+#          # -- the State Manager database user
+#          value: "flow_status"
+#          # The State Manager database username secret configuration; used in preference to value if name is set
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
+#        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
+#        password:
+#          # -- the State Manager database user
+#          value: ""
+#          # The State Manager database password secret configuration; used in preference to value if name is set
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
+#        # Connection pool configuration for the State Manager
+#        connectionPool:
+#          # -- maximum connection pool size
+#          maxSize: 5
+#          # -- minimum connection pool size; null value means pool's min size will default to pool's max size value
+#          minSize: null
+#          # -- maximum time (in seconds) a connection can stay idle in the pool; a value of 0 means that idle connections are never removed from the pool
+#          idleTimeoutSeconds: 120
+#          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; if a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+#          maxLifetimeSeconds: 1800
+#          # -- interval time (in seconds) in which connections will be tested for aliveness; connections which are no longer alive are removed from the pool; a value of 0 means this check is disabled
+#          keepAliveTimeSeconds: 0
+#          # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+#          validationTimeoutSeconds: 5
+#     TODO-[CORE-19372]: remove children and uncomment above 'keyRotation' and 'flowStatus' sections
       # Type of State Manager
       type: DATABASE
       # State Manager database configuration
@@ -1431,8 +1758,49 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the P2P link manager worker containers
       limits: {}
-
     stateManager:
+#      # Runtime configuration settings for the State Manager used to interact with 'p2pSession' states
+#      p2pSession:
+#        # -- persistent storage type
+#        type: Database
+#        # Database user, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
+#        username:
+#          # -- the State Manager database user
+#          value: "p2p_session"
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
+#        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
+#        password:
+#          # -- the State Manager database user
+#          value: ""
+#          # The State Manager database password secret configuration; used in preference to value if name is set
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
+#        # Connection pool configuration for the State Manager
+#        connectionPool:
+#          # -- maximum connection pool size
+#          maxSize: 5
+#          # -- minimum connection pool size; null value means pool's min size will default to pool's max size value
+#          minSize: null
+#          # -- maximum time (in seconds) a connection can stay idle in the pool; a value of 0 means that idle connections are never removed from the pool
+#          idleTimeoutSeconds: 120
+#          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; if a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+#          maxLifetimeSeconds: 1800
+#          # -- interval time (in seconds) in which connections will be tested for aliveness; connections which are no longer alive are removed from the pool; a value of 0 means this check is disabled
+#          keepAliveTimeSeconds: 0
+#          # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+#          validationTimeoutSeconds: 5
+#      TODO-[CORE-19372]: remove children and uncomment above 'p2pSession' section
       # Type of State Manager
       type: DATABASE
       # State Manager database configuration
@@ -1483,7 +1851,6 @@ workers:
           keepAliveTimeSeconds: 0
           # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
           validationTimeoutSeconds: 5
-
     # P2P link manager worker Kafka configuration
     kafka:
       # if kafka.sasl.enabled, the credentials to connect to Kafka with for the P2P link manager worker
@@ -1722,8 +2089,49 @@ workers:
       keepaliveTimeSeconds: 0
       # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
       validationTimeoutSeconds: 5
-
     stateManager:
+#      # Runtime configuration settings for the State Manager used to interact with 'tokenPoolCache' states
+#      tokenPoolCache:
+#        # -- persistent storage type
+#        type: Database
+#        # Database user, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
+#        username:
+#          # -- the State Manager database user
+#          value: "token_pool_cache"
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
+#        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
+#        password:
+#          # -- the State Manager database user
+#          value: ""
+#          # The State Manager database password secret configuration; used in preference to value if name is set
+#          valueFrom:
+#            # The State Manager database password secret key reference
+#            secretKeyRef:
+#              # -- the State Manager database password secret name
+#              name: ""
+#              # -- the State Manager database password secret key
+#              key: ""
+#        # Connection pool configuration for the State Manager
+#        connectionPool:
+#          # -- maximum connection pool size
+#          maxSize: 5
+#          # -- minimum connection pool size; null value means pool's min size will default to pool's max size value
+#          minSize: null
+#          # -- maximum time (in seconds) a connection can stay idle in the pool; a value of 0 means that idle connections are never removed from the pool
+#          idleTimeoutSeconds: 120
+#          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; if a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+#          maxLifetimeSeconds: 1800
+#          # -- interval time (in seconds) in which connections will be tested for aliveness; connections which are no longer alive are removed from the pool; a value of 0 means this check is disabled
+#          keepAliveTimeSeconds: 0
+#          # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+#          validationTimeoutSeconds: 5
+#     TODO-[CORE-19372]: remove children and uncomment above 'tokenPoolCache' section
       # Type of State Manager
       type: DATABASE
       # State Manager database configuration
@@ -1774,7 +2182,6 @@ workers:
           keepAliveTimeSeconds: 0
           # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
           validationTimeoutSeconds: 5
-
     # token selection worker Kafka configuration
     kafka:
       # if kafka.sasl.enabled, the credentials to connect to Kafka with for the token selection worker
@@ -1869,7 +2276,6 @@ workers:
       keepaliveTimeSeconds: 0
       # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
       validationTimeoutSeconds: 5
-
     # uniqueness worker Kafka configuration
     kafka:
       # if kafka.sasl.enabled, the credentials to connect to Kafka with for the uniqueness worker

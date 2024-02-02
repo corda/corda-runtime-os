@@ -1,6 +1,7 @@
 package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.e2etest.utilities.types.GroupPolicyFactory
 import net.corda.e2etest.utilities.types.NetworkOnboardingMetadata
 import net.corda.e2etest.utilities.types.jsonToMemberList
 import net.corda.rest.ResponseCode
@@ -11,8 +12,6 @@ import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions
 import java.io.File
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 
 private val mapper = ObjectMapper()
 
@@ -46,7 +45,7 @@ const val DEFAULT_NOTARY_SERVICE = "O=NotaryService, L=London, C=GB"
  *
  * @param cpb The path to the CPB to use when creating the CPI.
  * @param cpiName The name to be used for the CPI.
- * @param groupPolicy The group policy file to be bundled with the CPB in the CPI.
+ * @param groupPolicyFactory [GroupPolicyFactory] to be used.
  * @param x500Name The X500 name of the onboarding member.
  * @param waitForApproval Boolean flag to indicate whether the function should wait and assert for approved status.
  *  Defaults to true.
@@ -59,16 +58,15 @@ const val DEFAULT_NOTARY_SERVICE = "O=NotaryService, L=London, C=GB"
 fun ClusterInfo.onboardMember(
     cpb: String?,
     cpiName: String,
-    groupPolicy: String,
+    groupPolicyFactory: GroupPolicyFactory,
     x500Name: String,
     waitForApproval: Boolean = true,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
-    tlsCertificateUploadedCallback: (String) -> Unit = {},
     useSessionCertificate: Boolean = false,
     useLedgerKey: Boolean = true,
 ): NetworkOnboardingMetadata {
     conditionallyUploadCpiSigningCertificate()
-    conditionallyUploadCordaPackage(cpiName, cpb, groupPolicy)
+    conditionallyUploadCordaPackage(cpiName, cpb, groupPolicyFactory.groupPolicy)
     val holdingId = getOrCreateVirtualNodeFor(x500Name, cpiName)
 
     addSoftHsmFor(holdingId, CAT_SESSION_INIT)
@@ -92,7 +90,7 @@ fun ClusterInfo.onboardMember(
         null
     }
 
-    if (!keyExists(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS)) {
+    whenNoKeyExists(TENANT_P2P, alias = "$TENANT_P2P$CAT_TLS", category = CAT_TLS) {
         disableCertificateRevocationChecks()
         val tlsKeyId = createKeyFor(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS, DEFAULT_KEY_SCHEME)
         val tlsCsr = generateCsr(x500Name, tlsKeyId)
@@ -102,7 +100,9 @@ fun ClusterInfo.onboardMember(
             it.writeBytes(tlsCert.toByteArray())
         }
         importCertificate(tlsCertFile, CERT_USAGE_P2P, CERT_ALIAS_P2P)
-        tlsCertificateUploadedCallback(tlsCert)
+        if (TlsType.type == TlsType.MUTUAL) {
+            groupPolicyFactory.clusterInfo.allowClientCertificates(tlsCert, groupPolicyFactory.holdingId)
+        }
     }
 
     val registrationContext = createRegistrationContext(
@@ -121,6 +121,7 @@ fun ClusterInfo.onboardMember(
     return NetworkOnboardingMetadata(holdingId, x500Name, registrationId, registrationContext, this)
 }
 
+@Suppress("unused")
 /**
  * Register a member who has registered previously using the [NetworkOnboardingMetadata] from the previous registration
  * for the cluster connection details and for the member identifier.
@@ -151,18 +152,17 @@ fun NetworkOnboardingMetadata.reregisterMember(
 fun ClusterInfo.onboardNotaryMember(
     resourceName: String,
     cpiName: String,
-    groupPolicy: String,
+    groupPolicyFactory: GroupPolicyFactory,
     x500Name: String,
     wait: Boolean = true,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
-    tlsCertificateUploadedCallback: (String) -> Unit = {},
     notaryServiceName: String = DEFAULT_NOTARY_SERVICE,
     isBackchainRequired: Boolean = true,
     notaryPlugin: String = "nonvalidating"
 ) = onboardMember(
     resourceName,
     cpiName,
-    groupPolicy,
+    groupPolicyFactory,
     x500Name,
     wait,
     getAdditionalContext = { holdingId ->
@@ -183,7 +183,6 @@ fun ClusterInfo.onboardNotaryMember(
                 else emptyMap()
         )
     },
-    tlsCertificateUploadedCallback = tlsCertificateUploadedCallback,
     useLedgerKey = false
 )
 
@@ -307,7 +306,6 @@ fun registerStaticMember(
     notaryPlugin
 )
 
-val memberRegisterLock = ReentrantLock()
 fun ClusterInfo.registerStaticMember(
     holdingIdentityShortHash: String,
     notaryServiceName: String? = null,
@@ -316,38 +314,36 @@ fun ClusterInfo.registerStaticMember(
     notaryPlugin: String = "nonvalidating"
 ) {
     cluster {
-        memberRegisterLock.withLock {
-            assertWithRetry {
-                interval(1.seconds)
-                timeout(10.seconds)
-                command {
-                    registerStaticMember(
-                        holdingIdentityShortHash,
-                        notaryServiceName,
-                        customMetadata,
-                        isBackchainRequired,
-                        notaryPlugin
-                    )
-                }
-                condition {
-                    it.code == ResponseCode.OK.statusCode
-                            && it.toJson()["registrationStatus"].textValue() == REGISTRATION_SUBMITTED
-                }
-                failMessage("Failed to register the member to the network '$holdingIdentityShortHash'")
+        assertWithRetry {
+            interval(1.seconds)
+            timeout(10.seconds)
+            command {
+                registerStaticMember(
+                    holdingIdentityShortHash,
+                    notaryServiceName,
+                    customMetadata,
+                    isBackchainRequired,
+                    notaryPlugin
+                )
             }
+            condition {
+                it.code == ResponseCode.OK.statusCode
+                        && it.toJson()["registrationStatus"].textValue() == REGISTRATION_SUBMITTED
+            }
+            failMessage("Failed to register the member to the network '$holdingIdentityShortHash'")
+        }
 
-            assertWithRetry {
-                // Use a fairly long timeout here to give plenty of time for the other side to respond. Longer
-                // term this should be changed to not use the RPC message pattern and have the information available in a
-                // cache on the REST worker, but for now this will have to suffice.
-                timeout(60.seconds)
-                interval(2.seconds)
-                command { getRegistrationStatus(holdingIdentityShortHash) }
-                condition {
-                    it.toJson().firstOrNull()?.get("registrationStatus")?.textValue() == REGISTRATION_APPROVED
-                }
-                failMessage("Registration was not completed for $holdingIdentityShortHash")
+        assertWithRetry {
+            // Use a fairly long timeout here to give plenty of time for the other side to respond. Longer
+            // term this should be changed to not use the RPC message pattern and have the information available in a
+            // cache on the REST worker, but for now this will have to suffice.
+            timeout(60.seconds)
+            interval(2.seconds)
+            command { getRegistrationStatus(holdingIdentityShortHash) }
+            condition {
+                it.toJson().firstOrNull()?.get("registrationStatus")?.textValue() == REGISTRATION_APPROVED
             }
+            failMessage("Registration was not completed for $holdingIdentityShortHash")
         }
     }
 }
@@ -393,12 +389,13 @@ fun ClusterInfo.lookup(
         interval(1.seconds)
         command {
             val additionalQuery = statuses.joinToString(prefix = "?", separator = "&") { "statuses=$it" }
-            get("/api/${ClusterBuilder.REST_API_VERSION_PATH}/members/$holdingId$additionalQuery")
+            get("/api/$REST_API_VERSION_PATH/members/$holdingId$additionalQuery")
         }
         condition { it.code == ResponseCode.OK.statusCode }
     }
 }
 
+@Suppress("unused")
 /**
  * Look up the current group parameters as viewed on a specific cluster by a specific holding ID.
  */
@@ -409,7 +406,7 @@ fun ClusterInfo.lookupGroupParameters(
         timeout(15.seconds)
         interval(1.seconds)
         command {
-            get("/api/${ClusterBuilder.REST_API_VERSION_PATH}/members/$holdingId/group-parameters")
+            get("/api/$REST_API_VERSION_PATH/members/$holdingId/group-parameters")
         }
         condition { it.code == ResponseCode.OK.statusCode }
     }

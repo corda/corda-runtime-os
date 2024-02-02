@@ -64,7 +64,12 @@ class UniquenessWorker @Activate constructor(
 
         val params = getParams(args, UniquenessWorkerParams())
         if (printHelpOrVersion(params.defaultParams, UniquenessWorker::class.java, shutDownService)) return
-        Metrics.configure(webServer, this.javaClass.simpleName)
+        Metrics.configure(
+            webServer,
+            this.javaClass.simpleName,
+            params.defaultParams.metricsKeepNames?.toRegex(),
+            params.defaultParams.metricsDropLabels?.toRegex()
+        )
         Health.configure(webServer, lifecycleRegistry)
 
         configureTracing("Uniqueness Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)

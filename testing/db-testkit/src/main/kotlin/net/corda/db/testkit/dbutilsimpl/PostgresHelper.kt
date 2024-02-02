@@ -35,31 +35,63 @@ class PostgresHelper : ExternalDbHelper() {
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
 
-        val jdbcUrlCopy = if (!schemaName.isNullOrBlank()) {
+        if (!schemaName.isNullOrBlank()) {
+            val adminUser = getAdminUser()
+            val adminPassword = getAdminPassword()
+            val adminDataSource = net.corda.db.core.createUnpooledDataSource(
+                driverClass,
+                jdbcUrl,
+                adminUser,
+                adminPassword,
+                maximumPoolSize = maximumPoolSize
+            )
+
             if (createSchema) {
                 logger.info("Creating schema: $schemaName".emphasise())
-                net.corda.db.core.createDataSource(
-                    driverClass,
-                    jdbcUrl,
-                    user,
-                    password,
-                    maximumPoolSize = maximumPoolSize
-                ).connection.use{ conn ->
-                    conn.prepareStatement("CREATE SCHEMA IF NOT EXISTS $schemaName;").execute()
+                adminDataSource.connection.use { conn ->
+                    val sql = """
+                        CREATE SCHEMA IF NOT EXISTS $schemaName;
+                    """.trimIndent()
+                    conn.prepareStatement(sql).execute()
                     conn.commit()
                 }
             }
 
-            if (rewriteBatchedInserts) {
-                "$jdbcUrl?currentSchema=$schemaName&reWriteBatchedInserts=true"
+            if (dbUser != null) {
+                adminDataSource.connection.use { conn ->
+                    val createUserSql = """
+                        DO 
+                        ${'$'}${'$'} 
+                        BEGIN 
+                            IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '$dbUser') THEN 
+                                RAISE NOTICE 'Role "$dbUser" already exists'; 
+                            ELSE 
+                                CREATE USER "$dbUser" WITH PASSWORD '$password'; 
+                            END IF; 
+                        END 
+                        ${'$'}${'$'};
+                        GRANT ALL ON SCHEMA $schemaName TO "$dbUser";
+                        ALTER ROLE "$dbUser" SET search_path TO $schemaName;
+                            """.trimIndent()
+                    conn.prepareStatement(createUserSql).execute()
+                    conn.commit()
+                }
             } else {
-                "$jdbcUrl?currentSchema=$schemaName"
+                adminDataSource.connection.use { conn ->
+                    conn.prepareStatement("ALTER ROLE $adminUser SET search_path TO public, $schemaName;").execute()
+                    conn.commit()
+                }
             }
+        }
+
+        val jdbcUrlCopy = if (rewriteBatchedInserts) {
+            "$jdbcUrl?reWriteBatchedInserts=true"
         } else {
             jdbcUrl
         }
         logger.info("Using URL $jdbcUrlCopy".emphasise())
-        return net.corda.db.core.createDataSource(
+
+        return net.corda.db.core.createUnpooledDataSource(
             driverClass,
             jdbcUrlCopy,
             user,
@@ -67,7 +99,6 @@ class PostgresHelper : ExternalDbHelper() {
             maximumPoolSize = maximumPoolSize
         )
     }
-
 
     override fun createConfig(
         inMemoryDbName: String,
@@ -77,15 +108,9 @@ class PostgresHelper : ExternalDbHelper() {
     ): Config {
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
-        val currentJdbcUrl = if (!schemaName.isNullOrBlank()) {
-            "$jdbcUrl?currentSchema=$schemaName"
-        } else {
-            jdbcUrl
-        }
         return ConfigFactory.empty()
-            .withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(currentJdbcUrl))
+            .withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcUrl))
             .withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(user))
             .withValue(DatabaseConfig.DB_PASS, ConfigValueFactory.fromAnyRef(password))
     }
-
 }

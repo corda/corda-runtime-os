@@ -1,4 +1,5 @@
 @file:Suppress("DEPRECATION")
+
 package net.corda.membership.impl.rest.v1.deprecated
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
@@ -152,14 +153,16 @@ class CertificatesRestResourceImpl @Activate constructor(
 
         val extensionsGenerator = ExtensionsGenerator()
         extensionsGenerator.addExtension(
-            Extension.keyUsage, true, KeyUsage(digitalSignature)
+            Extension.keyUsage,
+            true,
+            KeyUsage(digitalSignature)
         )
         subjectAlternativeNames?.forEach { name ->
             if (InetAddressValidator.getInstance().isValid(name)) {
                 val altName = GeneralName(iPAddress, name)
                 val subjectAltName = GeneralNames(altName)
                 extensionsGenerator.addExtension(subjectAlternativeName, true, subjectAltName)
-            } else if (validateHostname(name)){
+            } else if (validateHostname(name)) {
                 val altName = GeneralName(dNSName, name)
                 val subjectAltName = GeneralNames(altName)
                 extensionsGenerator.addExtension(subjectAlternativeName, true, subjectAltName)
@@ -178,7 +181,8 @@ class CertificatesRestResourceImpl @Activate constructor(
         val signer = CsrContentSigner(spec, publicKey, tenantId)
 
         val p10Builder = JcaPKCS10CertificationRequestBuilder(
-            principal, publicKey
+            principal,
+            publicKey
         )
 
         p10Builder

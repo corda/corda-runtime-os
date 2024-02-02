@@ -506,10 +506,10 @@ class MembershipPersistenceClientImplTest {
     }
 
     @Test
-    fun `Response timestamp before request timestamp causes failed response`() {
+    fun `Response timestamp over two minutes before request timestamp causes failed response`() {
         postConfigChangedEvent()
         mockPersistenceResponse(
-            rsTimestampOverride = clock.instant().minusSeconds(10)
+            rsTimestampOverride = clock.instant().minusSeconds(180)
         )
 
         val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourSignedMemberInfo))
@@ -707,7 +707,6 @@ class MembershipPersistenceClientImplTest {
             assertThat(sentParams?.mgmSignature?.publicKey?.array()).isEqualTo(publicKeyBytes)
             assertThat(sentParams?.mgmSignature?.bytes?.array()).isEqualTo(signatureBytes)
             assertThat(sentParams?.mgmSignatureSpec?.signatureName).isEqualTo(mockSignatureSpec.signatureName)
-
         }
     }
 
@@ -1197,10 +1196,10 @@ class MembershipPersistenceClientImplTest {
 
             verify(rpcSender).sendRequest(
                 argThat {
-                    request is ConsumePreAuthToken
-                            && (request as ConsumePreAuthToken).tokenId == uuid.toString()
-                            && (request as ConsumePreAuthToken).ownerX500Name == bobX500Name.toString()
-                            && context.holdingIdentity == ourHoldingIdentity.toAvro()
+                    request is ConsumePreAuthToken &&
+                        (request as ConsumePreAuthToken).tokenId == uuid.toString() &&
+                        (request as ConsumePreAuthToken).ownerX500Name == bobX500Name.toString() &&
+                        context.holdingIdentity == ourHoldingIdentity.toAvro()
                 }
             )
         }
@@ -1503,7 +1502,8 @@ class MembershipPersistenceClientImplTest {
             mockPersistenceResponse(queryResponse)
 
             val output = membershipPersistenceClient.updateGroupParameters(
-                ourHoldingIdentity, update
+                ourHoldingIdentity,
+                update
             ).execute()
 
             val argument = argumentCaptor<MembershipPersistenceRequest>()

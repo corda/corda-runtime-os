@@ -417,11 +417,11 @@ class MembershipQueryClientImplTest {
     }
 
     @Test
-    fun `Response timestamp before request timestamp causes failed response`() {
+    fun `Response timestamp over two minutes before request timestamp causes failed response`() {
         postConfigChangedEvent()
         mockPersistenceResponse(
             MemberInfoQueryResponse(emptyList()),
-            rsTimestampOverride = clock.instant().minusSeconds(10)
+            rsTimestampOverride = clock.instant().minusSeconds(180)
         )
         assertThat(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))).isInstanceOf(
             MembershipQueryResult.Failure::class.java
@@ -535,6 +535,7 @@ class MembershipQueryClientImplTest {
 
             assertThat(result.getOrThrow()).isEqualTo(status)
         }
+
         @Test
         fun `it will returns the correct data in case of successful null result`() {
             postConfigChangedEvent()
@@ -560,6 +561,7 @@ class MembershipQueryClientImplTest {
             assertThat(result.getOrThrow())
                 .isNull()
         }
+
         @Test
         fun `it will returns an error when the result is unexpected`() {
             postConfigChangedEvent()
@@ -584,6 +586,7 @@ class MembershipQueryClientImplTest {
 
             assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
         }
+
         @Test
         fun `it will returns an error when the result is an error`() {
             postConfigChangedEvent()
@@ -608,6 +611,7 @@ class MembershipQueryClientImplTest {
 
             assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
         }
+
         @Test
         fun `it will returns an error when the result not right`() {
             postConfigChangedEvent()
@@ -631,7 +635,6 @@ class MembershipQueryClientImplTest {
 
             assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
         }
-
     }
 
     @Nested
@@ -714,6 +717,7 @@ class MembershipQueryClientImplTest {
 
             assertThat(result.getOrThrow()).isEqualTo(statuses)
         }
+
         @Test
         fun `it will returns an error when the result is unexpected`() {
             postConfigChangedEvent()
@@ -738,6 +742,7 @@ class MembershipQueryClientImplTest {
 
             assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
         }
+
         @Test
         fun `it will returns an error when the result is an error`() {
             postConfigChangedEvent()
@@ -762,6 +767,7 @@ class MembershipQueryClientImplTest {
 
             assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
         }
+
         @Test
         fun `it will returns an error when the result not right`() {
             postConfigChangedEvent()
@@ -976,7 +982,10 @@ class MembershipQueryClientImplTest {
             whenever(rpcSender.sendRequest(any())).thenAnswer {
                 val myContext = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                     MembershipResponseContext(
-                        requestTimestamp, requestId, clock.instant(), holdingIdentity
+                        requestTimestamp,
+                        requestId,
+                        clock.instant(),
+                        holdingIdentity
                     )
                 }
                 val response = mock<MembershipPersistenceResponse> {
@@ -1147,7 +1156,10 @@ class MembershipQueryClientImplTest {
             whenever(rpcSender.sendRequest(any())).thenAnswer {
                 val myContext = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                     MembershipResponseContext(
-                        requestTimestamp, requestId, clock.instant(), holdingIdentity
+                        requestTimestamp,
+                        requestId,
+                        clock.instant(),
+                        holdingIdentity
                     )
                 }
                 val response = mock<MembershipPersistenceResponse> {

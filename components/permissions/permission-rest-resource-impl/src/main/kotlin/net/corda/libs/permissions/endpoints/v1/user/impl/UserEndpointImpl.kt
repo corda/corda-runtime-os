@@ -24,8 +24,11 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.permissions.management.PermissionManagementService
 import net.corda.rest.PluggableRestResource
+import net.corda.rest.annotations.HttpPOST
+import net.corda.rest.authorization.AuthorizationProvider
+import net.corda.rest.authorization.AuthorizingSubject
 import net.corda.rest.exception.BadRequestException
-import net.corda.rest.exception.InvalidStateChangeException
+import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.response.ResponseEntity
 import net.corda.rest.security.CURRENT_REST_CONTEXT
@@ -34,6 +37,8 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import kotlin.reflect.full.findAnnotation
+import kotlin.reflect.full.memberFunctions
 
 /**
  * A REST resource endpoint for User operations.
@@ -47,6 +52,31 @@ class UserEndpointImpl @Activate constructor(
     @Reference(service = PlatformInfoProvider::class)
     private val platformInfoProvider: PlatformInfoProvider,
 ) : UserEndpoint, PluggableRestResource<UserEndpoint>, Lifecycle {
+
+    private val changeSelfPasswordMethodPath: String
+
+    init {
+        changeSelfPasswordMethodPath = this::class.memberFunctions
+            .firstOrNull { it.name == ::changeUserPasswordSelf.name }
+            ?.let { method ->
+                UserEndpoint::class.memberFunctions.find { it.name == method.name }?.findAnnotation<HttpPOST>()
+            }
+            ?.path ?: throw IllegalStateException("changeUserPasswordSelf method path not found")
+    }
+
+    override val authorizationProvider = object : AuthorizationProvider {
+        override fun isAuthorized(subject: AuthorizingSubject, action: String): Boolean {
+            val requestedPath = action.split(":", limit = 2).last()
+
+            // if requested Path is for /selfpassword we override the default authorization, as all users
+            // should be able to change their password
+            return if (requestedPath.endsWith(changeSelfPasswordMethodPath)) {
+                true
+            } else {
+                AuthorizationProvider.Default.isAuthorized(subject, action)
+            }
+        }
+    }
 
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -79,8 +109,12 @@ class UserEndpointImpl @Activate constructor(
     override fun createUser(createUserType: CreateUserType): ResponseEntity<UserResponseType> {
         val principal = getRestThreadLocalContext()
 
-        val createUserResult = withPermissionManager(permissionManagementService.permissionManager, logger) {
-            createUser(createUserType.convertToDto(principal))
+        val createUserResult = try {
+            withPermissionManager(permissionManagementService.permissionManager, logger) {
+                createUser(createUserType.convertToDto(principal))
+            }
+        } catch (e: IllegalArgumentException) {
+            throw InvalidInputDataException(e.message ?: "Invalid argument in request.")
         }
 
         return ResponseEntity.created(createUserResult.convertToEndpointType())
@@ -111,12 +145,14 @@ class UserEndpointImpl @Activate constructor(
     override fun changeUserPasswordSelf(password: String): UserResponseType {
         val principal = getRestThreadLocalContext()
 
-        val userResponseDto = try {
-            withPermissionManager(permissionManagementService.permissionManager, logger) {
+        val userResponseDto = withPermissionManager(permissionManagementService.permissionManager, logger) {
+            try {
                 changeUserPasswordSelf(ChangeUserPasswordDto(principal, principal.lowercase(), password))
+            } catch (e: NoSuchElementException) {
+                throw ResourceNotFoundException(e.message ?: "No resource found for this request.")
+            } catch (e: IllegalArgumentException) {
+                throw InvalidInputDataException(e.message ?: "Invalid argument in request.")
             }
-        } catch (e: IllegalArgumentException) {
-            throw InvalidStateChangeException(e.message ?: "New password must be different from old one.")
         }
 
         return userResponseDto.convertToEndpointType()
@@ -125,12 +161,14 @@ class UserEndpointImpl @Activate constructor(
     override fun changeOtherUserPassword(username: String, password: String): UserResponseType {
         val principal = getRestThreadLocalContext()
 
-        val userResponseDto = try {
-            withPermissionManager(permissionManagementService.permissionManager, logger) {
+        val userResponseDto = withPermissionManager(permissionManagementService.permissionManager, logger) {
+            try {
                 changeUserPasswordOther(ChangeUserPasswordDto(principal, username.lowercase(), password))
+            } catch (e: NoSuchElementException) {
+                throw ResourceNotFoundException(e.message ?: "No resource found for this request.")
+            } catch (e: IllegalArgumentException) {
+                throw InvalidInputDataException(e.message ?: "Invalid argument in request.")
             }
-        } catch (e: IllegalArgumentException) {
-            throw InvalidStateChangeException(e.message ?: "New password must be different from old one.")
         }
 
         return userResponseDto.convertToEndpointType()

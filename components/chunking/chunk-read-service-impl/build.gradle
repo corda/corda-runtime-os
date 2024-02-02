@@ -33,6 +33,6 @@ dependencies {
     implementation project(":components:reconciliation:reconciliation")
 
     implementation 'javax.persistence:javax.persistence-api'
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation libs.typesafe.config
+    implementation libs.slf4j.api
 }

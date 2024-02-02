@@ -29,7 +29,7 @@ import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
 import javax.persistence.LockModeType
 
-class RevokePreAuthTokenHandlerTest  {
+class RevokePreAuthTokenHandlerTest {
     private companion object {
         const val TOKEN_ID = "tokenId"
         const val OWNER_X500_NAME = "x500Name"

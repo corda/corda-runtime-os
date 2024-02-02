@@ -136,8 +136,6 @@ class UtxoReceiveFinalityFlowV1Test {
     private val signedTransaction = mock<UtxoSignedTransactionInternal>()
     private val signedTransactionWithOwnKeys = mock<UtxoSignedTransactionInternal>()
     private val notarizedTransaction = mock<UtxoSignedTransactionInternal>()
-    private val receivedPayloadV2 = FinalityPayload(signedTransaction, true)
-    private val receivedPayloadV2ForTwoParties = FinalityPayload(signedTransaction, false)
 
     private val filteredOutputStateAndRefs = mock<Audit<StateAndRef<*>>>()
     private val filteredTransaction = mock<UtxoFilteredTransaction>().also {
@@ -145,9 +143,14 @@ class UtxoReceiveFinalityFlowV1Test {
         whenever(it.notaryKey).thenReturn(publicKeyNotary)
         whenever(it.notaryName).thenReturn(notaryX500Name)
     }
+
     private val filteredTxAndSig = FilteredTransactionAndSignatures(filteredTransaction, listOf(signatureNotary))
-    private val finalityPayload = FinalityPayload(signedTransaction, true)
     private val filteredTxPayload = listOf(filteredTxAndSig)
+    private val finalityPayload = FinalityPayload(signedTransaction, true)
+    private val verifyingFinalityPayload = FinalityPayload(signedTransaction, true, filteredTxPayload)
+
+    private val receivedPayloadV2 = FinalityPayload(signedTransaction, true)
+    private val receivedPayloadV2ForTwoParties = FinalityPayload(signedTransaction, false)
 
     @BeforeEach
     fun beforeEach() {
@@ -200,7 +203,12 @@ class UtxoReceiveFinalityFlowV1Test {
         verify(signedTransaction).addMissingSignatures()
 
         verify(signedTransactionWithOwnKeys).addSignature(signature3)
-        verify(persistenceService, times(2)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService, times(1)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persistTransactionSignatures(
+            ID,
+            2,
+            listOf()
+        )
         verify(persistenceService).persist(notarizedTransaction, TransactionStatus.VERIFIED)
         verify(session).send(Payload.Success(listOf(signature1, signature2)))
     }
@@ -271,7 +279,12 @@ class UtxoReceiveFinalityFlowV1Test {
             .hasMessageContaining("No notary signature received for transaction:")
 
         verify(signedTransaction).addMissingSignatures()
-        verify(persistenceService, times(2)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService, times(1)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persistTransactionSignatures(
+            ID,
+            2,
+            listOf()
+        )
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(persistenceService).persist(signedTransactionWithOwnKeys, TransactionStatus.INVALID)
         verify(session).send(Payload.Success(listOf(signature1, signature2)))
@@ -293,7 +306,12 @@ class UtxoReceiveFinalityFlowV1Test {
             .hasMessageContaining("notarization error")
 
         verify(signedTransaction).addMissingSignatures()
-        verify(persistenceService, times(2)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService, times(1)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persistTransactionSignatures(
+            ID,
+            2,
+            listOf()
+        )
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(persistenceService).persist(signedTransactionWithOwnKeys, TransactionStatus.INVALID)
         verify(session).send(Payload.Success(listOf(signature1, signature2)))
@@ -310,7 +328,12 @@ class UtxoReceiveFinalityFlowV1Test {
             .hasMessageContaining("notarization error")
 
         verify(signedTransaction).addMissingSignatures()
-        verify(persistenceService, times(2)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService, times(1)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persistTransactionSignatures(
+            ID,
+            2,
+            listOf()
+        )
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.INVALID), any())
         verify(session).send(Payload.Success(listOf(signature1, signature2)))
@@ -331,7 +354,12 @@ class UtxoReceiveFinalityFlowV1Test {
             .hasMessageContaining("Verifying notary signature failed!!")
 
         verify(signedTransaction).addMissingSignatures()
-        verify(persistenceService, times(2)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService, times(1)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persistTransactionSignatures(
+            ID,
+            2,
+            listOf()
+        )
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(persistenceService).persist(signedTransactionWithOwnKeys, TransactionStatus.INVALID)
         verify(session).send(Payload.Success(listOf(signature1, signature2)))
@@ -353,7 +381,12 @@ class UtxoReceiveFinalityFlowV1Test {
             .hasMessageContaining("Notary's signature has not been created by the transaction's notary.")
 
         verify(signedTransaction).addMissingSignatures()
-        verify(persistenceService, times(2)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService, times(1)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persistTransactionSignatures(
+            ID,
+            2,
+            listOf()
+        )
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(persistenceService).persist(signedTransactionWithOwnKeys, TransactionStatus.INVALID)
         verify(session).send(Payload.Success(listOf(signature1, signature2)))
@@ -378,7 +411,12 @@ class UtxoReceiveFinalityFlowV1Test {
 
         verify(signedTransaction).addMissingSignatures()
         verify(signedTransactionWith1Key, never()).addMissingSignatures()
-        verify(persistenceService, times(2)).persist(signedTransactionWith1Key, TransactionStatus.UNVERIFIED)
+        verify(persistenceService, times(1)).persist(signedTransactionWith1Key, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persistTransactionSignatures(
+            ID,
+            1,
+            listOf()
+        )
         verify(persistenceService).persist(notarizedTransaction, TransactionStatus.VERIFIED)
         verify(session).send(Payload.Success(listOf(signature1)))
     }
@@ -443,7 +481,12 @@ class UtxoReceiveFinalityFlowV1Test {
 
         verify(signedTransaction).addMissingSignatures()
         verify(session).send(Payload.Success(emptyList<DigitalSignatureAndMetadata>()))
-        verify(persistenceService, times(2)).persist(signedTransaction, TransactionStatus.UNVERIFIED)
+        verify(persistenceService, times(1)).persist(signedTransaction, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persistTransactionSignatures(
+            ID,
+            1,
+            listOf()
+        )
         verify(persistenceService).persist(notarizedTransaction, TransactionStatus.VERIFIED)
     }
 
@@ -552,15 +595,20 @@ class UtxoReceiveFinalityFlowV1Test {
         callReceiveFinalityFlow()
 
         verify(session, times(1)).receive(List::class.java)
-        verify(persistenceService, times(2)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService, times(1)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persistTransactionSignatures(
+            ID,
+            2,
+            listOf()
+        )
     }
 
     @Test
     fun `skip backchain with a backchain not required notary`() {
         whenever(notaryInfo.isBackchainRequired).thenReturn(false)
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1, signature2))
-        whenever(session.receive(FinalityPayload::class.java)).thenReturn(finalityPayload)
-        whenever(session.receive(List::class.java)).thenReturn(filteredTxPayload, listOf(signature3))
+        whenever(session.receive(FinalityPayload::class.java)).thenReturn(verifyingFinalityPayload)
+        whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
 
         callReceiveFinalityFlow()
@@ -570,7 +618,6 @@ class UtxoReceiveFinalityFlowV1Test {
 
     @Test
     fun `run backchain with a backchain required notary`() {
-        val finalityPayload = FinalityPayload(signedTransaction, true)
         val inputState = mock<StateRef>()
         whenever(signedTransaction.inputStateRefs).thenReturn(listOf(inputState))
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1, signature2))
@@ -592,12 +639,12 @@ class UtxoReceiveFinalityFlowV1Test {
             whenever(it.notaryName).thenReturn(notaryX500Name)
         }
         val filteredTxAndSig = FilteredTransactionAndSignatures(filteredTransaction, listOf(signatureAnotherNotary))
-        val finalityPayload = FinalityPayload(signedTransaction, true)
         val filteredTxPayload = listOf(filteredTxAndSig)
+        val finalityPayload = FinalityPayload(signedTransaction, true, filteredTxPayload)
 
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1, signature2))
         whenever(session.receive(FinalityPayload::class.java)).thenReturn(finalityPayload)
-        whenever(session.receive(List::class.java)).thenReturn(filteredTxPayload, listOf(signature3))
+        whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
 
         whenever(notaryInfo.isBackchainRequired).thenReturn(false)
@@ -628,8 +675,8 @@ class UtxoReceiveFinalityFlowV1Test {
         whenever(signedTransaction.notaryName).thenReturn(anotherNotaryX500Name)
         whenever(signedTransaction.notaryKey).thenReturn(publicKeyAnotherNotary)
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1, signature2))
-        whenever(session.receive(FinalityPayload::class.java)).thenReturn(finalityPayload)
-        whenever(session.receive(List::class.java)).thenReturn(filteredTxPayload, listOf(signature3))
+        whenever(session.receive(FinalityPayload::class.java)).thenReturn(verifyingFinalityPayload)
+        whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
 
         assertThatThrownBy { callReceiveFinalityFlow() }
@@ -649,8 +696,8 @@ class UtxoReceiveFinalityFlowV1Test {
             whenever(it.notaryName).thenReturn(notaryX500Name)
         }
         val filteredTxAndSig = FilteredTransactionAndSignatures(filteredTransaction, listOf(signatureNotary))
-        val finalityPayload = FinalityPayload(signedTransaction, true)
         val filteredTxPayload = listOf(filteredTxAndSig)
+        val finalityPayload = FinalityPayload(signedTransaction, true, filteredTxPayload)
 
         whenever(notaryInfo.publicKey).thenReturn(compositeKeyNotary)
         whenever(notaryInfo.isBackchainRequired).thenReturn(false)
@@ -661,7 +708,7 @@ class UtxoReceiveFinalityFlowV1Test {
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1, signature2))
 
         whenever(session.receive(FinalityPayload::class.java)).thenReturn(finalityPayload)
-        whenever(session.receive(List::class.java)).thenReturn(filteredTxPayload, listOf(signature3))
+        whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
 
         whenever(

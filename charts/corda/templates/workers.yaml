@@ -1,3 +1,4 @@
+{{/* TODO-[CORE-19372]: remove stateManagerDbAccess and all references to it */}}
 {{- include "corda.worker" ( list $ .Values.workers.crypto "crypto"
   ( dict "clusterDbAccess" true "stateManagerDbAccess" true "additionalWorkerArgs" ( list "--hsm-id=SOFT" ) )
 ) }}
@@ -16,7 +17,7 @@
     ( dict "httpPort" 8080 "servicesAccessed" ( list "p2pLinkManager" ) )
   ) }}
 {{- include "corda.worker" ( list $ .Values.workers.p2pLinkManager "p2pLinkManager"
-    ( dict "stateManagerDbAccess" true )
+    ( dict "stateManagerDbAccess" true "servicesAccessed" ( list "crypto" ) )
 ) }}
 {{- include "corda.worker" ( list $ .Values.workers.persistence "persistence"
     ( dict "clusterDbAccess" true )
