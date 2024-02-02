@@ -18,7 +18,7 @@ import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 
-internal class SessionExpiryScheduler(
+internal class SessionCache(
     private val stateManager: StateManager,
     private val clock: Clock,
     private val eventPublisher: StatefulSessionEventPublisher,
@@ -74,10 +74,13 @@ internal class SessionExpiryScheduler(
         return cachedOutboundSessions.getAllPresent(keys)
     }
 
-    fun getSessionIfCached(sessionID: String): SessionManager.SessionDirection? =
+    fun getBySessionIfCached(sessionID: String): SessionManager.SessionDirection? =
         cachedInboundSessions.getIfPresent(sessionID) ?: counterpartiesForSessionId[sessionID]?.let {
             cachedOutboundSessions.getIfPresent(it)
         }
+
+    fun getByKeyIfCached(key: String): SessionManager.SessionDirection? =
+        cachedInboundSessions.getIfPresent(key) ?: cachedOutboundSessions.getIfPresent(key)
 
     fun putInboundSession(sessionID: String, session: SessionManager.SessionDirection.Inbound) {
         cachedInboundSessions.put(sessionID, session)

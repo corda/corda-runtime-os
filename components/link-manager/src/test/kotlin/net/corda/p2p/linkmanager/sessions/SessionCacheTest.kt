@@ -21,7 +21,7 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
-class SessionExpirySchedulerTest {
+class SessionCacheTest {
     private val stateManager = mock<StateManager>()
     private val clock = mock<Clock>() {
         on { instant() } doReturn Instant.ofEpochMilli(1000)
@@ -69,7 +69,7 @@ class SessionExpirySchedulerTest {
         on { key } doReturn "stateKey"
     }
 
-    private val sessionExpiryScheduler = SessionExpiryScheduler(
+    private val sessionExpiryScheduler = SessionCache(
         stateManager,
         clock,
         mock(),
@@ -203,7 +203,7 @@ class SessionExpirySchedulerTest {
             )
             task.firstValue.run()
 
-            assertThat(sessionExpiryScheduler.getSessionIfCached("stateKey")).isNull()
+            assertThat(sessionExpiryScheduler.getBySessionIfCached("stateKey")).isNull()
         }
     }
 

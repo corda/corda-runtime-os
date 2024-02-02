@@ -11,7 +11,6 @@ import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.createCoordinator
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
@@ -32,11 +31,14 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
+import org.junit.jupiter.api.AfterEach
+import org.mockito.Mockito
 
 class StatefulSessionManagerImplTest {
-    private val cordinator = mock<LifecycleCoordinator>()
+    private val coordinator = mock<LifecycleCoordinator>()
     private val coordinatorFactory = mock<LifecycleCoordinatorFactory> {
-        on { createCoordinator(any(), any()) } doReturn cordinator
+        on { createCoordinator(any(), any()) } doReturn coordinator
     }
     private val stateManager = mock<StateManager>()
     private val sessionManagerImplDominoTile = mock<ComplexDominoTile> {
@@ -50,6 +52,12 @@ class StatefulSessionManagerImplTest {
     private val now = Instant.ofEpochMilli(333L)
     private val clock = mock<Clock> {
         on { instant() } doReturn now
+    }
+    private val publisherWithDominoLogic = Mockito.mockConstruction(PublisherWithDominoLogic::class.java) { mock, _ ->
+        val mockDominoTile = mock<ComplexDominoTile> {
+            whenever(it.toNamedLifecycle()).thenReturn(mock())
+        }
+        whenever(mock.dominoTile).thenReturn(mockDominoTile)
     }
 
     private val manager = StatefulSessionManagerImpl(
@@ -67,6 +75,11 @@ class StatefulSessionManagerImplTest {
     private data class Wrapper<T>(
         val value: T,
     )
+
+    @AfterEach
+    fun cleanUp() {
+        publisherWithDominoLogic.close()
+    }
 
     @Nested
     inner class GetSessionsByIdTests {

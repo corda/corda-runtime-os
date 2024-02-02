@@ -217,7 +217,7 @@ internal class StatefulSessionManagerImpl(
         }
         val traceable = uuids.groupBy { getSessionId(it) }
         val allCached = traceable.mapNotNull { (key, traces) ->
-            sessionExpiryScheduler.getSessionIfCached(key)?.let { sessionDirection ->
+            sessionExpiryScheduler.getBySessionIfCached(key)?.let { sessionDirection ->
                 key to (traces to sessionDirection)
             }
         }.toMap()
@@ -1067,7 +1067,7 @@ internal class StatefulSessionManagerImpl(
         publisherFactory,
         messagingConfig,
     )
-    private val sessionExpiryScheduler = SessionExpiryScheduler(
+    private val sessionExpiryScheduler = SessionCache(
         stateManager,
         clock,
         sessionEventPublisher,

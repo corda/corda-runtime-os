@@ -17,11 +17,15 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.api.Session
-import net.corda.p2p.linkmanager.sessions.SessionExpiryScheduler
+import net.corda.p2p.linkmanager.sessions.SessionCache
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.linkmanager.sessions.StateConvertor
 import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata.Companion.toCommonMetadata
+import net.corda.p2p.linkmanager.sessions.metadata.InboundSessionMetadata.Companion.toInbound
+import net.corda.p2p.linkmanager.sessions.metadata.InboundSessionStatus
+import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.toOutbound
+import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionStatus
 import net.corda.schema.Schemas
 import org.slf4j.LoggerFactory
 
@@ -32,7 +36,7 @@ internal class StatefulSessionEventProcessor(
     messagingConfiguration: SmartConfig,
     private val stateManager: StateManager,
     private val stateConvertor: StateConvertor,
-    private val sessionExpiryScheduler: SessionExpiryScheduler,
+    private val sessionExpiryScheduler: SessionCache,
     private val sessionManagerImpl: SessionManagerImpl,
 ): LifecycleWithDominoTile {
 
@@ -53,19 +57,19 @@ internal class StatefulSessionEventProcessor(
         private val stateManager: StateManager,
         private val stateConvertor: StateConvertor,
         private val sessionManagerImpl: SessionManagerImpl,
-        private val sessionExpiryScheduler: SessionExpiryScheduler,
+        private val sessionCache: SessionCache,
     ) : PubSubProcessor<String, SessionEvent> {
         private val logger = LoggerFactory.getLogger(this::class.java)
         override fun onNext(event: Record<String, SessionEvent>): Future<Unit> {
             val sessionEvent = event.value
             when (val type = sessionEvent?.type) {
                 is SessionCreated -> {
-                    sessionCreated(type.direction, type.stateManagerKey)
+                    sessionsCreated(listOf(type))
                 }
                 is SessionDeleted -> {
                     logger.info("Received a session deletion event for session with key ${type.stateManagerKey}.")
-                    sessionExpiryScheduler.removeFromScheduler(type.stateManagerKey)
-                    sessionExpiryScheduler.invalidate(type.stateManagerKey)
+                    sessionCache.removeFromScheduler(type.stateManagerKey)
+                    sessionCache.invalidate(type.stateManagerKey)
                 }
                 null -> {
                     logger.warn("Received an unknown session event. This will be ignored.")
@@ -74,40 +78,72 @@ internal class StatefulSessionEventProcessor(
             return CompletableFuture.completedFuture(Unit)
         }
 
-        private fun sessionCreated(direction: SessionDirection, key: String) {
-            val state = stateManager.get(listOf(key)).values.singleOrNull()
-            if (state == null) {
-                logger.info("Received a $direction session created event for $key but no session exists in the state manager.")
-                return
-            }
-            val session = stateConvertor.toCordaSessionState(
+        private fun sessionsCreated(events: List<SessionCreated>) {
+            val notCachedSessions = events.filter { sessionCache.getByKeyIfCached(it.stateManagerKey) != null }
+            val states = stateManager.get(notCachedSessions.mapNotNull { it.stateManagerKey }.toList())
+            for (event in events) {
+                val state = states[event.stateManagerKey]
+                if (state == null) {
+                    logger.info("Received a ${event.direction} session created event for ${event.stateManagerKey} but no session exists " +
+                            "in the state manager.")
+                    return
+                }
+                val session = stateConvertor.toCordaSessionState(
                     state,
                     sessionManagerImpl.revocationCheckerClient::checkRevocation,
                 ).sessionData as? Session
-            if (session == null) {
-                logger.warn("Received a $direction session created event for $key but could not deserialize the session.")
-                return
-            }
-            val metadata = state.metadata.toCommonMetadata()
-            val counterparties = SessionManager.Counterparties(metadata.source, metadata.destination)
-
-            when (direction) {
-                SessionDirection.INBOUND -> {
-                    logger.info("Received an inbound session creation event for session between (local=${counterparties.ourId} and " +
-                            "remote=${counterparties.counterpartyId}) for sessionId = ${session.sessionId}.")
-                    sessionExpiryScheduler.putInboundSession(
-                        key,
-                        SessionManager.SessionDirection.Inbound(counterparties, session)
-                    )
+                if (session == null) {
+                    logger.error("Received a ${event.direction} session created event for ${event.stateManagerKey} but could not " +
+                            "deserialize the session.")
+                    return
                 }
-                SessionDirection.OUTBOUND -> {
-                    logger.info("Received an outbound session creation event for session between (local=${counterparties.ourId} and " +
-                            "remote=${counterparties.counterpartyId}) for sessionId = ${session.sessionId}.")
-                    sessionExpiryScheduler.putOutboundSession(
-                        key,
-                        counterparties,
-                        session
-                    )
+                val metadata = state.metadata.toCommonMetadata()
+                val counterparties = SessionManager.Counterparties(metadata.source, metadata.destination)
+
+                when (event.direction) {
+                    SessionDirection.INBOUND -> {
+                        if (state.metadata.toInbound().status == InboundSessionStatus.SentResponderHandshake) {
+                            logger.info(
+                                "Received an inbound session creation event for session between (local=${counterparties.ourId} and " +
+                                    "remote=${counterparties.counterpartyId}) for sessionId = ${session.sessionId}."
+                            )
+                            sessionCache.putInboundSession(
+                                event.stateManagerKey,
+                                SessionManager.SessionDirection.Inbound(counterparties, session)
+                            )
+                        } else {
+                            logger.error(
+                                "Received an inbound session creation event for session between (local=${counterparties.ourId} and " +
+                                        "remote=${counterparties.counterpartyId}) for sessionId = ${session.sessionId} but session " +
+                                        "negotiation is not complete."
+                            )
+                        }
+                    }
+
+                    SessionDirection.OUTBOUND -> {
+                        if (state.metadata.toOutbound().status == OutboundSessionStatus.SessionReady) {
+                            logger.info(
+                                "Received an outbound session creation event for session between (local=${counterparties.ourId} and " +
+                                    "remote=${counterparties.counterpartyId}) for sessionId = ${session.sessionId}."
+                            )
+                            sessionCache.putOutboundSession(
+                                event.stateManagerKey,
+                                counterparties,
+                                session
+                            )
+                        } else {
+                            logger.error(
+                                "Received an outbound session creation event for session between (local=${counterparties.ourId} and " +
+                                    "remote=${counterparties.counterpartyId}) for sessionId = ${session.sessionId} but session " +
+                                    "negotiation is not complete."
+                            )
+                        }
+                    }
+                    null -> {
+                        logger.error("Received an session creation event with no direction for session between " +
+                                "(local=${counterparties.ourId} and remote=${counterparties.counterpartyId}) for sessionId = " +
+                                "${session.sessionId}.")
+                    }
                 }
             }
         }
