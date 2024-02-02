@@ -110,6 +110,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             val inputs = generateInputs(states.values, polledRecords)
             var groups = groupAllocator.allocateGroups(inputs, config)
 
+            val start = System.nanoTime()
             while (groups.isNotEmpty()) {
                 // Process each group on a thread
                 val outputs = groups.filter {
@@ -125,7 +126,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                         future.getOrThrow(Duration.ofMillis(config.processorTimeout)).also {
                             val end = System.nanoTime()
                             val rt = end-start
-                            log.info("processEvents took ${rt/1.0e6}ms")
+                            log.info("mediator ${Thread.currentThread().id} complete took ${rt/1.0e6}ms")
                         }
                     } catch (e: TimeoutException) {
                         log.error("timeout in mediator $group")
@@ -166,6 +167,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             // logged in SM and recorded by a metric
             stateManager.delete(statesToDelete)
         }
+        log.info("mediator ${Thread.currentThread().id} overall ${(System.nanoTime() - startTimestamp)/1e6}")
         metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
     }
 
