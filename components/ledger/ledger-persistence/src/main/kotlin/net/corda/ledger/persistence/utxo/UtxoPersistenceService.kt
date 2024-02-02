@@ -80,4 +80,6 @@ interface UtxoPersistenceService {
         transactionId: String,
         groupIndex: Int
     ): List<MerkleProofDto>
+
+    fun persistTransactionSignatures(id: String, signatures: List<ByteArray>, startingIndex: Int)
 }
