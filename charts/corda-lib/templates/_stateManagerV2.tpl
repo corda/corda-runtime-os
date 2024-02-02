@@ -316,7 +316,7 @@
                 "driver": {{ include "corda.db.driverClassName" $connectionSettings | quote }}
               },
               "pool": {
-              {{- if $stateTypeRuntimeConfig.connectionPool.minSize }}
+              {{- if not ( kindIs "invalid" $stateTypeRuntimeConfig.connectionPool.minSize ) }}
                 "minSize": {{ $stateTypeRuntimeConfig.connectionPool.minSize }},
               {{- end }}
                 "maxSize": {{ $stateTypeRuntimeConfig.connectionPool.maxSize -}},
