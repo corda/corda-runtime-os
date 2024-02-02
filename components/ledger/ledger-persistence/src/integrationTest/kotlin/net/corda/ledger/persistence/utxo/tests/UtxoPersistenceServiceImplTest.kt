@@ -675,7 +675,7 @@ class UtxoPersistenceServiceImplTest {
 
         assertThat(filteredTxResults).hasSize(1)
 
-        val storedFilteredTransaction = filteredTxResults[filteredTransactionToStore.id.toString()]?.first
+        val storedFilteredTransaction = filteredTxResults[filteredTransactionToStore.id]?.first
 
         assertNotNull(storedFilteredTransaction)
 
