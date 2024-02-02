@@ -10,7 +10,9 @@ import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.StateManagerHelper
+import net.corda.messaging.mediator.metrics.EventMediatorMetrics
 import net.corda.tracing.addTraceContextToRecord
+import java.util.concurrent.TimeUnit
 
 /**
  * Class to process records received from the consumer.
@@ -31,8 +33,11 @@ class EventProcessor<K : Any, S : Any, E : Any>(
      * @param retrievedStates states for a group
      */
     fun processEvents(
-        inputs: Map<K, EventProcessingInput<K, E>>
+        inputs: Map<K, EventProcessingInput<K, E>>,
+        topic: String,
+        metrics: EventMediatorMetrics
     ): Map<K, EventProcessingOutput> {
+        metrics.recordSize(topic, "INPUTS", inputs.size)
         return inputs.mapValues { (key, input) ->
             val groupKey = key.toString()
             val mediatorState = stateManagerHelper.deserializeMediatorState(input.state) ?: createNewMediatorState()
@@ -44,19 +49,38 @@ class EventProcessor<K : Any, S : Any, E : Any>(
             }
             val asyncOutputs = mutableMapOf<Record<K, E>, MutableList<MediatorMessage<Any>>>()
             val allConsumerInputs = input.records
+            var processedCount = 0
+            var rpcCount = 0
+            var procTime = 0L
+            var rpcTime = 0L
+            var rpc = false
             val processed = try {
                 allConsumerInputs.forEach { consumerInputEvent ->
                     val queue = ArrayDeque(listOf(consumerInputEvent))
                     while (queue.isNotEmpty()) {
+                        processedCount++
                         val event = queue.removeFirst()
+                        val procStartTime = System.nanoTime()
                         val response = config.messageProcessor.onNext(processorState, event)
+                        procTime += System.nanoTime() - procStartTime
                         processorState = response.updatedState
                         val (syncEvents, asyncEvents) = response.responseEvents.map { convertToMessage(it) }.partition {
                             messageRouter.getDestination(it).type == RoutingDestination.Type.SYNCHRONOUS
                         }
                         asyncOutputs.computeIfAbsent(consumerInputEvent) { mutableListOf() }.addAll(asyncEvents)
+                        val rpcStartTime = System.nanoTime()
                         val returnedMessages = processSyncEvents(key, syncEvents)
+                        rpcTime += System.nanoTime() - rpcStartTime
+                        rpc = rpc || syncEvents.isNotEmpty()
                         queue.addAll(returnedMessages)
+                        rpcCount += returnedMessages.size
+                    }
+                    metrics.recordSize(topic, "GROUP_PROC_COUNT", processedCount)
+                    metrics.recordSize(topic, "GROUP_RPC_COUNT", rpcCount)
+                    metrics.timer(topic, "GROUP_PROC_TIME").record(procTime, TimeUnit.NANOSECONDS)
+                    metrics.timer(topic, "GROUP_RPC_TIME").record(rpcTime, TimeUnit.NANOSECONDS)
+                    if (rpc) {
+                        metrics.timer(topic, "GROUP_RPC_ONLY_TIME").record(rpcTime, TimeUnit.NANOSECONDS)
                     }
                 }
                 mediatorState.outputEvents = mediatorReplayService.getOutputEvents(mediatorState.outputEvents, asyncOutputs)

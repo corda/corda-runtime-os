@@ -8,9 +8,10 @@ class EventMediatorMetrics {
         .withTag(CordaMetrics.Tag.OperationName, operationName)
         .build()
 
-    fun recordPollSize(topic: String, size: Int) =
+    fun recordSize(topic: String, operationName: String, size: Int) =
         CordaMetrics.Metric.Messaging.ConsumerPollSize.builder()
             .withTag(CordaMetrics.Tag.Topic, topic)
+            .withTag(CordaMetrics.Tag.OperationName, operationName)
             .build()
             .record(size.toDouble())
 }

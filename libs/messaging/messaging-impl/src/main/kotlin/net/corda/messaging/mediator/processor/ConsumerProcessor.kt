@@ -112,7 +112,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         metrics.timer(topic, "POLL").record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
         val polledRecords = messages.map { it.toRecord() }.groupBy { it.key }
         if (messages.isNotEmpty()) {
-            metrics.recordPollSize(topic, messages.size)
+            metrics.recordSize(topic, "POLL", messages.size)
             val loadStartTimestamp = System.nanoTime()
             val states = stateManager.get(polledRecords.keys.map { it.toString() })
             metrics.timer(topic, "LOAD").record(System.nanoTime() - loadStartTimestamp, TimeUnit.NANOSECONDS)
@@ -126,7 +126,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                     it.isNotEmpty()
                 }.map { group ->
                     val future = taskManager.executeShortRunningTask {
-                        eventProcessor.processEvents(group)
+                        eventProcessor.processEvents(group, topic, metrics)
                     }
                     Pair(future, group)
                 }.map { (future, group) ->
