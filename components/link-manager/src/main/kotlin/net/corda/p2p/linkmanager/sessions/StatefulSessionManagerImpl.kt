@@ -315,8 +315,8 @@ internal class StatefulSessionManagerImpl(
                         sessionEventPublisher.sessionCreated(sessionToCache.sessionId, SessionDirection.INBOUND)
                     }
                 }
-                is AvroInitiatorHelloMessage, is AvroInitiatorHandshakeMessage -> {
-                    result.result.sessionToCache?.let { sessionToCache ->
+                is AvroInitiatorHelloMessage, is AvroInitiatorHandshakeMessage, null -> {
+                    result.result?.sessionToCache?.let { sessionToCache ->
                         val key = result.result.stateAction.state.key
                         sessionExpiryScheduler.putOutboundSession(key, result.result.stateAction.state.toCounterparties(), sessionToCache)
                         sessionEventPublisher.sessionCreated(key, SessionDirection.OUTBOUND)
