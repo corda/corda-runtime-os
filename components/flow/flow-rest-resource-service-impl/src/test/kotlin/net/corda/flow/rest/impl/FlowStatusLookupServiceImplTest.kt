@@ -202,7 +202,8 @@ class FlowStatusLookupServiceImplTest {
             fun `getStatusesPerIdentity returns correct state`() = assertEquals(listOf(flowStatus1), getStatusesPerIdentityForFlowKey1())
 
             @Test
-            fun `getStatusesPerIdentity returns empty list for key not in state manager`() = assertEquals(emptyList<FlowStatus>(), getStatusesPerIdentityForFlowKey2())
+            fun `getStatusesPerIdentity returns empty list for key not in state manager`() =
+                assertEquals(emptyList<FlowStatus>(), getStatusesPerIdentityForFlowKey2())
 
         }
     }
