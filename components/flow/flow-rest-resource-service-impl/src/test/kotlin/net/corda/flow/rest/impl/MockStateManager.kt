@@ -2,6 +2,7 @@ package net.corda.flow.rest.impl
 
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
+import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateOperationGroup
@@ -68,8 +69,25 @@ fun getMockStateManager(): StateManager {
             TODO("Not yet implemented")
         }
 
+        @Suppress("UNCHECKED_CAST")
         override fun findByMetadataMatchingAll(filters: Collection<MetadataFilter>): Map<String, State> {
-            TODO("Not yet implemented")
+            var filteredStates: Map<String, State> = stateStore
+            for ((key, operation, value) in filters) {
+                filteredStates = when (operation) {
+                    Operation.Equals ->
+                        filteredStates.filter { it.value.metadata[key] == value }
+
+                    Operation.NotEquals ->
+                        filteredStates.filter { it.value.metadata[key] != value }
+
+                    Operation.LesserThan ->
+                        filteredStates.filter { (it.value.metadata[key] as Comparable<Any>) < value }
+
+                    Operation.GreaterThan ->
+                        filteredStates.filter { (it.value.metadata[key] as Comparable<Any>) > value }
+                }
+            }
+            return filteredStates
         }
 
         override fun findByMetadataMatchingAny(filters: Collection<MetadataFilter>): Map<String, State> {

@@ -9,6 +9,7 @@ import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.LifecycleEventHandler
@@ -71,7 +72,7 @@ class FlowStatusLookupServiceImplTest {
 
     companion object {
         val FLOW_KEY_1 = FlowKey("a1", HoldingIdentity("b1", "c1"))
-        val FLOW_KEY_2 = FlowKey("a2", HoldingIdentity("b1", "c1"))
+        val FLOW_KEY_2 = FlowKey("a2", HoldingIdentity("b2", "c2"))
     }
 
     @BeforeEach
@@ -148,11 +149,15 @@ class FlowStatusLookupServiceImplTest {
 
         private fun getStatusForFlowKey1() = flowStatusCacheService.getStatus(FLOW_KEY_1.id, FLOW_KEY_1.identity)
         private fun getStatusForFlowKey2() = flowStatusCacheService.getStatus(FLOW_KEY_2.id, FLOW_KEY_2.identity)
+        private fun getStatusesPerIdentityForFlowKey1() = flowStatusCacheService.getStatusesPerIdentity(FLOW_KEY_1.identity)
+        private fun getStatusesPerIdentityForFlowKey2() = flowStatusCacheService.getStatusesPerIdentity(FLOW_KEY_2.identity)
 
         @Nested
         inner class StateManagerIsEmpty {
             @Test
             fun `getStatus returns null`() = assertNull(getStatusForFlowKey1())
+            @Test
+            fun `getStatusesPerIdentity returns empty list`() = assertEquals(emptyList<FlowStatus>(), getStatusesPerIdentityForFlowKey2())
         }
 
         @Nested
@@ -177,7 +182,12 @@ class FlowStatusLookupServiceImplTest {
 
                 stateManager.create(
                     listOf(
-                        State(FLOW_KEY_1.toString(), serializer.serialize(flowStatus1)!!),
+                        State(FLOW_KEY_1.toString(), serializer.serialize(flowStatus1)!!, metadata = Metadata(
+                            mapOf(
+                                HOLDING_IDENTITY_METADATA_KEY to FLOW_KEY_1.identity.toString(),
+                                FLOW_STATUS_METADATA_KEY to flowStatus1.flowStatus.name
+                            )
+                        )),
                     )
                 )
             }
@@ -187,6 +197,14 @@ class FlowStatusLookupServiceImplTest {
 
             @Test
             fun `getStatus returns null for key not in state manager`() = assertNull(getStatusForFlowKey2())
+
+            @Test
+            fun `getStatusesPerIdentity returns correct state`() = assertEquals(listOf(flowStatus1), getStatusesPerIdentityForFlowKey1())
+
+            @Test
+            fun `getStatusesPerIdentity returns empty list for key not in state manager`() =
+                assertEquals(emptyList<FlowStatus>(), getStatusesPerIdentityForFlowKey2())
+
         }
     }
 }
