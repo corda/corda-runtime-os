@@ -329,8 +329,8 @@ internal class StatefulSessionManagerImpl(
                         )
                     }
                 }
-                is AvroInitiatorHelloMessage, is AvroInitiatorHandshakeMessage -> {
-                    result.result.sessionToCache?.let { sessionToCache ->
+                is AvroInitiatorHelloMessage, is AvroInitiatorHandshakeMessage, null -> {
+                    result.result?.sessionToCache?.let { sessionToCache ->
                         val key = result.result.stateAction.state.key
                         cachedOutboundSessions.put(
                             key,
