@@ -585,7 +585,7 @@ class UtxoPersistenceServiceImplTest {
         val signedTransaction = createSignedTransaction(Instant.now())
         val account = "Account"
 
-        val ftx = filteredTransactionFactory.create(
+        val filteredTransactionToStore = filteredTransactionFactory.create(
             signedTransaction.wireTransaction,
             componentGroupFilterParameters = listOf(
                 ComponentGroupFilterParameters.AuditProof(
@@ -612,33 +612,35 @@ class UtxoPersistenceServiceImplTest {
         )
 
         persistenceService.persistFilteredTransactions(
-            mapOf(ftx to emptyList()),
+            mapOf(filteredTransactionToStore to emptyList()),
             account
         )
 
         val filteredTxResults = (persistenceService as UtxoPersistenceServiceImpl).findFilteredTransactions(
-            listOf(ftx.id.toString())
+            listOf(filteredTransactionToStore.id.toString())
         )
 
         assertThat(filteredTxResults).hasSize(1)
 
-        val filteredTransaction = filteredTxResults[ftx.id.toString()]?.first
+        val storedFilteredTransaction = filteredTxResults[filteredTransactionToStore.id.toString()]?.first
 
-        assertNotNull(filteredTransaction)
+        assertNotNull(storedFilteredTransaction)
 
-        assertThat(filteredTransaction!!.id).isEqualTo(ftx.id)
-        assertThat(filteredTransaction.metadata).isEqualTo(ftx.metadata)
-        assertThat(filteredTransaction.privacySalt).isEqualTo(ftx.privacySalt)
-        assertThat(filteredTransaction.filteredComponentGroups).isEqualTo(ftx.filteredComponentGroups)
-        assertThat(filteredTransaction.topLevelMerkleProof).isEqualTo(ftx.topLevelMerkleProof)
+        assertThat(storedFilteredTransaction!!.id).isEqualTo(filteredTransactionToStore.id)
+        assertThat(storedFilteredTransaction.metadata).isEqualTo(filteredTransactionToStore.metadata)
+        assertThat(storedFilteredTransaction.privacySalt).isEqualTo(filteredTransactionToStore.privacySalt)
+        assertThat(storedFilteredTransaction.filteredComponentGroups).isEqualTo(filteredTransactionToStore.filteredComponentGroups)
+        assertThat(storedFilteredTransaction.topLevelMerkleProof).isEqualTo(filteredTransactionToStore.topLevelMerkleProof)
 
         // Check that outputs / outputs_info merkle proofs are matching
-        assertThat(filteredTransaction.filteredComponentGroups[UtxoComponentGroup.OUTPUTS.ordinal]?.merkleProof).isEqualTo(
-            ftx.filteredComponentGroups[UtxoComponentGroup.OUTPUTS.ordinal]?.merkleProof
+        assertThat(storedFilteredTransaction.filteredComponentGroups[UtxoComponentGroup.OUTPUTS.ordinal]?.merkleProof).isEqualTo(
+            filteredTransactionToStore.filteredComponentGroups[UtxoComponentGroup.OUTPUTS.ordinal]?.merkleProof
         )
-        assertThat(filteredTransaction.filteredComponentGroups[UtxoComponentGroup.OUTPUTS_INFO.ordinal]?.merkleProof).isEqualTo(
-            ftx.filteredComponentGroups[UtxoComponentGroup.OUTPUTS_INFO.ordinal]?.merkleProof
+        assertThat(storedFilteredTransaction.filteredComponentGroups[UtxoComponentGroup.OUTPUTS_INFO.ordinal]?.merkleProof).isEqualTo(
+            filteredTransactionToStore.filteredComponentGroups[UtxoComponentGroup.OUTPUTS_INFO.ordinal]?.merkleProof
         )
+
+        storedFilteredTransaction.verify()
     }
 
     @Suppress("LongParameterList")
