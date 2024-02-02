@@ -2,14 +2,9 @@ package net.corda.ledger.common.data.transaction
 
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.core.bytes
-import net.corda.crypto.core.concatByteArrays
-import net.corda.crypto.core.toByteArray
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.base.annotations.CordaSerializable
-import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
-import net.corda.v5.crypto.merkle.HashDigestConstants.HASH_DIGEST_PROVIDER_ENTROPY_OPTION
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionWithMetadata
@@ -37,53 +32,12 @@ class WireTransaction(
     val wrappedLedgerTransactionClassName: String
         get() = metadata.getLedgerModel()
 
-    private val componentMerkleTreeEntropyAlgorithmName
-        get() = DigestAlgorithmName(
-            getDigestSetting(
-                COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME_KEY
-            )
-        )
-
-    private val componentMerkleTreeDigestProviderName
-        get() = getDigestSetting(
-            COMPONENT_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY
-        )
-
-    private val componentMerkleTreeDigestAlgorithmName
-        get() = DigestAlgorithmName(
-            getDigestSetting(
-                COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY
-            )
-        )
-
-    private fun getComponentGroupEntropy(
-        privacySalt: PrivacySalt,
-        componentGroupIndexBytes: ByteArray
-    ): ByteArray =
-        digestService.hash(
-            concatByteArrays(privacySalt.bytes, componentGroupIndexBytes),
-            componentMerkleTreeEntropyAlgorithmName
-        ).bytes
-
-    fun getComponentGroupMerkleTreeDigestProvider(
-        privacySalt: PrivacySalt,
-        componentGroupIndex: Int
-    ): MerkleTreeHashDigestProvider =
-        merkleTreeProvider.createHashDigestProvider(
-            componentMerkleTreeDigestProviderName,
-            componentMerkleTreeDigestAlgorithmName,
-            mapOf(
-                HASH_DIGEST_PROVIDER_ENTROPY_OPTION to
-                    getComponentGroupEntropy(privacySalt, componentGroupIndex.toByteArray())
-            )
-        )
-
     val componentMerkleTrees: ConcurrentHashMap<Int, MerkleTree> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         ConcurrentHashMap(
             componentGroupLists.mapIndexed { index, group ->
                 index to merkleTreeProvider.createTree(
                     group.ifEmpty { listOf(ByteArray(0)) },
-                    getComponentGroupMerkleTreeDigestProvider(privacySalt, index)
+                    metadata.getComponentGroupMerkleTreeDigestProvider(privacySalt, index, merkleTreeProvider, digestService)
                 )
             }.toMap()
         )
@@ -94,7 +48,7 @@ class WireTransaction(
             componentMerkleTrees[index]!!.root.bytes
         }
 
-        merkleTreeProvider.createTree(componentGroupRoots, getRootMerkleTreeDigestProvider(merkleTreeProvider))
+        merkleTreeProvider.createTree(componentGroupRoots, metadata.getRootMerkleTreeDigestProvider(merkleTreeProvider))
     }
 
     override fun equals(other: Any?): Boolean {

@@ -29,7 +29,7 @@ dependencies {
     runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
     runtimeOnly project(':libs:tracing-impl')
 
-    runtimeOnly "com.typesafe:config:$typeSafeConfigVersion"
+    runtimeOnly libs.typesafe.config
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"

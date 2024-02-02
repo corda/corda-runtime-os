@@ -3,6 +3,7 @@ package net.corda.ledger.common.data.transaction.filtered.impl
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY
+import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY
 import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY
 import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY
@@ -21,10 +22,12 @@ import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import java.util.*
 
+@Suppress("LongParameterList")
 class FilteredTransactionImpl(
     override val id: SecureHash,
     override val topLevelMerkleProof: MerkleProof,
     override val filteredComponentGroups: Map<Int, FilteredComponentGroup>,
+    override val privacySalt: PrivacySalt,
     private val jsonMarshallingService: JsonMarshallingService,
     private val merkleTreeProvider: MerkleTreeProvider
 ) : FilteredTransaction {

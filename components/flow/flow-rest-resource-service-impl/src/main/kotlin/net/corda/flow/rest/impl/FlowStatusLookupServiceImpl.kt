@@ -7,6 +7,8 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.rest.FlowStatusCacheService
 import net.corda.flow.rest.flowstatus.FlowStatusUpdateListener
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.statemanager.api.MetadataFilter
+import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -91,7 +93,12 @@ class FlowStatusLookupServiceImpl @Activate constructor(
     }
 
     override fun getStatusesPerIdentity(holdingIdentity: HoldingIdentity): List<FlowStatus> {
-        TODO("Not yet implemented")
+        val filter = MetadataFilter(HOLDING_IDENTITY_METADATA_KEY, Operation.Equals, holdingIdentity.toString())
+
+        return requireNotNull(stateManager) { "stateManager is null" }
+            .findByMetadata(filter)
+            .map { deSerializer.deserialize(it.value.value) }
+            .filterNotNull()
     }
 
     override fun registerFlowStatusListener(

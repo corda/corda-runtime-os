@@ -1,13 +1,12 @@
 package net.corda.ledger.common.data.transaction.factory
 
 import net.corda.common.json.validation.JsonValidator
-import net.corda.common.json.validation.WrappedJsonSchema
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
+import net.corda.ledger.common.data.transaction.TransactionMetadataUtils.parseMetadata
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandbox.type.UsedByVerification
@@ -36,17 +35,17 @@ class WireTransactionFactoryImpl @Activate constructor(
     private val jsonValidator: JsonValidator
 ) : WireTransactionFactory, UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken {
 
-    private val metadataSchema: WrappedJsonSchema by lazy {
-        jsonValidator.parseSchema(getSchema(TransactionMetadataImpl.SCHEMA_PATH))
-    }
-
     override fun create(
         componentGroupLists: List<List<ByteArray>>,
         privacySalt: PrivacySalt
     ): WireTransaction {
         checkComponentGroups(componentGroupLists)
         val metadata =
-            parseMetadata(componentGroupLists[TransactionMetadataImpl.ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first())
+            parseMetadata(
+                componentGroupLists[TransactionMetadataImpl.ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first(),
+                jsonValidator,
+                jsonMarshallingService
+            )
 
         check((metadata as TransactionMetadataInternal).getNumberOfComponentGroups() == componentGroupLists.size) {
             "Number of component groups in metadata structure description does not match with the real number!"
@@ -69,7 +68,9 @@ class WireTransactionFactoryImpl @Activate constructor(
         val metadata = parseMetadata(
             requireNotNull(componentGroupLists[TransactionMetadataImpl.ALL_LEDGER_METADATA_COMPONENT_GROUP_ID]?.first()) {
                 "There must be a metadata component group at index 0 with a single leaf"
-            }
+            },
+            jsonValidator,
+            jsonMarshallingService
         )
 
         val completeComponentGroupLists = (0 until metadata.getNumberOfComponentGroups()).map { index ->
@@ -88,19 +89,4 @@ class WireTransactionFactoryImpl @Activate constructor(
     private fun checkComponentGroups(componentGroupLists: Collection<List<ByteArray>>) {
         check(componentGroupLists.isNotEmpty()) { "Wire transactions cannot be created without at least one component group." }
     }
-
-    private fun parseMetadata(metadataBytes: ByteArray): TransactionMetadataImpl {
-        val json = metadataBytes.decodeToString()
-        jsonValidator.validate(json, metadataSchema)
-        val metadata = jsonMarshallingService.parse(json, TransactionMetadataImpl::class.java)
-
-        check(metadata.getDigestSettings() == WireTransactionDigestSettings.defaultValues) {
-            "Only the default digest settings are acceptable now! ${metadata.getDigestSettings()} vs " +
-                "${WireTransactionDigestSettings.defaultValues}"
-        }
-        return metadata
-    }
-
-    private fun getSchema(path: String) =
-        checkNotNull(this::class.java.getResourceAsStream(path)) { "Failed to load JSON schema from $path" }
 }

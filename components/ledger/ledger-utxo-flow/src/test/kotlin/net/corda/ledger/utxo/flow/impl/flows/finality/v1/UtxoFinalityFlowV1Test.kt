@@ -292,6 +292,7 @@ class UtxoFinalityFlowV1Test {
         val txAfterAlice2Signature = mock<UtxoSignedTransactionInternal>()
         whenever(txAfterAlice1Signature.addSignature(signatureAlice2)).thenReturn(txAfterAlice2Signature)
         val txAfterBobSignature = mock<UtxoSignedTransactionInternal>()
+        whenever(txAfterBobSignature.id).thenReturn(TX_ID)
         whenever(txAfterBobSignature.notaryName).thenReturn(notaryX500Name)
         whenever(txAfterAlice2Signature.addSignature(signatureBob)).thenReturn(txAfterBobSignature)
         whenever(txAfterBobSignature.addSignature(signatureNotary)).thenReturn(notarizedTx)
@@ -317,7 +318,11 @@ class UtxoFinalityFlowV1Test {
         verify(txAfterBobSignature).addSignature(signatureNotary)
 
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED, emptyList())
-        verify(persistenceService).persist(txAfterBobSignature, TransactionStatus.UNVERIFIED, emptyList())
+        verify(persistenceService).persistTransactionSignatures(
+            TX_ID,
+            1,
+            listOf(signatureAlice2, signatureBob)
+        )
         verify(persistenceService).persist(notarizedTx, TransactionStatus.VERIFIED, listOf(0))
 
         verify(flowMessaging).receiveAllMap(
@@ -373,6 +378,7 @@ class UtxoFinalityFlowV1Test {
         val txAfterAlice2Signature = mock<UtxoSignedTransactionInternal>()
         whenever(txAfterAlice1Signature.addSignature(signatureAlice2)).thenReturn(txAfterAlice2Signature)
         val txAfterBobSignature = mock<UtxoSignedTransactionInternal>()
+        whenever(txAfterBobSignature.id).thenReturn(TX_ID)
         whenever(txAfterBobSignature.notaryName).thenReturn(notaryX500Name)
         whenever(txAfterAlice2Signature.addSignature(signatureBob)).thenReturn(txAfterBobSignature)
 
@@ -402,7 +408,11 @@ class UtxoFinalityFlowV1Test {
         verify(txAfterBobSignature, never()).addSignature(signatureNotary)
 
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
-        verify(persistenceService).persist(txAfterBobSignature, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persistTransactionSignatures(
+            TX_ID,
+            1,
+            listOf(signatureAlice2, signatureBob)
+        )
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(persistenceService).persist(txAfterBobSignature, TransactionStatus.INVALID)
 
@@ -467,6 +477,7 @@ class UtxoFinalityFlowV1Test {
         val txAfterAlice2Signature = mock<UtxoSignedTransactionInternal>()
         whenever(txAfterAlice1Signature.addSignature(signatureAlice2)).thenReturn(txAfterAlice2Signature)
         val txAfterBobSignature = mock<UtxoSignedTransactionInternal>()
+        whenever(txAfterBobSignature.id).thenReturn(TX_ID)
         whenever(txAfterBobSignature.notaryName).thenReturn(notaryX500Name)
         whenever(txAfterAlice2Signature.addSignature(signatureBob)).thenReturn(txAfterBobSignature)
 
@@ -495,7 +506,11 @@ class UtxoFinalityFlowV1Test {
         verify(txAfterBobSignature, never()).addSignature(signatureNotary)
 
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
-        verify(persistenceService).persist(txAfterBobSignature, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persistTransactionSignatures(
+            TX_ID,
+            1,
+            listOf(signatureAlice2, signatureBob)
+        )
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.INVALID), any())
 
@@ -559,6 +574,7 @@ class UtxoFinalityFlowV1Test {
         val txAfterAlice2Signature = mock<UtxoSignedTransactionInternal>()
         whenever(txAfterAlice1Signature.addSignature(signatureAlice2)).thenReturn(txAfterAlice2Signature)
         val txAfterBobSignature = mock<UtxoSignedTransactionInternal>()
+        whenever(txAfterBobSignature.id).thenReturn(TX_ID)
         whenever(txAfterBobSignature.notaryName).thenReturn(notaryX500Name)
         whenever(txAfterAlice2Signature.addSignature(signatureBob)).thenReturn(txAfterBobSignature)
         whenever(txAfterBobSignature.addSignature(invalidNotarySignature)).thenReturn(notarizedTx)
@@ -585,7 +601,11 @@ class UtxoFinalityFlowV1Test {
         verify(txAfterBobSignature, never()).addSignature(invalidNotarySignature)
 
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
-        verify(persistenceService).persist(txAfterBobSignature, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persistTransactionSignatures(
+            TX_ID,
+            1,
+            listOf(signatureAlice2, signatureBob)
+        )
         verify(persistenceService).persist(txAfterBobSignature, TransactionStatus.INVALID)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
 
@@ -643,6 +663,7 @@ class UtxoFinalityFlowV1Test {
         val txAfterAlice2Signature = mock<UtxoSignedTransactionInternal>()
         whenever(txAfterAlice1Signature.addSignature(signatureAlice2)).thenReturn(txAfterAlice2Signature)
         val txAfterBobSignature = mock<UtxoSignedTransactionInternal>()
+        whenever(txAfterBobSignature.id).thenReturn(TX_ID)
         whenever(txAfterBobSignature.notaryName).thenReturn(notaryX500Name)
         whenever(txAfterAlice2Signature.addSignature(signatureBob)).thenReturn(txAfterBobSignature)
 
@@ -669,7 +690,11 @@ class UtxoFinalityFlowV1Test {
         verify(txAfterBobSignature, never()).addSignature(signatureNotary)
 
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
-        verify(persistenceService).persist(txAfterBobSignature, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persistTransactionSignatures(
+            TX_ID,
+            1,
+            listOf(signatureAlice2, signatureBob)
+        )
         verify(persistenceService).persist(txAfterBobSignature, TransactionStatus.INVALID)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
 
@@ -730,6 +755,7 @@ class UtxoFinalityFlowV1Test {
         val txAfterAlice2Signature = mock<UtxoSignedTransactionInternal>()
         whenever(txAfterAlice1Signature.addSignature(signatureAlice2)).thenReturn(txAfterAlice2Signature)
         val txAfterBobSignature = mock<UtxoSignedTransactionInternal>()
+        whenever(txAfterBobSignature.id).thenReturn(TX_ID)
         whenever(txAfterBobSignature.notaryName).thenReturn(notaryX500Name)
         whenever(txAfterBobSignature.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
         whenever(txAfterAlice2Signature.addSignature(signatureBob)).thenReturn(txAfterBobSignature)
@@ -754,7 +780,11 @@ class UtxoFinalityFlowV1Test {
         verify(txAfterBobSignature, never()).addSignature(signatureNotary)
 
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
-        verify(persistenceService).persist(txAfterBobSignature, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persistTransactionSignatures(
+            TX_ID,
+            1,
+            listOf(signatureAlice2, signatureBob)
+        )
         verify(persistenceService).persist(txAfterBobSignature, TransactionStatus.INVALID)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
 
@@ -805,6 +835,7 @@ class UtxoFinalityFlowV1Test {
         val txAfterAlice1Signature = mock<UtxoSignedTransactionInternal>()
         whenever(initialTx.addSignature(signatureAlice1)).thenReturn(txAfterAlice1Signature)
         val txAfterBobSignature = mock<UtxoSignedTransactionInternal>()
+        whenever(txAfterBobSignature.id).thenReturn(TX_ID)
         whenever(txAfterBobSignature.notaryName).thenReturn(notaryX500Name)
         whenever(txAfterBobSignature.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
         whenever(txAfterAlice1Signature.addSignature(signatureBob)).thenReturn(txAfterBobSignature)
@@ -826,7 +857,11 @@ class UtxoFinalityFlowV1Test {
         verify(txAfterAlice1Signature).addSignature(signatureBob)
 
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
-        verify(persistenceService).persist(txAfterBobSignature, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persistTransactionSignatures(
+            TX_ID,
+            1,
+            listOf(signatureBob)
+        )
         verify(persistenceService).persist(notarizedTx, TransactionStatus.VERIFIED)
 
         verify(flowMessaging).receiveAllMap(
@@ -1146,6 +1181,7 @@ class UtxoFinalityFlowV1Test {
 
         val txAfterBobSignature = mock<UtxoSignedTransactionInternal>()
         whenever(txAfterBobSignature.notaryName).thenReturn(notaryX500Name)
+        whenever(txAfterBobSignature.id).thenReturn(TX_ID)
         whenever(initialTx.addSignature(signatureBob)).thenReturn(txAfterBobSignature)
         whenever(txAfterBobSignature.addSignature(signatureNotary)).thenReturn(notarizedTx)
 
@@ -1199,6 +1235,7 @@ class UtxoFinalityFlowV1Test {
         val txAfterAlice2Signature = mock<UtxoSignedTransactionInternal>()
         whenever(txAfterAlice1Signature.addSignature(signatureAlice2)).thenReturn(txAfterAlice2Signature)
         val txAfterBobSignature = mock<UtxoSignedTransactionInternal>()
+        whenever(txAfterBobSignature.id).thenReturn(TX_ID)
         whenever(txAfterBobSignature.notaryName).thenReturn(notaryX500Name)
         whenever(txAfterAlice2Signature.addSignature(signatureBob)).thenReturn(txAfterBobSignature)
         whenever(txAfterBobSignature.addSignature(signatureNotary)).thenReturn(notarizedTx)
@@ -1259,6 +1296,7 @@ class UtxoFinalityFlowV1Test {
         whenever(txAfterAlice1Signature.addSignature(signatureAlice2)).thenReturn(txAfterAlice2Signature)
         val txAfterBobSignature = mock<UtxoSignedTransactionInternal>()
         whenever(txAfterBobSignature.notaryName).thenReturn(notaryX500Name)
+        whenever(txAfterBobSignature.id).thenReturn(TX_ID)
         whenever(txAfterAlice2Signature.addSignature(signatureBob)).thenReturn(txAfterBobSignature)
         whenever(txAfterBobSignature.addSignature(signatureNotary)).thenReturn(notarizedTx)
 
@@ -1317,6 +1355,7 @@ class UtxoFinalityFlowV1Test {
         val txAfterAlice2Signature = mock<UtxoSignedTransactionInternal>()
         whenever(txAfterAlice1Signature.addSignature(signatureAlice2)).thenReturn(txAfterAlice2Signature)
         val txAfterBobSignature = mock<UtxoSignedTransactionInternal>()
+        whenever(txAfterBobSignature.id).thenReturn(TX_ID)
         whenever(txAfterBobSignature.notaryName).thenReturn(notaryX500Name)
         whenever(txAfterAlice2Signature.addSignature(signatureBob)).thenReturn(txAfterBobSignature)
         whenever(txAfterBobSignature.addSignature(signatureNotary)).thenReturn(notarizedTx)

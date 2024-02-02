@@ -27,7 +27,7 @@ dependencies {
     implementation project(":libs:crypto:crypto-utils")
     implementation project(":libs:utilities")
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
     implementation "io.netty:netty-codec-http:$nettyVersion"
     implementation "commons-validator:commons-validator:$commonsVersion"
     implementation libs.caffeine

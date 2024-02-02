@@ -11,7 +11,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
     implementation 'javax.persistence:javax.persistence-api'
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-base"
