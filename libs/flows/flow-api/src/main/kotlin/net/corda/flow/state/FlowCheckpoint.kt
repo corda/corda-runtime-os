@@ -54,9 +54,11 @@ interface FlowCheckpoint : NonSerializable {
     val suspendCount: Int
 
     /**
-     * In memory counter used to generate unique and deterministic inputs into ledger PrivacySalts and external request ids
+     * In memory counter used to generate unique and deterministic inputs into ledger PrivacySalts
+     * when multiple transactions are created within a single suspension.
+     * This is not saved to the AVRO object. It only needs to be unique per suspension.
      */
-    val counter: Int
+    val ledgerSaltCounter: Int
 
     fun initFlowState(flowStartContext: FlowStartContext, cpkFileHashes: Set<SecureHash>)
 

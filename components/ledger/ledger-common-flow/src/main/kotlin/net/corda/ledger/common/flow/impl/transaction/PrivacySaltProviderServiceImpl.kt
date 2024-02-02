@@ -18,7 +18,7 @@ class PrivacySaltProviderServiceImpl @Activate constructor(
         val flowCheckpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
         val flowID = flowCheckpoint.flowId
         val suspendCount = flowCheckpoint.suspendCount
-        val saltCounter = flowCheckpoint.counter
+        val saltCounter = flowCheckpoint.ledgerSaltCounter
         val input = "$flowID-$suspendCount-$saltCounter"
         return PrivacySaltImpl(input.toByteArray())
     }
