@@ -21,16 +21,13 @@ open class PluginConfiguration @Inject constructor(objects: ObjectFactory) {
     val cordaRuntimePluginWorkspaceDir: Property<String> = objects.property(String::class.java).convention("workspace")
 
     @get:Input
-    val combinedWorkerVersion: Property<String> = objects.property(String::class.java).convention("5.2.0.0")
+    val composeFilePath: Property<String> = objects.property(String::class.java).convention("config/combined-worker-compose.yml")
+
+    @get:Input
+    val composeNetworkName: Property<String> = objects.property(String::class.java).convention("corda-cluster")
 
     @get:Input
     val notaryVersion: Property<String> = objects.property(String::class.java).convention("5.2.0.0")
-
-    @get:Input
-    val postgresJdbcVersion: Property<String> = objects.property(String::class.java).convention("42.7.1")
-
-    @get:Input
-    var cordaDbContainerName: Property<String> = objects.property(String::class.java).convention("cordaPostgres")
 
     @get:Input
     val cordaBinDir: Property<String> = objects.property(String::class.java)

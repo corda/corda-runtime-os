@@ -17,10 +17,9 @@ class ProjectContext(val project: Project, pluginConfig: PluginConfiguration) {
     val cordaRpcUser: String = pluginConfig.cordaRpcUser.get()
     val cordaRpcPassword: String = pluginConfig.cordaRpcPasswd.get()
     val workspaceDir: String = pluginConfig.cordaRuntimePluginWorkspaceDir.get()
-    val combinedWorkerVersion: String = pluginConfig.combinedWorkerVersion.get()
+    val composeFilePath: String = pluginConfig.composeFilePath.get()
+    val composeNetworkName: String = pluginConfig.composeNetworkName.get()
     val notaryVersion: String = pluginConfig.notaryVersion.get()
-    val postgresJdbcVersion: String = pluginConfig.postgresJdbcVersion.get()
-    val cordaDbContainerName: String =pluginConfig.cordaDbContainerName.get()
     val cordaBinDir: String = pluginConfig.cordaBinDir.get()
     val cordaCliBinDir: String = pluginConfig.cordaCliBinDir.get()
     val artifactoryUsername: String = pluginConfig.artifactoryUsername.get()
@@ -44,9 +43,6 @@ class ProjectContext(val project: Project, pluginConfig: PluginConfiguration) {
     val cordaClusterHost: String = cordaClusterURL.split("://").last().split(":").first()
     val cordaClusterPort: Int = cordaClusterURL.split("://").last().split(":").last().toInt()
 
-    val combinedWorkerFileName: String = "corda-combined-worker-$combinedWorkerVersion.jar"
-    val combinedWorkerFilePath: String = "$cordaBinDir/combinedWorker/$combinedWorkerFileName"
-    val cordaReleaseBranchName: String = "release-$combinedWorkerVersion"
     val notaryCpbFilePath: String = "$notaryServiceDir/notary-plugin-non-validating-server-$notaryVersion-package.cpb"
     val notaryCpiFilePath: String = "$workflowBuildDir/$notaryCpiName-${project.version}.cpi"
     val corDappCpbFilePath: String = "$workflowBuildDir/libs/${workflowsModuleName}-${project.version}-package.cpb"
