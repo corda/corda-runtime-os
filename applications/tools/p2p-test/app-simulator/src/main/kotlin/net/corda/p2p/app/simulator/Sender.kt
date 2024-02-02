@@ -112,7 +112,7 @@ class Sender(
                         }
 
                         val records = messagesWithIds.map { (messageMetaData, message) ->
-                            logger.debug("Going to publish message with ID ${messageMetaData.messageId}")
+                            logger.info("TTT Going to publish message with ID ${messageMetaData.messageId}")
                             Record(commonConfig.parameters.sendTopic, messageMetaData.messageId, message)
                         }
                         stopLock.read {

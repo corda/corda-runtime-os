@@ -77,6 +77,7 @@ class AppSimulator @Activate constructor(
     @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
         logger.info("Starting application simulator tool")
+        TimeValidator.validate()
 
         val parameters = CliParameters()
         CommandLine(parameters).parseArgs(*args)

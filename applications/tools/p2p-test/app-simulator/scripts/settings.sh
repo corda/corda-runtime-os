@@ -9,7 +9,7 @@ CORDA_CHART_VERSION="^5.2.0-beta"
 #CORDA_CHART_VERSION="^5.2.0-alpha"
 REPO_TOP_LEVEL_DIR=$(cd "$SCRIPT_DIR"; git rev-parse --show-toplevel)
 CORDA_VERSION="$(cat $REPO_TOP_LEVEL_DIR/gradle.properties | grep cordaProductVersion | awk -F= '{print $2}' | xargs).0"
-DOCKER_IMAGE_VERSION=5.2.0.0-alpha-1706863540833
+DOCKER_IMAGE_VERSION=5.2.0.0-alpha-1706867925669
 HELM_URI=oci://corda-os-docker.software.r3.com/helm-charts/release/os/5.2/corda
 #HELM_URI=oci://corda-os-docker-dev.software.r3.com/helm-charts/yift/core-18521/branch-for-testing-without-5523/corda
 if [ -z $DOCKER_IMAGE_VERSION ]; then
