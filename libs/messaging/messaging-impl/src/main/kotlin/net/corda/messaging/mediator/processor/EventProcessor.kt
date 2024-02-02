@@ -37,7 +37,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         topic: String,
         metrics: EventMediatorMetrics
     ): Map<K, EventProcessingOutput> {
-        metrics.recordSize(topic, "INPUTS", inputs.size)
+        val startTime = System.nanoTime()
         return inputs.mapValues { (key, input) ->
             val groupKey = key.toString()
             val mediatorState = stateManagerHelper.deserializeMediatorState(input.state) ?: createNewMediatorState()
@@ -47,41 +47,51 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                     input.state?.metadata
                 )
             }
+            metrics.timer(topic, "GROUP_STATE_TIME").record(startTime, TimeUnit.NANOSECONDS)
             val asyncOutputs = mutableMapOf<Record<K, E>, MutableList<MediatorMessage<Any>>>()
             val allConsumerInputs = input.records
             var processedCount = 0
             var rpcCount = 0
             var procTime = 0L
             var rpcTime = 0L
+            var sortTime = 0L
             var rpc = false
             val processed = try {
+                metrics.recordSize(topic, "GROUP_PROC_RECORDS", allConsumerInputs.size)
                 allConsumerInputs.forEach { consumerInputEvent ->
                     val queue = ArrayDeque(listOf(consumerInputEvent))
                     while (queue.isNotEmpty()) {
                         processedCount++
                         val event = queue.removeFirst()
+
                         val procStartTime = System.nanoTime()
                         val response = config.messageProcessor.onNext(processorState, event)
-                        procTime += System.nanoTime() - procStartTime
+                        val t1 = System.nanoTime()
+                        procTime += t1 - procStartTime
+
                         processorState = response.updatedState
                         val (syncEvents, asyncEvents) = response.responseEvents.map { convertToMessage(it) }.partition {
                             messageRouter.getDestination(it).type == RoutingDestination.Type.SYNCHRONOUS
                         }
                         asyncOutputs.computeIfAbsent(consumerInputEvent) { mutableListOf() }.addAll(asyncEvents)
-                        val rpcStartTime = System.nanoTime()
+                        val t2 = System.nanoTime()
+                        sortTime += t2 - t1
+
                         val returnedMessages = processSyncEvents(key, syncEvents)
-                        rpcTime += System.nanoTime() - rpcStartTime
+                        rpcTime += System.nanoTime() - t2
+
                         rpc = rpc || syncEvents.isNotEmpty()
                         queue.addAll(returnedMessages)
                         rpcCount += returnedMessages.size
                     }
-                    metrics.recordSize(topic, "GROUP_PROC_COUNT", processedCount)
-                    metrics.recordSize(topic, "GROUP_RPC_COUNT", rpcCount)
-                    metrics.timer(topic, "GROUP_PROC_TIME").record(procTime, TimeUnit.NANOSECONDS)
-                    metrics.timer(topic, "GROUP_RPC_TIME").record(rpcTime, TimeUnit.NANOSECONDS)
-                    if (rpc) {
-                        metrics.timer(topic, "GROUP_RPC_ONLY_TIME").record(rpcTime, TimeUnit.NANOSECONDS)
-                    }
+                    //metrics.recordSize(topic, "GROUP_PROC_COUNT", processedCount)
+                    //metrics.recordSize(topic, "GROUP_RPC_COUNT", rpcCount)
+                }
+                metrics.timer(topic, "GROUP_PROC_TIME").record(procTime, TimeUnit.NANOSECONDS)
+                metrics.timer(topic, "GROUP_SORT_TIME").record(procTime, TimeUnit.NANOSECONDS)
+                metrics.timer(topic, "GROUP_RPC_TIME").record(rpcTime, TimeUnit.NANOSECONDS)
+                if (rpc) {
+                    metrics.timer(topic, "GROUP_RPC_ONLY_TIME").record(rpcTime, TimeUnit.NANOSECONDS)
                 }
                 mediatorState.outputEvents = mediatorReplayService.getOutputEvents(mediatorState.outputEvents, asyncOutputs)
                 stateManagerHelper.createOrUpdateState(groupKey, input.state, mediatorState, processorState)
@@ -103,6 +113,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                 input.state != null && processed == null -> StateChangeAndOperation.Delete(input.state)
                 else -> StateChangeAndOperation.Noop
             }
+            metrics.timer(topic, "GROUP_TOTAL_TIME").record(System.nanoTime() - startTime, TimeUnit.NANOSECONDS)
 
             EventProcessingOutput(asyncOutputs.values.flatten(), stateChangeAndOperation)
         }
