@@ -146,6 +146,7 @@ internal class InboundMessageHandler(
 
         val (gatewayMessage, p2pMessage) = try {
             val gatewayMessage = avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(request.payload))
+            logger.info("TTT Got message: ${gatewayMessage.id}")
             gatewayMessage to LinkInMessage(gatewayMessage.payload)
         } catch (e: Throwable) {
             logger.warn("Received invalid message, which could not be deserialized", e)
@@ -174,7 +175,7 @@ internal class InboundMessageHandler(
                     HttpResponseStatus.OK
                 }
                 else -> {
-                    val statusCode = processSessionMessage(p2pMessage)
+                    val statusCode = processSessionMessage(gatewayMessage.id, p2pMessage)
                     httpWriter.write(statusCode, request.source, avroSchemaRegistry.serialize(response).array())
                     statusCode
                 }
@@ -215,7 +216,7 @@ internal class InboundMessageHandler(
         return HttpResponseStatus.OK
     }
 
-    private fun processSessionMessage(p2pMessage: LinkInMessage): HttpResponseStatus {
+    private fun processSessionMessage(id: String, p2pMessage: LinkInMessage): HttpResponseStatus {
         val sessionId = getSessionId(p2pMessage) ?: return INTERNAL_SERVER_ERROR
         if (p2pMessage.payload is InitiatorHelloMessage) {
             /* we are using the session identifier as key to ensure replayed initiator hello messages will end up on the same partition, and
@@ -223,7 +224,9 @@ internal class InboundMessageHandler(
             p2pInPublisher.publish(listOf(Record(LINK_IN_TOPIC, sessionId, p2pMessage)))
             return HttpResponseStatus.OK
         }
-        val record = Record(LINK_IN_TOPIC, sessionId, p2pMessage)
+        val newId = "$id:$sessionId"
+        logger.info("TTT Publishing with ID: $newId")
+        val record = Record(LINK_IN_TOPIC, newId, p2pMessage)
         if (commonComponents.features.useStatefulSessionManager) {
             p2pInPublisher.publish(listOf(record))
             return HttpResponseStatus.OK

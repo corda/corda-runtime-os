@@ -266,6 +266,7 @@ internal class OutboundMessageProcessor(
         isReplay: Boolean = false
     ): List<TraceableItem<List<Record<String, *>>, AppMessage>> {
         val validatedMessages = messagesWithKeys.map { message ->
+            logger.info("TTT processAuthenticatedMessages(replay: $isReplay) : ${message.item.message.header.messageId}")
             message to validateAndCheckIfSessionNeeded(message.item, isReplay)
         }
         val messagesWithSession = validatedMessages.mapNotNull { (message, result) ->
@@ -400,6 +401,10 @@ internal class OutboundMessageProcessor(
                         "Session already established with ${message.item.messageWithKey.message.header.destination}. Using this to send" +
                             " outbound message."
                     }
+                    logger.info("TTT " +
+                            "processRemoteAuthenticatedMessage for ${message.item.messageWithKey.message.header.messageId}" +
+                            " SessionEstablished"
+                    )
                     TraceableItem(
                         recordsForSessionEstablished(state, message.item.messageWithKey) + message.item.markerRecords,
                         message.originalRecord

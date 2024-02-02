@@ -117,7 +117,8 @@ internal class OutboundMessageHandler(
 
             val peerMessage = event.value
             try {
-                sendMessage(peerMessage)
+                logger.info("TTT Sending message ${event.key} to ${peerMessage?.header?.address}")
+                sendMessage(event.key, peerMessage)
             } catch (e: IllegalArgumentException) {
                 logger.warn("Can't send message to destination ${peerMessage?.header?.address}. ${e.message}")
                 CompletableFuture.completedFuture(Unit)
@@ -125,7 +126,7 @@ internal class OutboundMessageHandler(
         }
     }
 
-    private fun sendMessage(peerMessage: LinkOutMessage?): CompletableFuture<Unit> {
+    private fun sendMessage(key: String, peerMessage: LinkOutMessage?): CompletableFuture<Unit> {
         if (peerMessage == null) {
             logger.warn("Received a null message from topic $LINK_OUT_TOPIC. The message was discarded.")
             return CompletableFuture.completedFuture(Unit)
@@ -158,7 +159,8 @@ internal class OutboundMessageHandler(
         }
 
 
-        val messageId = UUID.randomUUID().toString()
+        val messageId = "$key-${UUID.randomUUID()}"
+        logger.info("TTT From key $key, message id will be $messageId")
         val gatewayMessage = GatewayMessage(messageId, peerMessage.payload)
         val expectedX500Name = if (NetworkType.CORDA_4 == peerMessage.header.destinationNetworkType) {
             X500Name(peerMessage.header.destinationIdentity.x500Name)

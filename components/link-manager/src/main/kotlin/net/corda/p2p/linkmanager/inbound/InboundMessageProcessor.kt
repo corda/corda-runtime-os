@@ -69,6 +69,7 @@ internal class InboundMessageProcessor(
 
         events.forEach { event ->
             val message = event.value
+            logger.info("TTT Got message with id: ${event.key}")
             when (val payload = message?.payload) {
                 is AuthenticatedDataMessage -> {
                     payload.header.sessionId.let { sessionId ->
