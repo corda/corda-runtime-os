@@ -9,7 +9,6 @@ import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.persistence.common.mapToComponentGroups
-import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.utxo.data.transaction.MerkleProofDto
 import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionDto
@@ -29,9 +28,9 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import org.slf4j.LoggerFactory
-import java.math.BigDecimal
 import java.nio.ByteBuffer
 import java.sql.Connection
+import java.sql.PreparedStatement
 import java.sql.Timestamp
 import java.sql.Types
 import java.time.Instant
@@ -63,7 +62,8 @@ class UtxoRepositoryImpl @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val TOP_LEVEL_MERKLE_PROOF_INDEX = -1
-        private const val BATCH_SIZE = 30
+        private const val BATCH_SIZE_PER_INSERT = 30
+        private const val INSERTS_PER_BATCH = 2
     }
 
     override fun findTransaction(
@@ -214,78 +214,107 @@ class UtxoRepositoryImpl @Activate constructor(
             .logResult("transaction metadata [$hash]")
     }
 
+    private fun <R> persistBatch(
+        entityManager: EntityManager,
+        query: (Int) -> String,
+        rowData: List<R>,
+        setRowParametersBlock: (statement: PreparedStatement, parameterIndex: Iterator<Int>, row: R) -> Unit
+    ) {
+        if (rowData.isEmpty()) return
+
+        entityManager.connection { connection ->
+            val batched = rowData.chunked(INSERTS_PER_BATCH * BATCH_SIZE_PER_INSERT)
+            batched.forEachIndexed { index, batch ->
+                val batchPerInsert = batch.chunked(BATCH_SIZE_PER_INSERT)
+                val hasReducedRowsOnLastInsert = index == batched.lastIndex && batchPerInsert.last().size < BATCH_SIZE_PER_INSERT
+
+                if (!hasReducedRowsOnLastInsert || batchPerInsert.size > 1) {
+                    connection.prepareStatement(query(BATCH_SIZE_PER_INSERT)).use { statement ->
+                        batchPerInsert.forEachIndexed { index, rowsPerInsert ->
+                            if (hasReducedRowsOnLastInsert && index == batchPerInsert.lastIndex) {
+                                return@connection
+                            }
+                            val parameterIndex = generateSequence(1) { it + 1 }.iterator()
+                            rowsPerInsert.forEach { row ->
+                                setRowParametersBlock(statement, parameterIndex, row)
+                            }
+                            statement.addBatch()
+                        }
+                        statement.executeBatch()
+                    }
+                }
+                if (hasReducedRowsOnLastInsert) {
+                    connection.prepareStatement(query(batchPerInsert.last().size)).use { statement ->
+                        val parameterIndex = generateSequence(1) { it + 1 }.iterator()
+                        batchPerInsert.last().forEach { row ->
+                            setRowParametersBlock(statement, parameterIndex, row)
+                        }
+                        statement.executeUpdate()
+                    }
+                }
+            }
+        }
+    }
+
     override fun persistTransactionSources(
         entityManager: EntityManager,
         transactionId: String,
         transactionSources: List<UtxoRepository.TransactionSource>
     ) {
-        val totalBatchSize = transactionSources.size
-
-        if (totalBatchSize == 0) return
-
-        var index = 1
-
-        entityManager.connection { connection ->
-            connection.prepareStatement(createTransactionSourceInsertBatchStatement(totalBatchSize)).use { statement ->
-                transactionSources.forEach { transactionSource ->
-                    statement.setString(index++, transactionId)
-                    statement.setInt(index++, transactionSource.group.ordinal)
-                    statement.setInt(index++, transactionSource.index)
-                    statement.setString(index++, transactionSource.sourceTransactionId)
-                    statement.setInt(index++, transactionSource.sourceIndex)
-                }
-                statement.executeUpdate()
-                    .logResult(
-                        "transaction source [$transactionId, ${
-                            transactionSources.map { transactionSource ->
-                                "(${transactionSource.group.ordinal}, ${transactionSource.index})"
-                            }
-                        }]"
-                    )
-            }
+        persistBatch(entityManager, queryProvider.persistTransactionSources, transactionSources) { statement, parameterIndex, transactionSource ->
+            statement.setString(parameterIndex.next(), transactionId)
+            statement.setInt(parameterIndex.next(), transactionSource.group.ordinal)
+            statement.setInt(parameterIndex.next(), transactionSource.index)
+            statement.setString(parameterIndex.next(), transactionSource.sourceTransactionId)
+            statement.setInt(parameterIndex.next(), transactionSource.sourceIndex)
         }
     }
 
-    private fun createTransactionSourceInsertBatchStatement(size: Int): String {
-        return """
-            INSERT INTO utxo_transaction_sources(transaction_id, group_idx, leaf_idx, source_state_transaction_id, source_state_idx)
-            VALUES ${List(size) { "(?, ?, ?, ?, ?)"}.joinToString(",")}
-            ON CONFLICT DO NOTHING
-        """.trimIndent()
-    }
-
-//    override fun persistTransactionComponents(
+//    override fun persistTransactionSources(
 //        entityManager: EntityManager,
 //        transactionId: String,
-//        components: List<List<ByteArray>>,
-//        hash: (ByteArray) -> String
+//        transactionSources: List<UtxoRepository.TransactionSource>
 //    ) {
-//        fun isMetadata(groupIndex: Int, leafIndex: Int) = groupIndex == 0 && leafIndex == 0
+//        if (transactionSources.isEmpty()) return
+//
+//        val block =
+//            { statement: PreparedStatement, parameterIndex: Iterator<Int>, transactionId: String, transactionSource: UtxoRepository.TransactionSource ->
+//                statement.setString(parameterIndex.next(), transactionId)
+//                statement.setInt(parameterIndex.next(), transactionSource.group.ordinal)
+//                statement.setInt(parameterIndex.next(), transactionSource.index)
+//                statement.setString(parameterIndex.next(), transactionSource.sourceTransactionId)
+//                statement.setInt(parameterIndex.next(), transactionSource.sourceIndex)
+//            }
 //
 //        entityManager.connection { connection ->
-//            connection.prepareStatement(queryProvider.persistTransactionComponentLeaf).use { statement ->
-//                var counter = 0
-//                components.forEachIndexed { groupIndex, leaves ->
-//                    leaves.forEachIndexed { leafIndex, data ->
-//                        // Metadata is not stored with the other components. See persistTransactionMetadata()
-//                        if (!isMetadata(groupIndex, leafIndex)) {
-//                            statement.clearParameters()
-//                            statement.setString(1, transactionId)
-//                            statement.setInt(2, groupIndex)
-//                            statement.setInt(3, leafIndex)
-//                            statement.setBytes(4, data)
-//                            statement.setString(5, hash(data))
-//                            statement.addBatch()
-//                            if (++counter == BATCH_SIZE) {
-//                                statement.executeBatch()
-//                                statement.clearBatch()
-//                                counter = 0
+//            val batched = transactionSources.chunked(INSERTS_PER_BATCH * BATCH_SIZE_PER_INSERT)
+//            batched.forEachIndexed { index, batch ->
+//                val batchPerInsert = batch.chunked(BATCH_SIZE_PER_INSERT)
+//                val hasReducedRowsOnLastInsert = index == batched.lastIndex && batchPerInsert.last().size < BATCH_SIZE_PER_INSERT
+//
+//                if (!hasReducedRowsOnLastInsert || batchPerInsert.size > 1) {
+//                    connection.prepareStatement(queryProvider.persistTransactionSources(BATCH_SIZE_PER_INSERT)).use { statement ->
+//                        batchPerInsert.forEachIndexed { index, transactionSources ->
+//                            if (hasReducedRowsOnLastInsert && index == batchPerInsert.lastIndex) {
+//                                return@connection
 //                            }
+//                            val parameterIndex = generateSequence(1) { it + 1 }.iterator()
+//                            transactionSources.forEach { transactionSource ->
+//                                block(statement, parameterIndex, transactionId, transactionSource)
+//                            }
+//                            statement.addBatch()
 //                        }
+//                        statement.executeBatch()
 //                    }
 //                }
-//                if (counter > 0) {
-//                    statement.executeBatch()
+//                if (hasReducedRowsOnLastInsert) {
+//                    connection.prepareStatement(queryProvider.persistTransactionSources(batchPerInsert.last().size)).use { statement ->
+//                        val parameterIndex = generateSequence(1) { it + 1 }.iterator()
+//                        batchPerInsert.last().forEach { transactionSource ->
+//                            block(statement, parameterIndex, transactionId, transactionSource)
+//                        }
+//                        statement.executeUpdate()
+//                    }
 //                }
 //            }
 //        }
@@ -299,37 +328,22 @@ class UtxoRepositoryImpl @Activate constructor(
     ) {
         fun isMetadata(groupIndex: Int, leafIndex: Int) = groupIndex == 0 && leafIndex == 0
 
-        val totalBatchSize = components.sumOf { group -> group.size } - 1
-
-        if (totalBatchSize == 0) return
-
-        var index = 1
-
-        entityManager.connection { connection ->
-            connection.prepareStatement(createComponentInsertBatchStatement(totalBatchSize)).use { statement ->
-                components.forEachIndexed { groupIndex, leaves ->
-                    leaves.forEachIndexed { leafIndex, data ->
-                        // Metadata is not stored with the other components. See persistTransactionMetadata()
-                        if (!isMetadata(groupIndex, leafIndex)) {
-                            statement.setString(index++, transactionId)
-                            statement.setInt(index++, groupIndex)
-                            statement.setInt(index++, leafIndex)
-                            statement.setBytes(index++, data)
-                            statement.setString(index++, hash(data))
-                        }
-                    }
+        val flattenedComponentList = components.mapIndexed { groupIndex, leaves ->
+            leaves.mapIndexedNotNull { leafIndex, data ->
+                if (isMetadata(groupIndex, leafIndex)) {
+                    null
+                } else {
+                    Triple(groupIndex, leafIndex, data)
                 }
-                statement.execute()
             }
+        }.flatten()
+        persistBatch(entityManager, queryProvider.persistTransactionComponents, flattenedComponentList) {statement, parameterIndex, component ->
+            statement.setString(parameterIndex.next(), transactionId)
+            statement.setInt(parameterIndex.next(), component.first)
+            statement.setInt(parameterIndex.next(), component.second)
+            statement.setBytes(parameterIndex.next(), component.third)
+            statement.setString(parameterIndex.next(), hash(component.third))
         }
-    }
-
-    private fun createComponentInsertBatchStatement(size: Int): String {
-        return """
-            INSERT INTO utxo_transaction_component(transaction_id, group_idx, leaf_idx, data, hash)
-            VALUES ${List(size) { "(?, ?, ?, ?, ?)"}.joinToString(",")}
-            ON CONFLICT DO NOTHING
-        """.trimIndent()
     }
 
     private fun <T> EntityManager.connection(block: (connection: Connection) -> T) {
@@ -345,65 +359,27 @@ class UtxoRepositoryImpl @Activate constructor(
         timestamp: Instant,
         visibleTransactionOutputs: List<UtxoRepository.VisibleTransactionOutput>
     ) {
-        val totalBatchSize = visibleTransactionOutputs.size
-
-        if (totalBatchSize == 0) return
-
-        var index = 1
-
-        entityManager.connection { connection ->
-            connection.prepareStatement(createVisibleTransactionOutputInsertBatchStatement(totalBatchSize)).use { statement ->
-                statement.run {
-                    visibleTransactionOutputs.forEach { visibleTransactionOutput ->
-                        setString(index++, transactionId)
-                        setInt(index++, UtxoComponentGroup.OUTPUTS.ordinal)
-                        setInt(index++, visibleTransactionOutput.stateIndex)
-                        setString(index++, visibleTransactionOutput.className)
-                        setString(index++, visibleTransactionOutput.token?.poolKey?.tokenType)
-                        setString(index++, visibleTransactionOutput.token?.poolKey?.issuerHash?.toString())
-                        setString(index++, visibleTransactionOutput.notaryName)
-                        setString(index++, visibleTransactionOutput.token?.poolKey?.symbol)
-                        setString(index++, visibleTransactionOutput.token?.filterFields?.tag)
-                        setString(index++, visibleTransactionOutput.token?.filterFields?.ownerHash?.toString())
-
-                        // This is a workaround for avoiding error when tokenAmount is null, see:
-                        // https://stackoverflow.com/questions/53648865/postgresql-spring-data-jpa-integer-null-interpreted-as-bytea
-                        if (visibleTransactionOutput.token != null) {
-                            setBigDecimal(index++, visibleTransactionOutput.token.amount)
-                        } else {
-                            setNull(index++, Types.NUMERIC)
-                        }
-
-                        setTimestamp(index++, Timestamp.from(timestamp))
-                        setNull(index++, Types.TIMESTAMP)
-                        setString(index++, visibleTransactionOutput.customRepresentation.json)
-                    }
-                    executeUpdate()
-                        .logResult("transaction output [$transactionId, ${visibleTransactionOutputs.map { it.stateIndex }}]")
-                }
+        persistBatch(entityManager, queryProvider.persistVisibleTransactionOutputs, visibleTransactionOutputs) {statement, parameterIndex, visibleTransactionOutput ->
+            statement.setString(parameterIndex.next(), transactionId)
+            statement.setInt(parameterIndex.next(), UtxoComponentGroup.OUTPUTS.ordinal)
+            statement.setInt(parameterIndex.next(), visibleTransactionOutput.stateIndex)
+            statement.setString(parameterIndex.next(), visibleTransactionOutput.className)
+            statement.setString(parameterIndex.next(), visibleTransactionOutput.token?.poolKey?.tokenType)
+            statement.setString(parameterIndex.next(), visibleTransactionOutput.token?.poolKey?.issuerHash?.toString())
+            statement.setString(parameterIndex.next(), visibleTransactionOutput.notaryName)
+            statement.setString(parameterIndex.next(), visibleTransactionOutput.token?.poolKey?.symbol)
+            statement.setString(parameterIndex.next(), visibleTransactionOutput.token?.filterFields?.tag)
+            statement.setString(parameterIndex.next(), visibleTransactionOutput.token?.filterFields?.ownerHash?.toString())
+            if (visibleTransactionOutput.token != null) {
+                statement.setBigDecimal(parameterIndex.next(), visibleTransactionOutput.token.amount)
+            } else {
+                statement.setNull(parameterIndex.next(), Types.NUMERIC)
             }
-        }
-    }
 
-    private fun createVisibleTransactionOutputInsertBatchStatement(size: Int): String {
-//        """INSERT INTO {h-schema}utxo_visible_transaction_output(
-//                transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,
-//                token_symbol, token_tag, token_owner_hash, token_amount, created, consumed, custom_representation)
-//            VALUES(
-//                :transactionId, :groupIndex, :leafIndex, :type, :tokenType, :tokenIssuerHash, :tokenNotaryX500Name,
-//                :tokenSymbol, :tokenTag, :tokenOwnerHash, :tokenAmount, :createdAt,
-//                ${if (consumed) ":consumedAt" else "null"},
-//                CAST(:customRepresentation as JSONB)
-//            ) ON CONFLICT DO NOTHING"""
-//            .trimIndent()
-        return """
-            INSERT INTO utxo_visible_transaction_output(
-                transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,
-                token_symbol, token_tag, token_owner_hash, token_amount, created, consumed, custom_representation
-            )
-            VALUES ${List(size) { "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CAST(? as JSONB))"}.joinToString(",")}
-            ON CONFLICT DO NOTHING
-        """.trimIndent()
+            statement.setTimestamp(parameterIndex.next(), Timestamp.from(timestamp))
+            statement.setNull(parameterIndex.next(), Types.TIMESTAMP)
+            statement.setString(parameterIndex.next(), visibleTransactionOutput.customRepresentation.json)
+        }
     }
 
     override fun persistTransactionSignatures(
@@ -412,35 +388,13 @@ class UtxoRepositoryImpl @Activate constructor(
         signatures: List<UtxoRepository.TransactionSignature>,
         timestamp: Instant
     ) {
-        val totalBatchSize = signatures.size
-
-        if (totalBatchSize == 0) return
-
-        var index = 1
-
-        entityManager.connection { connection ->
-            connection.prepareStatement(createTransactionSignaturesInsertBatchStatement(totalBatchSize)).use { statement ->
-                statement.run {
-                    signatures.forEach { signature ->
-                        setString(index++, transactionId)
-                        setInt(index++, signature.index)
-                        setBytes(index++, signature.signatureBytes)
-                        setString(index++, signature.publicKeyHash.toString())
-                        setTimestamp(index++, Timestamp.from(timestamp))
-                    }
-                    executeUpdate()
-                        .logResult("transaction signature [$transactionId, ${signatures.map { it.index }}]")
-                }
-            }
+        persistBatch(entityManager, queryProvider.persistTransactionSignatures, signatures) {statement, parameterIndex, signature ->
+            statement.setString(parameterIndex.next(), transactionId)
+            statement.setInt(parameterIndex.next(), signature.index)
+            statement.setBytes(parameterIndex.next(), signature.signatureBytes)
+            statement.setString(parameterIndex.next(), signature.publicKeyHash.toString())
+            statement.setTimestamp(parameterIndex.next(), Timestamp.from(timestamp))
         }
-    }
-
-    private fun createTransactionSignaturesInsertBatchStatement(size: Int): String {
-        return """
-            INSERT INTO utxo_transaction_signature(transaction_id, signature_idx, signature, pub_key_hash, created)
-            VALUES ${List(size) { "(?, ?, ?, ?, ?)"}.joinToString(",")}
-            ON CONFLICT DO NOTHING
-        """.trimIndent()
     }
 
     override fun updateTransactionStatus(

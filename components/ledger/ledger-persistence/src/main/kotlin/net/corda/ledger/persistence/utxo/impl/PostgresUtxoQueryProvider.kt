@@ -34,50 +34,44 @@ class PostgresUtxoQueryProvider @Activate constructor(
             ON CONFLICT DO NOTHING"""
             .trimIndent()
 
-    override val persistTransactionSource: String
-        get() = """
-            INSERT INTO {h-schema}utxo_transaction_sources(
-                transaction_id, group_idx, leaf_idx, source_state_transaction_id, source_state_idx)
-            VALUES(
-                :transactionId, :groupIndex, :leafIndex, :sourceStateTransactionId, :sourceStateIndex)
-            ON CONFLICT DO NOTHING"""
-            .trimIndent()
+    override val persistTransactionSources: (batchSize: Int) -> String
+        get() = { batchSize ->
+            """
+            INSERT INTO utxo_transaction_sources(transaction_id, group_idx, leaf_idx, source_state_transaction_id, source_state_idx)
+            VALUES ${List(batchSize) { "(?, ?, ?, ?, ?)" }.joinToString(",")}
+            ON CONFLICT DO NOTHING
+            """.trimIndent()
+        }
 
-//    override val persistTransactionComponentLeaf: String
-//        get() = """
-//            INSERT INTO {h-schema}utxo_transaction_component(transaction_id, group_idx, leaf_idx, data, hash)
-//                VALUES(:transactionId, :groupIndex, :leafIndex, :data, :hash)
-//            ON CONFLICT DO NOTHING"""
-//            .trimIndent()
-
-    override val persistTransactionComponentLeaf: String
-        get() = """
+    override val persistTransactionComponents: (batchSize: Int) -> String
+        get() = { batchSize ->
+            """
             INSERT INTO utxo_transaction_component(transaction_id, group_idx, leaf_idx, data, hash)
-                VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT DO NOTHING"""
-            .trimIndent()
+            VALUES ${List(batchSize) { "(?, ?, ?, ?, ?)" }.joinToString(",")}
+            ON CONFLICT DO NOTHING
+            """.trimIndent()
+        }
 
-    override fun persistVisibleTransactionOutput(consumed: Boolean): String {
-        return """INSERT INTO {h-schema}utxo_visible_transaction_output(
+    override val persistVisibleTransactionOutputs: (batchSize: Int) -> String
+        get() = { batchSize ->
+            """
+            INSERT INTO utxo_visible_transaction_output(
                 transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,
-                token_symbol, token_tag, token_owner_hash, token_amount, created, consumed, custom_representation)
-            VALUES(
-                :transactionId, :groupIndex, :leafIndex, :type, :tokenType, :tokenIssuerHash, :tokenNotaryX500Name,
-                :tokenSymbol, :tokenTag, :tokenOwnerHash, :tokenAmount, :createdAt, 
-                ${if (consumed) ":consumedAt" else "null"}, 
-                CAST(:customRepresentation as JSONB)
-            ) ON CONFLICT DO NOTHING"""
-            .trimIndent()
-    }
+                token_symbol, token_tag, token_owner_hash, token_amount, created, consumed, custom_representation
+            )
+            VALUES ${List(batchSize) { "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CAST(? as JSONB))"}.joinToString(",")}
+            ON CONFLICT DO NOTHING
+            """.trimIndent()
+        }
 
-    override val persistTransactionSignature: String
-        get() = """
-            INSERT INTO {h-schema}utxo_transaction_signature(
-                transaction_id, signature_idx, signature, pub_key_hash, created)
-            VALUES (
-                :transactionId, :signatureIdx, :signature, :publicKeyHash, :createdAt)
-            ON CONFLICT DO NOTHING"""
-            .trimIndent()
+    override val persistTransactionSignatures: (batchSize: Int) -> String
+        get() = { batchSize ->
+            """
+            INSERT INTO utxo_transaction_signature(transaction_id, signature_idx, signature, pub_key_hash, created)
+            VALUES ${List(batchSize) { "(?, ?, ?, ?, ?)" }.joinToString(",")}
+            ON CONFLICT DO NOTHING
+            """.trimIndent()
+        }
 
     override val persistSignedGroupParameters: String
         get() = """

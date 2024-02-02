@@ -64,23 +64,23 @@ interface UtxoQueryProvider {
     /**
      * @property persistTransactionSource SQL text for [UtxoRepositoryImpl.persistTransactionSource].
      */
-    val persistTransactionSource: String
+    val persistTransactionSources: (Int) -> String
 
     /**
      * @property persistTransactionComponentLeaf SQL text for [UtxoRepositoryImpl.persistTransactionComponentLeaf].
      */
-    val persistTransactionComponentLeaf: String
+    val persistTransactionComponents: (Int) -> String
 
     /**
      * @param consumed Whether the persisted states have been consumed.
      * @property persistVisibleTransactionOutput SQL text for [UtxoRepositoryImpl.persistVisibleTransactionOutputs].
      */
-    fun persistVisibleTransactionOutput(consumed: Boolean): String
+    val persistVisibleTransactionOutputs: (Int) -> String
 
     /**
      * @property persistTransactionSignature SQL text for [UtxoRepositoryImpl.persistTransactionSignature].
      */
-    val persistTransactionSignature: String
+    val persistTransactionSignatures: (Int) -> String
 
     /**
      * @property persistMerkleProof SQL text for [UtxoRepositoryImpl.persistMerkleProof].

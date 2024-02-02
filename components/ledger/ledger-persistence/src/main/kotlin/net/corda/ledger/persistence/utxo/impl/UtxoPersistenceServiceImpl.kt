@@ -227,7 +227,8 @@ class UtxoPersistenceServiceImpl(
                 transaction.account,
                 nowUtc,
                 transaction.status,
-                metadataHash
+                metadataHash,
+                isFiltered = false
             )
 
             repository.persistTransactionComponents(
@@ -373,88 +374,88 @@ class UtxoPersistenceServiceImpl(
         filteredTransactionsAndSignatures: Map<FilteredTransaction, List<DigitalSignatureAndMetadata>>,
         account: String
     ) {
-        entityManagerFactory.transaction { em ->
-
-            filteredTransactionsAndSignatures.forEach { (filteredTransaction, signatures) ->
-
-                val nowUtc = utcClock.instant()
-
-                val metadata = filteredTransaction.metadata as TransactionMetadataInternal
-
-                // 1. Get the metadata bytes from the 0th component group merkle proof and create the hash
-                val metadataBytes = filteredTransaction.filteredComponentGroups[0]
-                    ?.merkleProof
-                    ?.leaves
-                    ?.get(0)
-                    ?.leafData
-
-                requireNotNull(metadataBytes) {
-                    "Could not find metadata in the filtered transaction with id: ${filteredTransaction.id}"
-                }
-
-                val metadataHash = sandboxDigestService.hash(
-                    metadataBytes,
-                    DigestAlgorithmName.SHA2_256
-                ).toString()
-
-                // 2. Persist the transaction metadata
-                repository.persistTransactionMetadata(
-                    em,
-                    metadataHash,
-                    metadataBytes,
-                    requireNotNull(metadata.getMembershipGroupParametersHash()) {
-                        "Metadata without membership group parameters hash"
-                    },
-                    requireNotNull(metadata.getCpiMetadata()) {
-                        "Metadata without CPI metadata"
-                    }.fileChecksum
-                )
-
-                // 3. Persist the transaction itself to the utxo_transaction table
-                repository.persistTransaction(
-                    em,
-                    filteredTransaction.id.toString(),
-                    filteredTransaction.privacySalt.bytes,
-                    account,
-                    nowUtc,
-                    TransactionStatus.VERIFIED,
-                    metadataHash,
-                    isFiltered = true
-                )
-
-                // 4. Persist the signatures
-                signatures.forEachIndexed { index, digitalSignatureAndMetadata ->
-                    repository.persistTransactionSignature(
-                        em,
-                        filteredTransaction.id.toString(),
-                        index,
-                        digitalSignatureAndMetadata,
-                        nowUtc
-                    )
-                }
-
-                // 5. Persist the top level merkle proof
-                // No need to persist the leaf data as we can reconstruct that
-                repository.persistMerkleProof(
-                    em,
-                    filteredTransaction.id.toString(),
-                    TOP_LEVEL_MERKLE_PROOF_GROUP_INDEX,
-                    filteredTransaction.topLevelMerkleProof.treeSize,
-                    filteredTransaction.topLevelMerkleProof.leaves.map { it.index },
-                    filteredTransaction.topLevelMerkleProof.hashes.map { it.toString() }
-                )
-
-                // 6. Persist the merkle proof and leaf data for each component group
-                filteredTransaction.filteredComponentGroups.forEach { (groupIndex, groupData) ->
-                    persistMerkleProofAndLeavesData(
-                        em,
-                        filteredTransaction.id,
-                        groupIndex,
-                        groupData.merkleProof
-                    )
-                }
-            }
-        }
+//        entityManagerFactory.transaction { em ->
+//
+//            filteredTransactionsAndSignatures.forEach { (filteredTransaction, signatures) ->
+//
+//                val nowUtc = utcClock.instant()
+//
+//                val metadata = filteredTransaction.metadata as TransactionMetadataInternal
+//
+//                // 1. Get the metadata bytes from the 0th component group merkle proof and create the hash
+//                val metadataBytes = filteredTransaction.filteredComponentGroups[0]
+//                    ?.merkleProof
+//                    ?.leaves
+//                    ?.get(0)
+//                    ?.leafData
+//
+//                requireNotNull(metadataBytes) {
+//                    "Could not find metadata in the filtered transaction with id: ${filteredTransaction.id}"
+//                }
+//
+//                val metadataHash = sandboxDigestService.hash(
+//                    metadataBytes,
+//                    DigestAlgorithmName.SHA2_256
+//                ).toString()
+//
+//                // 2. Persist the transaction metadata
+//                repository.persistTransactionMetadata(
+//                    em,
+//                    metadataHash,
+//                    metadataBytes,
+//                    requireNotNull(metadata.getMembershipGroupParametersHash()) {
+//                        "Metadata without membership group parameters hash"
+//                    },
+//                    requireNotNull(metadata.getCpiMetadata()) {
+//                        "Metadata without CPI metadata"
+//                    }.fileChecksum
+//                )
+//
+//                // 3. Persist the transaction itself to the utxo_transaction table
+//                repository.persistTransaction(
+//                    em,
+//                    filteredTransaction.id.toString(),
+//                    filteredTransaction.privacySalt.bytes,
+//                    account,
+//                    nowUtc,
+//                    TransactionStatus.VERIFIED,
+//                    metadataHash,
+//                    isFiltered = true
+//                )
+//
+//                // 4. Persist the signatures
+//                signatures.forEachIndexed { index, digitalSignatureAndMetadata ->
+//                    repository.persistTransactionSignature(
+//                        em,
+//                        filteredTransaction.id.toString(),
+//                        index,
+//                        digitalSignatureAndMetadata,
+//                        nowUtc
+//                    )
+//                }
+//
+//                // 5. Persist the top level merkle proof
+//                // No need to persist the leaf data as we can reconstruct that
+//                repository.persistMerkleProof(
+//                    em,
+//                    filteredTransaction.id.toString(),
+//                    TOP_LEVEL_MERKLE_PROOF_GROUP_INDEX,
+//                    filteredTransaction.topLevelMerkleProof.treeSize,
+//                    filteredTransaction.topLevelMerkleProof.leaves.map { it.index },
+//                    filteredTransaction.topLevelMerkleProof.hashes.map { it.toString() }
+//                )
+//
+//                // 6. Persist the merkle proof and leaf data for each component group
+//                filteredTransaction.filteredComponentGroups.forEach { (groupIndex, groupData) ->
+//                    persistMerkleProofAndLeavesData(
+//                        em,
+//                        filteredTransaction.id,
+//                        groupIndex,
+//                        groupData.merkleProof
+//                    )
+//                }
+//            }
+//        }
     }
 
     @VisibleForTesting
@@ -565,36 +566,36 @@ class UtxoPersistenceServiceImpl(
         }.toMap()
     }
 
-    private fun persistMerkleProofAndLeavesData(
-        em: EntityManager,
-        transactionId: SecureHash,
-        componentGroupIndex: Int,
-        merkleProof: MerkleProof
-    ) {
-        val merkleProofId = repository.persistMerkleProof(
-            em,
-            transactionId.toString(),
-            componentGroupIndex,
-            merkleProof.treeSize,
-            merkleProof.leaves.map { it.index },
-            merkleProof.hashes.map { it.toString() }
-        )
-
-        merkleProof.leaves.forEach { leaf ->
-            repository.persistMerkleProofLeaf(
-                em,
-                merkleProofId,
-                leaf.index
-            )
-
-            repository.persistTransactionComponentLeaf(
-                em,
-                transactionId.toString(),
-                componentGroupIndex,
-                leaf.index,
-                leaf.leafData,
-                sandboxDigestService.hash(leaf.leafData, DigestAlgorithmName.SHA2_256).toString()
-            )
-        }
-    }
+//    private fun persistMerkleProofAndLeavesData(
+//        em: EntityManager,
+//        transactionId: SecureHash,
+//        componentGroupIndex: Int,
+//        merkleProof: MerkleProof
+//    ) {
+//        val merkleProofId = repository.persistMerkleProof(
+//            em,
+//            transactionId.toString(),
+//            componentGroupIndex,
+//            merkleProof.treeSize,
+//            merkleProof.leaves.map { it.index },
+//            merkleProof.hashes.map { it.toString() }
+//        )
+//
+//        merkleProof.leaves.forEach { leaf ->
+//            repository.persistMerkleProofLeaf(
+//                em,
+//                merkleProofId,
+//                leaf.index
+//            )
+//
+//            repository.persistTransactionComponentLeaf(
+//                em,
+//                transactionId.toString(),
+//                componentGroupIndex,
+//                leaf.index,
+//                leaf.leafData,
+//                sandboxDigestService.hash(leaf.leafData, DigestAlgorithmName.SHA2_256).toString()
+//            )
+//        }
+//    }
 }
