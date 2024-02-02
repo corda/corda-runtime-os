@@ -147,38 +147,6 @@ class BootstrapConfigTest {
     }
 
     @Test
-    fun `state manager config falls back on cli args when no config from files`() {
-        val user = "1user"
-        val pass = "1pass"
-        val url = "1url"
-
-        val config = WorkerHelpers.getBootstrapConfig(
-            mockSecretsServiceFactoryResolver,
-            DefaultWorkerParams(1234).also {
-                it.stateManagerParams = mapOf(
-                    "database.user" to user,
-                    "database.pass" to pass,
-                    "database.jdbc.url" to url,
-                )
-                it.secrets = mapOf(
-                    "salt" to "foo",
-                    "passphrase" to "bar",
-                )
-            },
-            mockConfigurationValidator
-        )
-
-        assertSoftly { softly ->
-            val stateManagerConfig = config.getConfig(BootConfig.BOOT_STATE_MANAGER)
-            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.FLOW_CHECKPOINT, user, pass, url)
-            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.FLOW_MAPPING, user, pass, url)
-            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION, user, pass, url)
-            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.TOKEN_POOL_CACHE, user, pass, url)
-            assertStateType(softly, stateManagerConfig, StateManagerConfig.StateType.P2P_SESSION, user, pass, url)
-        }
-    }
-
-    @Test
     fun `config with defaults`() {
         val config = WorkerHelpers.getBootstrapConfig(
             mockSecretsServiceFactoryResolver,

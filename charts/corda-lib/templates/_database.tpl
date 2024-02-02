@@ -5,23 +5,23 @@
 
 {{/*
     Default Name for Secrets Containing Bootstrap Database Credentials
-    The resulting secret name is "chartName-bootstrap-databaseName-db"
+    The resulting secret name is "chartName-bootstrap-databaseId-db"
 */}}
 {{- define "corda.db.bootstrapCredentialsSecretName" -}}
 {{- $ := index . 0 -}}
-{{- $dbName := index . 1 -}}
-{{ printf "%s-bootstrap-%s-db" ( include "corda.fullname" $ ) $dbName }}
+{{- $dbId := index . 1 -}}
+{{ printf "%s-bootstrap-%s-db" ( include "corda.fullname" $ ) $dbId }}
 {{- end -}}
 
 
 {{/*
     Default Name for Secrets Containing Database Credentials
-    The resulting secret name is "chartName-runtime-databaseName-db"
+    The resulting secret name is "chartName-runtime-databaseId-db"
 */}}
 {{- define "corda.db.runtimeCredentialsSecretName" -}}
 {{- $ := index . 0 -}}
-{{- $dbName := index . 1 -}}
-{{ printf "%s-runtime-%s-db" ( include "corda.fullname" $ ) $dbName }}
+{{- $dbId := index . 1 -}}
+{{ printf "%s-runtime-%s-db" ( include "corda.fullname" $ ) $dbId }}
 {{- end -}}
 
 
@@ -29,7 +29,7 @@
     Generate Java Database Connectivity URL From a 'database' Structure
 */}}
 {{- define "corda.db.connectionUrl" -}}
-jdbc:{{- .type -}}://{{- required ( printf "Must specify a host for database '%s'" .name ) .host -}}:{{- .port -}}/{{- .name -}}
+jdbc:{{- .type -}}://{{- required ( printf "Must specify a host for database '%s'" .id ) .host -}}:{{- .port -}}/{{- .name -}}
 {{- end -}}
 
 
@@ -49,18 +49,18 @@ jdbc:{{- .type -}}://{{- required ( printf "Must specify a host for database '%s
 */}}
 {{- define "corda.db.configuration" -}}
 {{- $ := index . 0 -}}
-{{- $dbName := index . 1 -}}
+{{- $dbId := index . 1 -}}
 {{- $reference := index . 2 -}}
 {{- $databaseFound := false -}}
 {{- $defaultDatabaseConfig := dict -}}
 {{- range $.Values.databases -}}
-{{-   if eq .name $dbName -}}
+{{-   if eq .id $dbId -}}
 {{-     $databaseFound = true -}}
 {{-     $defaultDatabaseConfig = . -}}
 {{-   end -}}
 {{- end -}}
 {{- if not $databaseFound -}}
-{{-   fail ( printf "Undefined persistent storage '%s' detected at %s" $dbName $reference ) -}}
+{{-   fail ( printf "Undefined persistent storage '%s' detected at %s" $dbId $reference ) -}}
 {{- end -}}
 {{ $defaultDatabaseConfig | toYaml }}
 {{- end -}}
