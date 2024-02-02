@@ -160,6 +160,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 consumer.syncCommitOffsets()
             }
         }
+        log.info("mediator ${Thread.currentThread().id} overall ${(System.nanoTime() - startTimestamp)/1e6}")
         metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
     }
 
