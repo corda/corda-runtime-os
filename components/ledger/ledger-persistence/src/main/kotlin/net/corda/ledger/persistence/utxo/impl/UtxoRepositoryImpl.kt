@@ -214,54 +214,16 @@ class UtxoRepositoryImpl @Activate constructor(
             .logResult("transaction metadata [$hash]")
     }
 
-    private fun <R> persistBatch(
-        entityManager: EntityManager,
-        query: (Int) -> String,
-        rowData: List<R>,
-        setRowParametersBlock: (statement: PreparedStatement, parameterIndex: Iterator<Int>, row: R) -> Unit
-    ) {
-        if (rowData.isEmpty()) return
-
-        entityManager.connection { connection ->
-            val batched = rowData.chunked(INSERTS_PER_BATCH * BATCH_SIZE_PER_INSERT)
-            batched.forEachIndexed { index, batch ->
-                val batchPerInsert = batch.chunked(BATCH_SIZE_PER_INSERT)
-                val hasReducedRowsOnLastInsert = index == batched.lastIndex && batchPerInsert.last().size < BATCH_SIZE_PER_INSERT
-
-                if (!hasReducedRowsOnLastInsert || batchPerInsert.size > 1) {
-                    connection.prepareStatement(query(BATCH_SIZE_PER_INSERT)).use { statement ->
-                        batchPerInsert.forEachIndexed { index, rowsPerInsert ->
-                            if (hasReducedRowsOnLastInsert && index == batchPerInsert.lastIndex) {
-                                return@connection
-                            }
-                            val parameterIndex = generateSequence(1) { it + 1 }.iterator()
-                            rowsPerInsert.forEach { row ->
-                                setRowParametersBlock(statement, parameterIndex, row)
-                            }
-                            statement.addBatch()
-                        }
-                        statement.executeBatch()
-                    }
-                }
-                if (hasReducedRowsOnLastInsert) {
-                    connection.prepareStatement(query(batchPerInsert.last().size)).use { statement ->
-                        val parameterIndex = generateSequence(1) { it + 1 }.iterator()
-                        batchPerInsert.last().forEach { row ->
-                            setRowParametersBlock(statement, parameterIndex, row)
-                        }
-                        statement.executeUpdate()
-                    }
-                }
-            }
-        }
-    }
-
     override fun persistTransactionSources(
         entityManager: EntityManager,
         transactionId: String,
         transactionSources: List<UtxoRepository.TransactionSource>
     ) {
-        persistBatch(entityManager, queryProvider.persistTransactionSources, transactionSources) { statement, parameterIndex, transactionSource ->
+        persistBatch(
+            entityManager,
+            queryProvider.persistTransactionSources,
+            transactionSources
+        ) { statement, parameterIndex, transactionSource ->
             statement.setString(parameterIndex.next(), transactionId)
             statement.setInt(parameterIndex.next(), transactionSource.group.ordinal)
             statement.setInt(parameterIndex.next(), transactionSource.index)
@@ -269,56 +231,6 @@ class UtxoRepositoryImpl @Activate constructor(
             statement.setInt(parameterIndex.next(), transactionSource.sourceIndex)
         }
     }
-
-//    override fun persistTransactionSources(
-//        entityManager: EntityManager,
-//        transactionId: String,
-//        transactionSources: List<UtxoRepository.TransactionSource>
-//    ) {
-//        if (transactionSources.isEmpty()) return
-//
-//        val block =
-//            { statement: PreparedStatement, parameterIndex: Iterator<Int>, transactionId: String, transactionSource: UtxoRepository.TransactionSource ->
-//                statement.setString(parameterIndex.next(), transactionId)
-//                statement.setInt(parameterIndex.next(), transactionSource.group.ordinal)
-//                statement.setInt(parameterIndex.next(), transactionSource.index)
-//                statement.setString(parameterIndex.next(), transactionSource.sourceTransactionId)
-//                statement.setInt(parameterIndex.next(), transactionSource.sourceIndex)
-//            }
-//
-//        entityManager.connection { connection ->
-//            val batched = transactionSources.chunked(INSERTS_PER_BATCH * BATCH_SIZE_PER_INSERT)
-//            batched.forEachIndexed { index, batch ->
-//                val batchPerInsert = batch.chunked(BATCH_SIZE_PER_INSERT)
-//                val hasReducedRowsOnLastInsert = index == batched.lastIndex && batchPerInsert.last().size < BATCH_SIZE_PER_INSERT
-//
-//                if (!hasReducedRowsOnLastInsert || batchPerInsert.size > 1) {
-//                    connection.prepareStatement(queryProvider.persistTransactionSources(BATCH_SIZE_PER_INSERT)).use { statement ->
-//                        batchPerInsert.forEachIndexed { index, transactionSources ->
-//                            if (hasReducedRowsOnLastInsert && index == batchPerInsert.lastIndex) {
-//                                return@connection
-//                            }
-//                            val parameterIndex = generateSequence(1) { it + 1 }.iterator()
-//                            transactionSources.forEach { transactionSource ->
-//                                block(statement, parameterIndex, transactionId, transactionSource)
-//                            }
-//                            statement.addBatch()
-//                        }
-//                        statement.executeBatch()
-//                    }
-//                }
-//                if (hasReducedRowsOnLastInsert) {
-//                    connection.prepareStatement(queryProvider.persistTransactionSources(batchPerInsert.last().size)).use { statement ->
-//                        val parameterIndex = generateSequence(1) { it + 1 }.iterator()
-//                        batchPerInsert.last().forEach { transactionSource ->
-//                            block(statement, parameterIndex, transactionId, transactionSource)
-//                        }
-//                        statement.executeUpdate()
-//                    }
-//                }
-//            }
-//        }
-//    }
 
     override fun persistTransactionComponents(
         entityManager: EntityManager,
@@ -337,19 +249,16 @@ class UtxoRepositoryImpl @Activate constructor(
                 }
             }
         }.flatten()
-        persistBatch(entityManager, queryProvider.persistTransactionComponents, flattenedComponentList) {statement, parameterIndex, component ->
+        persistBatch(
+            entityManager,
+            queryProvider.persistTransactionComponents,
+            flattenedComponentList
+        ) { statement, parameterIndex, component ->
             statement.setString(parameterIndex.next(), transactionId)
             statement.setInt(parameterIndex.next(), component.first)
             statement.setInt(parameterIndex.next(), component.second)
             statement.setBytes(parameterIndex.next(), component.third)
             statement.setString(parameterIndex.next(), hash(component.third))
-        }
-    }
-
-    private fun <T> EntityManager.connection(block: (connection: Connection) -> T) {
-        val hibernateSession = unwrap(Session::class.java)
-        hibernateSession.doWork { connection ->
-            block(connection)
         }
     }
 
@@ -577,6 +486,55 @@ class UtxoRepositoryImpl @Activate constructor(
                 metadataBytes = transactionPrivacySaltAndMetadata.second,
                 signatures = transactionSignatures
             )
+        }
+    }
+
+    private fun <R> persistBatch(
+        entityManager: EntityManager,
+        query: (Int) -> String,
+        rowData: List<R>,
+        setRowParametersBlock: (statement: PreparedStatement, parameterIndex: Iterator<Int>, row: R) -> Unit
+    ) {
+        if (rowData.isEmpty()) return
+
+        entityManager.connection { connection ->
+            val batched = rowData.chunked(INSERTS_PER_BATCH * BATCH_SIZE_PER_INSERT)
+            batched.forEachIndexed { index, batch ->
+                val batchPerInsert = batch.chunked(BATCH_SIZE_PER_INSERT)
+                val hasReducedRowsOnLastInsert = index == batched.lastIndex && batchPerInsert.last().size < BATCH_SIZE_PER_INSERT
+
+                if (!hasReducedRowsOnLastInsert || batchPerInsert.size > 1) {
+                    connection.prepareStatement(query(BATCH_SIZE_PER_INSERT)).use { statement ->
+                        batchPerInsert.forEachIndexed perInsertLoop@{ index, rowsPerInsert ->
+                            if (hasReducedRowsOnLastInsert && index == batchPerInsert.lastIndex) {
+                                return@perInsertLoop
+                            }
+                            val parameterIndex = generateSequence(1) { it + 1 }.iterator()
+                            rowsPerInsert.forEach { row ->
+                                setRowParametersBlock(statement, parameterIndex, row)
+                            }
+                            statement.addBatch()
+                        }
+                        statement.executeBatch()
+                    }
+                }
+                if (hasReducedRowsOnLastInsert) {
+                    connection.prepareStatement(query(batchPerInsert.last().size)).use { statement ->
+                        val parameterIndex = generateSequence(1) { it + 1 }.iterator()
+                        batchPerInsert.last().forEach { row ->
+                            setRowParametersBlock(statement, parameterIndex, row)
+                        }
+                        statement.executeUpdate()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun <T> EntityManager.connection(block: (connection: Connection) -> T) {
+        val hibernateSession = unwrap(Session::class.java)
+        hibernateSession.doWork { connection ->
+            block(connection)
         }
     }
 
