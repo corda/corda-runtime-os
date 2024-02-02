@@ -10,7 +10,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation libs.kafka.client
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
     implementation "net.corda:corda-base"
     implementation 'net.corda:corda-db-schema'
     implementation project(":libs:db:db-orm")

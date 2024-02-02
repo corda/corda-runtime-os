@@ -17,7 +17,7 @@ dependencies {
 
     api "javax.persistence:javax.persistence-api"
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
     implementation project(":libs:application:application-db-setup")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:configuration:configuration-merger")

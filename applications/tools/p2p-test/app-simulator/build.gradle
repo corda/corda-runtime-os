@@ -18,7 +18,7 @@ dependencies {
     implementation "net.corda:corda-avro-schema:$cordaApiVersion"
     implementation "net.corda:corda-config-schema:$cordaApiVersion"
     implementation "net.corda:corda-topic-schema:$cordaApiVersion"
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
     implementation "info.picocli:picocli:$picocliVersion"
     implementation "org.slf4j:slf4j-api"
     implementation "net.corda:corda-base"
