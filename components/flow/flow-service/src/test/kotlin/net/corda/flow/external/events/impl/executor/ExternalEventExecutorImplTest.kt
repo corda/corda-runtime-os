@@ -1,7 +1,6 @@
 package net.corda.flow.external.events.impl.executor
 
 import net.corda.data.flow.event.external.ExternalEventResponse
-import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.services.MockFlowFiberService
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.fiber.FlowIORequest
@@ -49,7 +48,7 @@ class ExternalEventExecutorImplTest {
         mockFlowFiberService = MockFlowFiberService()
         whenever(mockFlowFiberService.flowCheckpoint.flowId).thenReturn(flowId)
         whenever(mockFlowFiberService.flowCheckpoint.suspendCount).thenReturn(suspendCount)
-        serializationService = mock<SerializationServiceInternal?>().apply {
+        serializationService = mock<SerializationService?>().apply {
             whenever(serialize<Any>(anyOrNull())).doAnswer { inv ->
                 SerializedBytes { inv.getArgument<Any>(0).toString().toByteArray() }
             }
