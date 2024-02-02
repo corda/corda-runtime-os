@@ -19,6 +19,21 @@ import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.UUID
 
+/**
+ * A processor for cleaning up flow status records that are in terminal states and have not been updated within a specified time frame.
+ *
+ * When this processor receives a [ScheduledTaskTrigger] of type [SCHEDULE_TASK_NAME_FLOW_STATUS_CLEANUP], it will poll the StateManager
+ * for all FlowStatus records with a status of [FlowStates.COMPLETED], [FlowStates.FAILED], or [FlowStates.KILLED] which have
+ * not been updated within a configurable time window, specified by [REST_FLOW_STATUS_CLEANUP_TIME_MS] in the REST config.
+ *
+ * The retrieved stale records, if any, are split into batches determined by [batchSize] and sent downstream to the
+ * [FlowStatusDeletionExecutor] for deletion.
+ *
+ * @property config The [SmartConfig] instance used for configuration settings, including the cleanup time.
+ * @property stateManager The [StateManager] instance used for accessing and modifying flow status records.
+ * @property now A lambda function that returns the current [Instant]; this is used to assess FlowStatus staleness.
+ * @property batchSize The number of records per batch that are sent to the downstream [FlowStatusDeletionExecutor].
+ */
 class FlowStatusCleanupProcessor(
     config: SmartConfig,
     private val stateManager: StateManager,
