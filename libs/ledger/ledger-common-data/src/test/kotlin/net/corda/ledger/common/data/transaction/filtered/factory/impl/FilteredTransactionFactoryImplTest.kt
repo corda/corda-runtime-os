@@ -1,4 +1,4 @@
-package net.corda.ledger.common.flow.impl.transaction.filtered.factory
+package net.corda.ledger.common.data.transaction.filtered.factory.impl
 
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
@@ -11,7 +11,7 @@ import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters
 import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters.AuditProof.AuditProofPredicate
 import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
-import net.corda.ledger.common.data.transaction.filtered.factory.impl.FilteredTransactionFactoryImpl
+import net.corda.ledger.common.data.transaction.getComponentGroupMerkleTreeDigestProvider
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
@@ -50,7 +50,8 @@ class FilteredTransactionFactoryImplTest {
     private val filteredTransactionFactory = FilteredTransactionFactoryImpl(
         jsonMarshallingService,
         merkleTreeProvider,
-        serializationService
+        serializationService,
+        digestService
     )
 
     @BeforeEach
@@ -165,9 +166,11 @@ class FilteredTransactionFactoryImplTest {
             )
         )
 
-        val componentGroupMerkleTreeDigestProvider1 = wireTransaction.getComponentGroupMerkleTreeDigestProvider(
+        val componentGroupMerkleTreeDigestProvider1 = wireTransaction.metadata.getComponentGroupMerkleTreeDigestProvider(
             wireTransaction.privacySalt,
-            1
+            1,
+            merkleTreeProvider,
+            digestService
         )
         val componentGroupMerkleTreeSizeProofProvider1 =
             checkNotNull(componentGroupMerkleTreeDigestProvider1 as? MerkleTreeHashDigestProviderWithSizeProofSupport) {

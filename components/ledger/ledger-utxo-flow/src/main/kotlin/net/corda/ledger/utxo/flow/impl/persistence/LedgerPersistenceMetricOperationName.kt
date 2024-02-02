@@ -8,12 +8,10 @@ enum class LedgerPersistenceMetricOperationName {
     FindTransactionWithStatus,
     FindUnconsumedStatesByType,
     FindWithNamedQuery,
-    FindMerkleProofs,
     PersistSignedGroupParametersIfDoNotExist,
     PersistTransaction,
     PersistTransactionIfDoesNotExist,
     PersistTransactionSignatures,
     ResolveStateRefs,
-    UpdateTransactionStatus,
-    PersistMerkleProofIfDoesNotExist
+    UpdateTransactionStatus
 }
