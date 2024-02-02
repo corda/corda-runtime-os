@@ -67,6 +67,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                         val procStartTime = System.nanoTime()
                         val response = config.messageProcessor.onNext(processorState, event)
                         val t1 = System.nanoTime()
+                        metrics.timer(topic, "EVENT_PROC1_TIME").record(t1 - procStartTime, TimeUnit.NANOSECONDS)
                         procTime += t1 - procStartTime
 
                         processorState = response.updatedState
@@ -93,8 +94,11 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                 if (rpc) {
                     metrics.timer(topic, "EVENT_RPC_ONLY_TIME").record(rpcTime, TimeUnit.NANOSECONDS)
                 }
+                val stateStartTime = System.nanoTime()
                 mediatorState.outputEvents = mediatorReplayService.getOutputEvents(mediatorState.outputEvents, asyncOutputs)
-                stateManagerHelper.createOrUpdateState(groupKey, input.state, mediatorState, processorState)
+                val res = stateManagerHelper.createOrUpdateState(groupKey, input.state, mediatorState, processorState)
+                metrics.timer(topic, "EVENT_STATE_TIME").record(System.nanoTime() - stateStartTime, TimeUnit.NANOSECONDS)
+                res
             } catch (e: CordaMessageAPIIntermittentException) {
                 // If an intermittent error occurs here, the RPC client has failed to deliver a message to another part
                 // of the system despite the retry loop implemented there. This should trigger individual processing to

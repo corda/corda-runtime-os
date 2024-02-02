@@ -25,6 +25,7 @@ import java.time.Duration
 import java.util.concurrent.CompletionException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import java.util.concurrent.locks.ReentrantLock
 
 /**
  * Class to construct a message bus consumer and begin processing its subscribed topic(s).
@@ -119,6 +120,8 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             val inputs = generateInputs(states.values, polledRecords)
             var groups = groupAllocator.allocateGroups(inputs, config)
 
+            val lock = ReentrantLock()
+            val taskDurations = mutableListOf<Long>()
             while (groups.isNotEmpty()) {
                 val groupStartTimestamp = System.nanoTime()
                 // Process each group on a thread
@@ -126,7 +129,13 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                     it.isNotEmpty()
                 }.map { group ->
                     val future = taskManager.executeShortRunningTask {
-                        eventProcessor.processEvents(group, topic, metrics)
+                        val taskStartTimestamp = System.nanoTime()
+                        val result = eventProcessor.processEvents(group, topic, metrics)
+                        val taskDuration = System.nanoTime() - taskStartTimestamp
+                        lock.lock()
+                        taskDurations.add(taskDuration)
+                        lock.unlock()
+                        result
                     }
                     Pair(future, group)
                 }.map { (future, group) ->
@@ -154,6 +163,9 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                     it.toString()
                 }
                 metrics.timer(topic, "GROUP").record(System.nanoTime() - groupStartTimestamp, TimeUnit.NANOSECONDS)
+                taskDurations.sorted().forEachIndexed() { index, duration ->
+                    metrics.timer(topic, "TASK$index").record(duration, TimeUnit.NANOSECONDS)
+                }
 
                 // Persist state changes, send async outputs and setup to reprocess states that fail to persist
                 val failedStates = processOutputs(outputs, topic)
