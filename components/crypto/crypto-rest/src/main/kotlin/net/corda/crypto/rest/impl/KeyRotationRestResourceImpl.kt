@@ -209,7 +209,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
             rotationStatus,
             deserializedValueOfOneRecord.createdTimestamp,
             getLatestTimestamp(records),
-            prepareUnmanagedRotationOutput(records)
+            records.toUnmanagedRotationOutput()
         )
     }
 
@@ -260,7 +260,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
             rotationStatus,
             deserializedValueOfOneRecord.createdTimestamp,
             getLatestTimestamp(records),
-            prepareManagedRotationOutput(records)
+            records.toManagedRotationOutput()
         )
     }
 
@@ -282,25 +282,25 @@ class KeyRotationRestResourceImpl @Activate constructor(
             publishRequests = { publishToKafka!!.publish(it) }
         )
     }
-    private fun prepareUnmanagedRotationOutput(records: Collection<State>): List<Pair<String, RotatedKeysStatus>> {
-        return records.map { state ->
-            val unmanagedKeyRotationStatus = checkNotNull(unmanagedKeyStatusDeserializer.deserialize(state.value))
+
+    private fun Collection<State>.toUnmanagedRotationOutput() =
+        map { state ->
+            val unmanagedKeyRotationStatus =
+                checkNotNull(unmanagedKeyStatusDeserializer.deserialize(state.value))
             unmanagedKeyRotationStatus.tenantId to RotatedKeysStatus(
                 unmanagedKeyRotationStatus.total,
                 unmanagedKeyRotationStatus.rotatedKeys
             )
         }
-    }
 
-    private fun prepareManagedRotationOutput(records: Collection<State>): List<Pair<String, RotatedKeysStatus>> {
-        return records.map { state ->
+    private fun Collection<State>.toManagedRotationOutput() =
+        map { state ->
             val managedKeyRotationStatus = checkNotNull(managedKeyStatusDeserializer.deserialize(state.value))
             managedKeyRotationStatus.wrappingKeyAlias to RotatedKeysStatus(
                 managedKeyRotationStatus.total,
                 managedKeyRotationStatus.rotatedKeys
             )
         }
-    }
 
     private fun isRotationFinished(records: Collection<State>): Boolean {
         records.forEach {
