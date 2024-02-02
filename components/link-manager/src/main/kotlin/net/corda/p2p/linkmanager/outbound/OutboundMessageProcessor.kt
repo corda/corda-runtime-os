@@ -100,6 +100,7 @@ internal class OutboundMessageProcessor(
     }
 
     override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<String, *>> {
+        logger.info("QQQ OutboundMessageProcessor::onNext(${events.size}) -> ${Thread.currentThread().id}")
         val authenticatedMessages = mutableListOf<TraceableItem<AuthenticatedMessageAndKey, AppMessage>>()
         val unauthenticatedMessages = mutableListOf<TraceableItem<OutboundUnauthenticatedMessage, AppMessage>>()
         for (event in events) {
@@ -130,7 +131,9 @@ internal class OutboundMessageProcessor(
                 traceEventProcessing(originalRecord, tracingEventName) { result.item }
             }
         }
-        return results.map { it.item }.flatten()
+        return results.map { it.item }.flatten().also {
+            logger.info("QQQ OutboundMessageProcessor::onNext(${events.size}) <- ${Thread.currentThread().id}")
+        }
     }
 
     private fun checkSourceAndDestinationValid(
@@ -251,8 +254,12 @@ internal class OutboundMessageProcessor(
         }
     }
 
-    fun processReplayedAuthenticatedMessage(messageAndKey: AuthenticatedMessageAndKey): List<Record<String, *>> =
-        processAuthenticatedMessages(listOf(TraceableItem(messageAndKey, null)), true).flatMap { it.item }
+    fun processReplayedAuthenticatedMessage(messageAndKey: AuthenticatedMessageAndKey): List<Record<String, *>> {
+        logger.info("QQQ processReplayedAuthenticatedMessage(${messageAndKey.key}) -> ${Thread.currentThread()}")
+        return processAuthenticatedMessages(listOf(TraceableItem(messageAndKey, null)), true).flatMap { it.item }.also {
+            logger.info("QQQ processReplayedAuthenticatedMessage(${messageAndKey.key}) <- ${Thread.currentThread()}")
+        }
+    }
 
     private fun processAuthenticatedMessages(
         messagesWithKeys: List<TraceableItem<AuthenticatedMessageAndKey, AppMessage>>,
