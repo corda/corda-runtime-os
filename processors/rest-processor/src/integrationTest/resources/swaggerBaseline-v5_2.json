@@ -4374,9 +4374,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "type" : "string",
-                  "nullable" : false,
-                  "example" : "string"
+                  "$ref" : "#/components/schemas/ManagedKeyRotationStatusResponse"
                 }
               }
             }
@@ -5425,7 +5423,7 @@
                   "example" : "string"
                 },
                 "second" : {
-                  "$ref" : "#/components/schemas/TenantIdWrappingKeysStatus"
+                  "$ref" : "#/components/schemas/RotatedKeysStatus"
                 }
               },
               "example" : "No example available for this type"
@@ -5438,6 +5436,53 @@
         "type" : "object",
         "properties" : {
           "requestId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "tenantId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
+      "ManagedKeyRotationStatusResponse" : {
+        "required" : [ "createdTimestamp", "lastUpdatedTimestamp", "signingKeys", "status", "tenantId" ],
+        "type" : "object",
+        "properties" : {
+          "createdTimestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T10:15:30Z"
+          },
+          "lastUpdatedTimestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T10:15:30Z"
+          },
+          "signingKeys" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "type" : "object",
+              "properties" : {
+                "first" : {
+                  "type" : "string",
+                  "nullable" : false,
+                  "example" : "string"
+                },
+                "second" : {
+                  "$ref" : "#/components/schemas/RotatedKeysStatus"
+                }
+              },
+              "example" : "No example available for this type"
+            }
+          },
+          "status" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
@@ -5840,6 +5885,24 @@
           }
         }
       },
+      "RotatedKeysStatus" : {
+        "required" : [ "rotatedKeys", "total" ],
+        "type" : "object",
+        "properties" : {
+          "rotatedKeys" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          },
+          "total" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          }
+        }
+      },
       "Route" : {
         "required" : [ "active", "channelName", "externalReceiveTopicName", "inactiveResponseType" ],
         "type" : "object",
@@ -5977,24 +6040,6 @@
           }
         },
         "description" : "Parameters for suspending or activating a member."
-      },
-      "TenantIdWrappingKeysStatus" : {
-        "required" : [ "rotatedKeys", "total" ],
-        "type" : "object",
-        "properties" : {
-          "rotatedKeys" : {
-            "type" : "integer",
-            "format" : "int32",
-            "nullable" : false,
-            "example" : 0
-          },
-          "total" : {
-            "type" : "integer",
-            "format" : "int32",
-            "nullable" : false,
-            "example" : 0
-          }
-        }
       },
       "UpdateConfigParameters" : {
         "required" : [ "config", "schemaVersion", "section", "version" ],
