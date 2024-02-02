@@ -14,7 +14,7 @@ dependencies {
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
 
     implementation libs.javalin
-    implementation "org.slf4j:slf4j-simple:$slf4jVersion"
+    implementation libs.slf4j.simple
 
     api "info.picocli:picocli:$picocliVersion"
 }

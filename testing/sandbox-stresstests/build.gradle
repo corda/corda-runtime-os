@@ -52,7 +52,7 @@ dependencies {
     implementation 'net.corda:corda-topic-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'org.slf4j:slf4j-api'
-    implementation "io.micrometer:micrometer-registry-prometheus:$micrometerVersion"
+    implementation libs.micrometer.registry.prometheus
 
     testImplementation project(':testing:db-testkit')
     testImplementation project(':testing:persistence-testkit')
@@ -66,7 +66,7 @@ dependencies {
     testImplementation project(':testing:test-utilities')
 
     testRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
-    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    testRuntimeOnly libs.postgresql.jdbc
 
     // Integration test resources using cpis configuration
     cpis project(path: ':testing:cpbs:extendable-cpb', configuration: 'cordaCPB')
@@ -110,7 +110,7 @@ dependencies {
 
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly libs.postgresql.jdbc
 }
 
 //  Copy the cpi builds declared in the cpis configuration into our resources so we find and load them
