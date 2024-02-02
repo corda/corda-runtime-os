@@ -101,7 +101,7 @@ class Sender(
 
                             messagesWithIds.add(
                                 createMessage(
-                                    "$senderId:$client:${++messagesSent}",
+                                    "|$senderId:$client:${++messagesSent}|",
                                     senderId,
                                     destination,
                                     senderHoldingId,
@@ -120,6 +120,7 @@ class Sender(
                                 val publishedIds = publisher.publish(records).zip(messagesWithIds).filter { (future, messageWithId) ->
                                     try {
                                         future.get()
+                                        logger.info("TTT Published ${messageWithId.first.messageId}")
                                         true
                                     } catch (e: ExecutionException) {
                                         logger.warn("Could not publish message with ID: ${messageWithId.first}", e)
