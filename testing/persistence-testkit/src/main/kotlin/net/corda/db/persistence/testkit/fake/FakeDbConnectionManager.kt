@@ -66,7 +66,7 @@ class FakeDbConnectionManager(
                     schemaName = "$schemaName${conn.second.replace("-","")}",
                     createSchema = true).dataSource.let {
 
-                    NamedDataSources(conn.first, conn.second, it)
+                    NamedDataSources(conn.first, conn.second, schemaName, it)
                 }
             } else {
                 throw e
