@@ -9,6 +9,10 @@ import net.corda.crypto.core.bytes
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.LinkOutMessage
+import net.corda.data.p2p.ReEstablishSessionMessage
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.Operation
@@ -18,12 +22,17 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.messaging.api.records.Record
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.membership.lookup
+import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.CannotEstablishSession
+import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionsNeeded
+import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.SessionAlreadyPending
+import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.SessionEstablished
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.alreadySessionWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.noSessionWarning
 import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata
@@ -35,24 +44,26 @@ import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.toOutbound
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionStatus
 import net.corda.p2p.linkmanager.state.SessionState
+import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
+import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.time.Clock
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.exceptions.CryptoException
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.time.Duration
 import java.util.Base64
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import net.corda.data.p2p.crypto.InitiatorHandshakeMessage as AvroInitiatorHandshakeMessage
 import net.corda.data.p2p.crypto.InitiatorHelloMessage as AvroInitiatorHelloMessage
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage as AvroResponderHandshakeMessage
 import net.corda.data.p2p.crypto.ResponderHelloMessage as AvroResponderHelloMessage
-import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.CannotEstablishSession as CannotEstablishSession
-import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionsNeeded as NewSessionsNeeded
-import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.SessionAlreadyPending as SessionAlreadyPending
-import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.SessionEstablished as SessionEstablished
 
 @Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 internal class StatefulSessionManagerImpl(
@@ -62,9 +73,11 @@ internal class StatefulSessionManagerImpl(
     private val stateConvertor: StateConvertor,
     private val clock: Clock,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    private val schemaRegistry: AvroSchemaRegistry,
 ) : SessionManager {
     private companion object {
         const val CACHE_SIZE = 10_000L
+        const val LINK_MANAGER_SUBSYSTEM = "link-manager"
         val SESSION_VALIDITY_PERIOD: Duration = Duration.ofDays(7)
         val logger: Logger = LoggerFactory.getLogger(StatefulSessionManagerImpl::class.java)
     }
@@ -241,11 +254,16 @@ internal class StatefulSessionManagerImpl(
             )
                 .entries
                 .mapNotNull { (sessionId, state) ->
-                    val session =
+                    val session = try {
                         stateConvertor.toCordaSessionState(
                             state,
                             sessionManagerImpl.revocationCheckerClient::checkRevocation,
                         ).sessionData as? Session
+                    } catch (e: CryptoException) {
+                        val counterparties = state.toCounterparties()
+                        sendSessionReEstablishmentMessage(counterparties.ourId, counterparties.counterpartyId, sessionId)
+                        null
+                    }
                     session?.let {
                         sessionIdsNotInCache[sessionId]?.let { traceables ->
                             val inboundSession =
@@ -291,6 +309,8 @@ internal class StatefulSessionManagerImpl(
                     }
                 }
         }
+
+        // Return NoSession for sessions not found
 
         return (allCached.values + inboundSessionsFromStateManager + outboundSessionsFromStateManager).flatMap {  (traceables, direction) ->
             traceables.map {
@@ -370,6 +390,24 @@ internal class StatefulSessionManagerImpl(
     override fun dataMessageSent(session: Session) {
         // Not needed by the Stateful Session Manager
         return
+    }
+
+    override fun deleteOutboundSession(
+        counterParties: SessionManager.Counterparties, message: AuthenticatedMessage
+    ) {
+        val sessionId = schemaRegistry.deserialize(
+            message.payload, ReEstablishSessionMessage::class.java, null
+        ).sessionId
+        val key = counterpartiesForSessionId[sessionId] ?: getCounterpartySerial(
+            counterParties.ourId, counterParties.counterpartyId, message.header.statusFilter
+        )?.let { serial ->
+            calculateOutboundSessionKey(counterParties.ourId, counterParties.counterpartyId, serial)
+        }
+        if (key == null) {
+            logger.warn("Could not delete outbound session '{}' lost by counterparty.", sessionId)
+            return
+        }
+        sessionExpiryScheduler.deleteOutboundSession(key)
     }
 
     private data class InboundSessionMessageContext<T>(
@@ -1105,6 +1143,43 @@ internal class StatefulSessionManagerImpl(
             emptyMap()
         }
         return failedUpdates + failedCreates
+    }
+
+    private fun sendSessionReEstablishmentMessage(
+        source: HoldingIdentity,
+        destination: HoldingIdentity,
+        sessionId: String,
+    ) {
+        val messageBytes = schemaRegistry.serialize(
+            ReEstablishSessionMessage(sessionId)
+        ).array()
+        val record = createAuthenticatedMessageRecord(source, destination, messageBytes)
+        sessionManagerImpl.publisher.publish(listOf(record))
+    }
+
+    private fun createAuthenticatedMessageRecord(
+        source: HoldingIdentity,
+        destination: HoldingIdentity,
+        payload: ByteArray,
+    ): Record<String, AppMessage> {
+        val header = AuthenticatedMessageHeader.newBuilder()
+            .setDestination(destination.toAvro())
+            .setSource(source.toAvro())
+            .setMessageId(UUID.randomUUID().toString())
+            .setSubsystem(LINK_MANAGER_SUBSYSTEM)
+            .setStatusFilter(MembershipStatusFilter.ACTIVE)
+            .build()
+        val message = AuthenticatedMessage.newBuilder()
+            .setHeader(header)
+            .setPayload(ByteBuffer.wrap(payload))
+            .build()
+        val appMessage = AppMessage(message)
+
+        return Record(
+            P2P_OUT_TOPIC,
+            UUID.randomUUID().toString(),
+            appMessage,
+        )
     }
 
     private val sessionExpiryScheduler: SessionExpiryScheduler = SessionExpiryScheduler(

@@ -62,6 +62,12 @@ internal class SessionExpiryScheduler(
         }.toMap()
     }
 
+    fun deleteOutboundSession(key: String) {
+        stateManager.get(listOf(key)).values.firstOrNull()?.let {
+            forgetState(it)
+        }
+    }
+
     private fun forgetState(state: State) {
         val key = state.key
         stateManager.delete(listOf(state))

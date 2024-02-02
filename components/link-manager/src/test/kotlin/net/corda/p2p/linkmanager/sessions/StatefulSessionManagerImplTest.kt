@@ -17,6 +17,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.linkmanager.state.SessionState
+import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.time.Clock
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
@@ -51,6 +52,7 @@ class StatefulSessionManagerImplTest {
     private val clock = mock<Clock> {
         on { instant() } doReturn now
     }
+    private val schemaRegistry = mock<AvroSchemaRegistry>()
 
     private val manager = StatefulSessionManagerImpl(
         coordinatorFactory,
@@ -59,6 +61,7 @@ class StatefulSessionManagerImplTest {
         stateConvertor,
         clock,
         membershipGroupReaderProvider,
+        schemaRegistry,
     )
 
     private data class Wrapper<T>(

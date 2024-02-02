@@ -57,6 +57,7 @@ internal class InboundMessageProcessor(
     EventLogProcessor<String, LinkInMessage> {
 
     private companion object {
+        const val LINK_MANAGER_SUBSYSTEM = "link-manager"
         val logger: Logger = LoggerFactory.getLogger(this::class.java.name)
         const val tracingEventName = "P2P Link Manager Inbound Event"
     }
@@ -304,13 +305,16 @@ internal class InboundMessageProcessor(
                     makeAckMessageForHeartbeatMessage(counterparties, session)?.let { ack -> messages.add(ack) }
                 }
                 is AuthenticatedMessageAndKey -> {
-                    recordInboundMessagesMetric(innerMessage.message)
-                    checkIdentityBeforeProcessing(
-                        counterparties,
-                        innerMessage,
-                        session,
-                        messages
-                    )
+                    val authenticatedMessage = innerMessage.message
+                    val header = authenticatedMessage.header
+                    recordInboundMessagesMetric(authenticatedMessage)
+                    if (header.subsystem == LINK_MANAGER_SUBSYSTEM) {
+                        sessionManager.deleteOutboundSession(counterparties.reverse(), authenticatedMessage)
+                    } else {
+                        checkIdentityBeforeProcessing(
+                            counterparties, innerMessage, session, messages
+                        )
+                    }
                 }
                 else -> logger.warn("Unknown incoming message type: ${innerMessage.javaClass}. The message was discarded.")
             }
