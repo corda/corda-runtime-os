@@ -15,6 +15,7 @@ configurations {
         transitive = false
     }
 }
+
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:osgi.annotation"
