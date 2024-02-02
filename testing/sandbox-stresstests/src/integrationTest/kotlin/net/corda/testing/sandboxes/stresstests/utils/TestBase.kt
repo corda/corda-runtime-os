@@ -55,7 +55,7 @@ open class TestBase {
     @BeforeEach
     fun setUpMetrics() {
         prometheusMeterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
-        CordaMetrics.configure("test", prometheusMeterRegistry)
+        CordaMetrics.configure("test", prometheusMeterRegistry, null, null)
 
         JvmMemoryMetrics().bindTo(prometheusMeterRegistry)
         JvmGcMetrics().bindTo(CordaMetrics.registry)
