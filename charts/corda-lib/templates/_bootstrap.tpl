@@ -276,16 +276,6 @@ spec:
             {{-     end -}}
             {{-   end -}}
             {{- end }}
-            {{/* TODO-[CORE-19372]: remove the following range block */}}
-            {{- range $workerName, $authConfig := .Values.bootstrap.db.stateManager -}}
-            {{-   $workerConfig := (index $.Values.workers $workerName) -}}
-            {{/*  No point in trying to bootstrap the State Manager for the specific worker if the host has not been configured */}}
-            {{-   if and (not $workerConfig.stateManager.db.host) (or ( $authConfig.username.value ) ( $authConfig.username.valueFrom.secretKeyRef.name ) ( $authConfig.password.value ) ( $authConfig.password.valueFrom.secretKeyRef.name ) ) -}}
-            {{-     fail ( printf "Can only specify bootstrap.db.stateManager.%s when workers.%s.stateManager.host is configured" $workerName $workerName ) -}}
-            {{-   else -}}
-            {{-     include "corda.bootstrapStateManagerDb" ( list $ $workerName $authConfig ) }}
-            {{-   end -}}
-            {{- end }}
       containers:
         - name: apply
           image: {{ include "corda.bootstrapDbClientImage" . }}
