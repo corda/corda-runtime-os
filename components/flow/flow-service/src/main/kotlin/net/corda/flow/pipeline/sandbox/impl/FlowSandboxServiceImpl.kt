@@ -27,6 +27,7 @@ import org.osgi.framework.Constants.SERVICE_SCOPE
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 @RequireSandboxAMQP
@@ -44,6 +45,7 @@ class FlowSandboxServiceImpl @Activate constructor(
 
     private companion object {
         private const val NON_PROTOTYPE_SERVICES = "(!($SERVICE_SCOPE=$SCOPE_PROTOTYPE))"
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun get(holdingIdentity: HoldingIdentity, cpkFileHashes: Set<SecureHash>): FlowSandboxGroupContext {

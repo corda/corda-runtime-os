@@ -191,9 +191,11 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                     it.second
                 }
 
+                val start = System.nanoTime()
                 // Run the caller's initializer.
                 val initializerAutoCloseable =
                     initializer.initializeSandboxGroupContext(vnc.holdingIdentity, sandboxGroupContext)
+                logger.info("initializeSandboxGroupContext in ${(System.nanoTime() - start)/1.0e6}")
 
                 logger.debug("Created {} sandbox {} for holding identity={}",
                     vnc.sandboxGroupType, sandboxGroup.id, vnc.holdingIdentity)

@@ -34,6 +34,10 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 
+
+enum class EvolveMode {
+    NO_EXTRAS, ADD, ADD_AND_REMOVE,
+}
 @Suppress("Unused", "FunctionName")
 @TestInstance(PER_CLASS)
 class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
@@ -61,7 +65,7 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
     private val bobX500 = "CN=Bob-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
     private val charlieX500 = "CN=Charlie-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
     private val notaryX500 = "CN=Notary-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
-    private val extraParties = 50
+    private val extraParties = 20
     private val extraPartiesX500 = (0 until extraParties).map { "CN=Extra-${it}-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB" }
 
     private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, groupId)
@@ -159,13 +163,19 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
         var currentTransactionId = checkNotNull(utxoFlowResult.flowResult)
         var message = input
         var prevInput = ""
-        val constant = true // if true, keep the number of participants at 4, if false add one on each evolution
-        for (stage in 1 until extraParties) {
+        val mode: EvolveMode = EvolveMode.ADD
+        for (stage in 1 until 100) {
             val start = Instant.now()
             val evolvedMessage = "evolved input $stage"
-            val addList: List<String> = if (constant) { if (stage == 1) listOf(extraPartiesX500[stage-1]) else emptyList() } else listOf(extraPartiesX500[stage-1])
-            val removeList: List<String> = if (constant) emptyList() else  (if (stage >= 2) listOf(extraPartiesX500[stage-2]) else emptyList())
-            println("adding participants $addList  and removing participants $removeList")
+            val addList: List<String> = when (mode) {
+                EvolveMode.ADD_AND_REMOVE, EvolveMode.ADD -> if (stage < extraParties) listOf(extraPartiesX500[stage-1]) else emptyList()
+                EvolveMode.NO_EXTRAS -> emptyList()
+            }
+            val removeList: List<String> = when(mode) {
+                EvolveMode.ADD_AND_REMOVE -> if (stage > 2) listOf(extraPartiesX500[stage-2]) else emptyList()
+                EvolveMode.ADD, EvolveMode.NO_EXTRAS -> emptyList()
+            }
+            println("mode ${mode.name} adding participants $addList  and removing participants $removeList")
             val evolveRequestId = startRestFlow(
                 bobHoldingId,
                 mapOf(
