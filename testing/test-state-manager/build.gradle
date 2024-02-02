@@ -18,5 +18,5 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
 }

@@ -32,7 +32,7 @@ dependencies {
     implementation "net.corda:corda-config-schema"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
     implementation "info.picocli:picocli:$picocliVersion"
     implementation libs.javalin
     constraints {

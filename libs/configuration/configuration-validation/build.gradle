@@ -20,7 +20,7 @@ dependencies {
     implementation project(':libs:utilities')
 
     implementation libs.jackson.databind
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
     implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
     constraints {
         implementation("com.ethlo.time:itu:$comEthloTimeItuVersion") {
