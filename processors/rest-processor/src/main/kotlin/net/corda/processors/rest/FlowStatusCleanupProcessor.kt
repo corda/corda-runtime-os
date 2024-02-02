@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.UUID
 
-class FlowStatusCleanupProcessor (
+class FlowStatusCleanupProcessor(
     config: SmartConfig,
     private val stateManager: StateManager,
     private val now: () -> Instant = Instant::now,
@@ -29,7 +29,7 @@ class FlowStatusCleanupProcessor (
         private val logger = LoggerFactory.getLogger(FlowStatusCleanupProcessor::class.java)
         private val TERMINAL_STATES = setOf(FlowStates.COMPLETED, FlowStates.FAILED, FlowStates.KILLED)
         private const val FLOW_STATUS_METADATA_KEY = "flowStatus"
-        private const val BATCH_SIZE = 200
+        private const val BATCH_SIZE = 500
     }
 
     override val keyClass: Class<String> = String::class.java
@@ -41,7 +41,7 @@ class FlowStatusCleanupProcessor (
             logger.trace { "Processing flow status cleanup trigger scheduled at ${trigger.timestamp}" }
 
             getStaleFlowStatuses()
-                .map{ FlowStatusRecord(it.key, it.value.version) }
+                .map { FlowStatusRecord(it.key, it.value.version) }
                 .chunked(batchSize)
                 .map { Record(REST_FLOW_STATUS_CLEANUP_TOPIC, UUID.randomUUID(), ExecuteFlowStatusCleanup(it)) }
         } ?: emptyList()

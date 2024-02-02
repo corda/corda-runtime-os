@@ -49,10 +49,12 @@ class FlowStatusCleanupProcessorTest {
         assertThat(output.size).isEqualTo(1)
         assertThat(output[0].value)
             .isEqualTo(
-                ExecuteFlowStatusCleanup(listOf(
-                    FlowStatusRecord("key0", 0),
-                    FlowStatusRecord("key1", 0),
-                    FlowStatusRecord("key2", 0))
+                ExecuteFlowStatusCleanup(
+                    listOf(
+                        FlowStatusRecord("key0", 0),
+                        FlowStatusRecord("key1", 0),
+                        FlowStatusRecord("key2", 0)
+                    )
                 )
             )
     }
@@ -68,14 +70,18 @@ class FlowStatusCleanupProcessorTest {
         val output = flowStatusCleanupProcessor.onNext(inputRecords)
 
         assertThat(output.size).isEqualTo(2)
-        assertThat(output.map {it.value}).isEqualTo(
+        assertThat(output.map { it.value }).isEqualTo(
             listOf(
-                ExecuteFlowStatusCleanup(listOf(
-                    FlowStatusRecord("key0", 0),
-                    FlowStatusRecord("key1", 0))
+                ExecuteFlowStatusCleanup(
+                    listOf(
+                        FlowStatusRecord("key0", 0),
+                        FlowStatusRecord("key1", 0)
+                    )
                 ),
-                ExecuteFlowStatusCleanup(listOf(
-                    FlowStatusRecord("key2", 0))
+                ExecuteFlowStatusCleanup(
+                    listOf(
+                        FlowStatusRecord("key2", 0)
+                    )
                 )
             )
         )
