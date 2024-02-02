@@ -207,7 +207,7 @@
 {{- $ := index . 0 -}}
 {{- $workerName := index . 1 -}}
 {{- $workerConfig := index . 2 -}}
-{{- range $stateType, $runtimeSettings  := $workerConfig.stateManager }}
+{{- range $stateType, $runtimeSettings := $workerConfig.stateManager }}
 {{-   $volumeName := include "corda.sm.runtimeCredentialsVolumeName" $stateType }}
 {{-   $stateTypeRootConfig := ( index $.Values.stateManager $stateType ) }}
 {{-   $connectionSettings := fromYaml ( include "corda.db.configuration" ( list $ $stateTypeRootConfig.storageId ( printf "stateManager.%s.storageId" $stateType ) ) ) }}
@@ -291,7 +291,7 @@
 {{- $workerKebabCase := include "corda.kebabCase" $workerName -}}
 {{- with index . 0 }}
 - name: {{ ( printf "generate-%s-runtime-configuration" $workerKebabCase ) | quote }}
-  image: {{ include "corda.bootstrapCliImage" $ }}
+  image: {{ include "corda.workerImage" ( list $ $workerConfig ) }}
   imagePullPolicy: {{ $.Values.imagePullPolicy }}
   {{- include "corda.containerSecurityContext" $ | nindent 2 }}
   command: [ 'sh', '-c', '-e' ]

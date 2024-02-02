@@ -372,7 +372,6 @@ spec:
           {{- range $i, $arg := $optionalArgs.additionalWorkerArgs }}
           - {{ $arg | quote }}
           {{- end -}}
-          {{- $stateManagerV2 := include "corda.sm.required" ( list $ . ) -}}
           {{- if eq $stateManagerV2 "true" }}
           {{-   include "corda.sm.runtimeConfigurationParameters" . | nindent 10 -}}
           {{- end }}
@@ -469,7 +468,6 @@ spec:
             path: {{ $.Values.dumpHostPath }}/{{ $.Release.Namespace }}/
             type: DirectoryOrCreate
         {{- end -}}
-        {{- $stateManagerV2 := include "corda.sm.required" ( list $ . ) -}}
         {{- if eq $stateManagerV2 "true" }}
         {{-   include "corda.sm.runtimeCredentialVolumes" ( list $ $worker . )  | nindent 8 -}}
         {{- end -}}
