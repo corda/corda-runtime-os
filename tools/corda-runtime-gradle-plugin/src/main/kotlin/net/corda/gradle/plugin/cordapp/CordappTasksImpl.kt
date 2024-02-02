@@ -8,7 +8,7 @@ import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
 import java.io.File
 import java.io.FileInputStream
 
-class CordappTasksImpl(var pc: ProjectContext){
+class CordappTasksImpl(var pc: ProjectContext) {
 
     /**
      * Creates a group Policy based on the network config file and outputs it to the Group Policy json file.
@@ -55,13 +55,20 @@ class CordappTasksImpl(var pc: ProjectContext){
         validateGroupPolicyHasAllMembers(groupPolicy)
     }
 
-    private fun validateGroupPolicyHasAllMembers(groupPolicy: GroupPolicyDTO){
+    private fun validateGroupPolicyHasAllMembers(groupPolicy: GroupPolicyDTO) {
         val membersNames = groupPolicy.protocolParameters?.staticNetwork?.members?.map { it.name }
-        pc.networkConfig.vNodes.forEach { requiredNode ->
-            if (membersNames?.any { requiredNode.x500Name == it } != true) {
-                throw CordaRuntimeGradlePluginException(
-                    "GroupPolicy File does not contain member ${requiredNode.x500Name} specified in the networkConfigFile"
-                )
+        val requiredNodes = pc.networkConfig.vNodes
+        if (requiredNodes.isNotEmpty() && membersNames == null) {
+            throw CordaRuntimeGradlePluginException(
+                "GroupPolicy File does not contain any members"
+            )
+        } else {
+            requiredNodes.forEach { requiredNode ->
+                if (!membersNames!!.contains(requiredNode.x500Name)) {
+                    throw CordaRuntimeGradlePluginException(
+                        "GroupPolicy File does not contain member ${requiredNode.x500Name} specified in the networkConfigFile"
+                    )
+                }
             }
         }
     }
@@ -108,10 +115,10 @@ class CordappTasksImpl(var pc: ProjectContext){
     }
 
     /**
-     * Builds the Cpis for the CordDapp and the Notary
+     * Builds the CPIs for the CordDapp and the Notary
      */
     fun buildCPIs() {
-        pc.logger.quiet("Creating ${pc.corDappCpiName} Cpi.")
+        pc.logger.quiet("Creating ${pc.corDappCpiName} CPI.")
         BuildCpiHelper().createCPI(
             pc.javaBinDir,
             pc.cordaCliBinDir,
@@ -124,7 +131,7 @@ class CordappTasksImpl(var pc: ProjectContext){
             pc.corDappCpiName,
             pc.project.version.toString()
         )
-        pc.logger.quiet("Creating ${pc.notaryCpiName} Cpi.")
+        pc.logger.quiet("Creating ${pc.notaryCpiName} CPI.")
         BuildCpiHelper().createCPI(
             pc.javaBinDir,
             pc.cordaCliBinDir,
@@ -178,7 +185,7 @@ class CordappTasksImpl(var pc: ProjectContext){
             pc.corDappCpiUploadStatusFilePath,
             pc.cpiUploadTimeout
         )
-        pc.logger.quiet("Cpi ${pc.corDappCpiName} uploaded: ${cpiUploadStatus.cpiFileChecksum}")
+        pc.logger.quiet("CPI ${pc.corDappCpiName} uploaded: ${cpiUploadStatus.cpiFileChecksum}")
         val notaryUploadStatus = helper.uploadCpi(
             pc.cordaClusterURL,
             pc.cordaRpcUser,
@@ -189,6 +196,6 @@ class CordappTasksImpl(var pc: ProjectContext){
             pc.notaryCpiUploadStatusFilePath,
             pc.cpiUploadTimeout
         )
-        pc.logger.quiet("Cpi ${pc.notaryCpiName} uploaded: ${notaryUploadStatus.cpiFileChecksum}")
+        pc.logger.quiet("CPI ${pc.notaryCpiName} uploaded: ${notaryUploadStatus.cpiFileChecksum}")
     }
 }

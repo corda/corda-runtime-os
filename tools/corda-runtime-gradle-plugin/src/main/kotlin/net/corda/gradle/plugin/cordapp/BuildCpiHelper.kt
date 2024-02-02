@@ -21,7 +21,7 @@ class BuildCpiHelper {
         // Get Cpb
         val cpbFile = File(cpbFilePath)
         if (!cpbFile.exists()) {
-            throw CordaRuntimeGradlePluginException("Cpb file not found at: $cpbFilePath.")
+            throw CordaRuntimeGradlePluginException("CPB file not found at: $cpbFilePath.")
         }
         // Clear previous cpi if it exists
         val cpiFile = File(cpiFilePath)

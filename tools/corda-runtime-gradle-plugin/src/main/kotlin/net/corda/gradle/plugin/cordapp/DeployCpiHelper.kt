@@ -80,13 +80,13 @@ class DeployCpiHelper {
                 .asJson()
         }
         if (response.status != HttpURLConnection.HTTP_OK) {
-            throw CordaRuntimeGradlePluginException("Failed to request upload of cpi: '$cpiName'.")
+            throw CordaRuntimeGradlePluginException("Failed to request upload of CPI: '$cpiName'.")
         }
 
         val requestId = try {
             mapper.readValue(response.body.toString(), CpiUploadResponseDTO::class.java).id!!
         } catch (e: Exception) {
-            throw CordaRuntimeGradlePluginException("Failed to request upload of cpi: '$cpiName'.")
+            throw CordaRuntimeGradlePluginException("Failed to request upload of CPI: '$cpiName'.", e)
         }
 
         val cpiUploadStatus = pollForCpiUpload(
@@ -101,7 +101,7 @@ class DeployCpiHelper {
     }
 
     /**
-     * Checks if a Cpi has previously been uploaded by comparing the cpiName and cpiVersion to cpis already uploaded.
+     * Checks if a CPI has previously been uploaded by comparing the cpiName and cpiVersion to CPIs already uploaded.
      */
     private fun cpiPreviouslyUploaded(
         cordaClusterURL: String,
@@ -115,7 +115,7 @@ class DeployCpiHelper {
             .asJson()
 
         if (response.status != HttpURLConnection.HTTP_OK) {
-            throw CordaRuntimeGradlePluginException("Failed to check Cpis, response status:  ${response.status}.")
+            throw CordaRuntimeGradlePluginException("Failed to check CPIs, response status:  ${response.status}.")
         }
 
         try {
@@ -126,12 +126,12 @@ class DeployCpiHelper {
             }
             return false
         } catch (e: Exception) {
-            throw CordaRuntimeGradlePluginException("Failed to check Cpis with exception: $e.")
+            throw CordaRuntimeGradlePluginException("Failed to check CPIs with exception: ${e.message}.", e)
         }
     }
 
     /**
-     * Polls to see if a request to upload a Cpi has been successful.
+     * Polls to see if a request to upload a CPI has been successful.
      * The timeout is controlled by setting the cpiUploadTimeout property
      */
     private fun pollForCpiUpload(
@@ -170,12 +170,12 @@ class DeployCpiHelper {
                 cpiUploadStatus = mapper.readValue(response.body.toString(), CpiUploadStatus::class.java)
                 if (cpiUploadStatus.status != "OK")
                     throw CordaRuntimeGradlePluginException(
-                        "Failed to verify Cpi Upload Status, current status: ${cpiUploadStatus.status}."
+                        "CPI Upload Status is not OK, current status:${cpiUploadStatus.status}."
                     )
             }
             .ifFailure(
                 fun(response: HttpResponse<JsonNode>) {
-                    throw CordaRuntimeGradlePluginException("Failed to get Cpi Upload Status, response status: ${response.status}.")
+                    throw CordaRuntimeGradlePluginException("Failed to get CPI Upload Status, response status: ${response.status}.")
                 }
             )
         return cpiUploadStatus
