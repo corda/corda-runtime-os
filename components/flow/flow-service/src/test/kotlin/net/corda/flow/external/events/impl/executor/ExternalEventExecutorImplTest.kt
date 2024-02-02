@@ -5,6 +5,7 @@ import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.services.MockFlowFiberService
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.serialization.SerializedBytes
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -20,7 +21,7 @@ import kotlin.test.assertNotEquals
 
 class ExternalEventExecutorImplTest {
     private lateinit var mockFlowFiberService: MockFlowFiberService
-    private lateinit var serializationService: SerializationServiceInternal
+    private lateinit var serializationService: SerializationService
     private lateinit var externalEventExecutorImpl: ExternalEventExecutorImpl
 
     private val capturedArguments = mutableListOf<FlowIORequest.ExternalEvent>()
