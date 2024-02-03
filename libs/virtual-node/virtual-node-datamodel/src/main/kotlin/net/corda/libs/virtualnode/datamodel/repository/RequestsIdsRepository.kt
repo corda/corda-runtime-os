@@ -29,7 +29,7 @@ class RequestsIdsRepositoryImpl : RequestsIdsRepository {
                 """
                 DELETE FROM $VNODE_PERSISTENCE_REQUEST_ID_TABLE
                 WHERE insert_ts < NOW() - INTERVAL '1' SECOND * ? 
-            """.trimIndent()
+                """.trimIndent()
             ).also {
                 it.setLong(1, intervalInSeconds)
             }.executeUpdate()

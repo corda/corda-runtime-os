@@ -110,7 +110,7 @@ class RequestsIdsRepositoryTest {
                 """
                 INSERT INTO ${DbSchema.VNODE_PERSISTENCE_REQUEST_ID_TABLE}(request_id, insert_ts)
                 VALUES (?,?)
-            """.trimIndent()
+                """.trimIndent()
             ).also {
                 it.setString(1, requestId1.toString())
                 it.setTimestamp(2, Timestamp.from(Instant.now().minusSeconds(10)))
@@ -119,7 +119,7 @@ class RequestsIdsRepositoryTest {
                 """
                 INSERT INTO ${DbSchema.VNODE_PERSISTENCE_REQUEST_ID_TABLE}(request_id, insert_ts)
                 VALUES (?,?)
-            """.trimIndent()
+                """.trimIndent()
             ).also {
                 it.setString(1, requestId2.toString())
                 it.setTimestamp(2, Timestamp.from(Instant.now().plusSeconds(10)))
