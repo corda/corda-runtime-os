@@ -9,6 +9,7 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef
 import java.math.BigDecimal
+import java.sql.Timestamp
 import java.time.Instant
 import javax.persistence.EntityManager
 
@@ -97,13 +98,11 @@ interface UtxoRepository {
 
     /** Persists transaction component leaf [data] (operation is idempotent) */
     @Suppress("LongParameterList")
-    fun persistTransactionComponentLeaf(
+    fun persistTransactionComponents(
         entityManager: EntityManager,
         transactionId: String,
-        groupIndex: Int,
-        leafIndex: Int,
-        data: ByteArray,
-        hash: String
+        components: List<List<ByteArray>>,
+        hash: (ByteArray) -> String
     )
 
     /** Persists transaction output (operation is idempotent) */
@@ -127,12 +126,11 @@ interface UtxoRepository {
     )
 
     /** Persists transaction [signature] (operation is idempotent) */
-    fun persistTransactionSignature(
+    fun persistTransactionSignatures(
         entityManager: EntityManager,
         transactionId: String,
-        index: Int,
-        signature: DigitalSignatureAndMetadata,
-        timestamp: Instant
+        signatures: List<DigitalSignatureAndMetadata>,
+        timestamp: Timestamp
     )
 
     /**
