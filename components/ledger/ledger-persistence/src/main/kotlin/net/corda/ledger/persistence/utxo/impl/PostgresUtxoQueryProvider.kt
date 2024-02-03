@@ -45,8 +45,8 @@ class PostgresUtxoQueryProvider @Activate constructor(
 
     override val persistTransactionComponentLeaf: String
         get() = """
-            INSERT INTO {h-schema}utxo_transaction_component(transaction_id, group_idx, leaf_idx, data, hash)
-                VALUES(:transactionId, :groupIndex, :leafIndex, :data, :hash)
+            INSERT INTO utxo_transaction_component(transaction_id, group_idx, leaf_idx, data, hash)
+                VALUES (?, ?, ?, ?, ?)
             ON CONFLICT DO NOTHING"""
             .trimIndent()
 
@@ -65,10 +65,9 @@ class PostgresUtxoQueryProvider @Activate constructor(
 
     override val persistTransactionSignature: String
         get() = """
-            INSERT INTO {h-schema}utxo_transaction_signature(
+            INSERT INTO utxo_transaction_signature(
                 transaction_id, signature_idx, signature, pub_key_hash, created)
-            VALUES (
-                :transactionId, :signatureIdx, :signature, :publicKeyHash, :createdAt)
+            VALUES (?, ?, ?, ?, ?)
             ON CONFLICT DO NOTHING"""
             .trimIndent()
 
