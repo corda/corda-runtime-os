@@ -105,9 +105,9 @@ class GroupParametersReconcilerTest {
         on { createCoordinator(any(), any()) } doReturn coordinator
     }
     private val dbConnectionManager: DbConnectionManager = mock {
-        on { createEntityManagerFactory(eq(vnode1.vaultDmlConnectionId), any()) } doReturn emf1
-        on { createEntityManagerFactory(eq(vnode2.vaultDmlConnectionId), any()) } doReturn emf2
-        on { createEntityManagerFactory(eq(vnode3.vaultDmlConnectionId), any()) } doReturn emf3
+        on { createEntityManagerFactory(eq(vnode1.vaultDmlConnectionId), any(), eq(true)) } doReturn emf1
+        on { createEntityManagerFactory(eq(vnode2.vaultDmlConnectionId), any(), eq(true)) } doReturn emf2
+        on { createEntityManagerFactory(eq(vnode3.vaultDmlConnectionId), any(), eq(true)) } doReturn emf3
     }
 
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
@@ -227,7 +227,7 @@ class GroupParametersReconcilerTest {
             // call terminal operation to process stream
             groupParametersReconciler.dbReconcilerReader?.getAllVersionedRecords()?.count()
 
-            verify(dbConnectionManager, times(2)).createEntityManagerFactory(any(), any())
+            verify(dbConnectionManager, times(2)).createEntityManagerFactory(any(), any(), any())
             verify(em1).criteriaBuilder
             verify(em1).createQuery(any<CriteriaQuery<GroupParametersEntity>>())
             verify(em2).criteriaBuilder
