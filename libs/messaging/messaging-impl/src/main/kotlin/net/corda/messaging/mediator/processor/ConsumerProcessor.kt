@@ -121,7 +121,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             var groups = groupAllocator.allocateGroups(inputs, config)
 
             val lock = ReentrantLock()
-            val taskDurations = mutableListOf<Long>()
+            val eventsMetrics = mutableListOf<EventMetrics>()
             while (groups.isNotEmpty()) {
                 val groupStartTimestamp = System.nanoTime()
                 // Process each group on a thread
@@ -130,10 +130,11 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 }.map { group ->
                     val future = taskManager.executeShortRunningTask {
                         val taskStartTimestamp = System.nanoTime()
-                        val result = eventProcessor.processEvents(group, topic, metrics)
-                        val taskDuration = System.nanoTime() - taskStartTimestamp
+                        val eventMetrics = EventMetrics(topic, metrics)
+                        val result = eventProcessor.processEvents(group, eventMetrics)
+                        eventMetrics.taskTime = System.nanoTime() - taskStartTimestamp
                         lock.lock()
-                        taskDurations.add(taskDuration)
+                        eventsMetrics.add(eventMetrics)
                         lock.unlock()
                         result
                     }
@@ -163,8 +164,9 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                     it.toString()
                 }
                 metrics.timer(topic, "GROUP").record(System.nanoTime() - groupStartTimestamp, TimeUnit.NANOSECONDS)
-                taskDurations.sorted().forEachIndexed() { index, duration ->
-                    metrics.timer(topic, "TASK$index").record(duration, TimeUnit.NANOSECONDS)
+                eventsMetrics.sortedBy { it.taskTime }.forEachIndexed() { index, eventMetrics ->
+                    eventMetrics.index = index
+                    eventMetrics.record()
                 }
 
                 // Persist state changes, send async outputs and setup to reprocess states that fail to persist
