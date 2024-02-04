@@ -16,7 +16,7 @@ class InputData(val timestamp: Instant = Instant.now()) {
         override fun toString(): String {
             val proc = Duration.ofNanos(procTime)
             val rpc = Duration.ofNanos(rpcTime)
-            return "event=$event, proceTime=$proc, rpcCount=$rpcCount, rpcTime=$rpc, rpcOp=$rpcOp"
+            return "event=$event, procTime=$proc, rpcCount=$rpcCount, rpcTime=$rpc, rpcOp=$rpcOp"
         }
     }
 

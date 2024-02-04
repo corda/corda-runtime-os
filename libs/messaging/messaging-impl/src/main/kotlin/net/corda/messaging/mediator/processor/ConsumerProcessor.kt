@@ -187,6 +187,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                     (inputDataPerTopic[topic])?.let {
                         log.info("InputData topic=$topic, $it")
                     }
+                    inputDataPerTopic.remove(topic)
                 }
 
                 // Persist state changes, send async outputs and setup to reprocess states that fail to persist
