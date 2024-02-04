@@ -36,6 +36,7 @@ import net.corda.p2p.linkmanager.metrics.recordInboundHeartbeatMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordInboundMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordInboundSessionMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
+import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl.Companion.LINK_MANAGER_SUBSYSTEM
 import net.corda.schema.Schemas
 import net.corda.tracing.traceEventProcessing
 import net.corda.utilities.debug
@@ -57,7 +58,6 @@ internal class InboundMessageProcessor(
     EventLogProcessor<String, LinkInMessage> {
 
     private companion object {
-        const val LINK_MANAGER_SUBSYSTEM = "link-manager"
         val logger: Logger = LoggerFactory.getLogger(this::class.java.name)
         const val tracingEventName = "P2P Link Manager Inbound Event"
     }
@@ -306,9 +306,10 @@ internal class InboundMessageProcessor(
                 }
                 is AuthenticatedMessageAndKey -> {
                     val authenticatedMessage = innerMessage.message
-                    val header = authenticatedMessage.header
                     recordInboundMessagesMetric(authenticatedMessage)
-                    if (header.subsystem == LINK_MANAGER_SUBSYSTEM) {
+                    if (authenticatedMessage.header.subsystem == LINK_MANAGER_SUBSYSTEM) {
+                        logger.info("Received message indicating a session was lost by the counterparty. The " +
+                                "corresponding outbound session will be deleted.")
                         sessionManager.deleteOutboundSession(counterparties.reverse(), authenticatedMessage)
                     } else {
                         checkIdentityBeforeProcessing(

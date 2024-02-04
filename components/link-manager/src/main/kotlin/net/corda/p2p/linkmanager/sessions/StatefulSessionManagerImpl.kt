@@ -75,11 +75,12 @@ internal class StatefulSessionManagerImpl(
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val schemaRegistry: AvroSchemaRegistry,
 ) : SessionManager {
-    private companion object {
-        const val CACHE_SIZE = 10_000L
+    companion object {
         const val LINK_MANAGER_SUBSYSTEM = "link-manager"
-        val SESSION_VALIDITY_PERIOD: Duration = Duration.ofDays(7)
-        val logger: Logger = LoggerFactory.getLogger(StatefulSessionManagerImpl::class.java)
+
+        private const val CACHE_SIZE = 10_000L
+        private val SESSION_VALIDITY_PERIOD: Duration = Duration.ofDays(7)
+        private val logger: Logger = LoggerFactory.getLogger(StatefulSessionManagerImpl::class.java)
     }
 
     override fun <T> processOutboundMessages(
@@ -407,7 +408,9 @@ internal class StatefulSessionManagerImpl(
             logger.warn("Could not delete outbound session '{}' lost by counterparty.", sessionId)
             return
         }
-        sessionExpiryScheduler.deleteOutboundSession(key)
+        stateManager.get(listOf(key)).values.firstOrNull()?.let {
+            sessionExpiryScheduler.forgetState(it)
+        }
     }
 
     private data class InboundSessionMessageContext<T>(
@@ -1168,6 +1171,8 @@ internal class StatefulSessionManagerImpl(
             .setMessageId(UUID.randomUUID().toString())
             .setSubsystem(LINK_MANAGER_SUBSYSTEM)
             .setStatusFilter(MembershipStatusFilter.ACTIVE)
+            .setTtl(null)
+            .setTraceId(null)
             .build()
         val message = AuthenticatedMessage.newBuilder()
             .setHeader(header)

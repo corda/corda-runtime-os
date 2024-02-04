@@ -20,7 +20,6 @@ internal interface SessionManager : LifecycleWithDominoTile {
     fun messageAcknowledged(sessionId: String)
     fun dataMessageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity)
     fun dataMessageSent(session: Session)
-
     fun deleteOutboundSession(counterParties: Counterparties, message: AuthenticatedMessage)
 
     data class SessionCounterparties(

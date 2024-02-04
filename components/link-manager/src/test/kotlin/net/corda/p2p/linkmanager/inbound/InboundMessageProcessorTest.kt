@@ -60,6 +60,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import net.corda.p2p.linkmanager.TraceableItem
+import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl.Companion.LINK_MANAGER_SUBSYSTEM
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 
@@ -439,6 +440,52 @@ class InboundMessageProcessorTest {
             verify(networkMessagingValidator).isValidInbound(eq(myIdentity), eq(remoteIdentity))
             verify(sessionManager, never()).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
+
+        @Test
+        fun `AuthenticatedDataMessage with Inbound session and Link Manager subsystem will delete corresponding outbound session`() {
+            val authenticatedMsg = AuthenticatedMessage(
+                AuthenticatedMessageHeader(
+                    myIdentity.toAvro(),
+                    remoteIdentity.toAvro(),
+                    null, MESSAGE_ID, "trace-id", LINK_MANAGER_SUBSYSTEM, status
+                ),
+                ByteBuffer.wrap("payload".toByteArray())
+            )
+            val authenticatedMessageAndKey = AuthenticatedMessageAndKey(
+                authenticatedMsg,
+                "key"
+            )
+            val messageAndPayload = DataMessagePayload(authenticatedMessageAndKey)
+            val authenticationResult = mock<AuthenticationResult> {
+                on { header } doReturn commonHeader
+                on { mac } doReturn byteArrayOf()
+            }
+            val session = mock<AuthenticatedSession> {
+                on { createMac(any()) } doReturn authenticationResult
+            }
+            setupGetSessionsById(
+                SessionManager.SessionDirection.Inbound(
+                    SessionManager.Counterparties(
+                        remoteIdentity,
+                        myIdentity
+                    ),
+                    session
+                )
+            )
+            val dataMessage = AuthenticatedDataMessage(
+                commonHeader,
+                messageAndPayload.toByteBuffer(), ByteBuffer.wrap(byteArrayOf())
+            )
+
+            processor.onNext(
+                listOf(
+                    EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0),
+                )
+            )
+
+
+            verify(sessionManager).deleteOutboundSession(SessionManager.Counterparties(myIdentity, remoteIdentity), authenticatedMsg)
+        }
     }
 
     @Nested
@@ -744,6 +791,58 @@ class InboundMessageProcessorTest {
             verify(sessionManager, never()).messageAcknowledged(any())
             verify(networkMessagingValidator).isValidInbound(myIdentity, remoteIdentity)
             verify(sessionManager, never()).dataMessageReceived(eq(SESSION_ID), any(), any())
+        }
+
+        @Test
+        fun `receiving data message with Inbound session and Link Manager subsystem will delete corresponding outbound session`() {
+            val authenticatedMsg = AuthenticatedMessage(
+                AuthenticatedMessageHeader(
+                    myIdentity.toAvro(),
+                    remoteIdentity.toAvro(),
+                    null, MESSAGE_ID, "trace-id", LINK_MANAGER_SUBSYSTEM, status
+                ),
+                ByteBuffer.wrap("payload".toByteArray())
+            )
+            val authenticatedMessageAndKey = AuthenticatedMessageAndKey(
+                authenticatedMsg,
+                "key"
+            )
+            val messageAndPayload = DataMessagePayload(authenticatedMessageAndKey)
+            val encryptionResult = mock<EncryptionResult> {
+                on { header } doReturn commonHeader
+                on { authTag } doReturn byteArrayOf()
+                on { encryptedPayload } doReturn messageAndPayload.toByteBuffer().array()
+            }
+            val dataMessage = AuthenticatedEncryptedDataMessage(
+                commonHeader,
+                messageAndPayload.toByteBuffer(), ByteBuffer.wrap(byteArrayOf())
+            )
+            val session = mock<AuthenticatedEncryptionSession> {
+                on { encryptData(any()) } doReturn encryptionResult
+                on {
+                    decryptData(
+                        commonHeader, messageAndPayload.toByteBuffer().array(), byteArrayOf()
+                    )
+                } doReturn messageAndPayload.toByteBuffer().array()
+            }
+            setupGetSessionsById(
+                SessionManager.SessionDirection.Inbound(
+                    SessionManager.Counterparties(
+                        remoteIdentity,
+                        myIdentity
+                    ),
+                    session
+                )
+            )
+
+            processor.onNext(
+                listOf(
+                    EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0),
+                )
+            )
+
+
+            verify(sessionManager).deleteOutboundSession(SessionManager.Counterparties(myIdentity, remoteIdentity), authenticatedMsg)
         }
     }
 
