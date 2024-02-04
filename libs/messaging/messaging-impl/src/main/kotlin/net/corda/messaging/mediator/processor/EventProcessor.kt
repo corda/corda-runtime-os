@@ -1,5 +1,8 @@
 package net.corda.messaging.mediator.processor
 
+import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.session.SessionData
 import net.corda.data.messaging.mediator.MediatorState
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorMessage
@@ -33,6 +36,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     fun processEvents(
         inputs: Map<K, EventProcessingInput<K, E>>,
         eventMetrics: EventMetrics,
+        inputData: InputData
     ): Map<K, EventProcessingOutput> {
         val startTime = System.nanoTime()
         return inputs.mapValues { (key, input) ->
@@ -72,8 +76,19 @@ class EventProcessor<K : Any, S : Any, E : Any>(
 
                         val returnedMessages = processSyncEvents(key, syncEvents)
                         eventMetrics.rpcCount += syncEvents.size
-                        eventMetrics.rpcTime += System.nanoTime() - t2
+                        val rpc1Time = System.nanoTime() - t2
+                        eventMetrics.rpcTime += rpc1Time
                         queue.addAll(returnedMessages)
+
+                        inputData.events.add(
+                            InputData.EventData(
+                                eventStr(event.value),
+                                eventMetrics.proc1Time,
+                                syncEvents.size,
+                                syncEvents.firstOrNull()?.getProperty<String>(MessagingClient.MSG_PROP_ENDPOINT) ?: "",
+                                rpc1Time
+                            )
+                        )
                     }
                     //metrics.recordSize(topic, "GROUP_PROC_COUNT", processedCount)
                     //metrics.recordSize(topic, "GROUP_RPC_COUNT", rpcCount)
@@ -102,9 +117,28 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                 else -> StateChangeAndOperation.Noop
             }
             eventMetrics.totalTime = System.nanoTime() - startTime
+            inputData.totalTime = eventMetrics.totalTime
 
             EventProcessingOutput(asyncOutputs.values.flatten(), stateChangeAndOperation)
         }
+    }
+
+    private fun eventStr(value: E?): String {
+        return if (value is FlowEvent) {
+            val payload = value.payload
+            if (payload is SessionEvent) {
+                val sessionPayload = payload.payload
+                if (sessionPayload is SessionData) {
+                    "${sessionPayload.javaClass.simpleName}#init=${sessionPayload.sessionInit != null}"
+                } else {
+                    sessionPayload?.javaClass?.simpleName
+                }
+            } else {
+                payload?.javaClass?.simpleName
+            }
+        } else {
+            value?.javaClass?.simpleName
+        } ?: ""
     }
 
     private fun createNewMediatorState(): MediatorState {

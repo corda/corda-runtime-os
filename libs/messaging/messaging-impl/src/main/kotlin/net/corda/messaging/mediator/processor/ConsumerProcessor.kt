@@ -22,7 +22,9 @@ import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.CompletionException
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.locks.ReentrantLock
@@ -50,6 +52,8 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
 ) {
     private companion object {
         private const val EVENT_PROCESSING_TIMEOUT_MILLIS = 30000L // 30 seconds
+        val inputDataPerTopic = ConcurrentHashMap<String, InputData>()
+        var inputDataTimestamp = Instant.now()
     }
 
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.name}")
@@ -122,6 +126,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
 
             val lock = ReentrantLock()
             val eventsMetrics = mutableListOf<EventMetrics>()
+            val inputsData = mutableListOf<InputData>()
             while (groups.isNotEmpty()) {
                 val groupStartTimestamp = System.nanoTime()
                 // Process each group on a thread
@@ -131,10 +136,12 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                     val future = taskManager.executeShortRunningTask {
                         val taskStartTimestamp = System.nanoTime()
                         val eventMetrics = EventMetrics(topic, metrics)
-                        val result = eventProcessor.processEvents(group, eventMetrics)
+                        val inputData = InputData()
+                        val result = eventProcessor.processEvents(group, eventMetrics, inputData)
                         eventMetrics.taskTime = System.nanoTime() - taskStartTimestamp
                         lock.lock()
                         eventsMetrics.add(eventMetrics)
+                        inputsData.add(inputData)
                         lock.unlock()
                         result
                     }
@@ -167,6 +174,19 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 eventsMetrics.sortedBy { it.taskTime }.forEachIndexed() { index, eventMetrics ->
                     eventMetrics.index = index
                     eventMetrics.record()
+                }
+
+                val maxInputData = inputsData.maxBy { it.totalTime }
+                val topicInputData = inputDataPerTopic[topic]
+                if (topicInputData == null || topicInputData.totalTime < maxInputData.totalTime) {
+                    inputDataPerTopic[topic] = maxInputData
+                }
+                val ts = Instant.now()
+                if (ts.isAfter(inputDataTimestamp)) {
+                    inputDataTimestamp = ts.plusSeconds(15)
+                    (inputDataPerTopic[topic])?.let {
+                        log.info("InputData topic=$topic, $it")
+                    }
                 }
 
                 // Persist state changes, send async outputs and setup to reprocess states that fail to persist
