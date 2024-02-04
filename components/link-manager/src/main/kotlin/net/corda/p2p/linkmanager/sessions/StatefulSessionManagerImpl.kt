@@ -311,8 +311,6 @@ internal class StatefulSessionManagerImpl(
                 }
         }
 
-        // Return NoSession for sessions not found
-
         return (allCached.values + inboundSessionsFromStateManager + outboundSessionsFromStateManager).flatMap {  (traceables, direction) ->
             traceables.map {
                 it to direction
