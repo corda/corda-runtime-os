@@ -121,7 +121,10 @@ class CryptoRekeyBusProcessor(
                                 .map { wki -> tenantId to wki }
                         }
                     } catch (ex: Exception) {
-                        logger.warn("A wrappingRepositoryFactory could not be created for ${tenantId} because:", ex)
+                        logger.warn(
+                            "A wrappingRepositoryFactory could not be created and queried for ${tenantId} because:",
+                            ex
+                        )
                         null
                     }
                 }.filterNotNull().flatten()
