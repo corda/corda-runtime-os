@@ -64,103 +64,119 @@ class CryptoRekeyBusProcessor(
         logger.debug("received ${events.size} key rotation requests")
 
         events.mapNotNull { it.timestamp to it.value }.forEach { (timestamp, request) ->
-            logger.debug("processing $request")
-            require(request != null)
-
-            if (!hasPreviousRotationFinished()) {
-                logger.info("A key rotation is already ongoing, ignoring request to start new one.")
-                return emptyList()
-            }
-
-            when (request.managedKey) {
-                KeyType.UNMANAGED -> {
-                    if (request.oldParentKeyAlias.isNullOrEmpty()) {
-                        logger.info("oldParentKeyAlias missing from unmanaged KeyRotationRequest, ignoring.")
-                        return emptyList()
-                    }
-                    if (request.newParentKeyAlias.isNullOrEmpty()) {
-                        logger.info("newParentKeyAlias missing from unmanaged KeyRotationRequest, ignoring.")
-                        return emptyList()
-                    }
-                    if (request.tenantId != null) {
-                        logger.info("tenantId provided for unmanaged KeyRotationRequest, ignoring.")
-                        return emptyList()
-                    }
-
-                    // Root (unmanaged) keys can be used in clusterDB and vNodeDB. We need to go through all tenants and
-                    // clusterDB, and check if the oldKeyAlias is used there. If yes, we will issue a new record for this key
-                    // to be re-wrapped.
-
-                    val virtualNodeInfo = virtualNodeInfoReadService.getAll() // Get all the virtual nodes
-                    val virtualNodeTenantIds = virtualNodeInfo.map { it.holdingIdentity.shortHash.toString() }
-
-                    // We do not need to use separate wrapping repositories for the different cluster level tenants,
-                    // since they share the cluster crypto database. So we scan over the virtual node tenants and an arbitrary
-                    // choice of cluster level tenant. We pick CryptoTenants.CRYPTO as the arbitrary cluster level tenant,
-                    // and we should not also check CryptoTenants.P2P and CryptoTenants.REST since if we do we'll get duplicate.
-                    val allTenantIds = virtualNodeTenantIds + listOf(CryptoTenants.CRYPTO)
-                    logger.debug("Found ${allTenantIds.size} tenants; first few are: ${allTenantIds.take(10)}")
-                    val targetWrappingKeys = allTenantIds.asSequence().map { tenantId ->
-                        wrappingRepositoryFactory.create(tenantId).use { wrappingRepo ->
-                            wrappingRepo.findKeysWrappedByParentKey(request.oldParentKeyAlias)
-                                .map { wki -> tenantId to wki }
-                        }
-                    }.flatten()
-
-                    if (targetWrappingKeys.none()) {
-                        logger.info("No unmanaged keys to rotate for ${request.oldParentKeyAlias}.")
-                        return emptyList()
-                    }
-
-                    if (!writeStateForUnmanagedKey(targetWrappingKeys, request, timestamp)) {
-                        logger.warn(
-                            "Could not write initial state when attempting to rotate unmanaged keys for " +
-                                "${request.oldParentKeyAlias}."
-                        )
-                        return emptyList()
-                    }
-                    publishIndividualUnmanagedRewrappingRequests(targetWrappingKeys, request)
-                }
-
-                KeyType.MANAGED -> {
-                    if (request.oldParentKeyAlias != null) {
-                        logger.info("oldParentKeyAlias provided for managed KeyRotationRequest, ignoring.")
-                        return emptyList()
-                    }
-                    if (request.newParentKeyAlias != null) {
-                        logger.info("newParentKeyAlias provided for managed KeyRotationRequest, ignoring.")
-                        return emptyList()
-                    }
-                    if (request.tenantId.isNullOrEmpty()) {
-                        logger.info("tenantId missing from managed KeyRotationRequest, ignoring.")
-                        return emptyList()
-                    }
-
-                    val allKeyIdsAndAliases = wrappingRepositoryFactory.create(request.tenantId).use { wrappingRepo ->
-                        wrappingRepo.getAllKeyIdsAndAliases()
-                    }
-
-                    if (allKeyIdsAndAliases.isEmpty()) {
-                        logger.info("No managed keys to rotate for ${request.tenantId}.")
-                        return emptyList()
-                    }
-
-                    if (!writeStateForManagedKey(allKeyIdsAndAliases, request.tenantId, request, timestamp)) {
-                        logger.warn("Could not write initial state when attempting to rotate managed keys for ${request.tenantId}.")
-                        return emptyList()
-                    }
-
-                    publishIndividualManagedRewrappingRequests(
-                        allKeyIdsAndAliases.map { it.first }.toSet(),
-                        request
-                    )
-                }
-
-                else -> logger.info("Invalid KeyRotationRequest message, ignoring.")
+            try {
+                processEvent(request, timestamp)
+            } catch (ex: Exception) {
+                logger.warn("A KeyRotationRequest event could not be processed:", ex)
             }
         }
 
         return emptyList()
+    }
+
+    private fun processEvent(
+        request: KeyRotationRequest?,
+        timestamp: Long
+    ) {
+        logger.debug("processing $request")
+        require(request != null)
+
+        if (!hasPreviousRotationFinished()) {
+            logger.info("A key rotation is already ongoing, ignoring request to start new one.")
+            return
+        }
+
+        when (request.managedKey) {
+            KeyType.UNMANAGED -> {
+                if (request.oldParentKeyAlias.isNullOrEmpty()) {
+                    logger.info("oldParentKeyAlias missing from unmanaged KeyRotationRequest, ignoring.")
+                    return
+                }
+                if (request.newParentKeyAlias.isNullOrEmpty()) {
+                    logger.info("newParentKeyAlias missing from unmanaged KeyRotationRequest, ignoring.")
+                    return
+                }
+                if (request.tenantId != null) {
+                    logger.info("tenantId provided for unmanaged KeyRotationRequest, ignoring.")
+                    return
+                }
+
+                // Root (unmanaged) keys can be used in clusterDB and vNodeDB. We need to go through all tenants and
+                // clusterDB, and check if the oldKeyAlias is used there. If yes, we will issue a new record for this key
+                // to be re-wrapped.
+
+                val virtualNodeInfo = virtualNodeInfoReadService.getAll() // Get all the virtual nodes
+                val virtualNodeTenantIds = virtualNodeInfo.map { it.holdingIdentity.shortHash.toString() }
+
+                // We do not need to use separate wrapping repositories for the different cluster level tenants,
+                // since they share the cluster crypto database. So we scan over the virtual node tenants and an arbitrary
+                // choice of cluster level tenant. We pick CryptoTenants.CRYPTO as the arbitrary cluster level tenant,
+                // and we should not also check CryptoTenants.P2P and CryptoTenants.REST since if we do we'll get duplicate.
+                val allTenantIds = virtualNodeTenantIds + listOf(CryptoTenants.CRYPTO)
+                logger.debug("Found ${allTenantIds.size} tenants; first few are: ${allTenantIds.take(10)}")
+                val targetWrappingKeys = allTenantIds.asSequence().map { tenantId ->
+                    try {
+                        wrappingRepositoryFactory.create(tenantId).use { wrappingRepo ->
+                            wrappingRepo.findKeysWrappedByParentKey(request.oldParentKeyAlias)
+                                .map { wki -> tenantId to wki }
+                        }
+                    } catch (ex: Exception) {
+                        logger.warn("A wrappingRepositoryFactory could not be created for ${tenantId} because:", ex)
+                        null
+                    }
+                }.filterNotNull().flatten()
+
+                if (targetWrappingKeys.none()) {
+                    logger.info("No unmanaged keys to rotate for ${request.oldParentKeyAlias}.")
+                    return
+                }
+
+                if (!writeStateForUnmanagedKey(targetWrappingKeys, request, timestamp)) {
+                    logger.warn(
+                        "Could not write initial state when attempting to rotate unmanaged keys for " +
+                            "${request.oldParentKeyAlias}."
+                    )
+                    return
+                }
+                publishIndividualUnmanagedRewrappingRequests(targetWrappingKeys, request)
+            }
+
+            KeyType.MANAGED -> {
+                if (request.oldParentKeyAlias != null) {
+                    logger.info("oldParentKeyAlias provided for managed KeyRotationRequest, ignoring.")
+                    return
+                }
+                if (request.newParentKeyAlias != null) {
+                    logger.info("newParentKeyAlias provided for managed KeyRotationRequest, ignoring.")
+                    return
+                }
+                if (request.tenantId.isNullOrEmpty()) {
+                    logger.info("tenantId missing from managed KeyRotationRequest, ignoring.")
+                    return
+                }
+
+                val allKeyIdsAndAliases = wrappingRepositoryFactory.create(request.tenantId).use { wrappingRepo ->
+                    wrappingRepo.getAllKeyIdsAndAliases()
+                }
+
+                if (allKeyIdsAndAliases.isEmpty()) {
+                    logger.info("No managed keys to rotate for ${request.tenantId}.")
+                    return
+                }
+
+                if (!writeStateForManagedKey(allKeyIdsAndAliases, request.tenantId, request, timestamp)) {
+                    logger.warn("Could not write initial state when attempting to rotate managed keys for ${request.tenantId}.")
+                    return
+                }
+
+                publishIndividualManagedRewrappingRequests(
+                    allKeyIdsAndAliases.map { it.first }.toSet(),
+                    request
+                )
+            }
+
+            else -> logger.info("Invalid KeyRotationRequest message, ignoring.")
+        }
     }
 
     /**

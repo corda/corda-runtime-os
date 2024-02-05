@@ -46,78 +46,86 @@ class CryptoRewrapBusProcessor(
     private val serializer = cordaAvroSerializationFactory.createAvroSerializer<UnmanagedKeyStatus>()
 
     override fun onNext(events: List<Record<String, IndividualKeyRotationRequest>>): List<Record<*, *>> {
-        checkNotNull(stateManager) { "State manager is not initialised, cannot proceed with key rotation." }
         events.mapNotNull { it.value }.map { request ->
-            if (request.tenantId.isNullOrEmpty()) {
-                logger.info("tenantId missing from IndividualKeyRotationRequest type:${request.keyType}, ignoring.")
-                return emptyList()
-            }
-
-            when (request.keyType) {
-                KeyType.UNMANAGED -> {
-                    if (request.oldParentKeyAlias.isNullOrEmpty()) {
-                        logger.info("oldParentKeyAlias missing from unmanaged IndividualKeyRotationRequest, ignoring.")
-                        return emptyList()
-                    }
-                    if (request.newParentKeyAlias.isNullOrEmpty()) {
-                        logger.info("newParentKeyAlias missing from unmanaged IndividualKeyRotationRequest, ignoring.")
-                        return emptyList()
-                    }
-                    if (request.targetKeyAlias.isNullOrEmpty()) {
-                        logger.info("targetKeyAlias missing from unmanaged IndividualKeyRotationRequest, ignoring.")
-                        return emptyList()
-                    }
-                    if (request.keyUuid != null) {
-                        logger.info("keyUuid provided for unmanaged IndividualKeyRotationRequest, ignoring.")
-                        return emptyList()
-                    }
-
-                    rewrapTimer.recordCallable {
-                        cryptoService.rewrapWrappingKey(
-                            request.tenantId,
-                            request.targetKeyAlias,
-                            request.newParentKeyAlias
-                        )
-                    }
-
-                    writeStateForUnmanagedKey(stateManager, request)
-                }
-
-                KeyType.MANAGED -> {
-                    if (request.oldParentKeyAlias != null) {
-                        logger.info("oldParentKeyAlias provided for managed IndividualKeyRotationRequest, ignoring.")
-                        return emptyList()
-                    }
-                    if (request.newParentKeyAlias != null) {
-                        logger.info("newParentKeyAlias provided for managed IndividualKeyRotationRequest, ignoring.")
-                        return emptyList()
-                    }
-                    if (request.targetKeyAlias != null) {
-                        logger.info("targetKeyAlias provided for managed IndividualKeyRotationRequest, ignoring.")
-                        return emptyList()
-                    }
-                    if (request.keyUuid.isNullOrEmpty()) {
-                        logger.info("keyUuid missing from unmanaged IndividualKeyRotationRequest, ignoring.")
-                        return emptyList()
-                    }
-                    val uuid = try {
-                        UUID.fromString(request.keyUuid)
-                    } catch (ex: IllegalArgumentException) {
-                        logger.info("Invalid keyUuid from unmanaged IndividualKeyRotationRequest, ignoring.")
-                        return emptyList()
-                    }
-
-                    rewrapTimer.recordCallable {
-                        cryptoService.rewrapAllSigningKeysWrappedBy(uuid, request.tenantId)
-                    }
-
-                    writeStateForManagedKey(stateManager, request)
-                }
-
-                else -> logger.info("Invalid IndividualKeyRotationRequest message, ignoring.")
+            try {
+                processEvent(request)
+            } catch (ex: Exception) {
+                logger.warn("A IndividualKeyRotationRequest event could not be processed:", ex)
             }
         }
         return emptyList()
+    }
+
+    private fun CryptoRewrapBusProcessor.processEvent(request: IndividualKeyRotationRequest) {
+        checkNotNull(stateManager) { "State manager is not initialised, cannot proceed with key rotation." }
+        if (request.tenantId.isNullOrEmpty()) {
+            logger.info("tenantId missing from IndividualKeyRotationRequest type:${request.keyType}, ignoring.")
+            return
+        }
+
+        when (request.keyType) {
+            KeyType.UNMANAGED -> {
+                if (request.oldParentKeyAlias.isNullOrEmpty()) {
+                    logger.info("oldParentKeyAlias missing from unmanaged IndividualKeyRotationRequest, ignoring.")
+                    return
+                }
+                if (request.newParentKeyAlias.isNullOrEmpty()) {
+                    logger.info("newParentKeyAlias missing from unmanaged IndividualKeyRotationRequest, ignoring.")
+                    return
+                }
+                if (request.targetKeyAlias.isNullOrEmpty()) {
+                    logger.info("targetKeyAlias missing from unmanaged IndividualKeyRotationRequest, ignoring.")
+                    return
+                }
+                if (request.keyUuid != null) {
+                    logger.info("keyUuid provided for unmanaged IndividualKeyRotationRequest, ignoring.")
+                    return
+                }
+
+                rewrapTimer.recordCallable {
+                    cryptoService.rewrapWrappingKey(
+                        request.tenantId,
+                        request.targetKeyAlias,
+                        request.newParentKeyAlias
+                    )
+                }
+
+                writeStateForUnmanagedKey(stateManager, request)
+            }
+
+            KeyType.MANAGED -> {
+                if (request.oldParentKeyAlias != null) {
+                    logger.info("oldParentKeyAlias provided for managed IndividualKeyRotationRequest, ignoring.")
+                    return
+                }
+                if (request.newParentKeyAlias != null) {
+                    logger.info("newParentKeyAlias provided for managed IndividualKeyRotationRequest, ignoring.")
+                    return
+                }
+                if (request.targetKeyAlias != null) {
+                    logger.info("targetKeyAlias provided for managed IndividualKeyRotationRequest, ignoring.")
+                    return
+                }
+                if (request.keyUuid.isNullOrEmpty()) {
+                    logger.info("keyUuid missing from unmanaged IndividualKeyRotationRequest, ignoring.")
+                    return
+                }
+                val uuid = try {
+                    UUID.fromString(request.keyUuid)
+                } catch (ex: IllegalArgumentException) {
+                    logger.info("Invalid keyUuid from unmanaged IndividualKeyRotationRequest, ignoring.")
+                    return
+                }
+
+                rewrapTimer.recordCallable {
+                    cryptoService.rewrapAllSigningKeysWrappedBy(uuid, request.tenantId)
+                }
+
+                writeStateForManagedKey(stateManager, request)
+            }
+
+            else -> logger.info("Invalid IndividualKeyRotationRequest message, ignoring.")
+        }
     }
 
     private fun writeStateForManagedKey(
