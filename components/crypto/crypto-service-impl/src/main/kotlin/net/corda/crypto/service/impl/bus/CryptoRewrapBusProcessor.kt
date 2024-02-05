@@ -111,11 +111,11 @@ class CryptoRewrapBusProcessor(
                         return emptyList()
                     }
 
-                    rewrapTimer.recordCallable {
+                    val rewrappedKeys = rewrapTimer.recordCallable {
                         cryptoService.rewrapAllSigningKeysWrappedBy(uuid, request.tenantId)
                     }
 
-                    writeStateForManagedKey(stateManager, request)
+                    writeStateForManagedKey(stateManager, request, rewrappedKeys!!)
                 }
 
                 else -> logger.info("Invalid IndividualKeyRotationRequest message, ignoring.")
@@ -126,7 +126,8 @@ class CryptoRewrapBusProcessor(
 
     private fun writeStateForManagedKey(
         stateManager: StateManager,
-        request: IndividualKeyRotationRequest
+        request: IndividualKeyRotationRequest,
+        rewrappedKeys: Int
     ) {
         // Once re-wrap is done, we can update the state manager
         var statusUpdated = false
@@ -142,14 +143,14 @@ class CryptoRewrapBusProcessor(
                         )
                     )
                 )
-            require(tenantIdSigningKeysRecords.size == 1) {
+            check(tenantIdSigningKeysRecords.size == 1) {
                 "Found none or more than 1 ${request.tenantId} record " +
                         "in the database for rootKeyAlias ${request.keyUuid}. Found records $tenantIdSigningKeysRecords."
             }
 
-            tenantIdSigningKeysRecords.forEach { (_, state) ->
+            tenantIdSigningKeysRecords.entries.single().let { (_, state) ->
                 logger.debug(
-                    "Updating state manager record for tenantId ${state.metadata[KeyRotationMetadataValues.TENANT_ID]} " +
+                    "Updating state manager record for tenantId ${request.tenantId} " +
                             "after re-wrapping ${request.keyUuid}."
                 )
                 val deserializedStatus = checkNotNull(managedDeserializer.deserialize(state.value))
@@ -159,13 +160,16 @@ class CryptoRewrapBusProcessor(
                             ManagedKeyStatus(
                                 deserializedStatus.wrappingKeyAlias,
                                 deserializedStatus.total,
-                                deserializedStatus.rotatedKeys,
+                                deserializedStatus.rotatedKeys + rewrappedKeys,
                                 deserializedStatus.createdTimestamp
                             )
                         )
                     )
                 // Update status to Done if all keys for the tenant have been rotated
-                val newMetadata = getNewMetadata(deserializedStatus.total, deserializedStatus.rotatedKeys, state)
+                val newMetadata = getNewMetadata(
+                    deserializedStatus.total,
+                    deserializedStatus.rotatedKeys + rewrappedKeys,
+                    state)
                 statusUpdated = updateState(stateManager, state, newValue, newMetadata)
             }
         }
@@ -191,14 +195,14 @@ class CryptoRewrapBusProcessor(
                         )
                     )
                 )
-            require(tenantIdWrappingKeysRecords.size == 1) {
+            check(tenantIdWrappingKeysRecords.size == 1) {
                 "Found none or more than 1 ${request.tenantId} record " +
                     "in the database for rootKeyAlias ${request.oldParentKeyAlias}. Found records $tenantIdWrappingKeysRecords."
             }
 
             tenantIdWrappingKeysRecords.forEach { (_, state) ->
                 logger.debug(
-                    "Updating state manager record for tenantId ${state.metadata[KeyRotationMetadataValues.TENANT_ID]} " +
+                    "Updating state manager record for tenantId ${request.tenantId} " +
                         "after re-wrapping ${request.targetKeyAlias}."
                 )
                 val deserializedStatus = checkNotNull(unmanagedDeserializer.deserialize(state.value))
@@ -216,7 +220,10 @@ class CryptoRewrapBusProcessor(
                         )
                     )
                 // Update status to Done if all keys for the tenant have been rotated
-                val newMetadata = getNewMetadata(deserializedStatus.total, deserializedStatus.rotatedKeys, state)
+                val newMetadata = getNewMetadata(
+                    deserializedStatus.total,
+                    deserializedStatus.rotatedKeys + 1,
+                    state)
                 statusUpdated = updateState(stateManager, state, newValue, newMetadata)
             }
         }
@@ -229,8 +236,9 @@ class CryptoRewrapBusProcessor(
 
         return Metadata(map)
     }
+
     private fun getNewMetadata(total: Int, rotatedKeys: Int, state: State): Metadata =
-        if (total == rotatedKeys + 1) {
+        if (total == rotatedKeys) {
             mergeMetadata(
                 state.metadata,
                 Metadata(mapOf(KeyRotationMetadataValues.STATUS to KeyRotationStatus.DONE)),
@@ -239,6 +247,7 @@ class CryptoRewrapBusProcessor(
         } else {
             state.metadata
         }
+
     private fun updateState(
         stateManager: StateManager,
         state: State,
