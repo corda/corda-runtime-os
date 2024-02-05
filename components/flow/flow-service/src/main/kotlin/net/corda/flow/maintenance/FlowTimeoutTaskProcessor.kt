@@ -73,7 +73,7 @@ class FlowTimeoutTaskProcessor(
                 FlowTimeout().apply {
                     timeoutDateTime = now()
                     checkpointStateKey = kvp.value.key
-                    reason = MAX_IDLE_TIME_ERROR_MESSAGE
+                    reason = "$MAX_IDLE_TIME_ERROR_MESSAGE (${maxIdleTimeMilliseconds}ms)"
                 }
             )
         }
