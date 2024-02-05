@@ -85,10 +85,12 @@ internal class SandboxGroupContextCacheImpl private constructor(
      * thread safe. This also ensures if purgeExpiryQueue closes any sandboxes they are closed in the same thread
      * as would be the case with all other calls to the same method.
      */
+    @Suppress("UNUSED_PARAMETER")
     private fun buildSandboxGroupTypeCache(
         type: SandboxGroupType,
-        capacity: Long
+        capacityIn: Long
     ): Cache<VirtualNodeContext, SandboxGroupContextWrapper>  {
+        val capacity = 1000L
         logger.info("Set sandbox cache capacity to $capacity")
 
         return CacheFactoryImpl().buildNonAsync(
@@ -123,15 +125,18 @@ internal class SandboxGroupContextCacheImpl private constructor(
      * Creates the cache for the given [sandboxGroupType] with [newCapacity] maximum size, if not created yet.
      * Changes the maximum size for the [sandboxGroupType]'s cache to [newCapacity] if the cache already exists.
      */
-    override fun resize(sandboxGroupType: SandboxGroupType, newCapacity: Long) {
-        val sandboxCache = caches.computeIfAbsent(sandboxGroupType) { type ->
-            buildSandboxGroupTypeCache(type, newCapacity)
-        }
+    @Suppress("UNUSED_PARAMETER")
 
-        sandboxCache.policy().eviction().ifPresent {
-            it.maximum = newCapacity
-        }
-        capacities[sandboxGroupType] = newCapacity
+    override fun resize(sandboxGroupType: SandboxGroupType, newCapacity: Long) {
+        logger.info("resize sandbox cache to $newCapacity IGNORED")
+//        val sandboxCache = caches.computeIfAbsent(sandboxGroupType) { type ->
+//            buildSandboxGroupTypeCache(type, newCapacity)
+//        }
+//
+//        sandboxCache.policy().eviction().ifPresent {
+//            it.maximum = newCapacity
+//        }
+//        capacities[sandboxGroupType] = newCapacity
     }
 
     /**
