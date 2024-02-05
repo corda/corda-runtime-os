@@ -69,7 +69,7 @@ internal class StatefulSessionManagerImpl(
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
 ) : SessionManager {
     private companion object {
-        val SESSION_VALIDITY_PERIOD: Duration = Duration.ofDays(7)
+        val SESSION_VALIDITY_PERIOD: Duration = Duration.ofMinutes(10L)
         val logger: Logger = LoggerFactory.getLogger(StatefulSessionManagerImpl::class.java)
     }
 
