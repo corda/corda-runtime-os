@@ -551,41 +551,6 @@ class FlowRestResourceImplTest {
     }
 
     @Test
-    fun `registerFlowStatusUpdatesFeed sends resource not found if virtual node does not exist`() {
-        val duplexChannel = mock<DuplexChannel>()
-        val exceptionArgumentCaptor = argumentCaptor<Exception>()
-
-        whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(any())).thenReturn(null)
-        doNothing().whenever(duplexChannel).error(exceptionArgumentCaptor.capture())
-
-        val flowRestResource = createFlowRestResource()
-
-        flowRestResource.registerFlowStatusUpdatesFeed(duplexChannel, VALID_SHORT_HASH, clientRequestId)
-
-        verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
-        verify(duplexChannel, times(1)).error(any())
-        assertInstanceOf(ResourceNotFoundException::class.java, exceptionArgumentCaptor.firstValue.cause)
-        verify(fatalErrorFunction, never()).invoke()
-    }
-
-    @Test
-    fun `registerFlowStatusUpdatesFeed sends bad request if short hash is invalid`() {
-        val duplexChannel = mock<DuplexChannel>()
-        val exceptionArgumentCaptor = argumentCaptor<Exception>()
-
-        doNothing().whenever(duplexChannel).error(exceptionArgumentCaptor.capture())
-
-        val flowRestResource = createFlowRestResource()
-
-        flowRestResource.registerFlowStatusUpdatesFeed(duplexChannel, "invalid", clientRequestId)
-
-        verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
-        verify(duplexChannel, times(1)).error(any())
-        assertInstanceOf(BadRequestException::class.java, exceptionArgumentCaptor.firstValue.cause)
-        verify(fatalErrorFunction, never()).invoke()
-    }
-
-    @Test
     fun `start flow throws ForbiddenException exception when no permission granted`() {
         val flowRestResource = createFlowRestResource()
 

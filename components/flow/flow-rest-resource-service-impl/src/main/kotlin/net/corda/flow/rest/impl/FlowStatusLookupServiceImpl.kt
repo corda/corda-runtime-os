@@ -5,7 +5,6 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.rest.FlowStatusCacheService
-import net.corda.flow.rest.flowstatus.FlowStatusUpdateListener
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.Operation
@@ -99,13 +98,5 @@ class FlowStatusLookupServiceImpl @Activate constructor(
             .findByMetadata(filter)
             .map { deSerializer.deserialize(it.value.value) }
             .filterNotNull()
-    }
-
-    override fun registerFlowStatusListener(
-        clientRequestId: String,
-        holdingIdentity: HoldingIdentity,
-        listener: FlowStatusUpdateListener
-    ): AutoCloseable {
-        TODO("Not yet implemented")
     }
 }

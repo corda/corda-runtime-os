@@ -18,13 +18,4 @@ interface FlowStatusCacheService: Lifecycle {
 
     fun getStatusesPerIdentity(holdingIdentity: HoldingIdentity): List<FlowStatus>
 
-    /**
-     * Register the provided flow status update handler to handle the receiving of updates for a flow identified by the [clientRequestId]
-     * and [holdingIdentity].
-     *
-     * @return [AutoCloseable] registration object for closing and removing the flow status listener.
-     */
-    fun registerFlowStatusListener(clientRequestId: String, holdingIdentity: HoldingIdentity, listener: FlowStatusUpdateListener):
-            AutoCloseable
-
 }
