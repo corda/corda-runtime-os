@@ -59,6 +59,13 @@ abstract class ClusterInfo {
 
 }
 
+class ClusterInfoWithExternalDb(clusterInfo: ClusterInfo) : ClusterInfo() {
+    override val id: String = clusterInfo.id
+}
+
+fun ClusterInfo.withExternalDb(): ClusterInfo =
+    ClusterInfoWithExternalDb(this)
+
 /**
  * Data class for data relevant to the REST endpoint information of the E2E test cluster.
  */
@@ -88,6 +95,8 @@ data class P2PEndpointInfo(
 object ClusterAInfo : ClusterInfo() {
     override val id = "A"
 }
+
+val ClusterAWithExternalDbInfo = ClusterAInfo.withExternalDb()
 
 /**
  * Default cluster info for E2E test cluster "B"

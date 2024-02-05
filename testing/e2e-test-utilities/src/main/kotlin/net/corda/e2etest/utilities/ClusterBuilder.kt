@@ -2,6 +2,11 @@ package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import net.corda.db.core.DbPrivilege
+import net.corda.e2etest.utilities.externaldb.ConnectionStatementParams
+import net.corda.e2etest.utilities.externaldb.ExternalDBConnectionParams
+import net.corda.e2etest.utilities.externaldb.ExternalDbUtil
+import net.corda.e2etest.utilities.externaldb.PasswordGenerator
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.tracing.configureTracing
 import net.corda.tracing.trace
@@ -11,6 +16,7 @@ import java.io.FileNotFoundException
 import java.io.InputStream
 import java.nio.file.Paths
 import java.time.Instant
+import java.util.*
 
 /**
  *  All functions return a [SimpleResponse] if not explicitly declared.
@@ -18,7 +24,7 @@ import java.time.Instant
  *  The caller needs to marshall the response body to json, and then query
  *  the json for the expected results.
  */
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LargeClass")
 class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String) {
 
     internal companion object {
@@ -52,15 +58,6 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         val vaultDmlConnection: JsonNode?
     )
 
-    data class ExternalDBConnectionParams(
-        val cryptoDdlConnection: String? = null,
-        val cryptoDmlConnection: String? = null,
-        val uniquenessDdlConnection: String? = null,
-        val uniquenessDmlConnection: String? = null,
-        val vaultDdlConnection: String? = null,
-        val vaultDmlConnection: String? = null
-    )
-
     data class JsonExternalDBConnectionParams(
         val cryptoDdlConnection: JsonNode? = null,
         val cryptoDmlConnection: JsonNode? = null,
@@ -70,6 +67,8 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         val vaultDmlConnection: JsonNode? = null
     )
 
+    private val externalDbUtil = ExternalDbUtil()
+    private val createVnodesInExternalDb = clusterInfo is ClusterInfoWithExternalDb
 
     /** POST, but most useful for running flows */
     fun post(cmd: String, body: String) = client.post(cmd, body)
@@ -428,20 +427,63 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         cpiHash: String,
         x500Name: String,
         externalDBConnectionParams: ExternalDBConnectionParams? = null
-    ) =
-        post(
+    ): SimpleResponse {
+
+        val dbConnectionParams = externalDBConnectionParams ?: if (createVnodesInExternalDb)
+            {
+                val groupId = UUID.randomUUID().toString()
+                val holdingIdShortHash = getHoldingIdShortHash(x500Name, groupId)
+
+                logger.info("Creating external DB schemas:")
+                val cryptoSchema = "vnode_crypto_$holdingIdShortHash".also(logger::info)
+                val uniqSchema = "vnode_uniq_$holdingIdShortHash".also(logger::info)
+                val vaultSchema = "vnode_vault_$holdingIdShortHash".also(logger::info)
+
+                val cryptoDdlUsername = "cryptoDdlConnection_$holdingIdShortHash"
+                val cryptoDmlUsername = "cryptoDmlConnection_$holdingIdShortHash"
+                val uniqDdlUsername = "uniquenessDdlConnection_$holdingIdShortHash"
+                val uniqDmlUsername = "uniquenessDmlConnection_$holdingIdShortHash"
+                val vaultDdlUsername = "vaultDdlConnection_$holdingIdShortHash"
+                val vaultDmlUsername = "vaultDmlConnection_$holdingIdShortHash"
+
+                val connectionUsernames = listOf(
+                    ConnectionStatementParams(cryptoDdlUsername, DbPrivilege.DDL, cryptoSchema),
+                    ConnectionStatementParams(cryptoDmlUsername, DbPrivilege.DML, cryptoSchema, cryptoDdlUsername),
+                    ConnectionStatementParams(uniqDdlUsername, DbPrivilege.DDL, uniqSchema),
+                    ConnectionStatementParams(uniqDmlUsername, DbPrivilege.DML, uniqSchema, uniqDdlUsername),
+                    ConnectionStatementParams(vaultDdlUsername, DbPrivilege.DDL, vaultSchema),
+                    ConnectionStatementParams(vaultDmlUsername, DbPrivilege.DML, vaultSchema, vaultDdlUsername)
+                )
+
+                val password: String = PasswordGenerator().generatePassword().concatToString()
+
+                externalDbUtil.createUsersAndSchemas(connectionUsernames, password)
+                val jsonConnectionStrings = externalDbUtil.mapToExternalDBConnectionParams(connectionUsernames, password).iterator()
+
+                ExternalDBConnectionParams(
+                    jsonConnectionStrings.next(),
+                    jsonConnectionStrings.next(),
+                    jsonConnectionStrings.next(),
+                    jsonConnectionStrings.next(),
+                    jsonConnectionStrings.next(),
+                    jsonConnectionStrings.next()
+                )
+            } else {null}
+
+        return post(
             "/api/$REST_API_VERSION_PATH/virtualnode",
             vNodeBody(
                 cpiHash,
                 x500Name,
-                externalDBConnectionParams?.cryptoDdlConnection,
-                externalDBConnectionParams?.cryptoDmlConnection,
-                externalDBConnectionParams?.uniquenessDdlConnection,
-                externalDBConnectionParams?.uniquenessDmlConnection,
-                externalDBConnectionParams?.vaultDdlConnection,
-                externalDBConnectionParams?.vaultDmlConnection
+                dbConnectionParams?.cryptoDdlConnection,
+                dbConnectionParams?.cryptoDmlConnection,
+                dbConnectionParams?.uniquenessDdlConnection,
+                dbConnectionParams?.uniquenessDmlConnection,
+                dbConnectionParams?.vaultDdlConnection,
+                dbConnectionParams?.vaultDmlConnection
             )
         )
+    }
 
     @Suppress("LongParameterList", "unused")
     fun vNodeChangeConnectionStrings(
