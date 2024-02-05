@@ -77,7 +77,7 @@ class QueryTasksImpl(val pc: ProjectContext) {
         return try {
             mapper.readValue(response.body.toString(), GetCPIsResponseDTO::class.java).cpis!!
         } catch (e: Exception) {
-            throw CordaRuntimeGradlePluginException("Failed to get Existing vNodes with exception: $e")
+            throw CordaRuntimeGradlePluginException("Failed to get Existing CPIs with exception: ${e.message}", e)
         }
     }
 }
