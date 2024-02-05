@@ -176,6 +176,7 @@ internal class StatefulSessionManagerImpl(
                         counterparties,
                         state.first.message.message.header.statusFilter,
                     )?.let { (needed, newState) ->
+                        logger.info("QQQ Create 2 ${newState.key}", Exception("QQQ"))
                         state.toResultsFirstAndOther(
                             action = CreateAction(newState),
                             firstState = needed,
@@ -669,6 +670,7 @@ internal class StatefulSessionManagerImpl(
                 when (it.inboundSessionMessage) {
                     is InboundSessionMessage.InitiatorHelloMessage -> {
                         processInitiatorHello(state, it.inboundSessionMessage)?.let { (message, stateUpdate) ->
+                            logger.info("QQQ Create 1 ${stateUpdate.key}", Exception("QQQ"))
                             Result(message, CreateAction(stateUpdate), null)
                         }
                     }
@@ -1091,6 +1093,7 @@ internal class StatefulSessionManagerImpl(
             emptyMap()
         }
         val failedCreates = if (creates.isNotEmpty()) {
+            logger.info("QQQ Going to create: ${creates.map { it.key }}")
             stateManager.create(creates).associateWith {
                 logger.info("Failed to create the state of session with ID $it")
                 null
