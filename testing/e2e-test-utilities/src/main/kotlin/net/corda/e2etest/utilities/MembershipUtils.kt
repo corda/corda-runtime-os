@@ -146,11 +146,11 @@ fun NetworkOnboardingMetadata.reregisterMember(
 
 
 @Suppress("unused")
-        /**
-         * Register a member who has registered previously using the [ClusterInfo] and registration context from
-         * the previous registration for the cluster connection details and for the member identifier.
-         * Should be mainly used in upgrade scenarios where we cannot re-use the onboarding metadata.
-         */
+/**
+ * Register a member who has registered previously using the [ClusterInfo] and registration context from
+ * the previous registration for the cluster connection details and for the member identifier.
+ * Should be mainly used in upgrade scenarios where we cannot re-use the onboarding metadata.
+ */
 fun ClusterInfo.reregisterMember(
     holdingId: String,
     x500Name: String,
