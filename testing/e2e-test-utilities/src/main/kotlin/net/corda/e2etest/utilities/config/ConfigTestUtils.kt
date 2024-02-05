@@ -45,7 +45,7 @@ fun ClusterInfo.getConfig(section: String): JsonNode {
     }
 }
 
-internal fun ClusterInfo.updateConfig(config: String, section: String) {
+ fun ClusterInfo.updateConfig(config: String, section: String) {
     return cluster {
         val currentConfig = assertWithRetryIgnoringExceptions {
             command { getConfig(section) }
