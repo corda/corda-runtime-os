@@ -122,7 +122,7 @@ class CryptoRekeyBusProcessor(
                         }
                     } catch (ex: Exception) {
                         logger.warn(
-                            "A wrappingRepositoryFactory could not be created and queried for ${tenantId} because:",
+                            "A WrappingRepository could not be created and queried for ${tenantId} because:",
                             ex
                         )
                         null
