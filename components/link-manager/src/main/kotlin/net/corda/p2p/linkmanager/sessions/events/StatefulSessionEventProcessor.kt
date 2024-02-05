@@ -79,9 +79,9 @@ internal class StatefulSessionEventProcessor(
         }
 
         private fun sessionsCreated(events: List<SessionCreated>) {
-            val notCachedSessions = events.filter { sessionCache.getByKeyIfCached(it.stateManagerKey) != null }
-            val states = stateManager.get(notCachedSessions.mapNotNull { it.stateManagerKey }.toList())
-            for (event in events) {
+            val eventsWithoutCachedSession = events.filter { sessionCache.getByKeyIfCached(it.stateManagerKey) == null }
+            val states = stateManager.get(eventsWithoutCachedSession.mapNotNull { it.stateManagerKey }.toList())
+            for (event in eventsWithoutCachedSession) {
                 val state = states[event.stateManagerKey]
                 if (state == null) {
                     logger.info("Received a ${event.direction} session created event for ${event.stateManagerKey} but no session exists " +
