@@ -7,6 +7,8 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.rest.FlowStatusCacheService
 import net.corda.flow.rest.flowstatus.FlowStatusUpdateListener
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.statemanager.api.MetadataFilter
+import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -49,6 +51,7 @@ class FlowStatusLookupServiceImpl @Activate constructor(
     private var flowStatusSubscription: Subscription<FlowKey, FlowStatus>? = null
 
     private val serializer = cordaSerializationFactory.createAvroSerializer<Any> {}
+    private val deSerializer = cordaSerializationFactory.createAvroDeserializer({}, FlowStatus::class.java)
 
     private var stateManager: StateManager? = null
 
@@ -75,11 +78,27 @@ class FlowStatusLookupServiceImpl @Activate constructor(
     }
 
     override fun getStatus(clientRequestId: String, holdingIdentity: HoldingIdentity): FlowStatus? {
-        TODO("Not yet implemented")
+
+        val flowKey = FlowKey(clientRequestId, holdingIdentity)
+        val flowKeys = listOf(flowKey.toString())
+
+        return requireNotNull(stateManager) { "stateManager is null" }
+            .get(flowKeys)
+            .asSequence()
+            .map { it.value }
+            .firstOrNull()
+            ?.let { state ->
+                deSerializer.deserialize(state.value)
+            }
     }
 
     override fun getStatusesPerIdentity(holdingIdentity: HoldingIdentity): List<FlowStatus> {
-        TODO("Not yet implemented")
+        val filter = MetadataFilter(HOLDING_IDENTITY_METADATA_KEY, Operation.Equals, holdingIdentity.toString())
+
+        return requireNotNull(stateManager) { "stateManager is null" }
+            .findByMetadata(filter)
+            .map { deSerializer.deserialize(it.value.value) }
+            .filterNotNull()
     }
 
     override fun registerFlowStatusListener(

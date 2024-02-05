@@ -42,7 +42,7 @@ class VNodeHelper {
                 cordaRpcPassword,
                 cpiCheckSum
             )
-        ) throw CordaRuntimeGradlePluginException("Cpi $cpiCheckSum not uploaded.")
+        ) throw CordaRuntimeGradlePluginException("CPI $cpiCheckSum not uploaded.")
 
         val response: HttpResponse<JsonNode> = Unirest.post("$cordaClusterURL/api/v1/virtualnode")
             .body("{ \"request\" : { \"cpiFileChecksum\": \"" + cpiCheckSum + "\", \"x500Name\": \"" + vNode.x500Name + "\" } }")
@@ -81,7 +81,7 @@ class VNodeHelper {
             .asJson()
 
         if (response.status != HttpURLConnection.HTTP_OK) {
-            throw CordaRuntimeGradlePluginException("Failed to check cpis, response status: " + response.status)
+            throw CordaRuntimeGradlePluginException("Failed to check CPIs, response status: " + response.status)
         }
 
         try {
@@ -92,7 +92,7 @@ class VNodeHelper {
             }
             return false
         } catch (e: Exception) {
-            throw CordaRuntimeGradlePluginException("Failed to check cpis with exception: $e")
+            throw CordaRuntimeGradlePluginException("Failed to check CPIs with exception: ${e.message}", e)
         }
     }
 
@@ -107,7 +107,7 @@ class VNodeHelper {
             )
         } else if (matches.size > 1) {
             throw CordaRuntimeGradlePluginException(
-                "Registration failed because more than virtual node for '${requiredNode.x500Name}'"
+                "Registration failed because more than one virtual node for '${requiredNode.x500Name}'"
             )
         }
         return matches.single()
@@ -210,7 +210,7 @@ class VNodeHelper {
             // Returns false if array was empty or "APPROVED" wasn't found
             return false
         } catch (e: Exception) {
-            throw CordaRuntimeGradlePluginException("Failed to check registration status for $shortHash with exception: $e.")
+            throw CordaRuntimeGradlePluginException("Failed to check registration status for $shortHash with exception: ${e.message}.", e)
         }
     }
 }

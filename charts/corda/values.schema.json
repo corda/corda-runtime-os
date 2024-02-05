@@ -500,6 +500,24 @@
                         true
                     ]
                 },
+                "keepNames": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "format": "regex"
+                    },
+                    "title": "A list of regular expressions for the names of metrics that Corda should keep; if empty, all metrics are kept",
+                    "examples": [[ "jvm_.*" ]]
+                },
+                "dropLabels": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "format": "regex"
+                    },
+                    "title": "A list of regular expressions for labels that Corda should drop across all metrics; if empty, all labels are kept",
+                    "examples": [[ "virtualnode_destination" ]]
+                },
                 "podMonitor": {
                     "type": "object",
                     "default": {},
@@ -527,24 +545,6 @@
                                 ]
                             },
                             "examples": [{}]
-                        },
-                        "keepNames": {
-                            "type": "array",
-                            "items": {
-                                "type": "string",
-                                "format": "regex"
-                            },
-                            "title": "A list of regular expressions for the names of metrics that Prometheus should keep; if empty, all metrics are kept",
-                            "examples": [[ "jvm_.*" ]]
-                        },
-                        "dropLabels": {
-                            "type": "array",
-                            "items": {
-                                "type": "string",
-                                "format": "regex"
-                            },
-                            "title": "A list of regular expressions for labels that Prometheus should drop across all metrics; if empty, all labels are kept",
-                            "examples": [[ "virtualnode_destination" ]]
                         }
                     },
                     "examples": [

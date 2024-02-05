@@ -24,7 +24,7 @@ dependencies {
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:messaging:messaging")
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
 
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:utilities')

@@ -158,7 +158,12 @@ spec:
       serviceAccountName: {{ . }}
       {{- end }}
       {{- include "corda.topologySpreadConstraints" $ | indent 6 }}
-      {{- include "corda.affinity" (list $ ( include "corda.workerComponent" $worker ) ) | indent 6 }}
+      {{- include "corda.affinity" (list $ ( include "corda.workerComponent" $worker ) ) | indent 6 -}}
+      {{- $stateManagerV2 := include "corda.sm.required" ( list $ . ) -}}
+      {{- if eq $stateManagerV2 "true" }}
+      initContainers:
+      {{-   include "corda.sm.db.runtimeConfigurationContainer" ( list $ $worker . )  | indent 8 -}}
+      {{- end }}
       containers:
       - name: {{ $workerName | quote }}
         image: {{ include "corda.workerImage" ( list $ . ) }}
@@ -270,6 +275,7 @@ spec:
         {{- if $optionalArgs.clusterDbAccess }}
         {{- include "corda.clusterDbEnv" $ | nindent 10 }}
         {{- end }}
+        {{/* TODO-[CORE-19372]: remove */}}
         {{- if $optionalArgs.stateManagerDbAccess }}
         {{- include "corda.stateManagerDbEnv" ( list $ . $worker ) | nindent 10 }}
         {{- end }}
@@ -306,7 +312,7 @@ spec:
           {{- if $optionalArgs.clusterDbAccess }}
           - "-ddatabase.user=$(DB_CLUSTER_USERNAME)"
           - "-ddatabase.pass=$(DB_CLUSTER_PASSWORD)"
-          - "-ddatabase.jdbc.url=jdbc:postgresql://{{ required "Must specify db.cluster.host" $.Values.db.cluster.host }}:{{ $.Values.db.cluster.port }}/{{ $.Values.db.cluster.database }}?currentSchema={{ $.Values.db.cluster.schema }}"
+          - "-ddatabase.jdbc.url=jdbc:postgresql://{{ required "Must specify db.cluster.host" $.Values.db.cluster.host }}:{{ $.Values.db.cluster.port }}/{{ $.Values.db.cluster.database }}"
           - "-ddatabase.jdbc.directory=/opt/jdbc-driver"
           - "-ddatabase.pool.max_size={{ .clusterDbConnectionPool.maxSize }}"
           {{- if .clusterDbConnectionPool.minSize }}
@@ -317,6 +323,7 @@ spec:
           - "-ddatabase.pool.keepaliveTimeSeconds={{ .clusterDbConnectionPool.keepaliveTimeSeconds }}"
           - "-ddatabase.pool.validationTimeoutSeconds={{ .clusterDbConnectionPool.validationTimeoutSeconds }}"
           {{- end }}
+          {{/* TODO-[CORE-19372]: remove */}}
           {{- if $optionalArgs.stateManagerDbAccess }}
           - "--stateManager"
           - "type=DATABASE"
@@ -325,7 +332,7 @@ spec:
           - "--stateManager"
           - "database.pass=$(STATE_MANAGER_PASSWORD)"
           - "--stateManager"
-          - "database.jdbc.url={{- include "corda.stateManagerJdbcUrl" ( list $ . ) -}}?currentSchema=STATE_MANAGER"
+          - "database.jdbc.url={{- include "corda.stateManagerJdbcUrl" ( list $ . ) -}}"
           - "--stateManager"
           - "database.jdbc.directory=/opt/jdbc-driver"
           - "--stateManager"
@@ -351,6 +358,12 @@ spec:
           {{- if $.Values.tracing.samplesPerSecond }}
           - "--trace-samples-per-second={{ $.Values.tracing.samplesPerSecond }}"
           {{- end }}
+          {{- with $.Values.metrics.keepNames }}
+          - "--metrics-keep-names={{ join "|" . }}"
+          {{- end }}
+          {{- with $.Values.metrics.dropLabels }}
+          - "--metrics-drop-labels={{ join "|" . }}"
+          {{- end }}
           {{- if $optionalArgs.servicesAccessed }}
           {{- range $worker := $optionalArgs.servicesAccessed }}
           - "--serviceEndpoint={{ include "corda.getWorkerEndpoint" (dict "context" $ "worker" $worker) }}"
@@ -358,6 +371,9 @@ spec:
           {{- end }}
           {{- range $i, $arg := $optionalArgs.additionalWorkerArgs }}
           - {{ $arg | quote }}
+          {{- end -}}
+          {{- if eq $stateManagerV2 "true" }}
+          {{-   include "corda.sm.runtimeConfigurationParameters" . | nindent 10 -}}
           {{- end }}
         volumeMounts:
           - mountPath: "/tmp"
@@ -451,8 +467,11 @@ spec:
           hostPath:
             path: {{ $.Values.dumpHostPath }}/{{ $.Release.Namespace }}/
             type: DirectoryOrCreate
-        {{- end }}
-        {{- include "corda.log4jVolume" $ | nindent 8 }}
+        {{- end -}}
+        {{- if eq $stateManagerV2 "true" }}
+        {{-   include "corda.sm.runtimeCredentialVolumes" ( list $ $worker . )  | nindent 8 -}}
+        {{- end -}}
+        {{- include "corda.log4jVolume" $ | nindent 8 -}}
       {{- with $.Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

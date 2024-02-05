@@ -32,7 +32,7 @@ dependencies {
     implementation "net.corda:corda-config-schema"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
     implementation "info.picocli:picocli:$picocliVersion"
     implementation libs.javalin
     constraints {
@@ -59,6 +59,6 @@ dependencies {
 
     // Required for enterprise addons, so must appear in all worker JARs even if they don't use them
     runtimeOnly libs.jackson.module.kotlin
-    runtimeOnly "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
+    runtimeOnly libs.caffeine
     runtimeOnly project(":libs:cache:cache-caffeine")
 }

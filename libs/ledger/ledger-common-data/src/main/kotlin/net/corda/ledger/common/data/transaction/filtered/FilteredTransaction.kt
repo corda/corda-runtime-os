@@ -1,5 +1,6 @@
 package net.corda.ledger.common.data.transaction.filtered
 
+import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.SecureHash
@@ -34,6 +35,11 @@ interface FilteredTransaction {
      * @throws IllegalStateException If the [TransactionMetadata] component group does not exist at index 0.
      */
     val metadata: TransactionMetadata
+
+    /**
+     * Gets the [PrivacySalt] of the transaction.
+     */
+    val privacySalt: PrivacySalt
 
     /**
      * Verifies the structure of the transaction and the [MerkleProof]s contained within it

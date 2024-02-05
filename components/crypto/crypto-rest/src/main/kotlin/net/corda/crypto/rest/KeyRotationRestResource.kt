@@ -3,6 +3,7 @@ package net.corda.crypto.rest
 import net.corda.crypto.rest.response.KeyRotationResponse
 import net.corda.crypto.rest.response.KeyRotationStatusResponse
 import net.corda.crypto.rest.response.ManagedKeyRotationResponse
+import net.corda.crypto.rest.response.ManagedKeyRotationStatusResponse
 import net.corda.rest.RestResource
 import net.corda.rest.SC_ACCEPTED
 import net.corda.rest.annotations.ClientRequestBodyParameter
@@ -28,7 +29,7 @@ import net.corda.rest.response.ResponseEntity
 )
 interface KeyRotationRestResource : RestResource {
     /**
-     * The [getKeyRotationStatus] gets the latest key rotation status for [keyAlias] if one exists.
+     * The [getUnmanagedKeyRotationStatus] gets the latest key rotation status for [keyAlias] if one exists.
      *
      * @return A list of vNodes with the total number of keys needs re-rewrapping and the number of already re-wrapped
      *          keys.
@@ -40,7 +41,7 @@ interface KeyRotationRestResource : RestResource {
         description = "This method gets the status of the latest key rotation.",
         responseDescription = "Number of wrapping keys needs rotating grouped by vNode.",
     )
-    fun getKeyRotationStatus(
+    fun getUnmanagedKeyRotationStatus(
         @RestPathParameter(description = "The keyAlias we are rotating away from.")
         keyAlias: String
     ): KeyRotationStatusResponse
@@ -67,7 +68,7 @@ interface KeyRotationRestResource : RestResource {
         responseDescription = "Key rotation response",
         successCode = SC_ACCEPTED,
     )
-    fun startKeyRotation(
+    fun startUnmanagedKeyRotation(
         @RestPathParameter(
             description = "The alias of the current wrapping key to be rotated."
         )
@@ -94,7 +95,7 @@ interface KeyRotationRestResource : RestResource {
     fun getManagedKeyRotationStatus(
         @RestPathParameter(description = "The tenantId whose wrapping keys are rotating.")
         tenantId: String
-    ): String
+    ): ManagedKeyRotationStatusResponse
 
     /**
      * Initiates the managed key rotation process.

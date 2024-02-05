@@ -34,7 +34,7 @@ dependencies {
     implementation 'net.corda:corda-config-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
     implementation "com.google.guava:guava:$guavaVersion"
 
     testImplementation project(":testing:test-utilities")
@@ -57,5 +57,5 @@ dependencies {
     integrationTestImplementation project(':libs:lifecycle:registry')
     integrationTestImplementation project(':libs:schema-registry:schema-registry-impl')
     integrationTestImplementation project(':libs:messaging:kafka-message-bus-impl')
-    integrationTestImplementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+    integrationTestImplementation libs.kafka.client
 }

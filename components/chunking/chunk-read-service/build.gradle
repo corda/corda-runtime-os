@@ -15,5 +15,5 @@ dependencies {
 
     api project(":libs:configuration:configuration-core")
     api project(":libs:lifecycle:lifecycle")
-    api "com.typesafe:config:$typeSafeConfigVersion"
+    api libs.typesafe.config
 }
