@@ -11,6 +11,7 @@ import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.binder.BaseUnits
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry
 import io.micrometer.core.instrument.config.MeterFilter
+import io.micrometer.core.instrument.distribution.DistributionStatisticConfig
 import io.micrometer.core.instrument.noop.NoopGauge
 import java.io.File
 import java.nio.file.FileSystems
@@ -955,9 +956,33 @@ object CordaMetrics {
                 }
             })
         if (keepNames != null) {
-            config.meterFilter(MeterFilter.denyUnless {
-                registry.config().namingConvention().name(it.name, it.type, it.baseUnit).matches(keepNames)
-            })
+            config
+                .meterFilter(MeterFilter.denyUnless {
+                    val name = registry.config().namingConvention().name(it.name, it.type, it.baseUnit)
+                    when (it.type) {
+                        Meter.Type.COUNTER -> (name + "_total").matches(keepNames)
+                        Meter.Type.TIMER ->
+                            (name + "_count").matches(keepNames)
+                                || (name + "_sum").matches(keepNames)
+                                || (name + "_max").matches(keepNames)
+                                || (name + "_bucket").matches(keepNames)
+                        Meter.Type.DISTRIBUTION_SUMMARY ->
+                            (name + "_count").matches(keepNames)
+                                || (name + "_sum").matches(keepNames)
+                                || (name + "_bucket").matches(keepNames)
+                        else -> name.matches(keepNames)
+                    }
+                })
+                .meterFilter(object: MeterFilter {
+                    override fun configure(id: Meter.Id, config: DistributionStatisticConfig): DistributionStatisticConfig {
+                        val name = registry.config().namingConvention().name(id.name, id.type, id.baseUnit)
+                        val publishPercentiles = config.isPublishingHistogram && (name + "_bucket").matches(keepNames)
+                        return DistributionStatisticConfig.builder()
+                            .percentilesHistogram(publishPercentiles)
+                            .build()
+                            .merge(config)
+                    }
+                })
         }
         if (dropLabels != null) {
             config.meterFilter(object : MeterFilter {
