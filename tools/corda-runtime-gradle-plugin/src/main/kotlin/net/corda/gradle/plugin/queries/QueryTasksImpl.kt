@@ -71,7 +71,7 @@ class QueryTasksImpl(val pc: ProjectContext) {
             .asJson()
 
         if (response.status != HttpURLConnection.HTTP_OK) {
-            throw CordaRuntimeGradlePluginException("Failed to get Existing Cpis, response status: " + response.status)
+            throw CordaRuntimeGradlePluginException("Failed to get Existing CPIs, response status: " + response.status)
         }
 
         return try {
