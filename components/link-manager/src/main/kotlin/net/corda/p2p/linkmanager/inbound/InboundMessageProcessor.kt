@@ -62,6 +62,7 @@ internal class InboundMessageProcessor(
     }
 
     override fun onNext(events: List<EventLogRecord<String, LinkInMessage>>): List<Record<*, *>> {
+        logger.info("QQQ InboundMessageProcessor::onNext(${events.map { it.key }}) starts")
         val dataMessages = mutableListOf<SessionIdAndMessage>()
         val sessionMessages = mutableListOf<TraceableItem<LinkInMessage, LinkInMessage>>()
         val recordsForUnauthenticatedMessage = mutableListOf<TraceableItem<List<Record<String, AppMessage>>, LinkInMessage>>()
@@ -122,6 +123,8 @@ internal class InboundMessageProcessor(
             .flatMap { traceable ->
                 traceable.originalRecord?.let { traceEventProcessing(it, tracingEventName) { traceable.item } }
                 traceable.item
+            }.also {
+                logger.info("QQQ InboundMessageProcessor::onNext(${events.map { it.key }}) ends")
             }
     }
 
