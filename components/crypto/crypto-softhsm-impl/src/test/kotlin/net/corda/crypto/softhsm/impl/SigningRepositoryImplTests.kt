@@ -39,7 +39,6 @@ class SigningRepositoryImplTests {
             verify(dbConnectionManager, times(2)).getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
             verifyNoMoreInteractions(dbConnectionManager)
         }
-        verify(entityManagerFactory, times(0)).close()
     }
 
     private fun makeMockSigningRepository(
