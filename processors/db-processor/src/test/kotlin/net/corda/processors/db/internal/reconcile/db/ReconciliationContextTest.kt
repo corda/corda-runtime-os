@@ -46,7 +46,7 @@ class ReconciliationContextTest {
     private val dbConnectionManager: DbConnectionManager = mock {
         on { getClusterEntityManagerFactory() } doReturn clusterEmf
         on {
-            createEntityManagerFactory(eq(virtualNodeInfo.vaultDmlConnectionId), eq(jpaEntitiesSet))
+            createEntityManagerFactory(eq(virtualNodeInfo.vaultDmlConnectionId), eq(jpaEntitiesSet), eq(true))
         } doReturn vnodeEmf
     }
 
@@ -117,7 +117,8 @@ class ReconciliationContextTest {
         fun `Context initialisation does not create the entity manager factory and the entity manager`() {
             verify(dbConnectionManager, never()).createEntityManagerFactory(
                 eq(virtualNodeInfo.vaultDmlConnectionId),
-                eq(jpaEntitiesSet)
+                eq(jpaEntitiesSet),
+                eq(true)
             )
             verify(vnodeEmf, never()).createEntityManager()
         }
@@ -127,7 +128,8 @@ class ReconciliationContextTest {
             context.getOrCreateEntityManager()
             verify(dbConnectionManager).createEntityManagerFactory(
                 eq(virtualNodeInfo.vaultDmlConnectionId),
-                eq(jpaEntitiesSet)
+                eq(jpaEntitiesSet),
+                eq(true)
             )
             verify(vnodeEmf).createEntityManager()
         }
@@ -138,7 +140,8 @@ class ReconciliationContextTest {
             context.getOrCreateEntityManager()
             verify(dbConnectionManager).createEntityManagerFactory(
                 eq(virtualNodeInfo.vaultDmlConnectionId),
-                eq(jpaEntitiesSet)
+                eq(jpaEntitiesSet),
+                eq(true)
             )
             verify(vnodeEmf).createEntityManager()
         }
@@ -150,7 +153,8 @@ class ReconciliationContextTest {
             context.getOrCreateEntityManager()
             verify(dbConnectionManager, times(2)).createEntityManagerFactory(
                 eq(virtualNodeInfo.vaultDmlConnectionId),
-                eq(jpaEntitiesSet)
+                eq(jpaEntitiesSet),
+                eq(true)
             )
             verify(vnodeEmf, times(2)).createEntityManager()
         }

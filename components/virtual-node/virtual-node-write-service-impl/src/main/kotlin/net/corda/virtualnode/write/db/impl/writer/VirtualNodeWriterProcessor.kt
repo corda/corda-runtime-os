@@ -145,7 +145,8 @@ internal class VirtualNodeWriterProcessor(
                     dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).use { dataSource ->
                         val emVault = dbConnectionManager.getOrCreateEntityManagerFactory(
                             virtualNodeInfo.vaultDdlConnectionId!!,
-                            jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)!!
+                            jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)!!,
+                            enablePool = false
                         ).createEntityManager()
                         // changelog tags are the CPK file checksum the changelog belongs to
                         val cpkChecksumsOfAppliedChangelogs: Set<String> = getAppliedChangelogTags(
