@@ -158,14 +158,15 @@ fun ClusterInfo.reregisterMember(
     contextToMerge: Map<String, String?> = emptyMap(),
     waitForApproval: Boolean = true
 ): NetworkOnboardingMetadata {
-    val newContext = registrationContext.toMutableMap()
-    contextToMerge.forEach {
-        if (it.value == null) {
-            newContext.remove(it.key)
+    val newContext = registrationContext.mapNotNull { (key, value) ->
+        if (contextToMerge.containsKey(key)) {
+            contextToMerge[key]?.let {
+                key to it
+            }
         } else {
-            newContext[it.key] = it.value!!
+            key to value
         }
-    }
+    }.toMap()
     return NetworkOnboardingMetadata(
         holdingId,
         x500Name,
