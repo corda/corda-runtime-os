@@ -188,7 +188,7 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
 
             )
             val evolveFlowResult = awaitRestFlowFinished(bobHoldingId, evolveRequestId)
-            val evolveFlowResultInner = checkNotNull(evolveFlowResult.flowResult) {"evolve failed"}
+            val evolveFlowResultInner = checkNotNull(evolveFlowResult.flowResult) {"evolve failed ${evolveFlowResult.flowResult}"}
             assertThat(evolveFlowResult.flowError).isNull()
             // Peek into the last transaction
             val parsedEvolveFlowResultInner = objectMapper.readValue(evolveFlowResultInner, EvolveResponse::class.java)
