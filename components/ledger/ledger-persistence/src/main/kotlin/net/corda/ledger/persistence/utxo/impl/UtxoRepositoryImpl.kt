@@ -359,35 +359,21 @@ class UtxoRepositoryImpl @Activate constructor(
             .logResult("signed group parameters [$hash]")
     }
 
-    override fun persistMerkleProof(
-        entityManager: EntityManager,
-        transactionId: String,
-        groupIndex: Int,
-        treeSize: Int,
-        leaves: List<Int>,
-        hashes: List<String>
-    ): String {
-        // Generate an ID by concatenating transaction ID - group index - leaves
-        val merkleProofId = "$transactionId;$groupIndex;${leaves.joinToString(separator = ",")}"
-
-        entityManager.createNativeQuery(queryProvider.persistMerkleProof)
-            .setParameter("merkleProofId", merkleProofId)
-            .setParameter("transactionId", transactionId)
-            .setParameter("groupIndex", groupIndex)
-            .setParameter("treeSize", treeSize)
-            .setParameter("hashes", hashes.joinToString(","))
-            .executeUpdate()
-            .logResult("merkle proof for transaction: $transactionId")
-
-        return merkleProofId
+    override fun persistMerkleProofs(entityManager: EntityManager, merkleProofs: List<UtxoRepository.TransactionMerkleProof>) {
+        persistBatch(entityManager, queryProvider.persistMerkleProofs, merkleProofs) { statement, parameterIndex, merkleProof ->
+            statement.setString(parameterIndex.next(), merkleProof.merkleProofId)
+            statement.setString(parameterIndex.next(), merkleProof.transactionId)
+            statement.setInt(parameterIndex.next(), merkleProof.groupIndex)
+            statement.setInt(parameterIndex.next(), merkleProof.treeSize)
+            statement.setString(parameterIndex.next(), merkleProof.leafHashes.joinToString(","))
+        }
     }
 
-    override fun persistMerkleProofLeaf(entityManager: EntityManager, merkleProofId: String, leafIndex: Int) {
-        entityManager.createNativeQuery(queryProvider.persistMerkleProofLeaf)
-            .setParameter("merkleProofId", merkleProofId)
-            .setParameter("leafIndex", leafIndex)
-            .executeUpdate()
-            .logResult("merkle proof leaf for merkle proof: $merkleProofId")
+    override fun persistMerkleProofLeaves(entityManager: EntityManager, leaves: List<UtxoRepository.TransactionMerkleProofLeaf>) {
+        persistBatch(entityManager, queryProvider.persistMerkleProofs, leaves) { statement, parameterIndex, leaf ->
+            statement.setString(parameterIndex.next(), leaf.merkleProofId)
+            statement.setInt(parameterIndex.next(), leaf.leafIndex)
+        }
     }
 
     override fun findMerkleProofs(

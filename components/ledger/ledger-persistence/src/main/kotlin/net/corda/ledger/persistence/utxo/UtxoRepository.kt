@@ -176,21 +176,24 @@ interface UtxoRepository {
     )
 
     /** Persists a merkle proof and returns its ID */
-    @Suppress("LongParameterList")
-    fun persistMerkleProof(
-        entityManager: EntityManager,
-        transactionId: String,
-        groupIndex: Int,
-        treeSize: Int,
-        leaves: List<Int>,
-        hashes: List<String>
-    ): String
+    fun persistMerkleProofs(entityManager: EntityManager, merkleProofs: List<TransactionMerkleProof>)
+
+    data class TransactionMerkleProof(
+        val transactionId: String,
+        val groupIndex: Int,
+        val treeSize: Int,
+        val leafIndexes: List<Int>,
+        val leafHashes: List<String>
+    ) {
+        val merkleProofId: String = "${transactionId};$groupIndex;${leafIndexes.joinToString(separator = ",")}"
+    }
+
+    data class TransactionMerkleProofLeaf(val merkleProofId: String, val leafIndex: Int)
 
     /** Persist a leaf index that belongs to a given merkle proof with ID [merkleProofId] */
-    fun persistMerkleProofLeaf(
+    fun persistMerkleProofLeaves(
         entityManager: EntityManager,
-        merkleProofId: String,
-        leafIndex: Int
+        leaves: List<TransactionMerkleProofLeaf>
     )
 
     /** Find all the merkle proofs for a given list of transaction IDs */

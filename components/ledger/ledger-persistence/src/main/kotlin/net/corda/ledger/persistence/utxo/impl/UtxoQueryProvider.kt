@@ -64,33 +64,33 @@ interface UtxoQueryProvider {
     /**
      * @property persistTransactionSource SQL text for [UtxoRepositoryImpl.persistTransactionSource].
      */
-    val persistTransactionSources: (Int) -> String
+    val persistTransactionSources: (batchSize: Int) -> String
 
     /**
      * @property persistTransactionComponentLeaf SQL text for [UtxoRepositoryImpl.persistTransactionComponentLeaf].
      */
-    val persistTransactionComponents: (Int) -> String
+    val persistTransactionComponents: (batchSize: Int) -> String
 
     /**
      * @param consumed Whether the persisted states have been consumed.
      * @property persistVisibleTransactionOutput SQL text for [UtxoRepositoryImpl.persistVisibleTransactionOutputs].
      */
-    val persistVisibleTransactionOutputs: (Int) -> String
+    val persistVisibleTransactionOutputs: (batchSize: Int) -> String
 
     /**
      * @property persistTransactionSignature SQL text for [UtxoRepositoryImpl.persistTransactionSignature].
      */
-    val persistTransactionSignatures: (Int) -> String
+    val persistTransactionSignatures: (batchSize: Int) -> String
 
     /**
      * @property persistMerkleProof SQL text for [UtxoRepositoryImpl.persistMerkleProof].
      */
-    val persistMerkleProof: String
+    val persistMerkleProofs: (batchSize: Int) -> String
 
     /**
      * @property persistMerkleProofLeaf SQL text for [UtxoRepositoryImpl.persistMerkleProofLeaf]
      */
-    val persistMerkleProofLeaf: String
+    val persistMerkleProofLeaves: (batchSize: Int) -> String
 
     /**
      * @property updateTransactionStatus SQL text for [UtxoRepositoryImpl.updateTransactionStatus].
