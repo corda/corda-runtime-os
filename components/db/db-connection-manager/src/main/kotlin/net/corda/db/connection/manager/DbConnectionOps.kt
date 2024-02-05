@@ -147,7 +147,7 @@ interface DbConnectionOps {
     /**
      * Get an [EntityManagerFactory] for a given connection ID. Use cache or create one if necessary.
      *
-     * A consumer should not close the EMF.
+     * Callers of this function do not need to close the returned EMF. Doing so is a no-op.
      *
      * @param connectionId
      * @param entitiesSet Set of all entities managed by [javax.persistence.EntityManager]s created by the
