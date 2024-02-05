@@ -100,6 +100,7 @@ open class TestBase {
         }
     }
 
+    @Suppress("LongParameterList")
     fun executeTest(writer: BufferedWriter,
                     sandboxType: SandboxGroupType,
                     builder: (holdingIdentity: HoldingIdentity, hashes: Set<SecureHash>)-> SandboxGroupContext,

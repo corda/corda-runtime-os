@@ -41,7 +41,7 @@ class FakeDbConnectionManager(
         val dataSource: CloseableDataSource
     )
 
-    private val dbSources: List<NamedDataSources> = connections.map {
+    private var dbSources: List<NamedDataSources> = connections.map {
         val source = DbUtils.getEntityManagerConfiguration(
             "fake-db-manager-db-$schemaName",
             dbUser = "user_$schemaName",
@@ -54,6 +54,8 @@ class FakeDbConnectionManager(
     override fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet):
             EntityManagerFactory {
         var source = dbSources.single { it.id == connectionId }
+        // During sandbox tests, the dataSources may get closed when sandboxes are evicted. Upon sandbox being re-created,
+        // the datasources need to be recreated as well. Check if it's closed and re-create if needed
         try {
             // This will throw if the datasource is actually closed. This means we need to re-create it
             // Ideally we'd re-place it in the dbSources list
@@ -68,6 +70,7 @@ class FakeDbConnectionManager(
 
                     NamedDataSources(conn.first, conn.second, schemaName, it)
                 }
+                dbSources = dbSources.map { if (it.id == connectionId) source else it }
             } else {
                 throw e
             }

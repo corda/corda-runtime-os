@@ -31,6 +31,7 @@ dependencies {
     implementation project(':components:virtual-node:sandbox-group-context-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
 
+    implementation project(':libs:crypto:merkle-impl')
     implementation project(':libs:flows:external-event-responses')
     implementation project(':libs:flows:flow-utils')
     implementation project(':libs:flows:flow-api')
@@ -56,6 +57,7 @@ dependencies {
     testImplementation project(':testing:persistence-testkit')
     testImplementation project(':testing:sandboxes-testkit')
 
+    testImplementation project(':libs:crypto:merkle-impl')
     testImplementation project(':libs:flows:session-manager-impl')
     testImplementation project(':libs:lifecycle:lifecycle-test-impl')
     testImplementation project(':libs:lifecycle:lifecycle-impl')
@@ -82,6 +84,7 @@ dependencies {
 
     integrationTestImplementation project(':components:flow:flow-service')
     integrationTestImplementation project(":testing:db-message-bus-testkit")
+    integrationTestImplementation project(':libs:crypto:merkle-impl')
     integrationTestImplementation project(':libs:db:db-admin-impl')
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project(':testing:test-utilities')
