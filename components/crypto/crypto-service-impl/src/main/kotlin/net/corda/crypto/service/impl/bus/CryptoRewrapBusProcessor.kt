@@ -30,6 +30,7 @@ class CryptoRewrapBusProcessor(
     val cryptoService: CryptoService,
     private val stateManager: StateManager?,
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    private val defaultUnmanagedWrappingKeyName: String,
 ) : DurableProcessor<String, IndividualKeyRotationRequest> {
 
     companion object {
@@ -55,14 +56,6 @@ class CryptoRewrapBusProcessor(
 
             when (request.keyType) {
                 KeyType.UNMANAGED -> {
-                    if (request.oldParentKeyAlias.isNullOrEmpty()) {
-                        logger.info("oldParentKeyAlias missing from unmanaged IndividualKeyRotationRequest, ignoring.")
-                        return emptyList()
-                    }
-                    if (request.newParentKeyAlias.isNullOrEmpty()) {
-                        logger.info("newParentKeyAlias missing from unmanaged IndividualKeyRotationRequest, ignoring.")
-                        return emptyList()
-                    }
                     if (request.targetKeyAlias.isNullOrEmpty()) {
                         logger.info("targetKeyAlias missing from unmanaged IndividualKeyRotationRequest, ignoring.")
                         return emptyList()
@@ -76,7 +69,7 @@ class CryptoRewrapBusProcessor(
                         cryptoService.rewrapWrappingKey(
                             request.tenantId,
                             request.targetKeyAlias,
-                            request.newParentKeyAlias
+                            defaultUnmanagedWrappingKeyName
                         )
                     }
 
@@ -84,14 +77,6 @@ class CryptoRewrapBusProcessor(
                 }
 
                 KeyType.MANAGED -> {
-                    if (request.oldParentKeyAlias != null) {
-                        logger.info("oldParentKeyAlias provided for managed IndividualKeyRotationRequest, ignoring.")
-                        return emptyList()
-                    }
-                    if (request.newParentKeyAlias != null) {
-                        logger.info("newParentKeyAlias provided for managed IndividualKeyRotationRequest, ignoring.")
-                        return emptyList()
-                    }
                     if (request.targetKeyAlias != null) {
                         logger.info("targetKeyAlias provided for managed IndividualKeyRotationRequest, ignoring.")
                         return emptyList()
@@ -140,20 +125,20 @@ class CryptoRewrapBusProcessor(
                 stateManager.get(
                     listOf(
                         getKeyRotationStatusRecordKey(
-                            request.oldParentKeyAlias,
+                            defaultUnmanagedWrappingKeyName,
                             request.tenantId
                         )
                     )
                 )
             require(tenantIdWrappingKeysRecords.size == 1) {
                 "Found none or more than 1 ${request.tenantId} record " +
-                    "in the database for rootKeyAlias ${request.oldParentKeyAlias}. Found records $tenantIdWrappingKeysRecords."
+                        "in the database for new master wrapping key $defaultUnmanagedWrappingKeyName. Found records $tenantIdWrappingKeysRecords."
             }
 
             tenantIdWrappingKeysRecords.forEach { (_, state) ->
                 logger.debug(
                     "Updating state manager record for tenantId ${state.metadata[KeyRotationMetadataValues.TENANT_ID]} " +
-                        "after re-wrapping ${request.targetKeyAlias}."
+                            "after re-wrapping ${request.targetKeyAlias}."
                 )
                 val deserializedStatus = checkNotNull(deserializer.deserialize(state.value))
                 val newValue =
@@ -161,7 +146,7 @@ class CryptoRewrapBusProcessor(
                         serializer.serialize(
                             UnmanagedKeyStatus(
                                 deserializedStatus.oldParentKeyAlias,
-                                deserializedStatus.newParentKeyAlias,
+                                null,
                                 deserializedStatus.tenantId,
                                 deserializedStatus.total,
                                 deserializedStatus.rotatedKeys + 1,
