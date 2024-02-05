@@ -55,7 +55,7 @@ class VirtualNodeReconciliationContext(
 
     override fun getOrCreateEntityManager(): EntityManager = entityManager
         ?: dbConnectionManager
-            .getOrCreateEntityManagerFactory(virtualNodeInfo.vaultDmlConnectionId, jpaEntitiesSet)
+            .getOrCreateEntityManagerFactory(virtualNodeInfo.vaultDmlConnectionId, jpaEntitiesSet, enablePool = false)
             .createEntityManager().also { entityManager = it }
 
     override fun prettyPrint(): String = "vNode ${virtualNodeInfo.holdingIdentity.shortHash} context"

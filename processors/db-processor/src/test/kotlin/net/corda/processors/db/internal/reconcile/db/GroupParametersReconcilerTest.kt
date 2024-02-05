@@ -228,7 +228,7 @@ class GroupParametersReconcilerTest {
             // call terminal operation to process stream
             groupParametersReconciler.dbReconcilerReader?.getAllVersionedRecords()?.count()
 
-            verify(dbConnectionManager, atLeastOnce()).getOrCreateEntityManagerFactory(any<UUID>(), any())
+            verify(dbConnectionManager, atLeastOnce()).getOrCreateEntityManagerFactory(any<UUID>(), any(), eq(false))
             verify(em1).criteriaBuilder
             verify(em1).createQuery(any<CriteriaQuery<GroupParametersEntity>>())
             verify(em2).criteriaBuilder
