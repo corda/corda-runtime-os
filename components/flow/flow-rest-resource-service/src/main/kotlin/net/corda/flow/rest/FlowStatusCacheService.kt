@@ -2,7 +2,6 @@ package net.corda.flow.rest
 
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.rest.flowstatus.FlowStatusUpdateListener
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 

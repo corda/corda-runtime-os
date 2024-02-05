@@ -10,12 +10,10 @@ import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.HttpRestResource
-import net.corda.rest.annotations.HttpWS
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.annotations.RestQueryParameter
 import net.corda.rest.response.ResponseEntity
-import net.corda.rest.ws.DuplexChannel
 
 /** Rest operations for flow management. */
 @HttpRestResource(
