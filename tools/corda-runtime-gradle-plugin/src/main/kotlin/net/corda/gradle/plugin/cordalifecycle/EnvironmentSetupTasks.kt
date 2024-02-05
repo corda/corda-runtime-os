@@ -1,5 +1,6 @@
 package net.corda.gradle.plugin.cordalifecycle
 
+import kong.unirest.Unirest
 import net.corda.gradle.plugin.configuration.PluginConfiguration
 import net.corda.gradle.plugin.configuration.ProjectContext
 import org.gradle.api.DefaultTask
@@ -22,6 +23,8 @@ const val POSTGRES_JDBC_CFG = "myPostgresJDBC"
 const val PROJINIT_TASK_NAME = "projInit"
 const val GET_POSTGRES_JDBC_TASK_NAME = "getPostgresJDBC"
 const val GET_COMBINED_WORKER_JAR_TASK_NAME = "getCombinedWorkerJar"
+const val GET_NOTARY_SERVER_CPB_TASK_NAME = "getNotaryServerCPB"
+const val UPDATE_PROCESSOR_TIMEOUT = "updateProcessorTimeout"
 
 /**
  * Creates the supporting gradle tasks for downloading the combined worker, postgres, also creates
@@ -59,10 +62,20 @@ fun createPluginEnvSetupTasks(project: Project, pluginConfig: PluginConfiguratio
             it.group = UTIL_TASK_GROUP
             it.pluginConfig.set(pluginConfig)
         }
+
+        project.tasks.create(GET_NOTARY_SERVER_CPB_TASK_NAME, DownloadNotaryCpb::class.java) {
+            it.group = UTIL_TASK_GROUP
+            it.pluginConfig.set(pluginConfig)
+        }
+
+        project.tasks.create(UPDATE_PROCESSOR_TIMEOUT, UpdateClusterConfig::class.java) {
+            it.group = UTIL_TASK_GROUP
+            it.pluginConfig.set(pluginConfig)
+        }
     }
 }
 
-open class ProjInit @Inject constructor(objects: ObjectFactory): DefaultTask() {
+open class ProjInit @Inject constructor(objects: ObjectFactory) : DefaultTask() {
     @get:Input
     val pluginConfig: Property<PluginConfiguration> = objects.property(PluginConfiguration::class.java)
 
@@ -73,7 +86,7 @@ open class ProjInit @Inject constructor(objects: ObjectFactory): DefaultTask() {
     }
 }
 
-open class DownloadCombinedWorkerJar @Inject constructor(objects: ObjectFactory): DefaultTask() {
+open class DownloadCombinedWorkerJar @Inject constructor(objects: ObjectFactory) : DefaultTask() {
     @get:Input
     val pluginConfig: Property<PluginConfiguration> = objects.property(PluginConfiguration::class.java)
 
@@ -91,3 +104,50 @@ open class DownloadCombinedWorkerJar @Inject constructor(objects: ObjectFactory)
     }
 }
 
+open class DownloadNotaryCpb @Inject constructor(objects: ObjectFactory) : DefaultTask() {
+    @get:Input
+    val pluginConfig: Property<PluginConfiguration> = objects.property(PluginConfiguration::class.java)
+
+    @TaskAction
+    fun downloadNotaryCpb() {
+        val pc = ProjectContext(project, pluginConfig.get())
+        EnvironmentSetupHelper().downloadNotaryCpb(
+            pc.notaryVersion,
+            pc.cordaReleaseBranchName,
+            pc.notaryCpbFilePath,
+            pc.artifactoryUsername,
+            pc.artifactoryPassword
+        )
+    }
+}
+
+open class UpdateClusterConfig @Inject constructor(objects: ObjectFactory) : DefaultTask() {
+    @get:Input
+    val pluginConfig: Property<PluginConfiguration> = objects.property(PluginConfiguration::class.java)
+
+    @TaskAction
+    fun updateClusterMessagingConfig() {
+        val pc = ProjectContext(project, pluginConfig.get())
+        if (pc.cordaProcessorTimeout == (-1).toLong()) {
+            return
+        }
+        val helper = EnvironmentSetupHelper()
+        Unirest.config().verifySsl(false)
+        val configSection = "corda.messaging"
+        val configVersion = helper.getConfigVersion(pc.cordaClusterURL, pc.cordaRpcUser, pc.cordaRpcPassword, configSection)
+        val configBody = """
+                "subscription": {
+                    "processorTimeout": ${pc.cordaProcessorTimeout}
+                }
+            """.trimIndent()
+        helper.sendUpdate(
+            pc.cordaClusterURL,
+            pc.cordaRpcUser,
+            pc.cordaRpcPassword,
+            configSection,
+            configBody,
+            configVersion
+        )
+        logger.quiet("Updated $configSection processorTimeout to ${pc.cordaProcessorTimeout}")
+    }
+}

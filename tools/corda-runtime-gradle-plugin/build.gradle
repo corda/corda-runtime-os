@@ -17,7 +17,8 @@ repositories {
 }
 
 dependencies {
-    api libs.junit.api
+    implementation libs.unirest.java
+    implementation libs.unirest.objectmapper.jackson
     testImplementation libs.bundles.test
 }
 
