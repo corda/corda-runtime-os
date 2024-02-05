@@ -433,8 +433,6 @@ class UtxoPersistenceServiceImpl(
                     nowUtc
                 )
 
-                // 6. Persist the top level and component group merkle proofs
-                // No need to persist the leaf data for the top level merkle proof as we can reconstruct that
                 val topLevelTransactionMerkleProof = UtxoRepository.TransactionMerkleProof(
                     filteredTransaction.id.toString(),
                     TOP_LEVEL_MERKLE_PROOF_GROUP_INDEX,
@@ -445,7 +443,7 @@ class UtxoPersistenceServiceImpl(
 
                 val componentGroupTransactionMerkleProofs = filteredTransaction.filteredComponentGroups.map { (groupIndex, groupData) ->
                     val proof = UtxoRepository.TransactionMerkleProof(
-                        filteredTransaction.toString(),
+                        filteredTransaction.id.toString(),
                         groupIndex,
                         groupData.merkleProof.treeSize,
                         groupData.merkleProof.leaves.map { it.index },
@@ -457,16 +455,27 @@ class UtxoPersistenceServiceImpl(
                             leaf.index
                         )
                     }
-                    proof to leaves
+                    val components = groupData.merkleProof.leaves.map { leaf ->
+                        UtxoRepository.TransactionComponent(
+                            filteredTransaction.id.toString(),
+                            groupIndex,
+                            leaf.index,
+                            leaf.leafData
+                        )
+                    }
+                    TransactionMerkleProofToPersist(proof, leaves, components)
                 }
 
+                // 6. Persist the top level and component group merkle proofs
+                // No need to persist the leaf data for the top level merkle proof as we can reconstruct that
                 repository.persistMerkleProofs(
                     em,
-                    listOf(topLevelTransactionMerkleProof) + componentGroupTransactionMerkleProofs.map { it.first }
+                    listOf(topLevelTransactionMerkleProof) + componentGroupTransactionMerkleProofs.map { it.proof }
                 )
 
                 // 7. Persist the leaf data for each component group
-                repository.persistMerkleProofLeaves(em, componentGroupTransactionMerkleProofs.map { it.second }.flatten())
+                repository.persistMerkleProofLeaves(em, componentGroupTransactionMerkleProofs.map { it.leaves }.flatten())
+                repository.persistTransactionComponents(em, componentGroupTransactionMerkleProofs.map { it.components }.flatten(), this::hash)
             }
         }
     }
@@ -578,4 +587,10 @@ class UtxoPersistenceServiceImpl(
             filteredTransaction.id.toString() to Pair(filteredTransaction, ftxDto.signatures)
         }.toMap()
     }
+
+    private data class TransactionMerkleProofToPersist(
+        val proof: UtxoRepository.TransactionMerkleProof,
+        val leaves: List<UtxoRepository.TransactionMerkleProofLeaf>,
+        val components: List<UtxoRepository.TransactionComponent>
+    )
 }

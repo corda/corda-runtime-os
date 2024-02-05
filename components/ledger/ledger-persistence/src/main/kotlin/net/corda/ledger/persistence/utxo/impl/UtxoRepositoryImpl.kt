@@ -262,6 +262,34 @@ class UtxoRepositoryImpl @Activate constructor(
         }
     }
 
+    override fun persistTransactionComponents(
+        entityManager: EntityManager,
+        components: List<UtxoRepository.TransactionComponent>,
+        hash: (ByteArray) -> String
+    ) {
+        fun isMetadata(groupIndex: Int, leafIndex: Int) = groupIndex == 0 && leafIndex == 0
+
+        val componentsWithMetadataRemoved = components.mapNotNull { component ->
+                val (_, groupIndex, leafIndex) = component
+                if (isMetadata(groupIndex, leafIndex)) {
+                    null
+                } else {
+                    component
+            }
+        }
+        persistBatch(
+            entityManager,
+            queryProvider.persistTransactionComponents,
+            componentsWithMetadataRemoved
+        ) { statement, parameterIndex, component ->
+            statement.setString(parameterIndex.next(), component.transactionId)
+            statement.setInt(parameterIndex.next(), component.groupIndex)
+            statement.setInt(parameterIndex.next(), component.leafIndex)
+            statement.setBytes(parameterIndex.next(), component.leafData)
+            statement.setString(parameterIndex.next(), hash(component.leafData))
+        }
+    }
+
     override fun persistVisibleTransactionOutputs(
         entityManager: EntityManager,
         transactionId: String,
@@ -360,6 +388,7 @@ class UtxoRepositoryImpl @Activate constructor(
     }
 
     override fun persistMerkleProofs(entityManager: EntityManager, merkleProofs: List<UtxoRepository.TransactionMerkleProof>) {
+        println("proofs = $merkleProofs")
         persistBatch(entityManager, queryProvider.persistMerkleProofs, merkleProofs) { statement, parameterIndex, merkleProof ->
             statement.setString(parameterIndex.next(), merkleProof.merkleProofId)
             statement.setString(parameterIndex.next(), merkleProof.transactionId)
@@ -370,7 +399,7 @@ class UtxoRepositoryImpl @Activate constructor(
     }
 
     override fun persistMerkleProofLeaves(entityManager: EntityManager, leaves: List<UtxoRepository.TransactionMerkleProofLeaf>) {
-        persistBatch(entityManager, queryProvider.persistMerkleProofs, leaves) { statement, parameterIndex, leaf ->
+        persistBatch(entityManager, queryProvider.persistMerkleProofLeaves, leaves) { statement, parameterIndex, leaf ->
             statement.setString(parameterIndex.next(), leaf.merkleProofId)
             statement.setInt(parameterIndex.next(), leaf.leafIndex)
         }

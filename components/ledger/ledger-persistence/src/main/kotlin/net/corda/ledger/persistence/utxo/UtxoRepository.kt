@@ -120,6 +120,14 @@ interface UtxoRepository {
         hash: (ByteArray) -> String
     )
 
+    fun persistTransactionComponents(
+        entityManager: EntityManager,
+        components: List<TransactionComponent>,
+        hash: (ByteArray) -> String
+    )
+
+    data class TransactionComponent(val transactionId: String, val groupIndex: Int, val leafIndex: Int, val leafData: ByteArray)
+
     /** Persists transaction output (operation is idempotent) */
     @Suppress("LongParameterList")
     fun persistVisibleTransactionOutputs(
