@@ -40,7 +40,8 @@ class CordaLifeCycleTasksTest : FunctionalBaseTest() {
     @EnabledIfEnvironmentVariable(named = "CI", matches = "true", disabledReason = "Docker is expected to be running in local env")
     fun shouldFailToStartCordaOnCiWithoutDocker() {
         appendCordaRuntimeGradlePluginExtension()
-        val result = executeWithRunner(START_CORDA_TASK_NAME)
+        val result = executeAndFailWithRunner(START_CORDA_TASK_NAME)
+        assertTrue(result.output.contains(CordaRuntimeGradlePluginException::class.java.name))
         assertTrue(result.output.contains("Cannot connect to the Docker daemon"))
     }
 

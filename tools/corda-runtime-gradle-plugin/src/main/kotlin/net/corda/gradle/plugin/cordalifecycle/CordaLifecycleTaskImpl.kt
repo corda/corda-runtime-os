@@ -27,11 +27,16 @@ class CordaLifecycleTaskImpl(var pc: ProjectContext) {
         }
 
         pc.logger.quiet("Starting Corda Combined Worker in Docker.")
-        cordaLifecycleHelper.startCombinedWorkerWithDockerCompose(
+        val cordaProcess = cordaLifecycleHelper.startCombinedWorkerWithDockerCompose(
             pc.cordaPidCache,
             "${pc.project.rootDir}/${pc.composeFilePath}",
             pc.composeNetworkName
         )
+        cordaProcess.waitFor()
+        if (cordaProcess.exitValue() != 0) {
+            stopCorda()
+            throw CordaRuntimeGradlePluginException("Corda process did not start successfully, please check the logs.")
+        }
     }
 
     fun stopCorda() {

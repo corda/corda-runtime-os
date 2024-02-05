@@ -12,7 +12,7 @@ class CordaLifecycleHelper {
         pidFilePath: String,
         composeFilePath: String,
         dockerProjectName: String
-    ) {
+    ) : Process {
         val pidStore = PrintStream(FileOutputStream(File(pidFilePath)))
         val cordaProcessBuilder = ProcessBuilder(
             "docker",
@@ -28,6 +28,7 @@ class CordaLifecycleHelper {
         val cordaProcess = cordaProcessBuilder.start()
         pidStore.print(cordaProcess.pid())
         cordaProcess.inputStream.transferTo(System.out)
+        return cordaProcess
     }
 
     fun stopCombinedWorkerWithDockerCompose(
