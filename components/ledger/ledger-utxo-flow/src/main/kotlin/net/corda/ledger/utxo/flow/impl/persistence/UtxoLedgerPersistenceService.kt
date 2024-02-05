@@ -2,10 +2,10 @@ package net.corda.ledger.utxo.flow.impl.persistence
 
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedLedgerTransaction
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
@@ -85,18 +85,6 @@ interface UtxoLedgerPersistenceService {
     ): Pair<UtxoSignedLedgerTransaction?, TransactionStatus>?
 
     /**
-     * Find the [MerkleProof]s that were created from the transaction with ID [transactionId].
-     *
-     * @param transactionId ID of the transaction the Merkle proofs were created from
-     * @param groupIndex Component group index the Merkle proofs were created from
-     */
-    @Suspendable
-    fun findMerkleProofs(
-        transactionId: SecureHash,
-        groupIndex: Int
-    ): List<MerkleProof>
-
-    /**
      * Persist a [UtxoSignedTransaction] to the store.
      *
      * @param transaction UTXO signed transaction to persist.
@@ -133,17 +121,6 @@ interface UtxoLedgerPersistenceService {
         transactionStatus: TransactionStatus
     ): Pair<TransactionExistenceStatus, List<CordaPackageSummary>>
 
-    /**
-     * Persist a [MerkleProof] if it does not exist in the store already.
-     *
-     * @param transactionId ID of the transaction that the Merkle proof belongs to
-     * @param groupIndex index of the component group that the Merkle proof belongs to
-     * @param merkleProof the Merkle proof object to persist
-     */
     @Suspendable
-    fun persistMerkleProofIfDoesNotExist(
-        transactionId: SecureHash,
-        groupIndex: Int,
-        merkleProof: MerkleProof
-    )
+    fun persistTransactionSignatures(id: SecureHash, startingIndex: Int, signatures: List<DigitalSignatureAndMetadata>)
 }

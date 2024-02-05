@@ -2,44 +2,42 @@
 kotlinVersion = "1.8.21"
 
 bouncycastleVersion = "1.77"
-caffeineVersion = "3.1.6"
+braveVersion = "6.0.0"
+caffeineVersion = "3.1.8"
 hikariCpVersion = "5.1.0"
 jacksonVersion = "2.16.1"
-micrometerVersion = "1.12.2"
-mssqlDriverVersion = "11.2.3.jre17"
-postgresDriverVersion = "42.7.1"
-
-# REST dependency versions
 javalinVersion = "4.6.8"
+jcipAnnotationsVersion = "1.0_2"
 # This version of Jetty must be the same major version as used by Javalin, please see above.
 # Once Javalin version is upgraded to the latest, this override may be removed.
 jettyVersion = "9.4.53.v20231009"
-unirestVersion = "3.14.5"
+micrometerVersion = "1.12.2"
 nimbusVersion = "11.9.1"
-# Note: We cannot go to the higher versions as they transitively depend on SLF4J 2.X
-swaggerVersion = "2.2.16"
-# Please also update SWAGGERUI.version in net.corda.rest.server.impl.internal.OptionalDependency
-swaggeruiVersion = "5.10.3"
-jcipAnnotationsVersion = "1.0_2"
-pf4jVersion = "3.10.0"
-braveVersion = "6.0.0"
-zipkinReporterVersion = "3.2.1"
-zipkinCoreVersion = "2.27.1"
-
+kafkaClientVersion = "3.6.1_1"
+kubernetesClientVersion = "6.10.0"
 log4jVersion = "2.22.1"
+mssqlDriverVersion = "11.2.3.jre17"
+postgresDriverVersion = "42.7.1"
 # SLF4J cannot be ugraded to 2.x due to CorDapps requiring the 1.7 <= x < 2.0
 slf4jVersion = { strictly = "1.7.36" }
 # The CLI plugins use SLF4J version 2 because PF4j requires it
 # Since slf4jVersion is "strictly" enforced from `corda-api`, in order to override version we need to specify
 # version strictly here as well
 slf4jV2Version = { strictly = "2.0.6" }
-
-kubernetesClientVersion = "6.10.0"
-okioVersion = { strictly = "3.4.0" }
+# Please also update SWAGGERUI.version in net.corda.rest.server.impl.internal.OptionalDependency
+swaggeruiVersion = "5.10.3"
+# Note: We cannot go to the higher versions as they transitively depend on SLF4J 2.X
+swaggerVersion = "2.2.16"
+typeSafeConfigVersion = "1.4.3"
 okHttpVersion = { strictly = "4.9.2" }
+okioVersion = { strictly = "3.4.0" }
+pf4jVersion = "3.10.0"
+unirestVersion = "3.14.5"
+zipkinCoreVersion = "2.27.1"
+zipkinReporterVersion = "3.2.1"
 
 # Testing
-assertjVersion = "3.25.2"
+assertjVersion = "3.25.3"
 junitVersion = "5.10.1"
 mockitoVersion = "5.10.0"
 mockitoKotlinVersion = "5.2.1"
@@ -81,6 +79,7 @@ junit-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.r
 junit-params = { group = "org.junit.jupiter", name = "junit-jupiter-params", version.ref = "junitVersion" }
 junit-engine = { group = "org.junit.jupiter", name = "junit-jupiter-engine", version.ref = "junitVersion" }
 junit-platform = { group = "org.junit.platform", name = "junit-platform-launcher" }
+kafka-client = { group = "org.apache.servicemix.bundles", name = "org.apache.servicemix.bundles.kafka-clients", version.ref = "kafkaClientVersion" }
 kotlin-stdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version.ref = "kotlinVersion" }
 kotlin-stdlib-common = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib-common", version.ref = "kotlinVersion" }
 kotlin-stdlib-jdk7 = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk7", version.ref = "kotlinVersion" }
@@ -105,6 +104,7 @@ slf4j-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4jVersi
 slf4j-jul = { group = "org.slf4j", name = "jul-to-slf4j", version.ref = "slf4jVersion" }
 slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4jVersion" }
 slf4j-v2-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4jV2Version" }
+typesafe-config = { group = "com.typesafe", name = "config", version.ref = "typeSafeConfigVersion" }
 unirest-java = { group = "com.konghq", name = "unirest-java", version.ref = "unirestVersion"}
 unirest-objectmapper-jackson = { group = "com.konghq", name = "unirest-objectmapper-jackson", version.ref = "unirestVersion" }
 okio = { group = "com.squareup.okio", name = "okio", version.ref = "okioVersion" }

@@ -39,7 +39,7 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
-    runtimeOnly "com.typesafe:config:$typeSafeConfigVersion"
+    runtimeOnly libs.typesafe.config
 
     // This puts the jdbc driver into the docker image in the /opt/jdbc-driver folder
     // this folder can contain many jdbc drivers (and DataSourceFactory provider bundles).

@@ -193,7 +193,6 @@ class CryptoRekeyBusProcessorTests {
 
         stateManagerCreateCapture.firstValue.forEachIndexed { index, it ->
             assertThat(it.metadata[STATE_TYPE]).isEqualTo(UnmanagedKeyStatus::class.java.name)
-            assertThat(it.metadata[KeyRotationMetadataValues.TENANT_ID]).isEqualTo(allTenants[index])
             assertThat(it.metadata[KeyRotationMetadataValues.STATUS_TYPE]).isEqualTo(KeyRotationRecordType.KEY_ROTATION)
             assertThat(it.metadata[KeyRotationMetadataValues.STATUS]).isEqualTo(KeyRotationStatus.IN_PROGRESS)
             assertThat(it.metadata[KeyRotationMetadataValues.KEY_TYPE]).isEqualTo(KeyRotationKeyType.UNMANAGED)
@@ -209,6 +208,7 @@ class CryptoRekeyBusProcessorTests {
             assertThat(unmanagedKeyStatus).isNotNull()
             assertThat(unmanagedKeyStatus!!.newParentKeyAlias).isEqualTo(newKeyAlias)
             assertThat(unmanagedKeyStatus.oldParentKeyAlias).isEqualTo(oldKeyAlias)
+            assertThat(unmanagedKeyStatus.tenantId).isEqualTo(allTenants[index])
             assertThat(unmanagedKeyStatus.total).isEqualTo(1)
             assertThat(unmanagedKeyStatus.rotatedKeys).isEqualTo(0)
         }

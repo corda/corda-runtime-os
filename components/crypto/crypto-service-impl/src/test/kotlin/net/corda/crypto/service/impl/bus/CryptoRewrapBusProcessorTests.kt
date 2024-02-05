@@ -36,6 +36,7 @@ class CryptoRewrapBusProcessorTests {
         on { deserialize(any()) } doReturn UnmanagedKeyStatus(
             OLD_PARENT_KEY_ALIAS,
             NEW_PARENT_KEY_ALIAS,
+            tenantId,
             10,
             5,
             Instant.now()

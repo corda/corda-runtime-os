@@ -41,7 +41,7 @@ dependencies {
     implementation project(":libs:utilities")
     implementation project(":libs:virtual-node:virtual-node-info")
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-membership"

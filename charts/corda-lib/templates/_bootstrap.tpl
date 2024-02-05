@@ -259,20 +259,9 @@ spec:
             {{- include "corda.cryptoDbPasswordEnv" . | nindent 12 }}
             {{/* Bootstrap State Manager Databases */}}
             {{- range $stateType, $stateTypeConfig  := .Values.stateManager -}}
-            {{-   $databaseFound := false -}}
-            {{-   $connectionSettings := dict -}}
             {{-   $storageId := $stateTypeConfig.storageId -}}
             {{-   $storagePartition := $stateTypeConfig.partition -}}
-            {{/*  -- Ensure that every state type has an associated database storage configured */}}
-            {{-   range $.Values.databases -}}
-            {{-     if eq .name $storageId -}}
-            {{-       $databaseFound = true -}}
-            {{-       $connectionSettings = . -}}
-            {{-     end -}}
-            {{-   end -}}
-            {{-   if not $databaseFound -}}
-            {{-     fail ( printf "Undefined persistent storage '%s' detected at stateManager.%s.storageId" $storageId $stateType ) -}}
-            {{-   end -}}
+            {{-   $connectionSettings := fromYaml ( include "corda.db.configuration" ( list $ $storageId ( printf "stateManager.%s.storageId" $stateType ) ) ) -}}
             {{/*  -- Check whether bootstrap is enabled for the database storage associated to the state type */}}
             {{-   range $bootCredentials := $.Values.bootstrap.db.databases -}}
             {{-     if eq .name $storageId -}}
@@ -281,7 +270,7 @@ spec:
             {{-           $stateManagerSettings := ( index $workerConfig "stateManager" ) -}}
             {{/*          -- State Manager configured for the worker, generate the required database boostrap template */}}
             {{-           if and $stateManagerSettings ( index $stateManagerSettings $stateType ) -}}
-            {{-             include "corda.stateManagerDatabaseBootstrap" ( list $ $stateType $workerName $storagePartition $connectionSettings ( index $stateManagerSettings $stateType ) $bootCredentials ) -}}
+            {{-             include "corda.sm.db.bootstrapContainers" ( list $ $stateType $workerName $storagePartition $connectionSettings ( index $stateManagerSettings $stateType ) $bootCredentials ) -}}
             {{-           end -}}
             {{-         end -}}
             {{-     end -}}

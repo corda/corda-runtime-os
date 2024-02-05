@@ -1,3 +1,4 @@
+{{/* TODO-[CORE-19372]: remove stateManagerDbAccess and all references to it */}}
 {{- include "corda.worker" ( list $ .Values.workers.crypto "crypto"
   ( dict "clusterDbAccess" true "stateManagerDbAccess" true "additionalWorkerArgs" ( list "--hsm-id=SOFT" ) )
 ) }}

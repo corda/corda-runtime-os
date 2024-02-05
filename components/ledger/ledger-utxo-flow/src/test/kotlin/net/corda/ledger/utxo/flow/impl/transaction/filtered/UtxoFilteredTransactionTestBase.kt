@@ -71,7 +71,8 @@ open class UtxoFilteredTransactionTestBase {
     protected val filteredTransactionFactory = FilteredTransactionFactoryImpl(
         jsonMarshallingService,
         merkleTreeProvider,
-        serializationService
+        serializationService,
+        DigestServiceImpl(PlatformDigestServiceImpl(CipherSchemeMetadataImpl()), null)
     )
 
     @BeforeEach
