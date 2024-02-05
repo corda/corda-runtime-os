@@ -19,17 +19,35 @@ data class KeyRotationStatusResponse(
     val status: String,
     val createdTimestamp: Instant,
     val lastUpdatedTimestamp: Instant,
-    val wrappingKeys: List<Pair<String, TenantIdWrappingKeysStatus>>,
+    val wrappingKeys: List<Pair<String, RotatedKeysStatus>>,
 )
 
 /**
- * The key rotation status for wrapping keys per particular tenantId.
+ * The result of a managed key rotation status request.
  *
- * @param total Total number of wrapping keys that will be rotated for particular tenantId.
- * @param rotatedKeys The number of wrapping keys already rotated for particular tenantId.
+ * @param tenantId TenantId whose wrapping keys are rotating.
+ * @param status Overall status of the key rotation. Either In Progress or Done.
+ * @param createdTimestamp Timestamp of then the key rotation request was received.
+ * @param lastUpdatedTimestamp The last updated timestamp.
+ * @param signingKeys Number of signing keys needs rotating grouped by wrapping key.
  */
 
-data class TenantIdWrappingKeysStatus(
+data class ManagedKeyRotationStatusResponse(
+    val tenantId: String,
+    val status: String,
+    val createdTimestamp: Instant,
+    val lastUpdatedTimestamp: Instant,
+    val signingKeys: List<Pair<String, RotatedKeysStatus>>,
+)
+
+/**
+ * The key rotation status for wrapping or signing key.
+ *
+ * @param total Total number of keys that will be rotated.
+ * @param rotatedKeys The number of keys already rotated.
+ */
+
+data class RotatedKeysStatus(
     val total: Int,
     val rotatedKeys: Int,
 )

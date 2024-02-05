@@ -61,7 +61,7 @@ class UtxoPersistenceServiceImplTest {
             persistedJsonStrings[txId] = customRepresentation
         }
 
-        on { persistTransaction(any(), any(), any(), any(), any(), any(), any()) } doAnswer {}
+        on { persistTransaction(any(), any(), any(), any(), any(), any(), any(), any()) } doAnswer {}
         on { persistTransactionComponentLeaf(any(), any(), any(), any(), any(), any()) } doAnswer {}
     }
     private val mockDigestService = mock<DigestService> {
@@ -94,6 +94,11 @@ class UtxoPersistenceServiceImplTest {
         storage,
         DefaultContractStateVaultJsonFactoryImpl(),
         JsonMarshallingServiceImpl(mock<MerkleProofProvider> {}), // We could mock this but this is basically just a layer on top of Jackson
+        mock(),
+        mock(),
+        mock(),
+        mock(),
+        mock(),
         UTCClock()
     )
 
@@ -147,6 +152,11 @@ class UtxoPersistenceServiceImplTest {
             storage,
             emptyDefaultContractStateVaultJsonFactory,
             JsonMarshallingServiceImpl(mock<MerkleProofProvider> {}),
+            mock(),
+            mock(),
+            mock(),
+            mock(),
+            mock(),
             UTCClock()
         )
 
@@ -238,6 +248,11 @@ class UtxoPersistenceServiceImplTest {
             ContractStateVaultJsonFactoryRegistryImpl(), // Empty storage
             DefaultContractStateVaultJsonFactoryImpl(),
             JsonMarshallingServiceImpl(mock<MerkleProofProvider> {}),
+            mock(),
+            mock(),
+            mock(),
+            mock(),
+            mock(),
             UTCClock()
         )
 
@@ -278,6 +293,11 @@ class UtxoPersistenceServiceImplTest {
             storage,
             DefaultContractStateVaultJsonFactoryImpl(),
             JsonMarshallingServiceImpl(mock<MerkleProofProvider> {}),
+            mock(),
+            mock(),
+            mock(),
+            mock(),
+            mock(),
             UTCClock()
         )
 

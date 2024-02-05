@@ -24,7 +24,7 @@ dependencies {
     implementation project(":testing:db-testkit")
     implementation project(":testing:test-utilities")
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
 }
 
 description 'Database Message Bus Internal Testkit'

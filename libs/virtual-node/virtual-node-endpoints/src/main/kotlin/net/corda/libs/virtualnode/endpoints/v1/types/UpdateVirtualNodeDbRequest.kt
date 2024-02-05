@@ -1,15 +1,15 @@
 package net.corda.libs.virtualnode.endpoints.v1.types
 
+import net.corda.rest.JsonObject
+
 /**
- * The data object sent via HTTP to request the update of a virtual node.
- *
- * @param shortHash The short hash of the virtual node.
+ * The data object sent via REST to request the update of a virtual node DB connectivity parameters.
  */
 data class UpdateVirtualNodeDbRequest(
-    val vaultDdlConnection: String?,
-    val vaultDmlConnection: String?,
-    val cryptoDdlConnection: String?,
-    val cryptoDmlConnection: String?,
-    val uniquenessDdlConnection: String?,
-    val uniquenessDmlConnection: String?
+    val vaultDdlConnection: JsonObject?,
+    val vaultDmlConnection: JsonObject?,
+    val cryptoDdlConnection: JsonObject?,
+    val cryptoDmlConnection: JsonObject?,
+    val uniquenessDdlConnection: JsonObject?,
+    val uniquenessDmlConnection: JsonObject?
 )
