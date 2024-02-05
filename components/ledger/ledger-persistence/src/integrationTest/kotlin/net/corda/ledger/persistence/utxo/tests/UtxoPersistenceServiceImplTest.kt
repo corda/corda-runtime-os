@@ -2,7 +2,11 @@ package net.corda.ledger.persistence.utxo.tests
 
 import net.corda.common.json.validation.JsonValidator
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.cipher.suite.SignatureSpecImpl
+import net.corda.crypto.cipher.suite.SignatureSpecs
+import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.fullIdHash
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedGroupParameters
@@ -18,6 +22,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters
+import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.data.transaction.filtered.factory.FilteredTransactionFactory
 import net.corda.ledger.common.testkit.cpiPackageSummaryExample
 import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
@@ -52,6 +57,7 @@ import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
@@ -76,6 +82,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.junit.jupiter.api.assertAll
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
@@ -84,6 +91,7 @@ import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
+import java.lang.IllegalArgumentException
 import java.math.BigDecimal
 import java.nio.ByteBuffer
 import java.nio.file.Path
@@ -97,6 +105,7 @@ import java.time.temporal.ChronoUnit
 import java.util.Random
 import java.util.concurrent.atomic.AtomicInteger
 import javax.persistence.EntityManagerFactory
+import javax.persistence.PersistenceException
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
@@ -416,7 +425,7 @@ class UtxoPersistenceServiceImplTest {
             tokenAmount
         )
 
-        persistenceService.persistTransaction(transactionReader, utxoTokenMap)
+        persistenceService.persistSignedTransaction(transactionReader, utxoTokenMap)
 
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
 
@@ -581,35 +590,210 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
+    fun `persist the same filtered transaction twice with different signatures should result in combined signatures`() {
+        val signedTransaction = createSignedTransaction(Instant.now())
+        val account = "Account"
+
+        val filteredTransaction = createFilteredTransaction(signedTransaction)
+
+        val signature = getSignatureWithMetadataExample()
+
+        val otherKey = KeyPairGenerator.getInstance("RSA").also {
+                it.initialize(512)
+        }.genKeyPair().public
+
+        val signature2 = DigitalSignatureAndMetadata(
+            DigitalSignatureWithKeyId(otherKey.fullIdHash(), "signature1234".toByteArray()),
+            DigitalSignatureMetadata(
+                Instant.now(),
+                SignatureSpecImpl(SignatureSpecs.ECDSA_SHA256.signatureName),
+                mapOf(
+                    "propertyKey1" to "propertyValue1",
+                    "propertyKey2" to "propertyValue2"
+                )
+            )
+        )
+
+        persistenceService.persistFilteredTransactions(
+            mapOf(filteredTransaction to listOf(signature)),
+            account
+        )
+
+        persistenceService.persistFilteredTransactions(
+            mapOf(filteredTransaction to listOf(signature, signature2)),
+            account
+        )
+
+        val fetchedFilteredTransactionSignatures = (persistenceService as UtxoPersistenceServiceImpl).findFilteredTransactions(
+            listOf(filteredTransaction.id.toString())
+        ).entries.first().value.second
+
+        assertThat(fetchedFilteredTransactionSignatures).isNotEmpty
+        assertThat(fetchedFilteredTransactionSignatures).hasSize(2)
+        assertThat(fetchedFilteredTransactionSignatures[0]).isEqualTo(signature)
+        assertThat(fetchedFilteredTransactionSignatures[1]).isEqualTo(signature2)
+
+    }
+
+    @Test
+    fun `filtered transaction cannot be persisted if no cpi metadata is found in metadata`() {
+        val signedTransaction = createSignedTransaction(Instant.now())
+        val account = "Account"
+
+        val filteredTransaction = createFilteredTransaction(signedTransaction)
+        val noMetadataFtx = filteredTransactionFactory.create(
+            filteredTransaction.id,
+            filteredTransaction.topLevelMerkleProof,
+            filteredTransaction.filteredComponentGroups.filter { it.key != 0 },
+            filteredTransaction.privacySalt.bytes
+        )
+
+        val ex = assertThrows<IllegalArgumentException> {
+            persistenceService.persistFilteredTransactions(
+                mapOf(noMetadataFtx to emptyList()),
+                account
+            )
+        }
+
+        assertThat(ex).hasStackTraceContaining(
+            "Could not find metadata in the filtered transaction with id: ${filteredTransaction.id}"
+        )
+    }
+
+
+    @Test
+    fun `filtered transaction cannot be persisted if no metadata is present`() {
+        val signedTransaction = createSignedTransaction(Instant.now())
+        val account = "Account"
+
+        val filteredTransaction = createFilteredTransaction(signedTransaction)
+        val noMetadataFtx = filteredTransactionFactory.create(
+            filteredTransaction.id,
+            filteredTransaction.topLevelMerkleProof,
+            filteredTransaction.filteredComponentGroups.filter { it.key != 0 },
+            filteredTransaction.privacySalt.bytes
+        )
+
+        val ex = assertThrows<IllegalArgumentException> {
+            persistenceService.persistFilteredTransactions(
+                mapOf(noMetadataFtx to emptyList()),
+                account
+            )
+        }
+
+        assertThat(ex).hasStackTraceContaining(
+            "Could not find metadata in the filtered transaction with id: ${filteredTransaction.id}"
+        )
+    }
+
+    @Test
+    fun `filtered transaction cannot be fetched via the signed API`() {
+        val signedTransaction = createSignedTransaction(Instant.now())
+        val account = "Account"
+
+        val filteredTransactionToStore = createFilteredTransaction(signedTransaction)
+
+        persistenceService.persistFilteredTransactions(
+            mapOf(filteredTransactionToStore to emptyList()),
+            account
+        )
+
+        val ex = assertThrows<IllegalArgumentException> {
+            persistenceService.findSignedTransaction(
+                filteredTransactionToStore.id.toString(),
+                VERIFIED
+            )
+        }
+
+        assertThat(ex).hasStackTraceContaining(
+            "Transaction with ID: ${filteredTransactionToStore.id} was found in the database as a filtered transaction only."
+        )
+    }
+
+    @Test
+    fun `filtered transaction cannot be fetched if it doesn't exist in the DB`() {
+        val nonExistentTxId = "SHA-256D:111111111"
+
+        val ex = assertThrows<IllegalArgumentException> {
+            (persistenceService as UtxoPersistenceServiceImpl).findFilteredTransactions(
+                listOf(nonExistentTxId)
+            )
+        }
+
+        assertThat(ex).hasStackTraceContaining("Couldn't find any Merkle proofs for transaction with ID: $nonExistentTxId")
+    }
+
+    @Test
+    fun `filtered transaction signatures are fetched properly`() {
+        val signedTransaction = createSignedTransaction(Instant.now())
+        val account = "Account"
+
+        val dummySignatures = getSignatureWithMetadataExample()
+
+        val filteredTransaction = createFilteredTransaction(signedTransaction)
+
+        persistenceService.persistFilteredTransactions(
+            mapOf(filteredTransaction to listOf(dummySignatures)),
+            account
+        )
+
+        val fetchedFilteredTransactionSignatures = (persistenceService as UtxoPersistenceServiceImpl).findFilteredTransactions(
+            listOf(filteredTransaction.id.toString())
+        ).entries.first().value.second
+
+        assertThat(fetchedFilteredTransactionSignatures).isNotEmpty
+        assertThat(fetchedFilteredTransactionSignatures.first()).isEqualTo(dummySignatures)
+    }
+
+    @Test
+    fun `persisted signed transaction cannot be overwritten by a filtered transaction`() {
+        val signedTransaction = createSignedTransaction(Instant.now())
+        val account = "Account"
+
+        val initialPrivacySalt = signedTransaction.wireTransaction.privacySalt
+
+        val transactionReader = TestUtxoTransactionReader(
+            signedTransaction,
+            account,
+            VERIFIED,
+            listOf(0)
+        )
+
+        val filteredTransaction = createFilteredTransaction(signedTransaction)
+
+        persistenceService.persistSignedTransaction(transactionReader)
+
+        // generate a new privacy salt
+        val newPrivacySalt = getPrivacySalt()
+
+        // Make sure they are not the same just in case
+        assertThat(initialPrivacySalt).isNotEqualTo(newPrivacySalt)
+
+        // Modify the privacy salt
+        val alteredFilteredTransaction = filteredTransactionFactory.create(
+            filteredTransaction.id,
+            filteredTransaction.topLevelMerkleProof,
+            filteredTransaction.filteredComponentGroups,
+            newPrivacySalt.bytes
+        )
+
+        // In HSQL this will throw a constraint violation exception, there's no better way to simulate it
+        val ex = assertThrows<PersistenceException> {
+            persistenceService.persistFilteredTransactions(
+                mapOf(alteredFilteredTransaction to emptyList()),
+                account
+            )
+        }
+
+        assertThat(ex).hasStackTraceContaining("PK_UTXO_TRANSACTION")
+    }
+
+    @Test
     fun `persist and find filtered transactions`() {
         val signedTransaction = createSignedTransaction(Instant.now())
         val account = "Account"
 
-        val filteredTransactionToStore = filteredTransactionFactory.create(
-            signedTransaction.wireTransaction,
-            componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(
-                    0,
-                    TransactionMetadataImpl::class.java,
-                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                ),
-                ComponentGroupFilterParameters.AuditProof(
-                    1,
-                    Any::class.java,
-                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                ),
-                ComponentGroupFilterParameters.AuditProof(
-                    3,
-                    Any::class.java,
-                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                ),
-                ComponentGroupFilterParameters.AuditProof(
-                    8,
-                    Any::class.java,
-                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                ),
-            )
-        )
+        val filteredTransactionToStore = createFilteredTransaction(signedTransaction)
 
         persistenceService.persistFilteredTransactions(
             mapOf(filteredTransactionToStore to emptyList()),
@@ -804,6 +988,35 @@ class UtxoPersistenceServiceImplTest {
             .generateKeyPair().public
         val signatures = listOf(getSignatureWithMetadataExample(publicKey, createdTs))
         return SignedTransactionContainer(wireTransaction, signatures)
+    }
+
+
+    private fun createFilteredTransaction(signedTransaction: SignedTransactionContainer): FilteredTransaction {
+        return filteredTransactionFactory.create(
+            signedTransaction.wireTransaction,
+            componentGroupFilterParameters = listOf(
+                ComponentGroupFilterParameters.AuditProof(
+                    UtxoComponentGroup.METADATA.ordinal,
+                    TransactionMetadataImpl::class.java,
+                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
+                ),
+                ComponentGroupFilterParameters.AuditProof(
+                    UtxoComponentGroup.NOTARY.ordinal,
+                    Any::class.java,
+                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
+                ),
+                ComponentGroupFilterParameters.AuditProof(
+                    UtxoComponentGroup.OUTPUTS_INFO.ordinal,
+                    Any::class.java,
+                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
+                ),
+                ComponentGroupFilterParameters.AuditProof(
+                    UtxoComponentGroup.OUTPUTS.ordinal,
+                    Any::class.java,
+                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
+                ),
+            )
+        )
     }
 
     private class TestUtxoTransactionReader(

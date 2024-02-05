@@ -115,7 +115,7 @@ class UtxoPersistenceServiceImplTest {
             )
         )
 
-        persistenceService.persistTransaction(tx)
+        persistenceService.persistSignedTransaction(tx)
 
         assertThat(persistedJsonStrings).hasSize(1)
 
@@ -166,7 +166,7 @@ class UtxoPersistenceServiceImplTest {
             )
         )
 
-        singlePersistenceService.persistTransaction(tx)
+        singlePersistenceService.persistSignedTransaction(tx)
 
         assertThat(persistedJsonStrings).hasSize(1)
 
@@ -192,7 +192,7 @@ class UtxoPersistenceServiceImplTest {
             )
         )
 
-        persistenceService.persistTransaction(tx)
+        persistenceService.persistSignedTransaction(tx)
 
         assertThat(persistedJsonStrings).hasSize(1)
         val persisted = persistedJsonStrings.entries.first()
@@ -221,7 +221,7 @@ class UtxoPersistenceServiceImplTest {
             )
         )
 
-        persistenceService.persistTransaction(tx)
+        persistenceService.persistSignedTransaction(tx)
 
         assertThat(persistedJsonStrings).hasSize(1)
         val persisted = persistedJsonStrings.entries.first()
@@ -262,7 +262,7 @@ class UtxoPersistenceServiceImplTest {
             )
         )
 
-        emptyPersistenceService.persistTransaction(tx)
+        emptyPersistenceService.persistSignedTransaction(tx)
 
         assertThat(persistedJsonStrings).hasSize(1)
         val persisted = persistedJsonStrings.entries.first()
@@ -308,7 +308,7 @@ class UtxoPersistenceServiceImplTest {
         )
 
         assertDoesNotThrow {
-            persistenceService.persistTransaction(tx)
+            persistenceService.persistSignedTransaction(tx)
         }
 
         assertThat(persistedJsonStrings).hasSize(1)

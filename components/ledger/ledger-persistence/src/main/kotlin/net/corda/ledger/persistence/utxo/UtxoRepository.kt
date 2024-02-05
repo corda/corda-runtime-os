@@ -16,17 +16,23 @@ import javax.persistence.EntityManager
 @Suppress("TooManyFunctions")
 interface UtxoRepository {
 
+    /** Retrieves transaction by [id] */
+    fun findSignedTransaction(
+        entityManager: EntityManager,
+        id: String
+    ): SignedTransactionContainer?
+
+    /** Find filtered transactions with the given [ids] */
+    fun findFilteredTransactions(
+        entityManager: EntityManager,
+        ids: List<String>
+    ): Map<String, UtxoFilteredTransactionDto>
+
     /** Retrieves transaction IDs and their statuses if its ID is included in the [transactionIds] list. */
     fun findTransactionIdsAndStatuses(
         entityManager: EntityManager,
         transactionIds: List<String>
     ): Map<SecureHash, String>
-
-    /** Retrieves transaction by [id] */
-    fun findTransaction(
-        entityManager: EntityManager,
-        id: String
-    ): SignedTransactionContainer?
 
     /** Retrieves transaction component leafs except metadata which is stored separately */
     fun findTransactionComponentLeafs(
@@ -188,10 +194,4 @@ interface UtxoRepository {
         entityManager: EntityManager,
         transactionIds: List<String>
     ): Map<String, List<MerkleProofDto>>
-
-    /** Find filtered transactions with the given [ids] */
-    fun findFilteredTransactions(
-        entityManager: EntityManager,
-        ids: List<String>
-    ): Map<String, UtxoFilteredTransactionDto>
 }

@@ -25,7 +25,7 @@ class HsqldbUtxoQueryProvider @Activate constructor(
             MERGE INTO {h-schema}utxo_transaction AS ut
             USING (VALUES :id, CAST(:privacySalt AS VARBINARY(64)), :accountId, CAST(:createdAt AS TIMESTAMP), :status, CAST(:updatedAt AS TIMESTAMP), :metadataHash, :isFiltered)
                 AS x(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
-            ON x.id = ut.id
+            ON x.id = ut.id AND (x.is_filtered = ut.is_filtered OR ut.is_filtered = true)
             WHEN NOT MATCHED THEN
                 INSERT (id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
                 VALUES (x.id, x.privacy_salt, x.account_id, x.created, x.status, x.updated, x.metadata_hash, x.is_filtered)"""

@@ -189,4 +189,11 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
             	)
             WHERE utmp.transaction_id IN (:transactionIds)"""
             .trimIndent()
+
+    override val findIfTransactionsFiltered: String
+        get() = """
+            SELECT id, is_filtered 
+            FROM {h-schema}utxo_transaction 
+            WHERE id IN (:transactionIds)"""
+            .trimIndent()
 }

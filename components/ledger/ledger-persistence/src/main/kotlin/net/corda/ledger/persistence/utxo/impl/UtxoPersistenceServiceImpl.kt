@@ -84,19 +84,11 @@ class UtxoPersistenceServiceImpl(
         return entityManagerFactory.transaction { em ->
             val status = repository.findTransactionStatus(em, id)
             if (status == transactionStatus.value) {
-                repository.findTransaction(em, id)
+                repository.findSignedTransaction(em, id)
                     ?: throw InconsistentLedgerStateException("Transaction $id in status $status has disappeared from the database")
             } else {
                 null
             } to status
-        }
-    }
-
-    override fun findTransactionIdsAndStatuses(
-        transactionIds: List<String>
-    ): Map<SecureHash, String> {
-        return entityManagerFactory.transaction { em ->
-            repository.findTransactionIdsAndStatuses(em, transactionIds)
         }
     }
 
@@ -107,7 +99,7 @@ class UtxoPersistenceServiceImpl(
         return entityManagerFactory.transaction { em ->
             val status = repository.findTransactionStatus(em, id)
             if (status == transactionStatus.value) {
-                val (transaction, signatures) = repository.findTransaction(em, id)
+                val (transaction, signatures) = repository.findSignedTransaction(em, id)
                     ?.let { WrappedUtxoWireTransaction(it.wireTransaction, serializationService) to it.signatures }
                     ?: throw InconsistentLedgerStateException("Transaction $id in status $status has disappeared from the database")
 
@@ -134,6 +126,14 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
+    override fun findTransactionIdsAndStatuses(
+        transactionIds: List<String>
+    ): Map<SecureHash, String> {
+        return entityManagerFactory.transaction { em ->
+            repository.findTransactionIdsAndStatuses(em, transactionIds)
+        }
+    }
+
     override fun <T : ContractState> findUnconsumedVisibleStatesByType(stateClass: Class<out T>): List<UtxoVisibleTransactionOutputDto> {
         return entityManagerFactory.transaction { em ->
             repository.findUnconsumedVisibleStatesByType(em)
@@ -149,7 +149,7 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
-    override fun persistTransaction(transaction: UtxoTransactionReader, utxoTokenMap: Map<StateRef, UtxoToken>): List<CordaPackageSummary> {
+    override fun persistSignedTransaction(transaction: UtxoTransactionReader, utxoTokenMap: Map<StateRef, UtxoToken>): List<CordaPackageSummary> {
         entityManagerFactory.transaction { em ->
             return persistTransaction(em, transaction, utxoTokenMap)
         }
@@ -388,8 +388,6 @@ class UtxoPersistenceServiceImpl(
 
                 val nowUtc = utcClock.instant()
 
-                val metadata = filteredTransaction.metadata as TransactionMetadataInternal
-
                 // 1. Get the metadata bytes from the 0th component group merkle proof and create the hash
                 val metadataBytes = filteredTransaction.filteredComponentGroups[0]
                     ?.merkleProof
@@ -400,6 +398,8 @@ class UtxoPersistenceServiceImpl(
                 requireNotNull(metadataBytes) {
                     "Could not find metadata in the filtered transaction with id: ${filteredTransaction.id}"
                 }
+
+                val metadata = filteredTransaction.metadata as TransactionMetadataInternal
 
                 val metadataHash = sandboxDigestService.hash(
                     metadataBytes,
@@ -412,10 +412,10 @@ class UtxoPersistenceServiceImpl(
                     metadataHash,
                     metadataBytes,
                     requireNotNull(metadata.getMembershipGroupParametersHash()) {
-                        "Metadata without membership group parameters hash"
+                        "Could not find membership group parameters hash in metadata for transaction with id: ${filteredTransaction.id}"
                     },
                     requireNotNull(metadata.getCpiMetadata()) {
-                        "Metadata without CPI metadata"
+                        "Could not find CPI metadata in metadata for transaction with id: ${filteredTransaction.id}"
                     }.fileChecksum
                 )
 
@@ -467,9 +467,14 @@ class UtxoPersistenceServiceImpl(
     }
 
     @VisibleForTesting
-    internal fun findFilteredTransactions(
+    fun findFilteredTransactions(
         ids: List<String>
     ): Map<String, Pair<FilteredTransaction, List<DigitalSignatureAndMetadata>>> {
+
+        if (ids.isEmpty()) {
+            return emptyMap()
+        }
+
         return entityManagerFactory.transaction { em ->
             repository.findFilteredTransactions(em, ids)
         }.map { (transactionId, ftxDto) ->
@@ -570,7 +575,7 @@ class UtxoPersistenceServiceImpl(
             )
 
             // 6. Map the transaction id to the filtered transaction object and signatures
-            filteredTransaction.id.toString() to Pair(filteredTransaction, ftxDto.signatures)
+            transactionId to Pair(filteredTransaction, ftxDto.signatures)
         }.toMap()
     }
 

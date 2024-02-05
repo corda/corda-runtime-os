@@ -37,7 +37,7 @@ constructor(
         val utxoTokenMap = listOfPairsStateAndUtxoToken.associate { it.first.ref to it.second }
 
         // persist the transaction
-        persistenceService.persistTransaction(transaction, utxoTokenMap)
+        persistenceService.persistSignedTransaction(transaction, utxoTokenMap)
 
         // return output records
         return listOf(utxoOutputRecordFactory.getPersistTransactionSuccessRecord(externalEventContext))

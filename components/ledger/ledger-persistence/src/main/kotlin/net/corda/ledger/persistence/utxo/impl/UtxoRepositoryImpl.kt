@@ -60,10 +60,20 @@ class UtxoRepositoryImpl @Activate constructor(
         const val TOP_LEVEL_MERKLE_PROOF_INDEX = -1
     }
 
-    override fun findTransaction(
+    override fun findSignedTransaction(
         entityManager: EntityManager,
         id: String
     ): SignedTransactionContainer? {
+        val isTransactionFiltered = findIfTransactionsFiltered(entityManager, listOf(id))[id]
+
+        requireNotNull(isTransactionFiltered) {
+            "Transaction with ID: $id was not found in the database."
+        }
+
+        require(!isTransactionFiltered) {
+            "Transaction with ID: $id was found in the database as a filtered transaction only."
+        }
+
         val (privacySalt, metadataBytes) = findTransactionsPrivacySaltAndMetadata(entityManager, listOf(id))[id]
             ?: return null
         val wireTransaction = wireTransactionFactory.create(
@@ -74,6 +84,57 @@ class UtxoRepositoryImpl @Activate constructor(
             wireTransaction,
             findTransactionSignatures(entityManager, id)
         )
+    }
+
+    override fun findFilteredTransactions(
+        entityManager: EntityManager,
+        ids: List<String>
+    ): Map<String, UtxoFilteredTransactionDto> {
+        val privacySaltAndMetadataMap = findTransactionsPrivacySaltAndMetadata(entityManager, ids)
+        val merkleProofs = findMerkleProofs(entityManager, ids)
+        val signaturesMap = ids.associateWith { findTransactionSignatures(entityManager, it) }
+
+        return ids.associateWith { transactionId ->
+
+            val transactionMerkleProofs = merkleProofs[transactionId]
+            requireNotNull(transactionMerkleProofs) {
+                "Couldn't find any Merkle proofs for transaction with ID: $transactionId."
+            }
+
+            val (topLevelMerkleProofs, componentGroupMerkleProofs) = transactionMerkleProofs.partition {
+                it.groupIndex == TOP_LEVEL_MERKLE_PROOF_INDEX
+            }
+
+            require(topLevelMerkleProofs.isNotEmpty()) {
+                "Couldn't find a top level Merkle proof for transaction with ID: $transactionId."
+            }
+            require(componentGroupMerkleProofs.isNotEmpty()) {
+                "Couldn't find any component group Merkle proof for transaction with ID: $transactionId."
+            }
+
+            requireNotNull(privacySaltAndMetadataMap[transactionId]) {
+                "Couldn't find metadata for transaction with ID: $transactionId."
+            }
+
+            val transactionPrivacySaltAndMetadata = privacySaltAndMetadataMap[transactionId]
+            requireNotNull(transactionPrivacySaltAndMetadata) {
+                "Couldn't find metadata/privacy salt for transaction with ID: $transactionId"
+            }
+
+            val transactionSignatures = signaturesMap[transactionId]
+            requireNotNull(transactionSignatures) {
+                "Couldn't find signatures for transaction with ID: $transactionId"
+            }
+
+            UtxoFilteredTransactionDto(
+                transactionId = transactionId,
+                topLevelMerkleProofs = topLevelMerkleProofs,
+                componentMerkleProofMap = componentGroupMerkleProofs.groupBy { it.groupIndex },
+                privacySalt = transactionPrivacySaltAndMetadata.first,
+                metadataBytes = transactionPrivacySaltAndMetadata.second,
+                signatures = transactionSignatures
+            )
+        }
     }
 
     override fun findTransactionIdsAndStatuses(
@@ -436,56 +497,15 @@ class UtxoRepositoryImpl @Activate constructor(
             }
     }
 
-    override fun findFilteredTransactions(
+    private fun findIfTransactionsFiltered(
         entityManager: EntityManager,
-        ids: List<String>
-    ): Map<String, UtxoFilteredTransactionDto> {
-        val privacySaltAndMetadataMap = findTransactionsPrivacySaltAndMetadata(entityManager, ids)
-        val merkleProofs = findMerkleProofs(entityManager, ids)
-        val signaturesMap = ids.associateWith { findTransactionSignatures(entityManager, it) }
-
-        return ids.associateWith { transactionId ->
-
-            val transactionMerkleProofs = merkleProofs[transactionId]
-            requireNotNull(transactionMerkleProofs) {
-                "Couldn't find any Merkle proofs for transaction with ID: $transactionId."
-            }
-
-            val (topLevelMerkleProofs, componentGroupMerkleProofs) = transactionMerkleProofs.partition {
-                it.groupIndex == TOP_LEVEL_MERKLE_PROOF_INDEX
-            }
-
-            require(topLevelMerkleProofs.isNotEmpty()) {
-                "Couldn't find a top level Merkle proof for transaction with ID: $transactionId."
-            }
-            require(componentGroupMerkleProofs.isNotEmpty()) {
-                "Couldn't find any component group Merkle proof for transaction with ID: $transactionId."
-            }
-
-            requireNotNull(privacySaltAndMetadataMap[transactionId]) {
-                "Couldn't find metadata for transaction with ID: $transactionId."
-            }
-
-            val transactionPrivacySaltAndMetadata = privacySaltAndMetadataMap[transactionId]
-            requireNotNull(transactionPrivacySaltAndMetadata) {
-                "Couldn't find metadata/privacy salt for transaction with ID: $transactionId"
-            }
-
-            val transactionSignatures = signaturesMap[transactionId]
-            requireNotNull(transactionSignatures) {
-                "Couldn't find signatures for transaction with ID: $transactionId"
-            }
-
-            UtxoFilteredTransactionDto(
-                transactionId = transactionId,
-                topLevelMerkleProofs = topLevelMerkleProofs,
-                componentMerkleProofMap = componentGroupMerkleProofs.groupBy { it.groupIndex },
-                privacySalt = transactionPrivacySaltAndMetadata.first,
-                metadataBytes = transactionPrivacySaltAndMetadata.second,
-                signatures = transactionSignatures
-            )
+        transactionIds: List<String>
+    ): Map<String, Boolean> = entityManager.createNativeQuery(queryProvider.findIfTransactionsFiltered, Tuple::class.java)
+        .setParameter("transactionIds", transactionIds)
+        .resultListAsTuples()
+        .associate {
+            it.get(0) as String to it.get(1) as Boolean
         }
-    }
 
     private fun Int.logResult(entity: String): Int {
         if (this == 0) {

@@ -29,16 +29,6 @@ interface UtxoPersistenceService {
     fun findSignedTransaction(id: String, transactionStatus: TransactionStatus): Pair<SignedTransactionContainer?, String?>
 
     /**
-     * Find transactions with the given [transactionIds] that are present in the persistence context and return
-     * their IDs and statuses.
-     *
-     * @param transactionIds IDs of transactions to find.
-     *
-     * @return A map of the transaction IDs found and their statuses.
-     */
-    fun findTransactionIdsAndStatuses(transactionIds: List<String>): Map<SecureHash, String>
-
-    /**
      * Find a signed ledger transaction in the persistence context given it's [id] and return it with the status it is stored with. This
      * involves resolving its input and reference state and fetching the transaction's signatures.
      *
@@ -52,11 +42,21 @@ interface UtxoPersistenceService {
      */
     fun findSignedLedgerTransaction(id: String, transactionStatus: TransactionStatus): Pair<SignedLedgerTransactionContainer?, String?>
 
+    /**
+     * Find transactions with the given [transactionIds] that are present in the persistence context and return
+     * their IDs and statuses.
+     *
+     * @param transactionIds IDs of transactions to find.
+     *
+     * @return A map of the transaction IDs found and their statuses.
+     */
+    fun findTransactionIdsAndStatuses(transactionIds: List<String>): Map<SecureHash, String>
+
     fun <T : ContractState> findUnconsumedVisibleStatesByType(stateClass: Class<out T>): List<UtxoVisibleTransactionOutputDto>
 
     fun resolveStateRefs(stateRefs: List<StateRef>): List<UtxoVisibleTransactionOutputDto>
 
-    fun persistTransaction(
+    fun persistSignedTransaction(
         transaction: UtxoTransactionReader,
         utxoTokenMap: Map<StateRef, UtxoToken> = emptyMap()
     ): List<CordaPackageSummary>
