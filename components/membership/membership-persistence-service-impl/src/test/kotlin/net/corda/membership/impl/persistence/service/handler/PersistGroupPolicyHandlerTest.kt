@@ -76,7 +76,8 @@ class PersistGroupPolicyHandlerTest {
         on {
             getOrCreateEntityManagerFactory(
                 vaultDmlConnectionId,
-                entitySet
+                entitySet,
+                false
             )
         } doReturn entityManagerFactory
     }
