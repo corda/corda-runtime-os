@@ -40,6 +40,10 @@ class TestWrappingRepository(
         TODO("Not needed")
     }
 
+    override fun findKeysNotWrappedByParentKey(parentKeyAlias: String): List<WrappingKeyInfo> {
+        TODO("Not needed")
+    }
+
     override fun close() {
     }
 

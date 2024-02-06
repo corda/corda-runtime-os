@@ -27,6 +27,10 @@ class TestWrappingRepository(
 
     override fun findKeysWrappedByParentKey(parentKeyAlias: String): List<WrappingKeyInfo> = TODO("Not needed")
 
+    override fun findKeysNotWrappedByParentKey(parentKeyAlias: String): List<WrappingKeyInfo> {
+        TODO("Not needed")
+    }
+
     override fun getKeyById(id: UUID): WrappingKeyInfo? = TODO("Not needed")
 
     override fun getAllKeyIdsAndAliases(): Set<Pair<UUID, String>> = TODO("Not needed")
