@@ -6,7 +6,6 @@ import net.corda.crypto.rest.response.ManagedKeyRotationResponse
 import net.corda.crypto.rest.response.ManagedKeyRotationStatusResponse
 import net.corda.rest.RestResource
 import net.corda.rest.SC_ACCEPTED
-import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.HttpRestResource
