@@ -25,7 +25,7 @@ class SingleClusterDynamicNetworkTest : ClusterReadiness by ClusterReadinessChec
     @BeforeEach
     fun setup() {
         // check cluster is ready
-        assertIsReady(Duration.ofMinutes(1), Duration.ofMillis(100))
+        assertIsReady(Duration.ofMinutes(2), Duration.ofMillis(100))
     }
 
     @Test

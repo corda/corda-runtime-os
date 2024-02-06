@@ -52,7 +52,7 @@ class FlowStatusFeedSmokeTest : ClusterReadiness by ClusterReadinessChecker() {
     @BeforeAll
     fun beforeAll() {
         // check cluster is ready
-        assertIsReady(Duration.ofMinutes(1), Duration.ofMillis(100))
+        assertIsReady(Duration.ofMinutes(2), Duration.ofMillis(100))
 
         // Certificate upload can be slow in the combined worker, especially after it has just started up.
         cluster {

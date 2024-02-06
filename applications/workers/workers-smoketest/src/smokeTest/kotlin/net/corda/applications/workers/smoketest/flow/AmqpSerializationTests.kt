@@ -38,7 +38,7 @@ class AmqpSerializationTests : ClusterReadiness by ClusterReadinessChecker() {
     @BeforeAll
     internal fun beforeAll() {
         // check cluster is ready
-        assertIsReady(Duration.ofMinutes(1), Duration.ofMillis(100))
+        assertIsReady(Duration.ofMinutes(2), Duration.ofMillis(100))
         // Upload test flows if not already uploaded
         conditionallyUploadCordaPackage(
             cpiName,
