@@ -212,10 +212,6 @@ class SoftCryptoServiceCachingTests {
 
             override fun findKeyAndId(alias: String): Pair<UUID, WrappingKeyInfo>? = TODO("Not needed")
 
-            override fun findKeysWrappedByParentKey(parentKeyAlias: String): List<WrappingKeyInfo> {
-                TODO("Not needed")
-            }
-
             override fun findKeysNotWrappedByParentKey(parentKeyAlias: String): List<WrappingKeyInfo> {
                 TODO("Not needed")
             }
