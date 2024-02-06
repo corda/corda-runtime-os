@@ -39,12 +39,12 @@ class EnvironmentSetupHelper {
 
     fun getConfigVersion(
         cordaClusterURL: String,
-        cordaRpcUser: String,
-        cordaRpcPassword: String,
+        cordaRestUser: String,
+        cordaRestPassword: String,
         configSection: String
     ): Int {
         return Unirest.get("$cordaClusterURL/api/v1/config/$configSection")
-            .basicAuth(cordaRpcUser, cordaRpcPassword)
+            .basicAuth(cordaRestUser, cordaRestPassword)
             .asJson()
             .ifSuccess {}.body.`object`["version"].toString().toInt()
     }
@@ -52,14 +52,14 @@ class EnvironmentSetupHelper {
     @Suppress("LongParameterList")
     fun sendUpdate(
         cordaClusterURL: String,
-        cordaRpcUser: String,
-        cordaRpcPassword: String,
+        cordaRestUser: String,
+        cordaRestPassword: String,
         configSection: String,
         configBody: String,
         configVersion: Int
     ) {
         Unirest.put("$cordaClusterURL/api/v1/config")
-            .basicAuth(cordaRpcUser, cordaRpcPassword)
+            .basicAuth(cordaRestUser, cordaRestPassword)
             .body(
                 """
                 {

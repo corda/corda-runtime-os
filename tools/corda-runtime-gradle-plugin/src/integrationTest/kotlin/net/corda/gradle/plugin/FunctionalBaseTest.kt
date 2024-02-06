@@ -59,8 +59,8 @@ abstract class FunctionalBaseTest : Javalin() {
             """
             cordaRuntimeGradlePlugin {
                 cordaClusterURL = "$restProtocol://$restHostnameWithPort"
-                cordaRpcUser = "admin"
-                cordaRpcPasswd ="admin"
+                cordaRestUser = "admin"
+                cordaRestPasswd ="admin"
                 notaryVersion = "5.2.0.0-beta-1706865687074"
                 composeFilePath = "config/combined-worker-compose.yml"
                 networkConfigFile = "config/static-network-config.json"

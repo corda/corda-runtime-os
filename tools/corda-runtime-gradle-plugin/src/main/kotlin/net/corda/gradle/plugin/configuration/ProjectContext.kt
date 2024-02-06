@@ -14,8 +14,8 @@ class ProjectContext(val project: Project, pluginConfig: PluginConfiguration) {
 
     // Capture values of user configurable context properties items from pluginConfig
     val cordaClusterURL: String = pluginConfig.cordaClusterURL.get()
-    val cordaRpcUser: String = pluginConfig.cordaRpcUser.get()
-    val cordaRpcPassword: String = pluginConfig.cordaRpcPasswd.get()
+    val cordaRestUser: String = pluginConfig.cordaRestUser.get()
+    val cordaRestPassword: String = pluginConfig.cordaRestPasswd.get()
     val workspaceDir: String = pluginConfig.cordaRuntimePluginWorkspaceDir.get()
     val composeFilePath: String = pluginConfig.composeFilePath.get()
     val composeNetworkName: String = pluginConfig.composeNetworkName.get()

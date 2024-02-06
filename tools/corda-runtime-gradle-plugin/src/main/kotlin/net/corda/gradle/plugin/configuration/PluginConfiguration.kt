@@ -12,10 +12,10 @@ open class PluginConfiguration @Inject constructor(objects: ObjectFactory) {
     val cordaClusterURL: Property<String> = objects.property(String::class.java).convention("https://localhost:8888")
 
     @get:Input
-    val cordaRpcUser: Property<String> = objects.property(String::class.java).convention("admin")
+    val cordaRestUser: Property<String> = objects.property(String::class.java).convention("admin")
 
     @get:Input
-    val cordaRpcPasswd: Property<String> = objects.property(String::class.java).convention("admin")
+    val cordaRestPasswd: Property<String> = objects.property(String::class.java).convention("admin")
 
     @get:Input
     val cordaRuntimePluginWorkspaceDir: Property<String> = objects.property(String::class.java).convention("workspace")

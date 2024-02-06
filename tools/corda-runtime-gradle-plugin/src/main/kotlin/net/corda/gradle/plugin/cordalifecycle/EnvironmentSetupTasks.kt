@@ -90,7 +90,7 @@ open class UpdateClusterConfig @Inject constructor(objects: ObjectFactory) : Def
         val helper = EnvironmentSetupHelper()
         Unirest.config().verifySsl(false)
         val configSection = "corda.messaging"
-        val configVersion = helper.getConfigVersion(pc.cordaClusterURL, pc.cordaRpcUser, pc.cordaRpcPassword, configSection)
+        val configVersion = helper.getConfigVersion(pc.cordaClusterURL, pc.cordaRestUser, pc.cordaRestPassword, configSection)
         val configBody = """
                 "subscription": {
                     "processorTimeout": ${pc.cordaProcessorTimeout}
@@ -98,8 +98,8 @@ open class UpdateClusterConfig @Inject constructor(objects: ObjectFactory) : Def
             """.trimIndent()
         helper.sendUpdate(
             pc.cordaClusterURL,
-            pc.cordaRpcUser,
-            pc.cordaRpcPassword,
+            pc.cordaRestUser,
+            pc.cordaRestPassword,
             configSection,
             configBody,
             configVersion
