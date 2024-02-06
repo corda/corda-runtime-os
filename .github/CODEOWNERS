@@ -7,7 +7,7 @@ Jenkinsfile        @corda/blt
 *.gradle           @corda/blt
 gradle/wrapper     @corda/blt
 gradle.properties  @corda/corda5-team-leads
-gradle/*           @corda/blt
+/gradle/wrapper/   @corda/blt
 *.toml             @corda/corda5-team-leads
 
 .github/**         @corda/blt
