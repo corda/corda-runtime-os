@@ -92,7 +92,9 @@ class StatefulSessionManagerImplTest {
                     )
                     on { key } doReturn "stateKey"
                 }
-                val serialisableSessionData = mock<AuthenticatedSession>()
+                val serialisableSessionData = mock<AuthenticatedSession> {
+                    on { it.sessionId } doReturn sessionId
+                }
                 val sessionState = mock<SessionState> {
                     on { sessionData } doReturn serialisableSessionData
                 }
