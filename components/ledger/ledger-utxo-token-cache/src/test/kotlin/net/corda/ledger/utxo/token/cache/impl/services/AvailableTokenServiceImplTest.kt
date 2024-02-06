@@ -38,7 +38,7 @@ class AvailableTokenServiceImplTest {
         whenever(getByHoldingIdentityShortHash(any())).thenReturn(virtualNode)
     }
     private val dbConnectionManager = mock<DbConnectionManager>().apply {
-        whenever(getOrCreateEntityManagerFactory(eq(uuid), any())).thenReturn(entityManagerFactory)
+        whenever(getOrCreateEntityManagerFactory(eq(uuid), any(), any())).thenReturn(entityManagerFactory)
     }
     private val utxoTokenRepository = mock<UtxoTokenRepository>().apply {
         whenever(queryBalance(any(), any(), isNull(), isNull())).thenReturn(totalBalance)

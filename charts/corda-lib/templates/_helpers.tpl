@@ -6,6 +6,13 @@ Expand the name of the chart.
 {{- end }}
 
 {{/*
+    Transform the given string input into kebab case
+*/}}
+{{- define "corda.kebabCase" -}}
+{{ . | kebabcase | replace "p-2p" "p2p" }}
+{{- end }}
+
+{{/*
 Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
@@ -561,6 +568,17 @@ metadata:
 spec:
   podMetricsEndpoints:
   - port: monitor
+    metricRelabelings:
+    {{- with .Values.metrics.keepNames }}
+    - sourceLabels:
+      - "__name__"
+      regex: {{ join "|" . | quote }}
+      action: "keep"
+    {{- end }}
+    {{- with .Values.metrics.dropLabels }}
+    - regex: {{ join "|" . | quote }}
+      action: "labeldrop"
+    {{- end }}
   jobLabel: {{ $.Release.Name }}-{{ include "corda.name" . }}
   selector:
     matchLabels:

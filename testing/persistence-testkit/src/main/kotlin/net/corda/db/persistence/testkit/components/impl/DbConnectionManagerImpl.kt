@@ -138,7 +138,11 @@ class DbConnectionManagerImpl @Activate constructor(
         TODO("Not yet implemented")
     }
 
-    override fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory {
+    override fun createEntityManagerFactory(
+        connectionId: UUID,
+        entitiesSet: JpaEntitiesSet,
+        enablePool: Boolean,
+        ): EntityManagerFactory {
         val source = dataSources[connectionId]
             ?: throw NoSuchElementException("No DataSource for connectionId=$connectionId")
         return emff.create(
@@ -150,7 +154,8 @@ class DbConnectionManagerImpl @Activate constructor(
 
     override fun getOrCreateEntityManagerFactory(
         connectionId: UUID,
-        entitiesSet: JpaEntitiesSet
+        entitiesSet: JpaEntitiesSet,
+        enablePool: Boolean,
     ): EntityManagerFactory {
         TODO("Not yet implemented")
     }

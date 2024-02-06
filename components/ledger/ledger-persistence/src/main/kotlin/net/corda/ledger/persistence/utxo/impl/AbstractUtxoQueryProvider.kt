@@ -19,14 +19,16 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
             WHERE id IN (:transactionIds)"""
             .trimIndent()
 
-    override val findTransactionPrivacySaltAndMetadata: String
+    override val findTransactionsPrivacySaltAndMetadata: String
         get() = """
-            SELECT privacy_salt,
-            utm.canonical_data
+            SELECT 
+                id,
+                privacy_salt,
+                utm.canonical_data
             FROM {h-schema}utxo_transaction AS ut
             JOIN {h-schema}utxo_transaction_metadata AS utm
                 ON ut.metadata_hash = utm.hash
-            WHERE id = :transactionId"""
+            WHERE id IN (:transactionIds)"""
             .trimIndent()
 
     override val findTransactionComponentLeafs: String
@@ -129,14 +131,15 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
      * - Group Index
      * - Revealed leaf indices joined to a string
      *
-     * The indices that the Merkle proof reveals are stored in a join-table. That's the reason we need a sub-query
-     * to fetch the relevant indices from the other table.
+     * The indices that the Merkle proof reveals are stored in a join-table keyed on the Merkle proof ID.
+     * That's the reason we need a sub-query to fetch the relevant indices from the other table.
      *
      * This query will return a result set with the following column structure:
      *
-     * | transaction_id | group_idx | tree_size | leaf_idx | data  | hashes |
+     * | merkle_proof_id | transaction_id | group_idx | tree_size | hashes | privacy_salt | leaf_index  | data |
      *
      * A row will be returned for each revealed leaf containing the data from the component table.
+     * If the data couldn't be found in the component table then the data field will be `null` beause of the LEFT JOIN.
      *
      * For example if we have the following Merkle tree:
      *
@@ -157,31 +160,33 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
      * If we persist a Merkle proof that contains L1 and L3 data then retrieve it from the store, then we'll
      * get the following result set:
      *
-     * | merkle_proof_id     | transaction_id | group_idx | tree_size | leaf_idx | data  | hashes |
-     * |---------------------|----------------|-----------|-----------|----------|-------|--------|
-     * | SHA-256D:11111-8-13 | SHA-256:11111  | 8         | 4         | 1        | bytes | H0,H2  |
-     * | SHA-256D:11111-8-13 | SHA-256:11111  | 8         | 4         | 3        | bytes | H0,H2  |
+     * | merkle_proof_id      | transaction_id | group_idx | tree_size | hashes       | privacy_salt  | leaf_idx | data |
+     * |----------------------|----------------|-----------|-----------|--------------|---------------|----------|------|
+     * | SHA-256D:11111;8;1,3 | SHA-256:11111  | 8         | 4         | H0,H2        | bytes         | 1        |bytes |
+     * | SHA-256D:11111;8;1,3 | SHA-256:11111  | 8         | 4         | H0,H2        | bytes         | 3        |bytes |
      */
     override val findMerkleProofs: String
         get() = """
             SELECT
                 utmp.merkle_proof_id,
-                utc.transaction_id,
-                utc.group_idx,
+                utmp.transaction_id,
+                utmp.group_idx,
                 utmp.tree_size,
                 utmp.hashes,
+                utt.privacy_salt,
                 utc.leaf_idx,
-                utc.data,
-                utt.privacy_salt
-            FROM {h-schema}utxo_transaction_merkle_proof utmp
-            JOIN {h-schema}utxo_transaction_component utc
+                utc.data
+            FROM utxo_transaction_merkle_proof utmp
+            JOIN utxo_transaction utt
+                ON utt.id = utmp.transaction_id
+            LEFT JOIN utxo_transaction_component utc
                 ON utc.transaction_id = utmp.transaction_id
                 AND utc.group_idx = utmp.group_idx
-            JOIN {h-schema}utxo_transaction_merkle_proof_leaves utmpl
-                ON utmpl.merkle_proof_id = utmp.merkle_proof_id
-            JOIN {h-schema}utxo_transaction utt
-                ON utt.id = utmp.transaction_id
-            WHERE utmp.transaction_id = :transactionId
-                AND utmp.group_idx = :groupIndex"""
+                AND utc.leaf_idx IN (
+                	SELECT utmpl.leaf_index
+                	FROM utxo_transaction_merkle_proof_leaves utmpl
+                	WHERE utmpl.merkle_proof_id = utmp.merkle_proof_id
+            	)
+            WHERE utmp.transaction_id IN (:transactionIds)"""
             .trimIndent()
 }
