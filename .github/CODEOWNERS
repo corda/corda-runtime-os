@@ -6,11 +6,11 @@ Jenkinsfile        @corda/blt
 
 *.gradle           @corda/blt
 gradle/wrapper     @corda/blt
-*.toml             @corda/corda5-team-leads
 gradle.properties  @corda/corda5-team-leads
-gradle/*           @corda/blt
+/gradle/wrapper/   @corda/blt
+*.toml             @corda/corda5-team-leads
 
-.github/**          @corda/blt
+.github/**         @corda/blt
 CODEOWNERS         @corda/blt @corda/corda5-team-leads
 
 # Modules to be audited by REST team
