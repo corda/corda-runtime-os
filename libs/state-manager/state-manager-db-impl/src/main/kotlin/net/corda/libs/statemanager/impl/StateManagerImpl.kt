@@ -80,8 +80,9 @@ class StateManagerImpl(
         }.keys
         if (duplicateStatesKeys.isNotEmpty()) {
             throw IllegalArgumentException(
-                "Could not create two states with the same key." +
-                    " Trying to create more than one state for keys: $duplicateStatesKeys")
+                "Creating multiple states with the same key is not supported," +
+                    " duplicated keys found: $duplicateStatesKeys"
+            )
         }
 
         return metricsRecorder.recordProcessingTime(CREATE) {

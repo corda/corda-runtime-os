@@ -8,10 +8,10 @@ import net.corda.libs.statemanager.impl.metrics.MetricsRecorderImpl
 import net.corda.libs.statemanager.impl.repository.StateRepository
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.Assertions.entry
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -57,11 +57,10 @@ class StateManagerImplTest {
             stateOne,
         )
 
-        val exception = assertThrows<IllegalArgumentException> {
+        assertThatThrownBy {
             stateManager.create(states)
-        }
-
-        assertThat(exception).hasMessageContaining("Could not create two states with the same key.")
+        }.isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining("Creating multiple states with the same key is not supported")
     }
 
     @Test
