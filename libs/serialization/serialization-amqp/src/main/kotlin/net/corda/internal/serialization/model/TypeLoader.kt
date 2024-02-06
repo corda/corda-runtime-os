@@ -46,6 +46,7 @@ class ClassTypeLoader: TypeLoader {
             try {
                 identifier to cache.computeIfAbsent(identifier) { identifier.getLocalType(sandboxGroup, metadata) }
             } catch (ex: ClassNotFoundException) {
+                logger.warn("ClassNotFound ${ex.message} loading type for looking for ${identifier.prettyPrint()}")
                 null
             }
         }.toMap()
