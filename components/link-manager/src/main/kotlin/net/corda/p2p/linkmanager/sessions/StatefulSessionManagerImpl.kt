@@ -1090,6 +1090,9 @@ internal class StatefulSessionManagerImpl(
                 it.state
             }.mapNotNull {
                 sessionExpiryScheduler.checkStateValidateAndRememberIt(it)
+            }.flatMap {
+                logger.info("QQQ Duplicate creation...")
+                listOf(it, it)
             }
         val failedUpdates = if (updates.isNotEmpty()) {
             stateManager.update(updates).onEach {
