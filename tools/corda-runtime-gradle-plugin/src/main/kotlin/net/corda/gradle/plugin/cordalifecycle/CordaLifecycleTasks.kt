@@ -22,7 +22,7 @@ fun createCordaLifeCycleTasks(project: Project, pluginConfig: PluginConfiguratio
 
         project.tasks.create(START_CORDA_TASK_NAME, StartCorda::class.java) {
             it.group = CLUSTER_TASKS_GROUP
-            it.dependsOn(PROJINIT_TASK_NAME, GET_POSTGRES_JDBC_TASK_NAME, GET_COMBINED_WORKER_JAR_TASK_NAME)
+            it.dependsOn(PROJINIT_TASK_NAME)
             it.pluginConfig.set(pluginConfig)
         }
 

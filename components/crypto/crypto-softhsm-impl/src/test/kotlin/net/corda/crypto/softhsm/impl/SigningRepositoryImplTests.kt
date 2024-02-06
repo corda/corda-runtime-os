@@ -10,12 +10,14 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.ArgumentMatchers.eq
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
+import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
 class SigningRepositoryImplTests {
@@ -23,7 +25,7 @@ class SigningRepositoryImplTests {
     @Suppress("MaxLineLength")
     @Test
     fun `Appropriate use of DB connection manager that sets up DML connection when creating signing repository for Crypto tenant and P2P`() {
-        // Arguably this is really tessting getEntityManagerFactory so should be moved to a new test class
+        // Arguably this is really testing getEntityManagerFactory so should be moved to a new test class
         val entityManagerFactory = mock<EntityManagerFactory>()
         val dbConnectionManager = mock<DbConnectionManager> {
             on { getOrCreateEntityManagerFactory(any<CordaDb>(), any()) } doReturn entityManagerFactory
@@ -37,7 +39,6 @@ class SigningRepositoryImplTests {
             verify(dbConnectionManager, times(2)).getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
             verifyNoMoreInteractions(dbConnectionManager)
         }
-        verify(entityManagerFactory, times(0)).close()
     }
 
     private fun makeMockSigningRepository(
@@ -63,7 +64,7 @@ class SigningRepositoryImplTests {
         }
         val dbConnectionManager = mock<DbConnectionManager> {
             on { getOrCreateEntityManagerFactory(any<CordaDb>(), any()) } doReturn mock()
-            on { createEntityManagerFactory(any(), any(), any()) } doReturn ownedEntityManagerFactory
+            on { getOrCreateEntityManagerFactory(any<UUID>(), any(), any()) } doReturn ownedEntityManagerFactory
         }
         val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
             on { getByHoldingIdentityShortHash(any()) } doReturn virtualNodeInfo
@@ -102,7 +103,7 @@ class SigningRepositoryImplTests {
         ).use {
             verify(ownedEntityManagerFactory, times(0)).close()
         } // try shorter, ShortHash bombs
-        verify(dbConnectionManager).createEntityManagerFactory(any(), any(), any())
+        verify(dbConnectionManager).getOrCreateEntityManagerFactory(any(), any(), eq(false))
         verifyNoMoreInteractions(dbConnectionManager)
         verify(sharedEntityManagerFactory, times(0)).close()
         verify(ownedEntityManagerFactory, times(1)).close()

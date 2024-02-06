@@ -1133,7 +1133,7 @@ class DynamicMemberRegistrationServiceTest {
             postConfigChangedEvent()
             registrationService.start()
 
-            val exception = assertThrows<InvalidMembershipRegistrationException> {
+            val exception = assertThrows<NotReadyMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, context)
             }
             assertThat(exception).hasMessageContaining("MGM information")
