@@ -27,6 +27,7 @@ class CryptoRewrapBusProcessorTests {
         private val tenantId = UUID.randomUUID().toString()
         private const val OLD_PARENT_KEY_ALIAS = "alias1"
         private const val NEW_PARENT_KEY_ALIAS = "alias2"
+        private const val DEFAULT_MASTER_WRAP_KEY_ALIAS = "defaultKeyAlias"
     }
 
     private val serializer = mock<CordaAvroSerializer<UnmanagedKeyStatus>> {
@@ -50,8 +51,8 @@ class CryptoRewrapBusProcessorTests {
     private val cryptoService: CryptoService = mock<CryptoService> { }
     private val stateManager = mock<StateManager> {
         on { get(any()) } doReturn mapOf(
-            OLD_PARENT_KEY_ALIAS + tenantId + "keyRotation" to State(
-                OLD_PARENT_KEY_ALIAS + tenantId + "keyRotation",
+            DEFAULT_MASTER_WRAP_KEY_ALIAS + tenantId + "keyRotation" to State(
+                DEFAULT_MASTER_WRAP_KEY_ALIAS + tenantId + "keyRotation",
                 "random".toByteArray(),
                 0,
                 Metadata(mapOf("status" to "In Progress"))
@@ -62,7 +63,8 @@ class CryptoRewrapBusProcessorTests {
     private val cryptoRewrapBusProcessor = CryptoRewrapBusProcessor(
         cryptoService,
         stateManager,
-        cordaAvroSerializationFactory
+        cordaAvroSerializationFactory,
+        DEFAULT_MASTER_WRAP_KEY_ALIAS,
     )
 
     @Test
@@ -127,110 +129,6 @@ class CryptoRewrapBusProcessorTests {
                             "",
                             OLD_PARENT_KEY_ALIAS,
                             "root2",
-                            "alias1",
-                            null,
-                            KeyType.UNMANAGED
-                        )
-                    )
-                )
-            ).isEmpty()
-        )
-
-        verify(cryptoService, never()).rewrapWrappingKey(any(), any(), any())
-        verify(stateManager, never()).update(any())
-    }
-
-    @Test
-    fun `unmanaged rewrap with null old parent alias should be ignored`() {
-        assertTrue(
-            cryptoRewrapBusProcessor.onNext(
-                listOf(
-                    Record(
-                        "TBC",
-                        UUID.randomUUID().toString(),
-                        IndividualKeyRotationRequest(
-                            UUID.randomUUID().toString(),
-                            tenantId,
-                            null,
-                            "root2",
-                            "alias1",
-                            null,
-                            KeyType.UNMANAGED
-                        )
-                    )
-                )
-            ).isEmpty()
-        )
-
-        verify(cryptoService, never()).rewrapWrappingKey(any(), any(), any())
-        verify(stateManager, never()).update(any())
-    }
-
-    @Test
-    fun `unmanaged rewrap with empty old parent alias should be ignored`() {
-        assertTrue(
-            cryptoRewrapBusProcessor.onNext(
-                listOf(
-                    Record(
-                        "TBC",
-                        UUID.randomUUID().toString(),
-                        IndividualKeyRotationRequest(
-                            UUID.randomUUID().toString(),
-                            tenantId,
-                            "",
-                            "root2",
-                            "alias1",
-                            null,
-                            KeyType.UNMANAGED
-                        )
-                    )
-                )
-            ).isEmpty()
-        )
-
-        verify(cryptoService, never()).rewrapWrappingKey(any(), any(), any())
-        verify(stateManager, never()).update(any())
-    }
-
-    @Test
-    fun `unmanaged rewrap with null new parent alias should be ignored`() {
-        assertTrue(
-            cryptoRewrapBusProcessor.onNext(
-                listOf(
-                    Record(
-                        "TBC",
-                        UUID.randomUUID().toString(),
-                        IndividualKeyRotationRequest(
-                            UUID.randomUUID().toString(),
-                            tenantId,
-                            OLD_PARENT_KEY_ALIAS,
-                            null,
-                            "alias1",
-                            null,
-                            KeyType.UNMANAGED
-                        )
-                    )
-                )
-            ).isEmpty()
-        )
-
-        verify(cryptoService, never()).rewrapWrappingKey(any(), any(), any())
-        verify(stateManager, never()).update(any())
-    }
-
-    @Test
-    fun `unmanaged rewrap with empty new parent alias should be ignored`() {
-        assertTrue(
-            cryptoRewrapBusProcessor.onNext(
-                listOf(
-                    Record(
-                        "TBC",
-                        UUID.randomUUID().toString(),
-                        IndividualKeyRotationRequest(
-                            UUID.randomUUID().toString(),
-                            tenantId,
-                            OLD_PARENT_KEY_ALIAS,
-                            "",
                             "alias1",
                             null,
                             KeyType.UNMANAGED
@@ -384,58 +282,6 @@ class CryptoRewrapBusProcessorTests {
                             "",
                             null,
                             null,
-                            null,
-                            UUID.randomUUID().toString(),
-                            KeyType.MANAGED
-                        )
-                    )
-                )
-            ).isEmpty()
-        )
-
-        verify(cryptoService, never()).rewrapWrappingKey(any(), any(), any())
-        verify(stateManager, never()).update(any())
-    }
-
-    @Test
-    fun `managed rewrap with old parent key alias set should be ignored`() {
-        assertTrue(
-            cryptoRewrapBusProcessor.onNext(
-                listOf(
-                    Record(
-                        "TBC",
-                        UUID.randomUUID().toString(),
-                        IndividualKeyRotationRequest(
-                            UUID.randomUUID().toString(),
-                            tenantId,
-                            OLD_PARENT_KEY_ALIAS,
-                            null,
-                            null,
-                            UUID.randomUUID().toString(),
-                            KeyType.MANAGED
-                        )
-                    )
-                )
-            ).isEmpty()
-        )
-
-        verify(cryptoService, never()).rewrapWrappingKey(any(), any(), any())
-        verify(stateManager, never()).update(any())
-    }
-
-    @Test
-    fun `managed rewrap with new parent key alias set should be ignored`() {
-        assertTrue(
-            cryptoRewrapBusProcessor.onNext(
-                listOf(
-                    Record(
-                        "TBC",
-                        UUID.randomUUID().toString(),
-                        IndividualKeyRotationRequest(
-                            UUID.randomUUID().toString(),
-                            tenantId,
-                            null,
-                            "root2",
                             null,
                             UUID.randomUUID().toString(),
                             KeyType.MANAGED
