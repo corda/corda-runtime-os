@@ -162,6 +162,7 @@ class CryptoRewrapBusProcessor(
                             UnmanagedKeyStatus(
                                 deserializedStatus.oldParentKeyAlias,
                                 deserializedStatus.newParentKeyAlias,
+                                deserializedStatus.tenantId,
                                 deserializedStatus.total,
                                 deserializedStatus.rotatedKeys + 1,
                                 deserializedStatus.createdTimestamp

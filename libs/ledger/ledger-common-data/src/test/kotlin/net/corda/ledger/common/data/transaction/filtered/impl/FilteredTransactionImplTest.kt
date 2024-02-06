@@ -610,6 +610,7 @@ class FilteredTransactionImplTest {
             transactionId,
             componentGroupMerkleProof,
             filteredComponentGroups,
+            mock(),
             jsonMarshallingService,
             merkleTreeProvider
         )

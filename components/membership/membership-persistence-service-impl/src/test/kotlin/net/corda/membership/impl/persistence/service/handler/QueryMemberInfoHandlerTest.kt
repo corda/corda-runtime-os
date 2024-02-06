@@ -126,6 +126,7 @@ class QueryMemberInfoHandlerTest {
             getOrCreateEntityManagerFactory(
                 eq(vaultDmlConnectionId),
                 any(),
+                eq(true)
             )
         } doReturn entityManagerFactory
     }

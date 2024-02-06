@@ -82,10 +82,14 @@ class DbConnectionOpsImpl(
         )
     }
 
-    override fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet):
+    override fun createEntityManagerFactory(
+        connectionId: UUID,
+        entitiesSet: JpaEntitiesSet,
+        enablePool: Boolean,
+        ):
             EntityManagerFactory {
         logger.trace { "Loading DB connection details for $connectionId" }
-        val dataSource = dbConnectionsRepository.create(connectionId) ?:
+        val dataSource = dbConnectionsRepository.create(connectionId, enablePool) ?:
         throw DBConfigurationException("Details for $connectionId cannot be found")
         return entityManagerFactoryFactory.create(
             connectionId.toString(),
@@ -96,7 +100,8 @@ class DbConnectionOpsImpl(
 
     override fun getOrCreateEntityManagerFactory(
         connectionId: UUID,
-        entitiesSet: JpaEntitiesSet
+        entitiesSet: JpaEntitiesSet,
+        enablePool: Boolean,
     ): EntityManagerFactory {
         throw UnsupportedOperationException("You should be using ${DbConnectionOpsImpl::createEntityManagerFactory} instead")
     }

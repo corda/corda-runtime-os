@@ -20,8 +20,8 @@ class PostgresUtxoQueryProvider @Activate constructor(
 
     override val persistTransaction: String
         get() = """
-            INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash)
-                VALUES (:id, :privacySalt, :accountId, :createdAt, :status, :updatedAt, :metadataHash)
+            INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
+                VALUES (:id, :privacySalt, :accountId, :createdAt, :status, :updatedAt, :metadataHash, :isFiltered)
             ON CONFLICT(id) DO
                 UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated
             WHERE utxo_transaction.status in (EXCLUDED.status, '$UNVERIFIED', '$DRAFT')"""

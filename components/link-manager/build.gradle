@@ -64,7 +64,7 @@ dependencies {
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
     implementation libs.caffeine
     implementation project(":components:membership:group-policy")
     implementation project(":libs:virtual-node:virtual-node-info")

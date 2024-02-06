@@ -71,6 +71,7 @@ class SoftCryptoServiceOperationsTests {
         private val knownWrappingKeyMaterial = rootWrappingKey.wrap(knownWrappingKey)
         private val knownWrappingKeyAlias = UUID.randomUUID().toString()
         private val tenantId = UUID.randomUUID().toString()
+
         //  TODO - reuse these two fixtures?
         private val clusterWrappingRepository = TestWrappingRepository(
             ConcurrentHashMap(
@@ -211,6 +212,7 @@ class SoftCryptoServiceOperationsTests {
                 )
             }
         }
+
         val exception1 = verifySign(softAliasedKeys.getValue(scheme), spec)
         assertThat(exception1.message).contains("Wrapping key with alias")
         val exception2 = verifySign(softFreshKeys.getValue(scheme), spec)
@@ -375,7 +377,11 @@ class SoftCryptoServiceOperationsTests {
     fun `should throw IllegalArgumentException when generating key pair with unsupported key scheme`(aliased: Boolean) {
         val exception = assertThrows<IllegalArgumentException> {
             cryptoService.generateKeyPair(
-                KeyGenerationSpec(UNSUPPORTED_KEY_SCHEME, if (aliased) UUID.randomUUID().toString() else null, knownWrappingKeyAlias),
+                KeyGenerationSpec(
+                    UNSUPPORTED_KEY_SCHEME,
+                    if (aliased) UUID.randomUUID().toString() else null,
+                    knownWrappingKeyAlias
+                ),
                 defaultContext
             )
         }
@@ -497,7 +503,7 @@ class SoftCryptoServiceOperationsTests {
     }
 
     @Test
-    fun `generateKeyPair should throw IllegalArgumentException when encoding version is not recognised`() {
+    fun `generateKeyPair should throw IllegalStateException when encoding version is not recognised`() {
         val alias = UUID.randomUUID().toString()
         clusterWrappingRepository.saveKey(
             WrappingKeyInfo(
@@ -507,7 +513,7 @@ class SoftCryptoServiceOperationsTests {
                 1, rootKeyAlias, alias
             )
         )
-        val exception = assertThrows<IllegalArgumentException> {
+        val exception = assertThrows<IllegalStateException> {
             cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "k1", alias), emptyMap())
         }
         assertThat(exception.message).contains("Unknown wrapping key encoding")
@@ -527,7 +533,7 @@ class SoftCryptoServiceOperationsTests {
                 alias
             )
         )
-        val exception =  assertThrows<IllegalStateException> {
+        val exception = assertThrows<IllegalStateException> {
             cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key1", alias), emptyMap())
         }
         assertThat(exception.message).contains("Unknown parent key")

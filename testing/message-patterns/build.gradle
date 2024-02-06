@@ -42,10 +42,10 @@ dependencies {
     integrationTestImplementation 'net.corda:corda-config-schema'
     integrationTestImplementation 'net.corda:corda-topic-schema'
 
-    integrationTestImplementation "com.typesafe:config:$typeSafeConfigVersion"
+    integrationTestImplementation libs.typesafe.config
     integrationTestImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
     integrationTestImplementation "javax.persistence:javax.persistence-api"
-    integrationTestImplementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+    integrationTestImplementation libs.kafka.client
 
     integrationTestImplementation project(":components:kafka-topic-admin")
     integrationTestImplementation 'net.corda:corda-db-schema'

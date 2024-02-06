@@ -4,6 +4,7 @@ import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.data.transaction.MerkleProofDto
+import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionDto
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.SecureHash
@@ -72,7 +73,8 @@ interface UtxoRepository {
         account: String,
         timestamp: Instant,
         status: TransactionStatus,
-        metadataHash: String
+        metadataHash: String,
+        isFiltered: Boolean
     )
 
     /** Persists transaction metadata (operation is idempotent) */
@@ -181,10 +183,15 @@ interface UtxoRepository {
         leafIndex: Int
     )
 
-    /** Find all the merkle proofs for a given transaction ID and component group index */
+    /** Find all the merkle proofs for a given list of transaction IDs */
     fun findMerkleProofs(
         entityManager: EntityManager,
-        transactionId: String,
-        groupIndex: Int
-    ): List<MerkleProofDto>
+        transactionIds: List<String>
+    ): Map<String, List<MerkleProofDto>>
+
+    /** Find filtered transactions with the given [ids] */
+    fun findFilteredTransactions(
+        entityManager: EntityManager,
+        ids: List<String>
+    ): Map<String, UtxoFilteredTransactionDto>
 }
