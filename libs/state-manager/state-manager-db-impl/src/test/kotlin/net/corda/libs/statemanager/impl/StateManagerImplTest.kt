@@ -7,10 +7,12 @@ import net.corda.libs.statemanager.impl.metrics.MetricsRecorder
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorderImpl
 import net.corda.libs.statemanager.impl.repository.StateRepository
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.entry
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -46,6 +48,21 @@ class StateManagerImplTest {
             .whenever(stateRepository).create(connection, listOf(stateOne, stateTwo))
         assertThat(stateManager.create(listOf(stateOne, stateTwo))).isEmpty()
         verify(stateRepository).create(connection, listOf(stateOne, stateTwo))
+    }
+
+    @Test
+    fun `create throws an error if two states with the same key are created`() {
+        val states = listOf(
+            stateOne,
+            stateTwo,
+            stateOne,
+        )
+
+        val exception = assertThrows<CordaRuntimeException> {
+            stateManager.create(states)
+        }
+
+        assertThat(exception).hasMessageContaining("Could not create two states with the same key.")
     }
 
     @Test

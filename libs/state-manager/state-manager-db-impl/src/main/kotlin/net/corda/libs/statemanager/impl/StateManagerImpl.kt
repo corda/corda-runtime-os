@@ -17,6 +17,7 @@ import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.UP
 import net.corda.libs.statemanager.impl.repository.StateRepository
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
@@ -73,6 +74,16 @@ class StateManagerImpl(
 
     override fun create(states: Collection<State>): Set<String> {
         if (states.isEmpty()) return emptySet()
+        val duplicateStatesKeys = states.groupBy {
+            it.key
+        }.filter {
+            it.value.size > 1
+        }.keys
+        if (duplicateStatesKeys.isNotEmpty()) {
+            throw CordaRuntimeException(
+                "Could not create two states with the same key." +
+                    " Trying to create more than one state for keys: $duplicateStatesKeys")
+        }
 
         return metricsRecorder.recordProcessingTime(CREATE) {
             val successfulKeys = dataSource.connection.transaction { connection ->
