@@ -190,7 +190,29 @@ class LiquibaseSchemaMigratorImpl(
             )
 
             log.info("Retrieving ${database.databaseProductName} DB Schema")
-            lb.update(null, Contexts(), sql)
+            try {
+                val scopeObjects = mapOf(
+                    Scope.Attr.database.name to lb.database,
+                    Scope.Attr.resourceAccessor.name to lb.resourceAccessor
+                )
+                Scope.child(scopeObjects) {
+                    commandScopeFactory(UpdateSqlCommandStep.COMMAND_NAME).configure(lb, null).also {
+                        it.setOutput(
+                            WriterOutputStream(
+                                sql,
+                                GlobalConfiguration.OUTPUT_FILE_ENCODING.currentValue
+                            )
+                        )
+                        it.execute()
+                    }
+                }
+            } catch (e: Exception) {
+                if (e is LiquibaseException) {
+                    throw e
+                } else {
+                    throw LiquibaseException(e)
+                }
+            }
 
             File(offlineChangeLogFileName).delete()
         }

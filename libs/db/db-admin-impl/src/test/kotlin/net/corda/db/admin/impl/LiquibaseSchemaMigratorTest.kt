@@ -5,6 +5,7 @@ import liquibase.command.CommandArgumentDefinition
 import liquibase.command.CommandScope
 import liquibase.database.Database
 import liquibase.database.DatabaseConnection
+import liquibase.database.DatabaseFactory
 import liquibase.resource.ResourceAccessor
 import net.corda.db.admin.DbChange
 import net.corda.db.admin.LiquibaseSchemaMigrator
@@ -35,6 +36,9 @@ class LiquibaseSchemaMigratorTest {
     private val dbFactory = mock<(connection: Connection) -> Database> {
         on { invoke(any()) } doReturn (db)
     }
+    private val dbFactoryOffline = mock<(url: String, resourceAccessor: ResourceAccessor) -> Database> {
+        on { invoke(any(), any()) } doReturn db
+    }
     private val commandScope = mock<(CommandScope)> { cs ->
         on { addArgumentValue(ArgumentMatchers.anyString(), any()) } doReturn cs
         on { addArgumentValue(any<CommandArgumentDefinition<Any>>(), anyOrNull()) } doReturn cs
@@ -46,7 +50,7 @@ class LiquibaseSchemaMigratorTest {
     private val writer = mock<Writer>()
 
     private val migrator: LiquibaseSchemaMigrator =
-        LiquibaseSchemaMigratorImpl(lbFactory, dbFactory, commandScopeFactory)
+        LiquibaseSchemaMigratorImpl(lbFactory, dbFactory, dbFactoryOffline, commandScopeFactory)
 
     @Test
     fun `when updateDb create LB object`() {
