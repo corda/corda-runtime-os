@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.timewindow
 
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.ledger.utxo.TimeWindow
 import java.time.Instant
 
@@ -9,6 +10,8 @@ import java.time.Instant
  * @property from The boundary at which the time window begins.
  * @property until The boundary at which the time window ends.
  */
+
+@CordaSerializable
 data class TimeWindowBetweenImpl(private val from: Instant, private val until: Instant) : TimeWindow {
 
     init {
