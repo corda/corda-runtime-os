@@ -49,20 +49,15 @@ class UtxoPersistenceServiceImplTest {
 
     private val mockRepository = mock<UtxoRepository> {
         on {
-            persistVisibleTransactionOutputs(
-                any(), any(), any(), any(), any(), any(), any(), any(),
-                anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()
-            )
+            persistVisibleTransactionOutputs(any(), any(), any(), any())
         } doAnswer {
             val txId = it.getArgument<String>(1)
-            val customRepresentation = it.arguments.single {
-                it as? CustomRepresentation != null
-            } as CustomRepresentation
+            val customRepresentation = it.getArgument<List<UtxoRepository.VisibleTransactionOutput>>(3).single().customRepresentation
             persistedJsonStrings[txId] = customRepresentation
         }
 
         on { persistTransaction(any(), any(), any(), any(), any(), any(), any(), any()) } doAnswer {}
-        on { persistTransactionComponentLeaf(any(), any(), any(), any(), any(), any()) } doAnswer {}
+        on { persistTransactionComponents(any(), any(), any(), any()) } doAnswer {}
     }
     private val mockDigestService = mock<DigestService> {
         on { hash(any<ByteArray>(), any()) } doAnswer { SecureHashImpl("algo", byteArrayOf(1, 2, 11)) }
@@ -125,7 +120,7 @@ class UtxoPersistenceServiceImplTest {
             expected = """
                 {
                     "net.corda.ledger.persistence.utxo.impl.InvalidState" : {
-                    
+
                     },
                     "net.corda.v5.ledger.utxo.ContractState" : {
                         "stateRef": "hash:0"
@@ -176,7 +171,7 @@ class UtxoPersistenceServiceImplTest {
             expected = """
                 {
                     "net.corda.ledger.persistence.utxo.impl.EmptyState" : {
-                    
+
                     }
                 }
             """.trimIndent(),

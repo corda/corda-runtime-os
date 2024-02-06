@@ -9,6 +9,7 @@ import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.persistence.common.mapToComponentGroups
+import net.corda.ledger.persistence.utxo.BatchPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.utxo.data.transaction.MerkleProofDto
 import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionDto
@@ -51,19 +52,19 @@ import javax.persistence.Tuple
     scope = PROTOTYPE
 )
 class UtxoRepositoryImpl @Activate constructor(
-    @Reference
+    @Reference(service = BatchPersistenceService::class)
+    private val batchPersistenceService: BatchPersistenceService,
+    @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
-    @Reference
+    @Reference(service = WireTransactionFactory::class)
     private val wireTransactionFactory: WireTransactionFactory,
-    @Reference
+    @Reference(service = UtxoQueryProvider::class)
     private val queryProvider: UtxoQueryProvider
 ) : UtxoRepository, UsedByPersistence {
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val TOP_LEVEL_MERKLE_PROOF_INDEX = -1
-        private const val BATCH_SIZE_PER_INSERT = 30
-        private const val INSERTS_PER_BATCH = 2
     }
 
     override fun findTransaction(
@@ -219,7 +220,7 @@ class UtxoRepositoryImpl @Activate constructor(
         transactionId: String,
         transactionSources: List<UtxoRepository.TransactionSource>
     ) {
-        persistBatch(
+        batchPersistenceService.persistBatch(
             entityManager,
             queryProvider.persistTransactionSources,
             transactionSources
@@ -249,7 +250,7 @@ class UtxoRepositoryImpl @Activate constructor(
                 }
             }
         }.flatten()
-        persistBatch(
+        batchPersistenceService.persistBatch(
             entityManager,
             queryProvider.persistTransactionComponents,
             flattenedComponentList
@@ -277,7 +278,7 @@ class UtxoRepositoryImpl @Activate constructor(
                     component
             }
         }
-        persistBatch(
+        batchPersistenceService.persistBatch(
             entityManager,
             queryProvider.persistTransactionComponents,
             componentsWithMetadataRemoved
@@ -296,7 +297,11 @@ class UtxoRepositoryImpl @Activate constructor(
         timestamp: Instant,
         visibleTransactionOutputs: List<UtxoRepository.VisibleTransactionOutput>
     ) {
-        persistBatch(entityManager, queryProvider.persistVisibleTransactionOutputs, visibleTransactionOutputs) {statement, parameterIndex, visibleTransactionOutput ->
+        batchPersistenceService.persistBatch(
+            entityManager,
+            queryProvider.persistVisibleTransactionOutputs,
+            visibleTransactionOutputs
+        ) { statement, parameterIndex, visibleTransactionOutput ->
             statement.setString(parameterIndex.next(), transactionId)
             statement.setInt(parameterIndex.next(), UtxoComponentGroup.OUTPUTS.ordinal)
             statement.setInt(parameterIndex.next(), visibleTransactionOutput.stateIndex)
@@ -325,7 +330,11 @@ class UtxoRepositoryImpl @Activate constructor(
         signatures: List<UtxoRepository.TransactionSignature>,
         timestamp: Instant
     ) {
-        persistBatch(entityManager, queryProvider.persistTransactionSignatures, signatures) {statement, parameterIndex, signature ->
+        batchPersistenceService.persistBatch(
+            entityManager,
+            queryProvider.persistTransactionSignatures,
+            signatures
+        ) { statement, parameterIndex, signature ->
             statement.setString(parameterIndex.next(), transactionId)
             statement.setInt(parameterIndex.next(), signature.index)
             statement.setBytes(parameterIndex.next(), signature.signatureBytes)
@@ -388,8 +397,11 @@ class UtxoRepositoryImpl @Activate constructor(
     }
 
     override fun persistMerkleProofs(entityManager: EntityManager, merkleProofs: List<UtxoRepository.TransactionMerkleProof>) {
-        println("proofs = $merkleProofs")
-        persistBatch(entityManager, queryProvider.persistMerkleProofs, merkleProofs) { statement, parameterIndex, merkleProof ->
+        batchPersistenceService.persistBatch(
+            entityManager,
+            queryProvider.persistMerkleProofs,
+            merkleProofs
+        ) { statement, parameterIndex, merkleProof ->
             statement.setString(parameterIndex.next(), merkleProof.merkleProofId)
             statement.setString(parameterIndex.next(), merkleProof.transactionId)
             statement.setInt(parameterIndex.next(), merkleProof.groupIndex)
@@ -399,7 +411,11 @@ class UtxoRepositoryImpl @Activate constructor(
     }
 
     override fun persistMerkleProofLeaves(entityManager: EntityManager, leaves: List<UtxoRepository.TransactionMerkleProofLeaf>) {
-        persistBatch(entityManager, queryProvider.persistMerkleProofLeaves, leaves) { statement, parameterIndex, leaf ->
+        batchPersistenceService.persistBatch(
+            entityManager,
+            queryProvider.persistMerkleProofLeaves,
+            leaves
+        ) { statement, parameterIndex, leaf ->
             statement.setString(parameterIndex.next(), leaf.merkleProofId)
             statement.setInt(parameterIndex.next(), leaf.leafIndex)
         }
@@ -501,48 +517,6 @@ class UtxoRepositoryImpl @Activate constructor(
                 metadataBytes = transactionPrivacySaltAndMetadata.second,
                 signatures = transactionSignatures
             )
-        }
-    }
-
-    private fun <R> persistBatch(
-        entityManager: EntityManager,
-        query: (Int) -> String,
-        rowData: List<R>,
-        setRowParametersBlock: (statement: PreparedStatement, parameterIndex: Iterator<Int>, row: R) -> Unit
-    ) {
-        if (rowData.isEmpty()) return
-
-        entityManager.connection { connection ->
-            val batched = rowData.chunked(INSERTS_PER_BATCH * BATCH_SIZE_PER_INSERT)
-            batched.forEachIndexed { index, batch ->
-                val batchPerInsert = batch.chunked(BATCH_SIZE_PER_INSERT)
-                val hasReducedRowsOnLastInsert = index == batched.lastIndex && batchPerInsert.last().size < BATCH_SIZE_PER_INSERT
-
-                if (!hasReducedRowsOnLastInsert || batchPerInsert.size > 1) {
-                    connection.prepareStatement(query(BATCH_SIZE_PER_INSERT)).use { statement ->
-                        batchPerInsert.forEachIndexed perInsertLoop@{ index, rowsPerInsert ->
-                            if (hasReducedRowsOnLastInsert && index == batchPerInsert.lastIndex) {
-                                return@perInsertLoop
-                            }
-                            val parameterIndex = generateSequence(1) { it + 1 }.iterator()
-                            rowsPerInsert.forEach { row ->
-                                setRowParametersBlock(statement, parameterIndex, row)
-                            }
-                            statement.addBatch()
-                        }
-                        statement.executeBatch()
-                    }
-                }
-                if (hasReducedRowsOnLastInsert) {
-                    connection.prepareStatement(query(batchPerInsert.last().size)).use { statement ->
-                        val parameterIndex = generateSequence(1) { it + 1 }.iterator()
-                        batchPerInsert.last().forEach { row ->
-                            setRowParametersBlock(statement, parameterIndex, row)
-                        }
-                        statement.executeUpdate()
-                    }
-                }
-            }
         }
     }
 
