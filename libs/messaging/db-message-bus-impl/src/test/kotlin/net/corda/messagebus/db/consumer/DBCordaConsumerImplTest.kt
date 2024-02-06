@@ -6,10 +6,12 @@ import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import net.corda.messagebus.db.configuration.ResolvedConsumerConfig
+import net.corda.messagebus.db.datamodel.CommittedPositionEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
+import net.corda.messagebus.db.persistence.DBAccess.Companion.ATOMIC_TRANSACTION
 import net.corda.messagebus.db.serialization.MessageHeaderSerializerImpl
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import org.assertj.core.api.Assertions.assertThat
@@ -18,6 +20,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 import org.mockito.Mock
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -461,6 +464,27 @@ internal class DBCordaConsumerImplTest {
 
         assertThat(consumer.beginningOffsets(setOf(partition0, partition1, partition2))).isEqualTo(earliestPositions)
         assertThat(consumer.endOffsets(setOf(partition0, partition1, partition2))).isEqualTo(latestPositions)
+    }
+
+    @Test
+    fun `consumer provides correct offsets to sync commit offsets when given records`() {
+        val records = (getTopicRecords(count = 2) + getTopicRecords(partition1, count = 2)).map {
+            CordaConsumerRecord(
+                it.topic,
+                it.partition,
+                it.recordOffset,
+                "foo",
+                "bar",
+                0
+            )
+        }
+        val consumer = makeConsumer()
+        consumer.syncCommitOffsets(records)
+        verify(dbAccess).writeOffsets(argThat {
+            val entry1 = this.find { it.topic == partition0.topic && it.partition == partition0.partition }
+            val entry2 = this.find { it.topic == partition1.topic && it.partition == partition1.partition }
+            entry1?.recordPosition == 1L && entry2?.recordPosition ==1L
+        })
     }
 
     @Test
