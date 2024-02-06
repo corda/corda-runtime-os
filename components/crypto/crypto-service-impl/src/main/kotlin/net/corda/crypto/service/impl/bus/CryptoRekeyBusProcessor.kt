@@ -28,6 +28,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Crypto.REWRAP_MESSAGE_TOPIC
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.LoggerFactory
+import java.lang.IllegalStateException
 import java.time.Instant
 import java.util.UUID
 
@@ -81,8 +82,10 @@ class CryptoRekeyBusProcessor(
         logger.debug("processing $request")
         require(request != null)
 
-        if (!hasPreviousRotationFinished()) {
-            logger.info("A key rotation is already ongoing, ignoring request to start new one.")
+        try {
+            stateManager.isRunning
+        } catch (_: IllegalStateException) {
+            logger.info("State Manager is not initialised, ignoring")
             return
         }
 
@@ -335,26 +338,6 @@ class CryptoRekeyBusProcessor(
                 )
             }
         )
-    }
-
-    private fun hasPreviousRotationFinished(): Boolean {
-        // The current state of this method is to prevent any key rotations being started when any other one is in progress.
-        // Same check is done on the Rest worker side, but if user quickly issues two key rotation commands after each other,
-        // it will pass rest worker check as state manager was not yet populated.
-        // On that note, if the logic is changed here, it should also be changed to match in the Rest worker, see [KeyRotationRestResource]
-        // for the equivalent method.
-        stateManager.findByMetadataMatchingAll(
-            listOf(
-                MetadataFilter(
-                    KeyRotationMetadataValues.STATUS_TYPE,
-                    Operation.Equals,
-                    KeyRotationRecordType.KEY_ROTATION
-                )
-            )
-        ).forEach {
-            if (it.value.metadata[KeyRotationMetadataValues.STATUS] != KeyRotationStatus.DONE) return false
-        }
-        return true
     }
 
     /**
