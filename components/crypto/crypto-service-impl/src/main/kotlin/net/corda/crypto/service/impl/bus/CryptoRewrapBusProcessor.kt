@@ -132,7 +132,8 @@ class CryptoRewrapBusProcessor(
                 )
             require(tenantIdWrappingKeysRecords.size == 1) {
                 "Found none or more than 1 ${request.tenantId} record " +
-                        "in the database for new master wrapping key $defaultUnmanagedWrappingKeyName. Found records $tenantIdWrappingKeysRecords."
+                        "in the database for new master wrapping key $defaultUnmanagedWrappingKeyName. " +
+                        "Found records $tenantIdWrappingKeysRecords."
             }
 
             tenantIdWrappingKeysRecords.forEach { (_, state) ->
