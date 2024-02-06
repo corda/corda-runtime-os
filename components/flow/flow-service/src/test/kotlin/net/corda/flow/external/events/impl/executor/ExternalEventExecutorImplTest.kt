@@ -1,6 +1,5 @@
 package net.corda.flow.external.events.impl.executor
 
-import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.services.MockFlowFiberService
@@ -23,7 +22,6 @@ import kotlin.test.assertNotEquals
 class ExternalEventExecutorImplTest {
     private lateinit var mockFlowFiberService: MockFlowFiberService
     private lateinit var serializationService: SerializationServiceInternal
-    private lateinit var platformDigestService: PlatformDigestService
     private lateinit var externalEventExecutorImpl: ExternalEventExecutorImpl
 
     private val capturedArguments = mutableListOf<FlowIORequest.ExternalEvent>()
@@ -55,9 +53,6 @@ class ExternalEventExecutorImplTest {
         suspendCount: Int = 1
     ) {
         mockFlowFiberService = MockFlowFiberService()
-        platformDigestService = mock<PlatformDigestService>().apply {
-            whenever(hash(anyOrNull<ByteArray>(), anyOrNull())).thenReturn(mockHash1)
-        }
         whenever(mockFlowFiberService.flowCheckpoint.flowId).thenReturn(flowId)
         whenever(mockFlowFiberService.flowCheckpoint.suspendCount).thenReturn(suspendCount)
         serializationService = mock<SerializationServiceInternal>().apply {
@@ -73,7 +68,7 @@ class ExternalEventExecutorImplTest {
             return@doAnswer mock<ExternalEventResponse>()
         }.`when`(mockFlowFiberService.flowFiber).suspend<ExternalEventResponse>(any())
 
-        externalEventExecutorImpl = ExternalEventExecutorImpl(mockFlowFiberService, serializationService, platformDigestService)
+        externalEventExecutorImpl = ExternalEventExecutorImpl(mockFlowFiberService, serializationService)
     }
 
     @Test
@@ -85,7 +80,7 @@ class ExternalEventExecutorImplTest {
 
         val expectedRequest = FlowIORequest.ExternalEvent(
             // This is hardcoded, but should be deterministic!
-            "static_flow_id-123-1",
+            "static_flow_id-q/v+T/J78A36e/Dnb+ivsw==-1",
             mockFactoryClass, mockParams, contextProperties
         )
 
@@ -107,7 +102,6 @@ class ExternalEventExecutorImplTest {
     @Test
     fun `Suspending with different parameters produces a different requestID`() {
         externalEventExecutorImpl.execute(mockFactoryClass, mockParams)
-        whenever(platformDigestService.hash(any<ByteArray>(), any())).thenReturn(mockHash2)
         externalEventExecutorImpl.execute(mockFactoryClass, Mock(mapOf("additional" to "data")))
 
         assertEquals(2, capturedArguments.size)

@@ -1,6 +1,5 @@
 package net.corda.flow.external.events.impl.executor
 
-import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.external.events.factory.ExternalEventFactory
@@ -8,11 +7,12 @@ import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.base.util.EncodingUtils.toBase64
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.security.MessageDigest
 
 @Component(service = [ExternalEventExecutor::class, SingletonSerializeAsToken::class])
 class ExternalEventExecutorImpl @Activate constructor(
@@ -20,8 +20,6 @@ class ExternalEventExecutorImpl @Activate constructor(
     private val flowFiberService: FlowFiberService,
     @Reference(service = SerializationServiceInternal::class)
     private val serializationService: SerializationServiceInternal,
-    @Reference(service = PlatformDigestService::class)
-    private val platformDigestService: PlatformDigestService
 ) : ExternalEventExecutor, SingletonSerializeAsToken {
 
     @Suspendable
@@ -55,12 +53,15 @@ class ExternalEventExecutorImpl @Activate constructor(
         }
 
     private fun <PARAMETERS : Any> deterministicBytesID(parameters: PARAMETERS): String {
-        val bytes = serializationService.serialize(parameters).bytes
-        val hash = platformDigestService.hash(bytes, DigestAlgorithmName.SHA2_256)
-        return hash.toHexString()
+        return hash(serializationService.serialize(parameters).bytes)
     }
 
-    private fun generateRequestId(bytesAsHexString: String, flowFiber: FlowFiber): String {
+    /**
+    * MD5 is a fast hash. Security implications are not a concern as this is just used as an identifier
+    */
+    private fun hash(bytes: ByteArray) = toBase64(MessageDigest.getInstance("MD5").digest(bytes))
+
+    private fun generateRequestId(hashedInput: String, flowFiber: FlowFiber): String {
         val flowCheckpoint = flowFiber
             .getExecutionContext()
             .flowCheckpoint
@@ -68,6 +69,6 @@ class ExternalEventExecutorImpl @Activate constructor(
         val flowId = flowCheckpoint.flowId
         val suspendCount = flowCheckpoint.suspendCount
 
-        return "$flowId-$bytesAsHexString-$suspendCount"
+        return "$flowId-$hashedInput-$suspendCount"
     }
 }
