@@ -165,7 +165,7 @@ class KeyRotationRestResourceTest {
         val keyRotationRestResource =
             createKeyRotationRestResource(initialiseKafkaPublisher = false, initialiseStateManager = true)
         assertThrows<InternalServerException> {
-            keyRotationRestResource.startUnmanagedKeyRotation()
+            keyRotationRestResource.startKeyRotation("master")
         }
         verify(publishToKafka, never()).publish(any())
         assertThat(stateManagerPublicationCount).isEqualTo(0)
@@ -176,7 +176,7 @@ class KeyRotationRestResourceTest {
         val keyRotationRestResource =
             createKeyRotationRestResource(initialiseKafkaPublisher = true, initialiseStateManager = false)
         assertThrows<IllegalStateException> {
-            keyRotationRestResource.startUnmanagedKeyRotation()
+            keyRotationRestResource.startKeyRotation("master")
         }
         verify(publishToKafka, never()).publish(any())
         assertThat(stateManagerPublicationCount).isEqualTo(0)
@@ -194,7 +194,7 @@ class KeyRotationRestResourceTest {
         val keyRotationRestResource =
             createKeyRotationRestResource(initialiseKafkaPublisher = false, initialiseStateManager = true)
         assertThrows<InternalServerException> {
-            keyRotationRestResource.startManagedKeyRotation(tenantId)
+            keyRotationRestResource.startKeyRotation(tenantId)
         }
         verify(publishToKafka, never()).publish(any())
         assertThat(stateManagerPublicationCount).isEqualTo(0)
@@ -205,7 +205,7 @@ class KeyRotationRestResourceTest {
         val keyRotationRestResource =
             createKeyRotationRestResource(initialiseKafkaPublisher = true, initialiseStateManager = false)
         assertThrows<IllegalStateException> {
-            keyRotationRestResource.startManagedKeyRotation(tenantId)
+            keyRotationRestResource.startKeyRotation(tenantId)
         }
         verify(publishToKafka, never()).publish(any())
         assertThat(stateManagerPublicationCount).isEqualTo(0)
@@ -215,7 +215,7 @@ class KeyRotationRestResourceTest {
     fun `start managed key rotation event throws when tenantId is empty string`() {
         val keyRotationRestResource = createKeyRotationRestResource()
         assertThrows<InvalidInputDataException> {
-            keyRotationRestResource.startManagedKeyRotation("")
+            keyRotationRestResource.startKeyRotation("")
         }
         verify(publishToKafka, never()).publish(any())
         assertThat(stateManagerPublicationCount).isEqualTo(0)

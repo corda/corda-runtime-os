@@ -2,7 +2,6 @@ package net.corda.crypto.rest
 
 import net.corda.crypto.rest.response.KeyRotationResponse
 import net.corda.crypto.rest.response.KeyRotationStatusResponse
-import net.corda.crypto.rest.response.ManagedKeyRotationResponse
 import net.corda.crypto.rest.response.ManagedKeyRotationStatusResponse
 import net.corda.rest.RestResource
 import net.corda.rest.SC_ACCEPTED
@@ -11,7 +10,6 @@ import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.HttpRestResource
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.annotations.RestPathParameter
-import net.corda.rest.exception.ForbiddenException
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
@@ -45,25 +43,25 @@ interface KeyRotationRestResource : RestResource {
         keyAlias: String
     ): KeyRotationStatusResponse
 
-    /**
-     * Initiates the key rotation process.
-     * It assumes new default master key alias was set in the crypto config.
-     * All wrapping keys which key material is not wrapped with the default master key, will be re-wrapped with this key.
-     *
-     * @return Key rotation response where the requestId is the unique ID for the key rotation start request.
-     *
-     * @throws ServiceUnavailableException If the underlying service for sending messages is not available.
-     * @throws ForbiddenException If the same key rotation is already in progress.
-     * @throws InvalidInputDataException If the input parameters are invalid.
-     */
-
-    @HttpPOST(
-        path = "rotation/master",
-        description = "This method enables to rotate a current master wrapping key with a new master wrapping key.",
-        responseDescription = "Key rotation response",
-        successCode = SC_ACCEPTED,
-    )
-    fun startUnmanagedKeyRotation(): ResponseEntity<KeyRotationResponse>
+//    /**
+//     * Initiates the key rotation process.
+//     * It assumes new default master key alias was set in the crypto config.
+//     * All wrapping keys which key material is not wrapped with the default master key, will be re-wrapped with this key.
+//     *
+//     * @return Key rotation response where the requestId is the unique ID for the key rotation start request.
+//     *
+//     * @throws ServiceUnavailableException If the underlying service for sending messages is not available.
+//     * @throws ForbiddenException If the same key rotation is already in progress.
+//     * @throws InvalidInputDataException If the input parameters are invalid.
+//     */
+//
+//    @HttpPOST(
+//        path = "rotation/master",
+//        description = "This method enables to rotate a current master wrapping key with a new master wrapping key.",
+//        responseDescription = "Key rotation response",
+//        successCode = SC_ACCEPTED,
+//    )
+//    fun startUnmanagedKeyRotation(): ResponseEntity<KeyRotationResponse>
 
     /**
      * The [getManagedKeyRotationStatus] gets the latest key rotation status for [tenantId] if one exists.
@@ -97,10 +95,10 @@ interface KeyRotationRestResource : RestResource {
         responseDescription = "Key rotation response",
         successCode = SC_ACCEPTED,
     )
-    fun startManagedKeyRotation(
+    fun startKeyRotation(
         @RestPathParameter(
             description = "The tenantId whose wrapping keys are requested to be rotated."
         )
         tenantId: String
-    ): ResponseEntity<ManagedKeyRotationResponse>
+    ): ResponseEntity<KeyRotationResponse>
 }

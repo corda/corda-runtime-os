@@ -10,7 +10,6 @@ import net.corda.crypto.core.KeyRotationStatus
 import net.corda.crypto.rest.KeyRotationRestResource
 import net.corda.crypto.rest.response.KeyRotationResponse
 import net.corda.crypto.rest.response.KeyRotationStatusResponse
-import net.corda.crypto.rest.response.ManagedKeyRotationResponse
 import net.corda.crypto.rest.response.ManagedKeyRotationStatusResponse
 import net.corda.crypto.rest.response.RotatedKeysStatus
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
@@ -212,17 +211,18 @@ class KeyRotationRestResourceImpl @Activate constructor(
         )
     }
 
-    override fun startUnmanagedKeyRotation(): ResponseEntity<KeyRotationResponse> {
-        tryWithExceptionHandling(logger, "start key rotation") {
-            checkNotNull(publishToKafka)
-        }
-
-        if (!hasPreviousRotationFinished()) {
-            throw ForbiddenException("A key rotation operation is already ongoing, a new one cannot be started until it completes.")
-        }
-
-        return doKeyRotation(publishRequests = { publishToKafka!!.publish(it) })
-    }
+//    override fun startUnmanagedKeyRotation(): ResponseEntity<KeyRotationResponse> {
+//        println("XXX: startUnmanagedKeyRotation")
+//        tryWithExceptionHandling(logger, "start key rotation") {
+//            checkNotNull(publishToKafka)
+//        }
+//
+//        if (!hasPreviousRotationFinished()) {
+//            throw ForbiddenException("A key rotation operation is already ongoing, a new one cannot be started until it completes.")
+//        }
+//
+//        return doKeyRotation(publishRequests = { publishToKafka!!.publish(it) })
+//    }
 
     override fun getManagedKeyRotationStatus(tenantId: String): ManagedKeyRotationStatusResponse {
         val records = stateManager.findByMetadataMatchingAll(
@@ -254,23 +254,26 @@ class KeyRotationRestResourceImpl @Activate constructor(
         )
     }
 
-    override fun startManagedKeyRotation(tenantId: String): ResponseEntity<ManagedKeyRotationResponse> {
+    override fun startKeyRotation(tenantId: String): ResponseEntity<KeyRotationResponse> {
         tryWithExceptionHandling(logger, "start key rotation") {
             checkNotNull(publishToKafka)
         }
-
-        if (tenantId.isEmpty()) throw InvalidInputDataException(
-            "Cannot start key rotation. TenantId is not specified."
-        )
 
         if (!hasPreviousRotationFinished()) {
             throw ForbiddenException("A key rotation operation is already ongoing, a new one cannot be started until it completes.")
         }
 
-        return doManagedKeyRotation(
-            tenantId,
-            publishRequests = { publishToKafka!!.publish(it) }
-        )
+        return if (tenantId == "master") {
+            doKeyRotation(publishRequests = { publishToKafka!!.publish(it) })
+        } else {
+            if (tenantId.isEmpty()) throw InvalidInputDataException(
+                "Cannot start key rotation. TenantId is not specified."
+            )
+            doManagedKeyRotation(
+                tenantId,
+                publishRequests = { publishToKafka!!.publish(it) }
+            )
+        }
     }
 
     private fun Collection<State>.toUnmanagedRotationOutput() =
@@ -347,13 +350,13 @@ fun doKeyRotation(
     )
 
     publishRequests(listOf(Record(REKEY_MESSAGE_TOPIC, requestId, keyRotationRequest, Instant.now().toEpochMilli())))
-    return ResponseEntity.accepted(KeyRotationResponse(requestId))
+    return ResponseEntity.accepted(KeyRotationResponse(requestId, "master"))
 }
 
 fun doManagedKeyRotation(
     tenantId: String,
     publishRequests: ((List<Record<String, KeyRotationRequest>>) -> Unit)
-): ResponseEntity<ManagedKeyRotationResponse> {
+): ResponseEntity<KeyRotationResponse> {
     val requestId = UUID.randomUUID().toString()
     val keyRotationRequest = KeyRotationRequest(
         requestId,
@@ -364,5 +367,5 @@ fun doManagedKeyRotation(
     )
 
     publishRequests(listOf(Record(REKEY_MESSAGE_TOPIC, requestId, keyRotationRequest, Instant.now().toEpochMilli())))
-    return ResponseEntity.accepted(ManagedKeyRotationResponse(requestId, tenantId))
+    return ResponseEntity.accepted(KeyRotationResponse(requestId, tenantId))
 }
