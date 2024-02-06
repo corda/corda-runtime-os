@@ -185,7 +185,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
     override fun getUnmanagedKeyRotationStatus(keyAlias: String): KeyRotationStatusResponse {
         val records = stateManager.findByMetadataMatchingAll(
             listOf(
-                MetadataFilter(KeyRotationMetadataValues.ROOT_KEY_ALIAS, Operation.Equals, keyAlias),
+                MetadataFilter(KeyRotationMetadataValues.DEFAULT_MASTER_KEY_ALIAS, Operation.Equals, keyAlias),
                 MetadataFilter(
                     KeyRotationMetadataValues.STATUS_TYPE,
                     Operation.Equals,
