@@ -24,7 +24,7 @@ object Health {
             logIfDifferentFromLastMessage(
                 HTTP_HEALTH_ROUTE,
                 if (healthy)
-                    "Status is healthy"
+                    "Status is healthy. No Lifecycle components have errors."
                 else
                     "Status is unhealthy. The status of $unhealthyComponents has error.",
                 healthy
@@ -37,17 +37,16 @@ object Health {
 
         val statusRouteHandler = WebHandler { context ->
             val notReadyComponents = lifecycleRegistry.componentWithStatus(setOf(LifecycleStatus.DOWN, LifecycleStatus.ERROR))
-            val status = if (notReadyComponents.isEmpty()) {
-                ResponseCode.OK
-            } else {
-                logIfDifferentFromLastMessage(
-                    HTTP_STATUS_ROUTE,
-                    "There are components with error or down state: $notReadyComponents.",
-                    false
-                )
-                ResponseCode.SERVICE_UNAVAILABLE
-            }
-            context.status(status)
+            val ready = notReadyComponents.isEmpty()
+            logIfDifferentFromLastMessage(
+                HTTP_STATUS_ROUTE,
+                if (ready)
+                    "All lifecycle components are now up."
+                else
+                    "There are lifecycle components with error or down state: $notReadyComponents.",
+                ready
+            )
+            context.status(if (ready) ResponseCode.OK else ResponseCode.SERVICE_UNAVAILABLE)
             context.result(objectMapper.writeValueAsString(lifecycleRegistry.componentStatus()))
             context.header(Header.CACHE_CONTROL, NO_CACHE)
             context
@@ -57,11 +56,11 @@ object Health {
 
 
 
-    private fun logIfDifferentFromLastMessage(route: String, logMessage: String, healthy: Boolean) {
+    private fun logIfDifferentFromLastMessage(route: String, logMessage: String, newStatus: Boolean) {
         val lastLogMessage = lastLogMessage.put(route, logMessage)
         if (logMessage != lastLogMessage) {
-            if (healthy && lastLogMessage == "") {
-                // first time around, and we are healthy, so don't use WARN since this is normal
+            if (newStatus) {
+                // we are healthy, so don't use WARN since this is normal
                 logger.info(logMessage)
             } else {
                 logger.warn(logMessage)
