@@ -25,11 +25,9 @@ fun managedConfig(clusters: Collection<ClusterInfo> = emptyList()): TestConfigMa
     }
 }
 
-fun JsonNode.sourceConfigNode(): JsonNode =
-    this["sourceConfig"].textValue().toJson()
+fun JsonNode.sourceConfigNode(): JsonNode = this["sourceConfig"].textValue().toJson()
 
-fun JsonNode.configWithDefaultsNode(): JsonNode =
-    this["configWithDefaults"].textValue().toJson()
+fun JsonNode.configWithDefaultsNode(): JsonNode = this["configWithDefaults"].textValue().toJson()
 
 /**
  * Get the current configuration (as a [JsonNode]) for the specified [section].
@@ -45,32 +43,31 @@ fun ClusterInfo.getConfig(section: String): JsonNode {
     }
 }
 
-fun getConfigVersion(section: String) {
-    return cluster { getConfig(section).toJson()["version"].toString() }
+fun getConfigVersion(config: JsonNode) {
+    return cluster { config["version"].toString() }
 }
 
-fun getConfigMajorSchemaVersion(section: String) {
-    return cluster { getConfig(section).toJson()["schemaVersion"].get("major").toString() }
+fun getConfigMajorSchemaVersion(config: JsonNode) {
+    return cluster { config["schemaVersion"].get("major").toString() }
 }
 
-fun getConfigMinorSchemaVersion(section: String) {
-    return cluster { getConfig(section).toJson()["schemaVersion"].get("minor").toString() }
+fun getConfigMinorSchemaVersion(config: JsonNode) {
+    return cluster {
+        config["schemaVersion"].get("minor").toString()
+    }
 }
+
 
 fun ClusterInfo.updateConfig(config: JsonNode, section: String) {
     return cluster {
-        assertWithRetryIgnoringExceptions {
-            command { getConfig(section) }
-            condition { it.code == OK.statusCode }
-        }.body.toJson()
         val configuration = config.toString()
         try {
             val result = putConfig(
                 configuration,
                 section,
-                getConfigVersion(section).toString(),
-                getConfigMajorSchemaVersion(section).toString(),
-                getConfigMinorSchemaVersion(section).toString()
+                getConfigVersion(config).toString(),
+                getConfigMajorSchemaVersion(config).toString(),
+                getConfigMinorSchemaVersion(config).toString()
             )
 
             if (result.code != 202) {
@@ -157,9 +154,7 @@ fun ClusterInfo.waitForConfigurationChange(
             command { getConfig(section) }
             condition {
                 val bodyJSON = it.body.toJson()
-                it.code == OK.statusCode && bodyJSON["sourceConfig"] != null
-                        && bodyJSON.sourceConfigNode()[key] != null
-                        && bodyJSON.sourceConfigNode()[key].toString() == value
+                it.code == OK.statusCode && bodyJSON["sourceConfig"] != null && bodyJSON.sourceConfigNode()[key] != null && bodyJSON.sourceConfigNode()[key].toString() == value
             }
         }
     }
