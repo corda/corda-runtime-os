@@ -18,6 +18,8 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.REST_CONFIG
+import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -84,7 +86,7 @@ internal class FlowRestResourceServiceImpl @Activate constructor(
             is RegistrationStatusChangeEvent -> {
                 configurationReadService.registerComponentForUpdates(
                     lifecycleCoordinator,
-                    setOf(BOOT_CONFIG, MESSAGING_CONFIG)
+                    setOf(BOOT_CONFIG, MESSAGING_CONFIG, STATE_MANAGER_CONFIG, REST_CONFIG)
                 )
             }
             is ConfigChangedEvent -> {
