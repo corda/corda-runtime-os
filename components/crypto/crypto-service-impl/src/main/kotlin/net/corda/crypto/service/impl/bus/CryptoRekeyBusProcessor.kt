@@ -86,12 +86,12 @@ class CryptoRekeyBusProcessor(
             return
         }
 
-            when (request.managedKey) {
-                KeyType.UNMANAGED -> {
-                    if (request.tenantId != null) {
-                        logger.info("tenantId provided for unmanaged KeyRotationRequest, ignoring.")
-                        return
-                    }
+        when (request.managedKey) {
+            KeyType.UNMANAGED -> {
+                if (request.tenantId != null) {
+                    logger.info("tenantId provided for unmanaged KeyRotationRequest, ignoring.")
+                    return
+                }
 
                 // Root (unmanaged) keys can be used in clusterDB and vNodeDB. We need to go through all tenants and
                 // clusterDB, and check if the oldKeyAlias is used there. If yes, we will issue a new record for this key
@@ -134,13 +134,13 @@ class CryptoRekeyBusProcessor(
                     return
                 }
                 publishIndividualUnmanagedRewrappingRequests(targetWrappingKeys, request)
-                }
+            }
 
-                KeyType.MANAGED -> {
-                    if (request.tenantId.isNullOrEmpty()) {
-                        logger.info("tenantId missing from managed KeyRotationRequest, ignoring.")
-                        return
-                    }
+            KeyType.MANAGED -> {
+                if (request.tenantId.isNullOrEmpty()) {
+                    logger.info("tenantId missing from managed KeyRotationRequest, ignoring.")
+                    return
+                }
 
                 val allKeyIdsAndAliases = wrappingRepositoryFactory.create(request.tenantId).use { wrappingRepo ->
                     wrappingRepo.getAllKeyIdsAndAliases()
@@ -370,18 +370,18 @@ class CryptoRekeyBusProcessor(
             if (retries == 0) return false
             val toDelete = stateManager.findByMetadataMatchingAll(
                 filters +
-                    MetadataFilter(
-                        KeyRotationMetadataValues.STATUS_TYPE,
-                        Operation.Equals,
-                        KeyRotationRecordType.KEY_ROTATION
-                    )
+                        MetadataFilter(
+                            KeyRotationMetadataValues.STATUS_TYPE,
+                            Operation.Equals,
+                            KeyRotationRecordType.KEY_ROTATION
+                        )
             )
             logger.info("Deleting following records ${toDelete.keys} for previous key rotation for ${reason}.")
             val failedToDelete = stateManager.delete(toDelete.values)
             if (failedToDelete.isNotEmpty()) {
                 logger.info(
                     "Failed to delete following states " +
-                        "${failedToDelete.keys} from the state manager for ${reason}, retrying."
+                            "${failedToDelete.keys} from the state manager for ${reason}, retrying."
                 )
                 retries--
             } else {
