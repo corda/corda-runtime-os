@@ -219,6 +219,37 @@ class CryptoRekeyBusProcessorTests {
     }
 
     @Test
+    fun `unmanaged key rotation handles bad tenant access`() {
+        val virtualNodeTenantIds = listOf(tenantId1, tenantId2, tenantId3)
+        val virtualNodes = getStubVirtualNodes(virtualNodeTenantIds)
+        whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
+
+        // Create a WrappingRepository which throws before returning good keys
+        val wrappingRepository = mock<WrappingRepository>()
+        whenever(wrappingRepository.findKeysNotWrappedByParentKey(any())).thenThrow(IllegalStateException()).thenReturn(
+            listOf(
+                WrappingKeyInfo(
+                    0,
+                    "",
+                    byteArrayOf(),
+                    0,
+                    oldKeyAlias,
+                    "alias1"
+                )
+            )
+        )
+        whenever(wrappingRepositoryFactory.create(any())).thenReturn(wrappingRepository)
+
+        cryptoRekeyBusProcessor.onNext(listOf(getUnmanagedKeyRotationKafkaRecord()))
+
+        verify(rewrapPublisher, times(1)).publish(any())
+        assertThat(rewrapPublishCapture.allValues).hasSize(1)
+
+        val allTenantsExceptFirst = virtualNodeTenantIds.drop(1) + CryptoTenants.CRYPTO
+        assertThat(rewrapPublishCapture.firstValue).hasSize(allTenantsExceptFirst.size)
+    }
+
+    @Test
     fun `ongoing key rotation prevents another unmanaged rotation starting`() {
         val stateMap = mapOf("key" to State(key = "key", value = byteArrayOf(42)))
         // This mock ignores filters so will always return a state, simulating a hit for non-DONE states

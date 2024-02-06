@@ -135,7 +135,7 @@ class WrappingRepositoryImplTests {
     }
 
     @Test
-    fun `find a wrapping key using its alias`() {
+    fun `find a wrapping keys not wrapped by specified alias`() {
         val wrappingKeyInfo = WrappingKeyInfo(
             1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch", "alias1"
         )
@@ -148,7 +148,6 @@ class WrappingRepositoryImplTests {
                     on { setMaxResults(any()) } doReturn it
                     on { resultList } doReturn listOf(savedWrappingKey)
                     on { resultStream } doReturn listOf(savedWrappingKey).stream()
-
                 }
             }
         }
@@ -162,7 +161,7 @@ class WrappingRepositoryImplTests {
 
         // Alias here doesn't matter, mock<EntityManager> returns savedWrappingKey regardless the alias.
         // There is an integration test dealing with the database where it checks for the alias.
-        val keys = repo.findKeysWrappedByParentKey("alias1").toList()
+        val keys = repo.findKeysNotWrappedByParentKey("alias1").toList()
 
         assertThat(keys).hasSize(1)
         assertThat(keys.first()).isEqualTo(wrappingKeyInfo)
