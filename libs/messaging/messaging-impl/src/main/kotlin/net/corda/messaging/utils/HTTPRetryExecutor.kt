@@ -55,7 +55,7 @@ class HTTPRetryExecutor {
 
         private fun handleException(attempt: Int, config: HTTPRetryConfig, e: Exception) {
             val isFinalAttempt = attempt == config.times - 1
-            val isRetryable = config.retryOn.any { it.isInstance(e) }
+            val isRetryable = config.retryOn.any { it.isAssignableFrom(e::class.java) }
 
             if (!isRetryable || isFinalAttempt) {
                 val errorMsg = when {
