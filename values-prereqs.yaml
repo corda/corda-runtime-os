@@ -16,11 +16,8 @@
 #
 imagePullPolicy: "IfNotPresent"
 image:
-  registry: "corda-os-docker.software.r3.com"
-  tag: "5.2.0.0-beta-1706877822257"
-
-imagePullSecrets:
-  - docker-registry-cred
+  registry: "corda-os-docker-dev.software.r3.com"
+  tag: "latest-local-5.2.0"
 
 logging:
   format: "text"
@@ -61,7 +58,7 @@ bootstrap:
       username:
         value: "postgres"
     databases:
-      - id: "cordacluster"
+      - id: "default"
         username:
           value: "postgres"
           valueFrom:

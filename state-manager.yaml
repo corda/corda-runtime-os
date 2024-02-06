@@ -54,7 +54,7 @@ databases:
 bootstrap:
   db:
     databases:
-      - id: "cordacluster"
+      - id: "default"
         username:
           value: "postgres"
           valueFrom:
