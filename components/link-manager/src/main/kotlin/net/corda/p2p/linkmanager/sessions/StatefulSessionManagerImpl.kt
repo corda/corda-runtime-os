@@ -394,9 +394,14 @@ internal class StatefulSessionManagerImpl(
     override fun deleteOutboundSession(
         counterParties: SessionManager.Counterparties, message: AuthenticatedMessage
     ) {
-        val sessionId = schemaRegistry.deserialize(
-            message.payload, ReEstablishSessionMessage::class.java, null
-        ).sessionId
+        val sessionId = try {
+            schemaRegistry.deserialize(
+                message.payload, ReEstablishSessionMessage::class.java, null
+            ).sessionId
+        } catch (e: Exception) {
+            logger.warn("Could not deserialize '{}'. Outbound session will not be deleted.", ReEstablishSessionMessage::class.simpleName)
+            return
+        }
         val key = counterpartiesForSessionId[sessionId] ?: getCounterpartySerial(
             counterParties.ourId, counterParties.counterpartyId, message.header.statusFilter
         )?.let { serial ->

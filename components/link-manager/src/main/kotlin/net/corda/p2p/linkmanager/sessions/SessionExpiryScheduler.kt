@@ -68,6 +68,7 @@ internal class SessionExpiryScheduler(
         caches.forEach {
             it.invalidate(key)
         }
+        tasks[key]?.future?.cancel(false)
         tasks.remove(key)
     }
 }
