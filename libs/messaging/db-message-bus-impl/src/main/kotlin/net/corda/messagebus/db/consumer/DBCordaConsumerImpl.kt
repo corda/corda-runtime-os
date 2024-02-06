@@ -217,17 +217,20 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
         )
     }
 
-    override fun syncCommitOffsets(event: CordaConsumerRecord<K, V>, metaData: String?) {
+    override fun syncCommitOffsets(events: Collection<CordaConsumerRecord<K, V>>, metaData: String?) {
         dbAccess.writeOffsets(
-            listOf(
+            events.groupBy { event ->
+                Pair(event.topic, event.partition)
+            }.map { (topicPartition, partitionEvents) ->
+                val maxOffset = partitionEvents.maxBy { it.offset }.offset
                 CommittedPositionEntry(
-                    event.topic,
+                    topicPartition.first,
                     groupId,
-                    event.partition,
-                    event.offset,
-                    ATOMIC_TRANSACTION,
+                    topicPartition.second,
+                    maxOffset,
+                    ATOMIC_TRANSACTION
                 )
-            )
+            }
         )
     }
 
