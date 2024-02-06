@@ -62,6 +62,7 @@ interface StepSetup {
         requireClose: Boolean = true
     ): FlowIoRequestSetup
 
+    @Suppress("LongParameterList")
     fun sessionDataEventReceived(
         flowId: String,
         sessionId: String,
