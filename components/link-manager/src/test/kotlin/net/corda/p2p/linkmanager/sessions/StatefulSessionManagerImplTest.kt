@@ -33,7 +33,6 @@ import org.mockito.kotlin.whenever
 import java.time.Instant
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Disabled
 import org.mockito.Mockito
 
 class StatefulSessionManagerImplTest {
