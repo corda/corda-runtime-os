@@ -75,7 +75,8 @@ class QueryMemberSignatureHandlerTest {
         on {
             getOrCreateEntityManagerFactory(
                 vaultDmlConnectionId,
-                jpaEntitiesSet
+                jpaEntitiesSet,
+                false
             )
         } doReturn factory
     }
