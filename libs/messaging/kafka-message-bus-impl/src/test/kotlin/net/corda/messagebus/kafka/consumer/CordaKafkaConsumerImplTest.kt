@@ -204,10 +204,30 @@ class CordaKafkaConsumerImplTest {
         val consumerRecord = CordaConsumerRecord(eventTopic, 1, 5L, "", "value", 0)
         assertThat(consumer.committed(setOf(partition))).isEmpty()
 
-        cordaKafkaConsumer.syncCommitOffsets(consumerRecord, "meta data")
+        cordaKafkaConsumer.syncCommitOffsets(listOf(consumerRecord), "meta data")
 
         val committedPositionAfterCommit = consumer.committed(setOf(partition))
         assertThat(committedPositionAfterCommit.values.first().offset()).isEqualTo(6)
+    }
+
+    @Test
+    fun testSyncCommitOffsetsMultipleOffsets() {
+        val records = listOf(
+            CordaConsumerRecord(eventTopic, 1, 5L, "", "value", 0),
+            CordaConsumerRecord(eventTopic, 2, 3L, "", "value", 0),
+            CordaConsumerRecord(eventTopic, 1, 4L, "", "value", 0)
+        )
+        cordaKafkaConsumer.syncCommitOffsets(records, "meta data")
+        val committed = consumer.committed(setOf(
+            TopicPartition(PREFIX + eventTopic, 1),
+            TopicPartition(PREFIX + eventTopic, 2),
+        ))
+        assertThat(committed).isEqualTo(
+            mapOf(
+                TopicPartition(PREFIX + eventTopic, 1) to OffsetAndMetadata(6L, "meta data"),
+                TopicPartition(PREFIX + eventTopic, 2) to OffsetAndMetadata(4L, "meta data"),
+            )
+        )
     }
 
     @Test
@@ -218,7 +238,7 @@ class CordaKafkaConsumerImplTest {
         val consumerRecord = CordaConsumerRecord(eventTopic, 1, 5L, "", "value", 0)
         doThrow(CommitFailedException()).whenever(consumer).commitSync(anyMap())
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
-            cordaKafkaConsumer.syncCommitOffsets(consumerRecord, "meta data")
+            cordaKafkaConsumer.syncCommitOffsets(listOf(consumerRecord), "meta data")
         }
         verify(consumer, times(1)).commitSync(anyMap())
     }

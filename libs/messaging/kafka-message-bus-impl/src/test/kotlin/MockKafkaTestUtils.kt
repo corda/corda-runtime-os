@@ -18,12 +18,9 @@ fun createMockConsumerAndAddRecords(
 ):
         Pair<MockConsumer<Any, Any>, TopicPartition> {
     val topicPartition = TopicPartition(topic, 1)
-    val partitions = mutableListOf(topicPartition)
-    val partitionsBeginningMap = mutableMapOf<TopicPartition, Long>()
-    val partitionsEndMap = mutableMapOf<TopicPartition, Long>()
-
-    partitionsBeginningMap[topicPartition] = 0L
-    partitionsEndMap[topicPartition] = numberOfRecords
+    val partitions = listOf(TopicPartition(topic, 1), TopicPartition(topic, 2))
+    val partitionsBeginningMap = partitions.associateWith { 0L }
+    val partitionsEndMap = partitions.associateWith { numberOfRecords }
 
     val consumer = MockConsumer<Any, Any>(offsetResetStrategy)
     consumer.subscribe(listOf(topic))
