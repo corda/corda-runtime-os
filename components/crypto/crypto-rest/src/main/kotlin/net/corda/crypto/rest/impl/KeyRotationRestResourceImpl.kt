@@ -257,8 +257,10 @@ class KeyRotationRestResourceImpl @Activate constructor(
             checkNotNull(publishToKafka)
         }
 
-        if (!hasPreviousRotationFinished()) {
-            throw ForbiddenException("A key rotation operation is already ongoing, a new one cannot be started until it completes.")
+        if (!stateManager.isRunning) {
+            throw IllegalStateException(
+                "State manager for key rotation is not initialised"
+            )
         }
 
         return if (tenantId == MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER) {
@@ -306,24 +308,17 @@ class KeyRotationRestResourceImpl @Activate constructor(
         return records.maxBy { it.modifiedTime }.modifiedTime
     }
 
-    private fun hasPreviousRotationFinished(): Boolean {
-        // The current state of this method is to prevent any key rotations being started when any other one is in progress.
-        // Same check is done on the Crypto worker side because if user quickly issues two key rotation commands after each other,
-        // it will pass rest worker check as state manager was not yet populated.
-        // On that note, if the logic is changed here, it should also be changed to match in the Crypto worker, see [CryptoRekeyBusProcessor]
-        // for the equivalent method.
-        stateManager.findByMetadataMatchingAll(
-            listOf(
-                MetadataFilter(
-                    KeyRotationMetadataValues.STATUS_TYPE,
-                    Operation.Equals,
-                    KeyRotationRecordType.KEY_ROTATION
-                )
-            )
-        ).forEach {
-            if (it.value.metadata[KeyRotationMetadataValues.STATUS] != KeyRotationStatus.DONE) return false
-        }
-        return true
+    @Suppress("ThrowsCount")
+    private fun validateInputParams(oldKeyAlias: String, newKeyAlias: String) {
+        if (oldKeyAlias == newKeyAlias) throw InvalidInputDataException(
+            "Cannot start key rotation. The old key alias must be different to the new key alias."
+        )
+        if (oldKeyAlias.isEmpty()) throw InvalidInputDataException(
+            "Cannot start key rotation. The old key alias is not specified."
+        )
+        if (newKeyAlias.isEmpty()) throw InvalidInputDataException(
+            "Cannot start key rotation. The new key alias is not specified."
+        )
     }
 }
 
