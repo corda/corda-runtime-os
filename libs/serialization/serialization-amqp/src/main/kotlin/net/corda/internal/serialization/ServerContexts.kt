@@ -19,6 +19,6 @@ val AMQP_STORAGE_CONTEXT = SerializationContextImpl(
     properties = emptyMap(),
     objectReferencesEnabled = false,
     useCase = SerializationContext.UseCase.Storage,
-    encoding = CordaSerializationEncoding.SNAPPY,
+    encoding = null,
     encodingAllowList = AlwaysAcceptEncodingAllowList
 )
