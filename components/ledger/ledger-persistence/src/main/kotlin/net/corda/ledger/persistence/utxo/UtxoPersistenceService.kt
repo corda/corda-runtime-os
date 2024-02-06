@@ -3,10 +3,11 @@ package net.corda.ledger.persistence.utxo
 import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.persistence.common.InconsistentLedgerStateException
-import net.corda.ledger.utxo.data.transaction.MerkleProofDto
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.ContractState
@@ -68,16 +69,28 @@ interface UtxoPersistenceService {
 
     fun persistSignedGroupParametersIfDoNotExist(signedGroupParameters: SignedGroupParameters)
 
-    fun persistMerkleProof(
-        transactionId: String,
-        groupIndex: Int,
-        treeSize: Int,
-        leaves: List<Int>,
-        hashes: List<String>
+    /**
+     * Persist a list of filtered transactions to the persistence context.
+     *
+     * @param filteredTransactionsAndSignatures The list of [FilteredTransaction]s to persist and their signature list
+     * @param account The account to persist for the [FilteredTransaction]s
+     */
+    fun persistFilteredTransactions(
+        filteredTransactionsAndSignatures: Map<FilteredTransaction, List<DigitalSignatureAndMetadata>>,
+        account: String
     )
 
-    fun findMerkleProofs(
-        transactionId: String,
-        groupIndex: Int
-    ): List<MerkleProofDto>
+    fun persistTransactionSignatures(id: String, signatures: List<ByteArray>, startingIndex: Int)
+
+    /**
+     * Retrieve filtered transactions and its signatures with the given a list of state references.
+     *
+     * @param stateRefs The list of [StateRef]
+     *
+     * @return A map of the filtered transaction ID to a pair of a found [FilteredTransaction] and a corresponding signatures.
+     * If a [FilteredTransaction] with a given stateRef ID is not found, it will be null.
+     */
+    fun findFilteredTransactionsAndSignatures(
+        stateRefs: List<StateRef>
+    ): Map<SecureHash, Pair<FilteredTransaction?, List<DigitalSignatureAndMetadata>>>
 }

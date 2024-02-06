@@ -1,5 +1,6 @@
 package net.corda.e2etest.utilities
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.tracing.configureTracing
@@ -31,7 +32,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     private val client: HttpsClient =
         UnirestHttpsClient(clusterInfo.rest.uri, clusterInfo.rest.user, clusterInfo.rest.password)
 
-    data class VNodeCreateBody(
+    private data class VNodeCreateBody(
         val cpiFileChecksum: String,
         val x500Name: String,
         val cryptoDdlConnection: String?,
@@ -42,13 +43,13 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         val vaultDmlConnection: String?
     )
 
-    data class VNodeChangeConnectionStringsBody(
-        val cryptoDdlConnection: String?,
-        val cryptoDmlConnection: String?,
-        val uniquenessDdlConnection: String?,
-        val uniquenessDmlConnection: String?,
-        val vaultDdlConnection: String?,
-        val vaultDmlConnection: String?
+    private data class VNodeChangeConnectionStringsBody(
+        val cryptoDdlConnection: JsonNode?,
+        val cryptoDmlConnection: JsonNode?,
+        val uniquenessDdlConnection: JsonNode?,
+        val uniquenessDmlConnection: JsonNode?,
+        val vaultDdlConnection: JsonNode?,
+        val vaultDmlConnection: JsonNode?
     )
 
     data class ExternalDBConnectionParams(
@@ -58,6 +59,15 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         val uniquenessDmlConnection: String? = null,
         val vaultDdlConnection: String? = null,
         val vaultDmlConnection: String? = null
+    )
+
+    data class JsonExternalDBConnectionParams(
+        val cryptoDdlConnection: JsonNode? = null,
+        val cryptoDmlConnection: JsonNode? = null,
+        val uniquenessDdlConnection: JsonNode? = null,
+        val uniquenessDmlConnection: JsonNode? = null,
+        val vaultDdlConnection: JsonNode? = null,
+        val vaultDmlConnection: JsonNode? = null
     )
 
 
@@ -266,12 +276,12 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
 
     @Suppress("LongParameterList")
     private fun vNodeChangeConnectionStringsBody(
-        cryptoDdlConnection: String?,
-        cryptoDmlConnection: String?,
-        uniquenessDdlConnection: String?,
-        uniquenessDmlConnection: String?,
-        vaultDdlConnection: String?,
-        vaultDmlConnection: String?
+        cryptoDdlConnection: JsonNode?,
+        cryptoDmlConnection: JsonNode?,
+        uniquenessDdlConnection: JsonNode?,
+        uniquenessDmlConnection: JsonNode?,
+        vaultDdlConnection: JsonNode?,
+        vaultDmlConnection: JsonNode?
     ): String {
         val body = VNodeChangeConnectionStringsBody(
             cryptoDdlConnection,
@@ -436,7 +446,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     @Suppress("LongParameterList", "unused")
     fun vNodeChangeConnectionStrings(
         holdingIdShortHash: String,
-        externalDBConnectionParams: ExternalDBConnectionParams? = null
+        externalDBConnectionParams: JsonExternalDBConnectionParams? = null
     ) =
         put(
             "/api/$REST_API_VERSION_PATH/virtualnode/$holdingIdShortHash/db",

@@ -86,7 +86,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
             }
         }
 
-        val hashDigestProvider = transactions.first().getBatchMerkleTreeDigestProvider(merkleTreeProvider)
+        val hashDigestProvider = transactions.first().metadata.getBatchMerkleTreeDigestProvider(merkleTreeProvider)
         val batchTree = merkleTreeProvider.createTree(transactions.map { it.id.bytes }, hashDigestProvider)
 
         val batchSignaturesWithMeta = publicKeysToSigSpecs.map { (publicKey, signatureSpec) ->

@@ -141,7 +141,20 @@ interface DbConnectionOps {
      *                  [EntityManagerFactory] returned
      * @return
      */
-    fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory
+    fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet, enablePool: Boolean = true):
+            EntityManagerFactory
 
-    fun getOrCreateEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory
+    /**
+     * Get an [EntityManagerFactory] for a given connection ID. Use cache or create one if necessary.
+     *
+     * Callers of this function do not need to close the returned EMF. Doing so is a no-op.
+     *
+     * @param connectionId
+     * @param entitiesSet Set of all entities managed by [javax.persistence.EntityManager]s created by the
+     *                  [EntityManagerFactory] returned
+     * @param enablePool Enable client side connection pooling for the EMF. Default = true.
+     * @return
+     */
+    fun getOrCreateEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet, enablePool: Boolean = true):
+            EntityManagerFactory
 }

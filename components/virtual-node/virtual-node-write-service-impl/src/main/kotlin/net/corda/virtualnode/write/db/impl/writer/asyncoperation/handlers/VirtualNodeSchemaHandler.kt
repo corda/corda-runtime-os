@@ -10,6 +10,7 @@ import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.DbSchema
+import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
@@ -37,18 +38,16 @@ internal class VirtualNodeSchemaHandler(
     ) {
         val sql = when (virtualNodeSchemaRequest.dbType) {
             DbTypes.CRYPTO, DbTypes.UNIQUENESS -> {
-                val changelog = getChangelog(virtualNodeSchemaRequest.dbType)
-                buildSqlWithStringWriter(changelog)
+                val changeLog = getChangeLog(virtualNodeSchemaRequest.dbType)
+                buildSqlWithStringWriter(changeLog)
             }
 
             DbTypes.VAULT -> {
                 if (virtualNodeSchemaRequest.virtualNodeShortHash == null && virtualNodeSchemaRequest.cpiChecksum != null) {
-                    val changeLog = getChangelog(virtualNodeSchemaRequest.dbType)
+                    val changeLog = getChangeLog(virtualNodeSchemaRequest.dbType)
                     dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction { em ->
-                        val cpkChangeLog = getCpkChangelog(em, virtualNodeSchemaRequest.cpiChecksum)
-                        buildSqlWithStringWriter(changeLog) + buildSqlWithStringWriter(
-                            cpkChangeLog
-                        )
+                        val cpkChangeLogs = getCpkChangeLogs(em, virtualNodeSchemaRequest.cpiChecksum)
+                        buildSqlWithStringWriter(changeLog) + buildCpkSqlWithStringWriter(cpkChangeLogs)
                     }
                 } else if (virtualNodeSchemaRequest.virtualNodeShortHash != null && virtualNodeSchemaRequest.cpiChecksum != null) {
                     dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction { em ->
@@ -56,13 +55,10 @@ internal class VirtualNodeSchemaHandler(
                             em, ShortHash.parse(virtualNodeSchemaRequest.virtualNodeShortHash)
                         ) ?: throw VirtualNodeDbException("Unable to fetch virtual node info")
 
-                        val cpkChangeLog = getCpkChangelog(em, virtualNodeSchemaRequest.cpiChecksum)
+                        val cpkChangeLogs = getCpkChangeLogs(em, virtualNodeSchemaRequest.cpiChecksum)
                         val connectionVNodeVault =
                             dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).connection
-                        buildSqlWithStringWriter(
-                            cpkChangeLog,
-                            connectionVNodeVault
-                        )
+                        buildCpkSqlWithStringWriter(cpkChangeLogs, connectionVNodeVault)
                     }
                 } else {
                     throw IllegalArgumentException("Illegal argument combination for VirtualNodeSchemaRequest")
@@ -70,7 +66,10 @@ internal class VirtualNodeSchemaHandler(
             }
 
             else -> throw IllegalArgumentException("Cannot use dbType that does not exist: ${virtualNodeSchemaRequest.dbType}")
-        }
+        }.replace(
+            "CREATE TABLE databasechangelog",
+            "CREATE TABLE IF NOT EXISTS databasechangelog"
+        )
         respFuture.complete(
             VirtualNodeManagementResponse(
                 instant,
@@ -87,7 +86,7 @@ internal class VirtualNodeSchemaHandler(
         }
     }
 
-    private fun getChangelog(dbType: DbTypes): DbChange {
+    private fun getChangeLog(dbType: DbTypes): DbChange {
         val dbTypeAsString = dbTypesToString(dbType)
         val resourceSubPath = "vnode-$dbTypeAsString"
         val schemaClass = DbSchema::class.java
@@ -101,28 +100,40 @@ internal class VirtualNodeSchemaHandler(
         return ClassloaderChangeLog(linkedSetOf(changeLogFiles))
     }
 
-    private fun getCpkChangelog(em: EntityManager, cpiChecksum: String): DbChange {
+    private fun getCpkChangeLogs(em: EntityManager, cpiChecksum: String): List<DbChange> {
         val cpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository()
         val cpiMetadata = CpiCpkRepositoryFactory().createCpiMetadataRepository().findByFileChecksum(em, cpiChecksum)
-        val changelogsPerCpk = cpkDbChangeLogRepository.findByCpiId(em, cpiMetadata!!.cpiId)
-        return VirtualNodeDbChangeLog(changelogsPerCpk)
+        val changeLogsPerCpk = cpkDbChangeLogRepository.findByCpiId(em, cpiMetadata!!.cpiId)
+            .groupBy { it.id.cpkFileChecksum }
+        return changeLogsPerCpk.map { (_, changeLogs) ->
+            VirtualNodeDbChangeLog(changeLogs.map { CpkDbChangeLog(it.id, it.content) })
+        }
     }
 
     private fun buildSqlWithStringWriter(
-        dbChange: DbChange,
-        connection: Connection? = null
+        dbChange: DbChange
     ): String {
         StringWriter().use { writer ->
-            if (connection == null) {
-                val offlineDbDirPathString = offlineDbDir.toString()
-                schemaMigrator.createUpdateSqlOffline(dbChange, offlineDbDirPathString, writer)
-            } else {
-                schemaMigrator.createUpdateSql(connection, dbChange, writer)
+            val offlineDbDirPathString = offlineDbDir.toString()
+            schemaMigrator.createUpdateSqlOffline(dbChange, offlineDbDirPathString, writer)
+            return writer.toString()
+        }
+    }
+
+    private fun buildCpkSqlWithStringWriter(
+        dbChange: List<DbChange>,
+        connection: Connection? = null
+    ): String {
+        return dbChange.joinToString(separator = "") { cpkChangeLogs ->
+            StringWriter().use { writer ->
+                if (connection == null) {
+                    val offlineDbDirPathString = offlineDbDir.toString()
+                    schemaMigrator.createUpdateSqlOffline(cpkChangeLogs, offlineDbDirPathString, writer)
+                } else {
+                    schemaMigrator.createUpdateSql(connection, cpkChangeLogs, writer)
+                }
+                writer.toString()
             }
-            return writer.toString().replace(
-                "CREATE TABLE databasechangelog",
-                "CREATE TABLE IF NOT EXISTS databasechangelog"
-            )
         }
     }
 }

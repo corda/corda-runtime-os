@@ -63,7 +63,7 @@ class SigningRepositoryImplTests {
         }
         val dbConnectionManager = mock<DbConnectionManager> {
             on { getOrCreateEntityManagerFactory(any<CordaDb>(), any()) } doReturn mock()
-            on { createEntityManagerFactory(any(), any()) } doReturn ownedEntityManagerFactory
+            on { createEntityManagerFactory(any(), any(), any()) } doReturn ownedEntityManagerFactory
         }
         val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
             on { getByHoldingIdentityShortHash(any()) } doReturn virtualNodeInfo
@@ -102,7 +102,7 @@ class SigningRepositoryImplTests {
         ).use {
             verify(ownedEntityManagerFactory, times(0)).close()
         } // try shorter, ShortHash bombs
-        verify(dbConnectionManager).createEntityManagerFactory(any(), any())
+        verify(dbConnectionManager).createEntityManagerFactory(any(), any(), any())
         verifyNoMoreInteractions(dbConnectionManager)
         verify(sharedEntityManagerFactory, times(0)).close()
         verify(ownedEntityManagerFactory, times(1)).close()

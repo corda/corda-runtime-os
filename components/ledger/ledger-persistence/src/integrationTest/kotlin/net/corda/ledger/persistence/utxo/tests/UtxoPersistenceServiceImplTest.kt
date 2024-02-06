@@ -17,6 +17,8 @@ import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
+import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters
+import net.corda.ledger.common.data.transaction.filtered.factory.FilteredTransactionFactory
 import net.corda.ledger.common.testkit.cpiPackageSummaryExample
 import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
 import net.corda.ledger.common.testkit.getPrivacySalt
@@ -33,6 +35,8 @@ import net.corda.ledger.persistence.utxo.tests.datamodel.UtxoEntityFactory
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
+import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup.METADATA
+import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup.NOTARY
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionMetadata
@@ -56,6 +60,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.EncumbranceGroup
@@ -68,6 +73,7 @@ import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -112,6 +118,7 @@ class UtxoPersistenceServiceImplTest {
     private lateinit var repository: UtxoRepository
     private lateinit var cpiInfoReadService: CpiInfoReadService
     private lateinit var factoryRegistry: ContractStateVaultJsonFactoryRegistry
+    private lateinit var filteredTransactionFactory: FilteredTransactionFactory
     private val emConfig = DbUtils.getEntityManagerConfiguration("ledger_db_for_test")
 
     @InjectService(timeout = TIMEOUT_MILLIS)
@@ -165,6 +172,7 @@ class UtxoPersistenceServiceImplTest {
             entityManagerFactory = ctx.getEntityManagerFactory()
             repository = ctx.getSandboxSingletonService()
             factoryRegistry = ctx.getSandboxSingletonService()
+            filteredTransactionFactory = ctx.getSandboxSingletonService()
 
             persistenceService = UtxoPersistenceServiceImpl(
                 entityManagerFactory,
@@ -174,6 +182,11 @@ class UtxoPersistenceServiceImplTest {
                 factoryRegistry,
                 DefaultContractStateVaultJsonFactoryImpl(),
                 jsonMarshallingService,
+                ctx.getSandboxSingletonService(),
+                ctx.getSandboxSingletonService(),
+                ctx.getSandboxSingletonService(),
+                filteredTransactionFactory,
+                ctx.getSandboxSingletonService(),
                 testClock
             )
         }
@@ -247,6 +260,56 @@ class UtxoPersistenceServiceImplTest {
         val retval = persistenceService.findSignedLedgerTransaction(transaction.id.toString(), VERIFIED)
 
         assertThat(retval).isEqualTo(null to "U")
+    }
+
+    @Test
+    fun `find filtered transaction and signatures that matches with stateRefs`() {
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        val transactions = listOf(
+            persistTransactionViaEntity(entityFactory, VERIFIED),
+            persistTransactionViaEntity(entityFactory, VERIFIED)
+        )
+
+        val stateRefs = listOf(
+            StateRef(transactions[0].id, 0),
+            StateRef(transactions[1].id, 1),
+        )
+        val txIdToIndexes = stateRefs.groupBy { it.transactionId }
+            .mapValues { (_, stateRefs) -> stateRefs.map { stateRef -> stateRef.index } }
+        val expectedRetval = stateRefs.associate {
+            val indexes = txIdToIndexes[it.transactionId]!!
+            val (wireTransaction, signatures) = persistenceService.findSignedTransaction(it.transactionId.toString(), VERIFIED).first!!
+            val filteredTransaction = filteredTransactionFactory.create(
+                wireTransaction,
+                listOf(
+                    ComponentGroupFilterParameters.AuditProof(
+                        METADATA.ordinal,
+                        TransactionMetadata::class.java,
+                        ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
+                    ),
+                    ComponentGroupFilterParameters.AuditProof(
+                        NOTARY.ordinal,
+                        Any::class.java,
+                        ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
+                    ),
+                    ComponentGroupFilterParameters.AuditProof(
+                        UtxoComponentGroup.OUTPUTS_INFO.ordinal,
+                        UtxoOutputInfoComponent::class.java,
+                        ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Index(indexes)
+                    ),
+                    ComponentGroupFilterParameters.AuditProof(
+                        UtxoComponentGroup.OUTPUTS.ordinal,
+                        ContractState::class.java,
+                        ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Index(indexes)
+                    )
+                )
+            )
+            it.transactionId to Pair(filteredTransaction, signatures)
+        }
+
+        val retval = persistenceService.findFilteredTransactionsAndSignatures(stateRefs)
+
+        assertThat(retval).isEqualTo(expectedRetval)
     }
 
     @Test
@@ -571,51 +634,66 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
-    fun `persist and fetch merkle proof`() {
-        // 1. Create and persist a simple signed transaction with 2 outputs
-        val signedTx = createSignedTransaction()
-        val signedTxReader = TestUtxoTransactionReader(
-            signedTx,
-            "account",
-            VERIFIED,
-            listOf(0, 1)
+    fun `persist and find filtered transactions`() {
+        val signedTransaction = createSignedTransaction(Instant.now())
+        val account = "Account"
+
+        val filteredTransactionToStore = filteredTransactionFactory.create(
+            signedTransaction.wireTransaction,
+            componentGroupFilterParameters = listOf(
+                ComponentGroupFilterParameters.AuditProof(
+                    0,
+                    TransactionMetadataImpl::class.java,
+                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
+                ),
+                ComponentGroupFilterParameters.AuditProof(
+                    1,
+                    Any::class.java,
+                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
+                ),
+                ComponentGroupFilterParameters.AuditProof(
+                    3,
+                    Any::class.java,
+                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
+                ),
+                ComponentGroupFilterParameters.AuditProof(
+                    8,
+                    Any::class.java,
+                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
+                ),
+            )
         )
 
-        persistenceService.persistTransaction(signedTxReader)
-
-        // 2. Create a merkle proof from that transaction and persist it
-        persistenceService.persistMerkleProof(
-            signedTx.id.toString(),
-            UtxoComponentGroup.OUTPUTS.ordinal,
-            2,
-            listOf(0, 1),
-            emptyList()
+        persistenceService.persistFilteredTransactions(
+            mapOf(filteredTransactionToStore to emptyList()),
+            account
         )
 
-        // 3. Fetch the merkle proof from the DB
-        val persistedMerkleProofs = persistenceService.findMerkleProofs(
-            signedTx.id.toString(),
-            UtxoComponentGroup.OUTPUTS.ordinal
+        val filteredTxResults = (persistenceService as UtxoPersistenceServiceImpl).findFilteredTransactions(
+            listOf(filteredTransactionToStore.id.toString())
         )
 
-        // 4. Make sure basic details (ID / Group index matches)
-        assertThat(persistedMerkleProofs).hasSize(1)
+        assertThat(filteredTxResults).hasSize(1)
 
-        val persistedMerkleProof = persistedMerkleProofs.single()
+        val storedFilteredTransaction = filteredTxResults[filteredTransactionToStore.id]?.first
 
-        assertThat(persistedMerkleProof.transactionId).isEqualTo(signedTx.id.toString())
-        assertThat(persistedMerkleProof.groupIndex).isEqualTo(UtxoComponentGroup.OUTPUTS.ordinal)
+        assertNotNull(storedFilteredTransaction)
 
-        // 5. Make sure the revealed data is matching
-        assertThat(persistedMerkleProof.leavesWithData).hasSize(2)
+        assertThat(storedFilteredTransaction!!.id).isEqualTo(filteredTransactionToStore.id)
+        assertThat(storedFilteredTransaction.metadata).isEqualTo(filteredTransactionToStore.metadata)
+        assertThat(storedFilteredTransaction.privacySalt).isEqualTo(filteredTransactionToStore.privacySalt)
+        assertThat(storedFilteredTransaction.filteredComponentGroups).isEqualTo(filteredTransactionToStore.filteredComponentGroups)
+        assertThat(storedFilteredTransaction.topLevelMerkleProof).isEqualTo(filteredTransactionToStore.topLevelMerkleProof)
 
-        // Leaf 0 of outputs component group
-        assertThat(persistedMerkleProof.leavesWithData[0])
-            .isEqualTo(signedTx.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][0])
+        // Check that outputs / outputs_info merkle proofs are matching
+        assertThat(storedFilteredTransaction.filteredComponentGroups[UtxoComponentGroup.OUTPUTS.ordinal]?.merkleProof).isEqualTo(
+            filteredTransactionToStore.filteredComponentGroups[UtxoComponentGroup.OUTPUTS.ordinal]?.merkleProof
+        )
+        assertThat(storedFilteredTransaction.filteredComponentGroups[UtxoComponentGroup.OUTPUTS_INFO.ordinal]?.merkleProof).isEqualTo(
+            filteredTransactionToStore.filteredComponentGroups[UtxoComponentGroup.OUTPUTS_INFO.ordinal]?.merkleProof
+        )
 
-        // Leaf 1 of outputs component group
-        assertThat(persistedMerkleProof.leavesWithData[1])
-            .isEqualTo(signedTx.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][1])
+        storedFilteredTransaction.verify()
     }
 
     @Suppress("LongParameterList")
@@ -647,22 +725,24 @@ class UtxoPersistenceServiceImplTest {
         entityFactory: UtxoEntityFactory,
         status: TransactionStatus = UNVERIFIED,
         inputStateRefs: List<StateRef> = defaultInputStateRefs,
-        referenceStateRefs: List<StateRef> = defaultReferenceStateRefs
-
+        referenceStateRefs: List<StateRef> = defaultReferenceStateRefs,
+        isFiltered: Boolean = false
     ): SignedTransactionContainer {
         val signedTransaction = createSignedTransaction(inputStateRefs = inputStateRefs, referenceStateRefs = referenceStateRefs)
         entityManagerFactory.transaction { em ->
-            em.persist(createTransactionEntity(entityFactory, signedTransaction, status = status))
+            em.persist(createTransactionEntity(entityFactory, signedTransaction, status = status, isFiltered = isFiltered))
         }
         return signedTransaction
     }
 
+    @Suppress("LongParameterList")
     private fun createTransactionEntity(
         entityFactory: UtxoEntityFactory,
         signedTransaction: SignedTransactionContainer,
         account: String = "Account",
         createdTs: Instant = testClock.instant(),
-        status: TransactionStatus = UNVERIFIED
+        status: TransactionStatus = UNVERIFIED,
+        isFiltered: Boolean = false
     ): Any {
         val metadataBytes = signedTransaction.wireTransaction.componentGroupLists[0][0]
         val metadata = entityFactory.createOrFindUtxoTransactionMetadataEntity(
@@ -679,7 +759,8 @@ class UtxoPersistenceServiceImplTest {
             createdTs,
             status.value,
             createdTs,
-            metadata
+            metadata,
+            isFiltered
         ).also { transaction ->
             transaction.field<MutableCollection<Any>>("components").addAll(
                 signedTransaction.wireTransaction.componentGroupLists.flatMapIndexed { groupIndex, componentGroup ->
@@ -738,10 +819,11 @@ class UtxoPersistenceServiceImplTest {
         inputStateRefs: List<StateRef> = defaultInputStateRefs,
         referenceStateRefs: List<StateRef> = defaultReferenceStateRefs
     ): SignedTransactionContainer {
-        val transactionMetadata = utxoTransactionMetadataExample(cpkPackageSeed = seed,)
+        val transactionMetadata = utxoTransactionMetadataExample(cpkPackageSeed = seed)
+        val timeWindow = Instant.now().plusMillis(Duration.ofDays(1).toMillis())
         val componentGroupLists: List<List<ByteArray>> = listOf(
             listOf(jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetadata)).toByteArray()),
-            listOf("group1_component1".toByteArray()),
+            listOf(notaryExampleName.toBytes(), notaryExampleKey.toBytes(), timeWindow.toBytes()),
             listOf("group2_component1".toByteArray()),
             listOf(
                 UtxoOutputInfoComponent(
@@ -876,6 +958,9 @@ class UtxoPersistenceServiceImplTest {
     private fun ContractState.toBytes() = serializationService.serialize(this).bytes
     private fun StateRef.toBytes() = serializationService.serialize(this).bytes
     private fun UtxoOutputInfoComponent.toBytes() = serializationService.serialize(this).bytes
+    private fun MemberX500Name.toBytes() = serializationService.serialize(this).bytes
+    private fun PublicKey.toBytes() = serializationService.serialize(this).bytes
+    private fun Instant.toBytes() = serializationService.serialize(this).bytes
 
     private fun digest(algorithm: String, data: ByteArray) =
         SecureHashImpl(algorithm, MessageDigest.getInstance(algorithm).digest(data))

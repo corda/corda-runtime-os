@@ -11,11 +11,11 @@ import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.testkit.publicKeyExample
+import net.corda.ledger.utxo.data.transaction.FilteredTransactionAndSignatures
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
-import net.corda.ledger.utxo.flow.impl.flows.finality.FilteredTransactionAndSignatures
 import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityPayload
 import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
@@ -203,7 +203,12 @@ class UtxoReceiveFinalityFlowV1Test {
         verify(signedTransaction).addMissingSignatures()
 
         verify(signedTransactionWithOwnKeys).addSignature(signature3)
-        verify(persistenceService, times(2)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService, times(1)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persistTransactionSignatures(
+            ID,
+            2,
+            listOf()
+        )
         verify(persistenceService).persist(notarizedTransaction, TransactionStatus.VERIFIED)
         verify(session).send(Payload.Success(listOf(signature1, signature2)))
     }
@@ -274,7 +279,12 @@ class UtxoReceiveFinalityFlowV1Test {
             .hasMessageContaining("No notary signature received for transaction:")
 
         verify(signedTransaction).addMissingSignatures()
-        verify(persistenceService, times(2)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService, times(1)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persistTransactionSignatures(
+            ID,
+            2,
+            listOf()
+        )
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(persistenceService).persist(signedTransactionWithOwnKeys, TransactionStatus.INVALID)
         verify(session).send(Payload.Success(listOf(signature1, signature2)))
@@ -296,7 +306,12 @@ class UtxoReceiveFinalityFlowV1Test {
             .hasMessageContaining("notarization error")
 
         verify(signedTransaction).addMissingSignatures()
-        verify(persistenceService, times(2)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService, times(1)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persistTransactionSignatures(
+            ID,
+            2,
+            listOf()
+        )
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(persistenceService).persist(signedTransactionWithOwnKeys, TransactionStatus.INVALID)
         verify(session).send(Payload.Success(listOf(signature1, signature2)))
@@ -313,7 +328,12 @@ class UtxoReceiveFinalityFlowV1Test {
             .hasMessageContaining("notarization error")
 
         verify(signedTransaction).addMissingSignatures()
-        verify(persistenceService, times(2)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService, times(1)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persistTransactionSignatures(
+            ID,
+            2,
+            listOf()
+        )
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.INVALID), any())
         verify(session).send(Payload.Success(listOf(signature1, signature2)))
@@ -334,7 +354,12 @@ class UtxoReceiveFinalityFlowV1Test {
             .hasMessageContaining("Verifying notary signature failed!!")
 
         verify(signedTransaction).addMissingSignatures()
-        verify(persistenceService, times(2)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService, times(1)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persistTransactionSignatures(
+            ID,
+            2,
+            listOf()
+        )
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(persistenceService).persist(signedTransactionWithOwnKeys, TransactionStatus.INVALID)
         verify(session).send(Payload.Success(listOf(signature1, signature2)))
@@ -356,7 +381,12 @@ class UtxoReceiveFinalityFlowV1Test {
             .hasMessageContaining("Notary's signature has not been created by the transaction's notary.")
 
         verify(signedTransaction).addMissingSignatures()
-        verify(persistenceService, times(2)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService, times(1)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persistTransactionSignatures(
+            ID,
+            2,
+            listOf()
+        )
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(persistenceService).persist(signedTransactionWithOwnKeys, TransactionStatus.INVALID)
         verify(session).send(Payload.Success(listOf(signature1, signature2)))
@@ -381,7 +411,12 @@ class UtxoReceiveFinalityFlowV1Test {
 
         verify(signedTransaction).addMissingSignatures()
         verify(signedTransactionWith1Key, never()).addMissingSignatures()
-        verify(persistenceService, times(2)).persist(signedTransactionWith1Key, TransactionStatus.UNVERIFIED)
+        verify(persistenceService, times(1)).persist(signedTransactionWith1Key, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persistTransactionSignatures(
+            ID,
+            1,
+            listOf()
+        )
         verify(persistenceService).persist(notarizedTransaction, TransactionStatus.VERIFIED)
         verify(session).send(Payload.Success(listOf(signature1)))
     }
@@ -446,7 +481,12 @@ class UtxoReceiveFinalityFlowV1Test {
 
         verify(signedTransaction).addMissingSignatures()
         verify(session).send(Payload.Success(emptyList<DigitalSignatureAndMetadata>()))
-        verify(persistenceService, times(2)).persist(signedTransaction, TransactionStatus.UNVERIFIED)
+        verify(persistenceService, times(1)).persist(signedTransaction, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persistTransactionSignatures(
+            ID,
+            1,
+            listOf()
+        )
         verify(persistenceService).persist(notarizedTransaction, TransactionStatus.VERIFIED)
     }
 
@@ -555,7 +595,12 @@ class UtxoReceiveFinalityFlowV1Test {
         callReceiveFinalityFlow()
 
         verify(session, times(1)).receive(List::class.java)
-        verify(persistenceService, times(2)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService, times(1)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persistTransactionSignatures(
+            ID,
+            2,
+            listOf()
+        )
     }
 
     @Test

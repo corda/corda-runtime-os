@@ -17,7 +17,7 @@ dependencies {
     implementation libs.jackson.module.kotlin
     implementation libs.jackson.datatype.jsr310
     implementation libs.unirest.java
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
     implementation "org.apache.commons:commons-text:$commonsTextVersion"
     implementation libs.assertj.core
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinCoroutinesVersion"

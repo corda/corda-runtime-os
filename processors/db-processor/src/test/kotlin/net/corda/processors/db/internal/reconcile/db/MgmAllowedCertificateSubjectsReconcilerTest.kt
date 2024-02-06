@@ -36,7 +36,6 @@ import javax.persistence.TypedQuery
 import javax.persistence.criteria.CriteriaBuilder
 import javax.persistence.criteria.CriteriaQuery
 import javax.persistence.criteria.Root
-import kotlin.streams.toList
 
 class MgmAllowedCertificateSubjectsReconcilerTest {
     private val coordinator = mock<LifecycleCoordinator>()
@@ -70,7 +69,7 @@ class MgmAllowedCertificateSubjectsReconcilerTest {
         on { createEntityManager() } doReturn entityManager
     }
     private val dbConnectionManager = mock<DbConnectionManager> {
-        on { createEntityManagerFactory(connectionId, entitySet) } doReturn entityManagerFactory
+        on { getOrCreateEntityManagerFactory(eq(connectionId), eq(entitySet), any()) } doReturn entityManagerFactory
     }
     private val reconcilerFactory = mock<ReconcilerFactory> {
         on {

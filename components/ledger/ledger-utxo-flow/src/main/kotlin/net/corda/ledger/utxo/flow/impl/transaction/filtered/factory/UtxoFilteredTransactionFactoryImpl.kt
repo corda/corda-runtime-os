@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.flow.impl.transaction.filtered.factory
 
 import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters
 import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters.AuditProof.AuditProofPredicate
+import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.data.transaction.filtered.factory.FilteredTransactionFactory
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup.METADATA
@@ -85,6 +86,14 @@ class UtxoFilteredTransactionFactoryImpl @Activate constructor(
                     filteredTransactionBuilder.commands
                 )
             )
+        )
+    }
+
+    @Suspendable
+    override fun create(filteredTransaction: FilteredTransaction): UtxoFilteredTransaction {
+        return UtxoFilteredTransactionImpl(
+            serializationService,
+            filteredTransaction
         )
     }
 }

@@ -114,7 +114,8 @@ class PersistMemberInfoHandlerTest {
         on {
             getOrCreateEntityManagerFactory(
                 eq(vaultDmlConnectionId),
-                any()
+                any(),
+                eq(false)
             )
         } doReturn entityManagerFactory
     }
@@ -189,7 +190,7 @@ class PersistMemberInfoHandlerTest {
         assertThat(result).isInstanceOf(Unit::class.java)
         verify(memberInfoFactory, never()).createMemberInfo(any())
         verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
-        verify(dbConnectionManager, never()).getOrCreateEntityManagerFactory(any(), any(), any())
+        verify(dbConnectionManager, never()).getOrCreateEntityManagerFactory(any<String>(), any(), any())
         verify(jpaEntitiesRegistry, never()).get(any())
     }
 

@@ -4,10 +4,10 @@ import net.corda.flow.application.GroupParametersLookupInternal
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
+import net.corda.ledger.utxo.data.transaction.FilteredTransactionAndSignatures
 import net.corda.ledger.utxo.flow.impl.flows.backchain.InvalidBackchainException
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
-import net.corda.ledger.utxo.flow.impl.flows.finality.FilteredTransactionAndSignatures
 import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityPayload
 import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowContext
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
@@ -114,9 +114,10 @@ class UtxoReceiveFinalityFlowV1(
         transferAdditionalSignatures: Boolean
     ): UtxoSignedTransactionInternal {
         return if (transferAdditionalSignatures) {
-            receiveSignaturesAndAddToTransaction(transaction).also {
+            receiveSignaturesAndAddToTransaction(transaction).let { (it, startingIndex, signatures) ->
                 verifyAllReceivedSignatures(it)
-                persistenceService.persist(it, TransactionStatus.UNVERIFIED)
+                persistenceService.persistTransactionSignatures(it.id, startingIndex, signatures)
+                it
             }
         } else {
             verifyAllReceivedSignatures(transaction)
@@ -166,13 +167,6 @@ class UtxoReceiveFinalityFlowV1(
             verifyDependencies(filteredTransactionsAndSignatures, initialTransaction, transferAdditionalSignatures)
         }
     }
-
-    private data class InitialTransactionPayload(
-        val initialTransaction: UtxoSignedTransactionInternal,
-        val transferAdditionalSignatures: Boolean,
-        val inputStateAndRefs: List<StateAndRef<*>>,
-        val referenceStateAndRefs: List<StateAndRef<*>>
-    )
 
     @Suspendable
     private fun verifyDependencies(
@@ -309,7 +303,8 @@ class UtxoReceiveFinalityFlowV1(
     }
 
     @Suspendable
-    private fun receiveSignaturesAndAddToTransaction(transaction: UtxoSignedTransactionInternal): UtxoSignedTransactionInternal {
+    private fun receiveSignaturesAndAddToTransaction(transaction: UtxoSignedTransactionInternal): TransactionAndReceivedSignatures {
+        val initialSignaturesSize = transaction.signatures.size
         if (log.isDebugEnabled) {
             log.debug("Waiting for other parties' signatures for transaction: ${transaction.id}")
         }
@@ -322,7 +317,11 @@ class UtxoReceiveFinalityFlowV1(
                 signedTransaction = signedTransaction.addSignature(it)
             }
 
-        return signedTransaction
+        return TransactionAndReceivedSignatures(
+            signedTransaction,
+            initialSignaturesSize,
+            transaction.signatures.drop(initialSignaturesSize)
+        )
     }
 
     @Suspendable
@@ -386,4 +385,17 @@ class UtxoReceiveFinalityFlowV1(
             log.debug("Recorded transaction with all parties' and the notary's signature ${notarizedTransaction.id}")
         }
     }
+
+    private data class InitialTransactionPayload(
+        val initialTransaction: UtxoSignedTransactionInternal,
+        val transferAdditionalSignatures: Boolean,
+        val inputStateAndRefs: List<StateAndRef<*>>,
+        val referenceStateAndRefs: List<StateAndRef<*>>
+    )
+
+    private data class TransactionAndReceivedSignatures(
+        val transaction: UtxoSignedTransactionInternal,
+        val indexOfNewSignatures: Int,
+        val orderedNewSignatures: List<DigitalSignatureAndMetadata>
+    )
 }
