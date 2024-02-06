@@ -7,6 +7,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.rest.FlowStatusCacheService
 import net.corda.flow.rest.flowstatus.FlowStatusUpdateListener
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.StateManager
@@ -57,10 +58,15 @@ class FlowStatusLookupServiceImpl @Activate constructor(
     override val isRunning: Boolean
         get() = lifecycleCoordinator.isRunning
 
-
     override fun initialise(config: SmartConfig) {
+        TODO("Not yet implemented")
+    }
+
+
+    override fun initialise(config: Map<String, SmartConfig>) {
         val messagingConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
         val stateManagerConfig = config.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)
+        val restConfig = config.getConfig(ConfigKeys.REST_CONFIG)
 
         stateManager?.stop()
         val stateManagerNew = stateManagerFactory.create(stateManagerConfig, StateType.FLOW_STATUS).also { it.start() }
@@ -74,7 +80,7 @@ class FlowStatusLookupServiceImpl @Activate constructor(
                 FLOW_STATUS_TOPIC
             ),
             DurableFlowStatusProcessor(stateManagerNew, serializer),
-            config,
+            messagingConfig,
             null
         ).also { it.start() }
 
@@ -83,8 +89,8 @@ class FlowStatusLookupServiceImpl @Activate constructor(
                 "flow.status.cleanup.tasks",
                 SCHEDULED_TASK_TOPIC_FLOW_STATUS_PROCESSOR
             ),
-            FlowStatusCleanupProcessor(messagingConfig, stateManagerNew),
-            messagingConfig,
+            FlowStatusCleanupProcessor(restConfig, stateManagerNew),
+            restConfig,
             null
         ).also { it.start() }
 

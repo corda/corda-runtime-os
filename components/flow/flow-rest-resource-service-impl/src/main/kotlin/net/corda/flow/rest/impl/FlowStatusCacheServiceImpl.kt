@@ -83,6 +83,10 @@ class FlowStatusCacheServiceImpl @Activate constructor(
         flowStatusSubscription?.start()
     }
 
+    override fun initialise(config: Map<String, SmartConfig>) {
+        TODO("Not yet implemented")
+    }
+
     override fun getStatus(clientRequestId: String, holdingIdentity: HoldingIdentity): FlowStatus? {
         return cache[FlowKey(clientRequestId, holdingIdentity)]
     }

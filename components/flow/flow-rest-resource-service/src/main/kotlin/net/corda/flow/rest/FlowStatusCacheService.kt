@@ -14,6 +14,8 @@ interface FlowStatusCacheService: Lifecycle {
      */
     fun initialise(config: SmartConfig)
 
+    fun initialise(config: Map<String, SmartConfig>)
+
     fun getStatus(clientRequestId: String, holdingIdentity: HoldingIdentity): FlowStatus?
 
     fun getStatusesPerIdentity(holdingIdentity: HoldingIdentity): List<FlowStatus>
