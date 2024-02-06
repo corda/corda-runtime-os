@@ -29,8 +29,8 @@ class VNodeHelper {
 
     fun createVNode(
         cordaClusterURL: String,
-        cordaRpcUser: String,
-        cordaRpcPassword: String,
+        cordaRestUser: String,
+        cordaRestPassword: String,
         vNode: VNode,
         cpiUploadStatusFilePath: String
     ) {
@@ -38,15 +38,15 @@ class VNodeHelper {
 
         if (!checkCpiUploaded(
                 cordaClusterURL,
-                cordaRpcUser,
-                cordaRpcPassword,
+                cordaRestUser,
+                cordaRestPassword,
                 cpiCheckSum
             )
         ) throw CordaRuntimeGradlePluginException("CPI $cpiCheckSum not uploaded.")
 
         val response: HttpResponse<JsonNode> = Unirest.post("$cordaClusterURL/api/v1/virtualnode")
             .body("{ \"request\" : { \"cpiFileChecksum\": \"" + cpiCheckSum + "\", \"x500Name\": \"" + vNode.x500Name + "\" } }")
-            .basicAuth(cordaRpcUser, cordaRpcPassword)
+            .basicAuth(cordaRestUser, cordaRestPassword)
             .asJson()
 
         if (response.status != HttpURLConnection.HTTP_ACCEPTED) {
@@ -71,13 +71,13 @@ class VNodeHelper {
 
     private fun checkCpiUploaded(
         cordaClusterURL: String,
-        cordaRpcUser: String,
-        cordaRpcPassword: String,
+        cordaRestUser: String,
+        cordaRestPassword: String,
         cpiCheckSum: String
     ): Boolean {
 
         val response: HttpResponse<JsonNode> = Unirest.get(cordaClusterURL + "/api/v1/cpi")
-            .basicAuth(cordaRpcUser, cordaRpcPassword)
+            .basicAuth(cordaRestUser, cordaRestPassword)
             .asJson()
 
         if (response.status != HttpURLConnection.HTTP_OK) {
@@ -119,8 +119,8 @@ class VNodeHelper {
     @Suppress("LongParameterList")
     fun registerVNode(
         cordaClusterURL: String,
-        cordaRpcUser: String,
-        cordaRpcPassword: String,
+        cordaRestUser: String,
+        cordaRestPassword: String,
         vNode: VNode,
         shortHash: String,
         vnodeRegistrationTimeout: Long
@@ -153,7 +153,7 @@ class VNodeHelper {
 
         val response: HttpResponse<JsonNode> = Unirest.post("$cordaClusterURL/api/v1/membership/$shortHash")
             .body(registrationBody)
-            .basicAuth(cordaRpcUser, cordaRpcPassword)
+            .basicAuth(cordaRestUser, cordaRestPassword)
             .asJson()
 
         if (response.status != HttpURLConnection.HTTP_OK) {
@@ -167,8 +167,8 @@ class VNodeHelper {
         retry(timeout = Duration.ofMillis(vnodeRegistrationTimeout)) {
             if (!checkVNodeIsRegistered(
                     cordaClusterURL,
-                    cordaRpcUser,
-                    cordaRpcPassword,
+                    cordaRestUser,
+                    cordaRestPassword,
                     shortHash
                 )
             ) {
@@ -183,13 +183,13 @@ class VNodeHelper {
      */
     fun checkVNodeIsRegistered(
         cordaClusterURL: String,
-        cordaRpcUser: String,
-        cordaRpcPassword: String,
+        cordaRestUser: String,
+        cordaRestPassword: String,
         shortHash: String
     ): Boolean {
 
         val response: HttpResponse<JsonNode> = Unirest.get("$cordaClusterURL/api/v1/membership/$shortHash")
-            .basicAuth(cordaRpcUser, cordaRpcPassword)
+            .basicAuth(cordaRestUser, cordaRestPassword)
             .asJson()
 
         if (response.status != HttpURLConnection.HTTP_OK) {

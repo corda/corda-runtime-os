@@ -70,7 +70,7 @@ class BootConfigSchemaValidationTest {
         SoftAssertions.assertSoftly { softly ->
             softly.assertThat(result.hasPath(stateType))
             val typeConfig = result.getConfig(stateType)
-            softly.assertThat(typeConfig.getString(StateManagerConfig.TYPE)).isEqualTo("DATABASE")
+            softly.assertThat(typeConfig.getString(StateManagerConfig.TYPE)).isEqualTo("Database")
             softly.assertThat(typeConfig.getString(StateManagerConfig.Database.JDBC_URL))
                 .isEqualTo("jdbc:postgresql://localhost:5432/cordacluster?currentSchema=flowCheckpoint")
             softly.assertThat(typeConfig.getString(StateManagerConfig.Database.JDBC_USER)).isEqualTo("user")
