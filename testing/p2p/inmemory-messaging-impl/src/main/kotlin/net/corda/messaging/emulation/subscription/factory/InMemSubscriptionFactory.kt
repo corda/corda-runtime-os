@@ -25,13 +25,12 @@ import net.corda.messaging.emulation.subscription.pubsub.PubSubSubscription
 import net.corda.messaging.emulation.subscription.rpc.RPCSubscriptionImpl
 import net.corda.messaging.emulation.subscription.stateandevent.InMemoryStateAndEventSubscription
 import net.corda.messaging.emulation.topic.service.TopicService
-import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.UUID
 import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * In memory implementation of the Subscription Factory.
@@ -45,6 +44,9 @@ class InMemSubscriptionFactory @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : SubscriptionFactory {
+    private companion object {
+        val instanceIndex = AtomicInteger()
+    }
 
     override fun <K : Any, V : Any> createPubSubSubscription(
         subscriptionConfig: SubscriptionConfig,
@@ -56,7 +58,7 @@ class InMemSubscriptionFactory @Activate constructor(
             processor,
             topicService,
             lifecycleCoordinatorFactory,
-            UUID.randomUUID().toString()
+            instanceIndex.incrementAndGet().toString(),
         )
     }
 
@@ -72,7 +74,7 @@ class InMemSubscriptionFactory @Activate constructor(
             partitionAssignmentListener,
             topicService,
             lifecycleCoordinatorFactory,
-            messagingConfig.getInt(INSTANCE_ID)
+            instanceIndex.incrementAndGet(),
         )
     }
 
@@ -86,7 +88,7 @@ class InMemSubscriptionFactory @Activate constructor(
             processor,
             topicService,
             lifecycleCoordinatorFactory,
-            UUID.randomUUID().toString()
+            instanceIndex.incrementAndGet().toString()
         )
     }
 
@@ -102,7 +104,7 @@ class InMemSubscriptionFactory @Activate constructor(
             stateAndEventListener,
             topicService,
             lifecycleCoordinatorFactory,
-            messagingConfig.getInt(INSTANCE_ID)
+            instanceIndex.incrementAndGet()
         )
     }
 
@@ -118,7 +120,7 @@ class InMemSubscriptionFactory @Activate constructor(
             partitionAssignmentListener,
             topicService,
             lifecycleCoordinatorFactory,
-            messagingConfig.getInt(INSTANCE_ID)
+            instanceIndex.incrementAndGet()
         )
     }
 
@@ -132,7 +134,7 @@ class InMemSubscriptionFactory @Activate constructor(
             rpcTopicService,
             responderProcessor,
             lifecycleCoordinatorFactory,
-            UUID.randomUUID().toString()
+            instanceIndex.incrementAndGet().toString(),
         )
     }
 
