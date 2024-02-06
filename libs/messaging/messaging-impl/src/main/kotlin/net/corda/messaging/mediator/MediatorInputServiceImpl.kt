@@ -1,13 +1,13 @@
 package net.corda.messaging.mediator
 
 import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.messaging.api.mediator.MediatorInputService
 import net.corda.messaging.api.records.Record
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.UUID
+import java.security.MessageDigest
+import java.util.Base64
 
 @Component(service = [MediatorInputService::class])
 class MediatorInputServiceImpl @Activate constructor(
@@ -21,8 +21,13 @@ class MediatorInputServiceImpl @Activate constructor(
         check(recordValueBytes != null) {
             "Input record key and value bytes should not be null"
         }
-        return UUID.nameUUIDFromBytes(recordValueBytes.sha256Bytes()).toString()
+        return hash(recordValueBytes).toBase64()
     }
 
     private fun serialize(value: Any?) = value?.let { serializer.serialize(it) }
+
+    private fun hash(bytes: ByteArray) = MessageDigest.getInstance("MD5").digest(bytes)
+
+    private fun ByteArray.toBase64(): String =
+        String(Base64.getEncoder().encode(this))
 }
