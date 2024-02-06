@@ -57,7 +57,6 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.whenever
-import java.lang.IllegalStateException
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
@@ -227,7 +226,7 @@ class CryptoRekeyBusProcessorTests {
 
         // Create a WrappingRepository which throws before returning good keys
         val wrappingRepository = mock<WrappingRepository>()
-        whenever(wrappingRepository.findKeysWrappedByParentKey(any())).thenThrow(IllegalStateException()).thenReturn(
+        whenever(wrappingRepository.findKeysNotWrappedByParentKey(any())).thenThrow(IllegalStateException()).thenReturn(
             listOf(
                 WrappingKeyInfo(
                     0,
