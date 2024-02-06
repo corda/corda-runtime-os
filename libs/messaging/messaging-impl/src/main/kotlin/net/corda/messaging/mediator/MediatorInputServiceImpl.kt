@@ -26,6 +26,9 @@ class MediatorInputServiceImpl @Activate constructor(
 
     private fun serialize(value: Any?) = value?.let { serializer.serialize(it) }
 
+    /**
+     * MD5 is a fast hash. Security implications are not a concern as this is just used as an identifier
+     */
     private fun hash(bytes: ByteArray) = MessageDigest.getInstance("MD5").digest(bytes)
 
     private fun ByteArray.toBase64(): String =
