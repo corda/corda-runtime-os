@@ -37,7 +37,7 @@ interface KeyRotationRestResource : RestResource {
      * @throws ResourceNotFoundException If no key rotation was in progress for [keyAlias].
      */
     @HttpGET(
-        path = "unmanaged/rotation/{keyAlias}",
+        path = "rotation/master/{keyAlias}",
         description = "This method gets the status of the latest key rotation.",
         responseDescription = "Number of wrapping keys needs rotating grouped by vNode.",
     )
@@ -47,15 +47,11 @@ interface KeyRotationRestResource : RestResource {
     ): KeyRotationStatusResponse
 
     /**
-     * Initiates the key rotation process. 
+     * Initiates the key rotation process.
+     * It assumes new default master key alias was set in the crypto config.
+     * All wrapping keys which key material is not wrapped with the default master key, will be re-wrapped with this key.
      *
-     * @param oldKeyAlias Alias of the key to be rotated.
-     * @param newKeyAlias Alias of the new key the [oldKeyAlias] key will be rotated with.
-     *
-     * @return Key rotation response where
-     *  - requestId is the unique ID for the key rotation start request.
-     *  - oldKeyAlias is the alias of the key to be rotated.
-     *  - newKeyAlias is the alias of the new key the oldKeyAlias key will be rotated with.
+     * @return Key rotation response where the requestId is the unique ID for the key rotation start request.
      *
      * @throws ServiceUnavailableException If the underlying service for sending messages is not available.
      * @throws ForbiddenException If the same key rotation is already in progress.
@@ -63,22 +59,12 @@ interface KeyRotationRestResource : RestResource {
      */
 
     @HttpPOST(
-        path = "unmanaged/rotation/{oldKeyAlias}",
-        description = "This method enables to rotate a current wrapping key with a new wrapping key.",
+        path = "rotation/master",
+        description = "This method enables to rotate a current master wrapping key with a new master wrapping key.",
         responseDescription = "Key rotation response",
         successCode = SC_ACCEPTED,
     )
-    fun startUnmanagedKeyRotation(
-        @RestPathParameter(
-            description = "The alias of the current wrapping key to be rotated."
-        )
-        oldKeyAlias: String,
-        @ClientRequestBodyParameter(
-            description = "The alias of the new wrapping key that old one will be rotated with.",
-            required = true
-        )
-        newKeyAlias: String,
-    ): ResponseEntity<KeyRotationResponse>
+    fun startUnmanagedKeyRotation(): ResponseEntity<KeyRotationResponse>
 
     /**
      * The [getManagedKeyRotationStatus] gets the latest key rotation status for [tenantId] if one exists.
@@ -88,7 +74,7 @@ interface KeyRotationRestResource : RestResource {
      *
      */
     @HttpGET(
-        path = "managed/rotation/{tenantId}",
+        path = "rotation/{tenantId}",
         description = "This method gets the status of the latest key rotation for [tenantId].",
         responseDescription = "Number of signing keys which need rotating grouped by tenantId's wrapping keys",
     )
@@ -107,7 +93,7 @@ interface KeyRotationRestResource : RestResource {
      *
      */
     @HttpPOST(
-        path = "managed/rotation/{tenantId}",
+        path = "rotation/{tenantId}",
         description = "This method enables to rotate all wrapping keys for tenantId.",
         responseDescription = "Key rotation response",
         successCode = SC_ACCEPTED,

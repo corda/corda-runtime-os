@@ -212,25 +212,16 @@ class KeyRotationRestResourceImpl @Activate constructor(
         )
     }
 
-    override fun startUnmanagedKeyRotation(
-        oldKeyAlias: String,
-        newKeyAlias: String
-    ): ResponseEntity<KeyRotationResponse> {
+    override fun startUnmanagedKeyRotation(): ResponseEntity<KeyRotationResponse> {
         tryWithExceptionHandling(logger, "start key rotation") {
             checkNotNull(publishToKafka)
         }
-
-        validateInputParams(oldKeyAlias, newKeyAlias)
 
         if (!hasPreviousRotationFinished()) {
             throw ForbiddenException("A key rotation operation is already ongoing, a new one cannot be started until it completes.")
         }
 
-        return doKeyRotation(
-            oldKeyAlias,
-            newKeyAlias,
-            publishRequests = { publishToKafka!!.publish(it) }
-        )
+        return doKeyRotation(publishRequests = { publishToKafka!!.publish(it) })
     }
 
     override fun getManagedKeyRotationStatus(tenantId: String): ManagedKeyRotationStatusResponse {
@@ -333,49 +324,30 @@ class KeyRotationRestResourceImpl @Activate constructor(
         }
         return true
     }
-
-    @Suppress("ThrowsCount")
-    private fun validateInputParams(oldKeyAlias: String, newKeyAlias: String) {
-        if (oldKeyAlias == newKeyAlias) throw InvalidInputDataException(
-            "Cannot start key rotation. The old key alias must be different to the new key alias."
-        )
-        if (oldKeyAlias.isEmpty()) throw InvalidInputDataException(
-            "Cannot start key rotation. The old key alias is not specified."
-        )
-        if (newKeyAlias.isEmpty()) throw InvalidInputDataException(
-            "Cannot start key rotation. The new key alias is not specified."
-        )
-    }
 }
 
 /*
  * Do the start key rotation operation
  *
- * @param oldKeyAlias alias to replace
- * @param newKeyAlias alias to use
  * @param publishRequests callback to publish a list of kafka messages
  *
  * This is a top level function to make it easy to test without bothering with lifecycle and OSGi.
  */
 fun doKeyRotation(
-    oldKeyAlias: String,
-    newKeyAlias: String,
     publishRequests: ((List<Record<String, KeyRotationRequest>>) -> Unit)
 ): ResponseEntity<KeyRotationResponse> {
-    // We cannot validate oldKeyAlias or newKeyAlias early here on the client side of the RPC since
-    // those values are considered sensitive.
 
     val requestId = UUID.randomUUID().toString()
     val keyRotationRequest = KeyRotationRequest(
         requestId,
         KeyType.UNMANAGED,
-        oldKeyAlias,
-        newKeyAlias,
+        null,
+        null,
         null
     )
 
     publishRequests(listOf(Record(REKEY_MESSAGE_TOPIC, requestId, keyRotationRequest, Instant.now().toEpochMilli())))
-    return ResponseEntity.accepted(KeyRotationResponse(requestId, oldKeyAlias, newKeyAlias))
+    return ResponseEntity.accepted(KeyRotationResponse(requestId))
 }
 
 fun doManagedKeyRotation(

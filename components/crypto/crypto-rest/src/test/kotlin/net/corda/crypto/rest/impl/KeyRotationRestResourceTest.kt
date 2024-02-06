@@ -156,7 +156,7 @@ class KeyRotationRestResourceTest {
     @Test
     fun `start unmanaged key rotation event triggers successfully`() {
         val records = mutableListOf<Record<String, KeyRotationRequest>>()
-        doKeyRotation(oldKeyAlias, newKeyAlias, { records.addAll(it) })
+        doKeyRotation({ records.addAll(it) })
         assertThat(records.size).isEqualTo(1)
     }
 
@@ -165,7 +165,7 @@ class KeyRotationRestResourceTest {
         val keyRotationRestResource =
             createKeyRotationRestResource(initialiseKafkaPublisher = false, initialiseStateManager = true)
         assertThrows<InternalServerException> {
-            keyRotationRestResource.startUnmanagedKeyRotation(oldKeyAlias, newKeyAlias)
+            keyRotationRestResource.startUnmanagedKeyRotation()
         }
         verify(publishToKafka, never()).publish(any())
         assertThat(stateManagerPublicationCount).isEqualTo(0)
@@ -176,37 +176,7 @@ class KeyRotationRestResourceTest {
         val keyRotationRestResource =
             createKeyRotationRestResource(initialiseKafkaPublisher = true, initialiseStateManager = false)
         assertThrows<IllegalStateException> {
-            keyRotationRestResource.startUnmanagedKeyRotation(oldKeyAlias, newKeyAlias)
-        }
-        verify(publishToKafka, never()).publish(any())
-        assertThat(stateManagerPublicationCount).isEqualTo(0)
-    }
-
-    @Test
-    fun `start unmanaged key rotation event throws when old key alias matches new key alias`() {
-        val keyRotationRestResource = createKeyRotationRestResource()
-        assertThrows<InvalidInputDataException> {
-            keyRotationRestResource.startUnmanagedKeyRotation(oldKeyAlias, oldKeyAlias)
-        }
-        verify(publishToKafka, never()).publish(any())
-        assertThat(stateManagerPublicationCount).isEqualTo(0)
-    }
-
-    @Test
-    fun `start unmanaged key rotation event throws when old key alias is empty string`() {
-        val keyRotationRestResource = createKeyRotationRestResource()
-        assertThrows<InvalidInputDataException> {
-            keyRotationRestResource.startUnmanagedKeyRotation("", newKeyAlias)
-        }
-        verify(publishToKafka, never()).publish(any())
-        assertThat(stateManagerPublicationCount).isEqualTo(0)
-    }
-
-    @Test
-    fun `start unmanaged key rotation event throws when new key alias is empty string`() {
-        val keyRotationRestResource = createKeyRotationRestResource()
-        assertThrows<InvalidInputDataException> {
-            keyRotationRestResource.startUnmanagedKeyRotation(oldKeyAlias, "")
+            keyRotationRestResource.startUnmanagedKeyRotation()
         }
         verify(publishToKafka, never()).publish(any())
         assertThat(stateManagerPublicationCount).isEqualTo(0)
