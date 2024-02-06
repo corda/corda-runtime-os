@@ -20,19 +20,11 @@ class FlowEngineReplayServiceImpl : FlowEngineReplayService {
         inputEventHash: String,
         checkpoint: Checkpoint?
     ): List<Record<*, *>>? {
-        if (checkpoint == null) return null
-        val replayEvents = mutableListOf<Record<*, *>>()
-        var isReplay = false
-        checkpoint.savedOutputs.asReversed().forEach { replay ->
-            if (replay.inputEventHash == inputEventHash) {
-                isReplay = true
-                replayEvents.addAll(replay.outputEvents.map { output ->
-                    Record(output.topic, output.key, output.payload)
-                })
-            }
-        }
-
-        return if (isReplay) replayEvents else null
+        return checkpoint?.savedOutputs
+            ?.asReversed()
+            ?.find { it.inputEventHash == inputEventHash }
+            ?.outputEvents
+            ?.map { Record(it.topic, it.key, it.payload) }
     }
 
     override fun generateSavedOutputs(inputEventHash: String, outputRecords: List<Record<*, *>>): SavedOutputs {
