@@ -7,6 +7,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
+import java.time.Instant
 
 @Suppress("TooManyFunctions")
 interface StepSetup {
@@ -66,7 +67,8 @@ interface StepSetup {
         sessionId: String,
         data: ByteArray,
         sequenceNum: Int,
-        sessionInit: SessionInit? = null
+        sessionInit: SessionInit? = null,
+        timestamp: Instant = Instant.now()
     ): FlowIoRequestSetup
 
     fun sessionCounterpartyInfoResponseReceived(

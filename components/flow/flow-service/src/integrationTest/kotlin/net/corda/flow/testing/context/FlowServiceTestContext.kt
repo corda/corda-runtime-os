@@ -6,6 +6,7 @@ import co.paralleluniverse.fibers.FiberScheduler
 import com.typesafe.config.ConfigFactory
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.cpiinfo.read.fake.CpiInfoReadServiceFake
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
@@ -68,6 +69,7 @@ import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSIONS_SUPP
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_REQUIRE_CLOSE
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.EncodingUtils.toBase64
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
@@ -315,7 +317,8 @@ class FlowServiceTestContext @Activate constructor(
         sessionId: String,
         data: ByteArray,
         sequenceNum: Int,
-        sessionInit: SessionInit?
+        sessionInit: SessionInit?,
+        timestamp: Instant
     ): FlowIoRequestSetup {
         return createAndAddSessionEvent(
             flowId,
@@ -324,7 +327,8 @@ class FlowServiceTestContext @Activate constructor(
             null,
             SessionData(ByteBuffer.wrap(data), sessionInit),
             sequenceNum,
-            SESSION_PROPERTIES
+            SESSION_PROPERTIES,
+            timestamp
         )
     }
 
@@ -492,14 +496,15 @@ class FlowServiceTestContext @Activate constructor(
         initiatedIdentity: HoldingIdentity?,
         payload: Any,
         sequenceNum: Int?,
-        contextSessionProps: KeyValuePairList?
+        contextSessionProps: KeyValuePairList?,
+        instant: Instant = Instant.now()
     ): FlowIoRequestSetup {
         val sessionEvent = buildSessionEvent(
             MessageDirection.INBOUND,
             sessionId,
             sequenceNum,
             payload,
-            Instant.now(),
+            instant,
             initiatingIdentity ?: sessionInitiatingIdentity!!,
             initiatedIdentity ?: sessionInitiatedIdentity!!,
             contextSessionProps
@@ -518,12 +523,13 @@ class FlowServiceTestContext @Activate constructor(
     }
 
     private fun createFlowEventRecord(key: String, payload: Any): Record<String, FlowEvent> {
+        val hash = toBase64(serializer.serialize(payload)!!.sha256Bytes())
         return Record(
             FLOW_SESSION,
             key,
             FlowEvent(key, payload),
             0,
-            listOf(Pair(MediatorInputService.INPUT_HASH_HEADER, UUID.randomUUID().toString()))
+            listOf(Pair(MediatorInputService.INPUT_HASH_HEADER, hash))
         )
     }
 
