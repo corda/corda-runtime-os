@@ -114,7 +114,7 @@ class CryptoRekeyBusProcessor(
                 // and we should not also check CryptoTenants.P2P and CryptoTenants.REST since if we do we'll get duplicate.
                 val allTenantIds = virtualNodeTenantIds + listOf(CryptoTenants.CRYPTO)
                 logger.debug("Found ${allTenantIds.size} tenants; first few are: ${allTenantIds.take(10)}")
-                val targetWrappingKeys = allTenantIds.asSequence().map { tenantId ->
+                val targetWrappingKeys = allTenantIds.map { tenantId ->
                     try {
                         wrappingRepositoryFactory.create(tenantId).use { wrappingRepo ->
                             wrappingRepo.findKeysWrappedByParentKey(request.oldParentKeyAlias)
@@ -125,9 +125,9 @@ class CryptoRekeyBusProcessor(
                             "A WrappingRepository could not be created and queried for ${tenantId} because:",
                             ex
                         )
-                        null
+                        emptyList()
                     }
-                }.filterNotNull().flatten()
+                }.flatten()
 
                 if (targetWrappingKeys.none()) {
                     logger.info("No unmanaged keys to rotate for ${request.oldParentKeyAlias}.")
@@ -249,7 +249,7 @@ class CryptoRekeyBusProcessor(
      * @return false if there was a problem writing state which should abort key rotation
      */
     private fun writeStateForUnmanagedKey(
-        targetWrappingKeys: Sequence<Pair<String, WrappingKeyInfo>>,
+        targetWrappingKeys: List<Pair<String, WrappingKeyInfo>>,
         request: KeyRotationRequest,
         timestamp: Long
     ): Boolean {
@@ -312,7 +312,7 @@ class CryptoRekeyBusProcessor(
     }
 
     private fun publishIndividualUnmanagedRewrappingRequests(
-        targetWrappingKeys: Sequence<Pair<String, WrappingKeyInfo>>,
+        targetWrappingKeys: List<Pair<String, WrappingKeyInfo>>,
         request: KeyRotationRequest
     ) {
         rekeyPublisher.publish(

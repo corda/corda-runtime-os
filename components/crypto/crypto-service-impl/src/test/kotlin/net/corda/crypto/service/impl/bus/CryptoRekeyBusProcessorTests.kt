@@ -242,8 +242,8 @@ class CryptoRekeyBusProcessorTests {
         verify(rewrapPublisher, times(1)).publish(any())
         assertThat(rewrapPublishCapture.allValues).hasSize(1)
 
-        val allTenants = virtualNodeTenantIds + CryptoTenants.CRYPTO
-        assertThat(rewrapPublishCapture.firstValue).hasSize(allTenants.size)
+        val allTenantsExceptFirst = virtualNodeTenantIds.drop(1) + CryptoTenants.CRYPTO
+        assertThat(rewrapPublishCapture.firstValue).hasSize(allTenantsExceptFirst.size)
     }
 
     @Test
