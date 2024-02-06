@@ -92,6 +92,6 @@ fun getExistingNodes(pc: ProjectContext) : List<VirtualNodeInfoDTO> {
     return try {
         mapper.readValue(response.body.toString(), VirtualNodesDTO::class.java).virtualNodes!!
     } catch (e: Exception) {
-        throw CordaRuntimeGradlePluginException("Failed to get Existing vNodes with exception: $e")
+        throw CordaRuntimeGradlePluginException("Failed to get Existing vNodes with exception: ${e.message}", e)
     }
 }

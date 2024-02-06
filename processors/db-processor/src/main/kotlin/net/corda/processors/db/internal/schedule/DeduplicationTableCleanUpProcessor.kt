@@ -5,9 +5,6 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.virtualnode.datamodel.repository.RequestsIdsRepository
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.orm.JpaEntitiesSet
-import net.corda.orm.utils.transaction
-import net.corda.orm.utils.use
 import net.corda.schema.Schemas
 import net.corda.utilities.debug
 import net.corda.virtualnode.VirtualNodeInfo
@@ -50,20 +47,11 @@ class DeduplicationTableCleanUpProcessor(
     private fun cleanUpDeduplicationTable(virtualNodeInfo: VirtualNodeInfo) {
         log.debug { "Cleaning up deduplication table for vnode: ${virtualNodeInfo.holdingIdentity.shortHash}" }
         try {
-            dbConnectionManager.createEntityManagerFactory(
-                virtualNodeInfo.vaultDmlConnectionId,
-                // We don't really want to make use of any entities here.
-                object : JpaEntitiesSet {
-                    override val persistenceUnitName: String
-                        get() = ""
-                    override val classes: Set<Class<*>>
-                        get() = emptySet()
-                }
-            ).use { emf ->
-                emf.createEntityManager().transaction { em ->
-                    // TODO The below interval needs to be made configurable
-                    requestsIdsRepository.deleteRequestsOlderThan(120, em)
-                }
+            dbConnectionManager.createDatasource(
+                virtualNodeInfo.vaultDmlConnectionId, enablePool = false
+            ).use { ds ->
+                // TODO The below interval needs to be made configurable
+                requestsIdsRepository.deleteRequestsOlderThan(120, ds)
             }
         } catch (e: Exception) {
             log.warn("Cleaning up deduplication table for vnode: ${virtualNodeInfo.holdingIdentity.shortHash} FAILED", e)
