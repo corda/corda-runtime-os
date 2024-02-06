@@ -17,7 +17,6 @@ import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.UP
 import net.corda.libs.statemanager.impl.repository.StateRepository
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
@@ -80,7 +79,7 @@ class StateManagerImpl(
             it.value.size > 1
         }.keys
         if (duplicateStatesKeys.isNotEmpty()) {
-            throw CordaRuntimeException(
+            throw IllegalArgumentException(
                 "Could not create two states with the same key." +
                     " Trying to create more than one state for keys: $duplicateStatesKeys")
         }

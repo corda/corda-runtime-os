@@ -7,7 +7,6 @@ import net.corda.libs.statemanager.impl.metrics.MetricsRecorder
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorderImpl
 import net.corda.libs.statemanager.impl.repository.StateRepository
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.entry
 import org.junit.jupiter.api.Test
@@ -58,7 +57,7 @@ class StateManagerImplTest {
             stateOne,
         )
 
-        val exception = assertThrows<CordaRuntimeException> {
+        val exception = assertThrows<IllegalArgumentException> {
             stateManager.create(states)
         }
 
