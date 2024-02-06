@@ -260,14 +260,12 @@ internal class StatefulSessionManagerImpl(
                 }
         }
         val sessionsNotInInboundStateManager =
-            (sessionIdsNotInCache.keys - inboundSessionsFromStateManager.map { it.second.session.sessionId }.toSet()).map {
-                getSessionIdFilter(it)
-            }
+            (sessionIdsNotInCache.keys - inboundSessionsFromStateManager.map { it.second.session.sessionId }.toSet())
         val outboundSessionsFromStateManager = if (sessionsNotInInboundStateManager.isEmpty()) {
             emptyList()
         } else {
             sessionExpiryScheduler.checkStatesValidateAndRememberThem(
-                stateManager.findByMetadataMatchingAny(sessionsNotInInboundStateManager),
+                stateManager.findByMetadataMatchingAny(sessionsNotInInboundStateManager.map { getSessionIdFilter(it) }),
             )
                 .entries
                 .mapNotNull { (key, state) ->
@@ -291,12 +289,20 @@ internal class StatefulSessionManagerImpl(
                     }
                 }
         }
-
-        return (allCached.values + inboundSessionsFromStateManager + outboundSessionsFromStateManager).flatMap {  (traceables, direction) ->
-            traceables.map {
-                it to direction
+        val sessionsNotFound =
+            (sessionsNotInInboundStateManager - outboundSessionsFromStateManager.map { it.second.session.sessionId }
+                .toSet()).mapNotNull { sessionId ->
+                sessionIdsNotInCache[sessionId]?.let {
+                    it to SessionManager.SessionDirection.NoSession
+                }
             }
-        }
+
+        return (allCached.values + inboundSessionsFromStateManager + outboundSessionsFromStateManager + sessionsNotFound)
+            .flatMap { (traceables, direction) ->
+                traceables.map {
+                    it to direction
+                }
+            }
     }
 
     override fun <T> processSessionMessages(

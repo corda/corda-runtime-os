@@ -192,6 +192,25 @@ class StatefulSessionManagerImplTest {
 
             verify(stateManager, times(1)).get(listOf(sessionIdentity))
         }
+
+        @Test
+        fun `it returns NoSession for sessions not found in the cache or state manager`() {
+            val sessionIds = (1..4).map {
+                "session-$it"
+            }
+            val sessionIdsContainers = sessionIds.map {
+                Wrapper(it)
+            }
+
+            val sessions = manager.getSessionsById(sessionIdsContainers) {
+                it.value
+            }
+
+            assertSoftly {
+                assertThat(sessions.map { it.first.value }).containsExactlyInAnyOrderElementsOf(sessionIds)
+                assertThat(sessions.mapNotNull { it.second as? SessionManager.SessionDirection.NoSession }).hasSize(4)
+            }
+        }
     }
 
     @Nested
