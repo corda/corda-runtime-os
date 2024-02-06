@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@CORE-19345-newSmConfig') _
+@Library('corda-shared-build-pipeline-steps@5.2') _
 
 cordaPipelineKubernetesAgent(
     dailyBuildCron: 'H H/6 * * *',
@@ -16,5 +16,4 @@ cordaPipelineKubernetesAgent(
     publishToDownloadSiteTask: ':tools:plugins:publish',
     // TODO - remove this when J17 is the default in the pipeline
     javaVersion: '17',
-    enableNotifications: false
 )
