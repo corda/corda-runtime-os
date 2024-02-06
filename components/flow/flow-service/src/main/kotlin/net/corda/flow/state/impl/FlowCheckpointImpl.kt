@@ -239,7 +239,7 @@ class FlowCheckpointImpl(
     }
 
     override fun saveOutputs(savedOutputs: SavedOutputs) {
-        val existingOutputs = checkpoint.savedOutputs?.toMutableList() ?: mutableListOf()
+        val existingOutputs = checkpoint.savedOutputs ?: emptyList()
         checkpoint.savedOutputs = existingOutputs.plus(savedOutputs)
     }
 
