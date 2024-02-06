@@ -102,7 +102,8 @@ internal class DbClientImpl(
             entitiesSet = jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
                 ?: throw IllegalStateException(
                     "persistenceUnitName ${CordaDb.Vault.persistenceUnitName} is not registered."
-                )
+                ),
+            enablePool = false
         )
         val processor = NodeCertificateProcessor(factory, usage)
         return block.invoke(processor)

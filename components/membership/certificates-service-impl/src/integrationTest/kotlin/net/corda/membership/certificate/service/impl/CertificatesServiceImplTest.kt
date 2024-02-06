@@ -72,7 +72,7 @@ internal class CertificatesServiceImplTest {
         }
         val dbConnectionManagerMock = mock<DbConnectionManager>().apply {
             whenever(getClusterEntityManagerFactory()) doReturn entityManagerFactory
-            whenever(getOrCreateEntityManagerFactory(any<UUID>(), any())) doAnswer {
+            whenever(getOrCreateEntityManagerFactory(any<UUID>(), any(), any())) doAnswer {
                 EntityManagerFactoryFactoryImpl().create(
                     "test_vnode_unit",
                     CertificateEntities.vnodeClasses.toList(),

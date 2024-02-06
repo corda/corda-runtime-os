@@ -7,6 +7,7 @@ import net.corda.gradle.plugin.cordapp.createCordappTasks
 import net.corda.gradle.plugin.network.createNetworkTasks
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import net.corda.gradle.plugin.queries.createCordaClusterQueryTasks
 
 const val CONFIG_BLOCK_NAME = "cordaRuntimeGradlePlugin"
 
@@ -17,5 +18,6 @@ class CordaRuntimeGradlePlugin: Plugin<Project> {
         createCordaLifeCycleTasks(project, projectConfig)
         createCordappTasks(project, projectConfig)
         createNetworkTasks(project, projectConfig)
+        createCordaClusterQueryTasks(project, projectConfig)
     }
 }

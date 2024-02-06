@@ -86,7 +86,8 @@ class PersistRegistrationRequestHandlerTest {
         on {
             getOrCreateEntityManagerFactory(
                 eq(vaultDmlConnectionId),
-                any()
+                any(),
+                eq(true)
             )
         } doReturn entityManagerFactory
     }

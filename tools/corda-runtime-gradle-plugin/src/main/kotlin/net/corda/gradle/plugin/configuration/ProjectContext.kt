@@ -5,7 +5,7 @@ import org.gradle.api.logging.Logger
 
 /**
  * Class which holds all the context properties for the gradle build. This is split between:
- * - Properties which are obtained from the csde block in the csde build.gralde file
+ * - Properties which are obtained from the cordaRuntimeGradlePlugin block in the build.gradle file
  * - The network config
  * - Properties which are non-configurable by the user
  * A version of this class will typically be passed to each of the helper classes.
@@ -36,7 +36,7 @@ class ProjectContext(val project: Project, pluginConfig: PluginConfiguration) {
 
     // Set Non user configurable context properties
     val javaBinDir: String = "${System.getProperty("java.home")}/bin"
-    val cordaPidCache: String = "$workspaceDir/CordaPIDCache.dat"
+    val cordaPidCache: String = "${project.rootDir}/$workspaceDir/CordaPIDCache.dat"
     val jdbcDir: String = "$cordaBinDir/jdbcDrivers"
     val notaryServiceDir: String = "$cordaBinDir/notaryServer"
     val workflowBuildDir: String = "${project.rootDir}/${workflowsModuleName}/build"

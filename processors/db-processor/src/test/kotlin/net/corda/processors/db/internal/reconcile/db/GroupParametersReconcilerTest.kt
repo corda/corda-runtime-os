@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -105,9 +106,9 @@ class GroupParametersReconcilerTest {
         on { createCoordinator(any(), any()) } doReturn coordinator
     }
     private val dbConnectionManager: DbConnectionManager = mock {
-        on { createEntityManagerFactory(eq(vnode1.vaultDmlConnectionId), any()) } doReturn emf1
-        on { createEntityManagerFactory(eq(vnode2.vaultDmlConnectionId), any()) } doReturn emf2
-        on { createEntityManagerFactory(eq(vnode3.vaultDmlConnectionId), any()) } doReturn emf3
+        on { getOrCreateEntityManagerFactory(eq(vnode1.vaultDmlConnectionId), any(), eq(false)) } doReturn emf1
+        on { getOrCreateEntityManagerFactory(eq(vnode2.vaultDmlConnectionId), any(), eq(false)) } doReturn emf2
+        on { getOrCreateEntityManagerFactory(eq(vnode3.vaultDmlConnectionId), any(), eq(false)) } doReturn emf3
     }
 
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
@@ -227,7 +228,7 @@ class GroupParametersReconcilerTest {
             // call terminal operation to process stream
             groupParametersReconciler.dbReconcilerReader?.getAllVersionedRecords()?.count()
 
-            verify(dbConnectionManager, times(2)).createEntityManagerFactory(any(), any())
+            verify(dbConnectionManager, atLeastOnce()).getOrCreateEntityManagerFactory(any<UUID>(), any(), eq(false))
             verify(em1).criteriaBuilder
             verify(em1).createQuery(any<CriteriaQuery<GroupParametersEntity>>())
             verify(em2).criteriaBuilder
@@ -241,8 +242,6 @@ class GroupParametersReconcilerTest {
             groupParametersReconciler.updateInterval(1000)
 
             val stream = groupParametersReconciler.dbReconcilerReader?.getAllVersionedRecords()
-            verify(emf1, never()).close()
-            verify(emf2, never()).close()
             verify(em1, never()).close()
             verify(em2, never()).close()
             verify(tx1, never()).rollback()
@@ -250,8 +249,6 @@ class GroupParametersReconcilerTest {
 
             stream?.collect(Collectors.toList())
 
-            verify(emf1).close()
-            verify(emf2).close()
             verify(em1).close()
             verify(em2).close()
             verify(tx1).rollback()
