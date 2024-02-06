@@ -19,6 +19,8 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
+import net.corda.schema.Schemas.Rest.REST_FLOW_STATUS_CLEANUP_TOPIC
+import net.corda.schema.Schemas.ScheduledTask.SCHEDULED_TASK_TOPIC_FLOW_STATUS_PROCESSOR
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.StateManagerConfig.StateType
 import org.osgi.service.component.annotations.Activate
@@ -36,11 +38,6 @@ class FlowStatusLookupServiceImpl @Activate constructor(
     @Reference(service = StateManagerFactory::class)
     private val stateManagerFactory: StateManagerFactory,
 ) : FlowStatusCacheService {
-
-    private companion object {
-        private const val GROUP_NAME = "flow_status_subscription"
-    }
-
     private val lifecycleCoordinator = coordinatorFactory
         .createCoordinator<FlowStatusCacheService> { event, coordinator ->
             when (event) {
@@ -62,17 +59,42 @@ class FlowStatusLookupServiceImpl @Activate constructor(
 
 
     override fun initialise(config: SmartConfig) {
+        val messagingConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
         val stateManagerConfig = config.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)
 
         stateManager?.stop()
         val stateManagerNew = stateManagerFactory.create(stateManagerConfig, StateType.FLOW_STATUS).also { it.start() }
+
         stateManager = stateManagerNew
         flowStatusSubscription?.close()
 
         flowStatusSubscription = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig(GROUP_NAME, FLOW_STATUS_TOPIC),
+            SubscriptionConfig(
+                "flow.status.subscription",
+                FLOW_STATUS_TOPIC
+            ),
             DurableFlowStatusProcessor(stateManagerNew, serializer),
             config,
+            null
+        ).also { it.start() }
+
+        subscriptionFactory.createDurableSubscription(
+            SubscriptionConfig(
+                "flow.status.cleanup.tasks",
+                SCHEDULED_TASK_TOPIC_FLOW_STATUS_PROCESSOR
+            ),
+            FlowStatusCleanupProcessor(messagingConfig, stateManagerNew),
+            messagingConfig,
+            null
+        ).also { it.start() }
+
+        subscriptionFactory.createDurableSubscription(
+            SubscriptionConfig(
+                "flow.status.cleanup.executor",
+                REST_FLOW_STATUS_CLEANUP_TOPIC
+            ),
+            FlowStatusDeletionExecutor(stateManagerNew),
+            messagingConfig,
             null
         ).also { it.start() }
     }
