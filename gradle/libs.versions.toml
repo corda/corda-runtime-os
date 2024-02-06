@@ -28,7 +28,7 @@ slf4jV2Version = { strictly = "2.0.6" }
 swaggeruiVersion = "5.10.3"
 # Note: We cannot go to the higher versions as they transitively depend on SLF4J 2.X
 swaggerVersion = "2.2.16"
-typeSafeConfigVersion = "1.4.2"
+typeSafeConfigVersion = "1.4.3"
 okHttpVersion = { strictly = "4.9.2" }
 okioVersion = { strictly = "3.4.0" }
 pf4jVersion = "3.10.0"
@@ -37,8 +37,8 @@ zipkinCoreVersion = "2.27.1"
 zipkinReporterVersion = "3.2.1"
 
 # Testing
-assertjVersion = "3.25.2"
-junitVersion = "5.10.1"
+assertjVersion = "3.25.3"
+junitVersion = "5.10.2"
 mockitoVersion = "5.10.0"
 mockitoKotlinVersion = "5.2.1"
 

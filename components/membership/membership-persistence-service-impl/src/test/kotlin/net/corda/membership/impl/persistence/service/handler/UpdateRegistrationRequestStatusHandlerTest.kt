@@ -77,7 +77,8 @@ class UpdateRegistrationRequestStatusHandlerTest {
         on {
             getOrCreateEntityManagerFactory(
                 eq(vaultDmlConnectionId),
-                any()
+                any(),
+                eq(false)
             )
         } doReturn entityManagerFactory
     }

@@ -722,7 +722,7 @@ open class SoftCryptoService(
         return Pair(wrappingKeyUUID, wrappingKey)
     }
 
-    override fun rewrapAllSigningKeysWrappedBy(managedWrappingKeyId: UUID, tenantId: String) {
+    override fun rewrapAllSigningKeysWrappedBy(managedWrappingKeyId: UUID, tenantId: String): Int {
         wrappingRepositoryFactory.create(tenantId).use { wrappingRepo ->
             val oldWrappingKeyInfo = checkNotNull(wrappingRepo.getKeyById(managedWrappingKeyId)) {
                 "Unable to find existing wrapping key with id ${managedWrappingKeyId} for tenantId ${tenantId}"
@@ -734,6 +734,7 @@ open class SoftCryptoService(
             val createdWrappingKey = createWrappingKeyFrom(wrappingRepo, oldWrappingKeyInfo)
             val newWrappingUuid = createdWrappingKey.first
             val newWrappingKeyDecrypted = createdWrappingKey.second
+            var rewrappedKeys = 0
             signingRepositoryFactory.getInstance(tenantId).use { signingRepo ->
                 // Get signing materials which use the old wrapping uuid, passed in as wrappingKeyUuid
                 signingRepo.getKeyMaterials(managedWrappingKeyId).forEach { oldSigningKeyMaterial ->
@@ -744,8 +745,10 @@ open class SoftCryptoService(
                         newSigningKeyMaterial
                     )
                     signingRepo.saveSigningKeyMaterial(newSigningKeyMaterialInfo, newWrappingUuid)
+                    rewrappedKeys++
                 }
             }
+            return rewrappedKeys
         }
     }
 }
