@@ -264,7 +264,7 @@ spec:
             {{-   $connectionSettings := fromYaml ( include "corda.db.configuration" ( list $ $storageId ( printf "stateManager.%s.storageId" $stateType ) ) ) -}}
             {{/*  -- Check whether bootstrap is enabled for the database storage associated to the state type */}}
             {{-   range $bootCredentials := $.Values.bootstrap.db.databases -}}
-            {{-     if eq .name $storageId -}}
+            {{-     if eq .id $storageId -}}
             {{/*        -- The database storage associated to the state type exists and is configured to be included within the bootstrap process */}}
             {{-         range $workerName, $workerConfig := $.Values.workers -}}
             {{-           $stateManagerSettings := ( index $workerConfig "stateManager" ) -}}
@@ -274,16 +274,6 @@ spec:
             {{-           end -}}
             {{-         end -}}
             {{-     end -}}
-            {{-   end -}}
-            {{- end }}
-            {{/* TODO-[CORE-19372]: remove the following range block */}}
-            {{- range $workerName, $authConfig := .Values.bootstrap.db.stateManager -}}
-            {{-   $workerConfig := (index $.Values.workers $workerName) -}}
-            {{/*  No point in trying to bootstrap the State Manager for the specific worker if the host has not been configured */}}
-            {{-   if and (not $workerConfig.stateManager.db.host) (or ( $authConfig.username.value ) ( $authConfig.username.valueFrom.secretKeyRef.name ) ( $authConfig.password.value ) ( $authConfig.password.valueFrom.secretKeyRef.name ) ) -}}
-            {{-     fail ( printf "Can only specify bootstrap.db.stateManager.%s when workers.%s.stateManager.host is configured" $workerName $workerName ) -}}
-            {{-   else -}}
-            {{-     include "corda.bootstrapStateManagerDb" ( list $ $workerName $authConfig ) }}
             {{-   end -}}
             {{- end }}
       containers:
