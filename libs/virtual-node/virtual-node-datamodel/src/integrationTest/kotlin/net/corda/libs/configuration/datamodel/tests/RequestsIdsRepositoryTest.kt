@@ -79,8 +79,8 @@ class RequestsIdsRepositoryTest {
 
     @Test
     fun `inserts into request ids table`() {
-        val requestId1 = UUID.randomUUID()
-        val requestId2 = UUID.randomUUID()
+        val requestId1 = UUID.randomUUID().toString()
+        val requestId2 = UUID.randomUUID().toString()
         entityManagerFactory.createEntityManager().transaction { em ->
             requestsIdsRepository.persist(requestId1, em)
         }
