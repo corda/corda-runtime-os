@@ -12,8 +12,6 @@ interface FlowStatusCacheService: Lifecycle {
      * Initialises the API implementation. This method may be called multiple times throughout the life
      * of the API.
      */
-    fun initialise(config: SmartConfig)
-
     fun initialise(config: Map<String, SmartConfig>)
 
     fun getStatus(clientRequestId: String, holdingIdentity: HoldingIdentity): FlowStatus?

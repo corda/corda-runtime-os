@@ -55,11 +55,6 @@ class FlowStatusLookupServiceImpl @Activate constructor(
     override val isRunning: Boolean
         get() = lifecycleCoordinator.isRunning
 
-    override fun initialise(config: SmartConfig) {
-        TODO("Not yet implemented")
-    }
-
-
     override fun initialise(config: Map<String, SmartConfig>) {
         val messagingConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
         val stateManagerConfig = config.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)
