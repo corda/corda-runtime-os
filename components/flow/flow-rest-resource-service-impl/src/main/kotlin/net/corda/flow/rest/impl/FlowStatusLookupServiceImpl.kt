@@ -16,7 +16,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
@@ -46,8 +45,6 @@ class FlowStatusLookupServiceImpl @Activate constructor(
             }
         }
 
-    private var flowStatusSubscription: Subscription<FlowKey, FlowStatus>? = null
-
     private val serializer = cordaSerializationFactory.createAvroSerializer<Any> {}
     private val deSerializer = cordaSerializationFactory.createAvroDeserializer({}, FlowStatus::class.java)
 
@@ -72,37 +69,42 @@ class FlowStatusLookupServiceImpl @Activate constructor(
         val stateManagerNew = stateManagerFactory.create(stateManagerConfig, StateType.FLOW_STATUS).also { it.start() }
 
         stateManager = stateManagerNew
-        flowStatusSubscription?.close()
 
-        flowStatusSubscription = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig(
-                "flow.status.subscription",
-                FLOW_STATUS_TOPIC
-            ),
-            DurableFlowStatusProcessor(stateManagerNew, serializer),
-            messagingConfig,
-            null
-        ).also { it.start() }
+        lifecycleCoordinator.createManagedResource("FLOW_STATUS_LOOKUP_SUBSCRIPTION") {
+            subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig(
+                    "flow.status.subscription",
+                    FLOW_STATUS_TOPIC
+                ),
+                DurableFlowStatusProcessor(stateManagerNew, serializer),
+                messagingConfig,
+                null
+            )
+        }.start()
 
-        subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig(
-                "flow.status.cleanup.tasks",
-                SCHEDULED_TASK_TOPIC_FLOW_STATUS_PROCESSOR
-            ),
-            FlowStatusCleanupProcessor(restConfig, stateManagerNew),
-            restConfig,
-            null
-        ).also { it.start() }
+        lifecycleCoordinator.createManagedResource("FLOW_STATUS_CLEANUP_TASK_SUBSCRIPTION") {
+            subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig(
+                    "flow.status.cleanup.tasks",
+                    SCHEDULED_TASK_TOPIC_FLOW_STATUS_PROCESSOR
+                ),
+                FlowStatusCleanupProcessor(restConfig, stateManagerNew),
+                messagingConfig,
+                null
+            )
+        }.start()
 
-        subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig(
-                "flow.status.cleanup.executor",
-                REST_FLOW_STATUS_CLEANUP_TOPIC
-            ),
-            FlowStatusDeletionExecutor(stateManagerNew),
-            messagingConfig,
-            null
-        ).also { it.start() }
+        lifecycleCoordinator.createManagedResource("FLOW_STATUS_DELETION_EXECUTOR_SUBSCRIPTION") {
+            subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig(
+                    "flow.status.cleanup.executor",
+                    REST_FLOW_STATUS_CLEANUP_TOPIC
+                ),
+                FlowStatusDeletionExecutor(stateManagerNew),
+                messagingConfig,
+                null
+            )
+        }.start()
     }
 
     override fun getStatus(clientRequestId: String, holdingIdentity: HoldingIdentity): FlowStatus? {
