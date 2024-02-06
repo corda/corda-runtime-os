@@ -670,6 +670,7 @@ internal class StatefulSessionManagerImpl(
                 when (it.inboundSessionMessage) {
                     is InboundSessionMessage.InitiatorHelloMessage -> {
                         processInitiatorHello(state, it.inboundSessionMessage)?.let { (message, stateUpdate) ->
+                            // We could have two InitiatorHelloMessage with the same session ID?
                             logger.info("QQQ Create 1 ${stateUpdate.key}", Exception("QQQ"))
                             Result(message, CreateAction(stateUpdate), null)
                         }
@@ -1080,8 +1081,8 @@ internal class StatefulSessionManagerImpl(
                 sessionExpiryScheduler.checkStateValidateAndRememberIt(it)
             }
         val creates = changes.filterIsInstance<CreateAction>()
-            .map {
-                it.state
+            .flatMap {
+                listOf(it.state, it.state)
             }.mapNotNull {
                 sessionExpiryScheduler.checkStateValidateAndRememberIt(it)
             }
