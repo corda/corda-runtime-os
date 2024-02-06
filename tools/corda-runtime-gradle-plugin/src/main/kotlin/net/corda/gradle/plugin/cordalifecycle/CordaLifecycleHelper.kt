@@ -13,6 +13,10 @@ class CordaLifecycleHelper {
         composeFilePath: String,
         dockerProjectName: String
     ) : Process {
+        if (!File(composeFilePath).exists()) {
+            throw CordaRuntimeGradlePluginException("Unable to locate compose file: $composeFilePath")
+        }
+
         val pidStore = PrintStream(FileOutputStream(File(pidFilePath)))
         val cordaProcessBuilder = ProcessBuilder(
             "docker",

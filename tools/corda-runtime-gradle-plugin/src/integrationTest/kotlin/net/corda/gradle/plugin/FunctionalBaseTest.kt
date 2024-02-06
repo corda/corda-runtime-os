@@ -16,7 +16,7 @@ abstract class FunctionalBaseTest : Javalin() {
 
     @field:TempDir
     lateinit var projectDir: File
-    private lateinit var buildFile: File
+    protected lateinit var buildFile: File
 
     protected var restHostname = "localhost"
     protected var restPort = 8888

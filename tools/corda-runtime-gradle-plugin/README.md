@@ -14,6 +14,9 @@ Add the following extension properties
         vnodeRegistrationTimeout = "60000"
         cordaProcessorTimeout = "300000"
         workflowsModuleName = "workflows"
+        cordaClusterURL = "https://localhost:8888"
+        cordaRpcUser = "admin"
+        cordaRpcPasswd ="admin"
         composeFilePath = "config/combined-worker-compose.yml"
         networkConfigFile = "config/static-network-config.json"
         r3RootCertFile = "config/r3-ca-key.pem"
@@ -26,7 +29,7 @@ Add the following extension properties
 
 In order to use the vNodesSetup functionality, you will have to provide the following files:
 
-1. a docker compose yaml file, with the contents similar to
+1. A docker compose yaml file, with the contents similar to
 
 ```yaml
 version: '2'
@@ -60,12 +63,13 @@ services:
       - 7004:7004
       - 5005:5005
 ```
+Ensure the port given in the compose file matches the cordaClusterURL setting in the cordaRuntimeGradlePlugin extension properties; default is 8888.
 
 2. [Gradle plugin default signing key](https://github.com/corda/corda-runtime-os/wiki/CorDapp-Packaging#trust-the-gradle-plugin-default-signing-key)
 
 3. [R3 signing key](https://github.com/corda/corda-runtime-os/wiki/CorDapp-Packaging#trust-the-r3-signing-key)
 
-4. a config json file representing the nodes on the network, with the contents similar to
+4. A config json file representing the nodes on the network, with the contents similar to
 
 ```json
 [
