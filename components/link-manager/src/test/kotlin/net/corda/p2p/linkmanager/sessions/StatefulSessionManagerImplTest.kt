@@ -23,6 +23,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
+import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl.Companion.LINK_MANAGER_SUBSYSTEM
 import net.corda.p2p.linkmanager.state.SessionState
 import net.corda.schema.Schemas
@@ -55,6 +56,7 @@ class StatefulSessionManagerImplTest {
         on { createCoordinator(any(), any()) } doReturn coordinator
     }
     private val stateManager = mock<StateManager>()
+    private val deadSessionMonitor = mock<DeadSessionMonitor>()
     private val sessionManagerImplDominoTile = mock<ComplexDominoTile> {
         on { coordinatorName } doReturn mock()
     }
@@ -98,6 +100,7 @@ class StatefulSessionManagerImplTest {
         stateConvertor,
         clock,
         membershipGroupReaderProvider,
+        deadSessionMonitor,
         schemaRegistry,
     )
 
@@ -135,6 +138,38 @@ class StatefulSessionManagerImplTest {
         whenever(stateConvertor.toCordaSessionState(same(state), any())).doReturn(sessionState)
         return state
     }
+
+    @Nested
+    inner class DeadSessionMonitorTests {
+        @Test
+        fun `Given a data message is send then the monitor should record the session ID used`() {
+            val sessionId = "s1"
+            val session = mock<Session>().apply { whenever(this.sessionId).thenReturn(sessionId) }
+            manager.dataMessageSent(session)
+            verify(deadSessionMonitor).messageSent(sessionId)
+        }
+
+        @Test
+        fun `Given a data message is acknowledged then the monitor should record the session ID used`() {
+            val sessionId = "s1"
+            manager.messageAcknowledged(sessionId)
+            verify(deadSessionMonitor).ackReceived(sessionId)
+        }
+    }
+
+    @Nested
+    inner class GetSessionsByIdTests {
+        @Test
+        fun `it returned sessions from the state manager`() {
+            val sessionIds = (1..4).map {
+                "session-$it"
+            }
+            val sessionIdsContainers = sessionIds.map {
+                Wrapper(it)
+            }
+            val savedStates = sessionIds.associateWith { sessionId ->
+            }
+        }
 
     @Nested
     inner class GetSessionsByIdTests {

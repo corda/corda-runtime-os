@@ -77,6 +77,7 @@ internal class StatefulSessionManagerImpl(
     private val stateConvertor: StateConvertor,
     private val clock: Clock,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    private val deadSessionMonitor: DeadSessionMonitor,
     private val schemaRegistry: AvroSchemaRegistry,
 ) : SessionManager {
     companion object {
@@ -357,8 +358,7 @@ internal class StatefulSessionManagerImpl(
     }
 
     override fun messageAcknowledged(sessionId: String) {
-        // To be implemented in CORE-18730
-        return
+        deadSessionMonitor.ackReceived(sessionId)
     }
 
     override fun inboundSessionEstablished(sessionId: String) {
@@ -376,8 +376,7 @@ internal class StatefulSessionManagerImpl(
     }
 
     override fun dataMessageSent(session: Session) {
-        // Not needed by the Stateful Session Manager
-        return
+        deadSessionMonitor.messageSent(session.sessionId)
     }
 
     override fun deleteOutboundSession(
@@ -452,6 +451,7 @@ internal class StatefulSessionManagerImpl(
                 ),
             )
         }
+
         fun toResultsFirstAndOther(
             firstState: SessionManager.SessionState,
             otherStates: SessionManager.SessionState,
@@ -645,6 +645,7 @@ internal class StatefulSessionManagerImpl(
             updatedState.getSessionCounterparties(),
         ) to updatedState
     }
+
     private fun <T> processStateUpdates(
         resultStates: Collection<OutboundMessageResults<T>>,
     ): Collection<Pair<T, SessionManager.SessionState>> {
@@ -672,6 +673,7 @@ internal class StatefulSessionManagerImpl(
             }
         }
     }
+
     private fun <T> processInboundSessionMessages(messages: List<Pair<T, LinkInMessage?>>): Collection<TraceableResult<T>> {
         val messageContexts =
             messages.mapNotNull {
