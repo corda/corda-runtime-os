@@ -12,13 +12,16 @@ import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.data.persistence.EntityResponse
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.persistence.utxo.UtxoOutputRecordFactory
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.ResponseFactory
 import net.corda.schema.Schemas.Services.TOKEN_CACHE_EVENT
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.virtualnode.HoldingIdentity
@@ -90,6 +93,20 @@ class UtxoOutputRecordFactoryImpl(
         )
     }
 
+    override fun getFindFilteredTransactionsAndSignaturesSuccessRecord(
+        filteredTransactionsAndSignatures: Map<SecureHash, Pair<FilteredTransaction?, List<DigitalSignatureAndMetadata>>>,
+        externalEventContext: ExternalEventContext
+    ): Record<String, FlowEvent> {
+        return responseFactory.successResponse(
+            externalEventContext,
+            EntityResponse(
+                listOf(ByteBuffer.wrap(serializationService.serialize(filteredTransactionsAndSignatures).bytes)),
+                KeyValuePairList(emptyList()),
+                null
+            )
+        )
+    }
+
     override fun getStatesSuccessRecord(
         states: List<UtxoVisibleTransactionOutputDto>,
         externalEventContext: ExternalEventContext,
@@ -118,7 +135,10 @@ class UtxoOutputRecordFactoryImpl(
         )
     }
 
-    private fun createPoolKeyRecord(holdingIdentity: HoldingIdentity, stateTokenPair: Pair<StateAndRef<*>, UtxoToken>): TokenPoolCacheKey {
+    private fun createPoolKeyRecord(
+        holdingIdentity: HoldingIdentity,
+        stateTokenPair: Pair<StateAndRef<*>, UtxoToken>
+    ): TokenPoolCacheKey {
         val (stateAndRef, token) = stateTokenPair
         return TokenPoolCacheKey.newBuilder()
             .setShortHolderId(holdingIdentity.shortHash.value)

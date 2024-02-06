@@ -57,6 +57,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.whenever
+import java.lang.IllegalStateException
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
@@ -216,6 +217,37 @@ class CryptoRekeyBusProcessorTests {
             assertThat(unmanagedKeyStatus.total).isEqualTo(1)
             assertThat(unmanagedKeyStatus.rotatedKeys).isEqualTo(0)
         }
+    }
+
+    @Test
+    fun `unmanaged key rotation handles bad tenant access`() {
+        val virtualNodeTenantIds = listOf(tenantId1, tenantId2, tenantId3)
+        val virtualNodes = getStubVirtualNodes(virtualNodeTenantIds)
+        whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
+
+        // Create a WrappingRepository which throws before returning good keys
+        val wrappingRepository = mock<WrappingRepository>()
+        whenever(wrappingRepository.findKeysWrappedByParentKey(any())).thenThrow(IllegalStateException()).thenReturn(
+            listOf(
+                WrappingKeyInfo(
+                    0,
+                    "",
+                    byteArrayOf(),
+                    0,
+                    oldKeyAlias,
+                    "alias1"
+                )
+            )
+        )
+        whenever(wrappingRepositoryFactory.create(any())).thenReturn(wrappingRepository)
+
+        cryptoRekeyBusProcessor.onNext(listOf(getUnmanagedKeyRotationKafkaRecord()))
+
+        verify(rewrapPublisher, times(1)).publish(any())
+        assertThat(rewrapPublishCapture.allValues).hasSize(1)
+
+        val allTenantsExceptFirst = virtualNodeTenantIds.drop(1) + CryptoTenants.CRYPTO
+        assertThat(rewrapPublishCapture.firstValue).hasSize(allTenantsExceptFirst.size)
     }
 
     @Test

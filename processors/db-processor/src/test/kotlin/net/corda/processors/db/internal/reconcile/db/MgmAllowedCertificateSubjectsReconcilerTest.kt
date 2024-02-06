@@ -69,7 +69,7 @@ class MgmAllowedCertificateSubjectsReconcilerTest {
         on { createEntityManager() } doReturn entityManager
     }
     private val dbConnectionManager = mock<DbConnectionManager> {
-        on { createEntityManagerFactory(eq(connectionId), eq(entitySet), any()) } doReturn entityManagerFactory
+        on { getOrCreateEntityManagerFactory(eq(connectionId), eq(entitySet), any()) } doReturn entityManagerFactory
     }
     private val reconcilerFactory = mock<ReconcilerFactory> {
         on {
