@@ -2,11 +2,11 @@ package net.corda.flow.external.events.impl.executor
 
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.data.flow.event.external.ExternalEventResponse
+import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.services.MockFlowFiberService
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.internal.serialization.SerializedBytesImpl
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -22,7 +22,7 @@ import kotlin.test.assertNotEquals
 
 class ExternalEventExecutorImplTest {
     private lateinit var mockFlowFiberService: MockFlowFiberService
-    private lateinit var serializationService: SerializationService
+    private lateinit var serializationService: SerializationServiceInternal
     private lateinit var platformDigestService: PlatformDigestService
     private lateinit var externalEventExecutorImpl: ExternalEventExecutorImpl
 
@@ -60,7 +60,7 @@ class ExternalEventExecutorImplTest {
         }
         whenever(mockFlowFiberService.flowCheckpoint.flowId).thenReturn(flowId)
         whenever(mockFlowFiberService.flowCheckpoint.suspendCount).thenReturn(suspendCount)
-        serializationService = mock<SerializationService>().apply {
+        serializationService = mock<SerializationServiceInternal>().apply {
             whenever(serialize<Any>(anyOrNull())).doAnswer { inv ->
                 SerializedBytesImpl(inv.getArgument<Any>(0).toString().toByteArray())
             }

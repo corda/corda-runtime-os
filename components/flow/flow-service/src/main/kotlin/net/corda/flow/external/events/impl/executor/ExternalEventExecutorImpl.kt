@@ -1,12 +1,12 @@
 package net.corda.flow.external.events.impl.executor
 
 import net.corda.crypto.cipher.suite.PlatformDigestService
+import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -18,8 +18,8 @@ import org.osgi.service.component.annotations.Reference
 class ExternalEventExecutorImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService,
-    @Reference(service = SerializationService::class)
-    private val serializationService: SerializationService,
+    @Reference(service = SerializationServiceInternal::class)
+    private val serializationService: SerializationServiceInternal,
     @Reference(service = PlatformDigestService::class)
     private val platformDigestService: PlatformDigestService
 ) : ExternalEventExecutor, SingletonSerializeAsToken {
