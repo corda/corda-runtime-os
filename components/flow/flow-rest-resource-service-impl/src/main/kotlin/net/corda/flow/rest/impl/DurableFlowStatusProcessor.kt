@@ -5,6 +5,7 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.rest.impl.utils.hash
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
@@ -30,12 +31,12 @@ class DurableFlowStatusProcessor(
     override val keyClass: Class<FlowKey> get() = FlowKey::class.java
     override val valueClass: Class<FlowStatus> get() = FlowStatus::class.java
     override fun onNext(events: List<Record<FlowKey, FlowStatus>>): List<Record<*, *>> {
-        val flowKeys = events.map { it.key.toString() }
+        val flowKeys = events.map { it.key.hash() }
         val existingStates = stateManager.get(flowKeys)
         val existingKeys = existingStates.keys.toSet()
 
         val (updatedStates, newStates) = events.mapNotNull { record ->
-            val key = record.key.toString()
+            val key = record.key.hash()
             val value = record.value ?: return@mapNotNull null
             val bytes = serializer.serialize(value) ?: return@mapNotNull null
 

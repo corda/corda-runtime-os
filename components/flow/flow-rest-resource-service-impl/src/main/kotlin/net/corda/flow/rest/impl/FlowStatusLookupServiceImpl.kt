@@ -6,6 +6,7 @@ import net.corda.data.flow.output.FlowStatus
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.rest.FlowStatusCacheService
 import net.corda.flow.rest.flowstatus.FlowStatusUpdateListener
+import net.corda.flow.rest.impl.utils.hash
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.statemanager.api.MetadataFilter
@@ -102,12 +103,10 @@ class FlowStatusLookupServiceImpl @Activate constructor(
     }
 
     override fun getStatus(clientRequestId: String, holdingIdentity: HoldingIdentity): FlowStatus? {
-
-        val flowKey = FlowKey(clientRequestId, holdingIdentity)
-        val flowKeys = listOf(flowKey.toString())
+        val flowKey = FlowKey(clientRequestId, holdingIdentity).hash()
 
         return requireNotNull(stateManager) { "stateManager is null" }
-            .get(flowKeys)
+            .get(listOf(flowKey))
             .asSequence()
             .map { it.value }
             .firstOrNull()
