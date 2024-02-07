@@ -21,8 +21,8 @@ internal class DurableSubscription<K : Any, V : Any>(
     private val processor: DurableProcessor<K, V>,
     internal val partitionAssignmentListener: PartitionAssignmentListener?,
     private val topicService: TopicService,
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    private val instanceId: Int
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    instanceId: Int
 ) : Subscription<K, V> {
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
