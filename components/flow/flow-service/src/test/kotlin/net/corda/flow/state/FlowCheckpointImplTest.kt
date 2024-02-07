@@ -299,7 +299,8 @@ class FlowCheckpointImplTest {
         )
 
         flowCheckpoint.markDeleted()
-        assertThat(flowCheckpoint.toAvro()).isNull()
+        assertThat(flowCheckpoint.toAvro()).isNotNull()
+        assertThat(flowCheckpoint.isCompleted).isTrue()
     }
 
     @Test
@@ -309,8 +310,8 @@ class FlowCheckpointImplTest {
         val flowCheckpoint = createFlowCheckpoint(checkpoint)
 
         flowCheckpoint.markDeleted()
-        assertThat(flowCheckpoint.toAvro()).isNull()
-    }
+        assertThat(flowCheckpoint.toAvro()).isNotNull()
+        assertThat(flowCheckpoint.isCompleted).isTrue()    }
 
     @Test
     fun `mark delete sets isComplete to true`() {

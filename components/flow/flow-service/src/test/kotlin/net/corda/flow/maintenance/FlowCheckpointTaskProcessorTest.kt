@@ -1,13 +1,12 @@
 package net.corda.flow.maintenance
 
 import com.typesafe.config.ConfigValueFactory
-import net.corda.data.flow.event.mapper.ExecuteCleanup
+import net.corda.data.flow.FlowCheckpointTermination
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.scheduler.ScheduledTaskTrigger
 import net.corda.flow.state.impl.CheckpointMetadataKeys.STATE_META_CHECKPOINT_TERMINATED_KEY
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.statemanager.api.IntervalFilter
-import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.STATE_TYPE
@@ -29,15 +28,15 @@ import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 
-class FlowCheeckpointTaskProcessorTest {
+class FlowCheckpointTaskProcessorTest {
 
     private val clock = Clock.fixed(Instant.now(), ZoneId.systemDefault())
     private val window = 1000L
     private val config = SmartConfigImpl.empty().withValue(FlowConfig.PROCESSING_FLOW_CHECKPOINT_CLEANUP_TIME, ConfigValueFactory
         .fromAnyRef(window))
     private val terminatedStates = listOf(
-        createStateEntry("key1", clock.instant().minusMillis(window * 2), true),
-        createStateEntry("key4", clock.instant().minusMillis(window * 3), true)
+        createStateEntry("key1", clock.instant().minusMillis(window * 2)),
+        createStateEntry("key4", clock.instant().minusMillis(window * 3))
     ).toMap()
 
     private val inputEvent = Record(
@@ -56,12 +55,12 @@ class FlowCheeckpointTaskProcessorTest {
             clock
         )
         val output = scheduledTaskProcessor.onNext(listOf(inputEvent))
-        val ids = output.flatMap { (it.value as ExecuteCleanup).ids }
+        val ids = output.flatMap { (it.value as FlowCheckpointTermination).checkpointStateKeys }
         assertThat(ids).contains("key1", "key4")
         verify(stateManager).findUpdatedBetweenWithMetadataMatchingAny(
             IntervalFilter(Instant.EPOCH, clock.instant() - Duration.ofMillis(window)),
             listOf(
-                MetadataFilter(STATE_TYPE, Operation.Equals, Checkpoint::class.java),
+                MetadataFilter(STATE_TYPE, Operation.Equals, Checkpoint::class.java.name),
                 MetadataFilter(STATE_META_CHECKPOINT_TERMINATED_KEY, Operation.Equals, true),
             )
         )
@@ -97,7 +96,7 @@ class FlowCheeckpointTaskProcessorTest {
         verify(stateManager).findUpdatedBetweenWithMetadataMatchingAny(
             IntervalFilter(Instant.EPOCH, clock.instant() - Duration.ofMillis(window * 5)),
             listOf(
-                MetadataFilter(STATE_TYPE, Operation.Equals, Checkpoint::class.java),
+                MetadataFilter(STATE_TYPE, Operation.Equals, Checkpoint::class.java.name),
                 MetadataFilter(STATE_META_CHECKPOINT_TERMINATED_KEY, Operation.Equals, true),
             )
         )
@@ -123,10 +122,9 @@ class FlowCheeckpointTaskProcessorTest {
 
     private fun createStateEntry(
         key: String,
-        lastUpdated: Instant,
-        status: Boolean
+        lastUpdated: Instant
     ): Pair<String, State> {
-        val metadata = if (status) metadata(STATE_META_CHECKPOINT_TERMINATED_KEY to true) else Metadata()
+        val metadata = metadata(STATE_META_CHECKPOINT_TERMINATED_KEY to true)
         val state = State(
             key,
             byteArrayOf(),
