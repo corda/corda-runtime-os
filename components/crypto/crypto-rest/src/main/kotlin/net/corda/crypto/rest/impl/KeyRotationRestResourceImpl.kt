@@ -199,7 +199,8 @@ class KeyRotationRestResourceImpl @Activate constructor(
                     )
                 ).values
 
-                // if entries are empty, there is no data for unmanaged rotation stored in the state manager, so no key rotation is/was in progress
+                // if entries are empty, there is no data for unmanaged rotation stored in the state manager,
+                // so no key rotation is/was in progress
                 if (records.isEmpty()) throw ResourceNotFoundException("No master wrapping key rotation is in progress.")
 
                 val rotationStatus =
