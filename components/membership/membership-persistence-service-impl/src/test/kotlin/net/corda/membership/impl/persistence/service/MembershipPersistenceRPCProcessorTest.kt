@@ -267,6 +267,7 @@ class MembershipPersistenceRPCProcessorTest {
         on {
             getOrCreateEntityManagerFactory(
                 eq(vaultDmlConnectionId),
+                any(),
                 any()
             )
         } doReturn entityManagerFactory

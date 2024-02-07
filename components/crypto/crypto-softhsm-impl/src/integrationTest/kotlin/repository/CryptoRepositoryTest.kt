@@ -50,8 +50,12 @@ abstract class CryptoRepositoryTest {
                         schemaName = uniqueSchemaName,
                         createSchema = true
                     )
+                if (!DbUtils.isInMemory) {
+                    dbConfig.dataSource.connection.transaction { connection ->
+                        connection.prepareStatement("SET search_path TO \"$uniqueSchemaName\";").execute()
+                    }
+                }
                 dbConfig.dataSource.connection.transaction { connection ->
-                    connection.prepareStatement("SET search_path TO \"$uniqueSchemaName\";").execute()
                     LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange, uniqueSchemaName)
                 }
                 val entityManagerFactory = EntityManagerFactoryFactoryImpl().create(

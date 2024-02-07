@@ -353,6 +353,8 @@ interface CryptoService {
      *
      * @param managedWrappingKeyId The managed wrapping key which is being rotated away from
      * @param tenantId The tenant Id which uses the specified wrapping key
+     *
+     * @return The number of keys rewrapped
      */
-    fun rewrapAllSigningKeysWrappedBy(managedWrappingKeyId: UUID, tenantId: String)
+    fun rewrapAllSigningKeysWrappedBy(managedWrappingKeyId: UUID, tenantId: String): Int
 }

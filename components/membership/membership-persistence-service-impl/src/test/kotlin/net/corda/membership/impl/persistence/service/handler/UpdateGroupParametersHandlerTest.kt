@@ -169,7 +169,8 @@ class UpdateGroupParametersHandlerTest {
         on {
             getOrCreateEntityManagerFactory(
                 eq(vaultDmlConnectionId),
-                any()
+                any(),
+                eq(false)
             )
         } doReturn entityManagerFactory
     }

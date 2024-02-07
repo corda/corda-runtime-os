@@ -88,7 +88,7 @@ internal class StatefulSessionEventProcessor(
                 val session = stateConvertor.toCordaSessionState(
                     state,
                     sessionManagerImpl.revocationCheckerClient::checkRevocation,
-                ).sessionData as? Session
+                )?.sessionData as? Session
                 if (session == null) {
                     logger.error("Received a ${event.direction} session created event for ${event.stateManagerKey} but could not " +
                             "deserialize the session.")

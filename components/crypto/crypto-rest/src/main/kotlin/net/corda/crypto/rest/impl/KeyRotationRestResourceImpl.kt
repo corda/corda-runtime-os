@@ -201,13 +201,12 @@ class KeyRotationRestResourceImpl @Activate constructor(
         val rotationStatus = if (isRotationFinished(records)) KeyRotationStatus.DONE else KeyRotationStatus.IN_PROGRESS
 
         // newParentKeyAlias and createdTimestamp are in all records, we just need to grab it from one
-        val deserializedValueOfOneRecord =
-            checkNotNull(unmanagedKeyStatusDeserializer.deserialize(records.first().value))
+        val deserializedValueOfOneRecord = unmanagedKeyStatusDeserializer.deserialize(records.first().value)
         return KeyRotationStatusResponse(
             keyAlias,
-            deserializedValueOfOneRecord.newParentKeyAlias,
+            "newParentKeyAlias",
             rotationStatus,
-            deserializedValueOfOneRecord.createdTimestamp,
+            deserializedValueOfOneRecord!!.createdTimestamp,
             getLatestTimestamp(records),
             records.toUnmanagedRotationOutput()
         )

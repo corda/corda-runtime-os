@@ -100,6 +100,7 @@ internal class CommonComponents(
             ),
             clock,
             membershipGroupReaderProvider,
+            schemaRegistry,
         )
     } else {
         SessionManagerImpl(

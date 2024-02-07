@@ -13,9 +13,10 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import java.sql.Timestamp
+import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
@@ -99,30 +100,34 @@ class RequestsIdsRepositoryTest {
         assertTrue(request1Time < request2Time)
     }
 
-    @Disabled(
-        "Disabling due to its time overhead of 2 seconds. " +
-            "The test, however, is valid to assert `requestsIdsRepository.deleteRequestsOlderThan` works"
-    )
     @Test
     fun `deletes older requests`() {
         val requestId1 = UUID.randomUUID()
         val requestId2 = UUID.randomUUID()
-        entityManagerFactory.createEntityManager().transaction { em ->
-            requestsIdsRepository.persist(requestId1, em)
-        }
-
-        entityManagerFactory.createEntityManager().transaction { em ->
-            requestsIdsRepository.persist(requestId2, em)
+        dbConfig.dataSource.connection.use { con ->
+            con.autoCommit = true
+            con.prepareStatement(
+                """
+                INSERT INTO ${DbSchema.VNODE_PERSISTENCE_REQUEST_ID_TABLE}(request_id, insert_ts)
+                VALUES (?,?)
+                """.trimIndent()
+            ).also {
+                it.setString(1, requestId1.toString())
+                it.setTimestamp(2, Timestamp.from(Instant.now().minusSeconds(10)))
+            }.executeUpdate()
+            con.prepareStatement(
+                """
+                INSERT INTO ${DbSchema.VNODE_PERSISTENCE_REQUEST_ID_TABLE}(request_id, insert_ts)
+                VALUES (?,?)
+                """.trimIndent()
+            ).also {
+                it.setString(1, requestId2.toString())
+                it.setTimestamp(2, Timestamp.from(Instant.now().plusSeconds(10)))
+            }.executeUpdate()
         }
         var storedRequestIds = getStoredRequestIds()
         assertEquals(2, storedRequestIds.size)
-        Thread.sleep(2000)
-        entityManagerFactory.createEntityManager().transaction { em ->
-            requestsIdsRepository.persist(UUID.randomUUID(), em)
-        }
-        entityManagerFactory.createEntityManager().transaction { em ->
-            requestsIdsRepository.deleteRequestsOlderThan(1, em)
-        }
+        requestsIdsRepository.deleteRequestsOlderThan(1, dbConfig.dataSource)
 
         storedRequestIds = getStoredRequestIds()
         assertEquals(1, storedRequestIds.size)

@@ -462,8 +462,8 @@ class TopicTemplates {
                     } 
                 ]"""
 
-    const val MEDIATOR_TOPIC1 = "MediatorTopic1"
-    val MEDIATOR_TOPIC1_TEMPLATE = """topics = [ 
+        const val MEDIATOR_TOPIC1 = "MediatorTopic1"
+        val MEDIATOR_TOPIC1_TEMPLATE = """topics = [ 
             { 
                 topicName = "$TEST_TOPIC_PREFIX$MEDIATOR_TOPIC1" 
                 numPartitions = 2 
@@ -471,18 +471,84 @@ class TopicTemplates {
             } 
         ]"""
 
-    const val MEDIATOR_TOPIC1_OUTPUT = "MediatorTopic1Output"
-    val MEDIATOR_TOPIC1_OUTPUT_TEMPLATE = """topics = [ 
+        const val MEDIATOR_TOPIC1_OUTPUT = "MediatorTopic1Output"
+        val MEDIATOR_TOPIC1_OUTPUT_TEMPLATE = """topics = [ 
             { 
                 topicName = "$TEST_TOPIC_PREFIX$MEDIATOR_TOPIC1_OUTPUT" 
                 numPartitions = 2 
                 replicationFactor = 3 
             } 
         ]"""
-    const val MEDIATOR_TOPIC2 = "MediatorTopic2"
-    val MEDIATOR_TOPIC2_TEMPLATE = """topics = [ 
+        const val MEDIATOR_TOPIC2 = "MediatorTopic2"
+        val MEDIATOR_TOPIC2_TEMPLATE = """topics = [ 
             { 
                 topicName = "$TEST_TOPIC_PREFIX$MEDIATOR_TOPIC2" 
+                numPartitions = 2 
+                replicationFactor = 3 
+            } 
+        ]"""
+
+
+        const val MEDIATOR_TOPIC2_OUTPUT = "${MEDIATOR_TOPIC2}Output"
+        val MEDIATOR_TOPIC2_OUTPUT_TEMPLATE = """topics = [ 
+            { 
+                topicName = "$TEST_TOPIC_PREFIX$MEDIATOR_TOPIC2_OUTPUT" 
+                numPartitions = 2 
+                replicationFactor = 3 
+            } 
+        ]"""
+
+        const val MEDIATOR_TOPIC3 = "MediatorTopic3"
+        val MEDIATOR_TOPIC3_TEMPLATE = """topics = [ 
+            { 
+                topicName = "$TEST_TOPIC_PREFIX$MEDIATOR_TOPIC3" 
+                numPartitions = 2 
+                replicationFactor = 3 
+            } 
+        ]"""
+
+
+        const val MEDIATOR_TOPIC3_OUTPUT = "${MEDIATOR_TOPIC3}Output"
+        val MEDIATOR_TOPIC3_OUTPUT_TEMPLATE = """topics = [ 
+            { 
+                topicName = "$TEST_TOPIC_PREFIX$MEDIATOR_TOPIC3_OUTPUT" 
+                numPartitions = 2 
+                replicationFactor = 3 
+            } 
+        ]"""
+
+        const val MEDIATOR_TOPIC4 = "MediatorTopic4"
+        val MEDIATOR_TOPIC4_TEMPLATE = """topics = [ 
+            { 
+                topicName = "$TEST_TOPIC_PREFIX$MEDIATOR_TOPIC4" 
+                numPartitions = 2 
+                replicationFactor = 3 
+            } 
+        ]"""
+
+
+        const val MEDIATOR_TOPIC4_OUTPUT = "${MEDIATOR_TOPIC4}Output"
+        val MEDIATOR_TOPIC4_OUTPUT_TEMPLATE = """topics = [ 
+            { 
+                topicName = "$TEST_TOPIC_PREFIX$MEDIATOR_TOPIC4_OUTPUT" 
+                numPartitions = 2 
+                replicationFactor = 3 
+            } 
+        ]"""
+
+        const val MEDIATOR_TOPIC5 = "MediatorTopic5"
+        val MEDIATOR_TOPIC5_TEMPLATE = """topics = [ 
+            { 
+                topicName = "$TEST_TOPIC_PREFIX$MEDIATOR_TOPIC5" 
+                numPartitions = 2 
+                replicationFactor = 3 
+            } 
+        ]"""
+
+        const val MEDIATOR_TOPIC5_OUTPUT = "${MEDIATOR_TOPIC5}Output"
+        val MEDIATOR_TOPIC5_OUTPUT_TEMPLATE = """topics = [ 
+            { 
+                topicName = "$TEST_TOPIC_PREFIX$MEDIATOR_TOPIC5_OUTPUT" 
                 numPartitions = 2 
                 replicationFactor = 3 
             } 

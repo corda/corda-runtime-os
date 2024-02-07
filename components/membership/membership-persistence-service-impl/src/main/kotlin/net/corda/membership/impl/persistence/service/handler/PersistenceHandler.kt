@@ -74,7 +74,8 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
             entitiesSet = jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
                 ?: throw java.lang.IllegalStateException(
                     "persistenceUnitName ${CordaDb.Vault.persistenceUnitName} is not registered."
-                )
+                ),
+            enablePool = false
         )
     }
 }

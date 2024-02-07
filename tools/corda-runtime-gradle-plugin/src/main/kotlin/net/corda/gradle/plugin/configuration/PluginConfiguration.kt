@@ -12,22 +12,22 @@ open class PluginConfiguration @Inject constructor(objects: ObjectFactory) {
     val cordaClusterURL: Property<String> = objects.property(String::class.java).convention("https://localhost:8888")
 
     @get:Input
-    val cordaRpcUser: Property<String> = objects.property(String::class.java).convention("admin")
+    val cordaRestUser: Property<String> = objects.property(String::class.java).convention("admin")
 
     @get:Input
-    val cordaRpcPasswd: Property<String> = objects.property(String::class.java).convention("admin")
+    val cordaRestPasswd: Property<String> = objects.property(String::class.java).convention("admin")
 
     @get:Input
     val cordaRuntimePluginWorkspaceDir: Property<String> = objects.property(String::class.java).convention("workspace")
 
     @get:Input
-    val combinedWorkerVersion: Property<String> = objects.property(String::class.java).convention("5.0.1.0")
+    val composeFilePath: Property<String> = objects.property(String::class.java).convention("config/combined-worker-compose.yml")
 
     @get:Input
-    val postgresJdbcVersion: Property<String> = objects.property(String::class.java).convention("42.6.0")
+    val composeNetworkName: Property<String> = objects.property(String::class.java).convention("corda-cluster")
 
     @get:Input
-    var cordaDbContainerName: Property<String> = objects.property(String::class.java).convention("cordaPostgres")
+    val notaryVersion: Property<String> = objects.property(String::class.java).convention("5.2.0.0")
 
     @get:Input
     val cordaBinDir: Property<String> = objects.property(String::class.java)
@@ -43,4 +43,30 @@ open class PluginConfiguration @Inject constructor(objects: ObjectFactory) {
     @get:Input
     val artifactoryPassword: Property<String> = objects.property(String::class.java).convention("")
 
+    @get:Input
+    val notaryCpiName: Property<String> = objects.property(String::class.java).convention("NotaryServer")
+
+    @get:Input
+    val corDappCpiName: Property<String> = objects.property(String::class.java).convention("MyCorDapp")
+
+    @get:Input
+    val cpiUploadTimeout: Property<String> = objects.property(String::class.java).convention("10000")
+
+    @get:Input
+    val vnodeRegistrationTimeout: Property<String> = objects.property(String::class.java).convention("30000")
+
+    @get:Input
+    val cordaProcessorTimeout: Property<String> = objects.property(String::class.java).convention("-1")
+
+    @get:Input
+    val workflowsModuleName: Property<String> = objects.property(String::class.java).convention("workflows")
+
+    @get:Input
+    val networkConfigFile: Property<String> = objects.property(String::class.java).convention("config/static-network-config.json")
+
+    @get:Input
+    val r3RootCertFile: Property<String> = objects.property(String::class.java).convention("config/r3-ca-key.pem")
+
+    @get:Input
+    val skipTestsDuringBuildCpis: Property<String> = objects.property(String::class.java).convention("false")
 }

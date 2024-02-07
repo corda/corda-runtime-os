@@ -72,6 +72,8 @@ internal class SessionCache(
             cachedOutboundSessions.getIfPresent(it)
         }
 
+    fun getKeyForOutboundSessionId(sessionID: String) = counterpartiesForSessionId[sessionID]
+
     fun getByKeyIfCached(key: String): SessionManager.SessionDirection? =
         cachedInboundSessions.getIfPresent(key) ?: cachedOutboundSessions.getIfPresent(key)
 

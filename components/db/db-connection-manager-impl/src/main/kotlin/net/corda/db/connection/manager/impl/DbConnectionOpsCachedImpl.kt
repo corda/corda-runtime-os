@@ -7,7 +7,7 @@ import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
@@ -22,7 +22,7 @@ class DbConnectionOpsCachedImpl(
     //  duplicate entity proxies loaded in the class loader as identified in CORE-15806.
     private val cache = ConcurrentHashMap<Pair<String,DbPrivilege>, EntityManagerFactory>()
 
-    private val cacheByConnectionId = ConcurrentHashMap<UUID, EntityManagerFactory>()
+    private val cacheByConnectionId = ConcurrentHashMap<Pair<UUID,Boolean>, Pair<EntityManagerFactory,Int>>()
 
     private fun removeFromCache(name: String, privilege: DbPrivilege) {
         val entityManagerFactory = cache.remove(Pair(name,privilege))
@@ -46,10 +46,15 @@ class DbConnectionOpsCachedImpl(
             entitiesRegistry.get(db.persistenceUnitName) ?:
             throw DBConfigurationException("Entity set for ${db.persistenceUnitName} not found")
 
-        return getOrCreateEntityManagerFactory(
+        val emf = getOrCreateEntityManagerFactory(
             db.persistenceUnitName,
             privilege,
             entitiesSet)
+        return object : EntityManagerFactory by emf {
+            override fun close() {
+                // consumers of this function are not responsible for closing the EMF. Calling close becomes a no-op.
+            }
+        }
     }
 
     override fun getOrCreateEntityManagerFactory(
@@ -57,17 +62,31 @@ class DbConnectionOpsCachedImpl(
         privilege: DbPrivilege,
         entitiesSet: JpaEntitiesSet
     ): EntityManagerFactory {
-        return cache.computeIfAbsent(Pair(name,privilege)) {
+        val emf = cache.computeIfAbsent(Pair(name,privilege)) {
             delegate.getOrCreateEntityManagerFactory(name, privilege, entitiesSet)
+        }
+        return object : EntityManagerFactory by emf {
+            override fun close() {
+                // consumers of this function are not responsible for closing the EMF. Calling close becomes a no-op.
+            }
         }
     }
 
     override fun getOrCreateEntityManagerFactory(
         connectionId: UUID,
-        entitiesSet: JpaEntitiesSet
+        entitiesSet: JpaEntitiesSet,
+        enablePool: Boolean,
     ): EntityManagerFactory {
-        return cacheByConnectionId.computeIfAbsent(connectionId) {
-            delegate.createEntityManagerFactory(connectionId, entitiesSet)
+        val entities = entitiesSet.classes.hashCode()
+        val emfP = cacheByConnectionId.computeIfAbsent(Pair(connectionId, enablePool)) {
+            Pair(delegate.createEntityManagerFactory(connectionId, entitiesSet, enablePool), entities)
+        }
+        if(entities != emfP.second)
+            throw IllegalArgumentException("EntityManagerFactory with a different JpaEntitiesSet already exists.")
+        return object : EntityManagerFactory by emfP.first {
+            override fun close() {
+                // consumers of this function are not responsible for closing the EMF. Calling close becomes a no-op.
+            }
         }
     }
 }

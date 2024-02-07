@@ -12,8 +12,8 @@ class RPCSubscriptionImpl<REQUEST, RESPONSE>(
     private val rpcConfig: RPCConfig<REQUEST, RESPONSE>,
     private val rpcTopicService: RPCTopicService,
     private val responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>,
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    private val clientIdCounter: String
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    clientIdCounter: String
 ) : RPCSubscription<REQUEST, RESPONSE> {
 
     private var running = false

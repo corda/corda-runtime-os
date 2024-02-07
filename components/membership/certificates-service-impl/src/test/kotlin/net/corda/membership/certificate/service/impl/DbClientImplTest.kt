@@ -52,7 +52,8 @@ class DbClientImplTest {
         on {
             getOrCreateEntityManagerFactory(
                 eq(dmlConnectionId),
-                eq(registry)
+                eq(registry),
+                eq(false)
             )
         } doReturn nodeFactory
     }

@@ -109,6 +109,8 @@ interface DbConnectionOps {
     /**
      * Get an instance of [EntityManagerFactory] for the named [db] from cache or create one if necessary.
      *
+     * Callers of this function do not need to close the returned EMF. Doing so is a no-op.
+     *
      * @param db Name of the DB to use.
      * @param privilege [DbPrivilege] required (DML or DDL).
      * @return [EntityManagerFactory] from cache, or created on demand.
@@ -119,6 +121,8 @@ interface DbConnectionOps {
 
     /**
      * Get an instance of [EntityManagerFactory] for the connection ID. Use cache or create one if necessary.
+     *
+     * Callers of this function do not need to close the returned EMF. Doing so is a no-op.
      *
      * @param name name for the connection to be used.
      * @param privilege [DbPrivilege] required (DML or DDL).
@@ -133,6 +137,7 @@ interface DbConnectionOps {
 
     /**
      * Create an [EntityManagerFactory] for a given connection ID.
+     * NOTE: to be deprecated - use getOrCreateEntityManagerFactory(db: CordaDb, privilege: DbPrivilege) instead
      *
      * A new EMF should be created and implementations of this class should not cache it.
      *
@@ -141,7 +146,20 @@ interface DbConnectionOps {
      *                  [EntityManagerFactory] returned
      * @return
      */
-    fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory
+    fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet, enablePool: Boolean = true):
+            EntityManagerFactory
 
-    fun getOrCreateEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory
+    /**
+     * Get an [EntityManagerFactory] for a given connection ID. Use cache or create one if necessary.
+     *
+     * Callers of this function do not need to close the returned EMF. Doing so is a no-op.
+     *
+     * @param connectionId
+     * @param entitiesSet Set of all entities managed by [javax.persistence.EntityManager]s created by the
+     *                  [EntityManagerFactory] returned
+     * @param enablePool Enable client side connection pooling for the EMF. Default = true.
+     * @return
+     */
+    fun getOrCreateEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet, enablePool: Boolean = true):
+            EntityManagerFactory
 }

@@ -1,9 +1,10 @@
 package net.corda.flow.pipeline.impl
 
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.state.checkpoint.Checkpoint
+import net.corda.flow.pipeline.FlowEngineReplayService
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
+import net.corda.flow.pipeline.FlowEventPipeline
 import net.corda.flow.pipeline.FlowMDCService
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
 import net.corda.flow.pipeline.exceptions.FlowEventException
@@ -15,6 +16,8 @@ import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
 import net.corda.flow.pipeline.handlers.FlowPostProcessingHandler
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
+import net.corda.messaging.api.mediator.MediatorInputService.Companion.INPUT_HASH_HEADER
+import net.corda.messaging.api.mediator.MediatorInputService.Companion.SYNC_RESPONSE_HEADER
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
@@ -39,7 +42,8 @@ class FlowEventProcessorImpl(
     private val flowEventContextConverter: FlowEventContextConverter,
     private val configs: Map<String, SmartConfig>,
     private val flowMDCService: FlowMDCService,
-    private val postProcessingHandlers: List<FlowPostProcessingHandler>
+    private val postProcessingHandlers: List<FlowPostProcessingHandler>,
+    private val flowEngineReplayService: FlowEngineReplayService
 ) : StateAndEventProcessor<String, Checkpoint, FlowEvent> {
 
     private companion object {
@@ -67,18 +71,18 @@ class FlowEventProcessorImpl(
         val eventType = event.value?.payload?.javaClass?.simpleName ?: "Unknown"
         return withMDC(mdcProperties) {
             traceStateAndEventExecution(event, "Flow Event - $eventType") {
-                getFlowPipelineResponse(flowEvent, event, state, mdcProperties, this)
+                createAndExecutePipeline(event, state, mdcProperties, this)
             }
         }
     }
 
-    private fun getFlowPipelineResponse(
-        flowEvent: FlowEvent?,
+    private fun createAndExecutePipeline(
         event: Record<String, FlowEvent>,
         state: State<Checkpoint>?,
         mdcProperties: Map<String, String>,
         traceContext: TraceContext
     ): StateAndEventProcessor.Response<Checkpoint> {
+        val flowEvent = event.value
         if (flowEvent == null) {
             log.debug { "The incoming event record '${event}' contained a null FlowEvent, this event will be discarded" }
             return StateAndEventProcessor.Response(
@@ -87,10 +91,19 @@ class FlowEventProcessorImpl(
             )
         }
 
+        val inputEventHash = getInputEventHash(event)
+        if (!isSyncResponse(event)) {
+            flowEngineReplayService.getReplayEvents(inputEventHash, state?.value)?.let { replays ->
+                log.debug { "Detected input event that has been processed previously for hash :$inputEventHash" }
+                return StateAndEventProcessor.Response(state, replays)
+            }
+        }
+
         val pipeline = try {
             log.trace { "Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}" }
-            flowEventPipelineFactory.create(state, flowEvent, configs, mdcProperties, traceContext, event.timestamp)
+            flowEventPipelineFactory.create(state, flowEvent, configs, mdcProperties, traceContext, event.timestamp, inputEventHash)
         } catch (t: Throwable) {
+            log.warn("Failed to create flow event pipeline", t)
             traceContext.error(CordaRuntimeException(t.message, t))
             // Without a pipeline there's a limit to what can be processed.
             return StateAndEventProcessor.Response(
@@ -100,17 +113,12 @@ class FlowEventProcessorImpl(
             )
         }
 
-        val checkpoint = state?.value
-        val flowEventPayload = flowEvent.payload
+        return executePipeline(pipeline)
+    }
 
-        if (flowEventPayload is StartFlow && checkpoint != null) {
-            log.debug { "Ignoring duplicate '${StartFlow::class.java}'. Checkpoint has already been initialized" }
-            return StateAndEventProcessor.Response(
-                state,
-                listOf()
-            )
-        }
-
+    private fun executePipeline(
+        pipeline: FlowEventPipeline
+    ): StateAndEventProcessor.Response<Checkpoint> {
         // flow result timeout must be lower than the processor timeout as the processor thread will be killed by the subscription consumer
         // thread after this period and so this timeout would never be reached and given a chance to return otherwise.
         val flowTimeout = (flowConfig.getLong(PROCESSOR_TIMEOUT) * 0.75).toLong()
@@ -158,10 +166,23 @@ class FlowEventProcessorImpl(
             }
         }
 
+        //Save outputs to replay in the future. This must be the last step after all processing
+        val outputs = result.outputRecords + cleanupEvents
+        val hash = result.inputEventHash
+        if (hash != null) {
+            result.checkpoint.saveOutputs(flowEngineReplayService.generateSavedOutputs(hash, outputs))
+        }
         return flowEventContextConverter.convert(
-            result.copy(outputRecords = result.outputRecords + cleanupEvents)
+            result.copy(outputRecords = outputs)
         )
     }
+
+    private fun getInputEventHash(event: Record<String, FlowEvent>) =
+        event.headers.find { it.first == INPUT_HASH_HEADER }?.second ?: throw IllegalStateException("Record with key ${event.key} is " +
+                "missing expected record header '$INPUT_HASH_HEADER'")
+
+    private fun isSyncResponse(event: Record<String, FlowEvent>) =
+        event.headers.find { it.first == SYNC_RESPONSE_HEADER }?.second == "true"
 
     /**
      * Executed within the [tryWithBackoff] function whenever a retry attempt is about to be made.

@@ -358,6 +358,8 @@ class CryptoProcessorImpl @Activate constructor(
     ) {
         val retryingConfig = event.config.getConfig(CRYPTO_CONFIG).retrying()
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+        val defaultUnmanagedWrappingKeyName =
+            event.config.getConfig(CRYPTO_CONFIG).getConfig(HSM).getString(DEFAULT_WRAPPING_KEY)
         val wrappingRepositoryFactory = { tenantId: String ->
             WrappingRepositoryImpl(
                 entityManagerFactory = getEntityManagerFactory(
@@ -389,9 +391,15 @@ class CryptoProcessorImpl @Activate constructor(
         createHsmRegSubscription(coordinator, messagingConfig, retryingConfig)
         createRekeySubscription(
             coordinator, messagingConfig, wrappingRepositoryFactory, signingRepositoryFactory,
-            stateManager, cordaAvroSerializationFactory
+            stateManager, cordaAvroSerializationFactory, defaultUnmanagedWrappingKeyName
         )
-        createRewrapSubscription(coordinator, messagingConfig, stateManager, cordaAvroSerializationFactory)
+        createRewrapSubscription(
+            coordinator,
+            messagingConfig,
+            stateManager,
+            cordaAvroSerializationFactory,
+            defaultUnmanagedWrappingKeyName
+        )
         createSessionEncryptionSubscription(coordinator, retryingConfig)
         createSessionDecryptionSubscription(coordinator, retryingConfig)
     }
@@ -403,6 +411,7 @@ class CryptoProcessorImpl @Activate constructor(
         signingRepositoryFactory: SigningRepositoryFactory,
         stateManager: StateManager?,
         cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+        defaultUnmanagedWrappingKeyName: String,
     ) {
         val rekeyGroupName = "crypto.key.rotation.ops"
         val publisherConfig = PublisherConfig("RekeyBusProcessor", false)
@@ -419,6 +428,7 @@ class CryptoProcessorImpl @Activate constructor(
                     rekeyPublisher,
                     stateManager,
                     cordaAvroSerializationFactory,
+                    defaultUnmanagedWrappingKeyName,
                 )
 
                 val subscription = subscriptionFactory.createDurableSubscription(
@@ -447,8 +457,14 @@ class CryptoProcessorImpl @Activate constructor(
         messagingConfig: SmartConfig,
         stateManager: StateManager?,
         cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+        defaultUnmanagedWrappingKeyName: String,
     ) {
-        val rewrapProcessor = CryptoRewrapBusProcessor(cryptoService, stateManager, cordaAvroSerializationFactory)
+        val rewrapProcessor = CryptoRewrapBusProcessor(
+            cryptoService,
+            stateManager,
+            cordaAvroSerializationFactory,
+            defaultUnmanagedWrappingKeyName,
+        )
         val rewrapGroupName = "crypto.key.rotation.individual"
         coordinator.createManagedResource(REWRAP_SUBSCRIPTION) {
             subscriptionFactory.createDurableSubscription(
