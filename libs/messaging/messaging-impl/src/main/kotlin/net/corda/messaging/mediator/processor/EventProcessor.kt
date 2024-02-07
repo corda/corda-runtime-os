@@ -6,6 +6,7 @@ import net.corda.messaging.api.mediator.MediatorInputService
 import net.corda.messaging.api.mediator.MediatorInputService.Companion.INPUT_HASH_HEADER
 import net.corda.messaging.api.mediator.MediatorInputService.Companion.SYNC_RESPONSE_HEADER
 import net.corda.messaging.api.mediator.MediatorMessage
+import net.corda.messaging.api.mediator.MediatorTraceLog
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.RoutingDestination
@@ -59,7 +60,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                     inputState?.metadata
                 )
             }
-
+            MediatorTraceLog.recordEvent(key.toString(), "State Loaded")
             val newInputs = EventProcessingInput(key, allConsumerInputs, inputState)
             processRecords(newInputs, processorState)
         }
@@ -107,7 +108,9 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         val queue = ArrayDeque(listOf(consumerInputEvent))
         while (queue.isNotEmpty()) {
             val event = getNextEvent(queue, consumerInputHash)
+            MediatorTraceLog.recordEvent(key.toString(), "Dispatching Event...")
             val response = config.messageProcessor.onNext(processorStateUpdated, event)
+            MediatorTraceLog.recordEvent(key.toString(), "Dispatching event completed")
             processorStateUpdated = response.updatedState
             val (syncEvents, asyncEvents) = response.responseEvents.map { convertToMessage(it) }.partition {
                 messageRouter.getDestination(it).type == RoutingDestination.Type.SYNCHRONOUS
@@ -151,12 +154,13 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     ): List<Record<K, E>> {
         return syncEvents.mapNotNull { message ->
             val destination = messageRouter.getDestination(message)
-
+            MediatorTraceLog.recordEvent(key.toString(), "Start sync Event '${destination.endpoint}'...")
             @Suppress("UNCHECKED_CAST")
             val reply = with(destination) {
                 message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
                 client.send(message) as MediatorMessage<E>?
             }
+            MediatorTraceLog.recordEvent(key.toString(), "Sync Event '${destination.endpoint}' completed")
             reply?.let {
                 addTraceContextToRecord(
                     Record(

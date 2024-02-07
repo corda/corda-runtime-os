@@ -5,6 +5,7 @@ import net.corda.messaging.api.constants.MessagingMetadataKeys.PROCESSING_FAILUR
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorConsumer
 import net.corda.messaging.api.mediator.MediatorMessage
+import net.corda.messaging.api.mediator.MediatorTraceLog
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.config.MediatorConsumerConfig
@@ -15,6 +16,7 @@ import net.corda.messaging.mediator.MediatorSubscriptionState
 import net.corda.messaging.mediator.MultiSourceEventMediatorImpl
 import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.messaging.mediator.metrics.EventMediatorMetrics
+import net.corda.messaging.mediator.metrics.MediatorBatchMetrics
 import net.corda.messaging.utils.toRecord
 import net.corda.taskmanager.TaskManager
 import net.corda.utilities.concurrent.getOrThrow
@@ -43,7 +45,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     private val messageRouter: MessageRouter,
     private val mediatorSubscriptionState: MediatorSubscriptionState,
     private val eventProcessor: EventProcessor<K, S, E>,
-    private val stateManagerHelper: StateManagerHelper<S>
+    private val stateManagerHelper: StateManagerHelper<S>,
 ) {
     private companion object {
         private const val EVENT_PROCESSING_TIMEOUT_MILLIS = 120000L // 120 seconds
@@ -75,19 +77,24 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 pollAndProcessEvents(consumer)
                 attempts = 0
             } catch (exception: Exception) {
-                val cause = if (exception is CompletionException) { exception.cause ?: exception} else exception
+                val cause = if (exception is CompletionException) {
+                    exception.cause ?: exception
+                } else {
+                    exception
+                }
                 when (cause) {
                     is CordaMessageAPIIntermittentException -> {
                         log.warn(
                             "Multi-source event mediator ${config.name} failed to process records, " +
-                                    "Retrying poll and process. Attempts: $attempts."
+                                "Retrying poll and process. Attempts: $attempts.",
                         )
                         consumer?.resetEventOffsetPosition()
                     }
+
                     else -> {
-                        log.debug { "${exception.message} Attempts: $attempts. Fatal error occurred!: $exception"}
+                        log.debug { "${exception.message} Attempts: $attempts. Fatal error occurred!: $exception" }
                         consumer?.close()
-                        //rethrow to break out of processing topic
+                        // rethrow to break out of processing topic
                         throw cause
                     }
                 }
@@ -104,11 +111,13 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      * @param consumer message bus consumer
      */
     private fun pollAndProcessEvents(consumer: MediatorConsumer<K, E>) {
+        val batchMetrics = MediatorBatchMetrics()
         val messages = consumer.poll(pollTimeout)
         val startTimestamp = System.nanoTime()
         val polledRecords = messages.map { it.toRecord() }.groupBy { it.key }
         if (messages.isNotEmpty()) {
             val states = stateManager.get(polledRecords.keys.map { it.toString() })
+            batchMetrics.pollCompleted(states.size)
             val inputs = generateInputs(states.values, polledRecords)
             var groups = groupAllocator.allocateGroups(inputs, config)
 
@@ -117,11 +126,14 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 val outputs = groups.filter {
                     it.isNotEmpty()
                 }.map { group ->
+                    val batchGroupMetrics = batchMetrics.createGroupBatch(group.size)
                     val future = taskManager.executeShortRunningTask {
+                        MediatorTraceLog.init(batchGroupMetrics.logs, batchGroupMetrics.scheduledTime)
+                        batchGroupMetrics.start()
                         eventProcessor.processEvents(group)
                     }
-                    Pair(future, group)
-                }.map { (future, group) ->
+                    Triple(future, group, batchGroupMetrics)
+                }.map { (future, group, batchGroupMetrics) ->
                     try {
                         future.getOrThrow(config.processorTimeout)
                     } catch (e: TimeoutException) {
@@ -130,7 +142,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                             val state = stateManagerHelper.failStateProcessing(
                                 key.toString(),
                                 oldState,
-                                "timeout occurred while processing events"
+                                "timeout occurred while processing events",
                             )
                             val stateChange = if (oldState != null) {
                                 StateChangeAndOperation.Update(state)
@@ -139,6 +151,8 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                             }
                             EventProcessingOutput(listOf(), stateChange)
                         }
+                    }.apply {
+                        batchGroupMetrics.complete()
                     }
                 }.fold(mapOf<K, EventProcessingOutput>()) { acc, cur ->
                     acc + cur
@@ -147,16 +161,18 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 }
 
                 // Persist state changes, send async outputs and setup to reprocess states that fail to persist
-                val failedStates = processOutputs(outputs)
+                val failedStates = processOutputs(outputs, batchMetrics)
                 val failedRecords = polledRecords.filter { (key, _) ->
                     key.toString() in failedStates
                 }
                 groups = groupAllocator.allocateGroups(generateInputs(failedStates.values, failedRecords), config)
             }
+
             metrics.commitTimer.recordCallable {
                 consumer.syncCommitOffsets()
             }
         }
+        batchMetrics.batchCompleted()
         metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
     }
 
@@ -165,7 +181,10 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      *
      * The input records must be the set of records that should be processed.
      */
-    private fun generateInputs(states: Collection<State>, records: Map<K, List<Record<K, E>>>) : List<EventProcessingInput<K, E>> {
+    private fun generateInputs(
+        states: Collection<State>,
+        records: Map<K, List<Record<K, E>>>,
+    ): List<EventProcessingInput<K, E>> {
         val (runningStates, failedStates) = states.partition {
             it.metadata[PROCESSING_FAILURE] != true
         }
@@ -188,7 +207,10 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      * Will send any asynchronous outputs back to the bus for states which saved successfully.
      * @return a map of all the states that failed to save by their keys.
      */
-    private fun processOutputs(outputs: Map<String, EventProcessingOutput>): Map<String, State> {
+    private fun processOutputs(
+        outputs: Map<String, EventProcessingOutput>,
+        batchMetrics: MediatorBatchMetrics,
+    ): Map<String, State> {
         val statesToCreate = mutableListOf<State>()
         val statesToUpdate = mutableListOf<State>()
         val statesToDelete = mutableListOf<State>()
@@ -209,8 +231,9 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         }.toMap()
         val failedKeys = failedToCreate.keys + failedToDelete.keys + failedToUpdate.keys
         val outputsToSend = (outputs - failedKeys).values.flatMap { it.asyncOutputs }
+        batchMetrics.batchStatePersisted()
         sendAsynchronousEvents(outputsToSend)
-
+        batchMetrics.batchOutputsCommitted()
         return failedToCreate + failedToDelete + failedToUpdateOptimisticLockFailure
     }
 

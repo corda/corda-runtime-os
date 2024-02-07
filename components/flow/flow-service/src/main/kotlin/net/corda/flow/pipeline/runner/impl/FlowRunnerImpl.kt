@@ -23,6 +23,7 @@ import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.flow.utils.toMap
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.messaging.api.mediator.MediatorTraceLog
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_REQUIRE_CLOSE
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_TIMEOUT_MS
@@ -159,7 +160,9 @@ class FlowRunnerImpl @Activate constructor(
     ): FiberFuture {
         val checkpoint = context.checkpoint
         val fiberContext = flowFiberExecutionContextFactory.createFiberExecutionContext(context)
+        MediatorTraceLog.recordEvent(context.inputEvent.flowId, "Fiber context created")
         val flow = createFlow(fiberContext.sandboxGroupContext)
+        MediatorTraceLog.recordEvent(context.inputEvent.flowId, "Flow created")
         val stackItem = fiberContext.flowStackService.pushWithContext(
             flow = flow.logic,
             contextUserProperties = contextUserProperties,
@@ -168,6 +171,7 @@ class FlowRunnerImpl @Activate constructor(
         )
         updateFlowStackItem(stackItem)
         fiberContext.sandboxGroupContext.dependencyInjector.injectServices(flow.logic)
+        MediatorTraceLog.recordEvent(context.inputEvent.flowId, "Services Injected")
         return flowFiberFactory.createAndStartFlowFiber(fiberContext, checkpoint.flowId, flow)
     }
 
