@@ -28,7 +28,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Crypto.REWRAP_MESSAGE_TOPIC
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.LoggerFactory
-import java.lang.IllegalStateException
 import java.time.Instant
 import java.util.UUID
 
