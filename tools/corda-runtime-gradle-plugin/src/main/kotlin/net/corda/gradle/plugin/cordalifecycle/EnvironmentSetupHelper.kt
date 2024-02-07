@@ -11,31 +11,8 @@ import java.nio.file.Paths
 
 class EnvironmentSetupHelper {
 
-    @Suppress("LongParameterList")
-    fun downloadCombinedWorker(
-        combinedWorkerFileName: String,
-        combinedWorkerVersion: String,
-        cordaReleaseVersion: String,
-        targetFilePath: String,
-        artifactoryUsername: String,
-        artifactoryPassword: String
-    ) {
-        val url = if (nameContainsRcOrHc(combinedWorkerFileName) || nameContainsAlphaOrBeta(combinedWorkerFileName)) {
-            setupAuthentication(artifactoryUsername, artifactoryPassword)
-            URL(
-                "https://software.r3.com/artifactory/corda-os-maven/net/corda/" +
-                        "corda-combined-worker/$combinedWorkerVersion/$combinedWorkerFileName"
-            )
-        } else URL("https://github.com/corda/corda-runtime-os/releases/download/$cordaReleaseVersion/$combinedWorkerFileName")
-        if (!File(targetFilePath).exists()) {
-            File(targetFilePath).parentFile.mkdirs()
-            url.openStream().use { Files.copy(it, Paths.get(targetFilePath)) }
-        }
-    }
-
     fun downloadNotaryCpb(
         notaryCpbVersion: String,
-        cordaReleaseVersion: String,
         targetFilePath: String,
         artifactoryUsername: String,
         artifactoryPassword: String
@@ -47,10 +24,13 @@ class EnvironmentSetupHelper {
                         "notary-plugin-non-validating-server/$notaryCpbVersion/" +
                         "notary-plugin-non-validating-server-$notaryCpbVersion-package.cpb"
             )
-        } else URL(
-            "https://github.com/corda/corda-runtime-os/releases/download/$cordaReleaseVersion/" +
-                    "notary-plugin-non-validating-server-$notaryCpbVersion-package.cpb"
-        )
+        } else {
+            val cordaReleaseVersion = "release-$notaryCpbVersion"
+            URL(
+                "https://github.com/corda/corda-runtime-os/releases/download/$cordaReleaseVersion/" +
+                        "notary-plugin-non-validating-server-$notaryCpbVersion-package.cpb"
+            )
+        }
         if (!File(targetFilePath).exists()) {
             File(targetFilePath).parentFile.mkdirs()
             url.openStream().use { Files.copy(it, Paths.get(targetFilePath)) }
@@ -59,12 +39,12 @@ class EnvironmentSetupHelper {
 
     fun getConfigVersion(
         cordaClusterURL: String,
-        cordaRpcUser: String,
-        cordaRpcPassword: String,
+        cordaRestUser: String,
+        cordaRestPassword: String,
         configSection: String
     ): Int {
         return Unirest.get("$cordaClusterURL/api/v1/config/$configSection")
-            .basicAuth(cordaRpcUser, cordaRpcPassword)
+            .basicAuth(cordaRestUser, cordaRestPassword)
             .asJson()
             .ifSuccess {}.body.`object`["version"].toString().toInt()
     }
@@ -72,14 +52,14 @@ class EnvironmentSetupHelper {
     @Suppress("LongParameterList")
     fun sendUpdate(
         cordaClusterURL: String,
-        cordaRpcUser: String,
-        cordaRpcPassword: String,
+        cordaRestUser: String,
+        cordaRestPassword: String,
         configSection: String,
         configBody: String,
         configVersion: Int
     ) {
         Unirest.put("$cordaClusterURL/api/v1/config")
-            .basicAuth(cordaRpcUser, cordaRpcPassword)
+            .basicAuth(cordaRestUser, cordaRestPassword)
             .body(
                 """
                 {

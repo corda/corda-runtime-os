@@ -209,7 +209,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
                 val deserializedValueOfOneRecord =
                     checkNotNull(unmanagedKeyStatusDeserializer.deserialize(records.first().value))
                 return KeyRotationStatusResponse(
-                    deserializedValueOfOneRecord.oldParentKeyAlias,
+                    "master",
                     rotationStatus,
                     deserializedValueOfOneRecord.createdTimestamp,
                     getLatestTimestamp(records),

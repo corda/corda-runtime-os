@@ -9,7 +9,6 @@ import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.Health
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
 import net.corda.applications.workers.workercommon.Metrics
-import net.corda.applications.workers.workercommon.StateManagerConfigHelper.createStateManagerConfigFromCli
 import net.corda.applications.workers.workercommon.StateManagerConfigHelper.createStateManagerConfigFromClusterDb
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.createConfigFromParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
@@ -106,7 +105,7 @@ class CombinedWorker @Activate constructor(
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private const val DEFAULT_BOOT_STATE_MANAGER_TYPE = "DATABASE"
+        private const val DEFAULT_BOOT_STATE_MANAGER_TYPE = "Database"
         private const val MESSAGE_BUS_CONFIG_PATH_SUFFIX = "_messagebus"
     }
 
@@ -128,13 +127,7 @@ class CombinedWorker @Activate constructor(
         val dbUrl = params.databaseParams[DatabaseConfig.JDBC_URL] ?: "jdbc:postgresql://localhost:5432/cordacluster"
 
         val dbConfig = createConfigFromParams(BootConfig.BOOT_DB, params.databaseParams)
-
-        val stateManagerConfig = if (params.defaultParams.stateManagerParams.isEmpty()) {
-            createStateManagerConfigFromClusterDb(dbConfig)
-        } else {
-            createStateManagerConfigFromCli(params.defaultParams.stateManagerParams)
-        }
-
+        val stateManagerConfig = createStateManagerConfigFromClusterDb(dbConfig)
         val preparedDbConfig = prepareDbConfig(dbConfig)
 
         if (printHelpOrVersion(params.defaultParams, CombinedWorker::class.java, shutDownService)) return

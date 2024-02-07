@@ -8,6 +8,6 @@
       "pass": "password",
       "user": "user"
     },
-    "type": "DATABASE"
+    "type": "Database"
   }
 }
