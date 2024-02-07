@@ -1,0 +1,30 @@
+version: '2'
+services:
+  postgresql:
+    image: postgres:14.10
+    restart: unless-stopped
+    tty: true
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=cordacluster
+    ports:
+      - 5432:5432
+
+  corda:
+    image: corda-os-docker.software.r3.com/corda-os-combined-worker:5.2.0.0-beta-1707102610189
+    depends_on:
+      - postgresql
+    command: [ "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005",
+               "-mbus.busType=DATABASE",
+               "-spassphrase=password",
+               "-ssalt=salt",
+               "-ddatabase.user=user",
+               "-ddatabase.pass=password",
+               "-ddatabase.jdbc.url=jdbc:postgresql://postgresql:5432/cordacluster",
+               "-ddatabase.jdbc.directory=/opt/jdbc-driver/"
+    ]
+    ports:
+      - 8888:8888
+      - 7004:7004
+      - 5005:5005

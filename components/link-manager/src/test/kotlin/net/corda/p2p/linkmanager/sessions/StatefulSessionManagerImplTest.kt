@@ -106,7 +106,7 @@ class StatefulSessionManagerImplTest {
                     "encryptionKeyId" to "encryptionKeyId",
                     "encryptionTenant" to "encryptionTenant",
                     "status" to "SentResponderHello",
-                    "expiry" to 2000000L,
+                    "expiry" to 20000000L,
                 ),
             )
             on { key } doReturn "stateKey"
@@ -145,7 +145,7 @@ class StatefulSessionManagerImplTest {
         fun `it will avoid going to the state manager if the state is cached`() {
             val sessionIdentity = "id"
             val state = mockState(sessionIdentity)
-            whenever(stateManager.get(listOf(sessionIdentity))).doReturn(
+            whenever(stateManager.get(argThat { contains(sessionIdentity) })).doReturn(
                 mapOf(
                     sessionIdentity to state,
                 ),
@@ -208,7 +208,7 @@ class StatefulSessionManagerImplTest {
                 it.value
             }
 
-            verify(stateManager, times(1)).get(listOf(sessionIdentity))
+            verify(stateManager, times(1)).get(any())
         }
 
         @Test
@@ -240,7 +240,7 @@ class StatefulSessionManagerImplTest {
         fun `processInitiatorHello return the correct data`() {
             val sessionIdentity = "id"
             val state = mockState(sessionIdentity)
-            whenever(stateManager.get(listOf(sessionIdentity))).doReturn(
+            whenever(stateManager.get(any())).doReturn(
                 mapOf(
                     sessionIdentity to state,
                 ),

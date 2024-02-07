@@ -74,11 +74,4 @@ class DefaultWorkerParams(healthPortOverride: Int = WORKER_SERVER_PORT) {
     @Option(names = ["--metrics-drop-labels"], description = ["A regular expression for the names of metric labels " +
             "that Corda should drop; if unspecified, defaults to keeping all labels"])
     var metricsDropLabels: String? = null
-
-    // todo CORE-19372 remove this CLI arg, it will be replaced with config file
-    @Option(
-        names = ["--${BootConfig.BOOT_STATE_MANAGER}"],
-        description = ["Configuration for the state manager."]
-    )
-    var stateManagerParams = emptyMap<String, String>()
 }

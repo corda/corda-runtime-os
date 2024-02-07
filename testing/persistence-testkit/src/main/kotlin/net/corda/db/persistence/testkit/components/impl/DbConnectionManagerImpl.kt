@@ -10,7 +10,6 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesSet
-import org.osgi.framework.BundleContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
@@ -31,18 +30,12 @@ private data class NamedDataSource(val id: UUID, val name: String, val dataSourc
 @ServiceRanking(Int.MAX_VALUE)
 class DbConnectionManagerImpl @Activate constructor(
     @Reference
-    private val emff: EntityManagerFactoryFactory,
-    bundleContext: BundleContext
+    private val emff: EntityManagerFactoryFactory
 ) : DbConnectionManager, DataSourceAdmin {
     private val logger = LoggerFactory.getLogger(this::class.java)
 
     private val dataSources = ConcurrentHashMap<UUID, NamedDataSource>()
     private var smartConfig: SmartConfig? = null
-    private val schemaName: String
-
-    init {
-        schemaName = bundleContext.getProperty("testkit.schema.name") ?: "DUMMY-SCHEMA"
-    }
 
     override val isRunning: Boolean
         get() = true
@@ -61,10 +54,14 @@ class DbConnectionManagerImpl @Activate constructor(
 
     override fun getOrCreateDataSource(id: UUID, name: String): CloseableDataSource {
         return dataSources.computeIfAbsent(id) { dbId ->
+            val schemaName = createSchemaName(id, name)
+            logger.info("Create EMF for schema: $schemaName")
             val configuration = DbUtils.getEntityManagerConfiguration(
                 "testkit-db-manager-db-$schemaName",
-                schemaName = "$schemaName$name".replace("-", ""),
-                createSchema = true
+                schemaName = schemaName,
+                createSchema = true,
+                dbUser = "u_$id",
+                dbPassword = "p_${UUID.randomUUID()}"
             )
             NamedDataSource(dbId, name, configuration.dataSource)
         }.dataSource
