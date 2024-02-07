@@ -48,7 +48,6 @@ import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.time.Clock
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.exceptions.CryptoException
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
@@ -255,17 +254,17 @@ internal class StatefulSessionManagerImpl(
             )
                 .entries
                 .mapNotNull { (sessionId, state) ->
-                    val session = try {
+                    val session =
                         stateConvertor.toCordaSessionState(
                             state,
                             sessionManagerImpl.revocationCheckerClient::checkRevocation,
-                        ).sessionData as? Session
-                    } catch (e: CryptoException) {
+                        )?.sessionData as? Session
+                    if (session == null) {
                         val counterparties = state.toCounterparties()
                         sendSessionReEstablishmentMessage(counterparties.ourId, counterparties.counterpartyId, sessionId)
-                        null
+                        return@mapNotNull null
                     }
-                    session?.let {
+                    session.let {
                         sessionIdsNotInCache[sessionId]?.let { traceables ->
                             val inboundSession =
                                 SessionManager.SessionDirection.Inbound(
@@ -294,9 +293,9 @@ internal class StatefulSessionManagerImpl(
                         stateConvertor.toCordaSessionState(
                             state,
                             sessionManagerImpl.revocationCheckerClient::checkRevocation,
-                        ).sessionData as? Session
+                        )?.sessionData as? Session ?: return@mapNotNull null
                     val sessionId = state.metadata.toOutbound().sessionId
-                    session?.let {
+                    session.let {
                         sessionIdsNotInCache[sessionId]?.let {
                             val outboundSession =
                                 SessionManager.SessionDirection.Outbound(
@@ -601,7 +600,7 @@ internal class StatefulSessionManagerImpl(
             stateConvertor.toCordaSessionState(
                 this,
                 sessionManagerImpl.revocationCheckerClient::checkRevocation,
-            ).sessionData
+            )?.sessionData
         return when (sessionData) {
             is AuthenticatedSession, is AuthenticatedEncryptionSession ->
                 SessionEstablished(sessionData as Session, counterParties)
@@ -656,7 +655,7 @@ internal class StatefulSessionManagerImpl(
             stateConvertor.toCordaSessionState(
                 this,
                 sessionManagerImpl.revocationCheckerClient::checkRevocation,
-            ).message ?: return null
+            )?.message ?: return null
         val outboundMetadata = metadata.toOutbound()
         val updatedMetadata = outboundMetadata.copy(
             commonData = outboundMetadata.commonData.copy(
@@ -814,7 +813,7 @@ internal class StatefulSessionManagerImpl(
                         stateConvertor.toCordaSessionState(
                             state,
                             sessionManagerImpl.revocationCheckerClient::checkRevocation,
-                        ).message
+                        )?.message ?: return null
                     val newState =
                         State(
                             key = state.key,
@@ -844,7 +843,7 @@ internal class StatefulSessionManagerImpl(
                     stateConvertor.toCordaSessionState(
                         state,
                         sessionManagerImpl.revocationCheckerClient::checkRevocation,
-                    ).sessionData as AuthenticationProtocolInitiator
+                    )?.sessionData as? AuthenticationProtocolInitiator ?: return null
                 val counterparties = state.getSessionCounterparties()
 
                 sessionManagerImpl.processResponderHello(
@@ -888,7 +887,7 @@ internal class StatefulSessionManagerImpl(
                         stateConvertor.toCordaSessionState(
                             state,
                             sessionManagerImpl.revocationCheckerClient::checkRevocation,
-                        ).message
+                        )?.message ?: return null
                     val newState =
                         State(
                             key = state.key,
@@ -937,7 +936,7 @@ internal class StatefulSessionManagerImpl(
                     stateConvertor.toCordaSessionState(
                         state,
                         sessionManagerImpl.revocationCheckerClient::checkRevocation,
-                    ).sessionData as? AuthenticationProtocolResponder
+                    )?.sessionData as? AuthenticationProtocolResponder
                 if (sessionData == null) {
                     logger.warn(
                         "Session ${state.key} has status SentResponderHello by the saved data is" +
@@ -980,7 +979,7 @@ internal class StatefulSessionManagerImpl(
                         stateConvertor.toCordaSessionState(
                             state,
                             sessionManagerImpl.revocationCheckerClient::checkRevocation,
-                        ).message
+                        )?.message ?: return null
                     val newState =
                         State(
                             key = state.key,
@@ -1007,7 +1006,7 @@ internal class StatefulSessionManagerImpl(
                     stateConvertor.toCordaSessionState(
                         state,
                         sessionManagerImpl.revocationCheckerClient::checkRevocation,
-                    ).sessionData as AuthenticationProtocolInitiator
+                    )?.sessionData as? AuthenticationProtocolInitiator ?: return null
                 val counterparties = state.getSessionCounterparties()
 
                 sessionManagerImpl.processResponderHandshake(

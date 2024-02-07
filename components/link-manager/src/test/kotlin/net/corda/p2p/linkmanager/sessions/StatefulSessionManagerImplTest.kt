@@ -29,7 +29,6 @@ import net.corda.schema.Schemas
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.utilities.time.Clock
-import net.corda.v5.crypto.exceptions.CryptoException
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
@@ -39,7 +38,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.same
@@ -217,7 +215,7 @@ class StatefulSessionManagerImplTest {
         fun `it will publish correct message if session state cannot be decrypted`() {
             val testSessionId = "test-session"
             val state = mockState(testSessionId)
-            whenever(stateConvertor.toCordaSessionState(same(state), any())).doThrow(CryptoException("error"))
+            whenever(stateConvertor.toCordaSessionState(same(state), any())).doReturn(null)
             whenever(stateManager.get(setOf(testSessionId))).doReturn(
                 mapOf(
                     testSessionId to state,
