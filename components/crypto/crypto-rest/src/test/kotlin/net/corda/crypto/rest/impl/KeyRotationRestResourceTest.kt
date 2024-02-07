@@ -254,7 +254,7 @@ class KeyRotationRestResourceTest {
         }
     }
 
-    // We need two wrapping key aliases - defaultMasterKeyAlias and anotherMasterKeyAlias
+    // We need two wrapping key aliases - masterKeyAlias2 and masterKeyAlias3
     private fun createCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any): SmartConfig =
         SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
             .withValue(
