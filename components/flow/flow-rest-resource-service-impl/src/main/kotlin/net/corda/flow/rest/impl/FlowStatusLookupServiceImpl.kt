@@ -8,7 +8,6 @@ import net.corda.flow.rest.FlowStatusCacheService
 import net.corda.flow.rest.flowstatus.FlowStatusUpdateListener
 import net.corda.flow.rest.impl.utils.hash
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.StateManager
@@ -22,7 +21,6 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import net.corda.schema.Schemas.Rest.REST_FLOW_STATUS_CLEANUP_TOPIC
 import net.corda.schema.Schemas.ScheduledTask.SCHEDULED_TASK_TOPIC_FLOW_STATUS_PROCESSOR
-import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.StateManagerConfig.StateType
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -55,11 +53,11 @@ class FlowStatusLookupServiceImpl @Activate constructor(
     override fun stop() = lifecycleCoordinator.stop()
     override val isRunning = true
 
-    override fun initialise(config: Map<String, SmartConfig>) {
-        val messagingConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-        val stateManagerConfig = config.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)
-        val restConfig = config.getConfig(ConfigKeys.REST_CONFIG)
-
+    override fun initialise(
+        messagingConfig: SmartConfig,
+        stateManagerConfig: SmartConfig,
+        restConfig: SmartConfig
+    ) {
         stateManager?.stop()
         val stateManagerNew = stateManagerFactory.create(stateManagerConfig, StateType.FLOW_STATUS).also { it.start() }
 
