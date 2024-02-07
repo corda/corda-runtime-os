@@ -64,14 +64,15 @@ class UtxoRepositoryImpl(
     }
 
     @Suppress("Unused")
-    @Activate constructor(
+    @Activate
+    constructor(
         @Reference(service = SerializationService::class)
         serializationService: SerializationService,
         @Reference(service = WireTransactionFactory::class)
         wireTransactionFactory: WireTransactionFactory,
         @Reference(service = UtxoQueryProvider::class)
         queryProvider: UtxoQueryProvider
-    ): this(BatchPersistenceServiceImpl(), serializationService, wireTransactionFactory, queryProvider)
+    ) : this(BatchPersistenceServiceImpl(), serializationService, wireTransactionFactory, queryProvider)
 
     override fun findTransaction(
         entityManager: EntityManager,
