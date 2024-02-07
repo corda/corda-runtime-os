@@ -1,7 +1,6 @@
 package net.corda.gradle.plugin.cordalifecycle
 
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
-import net.corda.gradle.plugin.retry
 import java.io.File
 import java.io.FileOutputStream
 import java.io.PrintStream
@@ -9,91 +8,48 @@ import java.util.*
 
 class CordaLifecycleHelper {
 
-    fun startPostgresContainer(containerName: String) : Process {
-        val dockerCmdList = listOf(
-            "docker",
-            "run",
-            "-d",
-            "--rm",
-            "-p",
-            "5432:5432",
-            "--name",
-            containerName,
-            "-e",
-            "POSTGRES_DB=cordacluster",
-            "-e",
-            "POSTGRES_USER=postgres",
-            "-e",
-            "POSTGRES_PASSWORD=password",
-            "postgres:14.10"
-        )
-
-        val dockerProcessBuilder = ProcessBuilder(dockerCmdList)
-        val dockerProcess = dockerProcessBuilder.start()
-        dockerProcess.waitFor()
-        return dockerProcess
-    }
-
-    fun waitForContainerStatus(containerName: String) {
-        val dockerStatusCmd = listOf(
-            "docker",
-            "ps",
-            "-f",
-            "name=$containerName",
-            "--format",
-            "{{.State}}"
-        )
-        val dockerProcess = ProcessBuilder(dockerStatusCmd).start()
-        dockerProcess.waitFor()
-
-        var containerStatus: String
-        retry {
-            containerStatus = dockerProcess.inputStream.bufferedReader().use { it.readText() }
-            isContainerRunning(containerName, containerStatus)
-        }
-    }
-
-    private fun isContainerRunning(containerName: String, containerStatus: String) {
-        if (!containerStatus.contains("running")) {
-            throw CordaRuntimeGradlePluginException("Expected $containerName to be `running` but was `$containerStatus`")
-        }
-    }
-
-    fun stopDockerContainer(containerName: String) {
-        ProcessBuilder("docker", "stop", containerName).start()
-    }
-
-    fun startCombinedWorkerProcess(
+    fun startCombinedWorkerWithDockerCompose(
         pidFilePath: String,
-        combinedWorkerJarFilePath: String,
-        javaBinDir: String,
-        jdbcDir: String,
-        projectRootDir: String
+        composeFilePath: String,
+        dockerProjectName: String
     ) : Process {
-        val pidStore = PrintStream(FileOutputStream(File(pidFilePath)))
-        val cordaCmdList = listOf(
-            "$javaBinDir/java",
-            "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005",
-            "-Dlog4j.configurationFile=$projectRootDir/config/log4j2.xml",
-            "-Dco.paralleluniverse.fibers.verifyInstrumentation=true",
-            "-jar",
-            combinedWorkerJarFilePath,
-            "--instance-id=0",
-            "-mbus.busType=DATABASE",
-            "-spassphrase=password",
-            "-ssalt=salt",
-            "-ddatabase.user=user",
-            "-ddatabase.pass=password",
-            "-ddatabase.jdbc.url=jdbc:postgresql://localhost:5432/cordacluster",
-            "-ddatabase.jdbc.directory=$jdbcDir"
-        )
+        if (!File(composeFilePath).exists()) {
+            throw CordaRuntimeGradlePluginException("Unable to locate compose file: $composeFilePath")
+        }
 
-        val cordaProcessBuilder = ProcessBuilder(cordaCmdList)
+        val pidStore = PrintStream(FileOutputStream(File(pidFilePath)))
+        val cordaProcessBuilder = ProcessBuilder(
+            "docker",
+            "compose",
+            "-f",
+            composeFilePath,
+            "-p",
+            dockerProjectName,
+            "up",
+            "--force-recreate"
+        )
         cordaProcessBuilder.redirectErrorStream(true)
         val cordaProcess = cordaProcessBuilder.start()
         pidStore.print(cordaProcess.pid())
         cordaProcess.inputStream.transferTo(System.out)
         return cordaProcess
+    }
+
+    fun stopCombinedWorkerWithDockerCompose(
+        composeFilePath: String,
+        dockerProjectName: String
+    ) {
+        ProcessBuilder(
+            "docker",
+            "compose",
+            "-f",
+            composeFilePath,
+            "-p",
+            dockerProjectName,
+            "down"
+        )
+        .start()
+        .waitFor()
     }
 
     fun stopCombinedWorkerProcess(pidFilePath: String) {

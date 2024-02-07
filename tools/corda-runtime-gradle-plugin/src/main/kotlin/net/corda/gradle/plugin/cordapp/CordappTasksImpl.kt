@@ -153,32 +153,32 @@ class CordappTasksImpl(var pc: ProjectContext) {
         val helper = DeployCpiHelper()
         helper.uploadCertificate(
             pc.cordaClusterURL,
-            pc.cordaRpcUser,
-            pc.cordaRpcPassword,
+            pc.cordaRestUser,
+            pc.cordaRestPassword,
             pc.gradleDefaultCertAlias,
             pc.gradleDefaultCertFilePath
         )
         pc.logger.quiet("Certificate '${pc.gradleDefaultCertAlias}' uploaded.")
         helper.uploadCertificate(
             pc.cordaClusterURL,
-            pc.cordaRpcUser,
-            pc.cordaRpcPassword,
+            pc.cordaRestUser,
+            pc.cordaRestPassword,
             pc.keystoreAlias,
             pc.keystoreCertFilePath
         )
         pc.logger.quiet("Certificate '${pc.keystoreAlias}' uploaded.")
         helper.uploadCertificate(
             pc.cordaClusterURL,
-            pc.cordaRpcUser,
-            pc.cordaRpcPassword,
+            pc.cordaRestUser,
+            pc.cordaRestPassword,
             pc.r3RootCertKeyAlias,
             pc.r3RootCertFile
         )
         pc.logger.quiet("Certificate '${pc.r3RootCertKeyAlias}' uploaded.")
         val cpiUploadStatus = helper.uploadCpi(
             pc.cordaClusterURL,
-            pc.cordaRpcUser,
-            pc.cordaRpcPassword,
+            pc.cordaRestUser,
+            pc.cordaRestPassword,
             pc.corDappCpiFilePath,
             pc.corDappCpiName,
             pc.project.version.toString(),
@@ -188,8 +188,8 @@ class CordappTasksImpl(var pc: ProjectContext) {
         pc.logger.quiet("CPI ${pc.corDappCpiName} uploaded: ${cpiUploadStatus.cpiFileChecksum}")
         val notaryUploadStatus = helper.uploadCpi(
             pc.cordaClusterURL,
-            pc.cordaRpcUser,
-            pc.cordaRpcPassword,
+            pc.cordaRestUser,
+            pc.cordaRestPassword,
             pc.notaryCpiFilePath,
             pc.notaryCpiName,
             pc.project.version.toString(),
