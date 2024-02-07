@@ -230,7 +230,7 @@ class StateAndEventSubscriptionIntegrationTest {
         val onNextLatch1 = CountDownLatch(3)
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$EVENT_TOPIC3-group", EVENT_TOPIC3),
-            TestStateEventProcessorStrings(onNextLatch1, true, true, EVENTSTATE_OUTPUT3),
+            TestStateEventProcessorStrings(onNextLatch1, true, 1, EVENTSTATE_OUTPUT3),
             TEST_CONFIG,
             TestStateAndEventListenerStrings()
         )
@@ -259,7 +259,7 @@ class StateAndEventSubscriptionIntegrationTest {
         val onNextLatch2 = CountDownLatch(2)
         val stateEventSub2 = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$EVENT_TOPIC3-group-2", EVENT_TOPIC3),
-            TestStateEventProcessorStrings(onNextLatch2, true, false, EVENTSTATE_OUTPUT3),
+            TestStateEventProcessorStrings(onNextLatch2, true, -1, EVENTSTATE_OUTPUT3),
             TEST_CONFIG,
             TestStateAndEventListenerStrings(expectedCommitStates, commitStatesLatch, null,
                 expectedSyncState, syncPartitionLatch, expectedSyncState, losePartitionLatch)
@@ -343,7 +343,7 @@ class StateAndEventSubscriptionIntegrationTest {
         val stateAndEventLatch = CountDownLatch(10)
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$EVENT_TOPIC5-group", EVENT_TOPIC5),
-            TestStateEventProcessorStrings(stateAndEventLatch, true, false, EVENTSTATE_OUTPUT5, 20000),
+            TestStateEventProcessorStrings(stateAndEventLatch, true, -1, EVENTSTATE_OUTPUT5, 20000),
             shortIntervalTimeoutConfig,
             TestStateAndEventListenerStrings()
         )
@@ -400,7 +400,7 @@ class StateAndEventSubscriptionIntegrationTest {
 
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$EVENT_TOPIC6-group", EVENT_TOPIC6),
-            TestStateEventProcessorStrings(stateAndEventLatch, true, false, EVENTSTATE_OUTPUT6, 5000),
+            TestStateEventProcessorStrings(stateAndEventLatch, true, -1, EVENTSTATE_OUTPUT6, 5000),
             shortIntervalTimeoutConfig, TestStateAndEventListenerStrings(expectedCommitStates, onCommitLatch, 5000)
         )
         stateEventSub1.start()

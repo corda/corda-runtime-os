@@ -107,7 +107,7 @@ class ConsumerProcessorTest {
             getGroups(2, 4),
             listOf()
         )
-        whenever(stateManagerHelper.createOrUpdateState(any(), any(), any(), any())).thenReturn(mock())
+        whenever(stateManagerHelper.createOrUpdateState(any(), any(), any())).thenReturn(mock())
         whenever(stateManager.get(any())).thenReturn(mapOf())
 
         consumerProcessor.processTopic(getConsumerFactory(), getConsumerConfig())

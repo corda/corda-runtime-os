@@ -30,10 +30,12 @@ import org.mockito.kotlin.whenever
 class FlowEventPipelineFactoryImplTest {
 
     private val flowEvent = FlowEvent(FLOW_ID_1, ExternalEventResponse())
+    private val inputHash = "inputHash"
     private val checkpoint = Checkpoint()
     private val flowCheckpoint = mock<FlowCheckpoint>()
     private val flowRunner = mock<FlowRunner>()
-    private val flowEventContext = buildFlowEventContext(flowCheckpoint, flowEvent.payload)
+    private val flowEventContext =
+        buildFlowEventContext(checkpoint = flowCheckpoint, inputEventPayload = flowEvent.payload, inputRecordHash = inputHash)
     private val flowMetrics = flowEventContext.flowMetrics
     private val flowMetricsFactory = mock<FlowMetricsFactory>().apply {
         whenever(create(any(), any())).thenReturn(flowMetrics)
@@ -96,7 +98,9 @@ class FlowEventPipelineFactoryImplTest {
             mapOf(FLOW_CONFIG to config),
             emptyMap(),
             flowEventContext.flowTraceContext,
-            0)
+            0,
+            inputHash
+        )
         assertEquals(expected.context, result.context)
     }
 }
