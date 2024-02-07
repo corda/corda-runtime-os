@@ -42,6 +42,10 @@ pipeline {
             defaultContainer k8s.defaultContainer.name
         }
     }
+    
+    options {
+        disableConcurrentBuilds()
+    }
 
     stages {
         stage ('Trigger E2E Test') {
