@@ -2,7 +2,9 @@ package net.corda.membership.impl.registration.dynamic.mgm
 
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
@@ -267,6 +269,32 @@ class MGMRegistrationContextValidatorTest {
             on { entries } doReturn mapOf(
                 "corda.endpoints.0.connectionURL" to "https://localhost:8888",
                 "corda.endpoints.0.protocolVersion" to "1",
+            ).entries
+        }
+        val newContext = mock<SelfSignedMemberInfo> {
+            on { memberProvidedContext } doReturn newMemberContext
+        }
+        val oldContext = mock<SelfSignedMemberInfo> {
+            on { memberProvidedContext } doReturn oldMemberContext
+        }
+
+        assertDoesNotThrow {
+            mgmRegistrationContextValidator.validateMemberContext(newContext, oldContext)
+        }
+    }
+
+    @Test
+    fun `context validation passes when only software and platform version changes were made`() {
+        val newMemberContext = mock<MemberContext> {
+            on { entries } doReturn mapOf(
+                PLATFORM_VERSION to "50200",
+                SOFTWARE_VERSION to "5.2.0",
+            ).entries
+        }
+        val oldMemberContext = mock<MemberContext> {
+            on { entries } doReturn mapOf(
+                PLATFORM_VERSION to "50100",
+                SOFTWARE_VERSION to "5.1.0",
             ).entries
         }
         val newContext = mock<SelfSignedMemberInfo> {

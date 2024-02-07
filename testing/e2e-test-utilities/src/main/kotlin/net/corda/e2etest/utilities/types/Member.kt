@@ -38,3 +38,7 @@ fun SimpleResponse.jsonToMemberList(): List<Member> =
             json.get("mgmContext").parseContextMap()
         )
     }
+
+@Suppress("unused")
+fun SimpleResponse.jsonToRegistrationContext(): Map<String, String> =
+    toJson().firstOrNull()?.get("memberInfoSubmitted")?.get("data")?.parseContextMap() ?: emptyMap()

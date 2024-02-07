@@ -36,7 +36,7 @@ class TestWrappingRepository(
         return keys.values.first()
     }
 
-    override fun findKeysWrappedByParentKey(parentKeyAlias: String): List<WrappingKeyInfo> {
+    override fun findKeysNotWrappedByParentKey(parentKeyAlias: String): List<WrappingKeyInfo> {
         TODO("Not needed")
     }
 

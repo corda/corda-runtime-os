@@ -16,7 +16,7 @@
       },
       "user": "user"
     },
-    "type": "DATABASE"
+    "type": "Database"
   },
   "flowMapping": {
     "database": {
@@ -35,7 +35,7 @@
       },
       "user": "user"
     },
-    "type": "DATABASE"
+    "type": "Database"
   },
   "flowStatus": {
     "database": {
@@ -54,7 +54,7 @@
       },
       "user": "user"
     },
-    "type": "DATABASE"
+    "type": "Database"
   },
   "keyRotation": {
     "database": {
@@ -73,7 +73,7 @@
       },
       "user": "user"
     },
-    "type": "DATABASE"
+    "type": "Database"
   },
   "p2pSession": {
     "database": {
@@ -92,7 +92,7 @@
       },
       "user": "user"
     },
-    "type": "DATABASE"
+    "type": "Database"
   },
   "tokenPoolCache": {
     "database": {
@@ -111,6 +111,6 @@
       },
       "user": "user"
     },
-    "type": "DATABASE"
+    "type": "Database"
   }
 }

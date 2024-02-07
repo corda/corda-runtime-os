@@ -53,7 +53,7 @@ class ConfigurationReadServiceImplTest {
             $BUS_TYPE = DATABASE
             $BOOT_JDBC_URL = $JDBC_URL_DATA
             $BOOT_MAX_ALLOWED_MSG_SIZE = 1000000000
-            $stateManagerTypeKey = DATABASE
+            $stateManagerTypeKey = Database
             $stateManagerJdbcKey = $STATE_MANAGER_JDBC_URL_DATA
         """
 
@@ -62,7 +62,7 @@ class ConfigurationReadServiceImplTest {
         """
 
         private val STATE_MANAGER_CONFIG_STRING = """
-            ${StateManagerConfig.StateType.FLOW_CHECKPOINT}.${StateManagerConfig.TYPE} = "DATABASE"
+            ${StateManagerConfig.StateType.FLOW_CHECKPOINT}.${StateManagerConfig.TYPE} = "Database"
             ${StateManagerConfig.StateType.FLOW_CHECKPOINT}.${StateManagerConfig.Database.JDBC_URL} = $STATE_MANAGER_JDBC_URL_DATA
         """
 

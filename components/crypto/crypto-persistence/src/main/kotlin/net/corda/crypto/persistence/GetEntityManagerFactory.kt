@@ -1,6 +1,5 @@
 package net.corda.crypto.persistence
 
-import javax.persistence.EntityManagerFactory
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.ShortHash
 import net.corda.db.connection.manager.DbConnectionManager
@@ -9,6 +8,7 @@ import net.corda.db.schema.CordaDb
 import net.corda.metrics.CordaMetrics
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import javax.persistence.EntityManagerFactory
 
 fun getEntityManagerFactory(
     tenantId: String,
@@ -23,16 +23,10 @@ fun getEntityManagerFactory(
             val onCluster = CryptoTenants.isClusterTenant(tenantId)
             val entityManagerFactory = if (onCluster) {
                 // tenantID is crypto, P2P or REST; let's obtain a connection to our cluster Crypto database
-                val baseEMF = dbConnectionManager.getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
-                object : EntityManagerFactory by baseEMF {
-                    override fun close() {
-                        // ignored; we should never close this since dbConnectionManager owns it
-                        // TODO maybe move this logic to never close to DbConnectionManager
-                    }
-                }
+                dbConnectionManager.getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
             } else {
                 // tenantID is a virtual node; let's connect to one of the virtual node Crypto databases
-                dbConnectionManager.createEntityManagerFactory(
+                dbConnectionManager.getOrCreateEntityManagerFactory(
                     connectionId = virtualNodeInfoReadService.getByHoldingIdentityShortHash(
                         ShortHash.of(
                             tenantId
@@ -44,7 +38,11 @@ fun getEntityManagerFactory(
                     entitiesSet = jpaEntitiesRegistry.get(CordaDb.Crypto.persistenceUnitName)
                         ?: throw IllegalStateException(
                             "persistenceUnitName ${CordaDb.Crypto.persistenceUnitName} is not registered."
-                        )
+                        ),
+                    // disabling client side connection pool means we can cache the EMFs without "hogging" DB
+                    //  connections. This should be ok because signing requests will usually be served from keys
+                    //  in cache.
+                    enablePool = false
                 )
             }
             entityManagerFactory

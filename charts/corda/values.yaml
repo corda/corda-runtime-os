@@ -236,7 +236,9 @@ kafka:
 # List of databases used by the Platform
 databases:
   # The default database configuration
-  - name: default
+  - id: default
+    # -- the default database name (required)
+    name: "cordacluster"
     # -- the default database host (required)
     host: null
     # -- the default database port
@@ -375,7 +377,7 @@ bootstrap:
 
     # Administrator credentials per database to use when creating required runtime permissions
     databases:
-      - name: default
+      - id: default
         # The bootstrap default database user configuration
         username:
           # -- the bootstrap default database user
@@ -513,160 +515,6 @@ bootstrap:
             name: ""
             # -- the password secret key
             key: ""
-
-    # TODO-[CORE-19372]: remove 'stateManager' section.
-    # State Manager DB Bootstrap Configuration
-    stateManager:
-      flow:
-        # the username configuration
-        username:
-          # -- the username, defaults to this value
-          value: ""
-          # the username secret configuration; used in preference to value if name is set
-          valueFrom:
-            # the username secret key reference
-            secretKeyRef:
-              # -- the username secret name
-              name: ""
-              # -- the username secret key
-              key: ""
-        # password configuration
-        password:
-          # -- the password, defaults to a value randomly-generated on install
-          value: ""
-          # the password secret configuration
-          valueFrom:
-            # the password secret key reference
-            secretKeyRef:
-              # -- the password secret name
-              name: ""
-              # -- the password secret key
-              key: ""
-      flowMapper:
-        # the username configuration
-        username:
-          # -- the username, defaults to this value
-          value: ""
-          # the username secret configuration; used in preference to value if name is set
-          valueFrom:
-            # the username secret key reference
-            secretKeyRef:
-              # -- the username secret name
-              name: ""
-              # -- the username secret key
-              key: ""
-        # password configuration
-        password:
-          # -- the password, defaults to a value randomly-generated on install
-          value: ""
-          # the password secret configuration
-          valueFrom:
-            # the password secret key reference
-            secretKeyRef:
-              # -- the password secret name
-              name: ""
-              # -- the password secret key
-              key: ""
-      tokenSelection:
-        # the username configuration
-        username:
-          # -- the username, defaults to this value
-          value: ""
-          # the username secret configuration; used in preference to value if name is set
-          valueFrom:
-            # the username secret key reference
-            secretKeyRef:
-              # -- the username secret name
-              name: ""
-              # -- the username secret key
-              key: ""
-        # password configuration
-        password:
-          # -- the password, defaults to a value randomly-generated on install
-          value: ""
-          # the password secret configuration
-          valueFrom:
-            # the password secret key reference
-            secretKeyRef:
-              # -- the password secret name
-              name: ""
-              # -- the password secret key
-              key: ""
-      rest:
-        # the username configuration
-        username:
-          # -- the username, defaults to this value
-          value: ""
-          # the username secret configuration; used in preference to value if name is set
-          valueFrom:
-            # the username secret key reference
-            secretKeyRef:
-              # -- the username secret name
-              name: ""
-              # -- the username secret key
-              key: ""
-        # password configuration
-        password:
-          # -- the password, defaults to a value randomly-generated on install
-          value: ""
-          # the password secret configuration
-          valueFrom:
-            # the password secret key reference
-            secretKeyRef:
-              # -- the password secret name
-              name: ""
-              # -- the password secret key
-              key: ""
-      crypto:
-        # the username configuration
-        username:
-          # -- the username, defaults to this value
-          value: ""
-          # the username secret configuration; used in preference to value if name is set
-          valueFrom:
-            # the username secret key reference
-            secretKeyRef:
-              # -- the username secret name
-              name: ""
-              # -- the username secret key
-              key: ""
-        # password configuration
-        password:
-          # -- the password, defaults to a value randomly-generated on install
-          value: ""
-          # the password secret configuration
-          valueFrom:
-            # the password secret key reference
-            secretKeyRef:
-              # -- the password secret name
-              name: ""
-              # -- the password secret key
-              key: ""
-      p2pLinkManager:
-        # the username configuration
-        username:
-          # -- the username, defaults to this value
-          value: ""
-          # the username secret configuration; used in preference to value if name is set
-          valueFrom:
-            # the username secret key reference
-            secretKeyRef:
-              # -- the username secret name
-              name: ""
-              # -- the username secret key
-              key: ""
-        # password configuration
-        password:
-          # -- the password, defaults to a value randomly-generated on install
-          value: ""
-          # the password secret configuration
-          valueFrom:
-            # the password secret key reference
-            secretKeyRef:
-              # -- the password secret name
-              name: ""
-              # -- the password secret key
-              key: ""
 
   # Configuration for RBAC roles bootstrap
   rbac:
@@ -844,96 +692,45 @@ workers:
               # -- the crypto worker SASL password secret key for client connection to Kafka
               key: ""
     stateManager:
-#      # Runtime configuration settings for the State Manager used to interact with 'KeyRotation' states
-#      keyRotation:
-#        # -- persistent storage type
-#        type: Database
-#        # Database user, empty values instructs the chart to use the default settings configured for the associated persistent storage
-#        username:
-#          # -- the State Manager database user
-#          value: "key_rotation_writer"
-#          # The State Manager database username secret configuration; used in preference to value if name is set
-#          valueFrom:
-#            # The State Manager database password secret key reference
-#            secretKeyRef:
-#              # -- the State Manager database password secret name
-#              name: ""
-#              # -- the State Manager database password secret key
-#              key: ""
-#        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
-#        password:
-#          # -- the State Manager database user
-#          value: ""
-#          # The State Manager database password secret configuration; used in preference to value if name is set
-#          valueFrom:
-#            # The State Manager database password secret key reference
-#            secretKeyRef:
-#              # -- the State Manager database password secret name
-#              name: ""
-#              # -- the State Manager database password secret key
-#              key: ""
-#        # Connection pool configuration for the State Manager
-#        connectionPool:
-#          # -- maximum connection pool size
-#          maxSize: 5
-#          # -- minimum connection pool size; null value means pool's min size will default to pool's max size value
-#          minSize: null
-#          # -- maximum time (in seconds) a connection can stay idle in the pool; a value of 0 means that idle connections are never removed from the pool
-#          idleTimeoutSeconds: 120
-#          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; if a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
-#          maxLifetimeSeconds: 1800
-#          # -- interval time (in seconds) in which connections will be tested for aliveness; connections which are no longer alive are removed from the pool; a value of 0 means this check is disabled
-#          keepAliveTimeSeconds: 0
-#          # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
-#          validationTimeoutSeconds: 5
-# TODO-[CORE-19372]: remove children and uncomment above 'keyRotation' section.
-      # -- type of State Manager
-      type: DATABASE
-      # State Manager database configuration
-      db:
-        # -- the State Manager database host
-        host: null
-        # -- the State Manager database type
-        type: "postgresql"
-        # -- the State Manager database port
-        port: 5432
-        # -- the State Manager database name
-        name: key_rotation_state_manager
-        # the State Manager database user configuration
+      # Runtime configuration settings for the State Manager used to interact with 'KeyRotation' states
+      keyRotation:
+        # -- persistent storage type
+        type: Database
+        # Database user, empty values instructs the chart to use the default settings configured for the associated persistent storage
         username:
           # -- the State Manager database user
-          value: "rest_state_manager_user"
-          # the State Manager database user secret configuration; used in preference to value if name is set
+          value: "key_rotation_writer"
+          # The State Manager database username secret configuration; used in preference to value if name is set
           valueFrom:
-            # the State Manager database user secret key reference
-            secretKeyRef:
-              # -- the State Manager database user secret name
-              name: ""
-              # -- the State Manager database user secret key
-              key: ""
-        # the State Manager database password configuration
-        password:
-          # -- the State Manager database password
-          value: ""
-          # the State Manager database password secret configuration; used in preference to value if name is set
-          valueFrom:
-            # the State Manager database password secret key reference
+            # The State Manager database password secret key reference
             secretKeyRef:
               # -- the State Manager database password secret name
               name: ""
               # -- the State Manager database password secret key
               key: ""
-        # crypto worker JDBC connection pool configuration for State Manager DB
+        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
+        password:
+          # -- the State Manager database user
+          value: ""
+          # The State Manager database password secret configuration; used in preference to value if name is set
+          valueFrom:
+            # The State Manager database password secret key reference
+            secretKeyRef:
+              # -- the State Manager database password secret name
+              name: ""
+              # -- the State Manager database password secret key
+              key: ""
+        # Connection pool configuration for the State Manager
         connectionPool:
-          # -- crypto worker maximum JDBC connection pool size for state manager DB
+          # -- maximum connection pool size
           maxSize: 5
-          # -- crypto worker minimum JDBC connection pool size for state manager DB; null value means pool's min size will default to pool's max size value
+          # -- minimum connection pool size; null value means pool's min size will default to pool's max size value
           minSize: null
-          # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
+          # -- maximum time (in seconds) a connection can stay idle in the pool; a value of 0 means that idle connections are never removed from the pool
           idleTimeoutSeconds: 120
-          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; if a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
           maxLifetimeSeconds: 1800
-          # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
+          # -- interval time (in seconds) in which connections will be tested for aliveness; connections which are no longer alive are removed from the pool; a value of 0 means this check is disabled
           keepAliveTimeSeconds: 0
           # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
           validationTimeoutSeconds: 5
@@ -1060,96 +857,45 @@ workers:
     verifyInstrumentation: false
     # Flow Worker State Manager configuration
     stateManager:
-#      # Runtime configuration settings for the State Manager used to interact with 'flowCheckpoint' states
-#      flowCheckpoint:
-#        # -- persistent storage type
-#        type: Database
-#        # Database user, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
-#        username:
-#          # -- the State Manager database user
-#          value: "flow_checkpoint"
-#          # The State Manager database username secret configuration; used in preference to value if name is set
-#          valueFrom:
-#            # The State Manager database password secret key reference
-#            secretKeyRef:
-#              # -- the State Manager database password secret name
-#              name: ""
-#              # -- the State Manager database password secret key
-#              key: ""
-#        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
-#        password:
-#          # -- the State Manager database user
-#          value: ""
-#          # The State Manager database password secret configuration; used in preference to value if name is set
-#          valueFrom:
-#            # The State Manager database password secret key reference
-#            secretKeyRef:
-#              # -- the State Manager database password secret name
-#              name: ""
-#              # -- the State Manager database password secret key
-#              key: ""
-#        # Connection pool configuration for the State Manager
-#        connectionPool:
-#          # -- maximum connection pool size
-#          maxSize: 5
-#          # -- minimum connection pool size; null value means pool's min size will default to pool's max size value
-#          minSize: null
-#          # -- maximum time (in seconds) a connection can stay idle in the pool; a value of 0 means that idle connections are never removed from the pool
-#          idleTimeoutSeconds: 120
-#          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; if a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
-#          maxLifetimeSeconds: 1800
-#          # -- interval time (in seconds) in which connections will be tested for aliveness; connections which are no longer alive are removed from the pool; a value of 0 means this check is disabled
-#          keepAliveTimeSeconds: 0
-#          # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
-#          validationTimeoutSeconds: 5
-#      TODO-[CORE-19372]: remove children and uncomment above 'flowCheckpoint' section
-      # Type of State Manager
-      type: DATABASE
-      # State Manager database configuration
-      db:
-        # -- the State Manager database host
-        host: null
-        # -- the State Manager database type
-        type: "postgresql"
-        # -- the State Manager database port
-        port: 5432
-        # -- the State Manager database name
-        name: flow_state_manager
-        # the State Manager database user configuration
+      # Runtime configuration settings for the State Manager used to interact with 'flowCheckpoint' states
+      flowCheckpoint:
+        # -- persistent storage type
+        type: Database
+        # Database user, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
         username:
           # -- the State Manager database user
-          value: "flow_state_manager_user"
-          # the State Manager database user secret configuration; used in preference to value if name is set
+          value: "flow_checkpoint"
+          # The State Manager database username secret configuration; used in preference to value if name is set
           valueFrom:
-            # the State Manager database user secret key reference
-            secretKeyRef:
-              # -- the State Manager database user secret name
-              name: ""
-              # -- the State Manager database user secret key
-              key: ""
-        # the State Manager database password configuration
-        password:
-          # -- the State Manager database password
-          value: ""
-          # the State Manager database password secret configuration; used in preference to value if name is set
-          valueFrom:
-            # the State Manager database password secret key reference
+            # The State Manager database password secret key reference
             secretKeyRef:
               # -- the State Manager database password secret name
               name: ""
               # -- the State Manager database password secret key
               key: ""
-        # flow worker JDBC connection pool configuration for State Manager DB
+        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
+        password:
+          # -- the State Manager database user
+          value: ""
+          # The State Manager database password secret configuration; used in preference to value if name is set
+          valueFrom:
+            # The State Manager database password secret key reference
+            secretKeyRef:
+              # -- the State Manager database password secret name
+              name: ""
+              # -- the State Manager database password secret key
+              key: ""
+        # Connection pool configuration for the State Manager
         connectionPool:
-          # -- flow worker maximum JDBC connection pool size for state manager DB
+          # -- maximum connection pool size
           maxSize: 5
-          # -- flow worker minimum JDBC connection pool size for state manager DB; null value means pool's min size will default to pool's max size value
+          # -- minimum connection pool size; null value means pool's min size will default to pool's max size value
           minSize: null
-          # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
+          # -- maximum time (in seconds) a connection can stay idle in the pool; a value of 0 means that idle connections are never removed from the pool
           idleTimeoutSeconds: 120
-          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; if a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
           maxLifetimeSeconds: 1800
-          # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
+          # -- interval time (in seconds) in which connections will be tested for aliveness; connections which are no longer alive are removed from the pool; a value of 0 means this check is disabled
           keepAliveTimeSeconds: 0
           # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
           validationTimeoutSeconds: 5
@@ -1223,96 +969,45 @@ workers:
     verifyInstrumentation: false
     # Flow Mapper Worker State Manager configuration
     stateManager:
-#      # Runtime configuration settings for the State Manager used to interact with 'flowMapping' states
-#      flowMapping:
-#        # -- persistent storage type
-#        type: Database
-#        # Database user, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
-#        username:
-#          # -- the State Manager database user
-#          value: "flow_mapper"
-#          # The State Manager database username secret configuration; used in preference to value if name is set
-#          valueFrom:
-#            # The State Manager database password secret key reference
-#            secretKeyRef:
-#              # -- the State Manager database password secret name
-#              name: ""
-#              # -- the State Manager database password secret key
-#              key: ""
-#        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
-#        password:
-#          # -- the State Manager database user
-#          value: ""
-#          # The State Manager database password secret configuration; used in preference to value if name is set
-#          valueFrom:
-#            # The State Manager database password secret key reference
-#            secretKeyRef:
-#              # -- the State Manager database password secret name
-#              name: ""
-#              # -- the State Manager database password secret key
-#              key: ""
-#        # Connection pool configuration for the State Manager
-#        connectionPool:
-#          # -- maximum connection pool size
-#          maxSize: 5
-#          # -- minimum connection pool size; null value means pool's min size will default to pool's max size value
-#          minSize: null
-#          # -- maximum time (in seconds) a connection can stay idle in the pool; a value of 0 means that idle connections are never removed from the pool
-#          idleTimeoutSeconds: 120
-#          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; if a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
-#          maxLifetimeSeconds: 1800
-#          # -- interval time (in seconds) in which connections will be tested for aliveness; connections which are no longer alive are removed from the pool; a value of 0 means this check is disabled
-#          keepAliveTimeSeconds: 0
-#          # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
-#          validationTimeoutSeconds: 5
-#      TODO-[CORE-19372]: remove children and uncomment above 'flowMapping' section
-      # Type of State Manager
-      type: DATABASE
-      # State Manager database configuration
-      db:
-        # -- the State Manager database host
-        host: null
-        # -- the State Manager database type
-        type: "postgresql"
-        # -- the State Manager database port
-        port: 5432
-        # -- the State Manager database name
-        name: flow_mapper_state_manager
-        # the State Manager database user configuration
+      # Runtime configuration settings for the State Manager used to interact with 'flowMapping' states
+      flowMapping:
+        # -- persistent storage type
+        type: Database
+        # Database user, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
         username:
           # -- the State Manager database user
-          value: "flow_mapper_state_manager_user"
-          # the State Manager database user secret configuration; used in preference to value if name is set
+          value: "flow_mapper"
+          # The State Manager database username secret configuration; used in preference to value if name is set
           valueFrom:
-            # the State Manager database user secret key reference
-            secretKeyRef:
-              # -- the State Manager database user secret name
-              name: ""
-              # -- the State Manager database user secret key
-              key: ""
-        # the State Manager database password configuration
-        password:
-          # -- the State Manager database password
-          value: ""
-          # the State Manager database password secret configuration; used in preference to value if name is set
-          valueFrom:
-            # the State Manager database password secret key reference
+            # The State Manager database password secret key reference
             secretKeyRef:
               # -- the State Manager database password secret name
               name: ""
               # -- the State Manager database password secret key
               key: ""
-        # flow mapper worker JDBC connection pool configuration for State Manager DB
+        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
+        password:
+          # -- the State Manager database user
+          value: ""
+          # The State Manager database password secret configuration; used in preference to value if name is set
+          valueFrom:
+            # The State Manager database password secret key reference
+            secretKeyRef:
+              # -- the State Manager database password secret name
+              name: ""
+              # -- the State Manager database password secret key
+              key: ""
+        # Connection pool configuration for the State Manager
         connectionPool:
-          # -- flow mapper worker maximum JDBC connection pool size for state manager DB
+          # -- maximum connection pool size
           maxSize: 5
-          # -- flow mapper worker minimum JDBC connection pool size for state manager DB; null value means pool's min size will default to pool's max size value
+          # -- minimum connection pool size; null value means pool's min size will default to pool's max size value
           minSize: null
-          # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
+          # -- maximum time (in seconds) a connection can stay idle in the pool; a value of 0 means that idle connections are never removed from the pool
           idleTimeoutSeconds: 120
-          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; if a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
           maxLifetimeSeconds: 1800
-          # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
+          # -- interval time (in seconds) in which connections will be tested for aliveness; connections which are no longer alive are removed from the pool; a value of 0 means this check is disabled
           keepAliveTimeSeconds: 0
           # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
           validationTimeoutSeconds: 5
@@ -1565,138 +1260,87 @@ workers:
               # -- the REST worker SASL password secret key for client connection to Kafka
               key: ""
     stateManager:
-#      # Runtime configuration settings for the State Manager used to interact with 'keyRotation' states
-#      keyRotation:
-#        # -- persistent storage type
-#        type: Database
-#        # Database user, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
-#        username:
-#          # -- the State Manager database user
-#          value: "key_rotation_reader"
-#          # The State Manager database username secret configuration; used in preference to value if name is set
-#          valueFrom:
-#            # The State Manager database password secret key reference
-#            secretKeyRef:
-#              # -- the State Manager database password secret name
-#              name: ""
-#              # -- the State Manager database password secret key
-#              key: ""
-#        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
-#        password:
-#          # -- the State Manager database user
-#          value: ""
-#          # The State Manager database password secret configuration; used in preference to value if name is set
-#          valueFrom:
-#            # The State Manager database password secret key reference
-#            secretKeyRef:
-#              # -- the State Manager database password secret name
-#              name: ""
-#              # -- the State Manager database password secret key
-#              key: ""
-#        # Connection pool configuration for the State Manager
-#        connectionPool:
-#          # -- maximum connection pool size
-#          maxSize: 5
-#          # -- minimum connection pool size; null value means pool's min size will default to pool's max size value
-#          minSize: null
-#          # -- maximum time (in seconds) a connection can stay idle in the pool; a value of 0 means that idle connections are never removed from the pool
-#          idleTimeoutSeconds: 120
-#          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; if a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
-#          maxLifetimeSeconds: 1800
-#          # -- interval time (in seconds) in which connections will be tested for aliveness; connections which are no longer alive are removed from the pool; a value of 0 means this check is disabled
-#          keepAliveTimeSeconds: 0
-#          # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
-#          validationTimeoutSeconds: 5
-#      # Runtime configuration settings for the State Manager used to interact with 'flowStatus' states
-#      flowStatus:
-#        # -- persistent storage type
-#        type: Database
-#        # Database user, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
-#        username:
-#          # -- the State Manager database user
-#          value: "flow_status"
-#          # The State Manager database username secret configuration; used in preference to value if name is set
-#          valueFrom:
-#            # The State Manager database password secret key reference
-#            secretKeyRef:
-#              # -- the State Manager database password secret name
-#              name: ""
-#              # -- the State Manager database password secret key
-#              key: ""
-#        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
-#        password:
-#          # -- the State Manager database user
-#          value: ""
-#          # The State Manager database password secret configuration; used in preference to value if name is set
-#          valueFrom:
-#            # The State Manager database password secret key reference
-#            secretKeyRef:
-#              # -- the State Manager database password secret name
-#              name: ""
-#              # -- the State Manager database password secret key
-#              key: ""
-#        # Connection pool configuration for the State Manager
-#        connectionPool:
-#          # -- maximum connection pool size
-#          maxSize: 5
-#          # -- minimum connection pool size; null value means pool's min size will default to pool's max size value
-#          minSize: null
-#          # -- maximum time (in seconds) a connection can stay idle in the pool; a value of 0 means that idle connections are never removed from the pool
-#          idleTimeoutSeconds: 120
-#          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; if a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
-#          maxLifetimeSeconds: 1800
-#          # -- interval time (in seconds) in which connections will be tested for aliveness; connections which are no longer alive are removed from the pool; a value of 0 means this check is disabled
-#          keepAliveTimeSeconds: 0
-#          # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
-#          validationTimeoutSeconds: 5
-#     TODO-[CORE-19372]: remove children and uncomment above 'keyRotation' and 'flowStatus' sections
-      # Type of State Manager
-      type: DATABASE
-      # State Manager database configuration
-      db:
-        # -- the State Manager database host
-        host: null
-        # -- the State Manager database type
-        type: "postgresql"
-        # -- the State Manager database port
-        port: 5432
-        # -- the State Manager database name
-        name: key_rotation_state_manager
-        # the State Manager database user configuration
+      # Runtime configuration settings for the State Manager used to interact with 'keyRotation' states
+      keyRotation:
+        # -- persistent storage type
+        type: Database
+        # Database user, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
         username:
           # -- the State Manager database user
-          value: "rest_state_manager_user"
-          # the State Manager database user secret configuration; used in preference to value if name is set
+          value: "key_rotation_reader"
+          # The State Manager database username secret configuration; used in preference to value if name is set
           valueFrom:
-            # the State Manager database user secret key reference
-            secretKeyRef:
-              # -- the State Manager database user secret name
-              name: ""
-              # -- the State Manager database user secret key
-              key: ""
-        # the State Manager database password configuration
-        password:
-          # -- the State Manager database password
-          value: ""
-          # the State Manager database password secret configuration; used in preference to value if name is set
-          valueFrom:
-            # the State Manager database password secret key reference
+            # The State Manager database password secret key reference
             secretKeyRef:
               # -- the State Manager database password secret name
               name: ""
               # -- the State Manager database password secret key
               key: ""
-        # rest worker JDBC connection pool configuration for State Manager DB
+        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
+        password:
+          # -- the State Manager database user
+          value: ""
+          # The State Manager database password secret configuration; used in preference to value if name is set
+          valueFrom:
+            # The State Manager database password secret key reference
+            secretKeyRef:
+              # -- the State Manager database password secret name
+              name: ""
+              # -- the State Manager database password secret key
+              key: ""
+        # Connection pool configuration for the State Manager
         connectionPool:
-          # -- rest worker maximum JDBC connection pool size for state manager DB
+          # -- maximum connection pool size
           maxSize: 5
-          # -- rest worker minimum JDBC connection pool size for state manager DB; null value means pool's min size will default to pool's max size value
+          # -- minimum connection pool size; null value means pool's min size will default to pool's max size value
           minSize: null
-          # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
+          # -- maximum time (in seconds) a connection can stay idle in the pool; a value of 0 means that idle connections are never removed from the pool
           idleTimeoutSeconds: 120
-          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; if a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
           maxLifetimeSeconds: 1800
-          # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
+          # -- interval time (in seconds) in which connections will be tested for aliveness; connections which are no longer alive are removed from the pool; a value of 0 means this check is disabled
+          keepAliveTimeSeconds: 0
+          # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+          validationTimeoutSeconds: 5
+      # Runtime configuration settings for the State Manager used to interact with 'flowStatus' states
+      flowStatus:
+        # -- persistent storage type
+        type: Database
+        # Database user, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
+        username:
+          # -- the State Manager database user
+          value: "flow_status"
+          # The State Manager database username secret configuration; used in preference to value if name is set
+          valueFrom:
+            # The State Manager database password secret key reference
+            secretKeyRef:
+              # -- the State Manager database password secret name
+              name: ""
+              # -- the State Manager database password secret key
+              key: ""
+        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
+        password:
+          # -- the State Manager database user
+          value: ""
+          # The State Manager database password secret configuration; used in preference to value if name is set
+          valueFrom:
+            # The State Manager database password secret key reference
+            secretKeyRef:
+              # -- the State Manager database password secret name
+              name: ""
+              # -- the State Manager database password secret key
+              key: ""
+        # Connection pool configuration for the State Manager
+        connectionPool:
+          # -- maximum connection pool size
+          maxSize: 5
+          # -- minimum connection pool size; null value means pool's min size will default to pool's max size value
+          minSize: null
+          # -- maximum time (in seconds) a connection can stay idle in the pool; a value of 0 means that idle connections are never removed from the pool
+          idleTimeoutSeconds: 120
+          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; if a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+          maxLifetimeSeconds: 1800
+          # -- interval time (in seconds) in which connections will be tested for aliveness; connections which are no longer alive are removed from the pool; a value of 0 means this check is disabled
           keepAliveTimeSeconds: 0
           # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
           validationTimeoutSeconds: 5
@@ -1759,95 +1403,44 @@ workers:
       # -- the CPU/memory resource limits for the P2P link manager worker containers
       limits: {}
     stateManager:
-#      # Runtime configuration settings for the State Manager used to interact with 'p2pSession' states
-#      p2pSession:
-#        # -- persistent storage type
-#        type: Database
-#        # Database user, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
-#        username:
-#          # -- the State Manager database user
-#          value: "p2p_session"
-#          valueFrom:
-#            # The State Manager database password secret key reference
-#            secretKeyRef:
-#              # -- the State Manager database password secret name
-#              name: ""
-#              # -- the State Manager database password secret key
-#              key: ""
-#        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
-#        password:
-#          # -- the State Manager database user
-#          value: ""
-#          # The State Manager database password secret configuration; used in preference to value if name is set
-#          valueFrom:
-#            # The State Manager database password secret key reference
-#            secretKeyRef:
-#              # -- the State Manager database password secret name
-#              name: ""
-#              # -- the State Manager database password secret key
-#              key: ""
-#        # Connection pool configuration for the State Manager
-#        connectionPool:
-#          # -- maximum connection pool size
-#          maxSize: 5
-#          # -- minimum connection pool size; null value means pool's min size will default to pool's max size value
-#          minSize: null
-#          # -- maximum time (in seconds) a connection can stay idle in the pool; a value of 0 means that idle connections are never removed from the pool
-#          idleTimeoutSeconds: 120
-#          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; if a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
-#          maxLifetimeSeconds: 1800
-#          # -- interval time (in seconds) in which connections will be tested for aliveness; connections which are no longer alive are removed from the pool; a value of 0 means this check is disabled
-#          keepAliveTimeSeconds: 0
-#          # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
-#          validationTimeoutSeconds: 5
-#      TODO-[CORE-19372]: remove children and uncomment above 'p2pSession' section
-      # Type of State Manager
-      type: DATABASE
-      # State Manager database configuration
-      db:
-        # -- the State Manager database host
-        host: null
-        # -- the State Manager database type
-        type: "postgresql"
-        # -- the State Manager database port
-        port: 5432
-        # -- the State Manager database name
-        name: p2p_link_manager_state_manager
-        # the State Manager database user configuration
+      # Runtime configuration settings for the State Manager used to interact with 'p2pSession' states
+      p2pSession:
+        # -- persistent storage type
+        type: Database
+        # Database user, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
         username:
           # -- the State Manager database user
-          value: "p2p_link_manager_state_manager_user"
-          # the State Manager database user secret configuration; used in preference to value if name is set
+          value: "p2p_session"
           valueFrom:
-            # the State Manager database user secret key reference
-            secretKeyRef:
-              # -- the State Manager database user secret name
-              name: ""
-              # -- the State Manager database user secret key
-              key: ""
-        # the State Manager database password configuration
-        password:
-          # -- the State Manager database password
-          value: ""
-          # the State Manager database password secret configuration; used in preference to value if name is set
-          valueFrom:
-            # the State Manager database password secret key reference
+            # The State Manager database password secret key reference
             secretKeyRef:
               # -- the State Manager database password secret name
               name: ""
               # -- the State Manager database password secret key
               key: ""
-        # link manager worker JDBC connection pool configuration for State Manager DB
+        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
+        password:
+          # -- the State Manager database user
+          value: ""
+          # The State Manager database password secret configuration; used in preference to value if name is set
+          valueFrom:
+            # The State Manager database password secret key reference
+            secretKeyRef:
+              # -- the State Manager database password secret name
+              name: ""
+              # -- the State Manager database password secret key
+              key: ""
+        # Connection pool configuration for the State Manager
         connectionPool:
-          # -- link manager maximum JDBC connection pool size for state manager DB
+          # -- maximum connection pool size
           maxSize: 5
-          # -- link manager minimum JDBC connection pool size for state manager DB; null value means pool's min size will default to pool's max size value
+          # -- minimum connection pool size; null value means pool's min size will default to pool's max size value
           minSize: null
-          # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
+          # -- maximum time (in seconds) a connection can stay idle in the pool; a value of 0 means that idle connections are never removed from the pool
           idleTimeoutSeconds: 120
-          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; if a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
           maxLifetimeSeconds: 1800
-          # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
+          # -- interval time (in seconds) in which connections will be tested for aliveness; connections which are no longer alive are removed from the pool; a value of 0 means this check is disabled
           keepAliveTimeSeconds: 0
           # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
           validationTimeoutSeconds: 5
@@ -2090,95 +1683,44 @@ workers:
       # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
       validationTimeoutSeconds: 5
     stateManager:
-#      # Runtime configuration settings for the State Manager used to interact with 'tokenPoolCache' states
-#      tokenPoolCache:
-#        # -- persistent storage type
-#        type: Database
-#        # Database user, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
-#        username:
-#          # -- the State Manager database user
-#          value: "token_pool_cache"
-#          valueFrom:
-#            # The State Manager database password secret key reference
-#            secretKeyRef:
-#              # -- the State Manager database password secret name
-#              name: ""
-#              # -- the State Manager database password secret key
-#              key: ""
-#        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
-#        password:
-#          # -- the State Manager database user
-#          value: ""
-#          # The State Manager database password secret configuration; used in preference to value if name is set
-#          valueFrom:
-#            # The State Manager database password secret key reference
-#            secretKeyRef:
-#              # -- the State Manager database password secret name
-#              name: ""
-#              # -- the State Manager database password secret key
-#              key: ""
-#        # Connection pool configuration for the State Manager
-#        connectionPool:
-#          # -- maximum connection pool size
-#          maxSize: 5
-#          # -- minimum connection pool size; null value means pool's min size will default to pool's max size value
-#          minSize: null
-#          # -- maximum time (in seconds) a connection can stay idle in the pool; a value of 0 means that idle connections are never removed from the pool
-#          idleTimeoutSeconds: 120
-#          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; if a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
-#          maxLifetimeSeconds: 1800
-#          # -- interval time (in seconds) in which connections will be tested for aliveness; connections which are no longer alive are removed from the pool; a value of 0 means this check is disabled
-#          keepAliveTimeSeconds: 0
-#          # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
-#          validationTimeoutSeconds: 5
-#     TODO-[CORE-19372]: remove children and uncomment above 'tokenPoolCache' section
-      # Type of State Manager
-      type: DATABASE
-      # State Manager database configuration
-      db:
-        # -- the State Manager database host
-        host: null
-        # -- the State Manager database type
-        type: "postgresql"
-        # -- the State Manager database port
-        port: 5432
-        # -- the State Manager database name
-        name: token_selection_state_manager
-        # the State Manager database user configuration
+      # Runtime configuration settings for the State Manager used to interact with 'tokenPoolCache' states
+      tokenPoolCache:
+        # -- persistent storage type
+        type: Database
+        # Database user, 'null' value instructs the chart to use the default settings configured for the associated persistent storage
         username:
           # -- the State Manager database user
-          value: "token_selection_state_manager_user"
-          # the State Manager database user secret configuration; used in preference to value if name is set
+          value: "token_pool_cache"
           valueFrom:
-            # the State Manager database user secret key reference
-            secretKeyRef:
-              # -- the State Manager database user secret name
-              name: ""
-              # -- the State Manager database user secret key
-              key: ""
-        # the State Manager database password configuration
-        password:
-          # -- the State Manager database password
-          value: ""
-          # the State Manager database password secret configuration; used in preference to value if name is set
-          valueFrom:
-            # the State Manager database password secret key reference
+            # The State Manager database password secret key reference
             secretKeyRef:
               # -- the State Manager database password secret name
               name: ""
               # -- the State Manager database password secret key
               key: ""
-        # token selection worker JDBC connection pool configuration for State Manager DB
+        # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
+        password:
+          # -- the State Manager database user
+          value: ""
+          # The State Manager database password secret configuration; used in preference to value if name is set
+          valueFrom:
+            # The State Manager database password secret key reference
+            secretKeyRef:
+              # -- the State Manager database password secret name
+              name: ""
+              # -- the State Manager database password secret key
+              key: ""
+        # Connection pool configuration for the State Manager
         connectionPool:
-          # -- token selection maximum JDBC connection pool size for state manager DB
+          # -- maximum connection pool size
           maxSize: 5
-          # -- token selection minimum JDBC connection pool size for state manager DB; null value means pool's min size will default to pool's max size value
+          # -- minimum connection pool size; null value means pool's min size will default to pool's max size value
           minSize: null
-          # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
+          # -- maximum time (in seconds) a connection can stay idle in the pool; a value of 0 means that idle connections are never removed from the pool
           idleTimeoutSeconds: 120
-          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; if a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
           maxLifetimeSeconds: 1800
-          # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
+          # -- interval time (in seconds) in which connections will be tested for aliveness; connections which are no longer alive are removed from the pool; a value of 0 means this check is disabled
           keepAliveTimeSeconds: 0
           # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
           validationTimeoutSeconds: 5
