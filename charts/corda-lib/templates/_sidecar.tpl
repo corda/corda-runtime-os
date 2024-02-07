@@ -3,18 +3,23 @@
  */}}
 {{- define "corda.istioRestWorkerSidecar" -}}
 {{- if .Capabilities.APIVersions.Has "networking.istio.io/v1beta1/Sidecar" -}}
+{{- $worker := "rest" }}
+{{- $port := (index .Values.workers $worker).service.port }}
+{{- $workerName := printf "%s-%s-worker" ( include "corda.fullname" $ ) ( include "corda.workerTypeKebabCase" $worker ) }}
 ---
 apiVersion: networking.istio.io/v1beta1
 kind: Sidecar
 metadata:
-  name: https
+  name: {{ $workerName | quote }}
+  annotations:
+    "helm.sh/hook": pre-install
 spec:
   workloadSelector:
     labels:
-      {{- include "corda.workerSelectorLabels" ( list . "rest" ) | nindent 6 }}
+      {{- include "corda.workerSelectorLabels" ( list . $workerName ) | nindent 6 }}
   ingress:
     - port:
-        number: {{ .Values.workers.rest.service.port }}
+        number: {{ $port }}
         protocol: HTTPS
         name: https
 {{- end -}}
