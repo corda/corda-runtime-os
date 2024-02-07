@@ -1,6 +1,94 @@
 @Library('corda-shared-build-pipeline-steps@5.2') _
 
-githubCommentBuildTests(
-    branch: 'release/5.2',
-    chartVersion: '^5.2.0-alpha',
+import com.r3.build.AbstractInputValues
+import com.r3.build.agents.KubernetesAgent
+import com.r3.build.annotations.AssertThat
+import com.r3.build.enums.BuildEnvironment
+import com.r3.build.enums.KubernetesCluster
+import com.r3.build.utils.PipelineUtils
+import groovy.transform.Field
+
+@Field
+String branch = 'release/5.2'
+
+@Field
+String chartVersion = '^5.2.0-alpha'
+
+@Field
+PipelineUtils pipelineUtils = new PipelineUtils(this)
+
+
+
+/**
+    * Jenkins Kubernetes agent
+    */
+KubernetesAgent k8s = new KubernetesAgent(
+        BuildEnvironment.AMD64_LINUX,
+        KubernetesCluster.JenkinsAgents,
+        1
 )
+
+pipeline {
+    agent {
+        kubernetes {
+            cloud k8s.buildCluster.cloudName
+            yaml k8s.JSON
+            yamlMergeStrategy merge() // important to keep tolerations from the inherited template
+            idleMinutes 15
+            podRetention always()
+            nodeSelector k8s.nodeSelector
+            label k8s.jenkinsLabel
+            showRawYaml false
+            defaultContainer k8s.defaultContainer.name
+        }
+    }
+    
+    triggers {
+        issueCommentTrigger('^build e2e$')
+    }
+
+    stages {
+        stage ('Trigger E2E Test') {
+            steps {
+                echo "Building E2E Tests for ${env.BRANCH_NAME}"
+                script {
+                    String commentText = """\
+                        |Building E2E Tests on ${env.BRANCH_NAME}\n
+                        """.stripMargin()
+                    githubPRComment(commentText, "Building E2E Tests on ${env.BRANCH_NAME}")
+                }
+                // Jenkins is expecting the branch to be URL encoded
+                build job: "Corda5/corda5-e2e-tests/${config.branch.replaceAll("/", "%2F")}",
+                        parameters: [string(name: 'CORDA_CHART_REPOSITORY', value: "oci://corda-os-docker.software.r3.com/helm-charts/${env.BRANCH_NAME.toLowerCase()}/corda"),
+                                        string(name: 'CORDA_CHART_VERSION', value: "${config.chartVersion}")],
+                        wait: true
+
+            }
+            post {
+                success {
+                    script {
+                        String commentText = """\
+                        |Building E2E Tests on ${env.BRANCH_NAME}\n
+                        |Succeeded\n
+                        """.stripMargin()
+                        githubPRComment(commentText, "Building E2E Tests on ${env.BRANCH_NAME}")
+                    }
+                }
+                failure {
+                    script {
+                        String commentText = """\
+                        |Building E2E Tests on ${env.BRANCH_NAME}\n
+                        |Build Failed: ${env.BUILD_URL}\n
+                        """.stripMargin()
+                        githubPRComment(commentText, "Building E2E Tests on ${env.BRANCH_NAME}")
+                    }
+                }
+            }
+        }
+    }
+}
+
+def githubPRComment(String commentText, String pattern) {
+    Long userCommentId = pipelineUtils.getUserCommentIdMatchingPattern(pattern)
+    userCommentId == null ? pipelineUtils.addGitHubComment(commentText) : pipelineUtils.editGitHubComment(commentText, userCommentId)
+}
