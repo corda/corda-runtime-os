@@ -1,5 +1,7 @@
 package net.corda.crypto.core
 
+const val MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER = "master"
+
 /**
  * Metadata keys used when storing key rotation status in state manager
  */

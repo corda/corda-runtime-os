@@ -7,6 +7,7 @@ import net.corda.crypto.core.KeyRotationKeyType
 import net.corda.crypto.core.KeyRotationMetadataValues
 import net.corda.crypto.core.KeyRotationRecordType
 import net.corda.crypto.core.KeyRotationStatus
+import net.corda.crypto.core.MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER
 import net.corda.crypto.rest.KeyRotationRestResource
 import net.corda.crypto.rest.response.KeyRotationResponse
 import net.corda.crypto.rest.response.KeyRotationStatusResponse
@@ -183,7 +184,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
     override fun getKeyRotationStatus(tenantId: String): KeyRotationStatusResponse {
 
         when (tenantId) {
-            "master" -> { // do unmanaged key rotation status
+            MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER -> { // do unmanaged key rotation status
                 val records = stateManager.findByMetadataMatchingAll(
                     listOf(
                         MetadataFilter(
@@ -210,7 +211,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
                 val deserializedValueOfOneRecord =
                     checkNotNull(unmanagedKeyStatusDeserializer.deserialize(records.first().value))
                 return KeyRotationStatusResponse(
-                    "master",
+                    MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER,
                     rotationStatus,
                     deserializedValueOfOneRecord.createdTimestamp,
                     getLatestTimestamp(records),
@@ -260,7 +261,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
             throw ForbiddenException("A key rotation operation is already ongoing, a new one cannot be started until it completes.")
         }
 
-        return if (tenantId == "master") {
+        return if (tenantId == MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER) {
             doKeyRotation(publishRequests = { publishToKafka!!.publish(it) })
         } else {
             if (tenantId.isEmpty()) throw InvalidInputDataException(
@@ -347,7 +348,7 @@ fun doKeyRotation(
     )
 
     publishRequests(listOf(Record(REKEY_MESSAGE_TOPIC, requestId, keyRotationRequest, Instant.now().toEpochMilli())))
-    return ResponseEntity.accepted(KeyRotationResponse(requestId, "master"))
+    return ResponseEntity.accepted(KeyRotationResponse(requestId, MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER))
 }
 
 fun doManagedKeyRotation(

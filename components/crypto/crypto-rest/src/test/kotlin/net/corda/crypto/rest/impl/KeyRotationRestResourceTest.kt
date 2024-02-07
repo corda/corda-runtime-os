@@ -9,6 +9,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.config.impl.CryptoHSMConfig
 import net.corda.crypto.config.impl.HSM
 import net.corda.crypto.core.KeyRotationStatus
+import net.corda.crypto.core.MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER
 import net.corda.crypto.rest.KeyRotationRestResource
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.status.UnmanagedKeyStatus
@@ -60,7 +61,6 @@ class KeyRotationRestResourceTest {
     private val masterKeyAlias2 = "rootAlias2"
     private val masterKeyAlias3 = "rootAlias3"
     private val tenantId = "tenantId"
-    private val masterKeyRotationId = "master"
     private var stateManagerPublicationCount: Int = 0
 
     @BeforeEach
@@ -104,7 +104,7 @@ class KeyRotationRestResourceTest {
         }
 
         deserializer = mock<CordaAvroDeserializer<UnmanagedKeyStatus>> {
-            on { deserialize(any()) } doReturn UnmanagedKeyStatus(masterKeyRotationId, null, tenantId, 10, 5, Instant.now())
+            on { deserialize(any()) } doReturn UnmanagedKeyStatus(MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER, null, tenantId, 10, 5, Instant.now())
         }
 
         cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
@@ -121,12 +121,12 @@ class KeyRotationRestResourceTest {
     @Test
     fun `get key rotation status triggers successfully`() {
         val keyRotationRestResource = createKeyRotationRestResource()
-        val response = keyRotationRestResource.getKeyRotationStatus(masterKeyRotationId)
+        val response = keyRotationRestResource.getKeyRotationStatus(MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER)
 
         verify(stateManager, times(1)).findByMetadataMatchingAll(any())
 
         assertThat(response.status).isEqualTo(KeyRotationStatus.IN_PROGRESS)
-        assertThat(response.tenantId).isEqualTo(masterKeyRotationId)
+        assertThat(response.tenantId).isEqualTo(MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER)
     }
 
     @Test
@@ -143,7 +143,7 @@ class KeyRotationRestResourceTest {
         val keyRotationRestResource =
             createKeyRotationRestResource(initialiseKafkaPublisher = true, initialiseStateManager = false)
         assertThrows<IllegalStateException> {
-            keyRotationRestResource.getKeyRotationStatus(masterKeyRotationId)
+            keyRotationRestResource.getKeyRotationStatus(MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER)
         }
         verify(stateManager, never()).findByMetadataMatchingAll(any())
     }
