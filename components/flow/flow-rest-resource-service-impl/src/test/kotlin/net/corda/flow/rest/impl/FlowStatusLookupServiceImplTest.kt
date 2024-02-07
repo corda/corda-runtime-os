@@ -8,6 +8,7 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.rest.impl.utils.hash
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
@@ -85,8 +86,11 @@ class FlowStatusLookupServiceImplTest {
     )
 
     companion object {
-        val FLOW_KEY_1 = FlowKey("a1", HoldingIdentity("b1", "c1"))
-        val FLOW_KEY_2 = FlowKey("a2", HoldingIdentity("b2", "c2"))
+        const val ALICE_X500 = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
+        const val BOB_X500 = "CN=Bob, O=Bob Corp, L=LDN, C=GB"
+
+        val FLOW_KEY_1 = FlowKey("a1", HoldingIdentity(ALICE_X500, "c1"))
+        val FLOW_KEY_2 = FlowKey("a2", HoldingIdentity(BOB_X500, "c2"))
     }
 
     @BeforeEach
@@ -190,7 +194,7 @@ class FlowStatusLookupServiceImplTest {
 
                 stateManager.create(
                     listOf(
-                        State(FLOW_KEY_1.toString(), serializer.serialize(flowStatus1)!!, metadata = Metadata(
+                        State(FLOW_KEY_1.hash(), serializer.serialize(flowStatus1)!!, metadata = Metadata(
                             mapOf(
                                 HOLDING_IDENTITY_METADATA_KEY to FLOW_KEY_1.identity.toString(),
                                 FLOW_STATUS_METADATA_KEY to flowStatus1.flowStatus.name

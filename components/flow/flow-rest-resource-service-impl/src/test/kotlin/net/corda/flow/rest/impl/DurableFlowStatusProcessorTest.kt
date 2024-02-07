@@ -5,6 +5,7 @@ import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
+import net.corda.flow.rest.impl.utils.hash
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.records.Record
@@ -48,7 +49,7 @@ class DurableFlowStatusProcessorTest {
     @Test
     fun `Test onNext creates a new record in the StateManager`() {
         val record = Record(FLOW_STATUS_TOPIC, FlowStatusLookupServiceImplTest.FLOW_KEY_1, createFlowStatus())
-        val key = FlowStatusLookupServiceImplTest.FLOW_KEY_1.toString()
+        val key = FlowStatusLookupServiceImplTest.FLOW_KEY_1.hash()
 
         flowStatusProcessor.onNext(listOf(record))
 
@@ -65,8 +66,8 @@ class DurableFlowStatusProcessorTest {
     fun `Test onNext creates multiple records in the StateManager on different keys`() {
         val record1 = Record(FLOW_STATUS_TOPIC, FlowStatusLookupServiceImplTest.FLOW_KEY_1, createFlowStatus())
         val record2 = Record(FLOW_STATUS_TOPIC, FlowStatusLookupServiceImplTest.FLOW_KEY_2, createFlowStatus())
-        val key1 = FlowStatusLookupServiceImplTest.FLOW_KEY_1.toString()
-        val key2 = FlowStatusLookupServiceImplTest.FLOW_KEY_2.toString()
+        val key1 = FlowStatusLookupServiceImplTest.FLOW_KEY_1.hash()
+        val key2 = FlowStatusLookupServiceImplTest.FLOW_KEY_2.hash()
 
         flowStatusProcessor.onNext(listOf(record1, record2))
 
@@ -91,7 +92,7 @@ class DurableFlowStatusProcessorTest {
         val record2 = Record(
             FLOW_STATUS_TOPIC, FlowStatusLookupServiceImplTest.FLOW_KEY_1, createFlowStatus(
                 FlowStates.RUNNING))
-        val key = FlowStatusLookupServiceImplTest.FLOW_KEY_1.toString()
+        val key = FlowStatusLookupServiceImplTest.FLOW_KEY_1.hash()
 
         flowStatusProcessor.onNext(listOf(record1))
 
@@ -124,8 +125,8 @@ class DurableFlowStatusProcessorTest {
                 FlowStates.RUNNING))
         val record3 = Record(FLOW_STATUS_TOPIC, FlowStatusLookupServiceImplTest.FLOW_KEY_2, createFlowStatus())
 
-        val key1 = FlowStatusLookupServiceImplTest.FLOW_KEY_1.toString()
-        val key2 = FlowStatusLookupServiceImplTest.FLOW_KEY_2.toString()
+        val key1 = FlowStatusLookupServiceImplTest.FLOW_KEY_1.hash()
+        val key2 = FlowStatusLookupServiceImplTest.FLOW_KEY_2.hash()
 
         // Persist our first record
         flowStatusProcessor.onNext(listOf(record1))
