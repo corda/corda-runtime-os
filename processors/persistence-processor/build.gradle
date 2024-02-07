@@ -43,7 +43,6 @@ dependencies {
 
     // For TimeWindow implementations
     runtimeOnly project(':components:ledger:ledger-utxo-flow')
-    runtimeOnly project(":components:flow:flow-service")
 
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
