@@ -57,6 +57,6 @@ class FlowEventContextConverterImplTest {
         assertThat(result.markForDLQ).isFalse()
         assertThat(result.updatedState?.value).isSameAs(avroCheckpoint)
         assertThat(result.responseEvents).isSameAs(records)
-        assertThat(result.updatedState?.metadata).isSameAs(expectedMeta)
+        assertThat(result.updatedState?.metadata).isEqualTo(expectedMeta)
     }
 }
