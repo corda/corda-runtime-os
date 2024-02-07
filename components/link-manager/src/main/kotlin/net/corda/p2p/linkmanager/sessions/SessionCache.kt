@@ -15,7 +15,6 @@ import java.util.concurrent.Future
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import net.corda.cache.caffeine.CacheFactoryImpl
-import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 
 internal class SessionCache(
@@ -59,15 +58,9 @@ internal class SessionCache(
                 },
         )
 
-    fun putOutboundSession(key: String, counterparties: SessionManager.Counterparties, session: Session) {
-        cachedOutboundSessions.put(
-            key,
-            SessionManager.SessionDirection.Outbound(
-                counterparties,
-                session,
-            ),
-        )
-        counterpartiesForSessionId[session.sessionId] = key
+    fun putOutboundSession(key: String, outboundSession: SessionManager.SessionDirection.Outbound) {
+        cachedOutboundSessions.put(key, outboundSession)
+        counterpartiesForSessionId[outboundSession.session.sessionId] = key
     }
 
     fun getAllPresentOutboundSessions(keys: Iterable<String>): Map<String, SessionManager.SessionDirection.Outbound> {
@@ -82,11 +75,16 @@ internal class SessionCache(
     fun getByKeyIfCached(key: String): SessionManager.SessionDirection? =
         cachedInboundSessions.getIfPresent(key) ?: cachedOutboundSessions.getIfPresent(key)
 
-    fun putInboundSession(sessionID: String, session: SessionManager.SessionDirection.Inbound) {
-        cachedInboundSessions.put(sessionID, session)
+    fun putInboundSession(inboundSession: SessionManager.SessionDirection.Inbound) {
+        cachedInboundSessions.put(inboundSession.session.sessionId, inboundSession)
     }
 
-    fun invalidate(key: String) {
+    fun invalidateAndRemoveFromSchedular(key: String) {
+        invalidate(key)
+        removeFromScheduler(key)
+    }
+
+    private fun invalidate(key: String) {
         cachedInboundSessions.invalidate(key)
         cachedOutboundSessions.invalidate(key)
     }
@@ -125,7 +123,7 @@ internal class SessionCache(
         }.toMap()
     }
 
-    fun removeFromScheduler(key: String) {
+    private fun removeFromScheduler(key: String) {
         tasks.compute(key) { _, currentValue ->
             currentValue?.future?.cancel(false)
             null

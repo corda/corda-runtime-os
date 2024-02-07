@@ -91,9 +91,9 @@ class StatefulSessionManagerImplTest {
             val sessionIdsContainers = sessionIds.map {
                 Wrapper(it)
             }
-            val savedStates = sessionIds.associateWith { sessionId ->
+            val savedStates = sessionIds.associateWith { id ->
                 val state = mock<State> {
-                    on { value } doReturn sessionId.toByteArray()
+                    on { value } doReturn id.toByteArray()
                     on { metadata } doReturn Metadata(
                         mapOf(
                             "sourceVnode" to "O=Alice, L=London, C=GB",
@@ -108,7 +108,9 @@ class StatefulSessionManagerImplTest {
                     )
                     on { key } doReturn "stateKey"
                 }
-                val serialisableSessionData = mock<AuthenticatedSession>()
+                val serialisableSessionData = mock<AuthenticatedSession> {
+                    on { sessionId } doReturn id
+                }
                 val sessionState = mock<SessionState> {
                     on { sessionData } doReturn serialisableSessionData
                 }

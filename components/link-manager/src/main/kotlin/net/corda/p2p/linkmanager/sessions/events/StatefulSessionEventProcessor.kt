@@ -27,6 +27,7 @@ import net.corda.p2p.linkmanager.sessions.metadata.InboundSessionStatus
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.toOutbound
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionStatus
 import net.corda.schema.Schemas
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
@@ -36,30 +37,26 @@ internal class StatefulSessionEventProcessor(
     messagingConfiguration: SmartConfig,
     private val stateManager: StateManager,
     private val stateConvertor: StateConvertor,
-    private val sessionExpiryScheduler: SessionCache,
+
+    val sessionCache: SessionCache,
     private val sessionManagerImpl: SessionManagerImpl,
 ): LifecycleWithDominoTile {
 
-    companion object {
-        private val CONSUMER_GROUP_ID = "session-events" + UUID.randomUUID().toString()
+    private companion object {
+        val CONSUMER_GROUP_ID = "session-events" + UUID.randomUUID().toString()
+        val logger: Logger = LoggerFactory.getLogger(this::class.java)
     }
 
     private val subscriptionConfig = SubscriptionConfig(CONSUMER_GROUP_ID, Schemas.P2P.SESSION_EVENTS)
     private val sessionPartitionSubscription = {
         subscriptionFactory.createPubSubSubscription(
             subscriptionConfig,
-            SessionEventProcessor(stateManager, stateConvertor, sessionManagerImpl, sessionExpiryScheduler),
+            SessionEventProcessor(),
             messagingConfiguration
         )
     }
 
-    class SessionEventProcessor(
-        private val stateManager: StateManager,
-        private val stateConvertor: StateConvertor,
-        private val sessionManagerImpl: SessionManagerImpl,
-        private val sessionCache: SessionCache,
-    ) : PubSubProcessor<String, SessionEvent> {
-        private val logger = LoggerFactory.getLogger(this::class.java)
+    inner class SessionEventProcessor: PubSubProcessor<String, SessionEvent> {
         override fun onNext(event: Record<String, SessionEvent>): Future<Unit> {
             val sessionEvent = event.value
             when (val type = sessionEvent?.type) {
@@ -68,8 +65,7 @@ internal class StatefulSessionEventProcessor(
                 }
                 is SessionDeleted -> {
                     logger.info("Received a session deletion event for session with key ${type.stateManagerKey}.")
-                    sessionCache.removeFromScheduler(type.stateManagerKey)
-                    sessionCache.invalidate(type.stateManagerKey)
+                    sessionCache.invalidateAndRemoveFromSchedular(type.stateManagerKey)
                 }
                 null -> {
                     logger.warn("Received an unknown session event. This will be ignored.")
@@ -78,8 +74,9 @@ internal class StatefulSessionEventProcessor(
             return CompletableFuture.completedFuture(Unit)
         }
 
-        private fun sessionsCreated(events: List<SessionCreated>) {
+        private fun sessionsCreated(events: Collection<SessionCreated>) {
             val eventsWithoutCachedSession = events.filter { sessionCache.getByKeyIfCached(it.stateManagerKey) == null }
+            if (eventsWithoutCachedSession.isEmpty()) return
             val states = stateManager.get(eventsWithoutCachedSession.mapNotNull { it.stateManagerKey }.toList())
             for (event in eventsWithoutCachedSession) {
                 val state = states[event.stateManagerKey]
@@ -103,12 +100,11 @@ internal class StatefulSessionEventProcessor(
                 when (event.direction) {
                     SessionDirection.INBOUND -> {
                         if (state.metadata.toInbound().status == InboundSessionStatus.SentResponderHandshake) {
-                            logger.info(
+                            logger.trace(
                                 "Received an inbound session creation event for session between (local=${counterparties.ourId} and " +
                                     "remote=${counterparties.counterpartyId}) for sessionId = ${session.sessionId}."
                             )
                             sessionCache.putInboundSession(
-                                event.stateManagerKey,
                                 SessionManager.SessionDirection.Inbound(counterparties, session)
                             )
                         } else {
@@ -122,14 +118,13 @@ internal class StatefulSessionEventProcessor(
 
                     SessionDirection.OUTBOUND -> {
                         if (state.metadata.toOutbound().status == OutboundSessionStatus.SessionReady) {
-                            logger.info(
+                            logger.trace(
                                 "Received an outbound session creation event for session between (local=${counterparties.ourId} and " +
                                     "remote=${counterparties.counterpartyId}) for sessionId = ${session.sessionId}."
                             )
                             sessionCache.putOutboundSession(
                                 event.stateManagerKey,
-                                counterparties,
-                                session
+                                SessionManager.SessionDirection.Outbound(counterparties, session)
                             )
                         } else {
                             logger.error(
