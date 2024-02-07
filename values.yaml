@@ -30,14 +30,6 @@ bootstrap:
   preinstallCheck:
     enabled: false
   db:
-    cluster:
-      password:
-        valueFrom:
-          secretKeyRef:
-            name: "prereqs-postgresql"
-            key: "postgres-password"
-      username:
-        value: "postgres"
     databases:
       - id: "default"
         username:
@@ -72,17 +64,6 @@ kafka:
         secretKeyRef:
           name: "prereqs-kafka-0-tls"
           key: "ca.crt"
-
-db:
-  cluster:
-    host: "prereqs-postgresql"
-    password:
-      valueFrom:
-        secretKeyRef:
-          name: "prereqs-postgresql"
-          key: "password"
-    username:
-      value: "user"
 
 databases:
   - id: "default"

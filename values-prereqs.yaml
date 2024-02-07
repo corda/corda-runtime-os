@@ -48,15 +48,6 @@ bootstrap:
   # Disable pre-install check as we are not specifying resources
   preinstallCheck:
     enabled: false
-  db:
-    cluster:
-      password:
-        valueFrom:
-          secretKeyRef:
-            name: "prereqs-postgres"
-            key: "postgres-password"
-      username:
-        value: "postgres"
     databases:
       - id: "default"
         username:
@@ -72,17 +63,6 @@ bootstrap:
               key: "postgres-password"
   kafka:
     replicas: 1
-
-db:
-  cluster:
-    host: "prereqs-postgres"
-    username:
-      value: "corda"
-    password:
-      valueFrom:
-        secretKeyRef:
-          name: "prereqs-postgres"
-          key: "corda-password"
 
 kafka:
   bootstrapServers: "prereqs-kafka:9092"
