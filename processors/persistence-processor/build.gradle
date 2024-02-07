@@ -8,7 +8,6 @@ description 'Persistence Processor'
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly 'org.osgi:osgi.annotation'
-    compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':components:configuration:configuration-read-service')
