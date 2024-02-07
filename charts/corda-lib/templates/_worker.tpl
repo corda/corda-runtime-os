@@ -145,6 +145,7 @@ spec:
         {{- end }}
       labels:
         {{- include "corda.workerSelectorLabels" ( list $ $worker ) | nindent 8 }}
+        {{- include "corda.workerCommonPodLabels" $ | nindent 8 }}
     spec:
       {{- if and ( not $.Values.dumpHostPath ) ( not .profiling.enabled ) }}
       {{- with $.Values.podSecurityContext }}
