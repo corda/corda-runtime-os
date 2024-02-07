@@ -435,6 +435,53 @@ bootstrap:
             # -- the password secret key
             key: ""
 
+    # Virtual nodes configuration
+    virtualNodes:
+      # -- persistent storage type
+      type: Database
+      # -- name of the persistent storage to use. When using 'Database' as the type, an element with the given id should exist under the databases section
+      storageId: "default"
+      # -- name of the partition to use. When using 'Database' as the type, the 'partition' represents the name of the database schema
+      partition: "VIRTUAL_NODE"
+      # JDBC connection pool configuration for virtual node DB
+      connectionPool:
+        # -- maximum JDBC connection pool size for virtual node DB
+        maxSize: 5
+        # -- minimum JDBC connection pool size for virtual node DB; null value means pool's min size will default to pool's max size value
+        minSize: null
+        # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
+        idleTimeoutSeconds: 120
+        # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+        maxLifetimeSeconds: 1800
+        # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
+        keepAliveTimeSeconds: 0
+        # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+        validationTimeoutSeconds: 5
+      # the username configuration
+      username:
+        # -- the username, defaults to a value randomly-generated on install
+        value: "virtual_node_user"
+        # the username secret configuration; used in preference to value if name is set
+        valueFrom:
+          # the username secret key reference
+          secretKeyRef:
+            # -- the username secret name
+            name: ""
+            # -- the username secret key
+            key: ""
+      # password configuration
+      password:
+        # -- the password, defaults to a value randomly-generated on install
+        value: ""
+        # the password secret configuration
+        valueFrom:
+          # the password secret key reference
+          secretKeyRef:
+            # -- the password secret name
+            name: ""
+            # -- the password secret key
+            key: ""
+
   # Configuration for RBAC roles bootstrap
   rbac:
     # -- Indicates whether RBAC roles bootstrapping is enabled as part of installation

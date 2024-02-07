@@ -1087,6 +1087,16 @@
                                 }
                             ]
                         },
+                        "virtualNodes": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/$defs/persistentStorageMapping"
+                                },
+                                {
+                                    "$ref": "#/$defs/persistentStorageRuntimeConnectionSettings"
+                                }
+                            ]
+                        },
                         "databases": {
                             "type": "array",
                             "title": "Administrator credentials per database, used to configure users/roles and grant required runtime permissions",

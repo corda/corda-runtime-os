@@ -39,35 +39,6 @@
 {{ printf "%s-volume" ( include "corda.kebabCase" . ) }}
 {{- end -}}
 
-{{/*
-    Environment variables (BOOT_PG_USERNAME and BOOT_PG_PASSWORD) to be used when bootstrapping state manager databases
-*/}}
-{{- define "corda.sm.db.bootstrapEnvironment" -}}
-{{- $ := index . 0 -}}
-{{- $dbId := index . 1 -}}
-{{- $bootstrapSettings := index . 2 -}}
-- name: BOOT_PG_USERNAME
-  valueFrom:
-    secretKeyRef:
-      {{- if $bootstrapSettings.username.valueFrom.secretKeyRef.name }}
-      name: {{ $bootstrapSettings.username.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required ( printf "Must specify username.valueFrom.secretKeyRef.key for database '%s'" $dbId ) $bootstrapSettings.username.valueFrom.secretKeyRef.key | quote }}
-      {{-   else }}
-      name: {{ include "corda.db.bootstrapCredentialsSecretName" ( list $ $dbId ) | quote }}
-      key: "username"
-      {{-   end }}
-- name: BOOT_PG_PASSWORD
-  valueFrom:
-    secretKeyRef:
-      {{- if $bootstrapSettings.password.valueFrom.secretKeyRef.name }}
-      name: {{ $bootstrapSettings.password.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required ( printf "Must specify password.valueFrom.secretKeyRef.key for database '%s'" $dbId ) $bootstrapSettings.password.valueFrom.secretKeyRef.key | quote }}
-      {{-   else }}
-      name: {{ include "corda.db.bootstrapCredentialsSecretName" ( list $ $dbId ) | quote }}
-      key: "password"
-      {{-   end }}
-{{- end -}}
-
 
 {{/*
     Environment variables to be used when using state manager databases (STATE_MANAGER_USERNAME and STATE_MANAGER_PASSWORD)
@@ -82,22 +53,15 @@
 {{- $dbId := index . 1 -}}
 {{- $stateType := index . 2 -}}
 {{- $workerName := index . 3 -}}
-{{- $defaultSettings := index . 4 -}}
-{{- $runtimeSettings := index . 5 -}}
+{{- $runtimeSettings := index . 4 -}}
 - name: STATE_MANAGER_USERNAME
   valueFrom:
     secretKeyRef:
       {{- if $runtimeSettings.username.valueFrom.secretKeyRef.name }}
       name: {{ $runtimeSettings.username.valueFrom.secretKeyRef.name | quote }}
       key: {{ required ( printf "Must specify workers.%s.stateManager.%s.username.valueFrom.secretKeyRef.key" $workerName $stateType ) $runtimeSettings.username.valueFrom.secretKeyRef.key | quote }}
-      {{-   else if $runtimeSettings.username.value }}
+      {{-   else }}
       name: {{ include "corda.sm.runtimeCredentialsSecretName" ( list $ $stateType $workerName ) | quote }}
-      key: "username"
-      {{-   else if $defaultSettings.username.valueFrom.secretKeyRef.name }}
-      name: {{ $defaultSettings.username.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required ( printf "Must specify username.valueFrom.secretKeyRef.key for database '%s'" $dbId ) $defaultSettings.username.valueFrom.secretKeyRef.key | quote }}
-      {{-   else  }}
-      name: {{ include "corda.db.runtimeCredentialsSecretName" ( list $ $dbId ) | quote }}
       key: "username"
       {{-   end }}
 - name: STATE_MANAGER_PASSWORD
@@ -106,14 +70,8 @@
       {{- if $runtimeSettings.password.valueFrom.secretKeyRef.name }}
       name: {{ $runtimeSettings.password.valueFrom.secretKeyRef.name | quote }}
       key: {{ required ( printf "Must specify workers.%s.stateManager.%s.password.valueFrom.secretKeyRef.key" $workerName $stateType ) $runtimeSettings.password.valueFrom.secretKeyRef.key | quote }}
-      {{-   else if $runtimeSettings.password.value }}
+      {{-   else }}
       name: {{ include "corda.sm.runtimeCredentialsSecretName" ( list $ $stateType $workerName ) | quote }}
-      key: "password"
-      {{-   else if $defaultSettings.password.valueFrom.secretKeyRef.name }}
-      name: {{ $defaultSettings.password.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required ( printf "Must specify password.valueFrom.secretKeyRef.key for database '%s'" $dbId ) $defaultSettings.password.valueFrom.secretKeyRef.key | quote }}
-      {{-   else  }}
-      name: {{ include "corda.db.runtimeCredentialsSecretName" ( list $ $dbId ) | quote }}
       key: "password"
       {{-   end }}
 {{- end -}}
@@ -142,7 +100,7 @@
           {{- include "corda.containerSecurityContext" . | nindent 10 }}
           env:
             {{- include "corda.bootstrapCliEnv" . | nindent 12 }}
-            {{- include "corda.sm.db.bootstrapEnvironment" ( list $ $dbId $bootstrapSettings ) | nindent 12 }}
+            {{- include "corda.db.bootstrapEnvironment" ( list $ "config" $dbId $bootstrapSettings ) | nindent 12 }}
           command: [ 'sh', '-c', '-e' ]
           args:
             - |
@@ -153,7 +111,7 @@
               mkdir /tmp/database-{{ $workerKebabCase }}-{{ $stateTypeKebabCase }}
               java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
                 -s "statemanager" -g "statemanager:{{ $schemaName }}" \
-                -u "${BOOT_PG_USERNAME}" -p "${BOOT_PG_PASSWORD}" \
+                -u "${BOOTSTRAP_CONFIG_DB_USERNAME}" -p "${BOOTSTRAP_CONFIG_DB_PASSWORD}" \
                 --jdbc-url "${JDBC_URL}" \
                 -c -l /tmp/database-{{ $workerKebabCase }}-{{ $stateTypeKebabCase }}
               echo "Generating Database Specification for Database '{{ $dbId }}'... Done"
@@ -168,8 +126,8 @@
           {{- include "corda.bootstrapResources" . | nindent 10 }}
           {{- include "corda.containerSecurityContext" . | nindent 10 }}
           env:
-            {{- include "corda.sm.db.bootstrapEnvironment" ( list $ $dbId $bootstrapSettings ) | nindent 12 }}
-            {{- include "corda.sm.db.runtimeEnvironment" ( list $ $dbId $stateType $workerName $databaseConfig $runtimeSettings ) | nindent 12 }}
+            {{- include "corda.db.bootstrapEnvironment" ( list $ "config" $dbId $bootstrapSettings ) | nindent 12 }}
+            {{- include "corda.sm.db.runtimeEnvironment" ( list $ $dbId $stateType $workerName $runtimeSettings ) | nindent 12 }}
           command: [ 'sh', '-c', '-e' ]
           args:
             - |
@@ -209,7 +167,6 @@
 {{- range $stateType, $runtimeSettings := $workerConfig.stateManager }}
 {{-   $volumeName := include "corda.sm.runtimeCredentialsVolumeName" $stateType }}
 {{-   $stateTypeRootConfig := ( index $.Values.stateManager $stateType ) }}
-{{-   $connectionSettings := fromYaml ( include "corda.db.configuration" ( list $ $stateTypeRootConfig.storageId ( printf "stateManager.%s.storageId" $stateType ) ) ) }}
 - name: {{ $volumeName }}
   projected:
     sources:
@@ -219,18 +176,8 @@
           items:
             - key: {{ required ( printf "Must specify workers.%s.stateManager.%s.username.valueFrom.secretKeyRef.key" $workerName $stateType ) $runtimeSettings.username.valueFrom.secretKeyRef.key | quote }}
               path: "username"
-{{-   else if $runtimeSettings.username.value }}
+{{-   else }}
           name: {{ include "corda.sm.runtimeCredentialsSecretName" ( list $ $stateType $workerName ) | quote }}
-          items:
-            - key: "username"
-              path: "username"
-{{-   else if $connectionSettings.username.valueFrom.secretKeyRef.name }}
-          name: {{ $connectionSettings.username.valueFrom.secretKeyRef.name | quote }}
-          items:
-            - key: {{ required ( printf "Must specify username.valueFrom.secretKeyRef.key for database '%s'" $connectionSettings.id ) $connectionSettings.username.valueFrom.secretKeyRef.key | quote }}
-              path: "username"
-{{-   else  }}
-          name: {{ include "corda.db.runtimeCredentialsSecretName" ( list $ $connectionSettings.id ) | quote }}
           items:
             - key: "username"
               path: "username"
@@ -241,18 +188,8 @@
           items:
             - key: {{ required ( printf "Must specify workers.%s.stateManager.%s.password.valueFrom.secretKeyRef.key" $workerName $stateType ) $runtimeSettings.password.valueFrom.secretKeyRef.key | quote }}
               path: "password"
-{{-   else if $runtimeSettings.password.value }}
+{{-   else }}
           name: {{ include "corda.sm.runtimeCredentialsSecretName" ( list $ $stateType $workerName ) | quote }}
-          items:
-            - key: "password"
-              path: "password"
-{{-   else if $connectionSettings.password.valueFrom.secretKeyRef.name }}
-          name: {{ $connectionSettings.password.valueFrom.secretKeyRef.name | quote }}
-          items:
-            - key: {{ required ( printf "Must specify password.valueFrom.secretKeyRef.key for database '%s'" $connectionSettings.id ) $connectionSettings.password.valueFrom.secretKeyRef.key | quote }}
-              path: "password"
-{{-   else  }}
-          name: {{ include "corda.db.runtimeCredentialsSecretName" ( list $ $connectionSettings.id ) | quote }}
           items:
             - key: "password"
               path: "password"
