@@ -87,7 +87,7 @@ class StatefulSessionManagerImplTest {
                             "encryptionKeyId" to "encryptionKeyId",
                             "encryptionTenant" to "encryptionTenant",
                             "status" to "SentResponderHello",
-                            "expiry" to 2000000L,
+                            "expiry" to 20000000L,
                         ),
                     )
                     on { key } doReturn "stateKey"
@@ -120,14 +120,14 @@ class StatefulSessionManagerImplTest {
                         "groupId" to "group ID",
                         "lastSendTimestamp" to 50L,
                         "status" to "SentResponderHello",
-                        "expiry" to 1000L,
+                        "expiry" to 20000000L,
                     ),
                 )
 
                 on { key } doReturn "stateKey"
             }
             val sessionIdentity = "id"
-            whenever(stateManager.get(listOf(sessionIdentity))).doReturn(
+            whenever(stateManager.get(argThat { contains(sessionIdentity) })).doReturn(
                 mapOf(
                     sessionIdentity to state,
                 ),
@@ -190,7 +190,7 @@ class StatefulSessionManagerImplTest {
                 it.value
             }
 
-            verify(stateManager, times(1)).get(listOf(sessionIdentity))
+            verify(stateManager, times(1)).get(any())
         }
     }
 
@@ -212,7 +212,7 @@ class StatefulSessionManagerImplTest {
                 on { key } doReturn "stateKey"
             }
             val sessionIdentity = "id"
-            whenever(stateManager.get(listOf(sessionIdentity))).doReturn(
+            whenever(stateManager.get(any())).doReturn(
                 mapOf(
                     sessionIdentity to state,
                 ),
