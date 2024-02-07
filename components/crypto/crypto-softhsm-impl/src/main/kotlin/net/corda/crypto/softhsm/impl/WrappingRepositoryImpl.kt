@@ -62,10 +62,10 @@ class WrappingRepositoryImpl(
             }
         }
 
-    override fun findKeysWrappedByParentKey(parentKeyAlias: String): List<WrappingKeyInfo> =
+    override fun findKeysNotWrappedByParentKey(parentKeyAlias: String): List<WrappingKeyInfo> =
         entityManagerFactory.createEntityManager().use {
             it.createQuery(
-                "FROM ${WrappingKeyEntity::class.simpleName} AS k WHERE k.parentKeyReference = :parentKeyAlias",
+                "FROM ${WrappingKeyEntity::class.simpleName} AS k WHERE k.parentKeyReference != :parentKeyAlias",
                 WrappingKeyEntity::class.java
             ).setParameter("parentKeyAlias", parentKeyAlias).resultList
                 .map { dao -> dao.toDto() }
