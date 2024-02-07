@@ -61,13 +61,6 @@ stateManager:
 
 bootstrap:
   db:
-    cluster:
-      username:
-        value: "postgres"
-      password:
-        valueFrom:
-          secretKeyRef:
-            key: "postgres-password"
     databases:
       - id: "default"
         username:
@@ -106,15 +99,6 @@ bootstrap:
 
 logging:
   format: "text"
-
-db:
-  cluster:
-    password:
-      valueFrom:
-        secretKeyRef:
-          key: "password"
-    username:
-      value: "user"
 
 kafka:
   bootstrapServers: "prereqs-kafka:9092"

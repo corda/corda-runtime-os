@@ -384,7 +384,7 @@ bootstrap:
         # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
         maxLifetimeSeconds: 1800
         # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
-        keepaliveTimeSeconds: 0
+        keepAliveTimeSeconds: 0
         # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
         validationTimeoutSeconds: 5
       # the username configuration
@@ -431,7 +431,7 @@ bootstrap:
         # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
         maxLifetimeSeconds: 1800
         # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
-        keepaliveTimeSeconds: 0
+        keepAliveTimeSeconds: 0
         # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
         validationTimeoutSeconds: 5
       # the username configuration
@@ -601,6 +601,8 @@ workers:
       limits: {}
     # crypto worker configuration for the config service
     config:
+      # -- persistent storage type
+      type: Database
       # Database user, empty values instructs the chart to use the default settings configured for the associated persistent storage
       username:
         # -- the crypto worker config database user
@@ -636,7 +638,7 @@ workers:
         # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
         maxLifetimeSeconds: 1800
         # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
-        keepaliveTimeSeconds: 0
+        keepAliveTimeSeconds: 0
         # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
         validationTimeoutSeconds: 5
     # crypto worker Kafka configuration
@@ -751,6 +753,8 @@ workers:
       limits: {}
     # DB worker configuration for the config service
     config:
+      # -- persistent storage type
+      type: Database
       # Database user, empty values instructs the chart to use the default settings configured for the associated persistent storage
       username:
         # -- the DB worker config database user
@@ -786,7 +790,7 @@ workers:
         # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
         maxLifetimeSeconds: 1800
         # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
-        keepaliveTimeSeconds: 0
+        keepAliveTimeSeconds: 0
         # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
         validationTimeoutSeconds: 5
     # DB worker Kafka configuration
@@ -1592,6 +1596,8 @@ workers:
       limits: { }
     # persistence worker configuration for the config service
     config:
+      # -- persistent storage type
+      type: Database
       # Database user, empty values instructs the chart to use the default settings configured for the associated persistent storage
       username:
         # -- the persistence worker config database user
@@ -1627,7 +1633,7 @@ workers:
         # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
         maxLifetimeSeconds: 1800
         # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
-        keepaliveTimeSeconds: 0
+        keepAliveTimeSeconds: 0
         # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
         validationTimeoutSeconds: 5
     # persistence worker Kafka configuration
@@ -1698,6 +1704,8 @@ workers:
       limits: { }
     # token selection worker configuration for the config service
     config:
+      # -- persistent storage type
+      type: Database
       # Database user, empty values instructs the chart to use the default settings configured for the associated persistent storage
       username:
         # -- the token selection worker config database user
@@ -1733,7 +1741,7 @@ workers:
         # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
         maxLifetimeSeconds: 1800
         # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
-        keepaliveTimeSeconds: 0
+        keepAliveTimeSeconds: 0
         # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
         validationTimeoutSeconds: 5
     stateManager:
@@ -1860,6 +1868,8 @@ workers:
       limits: {}
     # uniqueness worker configuration for the config service
     config:
+      # -- persistent storage type
+      type: Database
       # Database user, empty values instructs the chart to use the default settings configured for the associated persistent storage
       username:
         # -- the uniqueness worker config database user
@@ -1895,7 +1905,7 @@ workers:
         # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
         maxLifetimeSeconds: 1800
         # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
-        keepaliveTimeSeconds: 0
+        keepAliveTimeSeconds: 0
         # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
         validationTimeoutSeconds: 5
     # uniqueness worker Kafka configuration
