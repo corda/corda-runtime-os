@@ -42,10 +42,6 @@ pipeline {
             defaultContainer k8s.defaultContainer.name
         }
     }
-    
-    triggers {
-        issueCommentTrigger('^build e2e$')
-    }
 
     stages {
         stage ('Trigger E2E Test') {
