@@ -5,6 +5,8 @@ bootstrap:
   db:
     clientImage:
       registry: docker-remotes.software.r3.com
+  commonPodLabels:
+    sidecar.istio.io/inject: !!str false # explicitly disable Istio integration from bootstrap pods
 
 resources:
   requests:
@@ -13,3 +15,6 @@ resources:
   limits:
     memory: "1250Mi"
     cpu: "1000m"
+
+commonPodLabels:
+  sidecar.istio.io/inject: !!str true # explicitly enable Istio integration from all Corda pods

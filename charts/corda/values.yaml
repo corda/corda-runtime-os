@@ -48,6 +48,9 @@ podSecurityContext:
 # -- extra labels to add to all deployed objects
 commonLabels: {}
 
+# extra labels to add to all pods created by deployments
+commonPodLabels: {}
+
 # -- image pull secrets
 imagePullSecrets: []
 
@@ -581,6 +584,8 @@ bootstrap:
   serviceAccount:
     name: ""
 
+  # extra labels to add to all pods created by bootstrap jobs
+  commonPodLabels: { }
 # config service configuration
 config:
   # the configuration for encryption of configuration
