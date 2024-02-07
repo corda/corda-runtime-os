@@ -37,7 +37,7 @@
     "description" : "The Keys Management API consists of endpoints used to manage public and private key pairs. The API allows you to list scheme codes which are supported by the associated HSM integration, retrieve information about key pairs owned by a tenant, generate a key pair for a tenant, and retrieve a tenant's public key in PEM format."
   }, {
     "name" : "Key Rotation API",
-    "description" : "Contains operations related to rotation of the master and vNode wrapping keys."
+    "description" : "Contains operations related to rotation of the master, cluster-level and vNode wrapping keys."
   }, {
     "name" : "MGM API",
     "description" : "The MGM API consists of a number of endpoints used to manage membership groups. A membership group is a logical grouping of a number of Corda Identities to communicate and transact with one another with a specific set of CorDapps. The API allows you to generate the group policy for a membership group, required for new members to join the group."
@@ -4359,18 +4359,18 @@
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "UUID of the virtual node or 'master' for master wrapping key rotation status.",
+          "description" : "Can either be a holding identity ID, the value 'master' for master wrapping key or one of the values 'p2p', 'rest', 'crypto' for corresponding cluster-level services.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "UUID of the virtual node or 'master' for master wrapping key rotation status.",
+            "description" : "Can either be a holding identity ID, the value 'master' for master wrapping key or one of the values 'p2p', 'rest', 'crypto' for corresponding cluster-level services.",
             "nullable" : false,
             "example" : "string"
           }
         } ],
         "responses" : {
           "200" : {
-            "description" : "Number of keys which need rotating grouped by tenantId or tenantId's wrapping keys",
+            "description" : "Number of keys which need rotating grouped by tenantId or tenantId's wrapping keys.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -4389,16 +4389,16 @@
       },
       "post" : {
         "tags" : [ "Key Rotation API" ],
-        "description" : "This method enables to rotate all wrapping keys for tenantId or master wrapping key.",
+        "description" : "This method enables to rotate master wrapping key or all wrapping keys for tenantId (holding identity ID or cluster-level tenant).",
         "operationId" : "post_wrappingkey_rotation__tenantid_",
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "UUID of the virtual node or 'master' for master wrapping key rotation.",
+          "description" : "Can either be a holding identity ID, the value 'master' for master wrapping key or one of the values 'p2p', 'rest', 'crypto' for corresponding cluster-level services.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "UUID of the virtual node or 'master' for master wrapping key rotation.",
+            "description" : "Can either be a holding identity ID, the value 'master' for master wrapping key or one of the values 'p2p', 'rest', 'crypto' for corresponding cluster-level services.",
             "nullable" : false,
             "example" : "string"
           }
