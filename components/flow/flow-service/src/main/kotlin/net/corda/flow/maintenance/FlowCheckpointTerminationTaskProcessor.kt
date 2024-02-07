@@ -44,6 +44,7 @@ class FlowCheckpointTerminationTaskProcessor(
     private val checkpointTerminationTimeMilliseconds = config.getLong(PROCESSING_FLOW_CHECKPOINT_CLEANUP_TIME)
 
     override fun onNext(events: List<Record<String, ScheduledTaskTrigger>>): List<Record<*, *>> {
+        // Filter to the task that this processor cares about. There can be other tasks on this topic.
         return if (events.any { it.value?.name == ScheduledTask.SCHEDULED_TASK_NAME_FLOW_CHECKPOINT_TERMINATION }) {
             process().map {
                 Record(Schemas.Flow.FLOW_CHECKPOINT_TERMINATION, UUID.randomUUID().toString(), it)
