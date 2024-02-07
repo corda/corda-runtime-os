@@ -117,7 +117,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val polledRecords = messages.map { it.toRecord() }.groupBy { it.key }
         if (messages.isNotEmpty()) {
             val states = stateManager.get(polledRecords.keys.map { it.toString() })
-            batchMetrics.pollCompleted(states.size)
+            batchMetrics.pollCompleted(messages.size)
             val inputs = generateInputs(states.values, polledRecords)
             var groups = groupAllocator.allocateGroups(inputs, config)
 
@@ -130,7 +130,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                     val future = taskManager.executeShortRunningTask {
                         MediatorTraceLog.init(batchGroupMetrics.logs, batchGroupMetrics.scheduledTime)
                         batchGroupMetrics.start()
-                        eventProcessor.processEvents(group)
+                        eventProcessor.processEvents(group, batchGroupMetrics)
                     }
                     Triple(future, group, batchGroupMetrics)
                 }.map { (future, group, batchGroupMetrics) ->

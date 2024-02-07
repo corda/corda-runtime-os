@@ -14,6 +14,7 @@ import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.StateManagerHelper
+import net.corda.messaging.mediator.metrics.MediatorBatchMetrics
 import net.corda.tracing.addTraceContextToRecord
 import org.slf4j.LoggerFactory
 
@@ -50,6 +51,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
      */
     fun processEvents(
         inputs: Map<K, EventProcessingInput<K, E>>,
+        batchGroupMetric: MediatorBatchMetrics.BatchGroupMetric,
     ): Map<K, EventProcessingOutput> {
         return inputs.mapValues { (key, input) ->
             val inputState = input.state
@@ -60,9 +62,9 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                     inputState?.metadata,
                 )
             }
-            MediatorTraceLog.recordEvent(key.toString(), "State Loaded")
             val newInputs = EventProcessingInput(key, allConsumerInputs, inputState)
-            processRecords(newInputs, processorState)
+            val summary = batchGroupMetric.createGroupSummary(key.toString())
+            processRecords(newInputs, processorState).apply { summary.complete() }
         }
     }
 

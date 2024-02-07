@@ -17,10 +17,20 @@ class MediatorBatchMetrics {
         private val lastReport = AtomicLong().apply { set(0) }
     }
 
+    class BatchGroupSummary(val id: String) {
+        val startExecutionTime = System.nanoTime()
+        var completionTime = 0L
+
+        fun complete() {
+            completionTime = System.nanoTime()
+        }
+    }
+
     class BatchGroupMetric(
         val scheduledTime: Long,
         val batchSize: Int,
         val logs: MutableList<MediatorTraceLog.LoggedEvent>,
+        val groups: MutableList<BatchGroupSummary>,
     ) {
         var startExecutionTime = 0L
         var completionTime = 0L
@@ -31,6 +41,10 @@ class MediatorBatchMetrics {
 
         fun complete() {
             completionTime = System.nanoTime()
+        }
+
+        fun createGroupSummary(id: String): BatchGroupSummary {
+            return BatchGroupSummary(id).apply { groups.add(this) }
         }
     }
 
@@ -43,11 +57,20 @@ class MediatorBatchMetrics {
         var groups = mutableListOf<GroupReport>()
     }
 
+    class GroupSummary {
+        var id: String = ""
+        var startOffset = 0L
+        var executionTime = 0L
+    }
+
     class GroupReport {
         var groupSize: Int = 0
         var groupStartOffset: Long = 0
         var groupExecutionTime: Long = 0
         var reportLogs = mutableListOf<LogReport>()
+        var groupSummary = mutableListOf<GroupSummary>()
+        var fiberInteractions: Int = 0
+        var serviceCalls: Int = 0
     }
 
     class LogReport {
@@ -71,7 +94,12 @@ class MediatorBatchMetrics {
     }
 
     fun createGroupBatch(batchSize: Int): BatchGroupMetric {
-        return BatchGroupMetric(System.nanoTime(), batchSize, mutableListOf()).apply { groupMetrics.add(this) }
+        return BatchGroupMetric(
+            System.nanoTime(),
+            batchSize,
+            mutableListOf(),
+            mutableListOf(),
+        ).apply { groupMetrics.add(this) }
     }
 
     fun batchStatePersisted() {
@@ -85,11 +113,12 @@ class MediatorBatchMetrics {
     fun batchCompleted() {
         val exeTime = startTime.timeToNow().toMillis()
         val now = Instant.now().toEpochMilli()
-        if (exeTime < thresholdTimeMillis || batchSize == 0 || (lastReport.get() + 1000) > now) {
+        if (exeTime < thresholdTimeMillis || batchSize == 0 || (lastReport.get() + 5000) > now) {
             return
         }
 
-        val report = Report().apply {
+        /*
+        val report1 = Report().apply {
             this.pollBatchSize = batchSize
             this.pollTime = pollCompleteTime.toMillis()
             this.pollBatchExecutionTime = startTime.timeToNow().toMillis()
@@ -110,15 +139,40 @@ class MediatorBatchMetrics {
                 }
             }.toMutableList()
         }
+*/
+        val report2 = Report().apply {
+            this.pollBatchSize = batchSize
+            this.pollTime = pollCompleteTime.toMillis()
+            this.pollBatchExecutionTime = startTime.timeToNow().toMillis()
+            this.stateUpdatedTime = internalStatePersistedTime.toMillis()
+            this.outputsCommittedTime = internalOutputsCommittedTime.toMillis()
+            this.groups = groupMetrics.map { grp ->
+                GroupReport().apply {
+                    this.groupSize = grp.batchSize
+                    this.groupStartOffset = (grp.startExecutionTime - grp.scheduledTime).toMillis()
+                    this.groupExecutionTime = (grp.completionTime - grp.startExecutionTime).toMillis()
+                    this.fiberInteractions = grp.logs.count { it.text == "Flow fiber started in the background." }
+                    this.serviceCalls = grp.logs.count { it.text.startsWith("Start sync Event") }
+                    this.groupSummary = grp.groups.map { loggedEvent ->
+                        GroupSummary().apply {
+                            id = loggedEvent.id
+                            startOffset = (loggedEvent.startExecutionTime - grp.scheduledTime).toMillis()
+                            executionTime = (loggedEvent.completionTime - loggedEvent.startExecutionTime).toMillis()
+                        }
+                    }.toMutableList()
+                }
+            }.toMutableList()
+        }
+
         lastReport.set(Instant.now().toEpochMilli())
-        log.info("Mediator threshold breached: '${mapper.writeValueAsString(report)}'")
+        log.info("Mediator threshold breached: '${mapper.writeValueAsString(report2)}'")
     }
+}
 
-    private fun Long.toMillis(): Long {
-        return Duration.ofNanos(this).toMillis()
-    }
+private fun Long.toMillis(): Long {
+    return Duration.ofNanos(this).toMillis()
+}
 
-    private fun Long.timeToNow(): Long {
-        return System.nanoTime() - this
-    }
+private fun Long.timeToNow(): Long {
+    return System.nanoTime() - this
 }
