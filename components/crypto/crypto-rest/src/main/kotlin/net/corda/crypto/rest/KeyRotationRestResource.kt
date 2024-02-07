@@ -2,7 +2,6 @@ package net.corda.crypto.rest
 
 import net.corda.crypto.rest.response.KeyRotationResponse
 import net.corda.crypto.rest.response.KeyRotationStatusResponse
-import net.corda.crypto.rest.response.ManagedKeyRotationStatusResponse
 import net.corda.rest.RestResource
 import net.corda.rest.SC_ACCEPTED
 import net.corda.rest.annotations.HttpGET
@@ -20,70 +19,37 @@ import net.corda.rest.response.ResponseEntity
  */
 @HttpRestResource(
     name = "Key Rotation API",
-    description = "Contains operations related to rotation of the wrapping keys.",
+    description = "Contains operations related to rotation of the master and vNode wrapping keys.",
     path = "wrappingkey",
     minVersion = RestApiVersion.C5_2
 )
 interface KeyRotationRestResource : RestResource {
     /**
-     * The [getUnmanagedKeyRotationStatus] gets the latest key rotation status for [keyAlias] if one exists.
+     * The [getKeyRotationStatus] gets the latest key rotation status for [tenantId] if one exists.
      *
-     * @return A list of vNodes with the total number of keys needs re-rewrapping and the number of already re-wrapped
-     *          keys.
+     * @param tenantId UUID of the virtual node or 'master' for master wrapping key rotation status.
      *
-     * @throws ResourceNotFoundException If no key rotation was in progress for [keyAlias].
-     */
-    @HttpGET(
-        path = "rotation/master/{keyAlias}",
-        description = "This method gets the status of the latest key rotation.",
-        responseDescription = "Number of wrapping keys needs rotating grouped by vNode.",
-    )
-    fun getUnmanagedKeyRotationStatus(
-        @RestPathParameter(description = "The keyAlias we are rotating away from.")
-        keyAlias: String
-    ): KeyRotationStatusResponse
-
-//    /**
-//     * Initiates the key rotation process.
-//     * It assumes new default master key alias was set in the crypto config.
-//     * All wrapping keys which key material is not wrapped with the default master key, will be re-wrapped with this key.
-//     *
-//     * @return Key rotation response where the requestId is the unique ID for the key rotation start request.
-//     *
-//     * @throws ServiceUnavailableException If the underlying service for sending messages is not available.
-//     * @throws ForbiddenException If the same key rotation is already in progress.
-//     * @throws InvalidInputDataException If the input parameters are invalid.
-//     */
-//
-//    @HttpPOST(
-//        path = "rotation/master",
-//        description = "This method enables to rotate a current master wrapping key with a new master wrapping key.",
-//        responseDescription = "Key rotation response",
-//        successCode = SC_ACCEPTED,
-//    )
-//    fun startUnmanagedKeyRotation(): ResponseEntity<KeyRotationResponse>
-
-    /**
-     * The [getManagedKeyRotationStatus] gets the latest key rotation status for [tenantId] if one exists.
+     * @return Total number of keys which need rotating grouped by tenantId or tenantId's wrapping keys and
+     *      the number of already re-wrapped keys.
      *
-     * @return A list of wrapping keys with the total number of signing keys needs re-wrapping
-     *        and the number of already re-wrapped keys.
-     *
+     * @throws ResourceNotFoundException If no key rotation was in progress for [tenantId].
      */
     @HttpGET(
         path = "rotation/{tenantId}",
         description = "This method gets the status of the latest key rotation for [tenantId].",
-        responseDescription = "Number of signing keys which need rotating grouped by tenantId's wrapping keys",
+        responseDescription = "Number of keys which need rotating grouped by tenantId or tenantId's wrapping keys",
     )
-    fun getManagedKeyRotationStatus(
-        @RestPathParameter(description = "The tenantId whose wrapping keys are rotating.")
+    fun getKeyRotationStatus(
+        @RestPathParameter(description = "UUID of the virtual node or 'master' for master wrapping key rotation status.")
         tenantId: String
-    ): ManagedKeyRotationStatusResponse
+    ): KeyRotationStatusResponse
 
     /**
-     * Initiates the managed key rotation process.
+     * Initiates the master wrapping key or vNode wrapping key rotation process.
      *
-     * @param tenantId UUID of the virtual node.
+     * @param tenantId UUID of the virtual node or 'master' for master wrapping key rotation.
+     *
+     * @return Key rotation response where the requestId is the unique ID for the key rotation start request.
      *
      * @throws ServiceUnavailableException If the underlying service for sending messages is not available.
      * @throws InvalidInputDataException If the input parameter is invalid.
@@ -91,13 +57,13 @@ interface KeyRotationRestResource : RestResource {
      */
     @HttpPOST(
         path = "rotation/{tenantId}",
-        description = "This method enables to rotate all wrapping keys for tenantId.",
+        description = "This method enables to rotate all wrapping keys for tenantId or master wrapping key.",
         responseDescription = "Key rotation response",
         successCode = SC_ACCEPTED,
     )
     fun startKeyRotation(
         @RestPathParameter(
-            description = "The tenantId whose wrapping keys are requested to be rotated."
+            description = "UUID of the virtual node or 'master' for master wrapping key rotation."
         )
         tenantId: String
     ): ResponseEntity<KeyRotationResponse>

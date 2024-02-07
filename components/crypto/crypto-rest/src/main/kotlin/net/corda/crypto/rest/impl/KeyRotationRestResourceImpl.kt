@@ -10,7 +10,6 @@ import net.corda.crypto.core.KeyRotationStatus
 import net.corda.crypto.rest.KeyRotationRestResource
 import net.corda.crypto.rest.response.KeyRotationResponse
 import net.corda.crypto.rest.response.KeyRotationStatusResponse
-import net.corda.crypto.rest.response.ManagedKeyRotationStatusResponse
 import net.corda.crypto.rest.response.RotatedKeysStatus
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyType
@@ -181,77 +180,74 @@ class KeyRotationRestResourceImpl @Activate constructor(
         logger.debug("State manager created and started {}", stateManager.name)
     }
 
-    override fun getUnmanagedKeyRotationStatus(keyAlias: String): KeyRotationStatusResponse {
-        val records = stateManager.findByMetadataMatchingAll(
-            listOf(
-                MetadataFilter(KeyRotationMetadataValues.DEFAULT_MASTER_KEY_ALIAS, Operation.Equals, keyAlias),
-                MetadataFilter(
-                    KeyRotationMetadataValues.STATUS_TYPE,
-                    Operation.Equals,
-                    KeyRotationRecordType.KEY_ROTATION
-                ),
-                MetadataFilter(KeyRotationMetadataValues.KEY_TYPE, Operation.Equals, KeyRotationKeyType.UNMANAGED)
-            )
-        ).values
+    override fun getKeyRotationStatus(tenantId: String): KeyRotationStatusResponse {
 
-        // if entries are empty, there is no rootKeyAlias data stored in the state manager, so no key rotation is/was in progress
-        if (records.isEmpty()) throw ResourceNotFoundException("No key rotation for $keyAlias is in progress.")
+        when (tenantId) {
+            "master" -> { // do unmanaged key rotation status
+                val records = stateManager.findByMetadataMatchingAll(
+                    listOf(
+                        MetadataFilter(
+                            KeyRotationMetadataValues.STATUS_TYPE,
+                            Operation.Equals,
+                            KeyRotationRecordType.KEY_ROTATION
+                        ),
+                        MetadataFilter(
+                            KeyRotationMetadataValues.KEY_TYPE,
+                            Operation.Equals,
+                            KeyRotationKeyType.UNMANAGED
+                        )
+                    )
+                ).values
 
-        val rotationStatus = if (isRotationFinished(records)) KeyRotationStatus.DONE else KeyRotationStatus.IN_PROGRESS
+                // if entries are empty, there is no data for unmanaged rotation stored in the state manager, so no key rotation is/was in progress
+                if (records.isEmpty()) throw ResourceNotFoundException("No master wrapping key rotation is in progress.")
 
-        // newParentKeyAlias and createdTimestamp are in all records, we just need to grab it from one
-        val deserializedValueOfOneRecord = unmanagedKeyStatusDeserializer.deserialize(records.first().value)
-        return KeyRotationStatusResponse(
-            keyAlias,
-            "newParentKeyAlias",
-            rotationStatus,
-            deserializedValueOfOneRecord!!.createdTimestamp,
-            getLatestTimestamp(records),
-            records.toUnmanagedRotationOutput()
-        )
-    }
+                val rotationStatus =
+                    if (isRotationFinished(records)) KeyRotationStatus.DONE else KeyRotationStatus.IN_PROGRESS
 
-//    override fun startUnmanagedKeyRotation(): ResponseEntity<KeyRotationResponse> {
-//        println("XXX: startUnmanagedKeyRotation")
-//        tryWithExceptionHandling(logger, "start key rotation") {
-//            checkNotNull(publishToKafka)
-//        }
-//
-//        if (!hasPreviousRotationFinished()) {
-//            throw ForbiddenException("A key rotation operation is already ongoing, a new one cannot be started until it completes.")
-//        }
-//
-//        return doKeyRotation(publishRequests = { publishToKafka!!.publish(it) })
-//    }
+                // createdTimestamp is in all records, we just need to grab it from one
+                val deserializedValueOfOneRecord =
+                    checkNotNull(unmanagedKeyStatusDeserializer.deserialize(records.first().value))
+                return KeyRotationStatusResponse(
+                    deserializedValueOfOneRecord.oldParentKeyAlias,
+                    rotationStatus,
+                    deserializedValueOfOneRecord.createdTimestamp,
+                    getLatestTimestamp(records),
+                    records.toUnmanagedRotationOutput()
+                )
+            }
 
-    override fun getManagedKeyRotationStatus(tenantId: String): ManagedKeyRotationStatusResponse {
-        val records = stateManager.findByMetadataMatchingAll(
-            listOf(
-                MetadataFilter(KeyRotationMetadataValues.TENANT_ID, Operation.Equals, tenantId),
-                MetadataFilter(
-                    KeyRotationMetadataValues.STATUS_TYPE,
-                    Operation.Equals,
-                    KeyRotationRecordType.KEY_ROTATION
-                ),
-                MetadataFilter(KeyRotationMetadataValues.KEY_TYPE, Operation.Equals, KeyRotationKeyType.MANAGED)
-            )
-        ).values
+            else -> { // do managed key rotation status
+                val records = stateManager.findByMetadataMatchingAll(
+                    listOf(
+                        MetadataFilter(KeyRotationMetadataValues.TENANT_ID, Operation.Equals, tenantId),
+                        MetadataFilter(
+                            KeyRotationMetadataValues.STATUS_TYPE,
+                            Operation.Equals,
+                            KeyRotationRecordType.KEY_ROTATION
+                        ),
+                        MetadataFilter(KeyRotationMetadataValues.KEY_TYPE, Operation.Equals, KeyRotationKeyType.MANAGED)
+                    )
+                ).values
 
-        // if entries are empty, there is no rootKeyAlias data stored in the state manager, so no key rotation is/was in progress
-        if (records.isEmpty()) throw ResourceNotFoundException("No key rotation for $tenantId is in progress.")
+                // if entries are empty, there is no rootKeyAlias data stored in the state manager, so no key rotation is/was in progress
+                if (records.isEmpty()) throw ResourceNotFoundException("No key rotation for $tenantId is in progress.")
 
-        val rotationStatus = if (isRotationFinished(records)) KeyRotationStatus.DONE else KeyRotationStatus.IN_PROGRESS
+                val rotationStatus =
+                    if (isRotationFinished(records)) KeyRotationStatus.DONE else KeyRotationStatus.IN_PROGRESS
 
-        // createdTimestamp is in all records, we just need to grab it from one
-        val deserializedValueOfOneRecord =
-            checkNotNull(managedKeyStatusDeserializer.deserialize(records.first().value))
-        return ManagedKeyRotationStatusResponse(
-            tenantId,
-            rotationStatus,
-            deserializedValueOfOneRecord.createdTimestamp,
-            getLatestTimestamp(records),
-            records.toManagedRotationOutput()
-        )
+                // createdTimestamp is in all records, we just need to grab it from one
+                val deserializedValueOfOneRecord =
+                    checkNotNull(managedKeyStatusDeserializer.deserialize(records.first().value))
+                return KeyRotationStatusResponse(
+                    tenantId,
+                    rotationStatus,
+                    deserializedValueOfOneRecord.createdTimestamp,
+                    getLatestTimestamp(records),
+                    records.toManagedRotationOutput()
+                )
+            }
+        }
     }
 
     override fun startKeyRotation(tenantId: String): ResponseEntity<KeyRotationResponse> {
