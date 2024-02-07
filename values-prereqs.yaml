@@ -29,17 +29,6 @@ databases:
     port: 5432
     type: "postgresql"
     host: "prereqs-postgres"
-    username:
-      value: "corda"
-      valueFrom:
-        secretKeyRef:
-          name: ""
-          key: ""
-    password:
-      valueFrom:
-        secretKeyRef:
-          name: "prereqs-postgres"
-          key: "postgres-password"
 
 bootstrap:
   restApiAdmin:

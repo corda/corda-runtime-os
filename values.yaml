@@ -71,14 +71,3 @@ databases:
     port: 5432
     type: "postgresql"
     host: "prereqs-postgresql"
-    username:
-      value: "user"
-      valueFrom:
-        secretKeyRef:
-          name: ""
-          key: ""
-    password:
-      valueFrom:
-        secretKeyRef:
-          name: "prereqs-postgresql"
-          key: "password"

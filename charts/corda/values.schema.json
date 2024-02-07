@@ -1091,7 +1091,27 @@
                             "type": "array",
                             "title": "Administrator credentials per database, used to configure users/roles and grant required runtime permissions",
                             "items": {
-                                "$ref": "#/$defs/databaseTemplate"
+                                "type": "object",
+                                "default": {},
+                                "title": "Connection settings for databases used by the Platform",
+                                "additionalProperties": false,
+                                "required": [
+                                    "id",
+                                    "username",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "minLength": 1
+                                    },
+                                    "username": {
+                                        "$ref": "#/$defs/config"
+                                    },
+                                    "password": {
+                                        "$ref": "#/$defs/config"
+                                    }
+                                }
                             }
                         }
                     }
@@ -3151,9 +3171,7 @@
             "title": "Connection settings for databases used by the Platform",
             "additionalProperties": false,
             "required": [
-                "id",
-                "username",
-                "password"
+                "id"
             ],
             "properties": {
                 "id": {
@@ -3187,12 +3205,6 @@
                 },
                 "type": {
                     "$ref": "#/$defs/databaseEngine"
-                },
-                "username": {
-                    "$ref": "#/$defs/config"
-                },
-                "password": {
-                    "$ref": "#/$defs/config"
                 }
             }
         },

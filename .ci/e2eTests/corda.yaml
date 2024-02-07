@@ -4,33 +4,11 @@ databases:
     host: null  # passed in from jenkins pipeline
     port: 5432
     type: "postgresql"
-    username:
-      value: "user"
-      valueFrom:
-        secretKeyRef:
-          name: ""
-          key: ""
-    password:
-      valueFrom:
-        secretKeyRef:
-          key: "password"
-          name: "" # passed in from jenkins pipeline
   - id: "isolated-state-manager"
     name: "state-manager"
     host: null # passed in from jenkins pipeline
     port: 5432
     type: "postgresql"
-    username:
-      value: "state-manager-user"
-      valueFrom:
-        secretKeyRef:
-          name: ""
-          key: ""
-    password:
-      valueFrom:
-        secretKeyRef:
-          key: "password"
-          name: "" # passed in from jenkins pipeline
 
 # Fields 'type' and 'partition' already have defaults set by the Helm Chart, adding them here just for clarity
 stateManager:

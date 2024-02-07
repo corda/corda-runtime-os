@@ -207,30 +207,6 @@ databases:
     port: 5432
     # -- the default database type
     type: "postgresql"
-    # The default database user configuration
-    username:
-      # -- the default database user
-      value: ""
-      # The default database user secret configuration; used in preference to value if name is set
-      valueFrom:
-        # The default database user secret key reference
-        secretKeyRef:
-          # -- the default database user secret name
-          name: ""
-          # -- the default database user secret key
-          key: ""
-    # The default database password configuration
-    password:
-      # -- the default database password
-      value: ""
-      # The default database password secret configuration; used in preference to value if name is set
-      valueFrom:
-        # The default database password secret key reference
-        secretKeyRef:
-          # -- the default database password secret name
-          name: ""
-          # -- the default database password secret key
-          key: ""
 
 # Persistent Storage configuration to be used by each State type known by the Platform
 stateManager:
@@ -389,7 +365,7 @@ bootstrap:
         validationTimeoutSeconds: 5
       # the username configuration
       username:
-        # -- the username, defaults to a value randomly-generated on install
+        # -- the username
         value: "crypto_user"
         # the username secret configuration; used in preference to value if name is set
         valueFrom:
@@ -606,7 +582,7 @@ workers:
       # Database user, empty values instructs the chart to use the default settings configured for the associated persistent storage
       username:
         # -- the crypto worker config database user
-        value: ""
+        value: "crypto_worker"
         # The crypto worker config database username secret configuration; used in preference to value if name is set
         valueFrom:
           # The crypto worker config database password secret key reference
@@ -758,7 +734,7 @@ workers:
       # Database user, empty values instructs the chart to use the default settings configured for the associated persistent storage
       username:
         # -- the DB worker config database user
-        value: ""
+        value: "db_worker"
         # The DB worker config database username secret configuration; used in preference to value if name is set
         valueFrom:
           # The DB worker config database password secret key reference
@@ -1601,7 +1577,7 @@ workers:
       # Database user, empty values instructs the chart to use the default settings configured for the associated persistent storage
       username:
         # -- the persistence worker config database user
-        value: ""
+        value: "persistence_worker"
         # The persistence worker config database username secret configuration; used in preference to value if name is set
         valueFrom:
           # The persistence worker config database password secret key reference
@@ -1709,7 +1685,7 @@ workers:
       # Database user, empty values instructs the chart to use the default settings configured for the associated persistent storage
       username:
         # -- the token selection worker config database user
-        value: ""
+        value: "token_selection_worker"
         # The token selection worker config database username secret configuration; used in preference to value if name is set
         valueFrom:
           # The token selection worker config database password secret key reference
@@ -1873,7 +1849,7 @@ workers:
       # Database user, empty values instructs the chart to use the default settings configured for the associated persistent storage
       username:
         # -- the uniqueness worker config database user
-        value: ""
+        value: "uniqueness_worker"
         # The uniqueness worker config database username secret configuration; used in preference to value if name is set
         valueFrom:
           # The uniqueness worker config database password secret key reference
