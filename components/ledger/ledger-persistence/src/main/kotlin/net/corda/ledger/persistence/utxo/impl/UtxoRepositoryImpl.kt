@@ -12,8 +12,8 @@ import net.corda.ledger.persistence.common.mapToComponentGroups
 import net.corda.ledger.persistence.utxo.BatchPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.utxo.data.transaction.MerkleProofDto
-import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionDto
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
+import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionDto
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByPersistence
@@ -31,7 +31,6 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.sql.Connection
-import java.sql.PreparedStatement
 import java.sql.Timestamp
 import java.sql.Types
 import java.time.Instant
@@ -271,11 +270,11 @@ class UtxoRepositoryImpl @Activate constructor(
         fun isMetadata(groupIndex: Int, leafIndex: Int) = groupIndex == 0 && leafIndex == 0
 
         val componentsWithMetadataRemoved = components.mapNotNull { component ->
-                val (_, groupIndex, leafIndex) = component
-                if (isMetadata(groupIndex, leafIndex)) {
-                    null
-                } else {
-                    component
+            val (_, groupIndex, leafIndex) = component
+            if (isMetadata(groupIndex, leafIndex)) {
+                null
+            } else {
+                component
             }
         }
         batchPersistenceService.persistBatch(

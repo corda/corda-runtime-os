@@ -4,8 +4,8 @@ import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.data.transaction.MerkleProofDto
-import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionDto
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
+import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionDto
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.SecureHash
@@ -193,7 +193,7 @@ interface UtxoRepository {
         val leafIndexes: List<Int>,
         val leafHashes: List<String>
     ) {
-        val merkleProofId: String = "${transactionId};$groupIndex;${leafIndexes.joinToString(separator = ",")}"
+        val merkleProofId: String = "$transactionId;$groupIndex;${leafIndexes.joinToString(separator = ",")}"
     }
 
     data class TransactionMerkleProofLeaf(val merkleProofId: String, val leafIndex: Int)

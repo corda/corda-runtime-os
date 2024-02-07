@@ -12,6 +12,7 @@ interface BatchPersistenceService {
         setRowParametersBlock: (statement: PreparedStatement, parameterIndex: Iterator<Int>, row: R) -> Unit
     )
 
+    @Suppress("LongParameterList")
     fun <R> persistBatch(
         entityManager: EntityManager,
         query: (Int) -> String,

@@ -18,6 +18,7 @@ import java.sql.Connection
 import java.sql.PreparedStatement
 import javax.persistence.EntityManager
 
+@Suppress("MaxLineLength")
 class BatchPersistenceServiceImplTest {
 
     private val entityManager = mock<EntityManager>()
@@ -198,7 +199,6 @@ class BatchPersistenceServiceImplTest {
                 verify(statement).setInt((rowIndex * 2) + 1, index)
                 verify(statement).setString((rowIndex * 2) + 2, value)
             }
-
         }
     }
 
@@ -218,7 +218,6 @@ class BatchPersistenceServiceImplTest {
                 verify(statement).setInt((rowIndex * 2) + 1, index)
                 verify(statement).setString((rowIndex * 2) + 2, value)
             }
-
         }
     }
 

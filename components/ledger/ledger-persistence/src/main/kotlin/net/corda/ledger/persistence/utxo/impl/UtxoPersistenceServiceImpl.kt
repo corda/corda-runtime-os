@@ -53,7 +53,7 @@ import org.slf4j.LoggerFactory
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 class UtxoPersistenceServiceImpl(
     private val entityManagerFactory: EntityManagerFactory,
     private val repository: UtxoRepository,
@@ -475,7 +475,11 @@ class UtxoPersistenceServiceImpl(
 
                 // 7. Persist the leaf data for each component group
                 repository.persistMerkleProofLeaves(em, componentGroupTransactionMerkleProofs.map { it.leaves }.flatten())
-                repository.persistTransactionComponents(em, componentGroupTransactionMerkleProofs.map { it.components }.flatten(), this::hash)
+                repository.persistTransactionComponents(
+                    em,
+                    componentGroupTransactionMerkleProofs.map { it.components }.flatten(),
+                    this::hash
+                )
             }
         }
     }
