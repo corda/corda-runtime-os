@@ -76,7 +76,7 @@ class HsqldbUtxoQueryProvider @Activate constructor(
                 """.trimIndent()
         }
 
-    override val persistVisibleTransactionOutputs: (batchSize: Int) -> String //13
+    override val persistVisibleTransactionOutputs: (batchSize: Int) -> String
         get() = { batchSize ->
             """
             MERGE INTO utxo_visible_transaction_output AS uto
