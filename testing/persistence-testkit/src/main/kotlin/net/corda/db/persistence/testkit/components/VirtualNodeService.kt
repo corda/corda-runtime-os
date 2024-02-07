@@ -12,6 +12,7 @@ import net.corda.virtualnode.VirtualNodeInfo
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -38,6 +39,7 @@ class VirtualNodeService @Activate constructor(
 
         fun generateHoldingIdentity() = createTestHoldingIdentity(X500_NAME, UUID.randomUUID().toString())
     }
+    private val logger = LoggerFactory.getLogger(this::class.java)
 
     private var connectionCounter = AtomicInteger(0)
 
@@ -58,9 +60,11 @@ class VirtualNodeService @Activate constructor(
             )
         ))
 
-        val dataSource = dataSourceAdmin.getOrCreateDataSource(dbConnectionId, "connection-${connectionCounter.incrementAndGet()}")
+        val name = "connection-${connectionCounter.incrementAndGet()}"
+        val dataSource = dataSourceAdmin.getOrCreateDataSource(dbConnectionId, name)
         dataSource.connection.use { connection ->
-            liquibaseSchemaMigrator.updateDb(connection, vaultSchema)
+            logger.info("Migrate DB schema for $name: ${connection.catalog}")
+            liquibaseSchemaMigrator.updateDb(connection, vaultSchema, dataSourceAdmin.createSchemaName(dbConnectionId, name))
         }
         return virtualNodeInfo
     }
