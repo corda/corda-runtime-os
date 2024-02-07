@@ -8,7 +8,12 @@ import org.mockito.kotlin.mock
 
 class ReceiveAndUpdateTransactionBuilderFlowVersionedFlowFactoryTest {
 
-    private val factory = ReceiveAndUpdateTransactionBuilderFlowVersionedFlowFactory(mock())
+    private val factory = ReceiveAndUpdateTransactionBuilderFlowVersionedFlowFactory(
+        mock(),
+        mock(),
+        mock(),
+        mock()
+    )
 
     @Test
     fun `with platform version 1 creates ReceiveAndUpdateTransactionBuilderFlowV1`() {

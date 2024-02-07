@@ -9,6 +9,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTransactionStatus
 import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
+import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionAndSignaturesImpl
 import net.corda.ledger.utxo.flow.impl.cache.StateAndRefCache
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindFilteredTransactionsAndSignatures
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindSignedLedgerTransactionWithStatus
@@ -55,6 +56,7 @@ import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndSignatures
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -175,7 +177,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         stateRefs: List<StateRef>,
         notaryKey: PublicKey,
         notaryName: MemberX500Name
-    ): Map<SecureHash, Map<UtxoFilteredTransaction, List<DigitalSignatureAndMetadata>>> {
+    ): Map<SecureHash, UtxoFilteredTransactionAndSignatures> {
         return recordSuspendable({ ledgerPersistenceFlowTimer(FindFilteredTransactionsAndSignatures) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
@@ -212,8 +214,9 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                         setOf(notaryKey.fullIdHash())
                     }
 
-                    mapOf(
-                        utxoFilteredTransaction to signatures.filter { signature -> newTxNotaryKeyIds.contains(signature.by) }
+                    UtxoFilteredTransactionAndSignaturesImpl(
+                        utxoFilteredTransaction,
+                        signatures.filter { signature -> newTxNotaryKeyIds.contains(signature.by) }
                     )
                 }
             }

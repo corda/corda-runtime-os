@@ -5,6 +5,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndSignatures
 import java.security.PublicKey
 
 interface UtxoTransactionBuilderData {

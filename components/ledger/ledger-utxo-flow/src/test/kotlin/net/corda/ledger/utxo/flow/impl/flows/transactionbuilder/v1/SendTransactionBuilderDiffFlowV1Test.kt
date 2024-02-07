@@ -4,6 +4,7 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.testkit.anotherPublicKeyExample
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowUntilImpl
 import net.corda.ledger.utxo.flow.impl.transaction.ContractStateAndEncumbranceTag
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoBaselinedTransactionBuilder
@@ -15,14 +16,25 @@ import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndSignatures
+import net.corda.v5.membership.NotaryInfo
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.security.PublicKey
 import java.time.Instant
 
 @Suppress("MaxLineLength")
@@ -40,6 +52,8 @@ class SendTransactionBuilderDiffFlowV1Test {
     private val state2 = mock<ContractStateAndEncumbranceTag>()
 
     private val flowEngine = mock<FlowEngine>()
+    private val notaryLookup = mock<NotaryLookup>()
+    private val utxoLedgerPersistenceService = mock<UtxoLedgerPersistenceService>()
 
     @BeforeEach
     fun beforeEach() {
@@ -259,10 +273,72 @@ class SendTransactionBuilderDiffFlowV1Test {
         verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
+    @Test
+    fun `notary backchain off - should result in sending filtered transactions`() {
+        val filteredTransactionsAndSignatures = mapOf<SecureHash, UtxoFilteredTransactionAndSignatures>(
+            hash1 to mock(),
+            hash2 to mock()
+        )
+
+        val notaryKey = mock<PublicKey>()
+        val mockNotaryInfo = mock<NotaryInfo> {
+            on { isBackchainRequired } doReturn false
+            on { publicKey } doReturn notaryKey
+            on { name } doReturn notaryX500Name
+        }
+
+        whenever(notaryLookup.lookup(eq(notaryX500Name))).thenReturn(mockNotaryInfo)
+
+        whenever(currentTransactionBuilder.getNotaryName()).thenReturn(notaryX500Name)
+
+        whenever(currentTransactionBuilder.inputStateRefs).thenReturn(listOf(stateRef1))
+        whenever(currentTransactionBuilder.referenceStateRefs).thenReturn(listOf(stateRef2))
+
+        whenever(utxoLedgerPersistenceService.findFilteredTransactionsAndSignatures(
+            eq(currentTransactionBuilder.inputStateRefs + currentTransactionBuilder.referenceStateRefs),
+            eq(notaryKey),
+            eq(notaryX500Name)
+        )).thenReturn(filteredTransactionsAndSignatures)
+
+        callSendFlow()
+
+        verify(session, times(1)).send(eq(filteredTransactionsAndSignatures.values.toList()))
+    }
+
+    @Test
+    fun `notary backchain off - mismatch in the number of dependencies and filtered transactions`() {
+        val notaryKey = mock<PublicKey>()
+        val mockNotaryInfo = mock<NotaryInfo> {
+            on { isBackchainRequired } doReturn false
+            on { publicKey } doReturn notaryKey
+            on { name } doReturn notaryX500Name
+        }
+
+        whenever(notaryLookup.lookup(eq(notaryX500Name))).thenReturn(mockNotaryInfo)
+
+        whenever(currentTransactionBuilder.getNotaryName()).thenReturn(notaryX500Name)
+
+        whenever(currentTransactionBuilder.inputStateRefs).thenReturn(listOf(stateRef1))
+
+        whenever(utxoLedgerPersistenceService.findFilteredTransactionsAndSignatures(
+            eq(originalTransactionalBuilder.inputStateRefs + originalTransactionalBuilder.referenceStateRefs),
+            eq(notaryKey),
+            eq(notaryX500Name)
+        )).thenReturn(emptyMap())
+
+        val ex = assertThrows<IllegalArgumentException> {
+            callSendFlow()
+        }
+
+        assertThat(ex).hasStackTraceContaining("The number of filtered transactions didn't match the number of dependencies.")
+    }
+
     private fun callSendFlow() {
         val flow = SendTransactionBuilderDiffFlowV1(
             UtxoBaselinedTransactionBuilder(currentTransactionBuilder).diff(),
-            session
+            session,
+            notaryLookup,
+            utxoLedgerPersistenceService
         )
 
         flow.flowEngine = flowEngine

@@ -27,7 +27,6 @@ import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.utilities.time.UTCClock
-import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.persistence.PagedQuery
@@ -40,6 +39,7 @@ import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.FinalizationResult
+import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.UtxoLedgerService
@@ -48,8 +48,9 @@ import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
-import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndSignatures
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionBuilder
+import net.corda.v5.membership.GroupParametersLookup
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -71,6 +72,9 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Reference(service = NotaryLookup::class) private val notaryLookup: NotaryLookup,
     @Reference(service = ExternalEventExecutor::class) private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = ResultSetFactory::class) private val resultSetFactory: ResultSetFactory,
+    @Reference(service = GroupParametersLookup::class) private val groupParametersLookup: GroupParametersLookup,
+    @Reference(service = NotarySignatureVerificationService::class)
+    private val notarySignatureVerificationService: NotarySignatureVerificationService,
     @Reference(service = UtxoLedgerTransactionVerificationService::class)
     private val transactionVerificationService: UtxoLedgerTransactionVerificationService
 ) : UtxoLedgerService, UsedByFlow, SingletonSerializeAsToken {
@@ -142,7 +146,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Suspendable
     override fun findFilteredTransactionsAndSignatures(
         signedTransaction: UtxoSignedTransaction
-    ): Map<SecureHash, Map<UtxoFilteredTransaction, List<DigitalSignatureAndMetadata>>> {
+    ): Map<SecureHash, UtxoFilteredTransactionAndSignatures> {
         return utxoLedgerPersistenceService.findFilteredTransactionsAndSignatures(
             signedTransaction.inputStateRefs + signedTransaction.referenceStateRefs,
             signedTransaction.notaryKey,
@@ -276,7 +280,10 @@ class UtxoLedgerServiceImpl @Activate constructor(
         val receivedTransactionBuilder = flowEngine.subFlow(
             ReceiveAndUpdateTransactionBuilderFlow(
                 session,
-                createTransactionBuilder()
+                createTransactionBuilder(),
+                notaryLookup,
+                groupParametersLookup,
+                notarySignatureVerificationService
             )
         )
         return UtxoBaselinedTransactionBuilder(
@@ -315,7 +322,9 @@ class UtxoLedgerServiceImpl @Activate constructor(
         flowEngine.subFlow(
             SendTransactionBuilderDiffFlow(
                 transactionBuilder,
-                session
+                session,
+                notaryLookup,
+                utxoLedgerPersistenceService
             )
         )
     }
@@ -328,13 +337,18 @@ class UtxoLedgerServiceImpl @Activate constructor(
         flowEngine.subFlow(
             SendTransactionBuilderDiffFlow(
                 transactionBuilder as UtxoTransactionBuilderInternal,
-                session
+                session,
+                notaryLookup,
+                utxoLedgerPersistenceService
             )
         )
         return flowEngine.subFlow(
             ReceiveAndUpdateTransactionBuilderFlow(
                 session,
-                transactionBuilder
+                transactionBuilder,
+                notaryLookup,
+                groupParametersLookup,
+                notarySignatureVerificationService
             )
         )
     }

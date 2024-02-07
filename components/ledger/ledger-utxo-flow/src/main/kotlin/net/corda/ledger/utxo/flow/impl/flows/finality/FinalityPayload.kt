@@ -1,10 +1,10 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality
 
-import net.corda.ledger.utxo.data.transaction.FilteredTransactionAndSignatures
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.v5.base.annotations.ConstructorForDeserialization
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndSignatures
 
 @CordaSerializable
 data class FinalityPayload @ConstructorForDeserialization constructor(val map: Map<String, Any?>) {
@@ -16,7 +16,7 @@ data class FinalityPayload @ConstructorForDeserialization constructor(val map: M
     constructor(
         initialTransaction: UtxoSignedTransaction,
         transferAdditionalSignatures: Boolean,
-        filteredTransactionsAndSignatures: List<FilteredTransactionAndSignatures>? = null
+        filteredTransactionsAndSignatures: List<UtxoFilteredTransactionAndSignatures>? = null
     ) : this(
         mapOf(
             INITIAL_TRANSACTION to initialTransaction,
@@ -29,5 +29,5 @@ data class FinalityPayload @ConstructorForDeserialization constructor(val map: M
     val transferAdditionalSignatures get() = map[TRANSFER_ADDITIONAL_SIGNATURES] as Boolean
 
     @Suppress("UNCHECKED_CAST")
-    val filteredTransactionsAndSignatures get() = map[FILTERED_TRANSACTIONS_AND_SIGNATURES] as List<FilteredTransactionAndSignatures>?
+    val filteredTransactionsAndSignatures get() = map[FILTERED_TRANSACTIONS_AND_SIGNATURES] as List<UtxoFilteredTransactionAndSignatures>?
 }

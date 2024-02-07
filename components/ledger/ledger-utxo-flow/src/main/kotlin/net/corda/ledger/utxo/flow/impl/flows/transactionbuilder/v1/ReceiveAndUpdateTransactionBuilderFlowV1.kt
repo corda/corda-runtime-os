@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.v1
 
+import net.corda.ledger.utxo.data.transaction.verifyFilteredTransactionAndSignatures
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderContainer
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
@@ -10,14 +11,21 @@ import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.ledger.common.NotaryLookup
+import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndSignatures
+import net.corda.v5.membership.GroupParametersLookup
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
 class ReceiveAndUpdateTransactionBuilderFlowV1(
     private val session: FlowSession,
-    private val originalTransactionBuilder: UtxoTransactionBuilderInternal
+    private val originalTransactionBuilder: UtxoTransactionBuilderInternal,
+    private val notaryLookup: NotaryLookup,
+    private val groupParametersLookup: GroupParametersLookup,
+    private val notarySignatureVerificationService: NotarySignatureVerificationService
 ) : SubFlow<UtxoTransactionBuilder> {
 
     @CordaInject
@@ -38,12 +46,37 @@ class ReceiveAndUpdateTransactionBuilderFlowV1(
 
         log.trace { "Transaction builder proposals have been applied. Result: $updatedTransactionBuilder" }
 
+        val notaryInfo = updatedTransactionBuilder.notaryName?.let {
+            notaryLookup.lookup(it)
+        }
+
         val newTransactionIds = receivedTransactionBuilder.dependencies
 
-        if (newTransactionIds.isEmpty()) {
-            log.trace { "There are no new states transferred, therefore no backchains need to be resolved." }
+        if (notaryInfo == null || notaryInfo.isBackchainRequired) {
+            if (newTransactionIds.isEmpty()) {
+                log.trace { "There are no new states transferred, therefore no backchains need to be resolved." }
+            } else {
+                flowEngine.subFlow(TransactionBackchainResolutionFlow(newTransactionIds, session))
+            }
         } else {
-            flowEngine.subFlow(TransactionBackchainResolutionFlow(newTransactionIds, session))
+            val receivedFilteredTransactions = session.receive(List::class.java)
+                .filterIsInstance<UtxoFilteredTransactionAndSignatures>()
+
+            require(receivedFilteredTransactions.size == newTransactionIds.size) {
+                "The number of filtered transactions received didn't match the number of dependencies."
+            }
+
+            val groupParameters = groupParametersLookup.currentGroupParameters
+            val notary = requireNotNull(groupParameters.notaries.first { it.name == updatedTransactionBuilder.notaryName }) {
+                "Notary from initial transaction \"${updatedTransactionBuilder.notaryName}\" " +
+                        "cannot be found in group parameter notaries."
+            }
+
+            receivedFilteredTransactions.forEach {
+                it.verifyFilteredTransactionAndSignatures(notary, notarySignatureVerificationService)
+            }
+
+            // TODO Store filtered transactions?
         }
 
         return updatedTransactionBuilder
