@@ -123,14 +123,6 @@ interface UtxoRepository {
         visibleTransactionOutputs: List<VisibleTransactionOutput>
     )
 
-    data class VisibleTransactionOutput(
-        val stateIndex: Int,
-        val className: String,
-        val customRepresentation: CustomRepresentation,
-        val token: UtxoToken?,
-        val notaryName: String,
-    )
-
     /** Persists transaction [signature] (operation is idempotent) */
     fun persistTransactionSignatures(
         entityManager: EntityManager,
@@ -189,6 +181,14 @@ interface UtxoRepository {
     ): Map<String, UtxoFilteredTransactionDto>
 
     data class TransactionComponent(val transactionId: String, val groupIndex: Int, val leafIndex: Int, val leafData: ByteArray)
+
+    data class VisibleTransactionOutput(
+        val stateIndex: Int,
+        val className: String,
+        val customRepresentation: CustomRepresentation,
+        val token: UtxoToken?,
+        val notaryName: String,
+    )
 
     data class TransactionSignature(val index: Int, val signatureBytes: ByteArray, val publicKeyHash: SecureHash)
 
