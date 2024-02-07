@@ -5,7 +5,8 @@ import java.time.Instant
 /**
  * The result of a key rotation status request.
  *
- * @param tenantId TenantId whose wrapping keys are rotating or 'master' for master wrapping key rotation.
+ * @param tenantId Either a holding identity ID, the value 'master' for master wrapping key or one of the values
+*          'p2p', 'rest', 'crypto' for corresponding cluster-level tenant.
  * @param status Overall status of the key rotation. Either In Progress or Done.
  * @param createdTimestamp Timestamp of then the key rotation request was received.
  * @param lastUpdatedTimestamp The last updated timestamp.

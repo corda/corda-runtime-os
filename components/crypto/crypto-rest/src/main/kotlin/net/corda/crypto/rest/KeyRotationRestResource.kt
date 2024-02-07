@@ -19,7 +19,7 @@ import net.corda.rest.response.ResponseEntity
  */
 @HttpRestResource(
     name = "Key Rotation API",
-    description = "Contains operations related to rotation of the master and vNode wrapping keys.",
+    description = "Contains operations related to rotation of the master, cluster-level and vNode wrapping keys.",
     path = "wrappingkey",
     minVersion = RestApiVersion.C5_2
 )
@@ -27,7 +27,8 @@ interface KeyRotationRestResource : RestResource {
     /**
      * The [getKeyRotationStatus] gets the latest key rotation status for [tenantId] if one exists.
      *
-     * @param tenantId UUID of the virtual node or 'master' for master wrapping key rotation status.
+     * @param tenantId Can either be a holding identity ID, the value 'master' for master wrapping key or one of the
+     *       values 'p2p', 'rest', 'crypto' for corresponding cluster-level services.
      *
      * @return Total number of keys which need rotating grouped by tenantId or tenantId's wrapping keys and
      *      the number of already re-wrapped keys.
@@ -37,17 +38,19 @@ interface KeyRotationRestResource : RestResource {
     @HttpGET(
         path = "rotation/{tenantId}",
         description = "This method gets the status of the latest key rotation for [tenantId].",
-        responseDescription = "Number of keys which need rotating grouped by tenantId or tenantId's wrapping keys",
+        responseDescription = "Number of keys which need rotating grouped by tenantId or tenantId's wrapping keys.",
     )
     fun getKeyRotationStatus(
-        @RestPathParameter(description = "UUID of the virtual node or 'master' for master wrapping key rotation status.")
+        @RestPathParameter(description = "Can either be a holding identity ID, the value 'master' for master wrapping " +
+                "key or one of the values 'p2p', 'rest', 'crypto' for corresponding cluster-level services.")
         tenantId: String
     ): KeyRotationStatusResponse
 
     /**
-     * Initiates the master wrapping key or vNode wrapping key rotation process.
+     * Initiates a master wrapping key, a cluster-level tenant wrapping key or a vNode wrapping key rotation process.
      *
-     * @param tenantId UUID of the virtual node or 'master' for master wrapping key rotation.
+     * @param tenantId Can either be a holding identity ID, the value 'master' for master wrapping key or one of the
+     *       values 'p2p', 'rest', 'crypto' for corresponding cluster-level services.
      *
      * @return Key rotation response where the requestId is the unique ID for the key rotation start request.
      *
@@ -57,14 +60,14 @@ interface KeyRotationRestResource : RestResource {
      */
     @HttpPOST(
         path = "rotation/{tenantId}",
-        description = "This method enables to rotate all wrapping keys for tenantId or master wrapping key.",
+        description = "This method enables to rotate master wrapping key or all wrapping keys for tenantId " +
+                "(holding identity ID or cluster-level tenant).",
         responseDescription = "Key rotation response",
         successCode = SC_ACCEPTED,
     )
     fun startKeyRotation(
-        @RestPathParameter(
-            description = "UUID of the virtual node or 'master' for master wrapping key rotation."
-        )
+        @RestPathParameter(description = "Can either be a holding identity ID, the value 'master' for master wrapping " +
+                "key or one of the values 'p2p', 'rest', 'crypto' for corresponding cluster-level services.")
         tenantId: String
     ): ResponseEntity<KeyRotationResponse>
 }
