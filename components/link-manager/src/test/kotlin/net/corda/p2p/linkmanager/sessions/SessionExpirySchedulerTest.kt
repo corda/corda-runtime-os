@@ -15,6 +15,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.time.Duration
 import java.time.Instant
 import java.util.Random
@@ -70,6 +71,8 @@ class SessionExpirySchedulerTest {
         )
 
         on { key } doReturn "stateKey"
+
+        on { version } doReturn 2
     }
 
     private val sessionExpiryScheduler = SessionExpiryScheduler(
@@ -150,6 +153,26 @@ class SessionExpirySchedulerTest {
         }
 
         @Test
+        fun `it will schedule different time if the version is different`() {
+            val validMetadata = validState.metadata
+            val stateTwo = mock<State> {
+                on { metadata } doReturn validMetadata
+
+                on { key } doReturn "stateKey"
+
+                on { version } doReturn 3
+            }
+            sessionExpiryScheduler.checkStateValidateAndRememberIt(
+                validState,
+            )
+            sessionExpiryScheduler.checkStateValidateAndRememberIt(
+                stateTwo,
+            )
+
+            verify(scheduler, times(2)).schedule(any(), any(), any())
+        }
+
+        @Test
         fun `it will not cancel the clean up for the same state`() {
             sessionExpiryScheduler.checkStateValidateAndRememberIt(
                 validState,
@@ -197,6 +220,22 @@ class SessionExpirySchedulerTest {
             task.firstValue.run()
 
             verify(stateManager).delete(listOf(validState))
+        }
+
+        @Test
+        fun `it will delete the state with the next version from the state manager if needed`() {
+            val nextState = mock<State> {
+                on { version } doReturn 3
+                on { key } doReturn "stateKey"
+            }
+            whenever(validState.copy(version = 3)).doReturn(nextState)
+            sessionExpiryScheduler.checkStateValidateAndRememberIt(
+                validState,
+                beforeUpdate = true,
+            )
+            task.firstValue.run()
+
+            verify(stateManager).delete(listOf(nextState))
         }
 
         @Test

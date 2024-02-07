@@ -57,7 +57,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.SessionEst
 @Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 internal class StatefulSessionManagerImpl(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    private val stateManager: StateManager,
+    stateManager: StateManager,
     private val sessionManagerImpl: SessionManagerImpl,
     private val stateConvertor: StateConvertor,
     private val clock: Clock,
@@ -105,8 +105,8 @@ internal class StatefulSessionManagerImpl(
         val notInCache = (keysToMessages - cachedSessions.keys)
         val sessionStates =
             if (notInCache.isNotEmpty()) {
-                sessionExpiryScheduler.checkStatesValidateAndRememberThem(
-                    stateManager.get(notInCache.keys.filterNotNull()),
+                stateManager.get(
+                    notInCache.keys.filterNotNull(),
                 )
                     .let { states ->
                         notInCache.map { (id, items) ->
@@ -236,8 +236,8 @@ internal class StatefulSessionManagerImpl(
         val inboundSessionsFromStateManager = if (sessionIdsNotInCache.isEmpty()) {
             emptyList()
         } else {
-            sessionExpiryScheduler.checkStatesValidateAndRememberThem(
-                stateManager.get(sessionIdsNotInCache.keys),
+            stateManager.get(
+                sessionIdsNotInCache.keys,
             )
                 .entries
                 .mapNotNull { (sessionId, state) ->
@@ -266,8 +266,8 @@ internal class StatefulSessionManagerImpl(
         val outboundSessionsFromStateManager = if (sessionsNotInInboundStateManager.isEmpty()) {
             emptyList()
         } else {
-            sessionExpiryScheduler.checkStatesValidateAndRememberThem(
-                stateManager.findByMetadataMatchingAny(sessionsNotInInboundStateManager),
+            stateManager.findStatesMatchingAny(
+                sessionsNotInInboundStateManager,
             )
                 .entries
                 .mapNotNull { (key, state) ->
@@ -307,7 +307,7 @@ internal class StatefulSessionManagerImpl(
         val results = processInboundSessionMessages(messages) + processOutboundSessionMessages(messages)
 
         val failedUpdate =
-            upsert(results.mapNotNull { it.result?.stateAction }).keys
+            stateManager.upsert(results.mapNotNull { it.result?.stateAction }).keys
 
         return results.mapNotNull { result ->
             if (failedUpdate.contains(result.result?.stateAction?.state?.key)) {
@@ -635,7 +635,7 @@ internal class StatefulSessionManagerImpl(
         resultStates: Collection<OutboundMessageResults<T>>,
     ): Collection<Pair<T, SessionManager.SessionState>> {
         val updates = resultStates.mapNotNull { it.action }
-        val failedUpdates = upsert(updates)
+        val failedUpdates = stateManager.upsert(updates)
 
         return resultStates.flatMap { resultState ->
             val key = resultState.key
@@ -668,8 +668,8 @@ internal class StatefulSessionManagerImpl(
         if (messageContexts.isEmpty()) {
             return emptyList()
         }
-        val states = sessionExpiryScheduler.checkStatesValidateAndRememberThem(
-            stateManager.get(messageContexts.keys),
+        val states = stateManager.get(
+            messageContexts.keys,
         )
         return messageContexts.flatMap { (sessionId, contexts) ->
             val state = states[sessionId]
@@ -702,7 +702,7 @@ internal class StatefulSessionManagerImpl(
         }
         val states =
             stateManager
-                .findByMetadataMatchingAny(messageContexts.keys.map { getSessionIdFilter(it) })
+                .findStatesMatchingAny(messageContexts.keys.map { getSessionIdFilter(it) })
                 .values.associateBy { state ->
                     state.metadata.toOutbound().sessionId
                 }
@@ -1078,43 +1078,15 @@ internal class StatefulSessionManagerImpl(
             metadata.communicationWithMgm,
         )
     }
-    private fun upsert(
-        changes: Collection<StateManagerAction>,
-    ): Map<String, State?> {
-        val updates = changes.filterIsInstance<UpdateAction>()
-            .map {
-                it.state
-            }.mapNotNull {
-                sessionExpiryScheduler.checkStateValidateAndRememberIt(it)
-            }
-        val creates = changes.filterIsInstance<CreateAction>()
-            .map {
-                it.state
-            }.mapNotNull {
-                sessionExpiryScheduler.checkStateValidateAndRememberIt(it)
-            }
-        val failedUpdates = if (updates.isNotEmpty()) {
-            stateManager.update(updates).onEach {
-                logger.info("Failed to update the state of session with ID ${it.key}")
-            }
-        } else {
-            emptyMap()
-        }
-        val failedCreates = if (creates.isNotEmpty()) {
-            stateManager.create(creates).associateWith {
-                logger.info("Failed to create the state of session with ID $it")
-                null
-            }
-        } else {
-            emptyMap()
-        }
-        return failedUpdates + failedCreates
-    }
 
     private val sessionExpiryScheduler: SessionExpiryScheduler = SessionExpiryScheduler(
         listOf(cachedInboundSessions, cachedOutboundSessions),
         stateManager,
         clock,
+    )
+    private val stateManager = StateManagerWrapper(
+        stateManager,
+        sessionExpiryScheduler,
     )
 
     override val dominoTile =
