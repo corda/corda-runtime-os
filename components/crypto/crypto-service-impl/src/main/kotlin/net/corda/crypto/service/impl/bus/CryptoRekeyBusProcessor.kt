@@ -189,7 +189,8 @@ class CryptoRekeyBusProcessor(
             )
 
             State(
-                getKeyRotationStatusRecordKey(wrappingKeyAlias, request.tenantId),
+                // using key's uuid and tenantId as key's alias is not available re-wrap processor
+                getKeyRotationStatusRecordKey(it.first.toString(), request.tenantId),
                 checkNotNull(managedKeyStatusSerializer.serialize(status)),
                 1,
                 Metadata(
