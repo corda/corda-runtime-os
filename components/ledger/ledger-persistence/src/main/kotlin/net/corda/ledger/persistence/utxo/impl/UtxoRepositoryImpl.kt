@@ -4,12 +4,13 @@ import net.corda.crypto.core.parseSecureHash
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedGroupParameters
+import net.corda.db.core.utils.BatchPersistenceService
+import net.corda.db.core.utils.BatchPersistenceServiceImpl
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.persistence.common.mapToComponentGroups
-import net.corda.ledger.persistence.utxo.BatchPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.utxo.data.transaction.MerkleProofDto
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
@@ -50,12 +51,9 @@ import javax.persistence.Tuple
     property = [ CORDA_MARKER_ONLY_SERVICE ],
     scope = PROTOTYPE
 )
-class UtxoRepositoryImpl @Activate constructor(
-    @Reference(service = BatchPersistenceService::class)
+class UtxoRepositoryImpl(
     private val batchPersistenceService: BatchPersistenceService,
-    @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
-    @Reference(service = WireTransactionFactory::class)
     private val wireTransactionFactory: WireTransactionFactory,
     @Reference(service = UtxoQueryProvider::class)
     private val queryProvider: UtxoQueryProvider
@@ -65,6 +63,16 @@ class UtxoRepositoryImpl @Activate constructor(
 
         const val TOP_LEVEL_MERKLE_PROOF_INDEX = -1
     }
+
+    @Suppress("Unused")
+    @Activate constructor(
+        @Reference(service = SerializationService::class)
+        serializationService: SerializationService,
+        @Reference(service = WireTransactionFactory::class)
+        wireTransactionFactory: WireTransactionFactory,
+        @Reference(service = UtxoQueryProvider::class)
+        queryProvider: UtxoQueryProvider
+    ): this(BatchPersistenceServiceImpl(), serializationService, wireTransactionFactory, queryProvider)
 
     override fun findTransaction(
         entityManager: EntityManager,
@@ -219,16 +227,18 @@ class UtxoRepositoryImpl @Activate constructor(
         transactionId: String,
         transactionSources: List<UtxoRepository.TransactionSource>
     ) {
-        batchPersistenceService.persistBatch(
-            entityManager,
-            queryProvider.persistTransactionSources,
-            transactionSources
-        ) { statement, parameterIndex, transactionSource ->
-            statement.setString(parameterIndex.next(), transactionId)
-            statement.setInt(parameterIndex.next(), transactionSource.group.ordinal)
-            statement.setInt(parameterIndex.next(), transactionSource.index)
-            statement.setString(parameterIndex.next(), transactionSource.sourceTransactionId)
-            statement.setInt(parameterIndex.next(), transactionSource.sourceIndex)
+        entityManager.connection { connection ->
+            batchPersistenceService.persistBatch(
+                connection,
+                queryProvider.persistTransactionSources,
+                transactionSources
+            ) { statement, parameterIndex, transactionSource ->
+                statement.setString(parameterIndex.next(), transactionId)
+                statement.setInt(parameterIndex.next(), transactionSource.group.ordinal)
+                statement.setInt(parameterIndex.next(), transactionSource.index)
+                statement.setString(parameterIndex.next(), transactionSource.sourceTransactionId)
+                statement.setInt(parameterIndex.next(), transactionSource.sourceIndex)
+            }
         }
     }
 
@@ -249,16 +259,18 @@ class UtxoRepositoryImpl @Activate constructor(
                 }
             }
         }.flatten()
-        batchPersistenceService.persistBatch(
-            entityManager,
-            queryProvider.persistTransactionComponents,
-            flattenedComponentList
-        ) { statement, parameterIndex, component ->
-            statement.setString(parameterIndex.next(), transactionId)
-            statement.setInt(parameterIndex.next(), component.first)
-            statement.setInt(parameterIndex.next(), component.second)
-            statement.setBytes(parameterIndex.next(), component.third)
-            statement.setString(parameterIndex.next(), hash(component.third))
+        entityManager.connection { connection ->
+            batchPersistenceService.persistBatch(
+                connection,
+                queryProvider.persistTransactionComponents,
+                flattenedComponentList
+            ) { statement, parameterIndex, component ->
+                statement.setString(parameterIndex.next(), transactionId)
+                statement.setInt(parameterIndex.next(), component.first)
+                statement.setInt(parameterIndex.next(), component.second)
+                statement.setBytes(parameterIndex.next(), component.third)
+                statement.setString(parameterIndex.next(), hash(component.third))
+            }
         }
     }
 
@@ -277,16 +289,18 @@ class UtxoRepositoryImpl @Activate constructor(
                 component
             }
         }
-        batchPersistenceService.persistBatch(
-            entityManager,
-            queryProvider.persistTransactionComponents,
-            componentsWithMetadataRemoved
-        ) { statement, parameterIndex, component ->
-            statement.setString(parameterIndex.next(), component.transactionId)
-            statement.setInt(parameterIndex.next(), component.groupIndex)
-            statement.setInt(parameterIndex.next(), component.leafIndex)
-            statement.setBytes(parameterIndex.next(), component.leafData)
-            statement.setString(parameterIndex.next(), hash(component.leafData))
+        entityManager.connection { connection ->
+            batchPersistenceService.persistBatch(
+                connection,
+                queryProvider.persistTransactionComponents,
+                componentsWithMetadataRemoved
+            ) { statement, parameterIndex, component ->
+                statement.setString(parameterIndex.next(), component.transactionId)
+                statement.setInt(parameterIndex.next(), component.groupIndex)
+                statement.setInt(parameterIndex.next(), component.leafIndex)
+                statement.setBytes(parameterIndex.next(), component.leafData)
+                statement.setString(parameterIndex.next(), hash(component.leafData))
+            }
         }
     }
 
@@ -296,30 +310,32 @@ class UtxoRepositoryImpl @Activate constructor(
         timestamp: Instant,
         visibleTransactionOutputs: List<UtxoRepository.VisibleTransactionOutput>
     ) {
-        batchPersistenceService.persistBatch(
-            entityManager,
-            queryProvider.persistVisibleTransactionOutputs,
-            visibleTransactionOutputs
-        ) { statement, parameterIndex, visibleTransactionOutput ->
-            statement.setString(parameterIndex.next(), transactionId)
-            statement.setInt(parameterIndex.next(), UtxoComponentGroup.OUTPUTS.ordinal)
-            statement.setInt(parameterIndex.next(), visibleTransactionOutput.stateIndex)
-            statement.setString(parameterIndex.next(), visibleTransactionOutput.className)
-            statement.setString(parameterIndex.next(), visibleTransactionOutput.token?.poolKey?.tokenType)
-            statement.setString(parameterIndex.next(), visibleTransactionOutput.token?.poolKey?.issuerHash?.toString())
-            statement.setString(parameterIndex.next(), visibleTransactionOutput.notaryName)
-            statement.setString(parameterIndex.next(), visibleTransactionOutput.token?.poolKey?.symbol)
-            statement.setString(parameterIndex.next(), visibleTransactionOutput.token?.filterFields?.tag)
-            statement.setString(parameterIndex.next(), visibleTransactionOutput.token?.filterFields?.ownerHash?.toString())
-            if (visibleTransactionOutput.token != null) {
-                statement.setBigDecimal(parameterIndex.next(), visibleTransactionOutput.token.amount)
-            } else {
-                statement.setNull(parameterIndex.next(), Types.NUMERIC)
-            }
+        entityManager.connection { connection ->
+            batchPersistenceService.persistBatch(
+                connection,
+                queryProvider.persistVisibleTransactionOutputs,
+                visibleTransactionOutputs
+            ) { statement, parameterIndex, visibleTransactionOutput ->
+                statement.setString(parameterIndex.next(), transactionId)
+                statement.setInt(parameterIndex.next(), UtxoComponentGroup.OUTPUTS.ordinal)
+                statement.setInt(parameterIndex.next(), visibleTransactionOutput.stateIndex)
+                statement.setString(parameterIndex.next(), visibleTransactionOutput.className)
+                statement.setString(parameterIndex.next(), visibleTransactionOutput.token?.poolKey?.tokenType)
+                statement.setString(parameterIndex.next(), visibleTransactionOutput.token?.poolKey?.issuerHash?.toString())
+                statement.setString(parameterIndex.next(), visibleTransactionOutput.notaryName)
+                statement.setString(parameterIndex.next(), visibleTransactionOutput.token?.poolKey?.symbol)
+                statement.setString(parameterIndex.next(), visibleTransactionOutput.token?.filterFields?.tag)
+                statement.setString(parameterIndex.next(), visibleTransactionOutput.token?.filterFields?.ownerHash?.toString())
+                if (visibleTransactionOutput.token != null) {
+                    statement.setBigDecimal(parameterIndex.next(), visibleTransactionOutput.token.amount)
+                } else {
+                    statement.setNull(parameterIndex.next(), Types.NUMERIC)
+                }
 
-            statement.setTimestamp(parameterIndex.next(), Timestamp.from(timestamp))
-            statement.setNull(parameterIndex.next(), Types.TIMESTAMP)
-            statement.setString(parameterIndex.next(), visibleTransactionOutput.customRepresentation.json)
+                statement.setTimestamp(parameterIndex.next(), Timestamp.from(timestamp))
+                statement.setNull(parameterIndex.next(), Types.TIMESTAMP)
+                statement.setString(parameterIndex.next(), visibleTransactionOutput.customRepresentation.json)
+            }
         }
     }
 
@@ -329,16 +345,18 @@ class UtxoRepositoryImpl @Activate constructor(
         signatures: List<UtxoRepository.TransactionSignature>,
         timestamp: Instant
     ) {
-        batchPersistenceService.persistBatch(
-            entityManager,
-            queryProvider.persistTransactionSignatures,
-            signatures
-        ) { statement, parameterIndex, signature ->
-            statement.setString(parameterIndex.next(), transactionId)
-            statement.setInt(parameterIndex.next(), signature.index)
-            statement.setBytes(parameterIndex.next(), signature.signatureBytes)
-            statement.setString(parameterIndex.next(), signature.publicKeyHash.toString())
-            statement.setTimestamp(parameterIndex.next(), Timestamp.from(timestamp))
+        entityManager.connection { connection ->
+            batchPersistenceService.persistBatch(
+                connection,
+                queryProvider.persistTransactionSignatures,
+                signatures
+            ) { statement, parameterIndex, signature ->
+                statement.setString(parameterIndex.next(), transactionId)
+                statement.setInt(parameterIndex.next(), signature.index)
+                statement.setBytes(parameterIndex.next(), signature.signatureBytes)
+                statement.setString(parameterIndex.next(), signature.publicKeyHash.toString())
+                statement.setTimestamp(parameterIndex.next(), Timestamp.from(timestamp))
+            }
         }
     }
 
@@ -396,27 +414,31 @@ class UtxoRepositoryImpl @Activate constructor(
     }
 
     override fun persistMerkleProofs(entityManager: EntityManager, merkleProofs: List<UtxoRepository.TransactionMerkleProof>) {
-        batchPersistenceService.persistBatch(
-            entityManager,
-            queryProvider.persistMerkleProofs,
-            merkleProofs
-        ) { statement, parameterIndex, merkleProof ->
-            statement.setString(parameterIndex.next(), merkleProof.merkleProofId)
-            statement.setString(parameterIndex.next(), merkleProof.transactionId)
-            statement.setInt(parameterIndex.next(), merkleProof.groupIndex)
-            statement.setInt(parameterIndex.next(), merkleProof.treeSize)
-            statement.setString(parameterIndex.next(), merkleProof.leafHashes.joinToString(","))
+        entityManager.connection { connection ->
+            batchPersistenceService.persistBatch(
+                connection,
+                queryProvider.persistMerkleProofs,
+                merkleProofs
+            ) { statement, parameterIndex, merkleProof ->
+                statement.setString(parameterIndex.next(), merkleProof.merkleProofId)
+                statement.setString(parameterIndex.next(), merkleProof.transactionId)
+                statement.setInt(parameterIndex.next(), merkleProof.groupIndex)
+                statement.setInt(parameterIndex.next(), merkleProof.treeSize)
+                statement.setString(parameterIndex.next(), merkleProof.leafHashes.joinToString(","))
+            }
         }
     }
 
     override fun persistMerkleProofLeaves(entityManager: EntityManager, leaves: List<UtxoRepository.TransactionMerkleProofLeaf>) {
-        batchPersistenceService.persistBatch(
-            entityManager,
-            queryProvider.persistMerkleProofLeaves,
-            leaves
-        ) { statement, parameterIndex, leaf ->
-            statement.setString(parameterIndex.next(), leaf.merkleProofId)
-            statement.setInt(parameterIndex.next(), leaf.leafIndex)
+        entityManager.connection { connection ->
+            batchPersistenceService.persistBatch(
+                connection,
+                queryProvider.persistMerkleProofLeaves,
+                leaves
+            ) { statement, parameterIndex, leaf ->
+                statement.setString(parameterIndex.next(), leaf.merkleProofId)
+                statement.setInt(parameterIndex.next(), leaf.leafIndex)
+            }
         }
     }
 

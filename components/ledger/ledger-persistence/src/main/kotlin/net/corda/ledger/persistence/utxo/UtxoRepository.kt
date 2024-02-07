@@ -102,17 +102,6 @@ interface UtxoRepository {
         val sourceIndex: Int
     )
 
-    /** Persists transaction component leaf [data] (operation is idempotent) */
-//    @Suppress("LongParameterList")
-//    fun persistTransactionComponentLeaf(
-//        entityManager: EntityManager,
-//        transactionId: String,
-//        groupIndex: Int,
-//        leafIndex: Int,
-//        data: ByteArray,
-//        hash: String
-//    )
-
     fun persistTransactionComponents(
         entityManager: EntityManager,
         transactionId: String,
@@ -126,10 +115,7 @@ interface UtxoRepository {
         hash: (ByteArray) -> String
     )
 
-    data class TransactionComponent(val transactionId: String, val groupIndex: Int, val leafIndex: Int, val leafData: ByteArray)
-
     /** Persists transaction output (operation is idempotent) */
-    @Suppress("LongParameterList")
     fun persistVisibleTransactionOutputs(
         entityManager: EntityManager,
         transactionId: String,
@@ -152,8 +138,6 @@ interface UtxoRepository {
         signatures: List<TransactionSignature>,
         timestamp: Instant
     )
-
-    data class TransactionSignature(val index: Int, val signatureBytes: ByteArray, val publicKeyHash: SecureHash)
 
     /**
      * Updates transaction [transactionStatus]. There is only one status per transaction. In case that status already
@@ -186,18 +170,6 @@ interface UtxoRepository {
     /** Persists a merkle proof and returns its ID */
     fun persistMerkleProofs(entityManager: EntityManager, merkleProofs: List<TransactionMerkleProof>)
 
-    data class TransactionMerkleProof(
-        val transactionId: String,
-        val groupIndex: Int,
-        val treeSize: Int,
-        val leafIndexes: List<Int>,
-        val leafHashes: List<String>
-    ) {
-        val merkleProofId: String = "$transactionId;$groupIndex;${leafIndexes.joinToString(separator = ",")}"
-    }
-
-    data class TransactionMerkleProofLeaf(val merkleProofId: String, val leafIndex: Int)
-
     /** Persist a leaf index that belongs to a given merkle proof with ID [merkleProofId] */
     fun persistMerkleProofLeaves(
         entityManager: EntityManager,
@@ -215,4 +187,20 @@ interface UtxoRepository {
         entityManager: EntityManager,
         ids: List<String>
     ): Map<String, UtxoFilteredTransactionDto>
+
+    data class TransactionComponent(val transactionId: String, val groupIndex: Int, val leafIndex: Int, val leafData: ByteArray)
+
+    data class TransactionSignature(val index: Int, val signatureBytes: ByteArray, val publicKeyHash: SecureHash)
+
+    data class TransactionMerkleProof(
+        val transactionId: String,
+        val groupIndex: Int,
+        val treeSize: Int,
+        val leafIndexes: List<Int>,
+        val leafHashes: List<String>
+    ) {
+        val merkleProofId: String = "$transactionId;$groupIndex;${leafIndexes.joinToString(separator = ",")}"
+    }
+
+    data class TransactionMerkleProofLeaf(val merkleProofId: String, val leafIndex: Int)
 }

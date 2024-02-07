@@ -1,27 +1,23 @@
-package net.corda.ledger.persistence.utxo.impl
+package net.corda.db.core.utils
 
 import org.assertj.core.api.Assertions.assertThat
-import org.hibernate.Session
-import org.hibernate.jdbc.Work
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.any
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.never
 import org.mockito.Mockito.times
-import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import java.sql.Connection
 import java.sql.PreparedStatement
-import javax.persistence.EntityManager
 
 @Suppress("MaxLineLength")
 class BatchPersistenceServiceImplTest {
 
-    private val entityManager = mock<EntityManager>()
+    private val connection = mock<Connection>()
     private val statement = mock<PreparedStatement>()
 
     private val batchPersistenceService = BatchPersistenceServiceImpl()
@@ -43,18 +39,13 @@ class BatchPersistenceServiceImplTest {
 
     @BeforeEach
     fun beforeEach() {
-        val session = mock<Session>()
-        val argumentCaptor = argumentCaptor<Work>()
-        val connection = mock<Connection>()
-        whenever(entityManager.unwrap(Session::class.java)).thenReturn(session)
-        whenever(session.doWork(argumentCaptor.capture())).then { argumentCaptor.firstValue.execute(connection) }
         whenever(connection.prepareStatement(any())).thenReturn(statement)
     }
 
     @Test
     fun `executes single insert when there are less rows than rowsPerInsert parameter`() {
         batchPersistenceService.persistBatch(
-            entityManager,
+            connection,
             query,
             rowsPerInsert = 5,
             insertsPerBatch = 3,
@@ -71,7 +62,7 @@ class BatchPersistenceServiceImplTest {
     @Test
     fun `executes single insert when there are equal rows as rowsPerInsert parameter`() {
         batchPersistenceService.persistBatch(
-            entityManager,
+            connection,
             query,
             rowsPerInsert = 5,
             insertsPerBatch = 3,
@@ -87,7 +78,7 @@ class BatchPersistenceServiceImplTest {
     @Test
     fun `returns when there are no rows`() {
         batchPersistenceService.persistBatch(
-            entityManager,
+            connection,
             query,
             rowsPerInsert = 5,
             insertsPerBatch = 3,
@@ -101,7 +92,7 @@ class BatchPersistenceServiceImplTest {
     @Test
     fun `executes multiple inserts when there are more rows than rowsPerInsert with the last insert having less rows than rowsPerInsert`() {
         batchPersistenceService.persistBatch(
-            entityManager,
+            connection,
             query,
             rowsPerInsert = 5,
             insertsPerBatch = 3,
@@ -118,7 +109,7 @@ class BatchPersistenceServiceImplTest {
     @Test
     fun `executes multiple inserts when there are more rows than rowsPerInsert with the last insert having equals rows as rowsPerInsert`() {
         batchPersistenceService.persistBatch(
-            entityManager,
+            connection,
             query,
             rowsPerInsert = 5,
             insertsPerBatch = 3,
@@ -135,7 +126,7 @@ class BatchPersistenceServiceImplTest {
     @Test
     fun `executes single batch of inserts when there are equal rows as insertsPerBatch x rowsPerInsert`() {
         batchPersistenceService.persistBatch(
-            entityManager,
+            connection,
             query,
             rowsPerInsert = 5,
             insertsPerBatch = 3,
@@ -152,7 +143,7 @@ class BatchPersistenceServiceImplTest {
     @Test
     fun `executes multiple batches of inserts when the number of rows are a multiple of insertsPerBatch x rowsPerInsert`() {
         batchPersistenceService.persistBatch(
-            entityManager,
+            connection,
             query,
             rowsPerInsert = 5,
             insertsPerBatch = 3,
@@ -169,7 +160,7 @@ class BatchPersistenceServiceImplTest {
     @Test
     fun `executes multiple batches of inserts and a single insert when there are more rows than insertsPerBatch x rowsPerInsert`() {
         batchPersistenceService.persistBatch(
-            entityManager,
+            connection,
             query,
             rowsPerInsert = 5,
             insertsPerBatch = 3,
@@ -187,7 +178,7 @@ class BatchPersistenceServiceImplTest {
     fun `parameterIndex updates the index correctly within a single insert statement`() {
         val rows = (1..5).map { Row(it, it.toString()) }
         batchPersistenceService.persistBatch(
-            entityManager,
+            connection,
             query,
             rowsPerInsert = 5,
             insertsPerBatch = 3,
@@ -206,7 +197,7 @@ class BatchPersistenceServiceImplTest {
     fun `parameterIndex updates the index correctly within a single insert statement with less rows than rowsPerInsert`() {
         val rows = (1..4).map { Row(it, it.toString()) }
         batchPersistenceService.persistBatch(
-            entityManager,
+            connection,
             query,
             rowsPerInsert = 5,
             insertsPerBatch = 3,
@@ -225,7 +216,7 @@ class BatchPersistenceServiceImplTest {
     fun `parameterIndex updates the index correctly within a single batch of inserts when the last insert has less rows than rowsPerInsert`() {
         val rows = (1..8).map { Row(it, it.toString()) }
         batchPersistenceService.persistBatch(
-            entityManager,
+            connection,
             query,
             rowsPerInsert = 5,
             insertsPerBatch = 3,
@@ -248,7 +239,7 @@ class BatchPersistenceServiceImplTest {
     fun `parameterIndex updates the index correctly across batches of inserts`() {
         val rows = (1..16).map { Row(it, it.toString()) }
         batchPersistenceService.persistBatch(
-            entityManager,
+            connection,
             query,
             rowsPerInsert = 5,
             insertsPerBatch = 3,
