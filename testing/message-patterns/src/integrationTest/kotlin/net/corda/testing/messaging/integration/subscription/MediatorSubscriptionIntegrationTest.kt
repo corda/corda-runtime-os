@@ -35,6 +35,7 @@ import net.corda.testing.messaging.integration.getTopicConfig
 import net.corda.testing.messaging.integration.processors.TestDurableProcessorStrings
 import net.corda.testing.messaging.integration.processors.TestStateEventProcessorStrings
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -100,7 +101,7 @@ class MediatorSubscriptionIntegrationTest {
         messagingConfig: SmartConfig,
         processor: StateAndEventProcessor<String, String, String>,
         outputTopic: String,
-        inputTopic: String
+        inputTopic: String,
     ): EventMediatorConfig<String, String, String> {
         return EventMediatorConfigBuilder<String, String, String>()
             .name("FlowEventMediator")
@@ -130,6 +131,8 @@ class MediatorSubscriptionIntegrationTest {
             MessageRouter { message ->
                 when (message.payload) {
                     is String -> routeTo(messageBusClient, outputTopic, RoutingDestination.Type.ASYNCHRONOUS)
+                    is ByteArray -> routeTo(messageBusClient, outputTopic, RoutingDestination.Type.ASYNCHRONOUS)
+                    is Any -> routeTo(messageBusClient, outputTopic, RoutingDestination.Type.ASYNCHRONOUS)
                     else -> throw IllegalStateException("No route defined for message $message")
                 }
             }
@@ -137,7 +140,7 @@ class MediatorSubscriptionIntegrationTest {
     }
 
     @Test
-    @Timeout(value = 600, unit = TimeUnit.SECONDS)
+    @Timeout(value = 60, unit = TimeUnit.SECONDS)
     fun `publish 50 records to an input topic and verify the processor is called and async outputs are sent`() {
         topicUtils.createTopics(getTopicConfig(MEDIATOR_TOPIC1_TEMPLATE))
         topicUtils.createTopics(getTopicConfig(MEDIATOR_TOPIC1_OUTPUT_TEMPLATE))
@@ -148,7 +151,7 @@ class MediatorSubscriptionIntegrationTest {
         publisher.close()
 
         val latch = CountDownLatch(50)
-        val processor = TestStateEventProcessorStrings(latch, true, false, MEDIATOR_TOPIC1)
+        val processor = TestStateEventProcessorStrings(latch, true, -1, MEDIATOR_TOPIC1)
         val builder = buildBuilder(TEST_CONFIG, processor, MEDIATOR_TOPIC1_OUTPUT, MEDIATOR_TOPIC1)
 
         val mediator = multiSourceEventMediatorFactory.create(builder)
@@ -165,8 +168,7 @@ class MediatorSubscriptionIntegrationTest {
         )
 
         verifySub.start()
-        verifyLatch.await(30, TimeUnit.SECONDS)
+        assertTrue(verifyLatch.await(30, TimeUnit.SECONDS))
         verifySub.close()
     }
-
 }

@@ -108,5 +108,31 @@ class HTTPRetryExecutorTest {
         assertEquals("Success on attempt 3", result.body().toString(Charsets.UTF_8))
     }
 
+    @Test
+    fun `retryOn inherited exception`() {
+        val mockResponse: HttpResponse<ByteArray> = mock()
+        whenever(mockResponse.body()).thenReturn("Success".toByteArray(Charsets.UTF_8))
+        val config = HTTPRetryConfig.Builder()
+            .times(3)
+            .initialDelay(100)
+            .factor(2.0)
+            .retryOn(BaseException::class.java)
+            .build()
+
+        var attempt = 0
+
+        val result: HttpResponse<ByteArray> = HTTPRetryExecutor.withConfig(config) {
+            ++attempt
+            if (attempt < 3) {
+                throw InheritedException("Inherited")
+            }
+            mockResponse
+        }
+
+        assertEquals("Success", result.body().toString(Charsets.UTF_8))
+    }
+
     internal class SpecificException(message: String) : Exception(message)
+    internal open class BaseException(message: String) : Exception(message)
+    internal class InheritedException(message: String) : BaseException(message)
 }

@@ -12,25 +12,22 @@ open class PluginConfiguration @Inject constructor(objects: ObjectFactory) {
     val cordaClusterURL: Property<String> = objects.property(String::class.java).convention("https://localhost:8888")
 
     @get:Input
-    val cordaRpcUser: Property<String> = objects.property(String::class.java).convention("admin")
+    val cordaRestUser: Property<String> = objects.property(String::class.java).convention("admin")
 
     @get:Input
-    val cordaRpcPasswd: Property<String> = objects.property(String::class.java).convention("admin")
+    val cordaRestPasswd: Property<String> = objects.property(String::class.java).convention("admin")
 
     @get:Input
     val cordaRuntimePluginWorkspaceDir: Property<String> = objects.property(String::class.java).convention("workspace")
 
     @get:Input
-    val combinedWorkerVersion: Property<String> = objects.property(String::class.java).convention("5.2.0.0")
+    val composeFilePath: Property<String> = objects.property(String::class.java).convention("config/combined-worker-compose.yml")
+
+    @get:Input
+    val composeNetworkName: Property<String> = objects.property(String::class.java).convention("corda-cluster")
 
     @get:Input
     val notaryVersion: Property<String> = objects.property(String::class.java).convention("5.2.0.0")
-
-    @get:Input
-    val postgresJdbcVersion: Property<String> = objects.property(String::class.java).convention("42.7.1")
-
-    @get:Input
-    var cordaDbContainerName: Property<String> = objects.property(String::class.java).convention("cordaPostgres")
 
     @get:Input
     val cordaBinDir: Property<String> = objects.property(String::class.java)

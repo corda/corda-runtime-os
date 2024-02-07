@@ -16,7 +16,7 @@ abstract class FunctionalBaseTest : Javalin() {
 
     @field:TempDir
     lateinit var projectDir: File
-    private lateinit var buildFile: File
+    protected lateinit var buildFile: File
 
     protected var restHostname = "localhost"
     protected var restPort = 8888
@@ -54,17 +54,15 @@ abstract class FunctionalBaseTest : Javalin() {
         sourceConfigFolder.absoluteFile.copyRecursively(targetConfigFolder)
     }
 
-    fun appendCordaRuntimeGradlePluginExtension(restProtocol: String = "https") {
+    fun appendCordaRuntimeGradlePluginExtension(restProtocol: String = "https", appendArtifactoryCredentials: Boolean = false) {
         buildFile.appendText(
             """
             cordaRuntimeGradlePlugin {
                 cordaClusterURL = "$restProtocol://$restHostnameWithPort"
-                cordaRpcUser = "admin"
-                cordaRpcPasswd ="admin"
-                combinedWorkerVersion = "5.0.1.0"
-                notaryVersion = "5.0.1.0"
-                postgresJdbcVersion = "42.4.3"
-                cordaDbContainerName = "corda-runtime-gradle-plugin-postgresql"
+                cordaRestUser = "admin"
+                cordaRestPasswd ="admin"
+                notaryVersion = "5.2.0.0-beta-1706865687074"
+                composeFilePath = "config/combined-worker-compose.yml"
                 networkConfigFile = "config/static-network-config.json"
                 r3RootCertFile = "config/r3-ca-key.pem"
                 corDappCpiName = "MyCorDapp"
@@ -80,6 +78,30 @@ abstract class FunctionalBaseTest : Javalin() {
             }
             """.trimIndent()
         )
+        if (appendArtifactoryCredentials)
+            appendArtifactoryCredentialsToTheCordaRuntimeGradlePluginExtension()
+    }
+
+    private fun appendArtifactoryCredentialsToTheCordaRuntimeGradlePluginExtension() {
+        val existingContent = buildFile.readText()
+        val newContent = if (existingContent.contains("cordaRuntimeGradlePlugin")) {
+            existingContent.replace(
+                "cordaRuntimeGradlePlugin {",
+                """
+                     cordaRuntimeGradlePlugin {
+                        artifactoryUsername = findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                        artifactoryPassword = findProperty('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                """.trimIndent()
+            )
+        } else {
+            existingContent + """
+                cordaRuntimeGradlePlugin {
+                    artifactoryUsername = findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    artifactoryPassword = findProperty('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                }
+            """.trimIndent()
+        }
+        buildFile.writeText(newContent)
     }
 
     fun executeWithRunner(vararg args: String): BuildResult {

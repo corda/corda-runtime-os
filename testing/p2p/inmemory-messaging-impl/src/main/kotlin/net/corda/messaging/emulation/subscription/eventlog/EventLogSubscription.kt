@@ -31,7 +31,7 @@ class EventLogSubscription<K : Any, V : Any>(
     internal val partitionAssignmentListener: PartitionAssignmentListener?,
     internal val topicService: TopicService,
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    private val instanceId: Int
+    instanceId: Int
 ) : Subscription<K, V> {
 
     companion object {

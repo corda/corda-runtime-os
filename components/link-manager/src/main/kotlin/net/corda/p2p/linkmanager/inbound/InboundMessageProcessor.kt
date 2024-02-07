@@ -36,6 +36,7 @@ import net.corda.p2p.linkmanager.metrics.recordInboundHeartbeatMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordInboundMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordInboundSessionMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
+import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl.Companion.LINK_MANAGER_SUBSYSTEM
 import net.corda.schema.Schemas
 import net.corda.tracing.traceEventProcessing
 import net.corda.utilities.debug
@@ -304,13 +305,17 @@ internal class InboundMessageProcessor(
                     makeAckMessageForHeartbeatMessage(counterparties, session)?.let { ack -> messages.add(ack) }
                 }
                 is AuthenticatedMessageAndKey -> {
-                    recordInboundMessagesMetric(innerMessage.message)
-                    checkIdentityBeforeProcessing(
-                        counterparties,
-                        innerMessage,
-                        session,
-                        messages
-                    )
+                    val authenticatedMessage = innerMessage.message
+                    recordInboundMessagesMetric(authenticatedMessage)
+                    if (authenticatedMessage.header.subsystem == LINK_MANAGER_SUBSYSTEM) {
+                        logger.info("Received message indicating a session was lost by the counterparty. The " +
+                                "corresponding outbound session will be deleted.")
+                        sessionManager.deleteOutboundSession(counterparties.reverse(), authenticatedMessage)
+                    } else {
+                        checkIdentityBeforeProcessing(
+                            counterparties, innerMessage, session, messages
+                        )
+                    }
                 }
                 else -> logger.warn("Unknown incoming message type: ${innerMessage.javaClass}. The message was discarded.")
             }

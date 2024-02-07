@@ -2,7 +2,6 @@ package net.corda.applications.workers.workercommon
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import net.corda.applications.workers.workercommon.StateManagerConfigHelper.createStateManagerConfigFromCli
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
@@ -10,7 +9,6 @@ import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Shutdown
 import net.corda.schema.configuration.BootConfig
-import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER
 import net.corda.schema.configuration.ConfigDefaults
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
@@ -155,21 +153,13 @@ class WorkerHelpers {
                 acc.withFallback(fileConfig)
             }.withFallback(ConfigFactory.parseMap(defaultParamsDefaultValuesMap))
 
-            val configWithStateManagerFallback =
-                // TODO CORE-19372 - removal of stateManagerParams CLI arg and removal of fallback logic here
-                if (defaultParams.stateManagerParams.isNotEmpty() && !configWithFiles.hasPath(BOOT_STATE_MANAGER)) {
-                    configWithFiles.withFallback(createStateManagerConfigFromCli(defaultParams.stateManagerParams))
-                } else {
-                    configWithFiles
-                }
-
             val smartConfigFactory = SmartConfigFactory
                 .createWith(
-                    configWithStateManagerFallback.getConfig(BootConfig.BOOT_SECRETS).atPath(BootConfig.BOOT_SECRETS),
+                    configWithFiles.getConfig(BootConfig.BOOT_SECRETS).atPath(BootConfig.BOOT_SECRETS),
                     secretsServiceFactoryResolver.findAll()
                 )
 
-            val bootConfig = smartConfigFactory.create(configWithStateManagerFallback.withoutPath(BootConfig.BOOT_SECRETS))
+            val bootConfig = smartConfigFactory.create(configWithFiles.withoutPath(BootConfig.BOOT_SECRETS))
             validator.validate(ConfigKeys.BOOT_CONFIG, bootConfig, loadResource(BOOT_CONFIG_PATH), true)
 
             // we now know bootConfig has:
