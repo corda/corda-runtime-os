@@ -111,6 +111,13 @@ class UtxoLedgerServiceImpl @Activate constructor(
     }
 
     @Suspendable
+    override fun findFilteredTransactionsAndSignatures(
+        signedTransaction: UtxoSignedTransaction
+    ): MutableMap<SecureHash, MutableMap<UtxoFilteredTransaction, MutableList<DigitalSignatureAndMetadata>>> {
+        TODO("Not yet implemented")
+    }
+
+    @Suspendable
     override fun filterSignedTransaction(signedTransaction: UtxoSignedTransaction): UtxoFilteredTransactionBuilder {
         return UtxoFilteredTransactionBuilderImpl(
             utxoFilteredTransactionFactory,
@@ -137,17 +144,6 @@ class UtxoLedgerServiceImpl @Activate constructor(
             .setCreatedTimestampLimit(createdTimestampLimit)
             .setLimit(limit)
             .execute() as PagedQuery.ResultSet<StateAndRef<T>>
-    }
-
-    @Suspendable
-    override fun findFilteredTransactionsAndSignatures(
-        signedTransaction: UtxoSignedTransaction
-    ): Map<SecureHash, Map<UtxoFilteredTransaction, List<DigitalSignatureAndMetadata>>> {
-        return utxoLedgerPersistenceService.findFilteredTransactionsAndSignatures(
-            signedTransaction.inputStateRefs + signedTransaction.referenceStateRefs,
-            signedTransaction.notaryKey,
-            signedTransaction.notaryName
-        )
     }
 
     @Suspendable

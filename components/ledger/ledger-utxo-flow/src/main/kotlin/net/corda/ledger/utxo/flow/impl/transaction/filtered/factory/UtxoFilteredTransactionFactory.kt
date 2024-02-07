@@ -1,6 +1,5 @@
 package net.corda.ledger.utxo.flow.impl.transaction.filtered.factory
 
-import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionBuilderInternal
 import net.corda.v5.base.annotations.Suspendable
@@ -25,17 +24,5 @@ interface UtxoFilteredTransactionFactory {
     fun create(
         signedTransaction: UtxoSignedTransactionInternal,
         filteredTransactionBuilder: UtxoFilteredTransactionBuilderInternal
-    ): UtxoFilteredTransaction
-
-    /**
-     * Creates a [UtxoFilteredTransaction].
-     *
-     * @param filteredTransaction The [FilteredTransaction] to build from
-     *
-     * @return A [UtxoFilteredTransaction].
-     */
-    @Suspendable
-    fun create(
-        filteredTransaction: FilteredTransaction
     ): UtxoFilteredTransaction
 }
