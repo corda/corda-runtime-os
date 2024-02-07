@@ -51,7 +51,7 @@ class SendTransactionBuilderDiffFlowV1(
         val newTransactionIds = transactionBuilder.dependencies
 
         // If we couldn't find the notary we default to backchain resolution
-        if (notaryInfo == null || notaryInfo.isBackchainRequired) {
+        if (notaryInfo.isBackchainRequired) {
             if (newTransactionIds.isEmpty()) {
                 log.trace { "There are no new states transferred, therefore no backchains need to be resolved." }
             } else {

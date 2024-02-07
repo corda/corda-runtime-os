@@ -56,7 +56,7 @@ class ReceiveAndUpdateTransactionBuilderFlowV1(
 
         log.trace { "Transaction builder proposals have been applied. Result: $updatedTransactionBuilder" }
 
-        val notaryName = requireNotNull(updatedTransactionBuilder.notaryName) {
+        val notaryName = requireNotNull(originalTransactionBuilder.notaryName) {
             "Notary name on transaction builder must not be null."
         }
 
@@ -66,7 +66,7 @@ class ReceiveAndUpdateTransactionBuilderFlowV1(
 
         val newTransactionIds = receivedTransactionBuilder.dependencies
 
-        if (notaryInfo == null || notaryInfo.isBackchainRequired) {
+        if (notaryInfo.isBackchainRequired) {
             if (newTransactionIds.isEmpty()) {
                 log.trace { "There are no new states transferred, therefore no backchains need to be resolved." }
             } else {
