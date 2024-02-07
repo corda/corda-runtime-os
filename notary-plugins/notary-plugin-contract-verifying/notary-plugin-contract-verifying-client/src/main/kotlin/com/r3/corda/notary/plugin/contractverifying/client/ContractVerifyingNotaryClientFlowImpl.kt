@@ -11,10 +11,11 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import org.slf4j.LoggerFactory
 
 @InitiatingFlow(protocol = "com.r3.corda.notary.plugin.contractverifying", version = [1])
@@ -88,24 +89,17 @@ class ContractVerifyingNotaryClientFlowImpl(
 
     @Suspendable
     internal fun createPayload(): ContractVerifyingNotarizationPayload {
-        val hashedNotaryKey = digestService.hash(signedTransaction.notaryKey.encoded, DigestAlgorithmName.SHA2_256)
+        val filteredTxAndSignatures = utxoLedgerService.findFilteredTransactionsAndSignatures(signedTransaction)
+            .toFilteredTransactionsAndSignatures()
+        return ContractVerifyingNotarizationPayload(signedTransaction, filteredTxAndSignatures)
+    }
 
-        val filteredDependenciesAndSignatures = signedTransaction.let { it.inputStateRefs + it.referenceStateRefs }
-            .groupBy { stateRef -> stateRef.transactionId }
-            .mapValues { (_, stateRefs) -> stateRefs.map { stateRef -> stateRef.index } }
-            .map { (transactionId, indexes) ->
-                val dependency = requireNotNull(utxoLedgerService.findSignedTransaction(transactionId)) {
-                    "Dependent transaction $transactionId does not exist"
-                }
-                FilteredTransactionAndSignatures(
-                    utxoLedgerService.filterSignedTransaction(dependency)
-                        .withOutputStates(indexes)
-                        .withNotary()
-                        .withTimeWindow()
-                        .build(),
-                    dependency.signatures.filter { hashedNotaryKey == it.by }
-                )
+    private fun Map<SecureHash, Map<UtxoFilteredTransaction, List<DigitalSignatureAndMetadata>>>.toFilteredTransactionsAndSignatures()
+            : List<FilteredTransactionAndSignatures> {
+        return this.flatMap { (_, ftxAndSigs) ->
+            ftxAndSigs.map {
+                FilteredTransactionAndSignatures(it.key, it.value)
             }
-        return ContractVerifyingNotarizationPayload(signedTransaction, filteredDependenciesAndSignatures)
+        }
     }
 }

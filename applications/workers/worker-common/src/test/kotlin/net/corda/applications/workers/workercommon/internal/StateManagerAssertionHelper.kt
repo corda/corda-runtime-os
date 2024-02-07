@@ -22,7 +22,7 @@ fun assertStateType(
 ) {
     softly.assertThat(config.hasPath(stateType.value))
     val typeConfig = config.getConfig(stateType.value)
-    softly.assertThat(typeConfig.getString(StateManagerConfig.TYPE)).isEqualTo("DATABASE")
+    softly.assertThat(typeConfig.getString(StateManagerConfig.TYPE)).isEqualTo("Database")
     softly.assertThat(typeConfig.getString(StateManagerConfig.Database.JDBC_URL)).isEqualTo(url)
     softly.assertThat(typeConfig.getString(StateManagerConfig.Database.JDBC_USER)).isEqualTo(user)
     softly.assertThat(typeConfig.getString(StateManagerConfig.Database.JDBC_PASS)).isEqualTo(pass)

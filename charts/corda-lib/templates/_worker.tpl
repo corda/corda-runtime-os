@@ -275,10 +275,6 @@ spec:
         {{- if $optionalArgs.clusterDbAccess }}
         {{- include "corda.clusterDbEnv" $ | nindent 10 }}
         {{- end }}
-        {{/* TODO-[CORE-19372]: remove */}}
-        {{- if $optionalArgs.stateManagerDbAccess }}
-        {{- include "corda.stateManagerDbEnv" ( list $ . $worker ) | nindent 10 }}
-        {{- end }}
         args:
           - "--workspace-dir=/work"
           - "--temp-dir=/tmp"
@@ -322,35 +318,6 @@ spec:
           - "-ddatabase.pool.maxLifetimeSeconds={{ .clusterDbConnectionPool.maxLifetimeSeconds }}"
           - "-ddatabase.pool.keepaliveTimeSeconds={{ .clusterDbConnectionPool.keepaliveTimeSeconds }}"
           - "-ddatabase.pool.validationTimeoutSeconds={{ .clusterDbConnectionPool.validationTimeoutSeconds }}"
-          {{- end }}
-          {{/* TODO-[CORE-19372]: remove */}}
-          {{- if $optionalArgs.stateManagerDbAccess }}
-          - "--stateManager"
-          - "type=DATABASE"
-          - "--stateManager"
-          - "database.user=$(STATE_MANAGER_USERNAME)"
-          - "--stateManager"
-          - "database.pass=$(STATE_MANAGER_PASSWORD)"
-          - "--stateManager"
-          - "database.jdbc.url={{- include "corda.stateManagerJdbcUrl" ( list $ . ) -}}"
-          - "--stateManager"
-          - "database.jdbc.directory=/opt/jdbc-driver"
-          - "--stateManager"
-          - "database.jdbc.driver=org.postgresql.Driver"
-          - "--stateManager"
-          - "database.pool.maxSize={{ .stateManager.db.connectionPool.maxSize }}"
-          {{- if .stateManager.db.connectionPool.minSize }}
-          - "--stateManager"
-          - "database.pool.minSize={{ .stateManager.db.connectionPool.minSize }}"
-          {{- end }}
-          - "--stateManager"
-          - "database.pool.idleTimeoutSeconds={{ .stateManager.db.connectionPool.idleTimeoutSeconds }}"
-          - "--stateManager"
-          - "database.pool.maxLifetimeSeconds={{ .stateManager.db.connectionPool.maxLifetimeSeconds }}"
-          - "--stateManager"
-          - "database.pool.keepAliveTimeSeconds={{ .stateManager.db.connectionPool.keepAliveTimeSeconds }}"
-          - "--stateManager"
-          - "database.pool.validationTimeoutSeconds={{ .stateManager.db.connectionPool.validationTimeoutSeconds }}"
           {{- end }}
           {{- if $.Values.tracing.endpoint }}
           - "--send-trace-to={{ $.Values.tracing.endpoint }}"

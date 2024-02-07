@@ -144,6 +144,38 @@ fun NetworkOnboardingMetadata.reregisterMember(
     )
 }
 
+
+@Suppress("unused")
+/**
+ * Register a member who has registered previously using the [ClusterInfo] and registration context from
+ * the previous registration for the cluster connection details and for the member identifier.
+ * Should be mainly used in upgrade scenarios where we cannot re-use the onboarding metadata.
+ */
+fun ClusterInfo.reregisterMember(
+    holdingId: String,
+    x500Name: String,
+    registrationContext: Map<String, String>,
+    contextToMerge: Map<String, String?> = emptyMap(),
+    waitForApproval: Boolean = true
+): NetworkOnboardingMetadata {
+    val newContext = registrationContext.mapNotNull { (key, value) ->
+        if (contextToMerge.containsKey(key)) {
+            contextToMerge[key]?.let {
+                key to it
+            }
+        } else {
+            key to value
+        }
+    }.toMap()
+    return NetworkOnboardingMetadata(
+        holdingId,
+        x500Name,
+        this.register(holdingId, newContext, waitForApproval),
+        newContext,
+        this,
+    )
+}
+
 /**
  * Onboard a member to be a notary. This performs the same logic as when onboarding a standard member, but also creates
  * the additional notary specific context.
@@ -286,6 +318,25 @@ fun ClusterInfo.waitForRegistrationStatus(
             }
             failMessage("Registration was not completed for $holdingIdentityShortHash")
         }
+    }
+}
+
+@Suppress("unused")
+fun ClusterInfo.getRegistrationContext(
+    holdingIdentityShortHash: String,
+    registrationId: String?,
+) = cluster {
+    assertWithRetryIgnoringExceptions {
+        timeout(15.seconds)
+        interval(1.seconds)
+        command {
+            if (registrationId != null) {
+                getRegistrationStatus(holdingIdentityShortHash, registrationId)
+            } else {
+                getRegistrationStatus(holdingIdentityShortHash)
+            }
+        }
+        condition { it.code == ResponseCode.OK.statusCode }
     }
 }
 

@@ -6,11 +6,10 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.mergeOver
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.StateManagerConfig
-import java.lang.IllegalArgumentException
 
 object StateManagerConfigHelper {
 
-    private const val DEFAULT_TYPE = "DATABASE"
+    private const val DEFAULT_TYPE = "Database"
     internal const val DEFAULT_DRIVER = "org.postgresql.Driver"
     internal const val DEFAULT_JDBC_POOL_MIN_SIZE = 0
     internal const val DEFAULT_JDBC_POOL_MAX_SIZE = 5

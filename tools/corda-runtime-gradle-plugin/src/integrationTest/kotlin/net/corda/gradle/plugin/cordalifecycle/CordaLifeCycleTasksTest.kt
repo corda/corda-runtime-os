@@ -61,4 +61,18 @@ class CordaLifeCycleTasksTest : FunctionalBaseTest() {
             "The process cache file is present but should be missing"
         )
     }
+
+    @Test
+    fun missingComposeFileShouldThrowError() {
+        appendCordaRuntimeGradlePluginExtension()
+        val currentValue = buildFile.readText()
+        val newValue = currentValue.replace(
+            "composeFilePath = \"config/combined-worker-compose.yml\"",
+            "composeFilePath = \"config/some-other-compose.yml\""
+        )
+        buildFile.writeText(newValue)
+        val result = executeAndFailWithRunner(START_CORDA_TASK_NAME)
+        assertTrue(result.output.contains(CordaRuntimeGradlePluginException::class.java.name))
+        assertTrue(result.output.contains("Unable to locate compose file"))
+    }
 }

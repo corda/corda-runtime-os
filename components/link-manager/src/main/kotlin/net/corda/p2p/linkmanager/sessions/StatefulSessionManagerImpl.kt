@@ -662,29 +662,31 @@ internal class StatefulSessionManagerImpl(
         val messageContexts =
             messages.mapNotNull {
                 it.second?.payload?.getSessionIdIfInboundSessionMessage(it.first)
+            }.groupBy {
+                it.sessionId
             }
         if (messageContexts.isEmpty()) {
             return emptyList()
         }
         val states = sessionExpiryScheduler.checkStatesValidateAndRememberThem(
-            stateManager.get(messageContexts.map { it.sessionId }),
+            stateManager.get(messageContexts.keys),
         )
-        return messageContexts.map {
-            val state = states[it.sessionId]
+        return messageContexts.flatMap { (sessionId, contexts) ->
+            val state = states[sessionId]
             val result =
-                when (it.inboundSessionMessage) {
+                when (val lastMessage = contexts.last().inboundSessionMessage) {
                     is InboundSessionMessage.InitiatorHelloMessage -> {
-                        processInitiatorHello(state, it.inboundSessionMessage)?.let { (message, stateUpdate) ->
+                        processInitiatorHello(state, lastMessage)?.let { (message, stateUpdate) ->
                             Result(message, CreateAction(stateUpdate), null)
                         }
                     }
                     is InboundSessionMessage.InitiatorHandshakeMessage -> {
-                        processInitiatorHandshake(state, it.inboundSessionMessage)?.let { (message, stateUpdate, session) ->
+                        processInitiatorHandshake(state, lastMessage)?.let { (message, stateUpdate, session) ->
                             Result(message, UpdateAction(stateUpdate), session)
                         }
                     }
                 }
-            TraceableResult(it.trace, result)
+            contexts.map { TraceableResult(it.trace, result) }
         }
     }
 
@@ -692,32 +694,34 @@ internal class StatefulSessionManagerImpl(
         val messageContexts =
             messages.mapNotNull {
                 it.second?.payload?.getSessionIdIfOutboundSessionMessage(it.first)
+            }.groupBy {
+                it.sessionId
             }
         if (messageContexts.isEmpty()) {
             return emptyList()
         }
         val states =
             stateManager
-                .findByMetadataMatchingAny(messageContexts.map { getSessionIdFilter(it.sessionId) })
+                .findByMetadataMatchingAny(messageContexts.keys.map { getSessionIdFilter(it) })
                 .values.associateBy { state ->
                     state.metadata.toOutbound().sessionId
                 }
-        return messageContexts.map {
-            val state = states[it.sessionId]
+        return messageContexts.flatMap { (sessionId, contexts) ->
+            val state = states[sessionId]
             val result =
-                when (it.outboundSessionMessage) {
+                when (val lastMessage = contexts.last().outboundSessionMessage) {
                     is OutboundSessionMessage.ResponderHelloMessage -> {
-                        processResponderHello(state, it.outboundSessionMessage)?.let { (message, stateUpdate) ->
+                        processResponderHello(state, lastMessage)?.let { (message, stateUpdate) ->
                             Result(message, UpdateAction(stateUpdate), null)
                         }
                     }
                     is OutboundSessionMessage.ResponderHandshakeMessage -> {
-                        processResponderHandshake(state, it.outboundSessionMessage)?.let { (message, stateUpdate, session) ->
+                        processResponderHandshake(state, lastMessage)?.let { (message, stateUpdate, session) ->
                             Result(message, UpdateAction(stateUpdate), session)
                         }
                     }
                 }
-            TraceableResult(it.trace, result)
+            contexts.map { TraceableResult(it.trace, result) }
         }
     }
 

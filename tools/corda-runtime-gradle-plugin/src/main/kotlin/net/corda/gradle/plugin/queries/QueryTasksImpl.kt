@@ -67,7 +67,7 @@ class QueryTasksImpl(val pc: ProjectContext) {
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 
         val response: HttpResponse<JsonNode> = Unirest.get(pc.cordaClusterURL + "/api/v1/cpi")
-            .basicAuth(pc.cordaRpcUser, pc.cordaRpcPassword)
+            .basicAuth(pc.cordaRestUser, pc.cordaRestPassword)
             .asJson()
 
         if (response.status != HttpURLConnection.HTTP_OK) {

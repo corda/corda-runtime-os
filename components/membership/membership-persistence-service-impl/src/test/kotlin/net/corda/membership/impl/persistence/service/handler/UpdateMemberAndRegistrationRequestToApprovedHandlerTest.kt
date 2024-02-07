@@ -100,7 +100,8 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         on {
             getOrCreateEntityManagerFactory(
                 vaultDmlConnectionId,
-                jpaEntitiesSet
+                jpaEntitiesSet,
+                false
             )
         } doReturn factory
     }

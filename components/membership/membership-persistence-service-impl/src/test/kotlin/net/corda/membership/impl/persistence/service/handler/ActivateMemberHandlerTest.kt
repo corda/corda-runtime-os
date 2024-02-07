@@ -71,7 +71,7 @@ class ActivateMemberHandlerTest {
         on { createEntityManager() } doReturn em
     }
     private val dbConnectionManager: DbConnectionManager = mock {
-        on { getOrCreateEntityManagerFactory(any<UUID>(), any(), eq(true)) } doReturn emf
+        on { getOrCreateEntityManagerFactory(any<UUID>(), any(), eq(false)) } doReturn emf
     }
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { getByHoldingIdentityShortHash(holdingIdentity.shortHash) } doReturn ourVirtualNodeInfo

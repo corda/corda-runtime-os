@@ -49,7 +49,7 @@ class MutualTlsListAllowedCertificatesHandlerTest {
         on { createEntityManager() } doReturn entityManager
     }
     private val dbConnectionManager = mock<DbConnectionManager> {
-        on { getOrCreateEntityManagerFactory(any<UUID>(), any(), eq(true)) } doReturn entityManagerFactory
+        on { getOrCreateEntityManagerFactory(any<UUID>(), any(), eq(false)) } doReturn entityManagerFactory
     }
     private val entitySet = mock<JpaEntitiesSet>()
     private val jpaEntitiesRegistry = mock<JpaEntitiesRegistry> {
