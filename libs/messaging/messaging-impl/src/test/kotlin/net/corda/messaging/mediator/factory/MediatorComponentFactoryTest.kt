@@ -2,6 +2,7 @@ package net.corda.messaging.mediator.factory
 
 
 import net.corda.messaging.api.mediator.MediatorConsumer
+import net.corda.messaging.api.mediator.MediatorInputService
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
@@ -17,7 +18,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.GroupAllocator
 import net.corda.messaging.mediator.MediatorSubscriptionState
 import net.corda.messaging.mediator.StateManagerHelper
-import net.corda.messaging.mediator.processor.MediatorReplayService
 import net.corda.taskmanager.TaskManager
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -61,7 +61,7 @@ class MediatorComponentFactoryTest {
     private val stateManagerHelper = mock<StateManagerHelper<String>>()
     private val taskManager = mock<TaskManager>()
     private val messageRouter = mock<MessageRouter>()
-    private val mediatorReplayService = mock<MediatorReplayService>()
+    private val mediatorInputService = mock<MediatorInputService>()
     private val mediatorSubscriptionState = MediatorSubscriptionState(AtomicBoolean(false), AtomicBoolean(false))
     private val eventMediatorConfig = mock<EventMediatorConfig<String, String, String>>().apply {
         whenever(name).thenReturn("name")
@@ -93,7 +93,7 @@ class MediatorComponentFactoryTest {
             messageRouterFactory,
             groupAllocator,
             stateManagerHelper,
-            mediatorReplayService
+            mediatorInputService
         )
     }
 
@@ -127,7 +127,7 @@ class MediatorComponentFactoryTest {
             messageRouterFactory,
             groupAllocator,
             stateManagerHelper,
-            mediatorReplayService
+            mediatorInputService
         )
 
         assertThrows<IllegalStateException> {
@@ -163,7 +163,7 @@ class MediatorComponentFactoryTest {
             messageRouterFactory,
             groupAllocator,
             stateManagerHelper,
-            mediatorReplayService
+            mediatorInputService
         )
 
         assertThrows<IllegalStateException> {
