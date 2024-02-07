@@ -45,8 +45,8 @@ class DurableFlowStatusProcessor(
             state?.copy(value = bytes, metadata = metadata) ?: State(key, bytes, metadata = metadata)
         }.partition { it.key in existingKeys }
 
-        stateManager.create(newStates)
-        stateManager.update(updatedStates)
+        stateManager.create(newStates.topOfStack())
+        stateManager.update(updatedStates.topOfStack())
 
         return emptyList()
     }
@@ -56,5 +56,16 @@ class DurableFlowStatusProcessor(
         metadata[HOLDING_IDENTITY_METADATA_KEY] = holdingIdentity.toString()
         metadata[FLOW_STATUS_METADATA_KEY] = flowStatus.name
         return Metadata(metadata)
+    }
+
+    /**
+     * If we have multiple updates for the same [FlowKey], we should only persist the latest.
+     * This function groups items by key, and takes only the last element of any group.
+     */
+    private fun List<State>.topOfStack() : List<State> {
+        return this.groupBy { it.key }
+            .mapValues { (_, values) -> values.last() }
+            .values
+            .toList()
     }
 }
