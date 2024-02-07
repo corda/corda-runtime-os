@@ -16,7 +16,7 @@ metadata:
 spec:
   workloadSelector:
     labels:
-      {{- include "corda.workerSelectorLabels" ( list . $workerName ) | nindent 6 }}
+      {{- include "corda.workerSelectorLabels" ( list . $worker ) | nindent 6 }}
   ingress:
     - port:
         number: {{ $port }}
