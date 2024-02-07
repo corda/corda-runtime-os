@@ -51,4 +51,3 @@ dependencies {
 
     testImplementation project(':testing:test-utilities')
 }
-
