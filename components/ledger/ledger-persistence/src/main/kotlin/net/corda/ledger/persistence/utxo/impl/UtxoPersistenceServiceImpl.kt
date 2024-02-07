@@ -12,7 +12,6 @@ import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionMetadataUtils.parseMetadata
 import net.corda.ledger.common.data.transaction.TransactionStatus
-import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters
 import net.corda.ledger.common.data.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.data.transaction.filtered.factory.FilteredTransactionFactory
@@ -27,9 +26,6 @@ import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
-import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup.METADATA
-import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup.NOTARY
-import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.ledger.utxo.data.transaction.toMerkleProof
@@ -48,7 +44,6 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
 import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
-import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -95,77 +90,6 @@ class UtxoPersistenceServiceImpl(
                 null
             } to status
         }
-    }
-
-    override fun findFilteredTransactionsAndSignatures(
-        stateRefs: List<StateRef>,
-    ): Map<SecureHash, Pair<FilteredTransaction?, List<DigitalSignatureAndMetadata>>> {
-        val txIdToIndexesMap = stateRefs.groupBy { it.transactionId }
-            .mapValues { (_, stateRefs) -> stateRefs.map { stateRef -> stateRef.index } }
-
-        // create payload map and make values null by default, if the value of certain filtered tx is null at the end,
-        // it means it's not found. The error will be handled in flow side.
-        val txIdToFilteredTxAndSignature: MutableMap<SecureHash, Pair<FilteredTransaction?, List<DigitalSignatureAndMetadata>>> = stateRefs
-            .groupBy { it.transactionId }
-            .mapValues { (_, _) -> null to emptyList<DigitalSignatureAndMetadata>() }.toMutableMap()
-
-        txIdToIndexesMap.keys.forEach { transactionId ->
-
-            require(txIdToFilteredTxAndSignature.containsKey(transactionId)) { "transaction Id $transactionId is not found." }
-
-            val signedTransactionContainer = findSignedTransaction(transactionId.toString(), TransactionStatus.VERIFIED).first
-            val wireTransaction = signedTransactionContainer?.wireTransaction
-            val signatures = signedTransactionContainer?.signatures ?: emptyList()
-            val indexesOfTxId = requireNotNull(txIdToIndexesMap[transactionId])
-
-            if (wireTransaction != null) {
-                /** filter wire transaction that is equivalent to:
-                 * var filteredTxBuilder = filteredTransactionBuilder
-                 *   .withTimeWindow()
-                 *   .withOutputStates(indexesOfTxId)
-                 *   .withNotary()
-                 */
-                val filteredTransaction = filteredTransactionFactory.create(
-                    wireTransaction,
-                    listOf(
-                        ComponentGroupFilterParameters.AuditProof(
-                            METADATA.ordinal,
-                            TransactionMetadata::class.java,
-                            ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                        ),
-                        ComponentGroupFilterParameters.AuditProof(
-                            NOTARY.ordinal,
-                            Any::class.java,
-                            ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                        ),
-                        ComponentGroupFilterParameters.AuditProof(
-                            UtxoComponentGroup.OUTPUTS_INFO.ordinal,
-                            UtxoOutputInfoComponent::class.java,
-                            ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Index(indexesOfTxId)
-                        ),
-                        ComponentGroupFilterParameters.AuditProof(
-                            UtxoComponentGroup.OUTPUTS.ordinal,
-                            ContractState::class.java,
-                            ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Index(indexesOfTxId)
-                        )
-                    )
-                )
-                txIdToFilteredTxAndSignature[transactionId] = filteredTransaction to signatures
-            }
-        }
-        // filter transaction ids who's filtered tx is null
-        val transactionIdsToFind =
-            txIdToFilteredTxAndSignature.filter { it.value.toList().contains(null) }.keys.map { it.toString() }
-
-        // find from filtered transaction table if there are still unfounded filtered txs
-        val txIdToFilteredTxSignaturePairFromMerkleTable =
-            if (transactionIdsToFind.isNotEmpty()) {
-                findFilteredTransactions(transactionIdsToFind)
-            } else {
-                emptyMap<SecureHash, Pair<FilteredTransaction?, List<DigitalSignatureAndMetadata>>>()
-            }
-
-        return (txIdToFilteredTxAndSignature + txIdToFilteredTxSignaturePairFromMerkleTable).toMap()
     }
 
     override fun findTransactionIdsAndStatuses(
@@ -545,7 +469,7 @@ class UtxoPersistenceServiceImpl(
     @VisibleForTesting
     internal fun findFilteredTransactions(
         ids: List<String>
-    ): Map<SecureHash, Pair<FilteredTransaction, List<DigitalSignatureAndMetadata>>> {
+    ): Map<String, Pair<FilteredTransaction, List<DigitalSignatureAndMetadata>>> {
         return entityManagerFactory.transaction { em ->
             repository.findFilteredTransactions(em, ids)
         }.map { (transactionId, ftxDto) ->
@@ -646,7 +570,7 @@ class UtxoPersistenceServiceImpl(
             )
 
             // 6. Map the transaction id to the filtered transaction object and signatures
-            filteredTransaction.id to Pair(filteredTransaction, ftxDto.signatures)
+            filteredTransaction.id.toString() to Pair(filteredTransaction, ftxDto.signatures)
         }.toMap()
     }
 
