@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.flow.impl.flows.finality
+package net.corda.ledger.utxo.data.transaction
 
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.base.annotations.CordaSerializable

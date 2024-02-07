@@ -1,19 +1,24 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
 import io.micrometer.core.instrument.Timer
+import net.corda.crypto.core.fullIdHash
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.fiber.metrics.recordSuspendable
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTransactionStatus
+import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.flow.impl.cache.StateAndRefCache
+import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindFilteredTransactionsAndSignatures
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindSignedLedgerTransactionWithStatus
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindTransactionIdsAndStatuses
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindTransactionWithStatus
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.PersistTransaction
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.PersistTransactionIfDoesNotExist
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.UpdateTransactionStatus
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindFilteredTransactionsAndSignaturesExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindFilteredTransactionsAndSignaturesParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedLedgerTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedLedgerTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
@@ -33,6 +38,7 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedLedgerTransactionIm
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
+import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactory
 import net.corda.metrics.CordaMetrics
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
@@ -41,15 +47,21 @@ import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
+import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
+import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.nio.ByteBuffer
+import java.security.PublicKey
 
 @Suppress("LongParameterList", "TooManyFunctions")
 @Component(
@@ -68,6 +80,10 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
     @Reference(service = UtxoSignedTransactionFactory::class)
     private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
+    @Reference(service = UtxoFilteredTransactionFactory::class)
+    private val utxoFilteredTransactionFactory: UtxoFilteredTransactionFactory,
+    @Reference(service = NotarySignatureVerificationService::class)
+    private val notarySignatureVerificationService: NotarySignatureVerificationService,
     @Reference(service = StateAndRefCache::class)
     private val stateAndRefCache: StateAndRefCache
 ) : UtxoLedgerPersistenceService, UsedByFlow, SingletonSerializeAsToken {
@@ -152,6 +168,56 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                 signedLedgerTransaction to status.toTransactionStatus()
             }
         }
+    }
+
+    @Suspendable
+    override fun findFilteredTransactionsAndSignatures(
+        stateRefs: List<StateRef>,
+        notaryKey: PublicKey,
+        notaryName: MemberX500Name
+    ): Map<SecureHash, Map<UtxoFilteredTransaction, List<DigitalSignatureAndMetadata>>> {
+        return recordSuspendable({ ledgerPersistenceFlowTimer(FindFilteredTransactionsAndSignatures) }) @Suspendable {
+            wrapWithPersistenceException {
+                externalEventExecutor.execute(
+                    FindFilteredTransactionsAndSignaturesExternalEventFactory::class.java,
+                    FindFilteredTransactionsAndSignaturesParameters(stateRefs)
+                )
+            }.firstOrNull()?.let {
+                serializationService.deserialize<Map<SecureHash, Pair<FilteredTransaction?, List<DigitalSignatureAndMetadata>>>>(
+                    it.array()
+                ).mapValues { (transactionId, filteredTransactionAndSignature) ->
+                    val (filteredTransaction, signatures) = filteredTransactionAndSignature
+
+                    requireNotNull(filteredTransaction) {
+                        "Dependent transaction $transactionId does not exist"
+                    }
+
+                    val utxoFilteredTransaction = utxoFilteredTransactionFactory.create(filteredTransaction)
+                    notarySignatureVerificationService.verifyNotarySignatures(
+                        utxoFilteredTransaction,
+                        notaryKey,
+                        signatures,
+                        mutableMapOf()
+                    )
+
+                    require(notaryName == utxoFilteredTransaction.notaryName) {
+                        "Notary name of filtered transaction \"${utxoFilteredTransaction.notaryName}\" doesn't match with " +
+                            "notary service of current transaction \"${notaryName}\""
+                    }
+
+                    val newTxNotaryKeyIds: Set<SecureHash> = if (notaryKey is CompositeKey) {
+                        // get public keys that is part of this composite key from leafKeys then key id from each public key
+                        notaryKey.leafKeys.map { publicKey -> publicKey.fullIdHash() }.toSet()
+                    } else {
+                        setOf(notaryKey.fullIdHash())
+                    }
+
+                    mapOf(
+                        utxoFilteredTransaction to signatures.filter { signature -> newTxNotaryKeyIds.contains(signature.by) }
+                    )
+                }
+            }
+        } ?: emptyMap()
     }
 
     @Suspendable
