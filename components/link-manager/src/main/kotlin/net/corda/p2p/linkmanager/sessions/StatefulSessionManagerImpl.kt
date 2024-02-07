@@ -264,16 +264,14 @@ internal class StatefulSessionManagerImpl(
                         sendSessionReEstablishmentMessage(counterparties.ourId, counterparties.counterpartyId, sessionId)
                         return@mapNotNull null
                     }
-                    session.let {
-                        sessionIdsNotInCache[sessionId]?.let { traceables ->
-                            val inboundSession =
-                                SessionManager.SessionDirection.Inbound(
-                                    state.toCounterparties(),
-                                    session,
-                                )
-                            cachedInboundSessions.put(sessionId, inboundSession)
-                            traceables to inboundSession
-                        }
+                    sessionIdsNotInCache[sessionId]?.let { traceables ->
+                        val inboundSession =
+                            SessionManager.SessionDirection.Inbound(
+                                state.toCounterparties(),
+                                session,
+                            )
+                        cachedInboundSessions.put(sessionId, inboundSession)
+                        traceables to inboundSession
                     }
                 }
         }
@@ -295,17 +293,15 @@ internal class StatefulSessionManagerImpl(
                             sessionManagerImpl.revocationCheckerClient::checkRevocation,
                         )?.sessionData as? Session ?: return@mapNotNull null
                     val sessionId = state.metadata.toOutbound().sessionId
-                    session.let {
-                        sessionIdsNotInCache[sessionId]?.let {
-                            val outboundSession =
-                                SessionManager.SessionDirection.Outbound(
-                                    state.toCounterparties(),
-                                    session,
-                                )
-                            cachedOutboundSessions.put(key, outboundSession)
-                            counterpartiesForSessionId[sessionId] = key
-                            it to outboundSession
-                        }
+                    sessionIdsNotInCache[sessionId]?.let {
+                        val outboundSession =
+                            SessionManager.SessionDirection.Outbound(
+                                state.toCounterparties(),
+                                session,
+                            )
+                        cachedOutboundSessions.put(key, outboundSession)
+                        counterpartiesForSessionId[sessionId] = key
+                        it to outboundSession
                     }
                 }
         }
@@ -1163,6 +1159,7 @@ internal class StatefulSessionManagerImpl(
             ReEstablishSessionMessage(sessionId)
         ).array()
         val record = createAuthenticatedMessageRecord(source, destination, messageBytes)
+        logger.info("Sending '{}' to session initiator '{}'.", ReEstablishSessionMessage::class.simpleName, destination)
         sessionManagerImpl.publisher.publish(listOf(record))
     }
 
