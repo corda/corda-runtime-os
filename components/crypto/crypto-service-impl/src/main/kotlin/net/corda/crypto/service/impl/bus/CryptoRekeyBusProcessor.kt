@@ -9,7 +9,6 @@ import net.corda.crypto.core.KeyRotationMetadataValues
 import net.corda.crypto.core.KeyRotationRecordType
 import net.corda.crypto.core.KeyRotationStatus
 import net.corda.crypto.core.getKeyRotationStatusRecordKey
-import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.SigningRepositoryFactory
 import net.corda.crypto.softhsm.WrappingRepositoryFactory
 import net.corda.data.crypto.wire.ops.key.rotation.IndividualKeyRotationRequest
@@ -45,6 +44,7 @@ class CryptoRekeyBusProcessor(
     private val rekeyPublisher: Publisher,
     private val stateManagerInit: StateManager?,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    private val defaultUnmanagedWrappingKeyName: String,
 ) : DurableProcessor<String, KeyRotationRequest> {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -88,14 +88,6 @@ class CryptoRekeyBusProcessor(
 
         when (request.managedKey) {
             KeyType.UNMANAGED -> {
-                if (request.oldParentKeyAlias.isNullOrEmpty()) {
-                    logger.info("oldParentKeyAlias missing from unmanaged KeyRotationRequest, ignoring.")
-                    return
-                }
-                if (request.newParentKeyAlias.isNullOrEmpty()) {
-                    logger.info("newParentKeyAlias missing from unmanaged KeyRotationRequest, ignoring.")
-                    return
-                }
                 if (request.tenantId != null) {
                     logger.info("tenantId provided for unmanaged KeyRotationRequest, ignoring.")
                     return
@@ -117,8 +109,8 @@ class CryptoRekeyBusProcessor(
                 val targetWrappingKeys = allTenantIds.map { tenantId ->
                     try {
                         wrappingRepositoryFactory.create(tenantId).use { wrappingRepo ->
-                            wrappingRepo.findKeysWrappedByParentKey(request.oldParentKeyAlias)
-                                .map { wki -> tenantId to wki }
+                            wrappingRepo.findKeysNotWrappedByParentKey(defaultUnmanagedWrappingKeyName)
+                                .map { wki -> tenantId to wki.alias }
                         }
                     } catch (ex: Exception) {
                         logger.warn(
@@ -130,14 +122,14 @@ class CryptoRekeyBusProcessor(
                 }.flatten()
 
                 if (targetWrappingKeys.none()) {
-                    logger.info("No unmanaged keys to rotate for ${request.oldParentKeyAlias}.")
+                    logger.info("No master wrapping keys to rotate.")
                     return
                 }
 
-                if (!writeStateForUnmanagedKey(targetWrappingKeys, request, timestamp)) {
+                if (!writeStateForUnmanagedKey(targetWrappingKeys, timestamp)) {
                     logger.warn(
-                        "Could not write initial state when attempting to rotate unmanaged keys for " +
-                            "${request.oldParentKeyAlias}."
+                        "Could not write initial state when attempting to rotate master wrapping key with " +
+                                "$defaultUnmanagedWrappingKeyName."
                     )
                     return
                 }
@@ -145,14 +137,6 @@ class CryptoRekeyBusProcessor(
             }
 
             KeyType.MANAGED -> {
-                if (request.oldParentKeyAlias != null) {
-                    logger.info("oldParentKeyAlias provided for managed KeyRotationRequest, ignoring.")
-                    return
-                }
-                if (request.newParentKeyAlias != null) {
-                    logger.info("newParentKeyAlias provided for managed KeyRotationRequest, ignoring.")
-                    return
-                }
                 if (request.tenantId.isNullOrEmpty()) {
                     logger.info("tenantId missing from managed KeyRotationRequest, ignoring.")
                     return
@@ -249,8 +233,7 @@ class CryptoRekeyBusProcessor(
      * @return false if there was a problem writing state which should abort key rotation
      */
     private fun writeStateForUnmanagedKey(
-        targetWrappingKeys: List<Pair<String, WrappingKeyInfo>>,
-        request: KeyRotationRequest,
+        targetWrappingKeys: List<Pair<String, String>>,
         timestamp: Long
     ): Boolean {
         // First update state manager, then publish re-wrap messages, so the state manager db is already populated
@@ -260,8 +243,8 @@ class CryptoRekeyBusProcessor(
         targetWrappingKeys.groupBy { it.first }.forEach { (tenantId, wrappingKeys) ->
             logger.debug("Grouping wrapping keys by vNode/tenantId $tenantId")
             val status = UnmanagedKeyStatus(
-                request.oldParentKeyAlias,
-                request.newParentKeyAlias,
+                defaultUnmanagedWrappingKeyName,
+                null,
                 tenantId,
                 wrappingKeys.size,
                 0,
@@ -270,12 +253,12 @@ class CryptoRekeyBusProcessor(
             records.add(
                 State(
                     // key is set as a unique string to prevent table search in re-wrap bus processor
-                    getKeyRotationStatusRecordKey(request.oldParentKeyAlias, tenantId),
+                    getKeyRotationStatusRecordKey(defaultUnmanagedWrappingKeyName, tenantId),
                     checkNotNull(unmanagedKeyStatusSerializer.serialize(status)),
                     1,
                     Metadata(
                         mapOf(
-                            KeyRotationMetadataValues.ROOT_KEY_ALIAS to request.oldParentKeyAlias,
+                            KeyRotationMetadataValues.ROOT_KEY_ALIAS to defaultUnmanagedWrappingKeyName,
                             KeyRotationMetadataValues.STATUS_TYPE to KeyRotationRecordType.KEY_ROTATION,
                             KeyRotationMetadataValues.STATUS to KeyRotationStatus.IN_PROGRESS,
                             KeyRotationMetadataValues.KEY_TYPE to KeyRotationKeyType.UNMANAGED,
@@ -294,14 +277,14 @@ class CryptoRekeyBusProcessor(
                         MetadataFilter(
                             KeyRotationMetadataValues.ROOT_KEY_ALIAS,
                             Operation.Equals,
-                            request.oldParentKeyAlias
+                            defaultUnmanagedWrappingKeyName,
                         ),
                         MetadataFilter(
                             KeyRotationMetadataValues.KEY_TYPE,
                             Operation.Equals,
                             KeyRotationKeyType.UNMANAGED
                         )
-                    ), "rootKeyAlias ${request.oldParentKeyAlias}"
+                    ), "default master wrapping key $defaultUnmanagedWrappingKeyName"
                 )
             ) {
                 return false
@@ -312,20 +295,20 @@ class CryptoRekeyBusProcessor(
     }
 
     private fun publishIndividualUnmanagedRewrappingRequests(
-        targetWrappingKeys: List<Pair<String, WrappingKeyInfo>>,
+        targetWrappingKeys: List<Pair<String, String>>,
         request: KeyRotationRequest
     ) {
         rekeyPublisher.publish(
-            targetWrappingKeys.map { (tenantId, wrappingKeyInfo) ->
+            targetWrappingKeys.map { (tenantId, alias) ->
                 Record(
                     REWRAP_MESSAGE_TOPIC,
                     UUID.randomUUID().toString(),
                     IndividualKeyRotationRequest(
                         request.requestId,
                         tenantId,
-                        request.oldParentKeyAlias,
-                        request.newParentKeyAlias,
-                        wrappingKeyInfo.alias,
+                        null,
+                        null,
+                        alias,
                         null, // keyUuid not used in unmanaged key rotation
                         KeyType.UNMANAGED
                     )
@@ -387,18 +370,18 @@ class CryptoRekeyBusProcessor(
             if (retries == 0) return false
             val toDelete = stateManager.findByMetadataMatchingAll(
                 filters +
-                    MetadataFilter(
-                        KeyRotationMetadataValues.STATUS_TYPE,
-                        Operation.Equals,
-                        KeyRotationRecordType.KEY_ROTATION
-                    )
+                        MetadataFilter(
+                            KeyRotationMetadataValues.STATUS_TYPE,
+                            Operation.Equals,
+                            KeyRotationRecordType.KEY_ROTATION
+                        )
             )
             logger.info("Deleting following records ${toDelete.keys} for previous key rotation for ${reason}.")
             val failedToDelete = stateManager.delete(toDelete.values)
             if (failedToDelete.isNotEmpty()) {
                 logger.info(
                     "Failed to delete following states " +
-                        "${failedToDelete.keys} from the state manager for ${reason}, retrying."
+                            "${failedToDelete.keys} from the state manager for ${reason}, retrying."
                 )
                 retries--
             } else {

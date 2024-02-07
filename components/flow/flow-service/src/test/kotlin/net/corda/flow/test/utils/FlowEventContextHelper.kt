@@ -13,6 +13,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.FlowConfig
 import org.mockito.kotlin.mock
+import java.util.UUID
 
 @Suppress("LongParameterList")
 fun <T> buildFlowEventContext(
@@ -22,7 +23,8 @@ fun <T> buildFlowEventContext(
     outputRecords: List<Record<*, *>> = emptyList(),
     flowId: String = FLOW_ID_1,
     sendToDlq: Boolean = false,
-    isRetryEvent: Boolean = false
+    isRetryEvent: Boolean = false,
+    inputRecordHash: String = UUID.randomUUID().toString()
 ): FlowEventContext<T> {
 
 
@@ -45,31 +47,8 @@ fun <T> buildFlowEventContext(
         emptyMap(),
         mock(),
         mock(),
-        null
+        null,
+        inputRecordHash
     )
 }
 
-@Suppress("LongParameterList")
-fun <T> buildFlowEventContext(
-    inputEventPayload: T,
-    config: SmartConfig = SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty()),
-    outputRecords: List<Record<*, *>> = emptyList(),
-    flowId: String = FLOW_ID_1,
-    sendToDlq: Boolean = false,
-    isRetryEvent: Boolean = false
-): FlowEventContext<T> {
-    return FlowEventContext(
-        mock(),
-        FlowEvent(flowId, inputEventPayload),
-        inputEventPayload,
-        emptyMap(),
-        config,
-        isRetryEvent,
-        outputRecords,
-        sendToDlq,
-        emptyMap(),
-        mock(),
-        mock(),
-        null
-    )
-}

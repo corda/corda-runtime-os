@@ -25,7 +25,9 @@ import net.corda.tracing.TraceContext
  * @param flowMetrics The [FlowMetrics] instance associated with the flow event
  * @param flowTraceContext The [TraceContext] instance associated with the flow event
  * @param metadata Metadata associated with the checkpoint in state storage
- */
+ * @param inputEventHash The hash of the original bus input associated with the current [event]. For RPC responses fed back into the
+ * pipeline, the hash will be that of the original consumer input from the bus. Used for storing events for replay logic.
+ * */
 data class FlowEventContext<T>(
     val checkpoint: FlowCheckpoint,
     val inputEvent: FlowEvent,
@@ -38,5 +40,6 @@ data class FlowEventContext<T>(
     val mdcProperties: Map<String, String>,
     val flowMetrics: FlowMetrics,
     val flowTraceContext: TraceContext,
-    val metadata: Metadata?
+    val metadata: Metadata?,
+    val inputEventHash: String?,
 )

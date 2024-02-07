@@ -22,6 +22,8 @@ interface FlowEventPipelineFactory {
      * @param mdcProperties properties to set the flow fibers MDC with.
      * @param traceContext the tracing context spanning the pipeline execution.
      * @param eventRecordTimestamp The produced timestamp of the flow event record.
+     * @param inputEventHash The hash of the original bus input associated with the current [event]. For RPC responses fed back into the
+     * pipeline, the hash will be that of the original consumer input from the bus. Used for storing events for replay logic.
      *
      * @return A new [FlowEventPipeline] instance.
      */
@@ -31,6 +33,7 @@ interface FlowEventPipelineFactory {
         configs: Map<String, SmartConfig>,
         mdcProperties: Map<String, String>,
         traceContext: TraceContext,
-        eventRecordTimestamp: Long
+        eventRecordTimestamp: Long,
+        inputEventHash: String?
     ): FlowEventPipeline
 }
