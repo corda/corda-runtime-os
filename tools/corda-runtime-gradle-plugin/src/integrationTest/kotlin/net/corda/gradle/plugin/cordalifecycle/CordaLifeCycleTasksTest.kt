@@ -39,8 +39,8 @@ class CordaLifeCycleTasksTest : FunctionalBaseTest() {
     }
 
     @Test
-    @EnabledIfEnvironmentVariable(named = "CI", matches = "true", disabledReason = "Docker is expected to be running in local env")
     @DisabledOnOs(OS.WINDOWS)
+    @EnabledIfEnvironmentVariable(named = "CI", matches = "true", disabledReason = "Docker is expected to be running in local env")
     fun shouldFailToStartCordaOnLinuxCiWithoutDocker() {
         appendCordaRuntimeGradlePluginExtension()
         val result = executeAndFailWithRunner(START_CORDA_TASK_NAME)
