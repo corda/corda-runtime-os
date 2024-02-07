@@ -586,6 +586,7 @@ bootstrap:
 
   # extra labels to add to all pods created by bootstrap jobs
   commonPodLabels: { }
+
 # config service configuration
 config:
   # the configuration for encryption of configuration
