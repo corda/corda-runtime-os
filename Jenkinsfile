@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@ronanb/ES-1931/create-kafka-combined-worker-docker-image') _
+@Library('corda-shared-build-pipeline-steps@5.2') _
 
 cordaPipelineKubernetesAgent(
     dailyBuildCron: 'H H/6 * * *',
