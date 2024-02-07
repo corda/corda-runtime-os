@@ -9,18 +9,12 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.ledger.common.NotaryLookup
-import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
-import net.corda.v5.membership.GroupParametersLookup
 
 @CordaSystemFlow
 class ReceiveAndUpdateTransactionBuilderFlow(
     private val session: FlowSession,
-    private val originalTransactionBuilder: UtxoTransactionBuilderInternal,
-    private val notaryLookup: NotaryLookup,
-    private val groupParametersLookup: GroupParametersLookup,
-    private val notarySignatureVerificationService: NotarySignatureVerificationService
+    private val originalTransactionBuilder: UtxoTransactionBuilderInternal
 ) : SubFlow<UtxoTransactionBuilder> {
 
     @CordaInject
@@ -30,10 +24,7 @@ class ReceiveAndUpdateTransactionBuilderFlow(
     override fun call(): UtxoTransactionBuilder {
         return versioningService.versionedSubFlow(
             ReceiveAndUpdateTransactionBuilderFlowVersionedFlowFactory(
-                originalTransactionBuilder,
-                notaryLookup,
-                groupParametersLookup,
-                notarySignatureVerificationService
+                originalTransactionBuilder
             ),
             session
         )
@@ -41,10 +32,7 @@ class ReceiveAndUpdateTransactionBuilderFlow(
 }
 
 class ReceiveAndUpdateTransactionBuilderFlowVersionedFlowFactory(
-    private val originalTransactionBuilder: UtxoTransactionBuilderInternal,
-    private val notaryLookup: NotaryLookup,
-    private val groupParametersLookup: GroupParametersLookup,
-    private val notarySignatureVerificationService: NotarySignatureVerificationService
+    private val originalTransactionBuilder: UtxoTransactionBuilderInternal
 ) : VersionedReceiveFlowFactory<UtxoTransactionBuilder> {
 
     override val versionedInstanceOf: Class<ReceiveAndUpdateTransactionBuilderFlow> = ReceiveAndUpdateTransactionBuilderFlow::class.java
@@ -53,10 +41,7 @@ class ReceiveAndUpdateTransactionBuilderFlowVersionedFlowFactory(
         return when {
             version >= 1 -> ReceiveAndUpdateTransactionBuilderFlowV1(
                 session,
-                originalTransactionBuilder,
-                notaryLookup,
-                groupParametersLookup,
-                notarySignatureVerificationService
+                originalTransactionBuilder
             )
             else -> throw IllegalArgumentException()
         }

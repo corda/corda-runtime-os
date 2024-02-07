@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.v1
 
 import net.corda.ledger.utxo.data.transaction.verifyFilteredTransactionAndSignatures
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderContainer
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.sandbox.CordaSystemFlow
@@ -22,14 +23,23 @@ import org.slf4j.LoggerFactory
 @CordaSystemFlow
 class ReceiveAndUpdateTransactionBuilderFlowV1(
     private val session: FlowSession,
-    private val originalTransactionBuilder: UtxoTransactionBuilderInternal,
-    private val notaryLookup: NotaryLookup,
-    private val groupParametersLookup: GroupParametersLookup,
-    private val notarySignatureVerificationService: NotarySignatureVerificationService
+    private val originalTransactionBuilder: UtxoTransactionBuilderInternal
 ) : SubFlow<UtxoTransactionBuilder> {
 
     @CordaInject
     lateinit var flowEngine: FlowEngine
+
+    @CordaInject
+    lateinit var notaryLookup: NotaryLookup
+
+    @CordaInject
+    lateinit var groupParametersLookup: GroupParametersLookup
+
+    @CordaInject
+    lateinit var notarySignatureVerificationService: NotarySignatureVerificationService
+
+    @CordaInject
+    lateinit var persistenceService: UtxoLedgerPersistenceService
 
     private companion object {
         val log: Logger = LoggerFactory.getLogger(ReceiveAndUpdateTransactionBuilderFlowV1::class.java)
@@ -46,8 +56,12 @@ class ReceiveAndUpdateTransactionBuilderFlowV1(
 
         log.trace { "Transaction builder proposals have been applied. Result: $updatedTransactionBuilder" }
 
-        val notaryInfo = updatedTransactionBuilder.notaryName?.let {
-            notaryLookup.lookup(it)
+        val notaryName = requireNotNull(updatedTransactionBuilder.notaryName) {
+            "Notary name on transaction builder must not be null."
+        }
+
+        val notaryInfo = requireNotNull(notaryLookup.lookup(notaryName)) {
+            "Could not find notary service with name: $notaryName"
         }
 
         val newTransactionIds = receivedTransactionBuilder.dependencies
@@ -72,11 +86,13 @@ class ReceiveAndUpdateTransactionBuilderFlowV1(
                         "cannot be found in group parameter notaries."
             }
 
+            // Verify the received filtered transactions
             receivedFilteredTransactions.forEach {
                 it.verifyFilteredTransactionAndSignatures(notary, notarySignatureVerificationService)
             }
 
-            // TODO Store filtered transactions?
+            // Persist the verified filtered transactions
+            persistenceService.persistFilteredTransactionsAndSignatures(receivedFilteredTransactions)
         }
 
         return updatedTransactionBuilder

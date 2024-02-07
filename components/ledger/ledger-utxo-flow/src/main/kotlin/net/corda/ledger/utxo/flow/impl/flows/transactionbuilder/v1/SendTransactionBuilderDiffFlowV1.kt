@@ -17,13 +17,17 @@ import org.slf4j.LoggerFactory
 @CordaSystemFlow
 class SendTransactionBuilderDiffFlowV1(
     private val transactionBuilder: UtxoTransactionBuilderContainer,
-    private val session: FlowSession,
-    private val notaryLookup: NotaryLookup,
-    private val utxoLedgerPersistenceService: UtxoLedgerPersistenceService
+    private val session: FlowSession
 ) : SubFlow<Unit> {
 
     @CordaInject
     lateinit var flowEngine: FlowEngine
+
+    @CordaInject
+    lateinit var notaryLookup: NotaryLookup
+
+    @CordaInject
+    lateinit var persistenceService: UtxoLedgerPersistenceService
 
     private companion object {
         val log: Logger = LoggerFactory.getLogger(SendTransactionBuilderDiffFlowV1::class.java)
@@ -33,12 +37,16 @@ class SendTransactionBuilderDiffFlowV1(
     override fun call() {
         log.trace { "Starting send transaction builder flow." }
 
+        val notaryName = requireNotNull(transactionBuilder.getNotaryName()) {
+            "Notary name on transaction builder must not be null."
+        }
+
+        val notaryInfo = requireNotNull(notaryLookup.lookup(notaryName)) {
+            "Could not find notary service with name: $notaryName"
+        }
+
         log.trace { "Sending proposed transaction builder components to ${session.counterparty}." }
         session.send(transactionBuilder)
-
-        val notaryInfo = transactionBuilder.getNotaryName()?.let {
-            notaryLookup.lookup(it)
-        }
 
         val newTransactionIds = transactionBuilder.dependencies
 
@@ -51,7 +59,7 @@ class SendTransactionBuilderDiffFlowV1(
             }
         } else {
             val dependencies = transactionBuilder.inputStateRefs + transactionBuilder.referenceStateRefs
-            val filteredTransactionsAndSignatures = utxoLedgerPersistenceService.findFilteredTransactionsAndSignatures(
+            val filteredTransactionsAndSignatures = persistenceService.findFilteredTransactionsAndSignatures(
                 dependencies,
                 notaryInfo.publicKey,
                 notaryInfo.name
