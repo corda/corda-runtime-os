@@ -55,7 +55,6 @@ class UtxoRepositoryImpl(
     private val batchPersistenceService: BatchPersistenceService,
     private val serializationService: SerializationService,
     private val wireTransactionFactory: WireTransactionFactory,
-    @Reference(service = UtxoQueryProvider::class)
     private val queryProvider: UtxoQueryProvider
 ) : UtxoRepository, UsedByPersistence {
     private companion object {
