@@ -78,11 +78,8 @@ class CryptoRekeyBusProcessor(
         logger.debug("processing $request")
         require(request != null)
 
-        try {
-            stateManager.isRunning
-        } catch (_: IllegalStateException) {
-            logger.info("State Manager is not initialised, ignoring")
-            return
+        check(stateManager.isRunning) {
+            "State manager for key rotation is not initialised."
         }
 
         when (request.managedKey) {
