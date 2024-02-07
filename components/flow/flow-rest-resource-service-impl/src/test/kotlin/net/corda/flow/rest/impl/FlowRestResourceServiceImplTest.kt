@@ -7,7 +7,6 @@ import net.corda.flow.rest.FlowStatusCacheService
 import net.corda.flow.rest.v1.FlowRestResource
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
@@ -18,20 +17,14 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.REST_CONFIG
 import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.Arguments
-import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import java.util.stream.Stream
 
 class FlowRestResourceServiceImplTest {
     private val configurationReadService = mock<ConfigurationReadService>()
@@ -76,18 +69,6 @@ class FlowRestResourceServiceImplTest {
         configChangeEvent = ConfigChangedEvent(configs.keys.toSet(), configs)
     }
 
-    companion object {
-        @JvmStatic
-        fun eventsToSignalUp(): Stream<Arguments> {
-            return Stream.of(
-                Arguments.of(listOf(StartEvent()), false),
-                Arguments.of(listOf(CacheLoadCompleteEvent()), false),
-                Arguments.of(listOf(StartEvent(), CacheLoadCompleteEvent()), true),
-                Arguments.of(listOf(CacheLoadCompleteEvent(), StartEvent()), true),
-            )
-        }
-    }
-
     @Test
     fun `Test start starts the lifecycle coordinator`() {
         flowRestResourceService.start()
@@ -98,23 +79,6 @@ class FlowRestResourceServiceImplTest {
     fun `Test stop stops the lifecycle coordinator`() {
         flowRestResourceService.stop()
         verify(lifecycleCoordinator).stop()
-    }
-
-    @ParameterizedTest(name = "Test UP is signaled when start and cache loaded events are received in any order")
-    @MethodSource("eventsToSignalUp")
-    fun `Test UP is signaled when start and cache loaded events are received in any order`(
-        events: List<LifecycleEvent>,
-        upSignaled: Boolean
-    ) {
-        events.forEach { eventHandler.processEvent(it, lifecycleCoordinator) }
-
-        if (upSignaled) {
-            verify(lifecycleCoordinator).updateStatus(LifecycleStatus.UP)
-            assertThat(flowRestResourceService.isRunning).isTrue
-        } else {
-            verify(lifecycleCoordinator, never()).updateStatus(LifecycleStatus.UP)
-            assertThat(flowRestResourceService.isRunning).isFalse
-        }
     }
 
     @Test

@@ -6,7 +6,6 @@ import net.corda.flow.rest.FlowRestResourceService
 import net.corda.flow.rest.FlowStatusCacheService
 import net.corda.flow.rest.v1.FlowRestResource
 import net.corda.libs.configuration.helper.getConfig
-import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -47,7 +46,6 @@ internal class FlowRestResourceServiceImpl @Activate constructor(
     }
 
     private var isUp = false
-    private var isCacheLoaded = false
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<FlowRestResourceService>(::eventHandler)
     private val dependentComponents = DependentComponents.of(
@@ -56,7 +54,7 @@ internal class FlowRestResourceServiceImpl @Activate constructor(
         ::flowStatusCacheService
     )
 
-    override val isRunning get() = isCacheLoaded && isUp
+    override val isRunning get() = lifecycleCoordinator.isRunning
 
     override fun start() = lifecycleCoordinator.start()
 
@@ -66,22 +64,7 @@ internal class FlowRestResourceServiceImpl @Activate constructor(
         when (event) {
             is StartEvent -> {
                 dependentComponents.registerAndStartAll(coordinator)
-                if(!isUp){
-                    isUp=true
-                    signalUpStatus()
-                }
-            }
-            is CustomEvent -> {
-                val cacheLoadCompeted = event.payload as? CacheLoadCompleteEvent
-                if (cacheLoadCompeted != null) {
-                    lifecycleCoordinator.postEvent(cacheLoadCompeted)
-                }
-            }
-            is CacheLoadCompleteEvent -> {
-                if(!isCacheLoaded){
-                    isCacheLoaded=true
-                    signalUpStatus()
-                }
+                lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
             }
             is RegistrationStatusChangeEvent -> {
                 configurationReadService.registerComponentForUpdates(
@@ -99,12 +82,6 @@ internal class FlowRestResourceServiceImpl @Activate constructor(
             else -> {
                 log.error("Unexpected event $event!")
             }
-        }
-    }
-
-    private fun signalUpStatus() {
-        if(isRunning){
-            lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         }
     }
 
