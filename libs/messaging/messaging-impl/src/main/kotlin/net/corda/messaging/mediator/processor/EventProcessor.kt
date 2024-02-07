@@ -49,7 +49,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
      * @return The asynchronous outputs and state updates grouped by record key
      */
     fun processEvents(
-        inputs: Map<K, EventProcessingInput<K, E>>
+        inputs: Map<K, EventProcessingInput<K, E>>,
     ): Map<K, EventProcessingOutput> {
         return inputs.mapValues { (key, input) ->
             val inputState = input.state
@@ -57,7 +57,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
             val processorState = stateManagerHelper.deserializeValue(inputState)?.let { stateValue ->
                 StateAndEventProcessor.State(
                     stateValue,
-                    inputState?.metadata
+                    inputState?.metadata,
                 )
             }
             MediatorTraceLog.recordEvent(key.toString(), "State Loaded")
@@ -76,7 +76,11 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         val asyncOutputs = mutableMapOf<Record<K, E>, MutableList<MediatorMessage<Any>>>()
         val processed = try {
             input.records.forEach { consumerInputEvent ->
-                val (updatedProcessorState, newAsyncOutputs) = processConsumerInput(consumerInputEvent, processorState, key)
+                val (updatedProcessorState, newAsyncOutputs) = processConsumerInput(
+                    consumerInputEvent,
+                    processorState,
+                    key,
+                )
                 processorState = updatedProcessorState
                 asyncOutputs.addOutputs(consumerInputEvent, newAsyncOutputs)
             }
@@ -89,7 +93,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
             stateManagerHelper.failStateProcessing(
                 key.toString(),
                 inputState,
-                "unable to contact Corda services while processing events"
+                "unable to contact Corda services while processing events",
             )
         }
 
@@ -123,7 +127,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
 
     private fun getNextEvent(
         queue: ArrayDeque<Record<K, E>>,
-        consumerInputHash: String
+        consumerInputHash: String,
     ): Record<K, E> {
         val event = queue.removeFirst()
         return event.copy(headers = event.headers.plus(Pair(INPUT_HASH_HEADER, consumerInputHash)))
@@ -131,7 +135,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
 
     private fun stateChangeAndOperation(
         state: State?,
-        processed: State?
+        processed: State?,
     ) = when {
         state == null && processed != null -> StateChangeAndOperation.Create(processed)
         state != null && processed != null -> StateChangeAndOperation.Update(processed)
@@ -139,10 +143,9 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         else -> StateChangeAndOperation.Noop
     }
 
-
     private fun MutableMap<Record<K, E>, MutableList<MediatorMessage<Any>>>.addOutputs(
         inputEvent: Record<K, E>,
-        asyncEvents: List<MediatorMessage<Any>>
+        asyncEvents: List<MediatorMessage<Any>>,
     ) = computeIfAbsent(inputEvent) { mutableListOf() }.addAll(asyncEvents)
 
     /**
@@ -150,7 +153,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
      */
     private fun processSyncEvents(
         key: K,
-        syncEvents: List<MediatorMessage<Any>>
+        syncEvents: List<MediatorMessage<Any>>,
     ): List<Record<K, E>> {
         return syncEvents.mapNotNull { message ->
             val destination = messageRouter.getDestination(message)
@@ -168,9 +171,9 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                         key,
                         reply.payload,
                         0,
-                        listOf(Pair(SYNC_RESPONSE_HEADER, "true"))
+                        listOf(Pair(SYNC_RESPONSE_HEADER, "true")),
                     ),
-                    message.properties
+                    message.properties,
                 )
             }
         }
