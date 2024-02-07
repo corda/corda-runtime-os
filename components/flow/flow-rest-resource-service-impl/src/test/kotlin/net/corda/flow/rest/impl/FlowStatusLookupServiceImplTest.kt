@@ -28,10 +28,11 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.same
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
@@ -42,6 +43,8 @@ class FlowStatusLookupServiceImplTest {
     private val lifecycleTestContext = LifecycleTestContext()
     private val lifecycleCoordinator = lifecycleTestContext.lifecycleCoordinator
     private val lifecycleEventRegistration = mock<RegistrationHandle>()
+
+
     class TestSerializer<T> : CordaAvroSerializer<T> {
         override fun serialize(data: T): ByteArray = if (data is FlowStatus)
             data.toByteBuffer().array()
@@ -63,12 +66,23 @@ class FlowStatusLookupServiceImplTest {
     private val stateManager = getMockStateManager()
 
     private var eventHandler = mock<LifecycleEventHandler>()
-    private val topicSubscription = mock<Subscription<FlowKey, FlowStatus>>()
-    private lateinit var flowStatusCacheService: FlowStatusLookupServiceImpl
-    private val config = mock<SmartConfig> {
+    private val mockSubscription = mock<Subscription<Any, Any>>()
+    private lateinit var flowStatusLookupService: FlowStatusLookupServiceImpl
+
+    private val bootConfig = mock<SmartConfig>()
+    private val messagingConfig = mock<SmartConfig> {
         whenever(it.getInt(INSTANCE_ID)).thenReturn(2)
         whenever(it.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)).thenReturn(mock())
     }
+    private val stateManagerConfig = mock<SmartConfig>()
+    private val restConfig = mock<SmartConfig>()
+
+    private val configs = mapOf(
+        ConfigKeys.BOOT_CONFIG to bootConfig,
+        ConfigKeys.MESSAGING_CONFIG to messagingConfig,
+        ConfigKeys.STATE_MANAGER_CONFIG to stateManagerConfig,
+        ConfigKeys.REST_CONFIG to restConfig
+    )
 
     companion object {
         val FLOW_KEY_1 = FlowKey("a1", HoldingIdentity("b1", "c1"))
@@ -78,13 +92,15 @@ class FlowStatusLookupServiceImplTest {
     @BeforeEach
     fun setup() {
         whenever(lifecycleCoordinator.followStatusChangesByName(any())).thenReturn(lifecycleEventRegistration)
-
-        whenever(subscriptionFactory.createDurableSubscription<FlowKey, FlowStatus>(any(), any(), any(), anyOrNull()))
-            .thenReturn(topicSubscription)
-
         whenever(stateManagerFactory.create(any(), any())).thenReturn(stateManager)
 
-        flowStatusCacheService = FlowStatusLookupServiceImpl(
+        val resourceCaptor = argumentCaptor<() -> Subscription<Any, Any>>()
+        whenever(lifecycleCoordinator.createManagedResource(any(), resourceCaptor.capture())).thenAnswer {
+            resourceCaptor.firstValue.invoke()
+            mockSubscription
+        }
+
+        flowStatusLookupService = FlowStatusLookupServiceImpl(
             subscriptionFactory,
             lifecycleTestContext.lifecycleCoordinatorFactory,
             cordaSerializationFactory,
@@ -96,41 +112,33 @@ class FlowStatusLookupServiceImplTest {
 
     @Test
     fun `Test start starts the lifecycle coordinator`() {
-        flowStatusCacheService.start()
+        flowStatusLookupService.start()
         verify(lifecycleCoordinator).start()
     }
 
     @Test
     fun `Test stop stops the lifecycle coordinator`() {
-        flowStatusCacheService.stop()
+        flowStatusLookupService.stop()
         verify(lifecycleCoordinator).stop()
     }
 
     @Test
     fun `Test initialise creates new topic subscription and starts it`() {
-        flowStatusCacheService.initialise(config)
+        flowStatusLookupService.initialise(configs)
 
         val expectedSubscriptionCfg = SubscriptionConfig(
-            "flow_status_subscription",
+            "flow.status.subscription",
             Schemas.Flow.FLOW_STATUS_TOPIC
         )
 
-        verify(subscriptionFactory).createDurableSubscription(
+        verify(subscriptionFactory, times(3)).createDurableSubscription(
             eq(expectedSubscriptionCfg),
             any<DurableFlowStatusProcessor>(),
-            same(config),
+            same(messagingConfig),
             same(null)
         )
 
-        verify(topicSubscription).start()
-    }
-
-    @Test
-    fun `Test initialise closes any existing topic subscription`() {
-        flowStatusCacheService.initialise(config)
-        // second time around we close the existing subscription
-        flowStatusCacheService.initialise(config)
-        verify(topicSubscription).close()
+        verify(mockSubscription, times(3)).start()
     }
 
     @Test
@@ -144,13 +152,13 @@ class FlowStatusLookupServiceImplTest {
 
         @BeforeEach
         fun prepareFlowStatusCacheService() {
-            flowStatusCacheService.initialise(config)
+            flowStatusLookupService.initialise(configs)
         }
 
-        private fun getStatusForFlowKey1() = flowStatusCacheService.getStatus(FLOW_KEY_1.id, FLOW_KEY_1.identity)
-        private fun getStatusForFlowKey2() = flowStatusCacheService.getStatus(FLOW_KEY_2.id, FLOW_KEY_2.identity)
-        private fun getStatusesPerIdentityForFlowKey1() = flowStatusCacheService.getStatusesPerIdentity(FLOW_KEY_1.identity)
-        private fun getStatusesPerIdentityForFlowKey2() = flowStatusCacheService.getStatusesPerIdentity(FLOW_KEY_2.identity)
+        private fun getStatusForFlowKey1() = flowStatusLookupService.getStatus(FLOW_KEY_1.id, FLOW_KEY_1.identity)
+        private fun getStatusForFlowKey2() = flowStatusLookupService.getStatus(FLOW_KEY_2.id, FLOW_KEY_2.identity)
+        private fun getStatusesPerIdentityForFlowKey1() = flowStatusLookupService.getStatusesPerIdentity(FLOW_KEY_1.identity)
+        private fun getStatusesPerIdentityForFlowKey2() = flowStatusLookupService.getStatusesPerIdentity(FLOW_KEY_2.identity)
 
         @Nested
         inner class StateManagerIsEmpty {

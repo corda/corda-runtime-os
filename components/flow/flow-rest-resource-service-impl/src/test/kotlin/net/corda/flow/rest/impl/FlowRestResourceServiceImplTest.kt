@@ -15,6 +15,8 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.REST_CONFIG
+import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -41,7 +43,17 @@ class FlowRestResourceServiceImplTest {
     private val lifecycleCoordinator = lifecycleTestContext.lifecycleCoordinator
     private var eventHandler = mock<LifecycleEventHandler>()
 
+    private val bootConfig = mock<SmartConfig>()
     private val messagingConfig = mock<SmartConfig>()
+    private val stateManagerConfig = mock<SmartConfig>()
+    private val restConfig = mock<SmartConfig>()
+
+    private val configs = mapOf(
+        BOOT_CONFIG to bootConfig,
+        MESSAGING_CONFIG to messagingConfig,
+        STATE_MANAGER_CONFIG to stateManagerConfig,
+        REST_CONFIG to restConfig
+    )
 
     private lateinit var configChangeEvent: ConfigChangedEvent
     private lateinit var flowRestResourceService: FlowRestResourceService
@@ -59,12 +71,7 @@ class FlowRestResourceServiceImplTest {
 
         eventHandler = lifecycleTestContext.getEventHandler()
 
-        val bootConfig: SmartConfig = mock()
 
-        val configs = mapOf(
-            BOOT_CONFIG to bootConfig,
-            MESSAGING_CONFIG to messagingConfig
-        )
 
         configChangeEvent = ConfigChangedEvent(configs.keys.toSet(), configs)
     }
@@ -135,14 +142,14 @@ class FlowRestResourceServiceImplTest {
 
         verify(configurationReadService).registerComponentForUpdates(
             eq(lifecycleCoordinator),
-            eq(setOf(BOOT_CONFIG, MESSAGING_CONFIG))
+            eq(setOf(BOOT_CONFIG, MESSAGING_CONFIG, STATE_MANAGER_CONFIG, REST_CONFIG))
         )
     }
 
     @Test
     fun `Test configuration changes initialise flow status cache service`() {
         eventHandler.processEvent(configChangeEvent, lifecycleCoordinator)
-        verify(flowStatusCacheService).initialise(eq(messagingConfig))
+        verify(flowStatusCacheService).initialise(eq(configs))
     }
 
     @Test
