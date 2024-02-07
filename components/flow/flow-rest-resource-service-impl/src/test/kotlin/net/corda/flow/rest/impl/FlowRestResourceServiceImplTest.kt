@@ -113,7 +113,7 @@ class FlowRestResourceServiceImplTest {
     @Test
     fun `Test configuration changes initialise flow status cache service`() {
         eventHandler.processEvent(configChangeEvent, lifecycleCoordinator)
-        verify(flowStatusCacheService).initialise(eq(configs))
+        verify(flowStatusCacheService).initialise(eq(messagingConfig), eq(stateManagerConfig), eq(restConfig))
     }
 
     @Test

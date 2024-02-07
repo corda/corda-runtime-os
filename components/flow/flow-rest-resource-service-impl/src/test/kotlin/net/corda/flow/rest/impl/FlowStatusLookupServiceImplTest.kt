@@ -124,7 +124,7 @@ class FlowStatusLookupServiceImplTest {
 
     @Test
     fun `Test initialise creates new topic subscription and starts it`() {
-        flowStatusLookupService.initialise(configs)
+        flowStatusLookupService.initialise(messagingConfig, stateManagerConfig, restConfig)
 
         val expectedSubscriptionCfg = SubscriptionConfig(
             "flow.status.subscription",
@@ -152,7 +152,7 @@ class FlowStatusLookupServiceImplTest {
 
         @BeforeEach
         fun prepareFlowStatusCacheService() {
-            flowStatusLookupService.initialise(configs)
+            flowStatusLookupService.initialise(messagingConfig, stateManagerConfig, restConfig)
         }
 
         private fun getStatusForFlowKey1() = flowStatusLookupService.getStatus(FLOW_KEY_1.id, FLOW_KEY_1.identity)
