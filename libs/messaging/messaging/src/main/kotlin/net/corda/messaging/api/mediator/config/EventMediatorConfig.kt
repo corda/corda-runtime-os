@@ -51,7 +51,8 @@ data class EventMediatorConfig<K: Any, S: Any, E: Any>(
     /**
      * The length of time to block for on event processing before timing out the processing group.
      */
-    val processorTimeout = Duration.ofMillis(messagingConfig.getLong(MEDIATOR_PROCESSING_PROCESSOR_TIMEOUT))
+    val processorTimeout: Duration
+        get() = Duration.ofMillis(messagingConfig.getLong(MEDIATOR_PROCESSING_PROCESSOR_TIMEOUT))
 
     /**
      * Maximal number of event processing retries.
