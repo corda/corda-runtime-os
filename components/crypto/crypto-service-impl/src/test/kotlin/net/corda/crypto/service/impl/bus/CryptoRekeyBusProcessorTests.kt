@@ -162,6 +162,7 @@ class CryptoRekeyBusProcessorTests {
         stateManager = mock<StateManager>() {
             on { create(stateManagerCreateCapture.capture()) } doReturn emptySet()
             on { delete(stateManagerDeleteCapture.capture()) } doReturn emptyMap()
+            on { isRunning } doReturn true
         }
 
         cryptoRekeyBusProcessor = CryptoRekeyBusProcessor(
@@ -311,7 +312,7 @@ class CryptoRekeyBusProcessorTests {
             wrappingRepositoryFactory,
             signingRepositoryFactory,
             rewrapPublisher,
-            mock(),
+            stateManager,
             cordaAvroSerializationFactory,
             defaultMasterWrappingKeyAlias
         )
