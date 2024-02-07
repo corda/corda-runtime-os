@@ -237,7 +237,10 @@ class CryptoProcessorImpl @Activate constructor(
                     val stateManagerConfig = bootConfig.getConfig(StateManagerConfig.STATE_MANAGER)
                     stateManager =
                         stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION)
-                            .also { it.start() }
+                    stateManager?.start()
+                } else {
+                    logger.warn("Cannot proceed with boot config without state manager")
+                    return
                 }
 
                 (CryptoConsts.Categories.all - ENCRYPTION_SECRET).forEach { category ->
@@ -249,7 +252,7 @@ class CryptoProcessorImpl @Activate constructor(
 
                 tenantInfoService.populate(CryptoTenants.P2P, ENCRYPTION_SECRET, cryptoService)
                 logger.trace("Assigned SOFT HSM for ${CryptoTenants.P2P}:$ENCRYPTION_SECRET")
-                startProcessors(event, coordinator, stateManager, cordaAvroSerializationFactory)
+                startProcessors(event, coordinator, stateManager as StateManager, cordaAvroSerializationFactory)
                 setStatus(LifecycleStatus.UP, coordinator)
             }
         }
@@ -353,7 +356,7 @@ class CryptoProcessorImpl @Activate constructor(
     private fun startProcessors(
         event: ConfigChangedEvent,
         coordinator: LifecycleCoordinator,
-        stateManager: StateManager?,
+        stateManager: StateManager,
         cordaAvroSerializationFactory: CordaAvroSerializationFactory
     ) {
         val retryingConfig = event.config.getConfig(CRYPTO_CONFIG).retrying()
@@ -409,7 +412,7 @@ class CryptoProcessorImpl @Activate constructor(
         messagingConfig: SmartConfig,
         wrappingRepositoryFactory: WrappingRepositoryFactory,
         signingRepositoryFactory: SigningRepositoryFactory,
-        stateManager: StateManager?,
+        stateManager: StateManager,
         cordaAvroSerializationFactory: CordaAvroSerializationFactory,
         defaultUnmanagedWrappingKeyName: String,
     ) {
@@ -455,7 +458,7 @@ class CryptoProcessorImpl @Activate constructor(
     private fun createRewrapSubscription(
         coordinator: LifecycleCoordinator,
         messagingConfig: SmartConfig,
-        stateManager: StateManager?,
+        stateManager: StateManager,
         cordaAvroSerializationFactory: CordaAvroSerializationFactory,
         defaultUnmanagedWrappingKeyName: String,
     ) {

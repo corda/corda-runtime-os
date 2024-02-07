@@ -84,7 +84,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
     )
 
     private var publishToKafka: Publisher? = null
-    private var stateManagerInit: StateManager? = null
+    private lateinit var stateManager: StateManager
     private val unmanagedKeyStatusDeserializer =
         cordaAvroSerializationFactory.createAvroDeserializer({}, UnmanagedKeyStatus::class.java)
     private val managedKeyStatusDeserializer =
@@ -109,11 +109,6 @@ class KeyRotationRestResourceImpl @Activate constructor(
     override fun stop() {
         lifecycleCoordinator.stop()
     }
-
-    private val stateManager: StateManager
-        get() = checkNotNull(stateManagerInit) {
-            "State manager for key rotation is not initialised."
-        }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("Handling KeyRotationRestResource event, $event.")
@@ -174,8 +169,10 @@ class KeyRotationRestResourceImpl @Activate constructor(
     fun initialiseStateManager(config: Map<String, SmartConfig>) {
         val stateManagerConfig = config.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)
 
-        stateManagerInit?.stop()
-        stateManagerInit = stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION)
+        if (::stateManager.isInitialized) {
+            stateManager.stop()
+        }
+        stateManager = stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION)
             .also { it.start() }
         logger.debug("State manager created and started {}", stateManager.name)
     }
@@ -184,8 +181,12 @@ class KeyRotationRestResourceImpl @Activate constructor(
 
         when (tenantId) {
             MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER -> { // do unmanaged key rotation status
-                val records = stateManager.findByMetadataMatchingAll(
-                    listOf(
+                check(::stateManager.isInitialized) {
+            "State manager for key rotation is not initialised."
+        }
+        val records = stateManager.findByMetadataMatchingAll(
+            listOf(
+
                         MetadataFilter(
                             KeyRotationMetadataValues.STATUS_TYPE,
                             Operation.Equals,
@@ -256,10 +257,12 @@ class KeyRotationRestResourceImpl @Activate constructor(
             checkNotNull(publishToKafka)
         }
 
-        if (!stateManager.isRunning) {
-            throw IllegalStateException(
-                "State manager for key rotation is not initialised"
-            )
+        if (tenantId.isEmpty()) throw InvalidInputDataException(
+            "Cannot start key rotation. TenantId is not specified."
+        )
+
+        check(::stateManager.isInitialized) {
+            "State manager for key rotation is not initialised."
         }
 
         return if (tenantId == MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER) {

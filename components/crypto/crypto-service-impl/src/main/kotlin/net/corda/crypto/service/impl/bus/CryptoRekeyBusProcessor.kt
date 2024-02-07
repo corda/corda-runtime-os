@@ -43,7 +43,7 @@ class CryptoRekeyBusProcessor(
     private val wrappingRepositoryFactory: WrappingRepositoryFactory,
     private val signingRepositoryFactory: SigningRepositoryFactory,
     private val rekeyPublisher: Publisher,
-    private val stateManagerInit: StateManager?,
+    private val stateManager: StateManager,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val defaultUnmanagedWrappingKeyName: String,
 ) : DurableProcessor<String, KeyRotationRequest> {
@@ -55,10 +55,6 @@ class CryptoRekeyBusProcessor(
     override val valueClass = KeyRotationRequest::class.java
     private val unmanagedKeyStatusSerializer = cordaAvroSerializationFactory.createAvroSerializer<UnmanagedKeyStatus>()
     private val managedKeyStatusSerializer = cordaAvroSerializationFactory.createAvroSerializer<ManagedKeyStatus>()
-    private val stateManager: StateManager
-        get() = checkNotNull(stateManagerInit) {
-            "State manager for key rotation is not initialised."
-        }
 
     @Suppress("NestedBlockDepth")
     override fun onNext(events: List<Record<String, KeyRotationRequest>>): List<Record<*, *>> {

@@ -47,7 +47,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
-import org.mockito.Mockito.`when`
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -260,7 +259,7 @@ class CryptoRekeyBusProcessorTests {
         }.toMap()
 
         // first return is empty map, so we pass ongoing rotation detection
-        `when`(stateManager.findByMetadataMatchingAll(any())).thenReturn(simulatedExistingStateMap)
+        whenever(stateManager.findByMetadataMatchingAll(any())).thenReturn(simulatedExistingStateMap)
         cryptoRekeyBusProcessor.onNext(listOf(getUnmanagedKeyRotationKafkaRecord()))
         verify(stateManager, times(1)).delete(any())
 
@@ -496,7 +495,7 @@ class CryptoRekeyBusProcessorTests {
         }.toMap()
 
         // first return is empty map, so we pass ongoing rotation detection
-        `when`(stateManager.findByMetadataMatchingAll(any())).thenReturn(simulatedExistingStateMap)
+        whenever(stateManager.findByMetadataMatchingAll(any())).thenReturn(simulatedExistingStateMap)
         cryptoRekeyBusProcessor.onNext(listOf(getManagedKeyRotationKafkaRecord(tenantId = tenantId)))
         verify(stateManager, times(1)).delete(any())
 
