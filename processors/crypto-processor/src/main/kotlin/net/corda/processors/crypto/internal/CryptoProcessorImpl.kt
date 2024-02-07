@@ -237,10 +237,7 @@ class CryptoProcessorImpl @Activate constructor(
                     val stateManagerConfig = bootConfig.getConfig(StateManagerConfig.STATE_MANAGER)
                     stateManager =
                         stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION)
-                    stateManager?.start()
-                } else {
-                    logger.warn("Cannot proceed with boot config without state manager")
-                    return
+                            .also { it.start() }
                 }
 
                 (CryptoConsts.Categories.all - ENCRYPTION_SECRET).forEach { category ->
@@ -252,7 +249,7 @@ class CryptoProcessorImpl @Activate constructor(
 
                 tenantInfoService.populate(CryptoTenants.P2P, ENCRYPTION_SECRET, cryptoService)
                 logger.trace("Assigned SOFT HSM for ${CryptoTenants.P2P}:$ENCRYPTION_SECRET")
-                startProcessors(event, coordinator, stateManager as StateManager, cordaAvroSerializationFactory)
+                startProcessors(event, coordinator, stateManager, cordaAvroSerializationFactory)
                 setStatus(LifecycleStatus.UP, coordinator)
             }
         }
@@ -356,7 +353,7 @@ class CryptoProcessorImpl @Activate constructor(
     private fun startProcessors(
         event: ConfigChangedEvent,
         coordinator: LifecycleCoordinator,
-        stateManager: StateManager,
+        stateManager: StateManager?,
         cordaAvroSerializationFactory: CordaAvroSerializationFactory
     ) {
         val retryingConfig = event.config.getConfig(CRYPTO_CONFIG).retrying()
@@ -392,17 +389,24 @@ class CryptoProcessorImpl @Activate constructor(
         createFlowOpsSubscription(coordinator, retryingConfig)
         createRpcOpsSubscription(coordinator, messagingConfig, retryingConfig)
         createHsmRegSubscription(coordinator, messagingConfig, retryingConfig)
-        createRekeySubscription(
-            coordinator, messagingConfig, wrappingRepositoryFactory, signingRepositoryFactory,
-            stateManager, cordaAvroSerializationFactory, defaultUnmanagedWrappingKeyName
-        )
-        createRewrapSubscription(
-            coordinator,
-            messagingConfig,
-            stateManager,
-            cordaAvroSerializationFactory,
-            defaultUnmanagedWrappingKeyName
-        )
+        if (stateManager != null) {
+            createRekeySubscription(
+                coordinator,
+                messagingConfig,
+                wrappingRepositoryFactory,
+                signingRepositoryFactory,
+                stateManager,
+                cordaAvroSerializationFactory,
+                defaultUnmanagedWrappingKeyName
+            )
+            createRewrapSubscription(
+                coordinator,
+                messagingConfig,
+                stateManager,
+                cordaAvroSerializationFactory,
+                defaultUnmanagedWrappingKeyName
+            )
+        }
         createSessionEncryptionSubscription(coordinator, retryingConfig)
         createSessionDecryptionSubscription(coordinator, retryingConfig)
     }
@@ -427,7 +431,7 @@ class CryptoProcessorImpl @Activate constructor(
                     cryptoService,
                     virtualNodeInfoReadService,
                     wrappingRepositoryFactory,
-            	    signingRepositoryFactory,
+                    signingRepositoryFactory,
                     rekeyPublisher,
                     stateManager,
                     cordaAvroSerializationFactory,
