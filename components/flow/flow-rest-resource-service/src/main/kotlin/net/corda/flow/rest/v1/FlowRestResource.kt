@@ -163,18 +163,4 @@ interface FlowRestResource : RestResource {
         @RestPathParameter(description = "Client provided flow identifier")
         clientRequestId: String
     ): ResponseEntity<FlowResultResponse>
-
-//    @HttpWS(
-//        path = "{holdingIdentityShortHash}/{clientRequestId}",
-//        title = "Get status updates for a flow via websockets.",
-//        description = "Gets a stream of status updates for a given flow.",
-//        responseDescription = "Flow status updates."
-//    )
-//    fun registerFlowStatusUpdatesFeed(
-//        channel: DuplexChannel,
-//        @RestPathParameter(description = "The short hash of the holding identity; obtained during node registration")
-//        holdingIdentityShortHash: String,
-//        @RestPathParameter(description = "Client provided flow identifier")
-//        clientRequestId: String
-//    )
 }
