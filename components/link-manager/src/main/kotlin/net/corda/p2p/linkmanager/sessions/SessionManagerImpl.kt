@@ -167,7 +167,7 @@ internal class SessionManagerImpl(
     )
     private val outboundSessionPool = OutboundSessionPool(sessionHealthManager::calculateWeightForSession)
 
-    private val publisher = PublisherWithDominoLogic(
+    internal val publisher = PublisherWithDominoLogic(
         publisherFactory,
         coordinatorFactory,
         PublisherConfig(SESSION_MANAGER_CLIENT_ID, false),
@@ -404,6 +404,11 @@ internal class SessionManagerImpl(
         dominoTile.withLifecycleLock {
             sessionHealthManager.dataMessageSent(session)
         }
+    }
+
+    override fun deleteOutboundSession(counterParties: SessionManager.Counterparties, message: AuthenticatedMessage) {
+        // Not needed by this Session Manager
+        return
     }
 
     override fun messageAcknowledged(sessionId: String) {

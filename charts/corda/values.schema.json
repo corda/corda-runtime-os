@@ -76,6 +76,17 @@
                 ]
             }
         },
+        "commonPodLabels": {
+            "type": "object",
+            "default": {},
+            "title": "extra labels to add to all pods created by deployments",
+            "additionalProperties": {
+                "type": [
+                    "string",
+                    "null"
+                ]
+            }
+        },
         "image": {
             "type": "object",
             "default": {},
@@ -136,12 +147,12 @@
                     ]
                 },
                 "runAsNonRoot": {
-                    "type": "boolean", 
+                    "type": "boolean",
                     "description": "indicates that the container must run as a non-root user",
                     "examples": [
                         true
                     ]
-                }, 
+                },
                 "runAsGroup": {
                     "type": "integer",
                     "title": "specify what group ID that processes will run with",
@@ -164,12 +175,12 @@
                     ]
                 },
                 "procMount": {
-                    "type": "string", 
-                    "description": "denotes the type of proc mount to use for the containers - cannot be set when spec.os.name is windows", 
+                    "type": "string",
+                    "description": "denotes the type of proc mount to use for the containers - cannot be set when spec.os.name is windows",
                     "examples": [
                         "DefaultProcMount"
                     ]
-                }, 
+                },
                 "privileged": {
                     "type": "boolean",
                     "title": "run container in privileged mode",
@@ -185,27 +196,27 @@
                         "add": {
                             "items": {
                                 "type": [
-                                    "string", 
+                                    "string",
                                     "null"
                                 ]
-                            }, 
+                            },
                             "type": [
-                                "array", 
+                                "array",
                                 "null"
-                            ], 
+                            ],
                             "description": "added capabilities"
-                        }, 
+                        },
                         "drop": {
                             "items": {
                                 "type": [
-                                    "string", 
+                                    "string",
                                     "null"
                                 ]
-                            }, 
+                            },
                             "type": [
-                                "array", 
+                                "array",
                                 "null"
-                            ], 
+                            ],
                             "description": "removed capabilities"
                         }
                     }
@@ -276,25 +287,25 @@
             "title": "define privilege and access control settings for a pod",
             "properties": {
                 "runAsNonRoot": {
-                    "type": "boolean", 
+                    "type": "boolean",
                     "description": "indicates that the container must run as a non-root user",
                     "examples": [
                         true
                     ]
-                }, 
+                },
                 "fsGroup": {
-                    "type": "integer", 
-                    "description": "a special supplemental group that applies to all containers in a pod", 
+                    "type": "integer",
+                    "description": "a special supplemental group that applies to all containers in a pod",
                     "format": "int64",
                     "examples": [
                         "1000"
                     ]
                 },
                 "fsGroupChangePolicy": {
-                    "type": "string", 
-                    "description": "defines behavior of changing ownership and permission of the volume before being exposed inside Pod", 
+                    "type": "string",
+                    "description": "defines behavior of changing ownership and permission of the volume before being exposed inside Pod",
                     "enum": ["Always", "OnRootMismatch"]
-                }, 
+                },
                 "seccompProfile": {
                     "type": "object",
                     "description": "the seccomp options to use by the containers in this pod - this field cannot be set if spec.os.name is windows",
@@ -380,26 +391,26 @@
                 },
                 "supplementalGroups": {
                     "items": {
-                        "type": "integer", 
+                        "type": "integer",
                         "format": "int64"
-                    }, 
+                    },
                     "type": [
-                        "array", 
+                        "array",
                         "null"
-                    ], 
+                    ],
                     "description": "a list of groups applied to the first process run in each container, in addition to the container's primary GID"
-                }, 
+                },
                 "runAsUser": {
-                    "type": "integer", 
-                    "description": "The UID to run the entrypoint of the container process", 
+                    "type": "integer",
+                    "description": "The UID to run the entrypoint of the container process",
                     "format": "int64",
                     "examples": [
                         "10001"
                     ]
                 },
                 "runAsGroup": {
-                    "type": "integer", 
-                    "description": "The GID to run the entrypoint of the container process", 
+                    "type": "integer",
+                    "description": "The GID to run the entrypoint of the container process",
                     "format": "int64",
                     "examples": [
                         "10002"
@@ -1034,7 +1045,8 @@
                 "kafka",
                 "image",
                 "resources",
-                "nodeSelector"
+                "nodeSelector",
+                "commonPodLabels"
             ],
             "additionalProperties": false,
             "properties": {
@@ -1645,6 +1657,17 @@
                     "examples": [{
                         "enabled": true
                     }]
+                },
+                "commonPodLabels": {
+                    "type": "object",
+                    "default": {},
+                    "title": "extra labels to add to all pods created by bootstrap jobs",
+                    "additionalProperties": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
                 }
             }
         },
