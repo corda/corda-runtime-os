@@ -192,7 +192,7 @@ spec:
               {{- end }}
                 --idle-timeout {{ .Values.bootstrap.db.crypto.connectionPool.idleTimeoutSeconds | quote }} \
                 --max-lifetime {{ .Values.bootstrap.db.crypto.connectionPool.maxLifetimeSeconds | quote }} \
-                --keepalive-time {{ .Values.bootstrap.db.crypto.connectionPool.keepaliveTimeSeconds | quote }} \
+                --keepalive-time {{ .Values.bootstrap.db.crypto.connectionPool.keepAliveTimeSeconds | quote }} \
                 --validation-timeout {{ .Values.bootstrap.db.crypto.connectionPool.validationTimeoutSeconds | quote }} \
               {{- if (((.Values).config).vault).url }}
                 -t "VAULT" --vault-path "dbsecrets" --key "crypto-db-password" \
@@ -213,7 +213,7 @@ spec:
               {{- end }}
                 --idle-timeout {{ .Values.bootstrap.db.rbac.connectionPool.idleTimeoutSeconds | quote }} \
                 --max-lifetime {{ .Values.bootstrap.db.rbac.connectionPool.maxLifetimeSeconds | quote }} \
-                --keepalive-time {{ .Values.bootstrap.db.rbac.connectionPool.keepaliveTimeSeconds | quote }} \
+                --keepalive-time {{ .Values.bootstrap.db.rbac.connectionPool.keepAliveTimeSeconds | quote }} \
                 --validation-timeout {{ .Values.bootstrap.db.rbac.connectionPool.validationTimeoutSeconds | quote }} \
               {{- if (((.Values).config).vault).url }}
                 -t "VAULT" --vault-path "dbsecrets" --key "rbac-db-password" \
@@ -235,7 +235,7 @@ spec:
               {{- end }}
                 --idle-timeout {{ .Values.bootstrap.db.virtualNodes.connectionPool.idleTimeoutSeconds | quote }} \
                 --max-lifetime {{ .Values.bootstrap.db.virtualNodes.connectionPool.maxLifetimeSeconds | quote }} \
-                --keepalive-time {{ .Values.bootstrap.db.virtualNodes.connectionPool.keepaliveTimeSeconds | quote }} \
+                --keepalive-time {{ .Values.bootstrap.db.virtualNodes.connectionPool.keepAliveTimeSeconds | quote }} \
                 --validation-timeout {{ .Values.bootstrap.db.virtualNodes.connectionPool.validationTimeoutSeconds | quote }} \
               {{- if (((.Values).config).vault).url }}
                 -t "VAULT" --vault-path "dbsecrets" --key "vnodes-db-password" \
