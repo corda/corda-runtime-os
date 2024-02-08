@@ -51,10 +51,12 @@ class ReceiveAndUpdateTransactionBuilderFlowV1(
         log.trace { "Waiting for transaction builder proposal from ${session.counterparty}." }
         val receivedTransactionBuilder = session.receive(UtxoTransactionBuilderContainer::class.java)
 
-        require(originalTransactionBuilder.notaryName == receivedTransactionBuilder.getNotaryName()
-                || originalTransactionBuilder.notaryName == null) {
+        require(
+            originalTransactionBuilder.notaryName == receivedTransactionBuilder.getNotaryName() ||
+                originalTransactionBuilder.notaryName == null
+        ) {
             "Notary name changed in the received transaction builder " +
-                    "from ${originalTransactionBuilder.notaryName} to ${receivedTransactionBuilder.getNotaryName()}."
+                "from ${originalTransactionBuilder.notaryName} to ${receivedTransactionBuilder.getNotaryName()}."
         }
 
         val updatedTransactionBuilder = originalTransactionBuilder.append(receivedTransactionBuilder)
@@ -87,7 +89,7 @@ class ReceiveAndUpdateTransactionBuilderFlowV1(
             val groupParameters = groupParametersLookup.currentGroupParameters
             val notary = requireNotNull(groupParameters.notaries.first { it.name == updatedTransactionBuilder.notaryName }) {
                 "Notary from initial transaction \"${updatedTransactionBuilder.notaryName}\" " +
-                        "cannot be found in group parameter notaries."
+                    "cannot be found in group parameter notaries."
             }
 
             // Verify the received filtered transactions

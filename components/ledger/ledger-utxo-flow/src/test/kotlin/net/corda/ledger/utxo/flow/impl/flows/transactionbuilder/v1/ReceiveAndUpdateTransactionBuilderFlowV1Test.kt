@@ -71,7 +71,7 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     private val notarySignatureVerificationService = mock<NotarySignatureVerificationService>()
     private val persistenceService = mock<UtxoLedgerPersistenceService>()
 
-    private val notaryKey = mock<PublicKey>() {
+    private val notaryKey = mock<PublicKey> {
         on { encoded } doReturn byteArrayOf(0x01)
     }
     private val mockGroupParameters = mock<GroupParameters>()
@@ -100,13 +100,13 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
         // By default, we want backchain logic
         whenever(mockNotaryInfo.isBackchainRequired).thenReturn(true)
 
-        whenever(utxoFilteredTransaction.verify()).doAnswer {  }
+        whenever(utxoFilteredTransaction.verify()).doAnswer { }
         whenever(utxoFilteredTransaction.notaryName).thenReturn(notaryX500Name)
 
-        whenever(utxoFilteredTransaction2.verify()).doAnswer {  }
+        whenever(utxoFilteredTransaction2.verify()).doAnswer { }
         whenever(utxoFilteredTransaction2.notaryName).thenReturn(notaryX500Name)
 
-        whenever(utxoFilteredTransactionInvalidNotaryName.verify()).doAnswer {  }
+        whenever(utxoFilteredTransactionInvalidNotaryName.verify()).doAnswer { }
         whenever(utxoFilteredTransactionInvalidNotaryName.notaryName).thenReturn(null)
 
         whenever(utxoFilteredTransactionInvalid.verify()).doAnswer {
@@ -118,19 +118,23 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
         whenever(groupParamsLookup.currentGroupParameters).thenReturn(mockGroupParameters)
         whenever(mockGroupParameters.notaries).thenReturn(listOf(mockNotaryInfo))
 
-        whenever(notarySignatureVerificationService.verifyNotarySignatures(
-            eq(utxoFilteredTransaction),
-            eq(notaryKey),
-            eq(listOf(notarySignature)),
-            eq(emptyMap())
-        )).thenAnswer {  }
+        whenever(
+            notarySignatureVerificationService.verifyNotarySignatures(
+                eq(utxoFilteredTransaction),
+                eq(notaryKey),
+                eq(listOf(notarySignature)),
+                eq(emptyMap())
+            )
+        ).thenAnswer { }
 
-        whenever(notarySignatureVerificationService.verifyNotarySignatures(
-            eq(utxoFilteredTransaction2),
-            eq(notaryKey),
-            eq(listOf(notarySignature)),
-            eq(emptyMap())
-        )).thenAnswer {  }
+        whenever(
+            notarySignatureVerificationService.verifyNotarySignatures(
+                eq(utxoFilteredTransaction2),
+                eq(notaryKey),
+                eq(listOf(notarySignature)),
+                eq(emptyMap())
+            )
+        ).thenAnswer { }
 
         @Suppress("unchecked_cast")
         whenever(persistenceService.persistFilteredTransactionsAndSignatures(any())).thenAnswer {
@@ -164,7 +168,6 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
         val ex = assertThrows<IllegalArgumentException> {
             callSendFlow(builderOverride = utxoLedgerService.createTransactionBuilder())
         }
-
 
         verify(mockFlowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
         assertThat(ex).hasStackTraceContaining(
@@ -507,7 +510,7 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
 
         assertThat(ex).hasStackTraceContaining(
             "Notary name of filtered transaction \"null\" doesn't match with " +
-                    "notary name of initial transaction \"$notaryX500Name"
+                "notary name of initial transaction \"$notaryX500Name"
         )
     }
 
@@ -527,12 +530,14 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
 
         whenever(mockNotaryInfo.isBackchainRequired).thenReturn(false)
 
-        whenever(notarySignatureVerificationService.verifyNotarySignatures(
-            eq(utxoFilteredTransaction),
-            eq(notaryKey),
-            eq(listOf(notarySignature)),
-            eq(emptyMap())
-        )).thenAnswer {
+        whenever(
+            notarySignatureVerificationService.verifyNotarySignatures(
+                eq(utxoFilteredTransaction),
+                eq(notaryKey),
+                eq(listOf(notarySignature)),
+                eq(emptyMap())
+            )
+        ).thenAnswer {
             throw IllegalArgumentException("Notary signature verification failed")
         }
 

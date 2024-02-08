@@ -123,10 +123,12 @@ class SendTransactionBuilderDiffFlowV1Test {
 
         callSendFlow()
 
-        verify(session).send(UtxoTransactionBuilderContainer(
-            timeWindow = utxoTimeWindowExample,
-            notaryName = notaryX500Name
-        ))
+        verify(session).send(
+            UtxoTransactionBuilderContainer(
+                timeWindow = utxoTimeWindowExample,
+                notaryName = notaryX500Name
+            )
+        )
         verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
@@ -159,10 +161,12 @@ class SendTransactionBuilderDiffFlowV1Test {
 
         callSendFlow()
 
-        verify(session).send(UtxoTransactionBuilderContainer(
-            commands = mutableListOf(command1, command2),
-            notaryName = notaryX500Name
-        ))
+        verify(session).send(
+            UtxoTransactionBuilderContainer(
+                commands = mutableListOf(command1, command2),
+                notaryName = notaryX500Name
+            )
+        )
         verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
@@ -195,10 +199,12 @@ class SendTransactionBuilderDiffFlowV1Test {
 
         callSendFlow()
 
-        verify(session).send(UtxoTransactionBuilderContainer(
-            signatories = mutableListOf(anotherPublicKeyExample),
-            notaryName = notaryX500Name
-        ))
+        verify(session).send(
+            UtxoTransactionBuilderContainer(
+                signatories = mutableListOf(anotherPublicKeyExample),
+                notaryName = notaryX500Name
+            )
+        )
         verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
@@ -231,10 +237,12 @@ class SendTransactionBuilderDiffFlowV1Test {
 
         callSendFlow()
 
-        verify(session).send(UtxoTransactionBuilderContainer(
-            inputStateRefs = mutableListOf(stateRef2),
-            notaryName = notaryX500Name
-        ))
+        verify(session).send(
+            UtxoTransactionBuilderContainer(
+                inputStateRefs = mutableListOf(stateRef2),
+                notaryName = notaryX500Name
+            )
+        )
         verify(flowEngine).subFlow(TransactionBackchainSenderFlow(setOf(stateRef2.transactionId), session))
     }
 
@@ -267,10 +275,12 @@ class SendTransactionBuilderDiffFlowV1Test {
 
         callSendFlow()
 
-        verify(session).send(UtxoTransactionBuilderContainer(
-            referenceStateRefs = mutableListOf(stateRef2),
-            notaryName = notaryX500Name
-        ))
+        verify(session).send(
+            UtxoTransactionBuilderContainer(
+                referenceStateRefs = mutableListOf(stateRef2),
+                notaryName = notaryX500Name
+            )
+        )
         verify(flowEngine).subFlow(TransactionBackchainSenderFlow(setOf(stateRef2.transactionId), session))
     }
 
@@ -292,10 +302,12 @@ class SendTransactionBuilderDiffFlowV1Test {
 
         callSendFlow()
 
-        verify(session).send(UtxoTransactionBuilderContainer(
-            outputStates = mutableListOf(state1, state2),
-            notaryName = notaryX500Name
-        ))
+        verify(session).send(
+            UtxoTransactionBuilderContainer(
+                outputStates = mutableListOf(state1, state2),
+                notaryName = notaryX500Name
+            )
+        )
         verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
@@ -317,20 +329,24 @@ class SendTransactionBuilderDiffFlowV1Test {
         whenever(currentTransactionBuilder.inputStateRefs).thenReturn(listOf(stateRef1))
         whenever(currentTransactionBuilder.referenceStateRefs).thenReturn(listOf(stateRef2))
 
-        whenever(utxoLedgerPersistenceService.findFilteredTransactionsAndSignatures(
-            eq(currentTransactionBuilder.inputStateRefs + currentTransactionBuilder.referenceStateRefs),
-            eq(notaryKey),
-            eq(notaryX500Name)
-        )).thenReturn(filteredTransactionsAndSignatures)
+        whenever(
+            utxoLedgerPersistenceService.findFilteredTransactionsAndSignatures(
+                eq(currentTransactionBuilder.inputStateRefs + currentTransactionBuilder.referenceStateRefs),
+                eq(notaryKey),
+                eq(notaryX500Name)
+            )
+        ).thenReturn(filteredTransactionsAndSignatures)
 
         callSendFlow()
 
-        verify(session).send(UtxoTransactionBuilderContainer(
-            inputStateRefs = listOf(stateRef1),
-            referenceStateRefs = listOf(stateRef2),
-            filteredDependencies = filteredTransactionsAndSignatures.values.toList(),
-            notaryName = notaryX500Name
-        ))
+        verify(session).send(
+            UtxoTransactionBuilderContainer(
+                inputStateRefs = listOf(stateRef1),
+                referenceStateRefs = listOf(stateRef2),
+                filteredDependencies = filteredTransactionsAndSignatures.values.toList(),
+                notaryName = notaryX500Name
+            )
+        )
     }
 
     @Test
@@ -345,11 +361,13 @@ class SendTransactionBuilderDiffFlowV1Test {
 
         whenever(currentTransactionBuilder.inputStateRefs).thenReturn(listOf(stateRef1))
 
-        whenever(utxoLedgerPersistenceService.findFilteredTransactionsAndSignatures(
-            eq(originalTransactionalBuilder.inputStateRefs + originalTransactionalBuilder.referenceStateRefs),
-            eq(notaryKey),
-            eq(notaryX500Name)
-        )).thenReturn(emptyMap())
+        whenever(
+            utxoLedgerPersistenceService.findFilteredTransactionsAndSignatures(
+                eq(originalTransactionalBuilder.inputStateRefs + originalTransactionalBuilder.referenceStateRefs),
+                eq(notaryKey),
+                eq(notaryX500Name)
+            )
+        ).thenReturn(emptyMap())
 
         val ex = assertThrows<IllegalArgumentException> {
             callSendFlow()

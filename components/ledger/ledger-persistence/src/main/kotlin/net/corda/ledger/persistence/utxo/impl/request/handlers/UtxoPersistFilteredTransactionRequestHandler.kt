@@ -23,10 +23,10 @@ class UtxoPersistFilteredTransactionRequestHandler(
 ) : RequestHandler {
 
     override fun execute(): List<Record<*, *>> {
-
-        val filteredTransactionsAndSignatures = serializationService.deserialize<Map<FilteredTransaction, List<DigitalSignatureAndMetadata>>>(
-            persistFilteredTransactions.filteredTransactionsAndSignatures.array()
-        )
+        val filteredTransactionsAndSignatures =
+            serializationService.deserialize<Map<FilteredTransaction, List<DigitalSignatureAndMetadata>>>(
+                persistFilteredTransactions.filteredTransactionsAndSignatures.array()
+            )
 
         persistenceService.persistFilteredTransactions(
             filteredTransactionsAndSignatures,

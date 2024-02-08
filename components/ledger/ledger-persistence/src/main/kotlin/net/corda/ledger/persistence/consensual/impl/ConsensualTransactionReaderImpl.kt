@@ -9,7 +9,6 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTransactionStatus
 import net.corda.ledger.persistence.common.LedgerPersistenceUtils.findAccount
 import net.corda.ledger.persistence.consensual.ConsensualTransactionReader
-import net.corda.persistence.common.exceptions.MissingAccountContextPropertyException
 import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
@@ -21,9 +20,6 @@ class ConsensualTransactionReaderImpl(
     private val externalEventContext: ExternalEventContext,
     private val transaction: PersistTransaction
 ) : ConsensualTransactionReader {
-
-    private companion object {
-    }
 
     private val signedTransaction = serializer.deserialize<SignedTransactionContainer>(transaction.transaction.array())
 

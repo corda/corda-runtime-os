@@ -49,7 +49,6 @@ class SendTransactionBuilderDiffFlowV1(
 
         // If we couldn't find the notary we default to backchain resolution
         if (notaryInfo.isBackchainRequired) {
-
             log.trace { "Sending proposed transaction builder components to ${session.counterparty}." }
             session.send(transactionBuilder)
 

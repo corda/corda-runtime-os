@@ -15,7 +15,6 @@ import net.corda.ledger.utxo.data.state.cast
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
-import net.corda.persistence.common.exceptions.MissingAccountContextPropertyException
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.utilities.serialization.deserialize
