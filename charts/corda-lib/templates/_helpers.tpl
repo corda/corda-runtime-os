@@ -342,7 +342,7 @@ Secret creation
 {{- $create := false }}
 {{- range $k, $v := $fields }}
 {{-   $field := ( get $context $k ) }}
-{{-   if not $field.valueFrom.secretKeyRef.name }}
+{{-   if not (($field.valueFrom).secretKeyRef).name }}
 {{-     if and $v.required ( not $field.value ) }}
 {{-       fail ( printf "Must specify %s.%s.valueFrom.secretKeyRef.name or %s.%s.value" $path $k $path $k ) }}
 {{-     end }}
