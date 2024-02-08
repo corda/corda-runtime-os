@@ -3,6 +3,7 @@ package net.corda.flow.fiber
 import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
 import net.corda.flow.application.serialization.FlowSerializationServiceImpl
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
+import net.corda.internal.serialization.amqp.api.SerializationServiceInternal
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE
 import net.corda.sandboxgroupcontext.VirtualNodeContext
@@ -25,7 +26,7 @@ class FlowSerializationServiceImplTest {
     private val currentSandboxGroupContext : CurrentSandboxGroupContext = mock()
 
     private val sandboxGroupContext = mock<FlowSandboxGroupContext>()
-    private val serializationService = mock<SerializationService>()
+    private val serializationService = mock<SerializationServiceInternal>()
     private val virtualNodeContext = mock<VirtualNodeContext>()
     private val serializedBytes = mock<SerializedBytes<Any>>()
 
@@ -37,7 +38,7 @@ class FlowSerializationServiceImplTest {
     @BeforeEach
     fun setup() {
         whenever(currentSandboxGroupContext.get()).thenReturn(sandboxGroupContext)
-        whenever(sandboxGroupContext.get(AMQP_SERIALIZATION_SERVICE, SerializationService::class.java)).thenReturn(serializationService)
+        whenever(sandboxGroupContext.get(AMQP_SERIALIZATION_SERVICE, SerializationServiceInternal::class.java)).thenReturn(serializationService)
         whenever(serializationService.serialize(any<Any>())).thenReturn(serializedBytes)
         whenever(sandboxGroupContext.virtualNodeContext).thenReturn(virtualNodeContext)
         whenever(virtualNodeContext.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
