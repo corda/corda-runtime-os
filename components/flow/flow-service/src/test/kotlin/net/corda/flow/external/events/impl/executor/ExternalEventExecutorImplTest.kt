@@ -80,7 +80,7 @@ class ExternalEventExecutorImplTest {
 
         val expectedRequest = FlowIORequest.ExternalEvent(
             // This is hardcoded, but should be deterministic!
-            "static_flow_id-q/v+T/J78A36e/Dnb+ivsw==-1",
+            "static_flow_id-Rv/Hk3fgtersGknFrgpJSsMr9kqPU9+RROLZiRTxyqo=-1",
             mockFactoryClass, mockParams, contextProperties
         )
 
