@@ -18,6 +18,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters
+import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.data.transaction.filtered.factory.FilteredTransactionFactory
 import net.corda.ledger.common.testkit.cpiPackageSummaryExample
 import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
@@ -278,33 +279,9 @@ class UtxoPersistenceServiceImplTest {
             .mapValues { (_, stateRefs) -> stateRefs.map { stateRef -> stateRef.index } }
         val expectedRetval = stateRefs.associate {
             val indexes = txIdToIndexes[it.transactionId]!!
-            val (wireTransaction, signatures) = persistenceService.findSignedTransaction(it.transactionId.toString(), VERIFIED).first!!
-            val filteredTransaction = filteredTransactionFactory.create(
-                wireTransaction,
-                listOf(
-                    ComponentGroupFilterParameters.AuditProof(
-                        METADATA.ordinal,
-                        TransactionMetadata::class.java,
-                        ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                    ),
-                    ComponentGroupFilterParameters.AuditProof(
-                        NOTARY.ordinal,
-                        Any::class.java,
-                        ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                    ),
-                    ComponentGroupFilterParameters.AuditProof(
-                        UtxoComponentGroup.OUTPUTS_INFO.ordinal,
-                        UtxoOutputInfoComponent::class.java,
-                        ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Index(indexes)
-                    ),
-                    ComponentGroupFilterParameters.AuditProof(
-                        UtxoComponentGroup.OUTPUTS.ordinal,
-                        ContractState::class.java,
-                        ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Index(indexes)
-                    )
-                )
-            )
-            it.transactionId to Pair(filteredTransaction, signatures)
+            val signedTransaction = persistenceService.findSignedTransaction(it.transactionId.toString(), VERIFIED).first!!
+            val filteredTransaction = createFilteredTransaction(signedTransaction, indexes)
+            it.transactionId to Pair(filteredTransaction, signedTransaction.signatures)
         }
 
         val retval = persistenceService.findFilteredTransactionsAndSignatures(stateRefs)
@@ -634,36 +611,52 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
+    fun `persist filtered transactions and signatures with persistFilteredTransactionsAndSignaturesIfDoNotExist `() {
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(signatures = signatures)
+        val account = "Account"
+
+        val filteredTransactionToStore = createFilteredTransaction(signedTransaction)
+
+        (persistenceService as UtxoPersistenceServiceImpl).persistFilteredTransactionsAndSignaturesIfDoNotExist(
+            mapOf(filteredTransactionToStore to signatures),
+            account
+        )
+
+        val filteredTxResults = (persistenceService as UtxoPersistenceServiceImpl).findFilteredTransactions(
+            listOf(filteredTransactionToStore.id.toString())
+        )
+
+        assertThat(filteredTxResults).hasSize(1)
+
+        val storedFilteredTransaction = filteredTxResults[filteredTransactionToStore.id]?.first
+
+        assertNotNull(storedFilteredTransaction)
+
+        assertThat(storedFilteredTransaction!!.id).isEqualTo(filteredTransactionToStore.id)
+        assertThat(storedFilteredTransaction.metadata).isEqualTo(filteredTransactionToStore.metadata)
+        assertThat(storedFilteredTransaction.privacySalt).isEqualTo(filteredTransactionToStore.privacySalt)
+        assertThat(storedFilteredTransaction.filteredComponentGroups).isEqualTo(filteredTransactionToStore.filteredComponentGroups)
+        assertThat(storedFilteredTransaction.topLevelMerkleProof).isEqualTo(filteredTransactionToStore.topLevelMerkleProof)
+
+        // Check that outputs / outputs_info merkle proofs are matching
+        assertThat(storedFilteredTransaction.filteredComponentGroups[UtxoComponentGroup.OUTPUTS.ordinal]?.merkleProof).isEqualTo(
+            filteredTransactionToStore.filteredComponentGroups[UtxoComponentGroup.OUTPUTS.ordinal]?.merkleProof
+        )
+        assertThat(storedFilteredTransaction.filteredComponentGroups[UtxoComponentGroup.OUTPUTS_INFO.ordinal]?.merkleProof).isEqualTo(
+            filteredTransactionToStore.filteredComponentGroups[UtxoComponentGroup.OUTPUTS_INFO.ordinal]?.merkleProof
+        )
+
+        storedFilteredTransaction.verify()
+    }
+
+    @Test
     fun `persist and find filtered transactions`() {
         val signatures = createSignatures(Instant.now())
         val signedTransaction = createSignedTransaction(signatures = signatures)
         val account = "Account"
 
-        val filteredTransactionToStore = filteredTransactionFactory.create(
-            signedTransaction.wireTransaction,
-            componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(
-                    0,
-                    TransactionMetadataImpl::class.java,
-                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                ),
-                ComponentGroupFilterParameters.AuditProof(
-                    1,
-                    Any::class.java,
-                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                ),
-                ComponentGroupFilterParameters.AuditProof(
-                    3,
-                    Any::class.java,
-                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                ),
-                ComponentGroupFilterParameters.AuditProof(
-                    8,
-                    Any::class.java,
-                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                ),
-            )
-        )
+        val filteredTransactionToStore = createFilteredTransaction(signedTransaction)
 
         (persistenceService as UtxoPersistenceServiceImpl).persistFilteredTransactionsAndSignatures(
             mapOf(filteredTransactionToStore to signatures),
@@ -812,6 +805,50 @@ class UtxoPersistenceServiceImplTest {
                 { assertThat(dbTransaction.field<Instant>("updated")).isAfterOrEqualTo(floorDateTime) }
             )
         }
+    }
+
+    private fun createFilteredTransaction(
+        signedTransaction: SignedTransactionContainer,
+        indexes: List<Int> = emptyList()
+    ): FilteredTransaction {
+        val (outputInfoGroupParameter, outputGroupParameter) = if (indexes.isEmpty()) {
+            ComponentGroupFilterParameters.AuditProof(
+                UtxoComponentGroup.OUTPUTS_INFO.ordinal,
+                Any::class.java,
+                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
+            ) to ComponentGroupFilterParameters.AuditProof(
+                UtxoComponentGroup.OUTPUTS.ordinal,
+                Any::class.java,
+                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
+            )
+        } else {
+            ComponentGroupFilterParameters.AuditProof(
+                UtxoComponentGroup.OUTPUTS_INFO.ordinal,
+                UtxoOutputInfoComponent::class.java,
+                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Index(indexes)
+            ) to ComponentGroupFilterParameters.AuditProof(
+                UtxoComponentGroup.OUTPUTS.ordinal,
+                ContractState::class.java,
+                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Index(indexes)
+            )
+        }
+        return filteredTransactionFactory.create(
+            signedTransaction.wireTransaction,
+            componentGroupFilterParameters = listOf(
+                ComponentGroupFilterParameters.AuditProof(
+                    METADATA.ordinal,
+                    TransactionMetadata::class.java,
+                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
+                ),
+                ComponentGroupFilterParameters.AuditProof(
+                    NOTARY.ordinal,
+                    Any::class.java,
+                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
+                ),
+                outputInfoGroupParameter,
+                outputGroupParameter,
+            )
+        )
     }
 
     private fun createSignedTransaction(
