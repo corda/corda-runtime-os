@@ -369,7 +369,7 @@ type: Opaque
 data:
 {{- range $k, $v := $fields }}
 {{-   $field := ( get $context $k ) }}
-{{-   if not $field.valueFrom.secretKeyRef.name }}
+{{-   if not (($field.valueFrom).secretKeyRef).name }}
 {{-     if $field.value }}
   {{ $k }}: {{ $field.value | b64enc | quote }}
 {{-     else if $v.generate }}

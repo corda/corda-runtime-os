@@ -43,10 +43,6 @@ bootstrap:
       - id: "default"
         username:
           value: "postgres"
-          valueFrom:
-            secretKeyRef:
-              name: ""
-              key: ""
         password:
           valueFrom:
             secretKeyRef:
@@ -55,10 +51,6 @@ bootstrap:
       - id: "isolated-state-manager"
         username:
           value: "state-manager-user"
-          valueFrom:
-            secretKeyRef:
-              name: ""
-              key: ""
         password:
           valueFrom:
             secretKeyRef:

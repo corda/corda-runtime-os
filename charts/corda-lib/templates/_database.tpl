@@ -24,7 +24,7 @@
 - name: {{ upper ( snakecase $db ) }}_DB_USERNAME
   valueFrom:
     secretKeyRef:
-      {{- if $bootstrapSettings.username.valueFrom.secretKeyRef.name }}
+      {{- if (($bootstrapSettings.username.valueFrom).secretKeyRef).name }}
       name: {{ $bootstrapSettings.username.valueFrom.secretKeyRef.name | quote }}
       key: {{ required ( printf "Must specify bootstrap.db.%s.username.valueFrom.secretKeyRef.key" $db ) $bootstrapSettings.username.valueFrom.secretKeyRef.key | quote }}
       {{-   else }}
@@ -34,13 +34,47 @@
 - name: {{ upper ( snakecase $db ) }}_DB_PASSWORD
   valueFrom:
     secretKeyRef:
-      {{- if $bootstrapSettings.password.valueFrom.secretKeyRef.name }}
+      {{- if (($bootstrapSettings.password.valueFrom).secretKeyRef).name }}
       name: {{ $bootstrapSettings.password.valueFrom.secretKeyRef.name | quote }}
       key: {{ required ( printf "Must specify bootstrap.db.%s.password.valueFrom.secretKeyRef.key" $db ) $bootstrapSettings.password.valueFrom.secretKeyRef.key | quote }}
       {{-   else }}
       name: {{ printf "%s-%s-db" ( include "corda.fullname" $ ) ( kebabcase $db ) }}
       key: "password"
       {{-   end }}
+{{- end -}}
+
+
+{{/*
+    Environment variables (CONFIG_*_DB_USERNAME and CONFIG_*_DB_PASSWORD) to be used when configuring config database
+    for each worker
+*/}}
+{{- define "corda.db.runtimeConfigEnvironment" -}}
+{{- $ := index . 0 -}}
+{{- range $workerName, $workerValues := $.Values.workers }}
+{{-   if $workerValues.config }}
+{{-     $configValues := $workerValues.config }}
+- name: CONFIG_{{ upper ( snakecase $workerName ) }}_DB_USERNAME
+  valueFrom:
+    secretKeyRef:
+      {{- if (($configValues.username.valueFrom).secretKeyRef).name }}
+      name: {{ $configValues.username.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required ( printf "Must specify workers.%s.config.username.valueFrom.secretKeyRef.key" $workerName ) $configValues.username.valueFrom.secretKeyRef.key | quote }}
+      {{-   else }}
+      name: {{ include "corda.db.workerCredentialsSecretName" ( list $ $workerName ) }}
+      key: "username"
+      {{-   end }}
+- name: CONFIG_{{ upper ( snakecase $workerName ) }}_DB_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      {{- if (($configValues.password.valueFrom).secretKeyRef).name }}
+      name: {{ $configValues.password.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required ( printf "Must specify workers.%s.config.password.valueFrom.secretKeyRef.key" $workerName ) $configValues.password.valueFrom.secretKeyRef.key | quote }}
+      {{-   else }}
+      name: {{ include "corda.db.workerCredentialsSecretName" ( list $ $workerName ) }}
+      key: "password"
+      {{-   end }}
+{{-   end -}}
+{{- end -}}
 {{- end -}}
 
 
@@ -55,7 +89,7 @@
 - name: BOOTSTRAP_{{ upper ( snakecase $db ) }}_DB_USERNAME
   valueFrom:
     secretKeyRef:
-      {{- if $bootstrapSettings.username.valueFrom.secretKeyRef.name }}
+      {{- if (($bootstrapSettings.username.valueFrom).secretKeyRef).name }}
       name: {{ $bootstrapSettings.username.valueFrom.secretKeyRef.name | quote }}
       key: {{ required ( printf "Must specify bootstrap username.valueFrom.secretKeyRef.key for database '%s'" $dbId ) $bootstrapSettings.username.valueFrom.secretKeyRef.key | quote }}
       {{-   else }}
@@ -65,7 +99,7 @@
 - name: BOOTSTRAP_{{ upper ( snakecase $db ) }}_DB_PASSWORD
   valueFrom:
     secretKeyRef:
-      {{- if $bootstrapSettings.password.valueFrom.secretKeyRef.name }}
+      {{- if (($bootstrapSettings.password.valueFrom).secretKeyRef).name }}
       name: {{ $bootstrapSettings.password.valueFrom.secretKeyRef.name | quote }}
       key: {{ required ( printf "Must specify bootstrap password.valueFrom.secretKeyRef.key for database '%s'" $dbId ) $bootstrapSettings.password.valueFrom.secretKeyRef.key | quote }}
       {{-   else }}
@@ -86,7 +120,7 @@
 - name: CONFIG_DB_USERNAME
   valueFrom:
     secretKeyRef:
-      {{- if $config.username.valueFrom.secretKeyRef.name }}
+      {{- if (($config.username.valueFrom).secretKeyRef).name }}
       name: {{ $config.username.valueFrom.secretKeyRef.name | quote }}
       key: {{ required ( printf "Must specify username.valueFrom.secretKeyRef.key for database '%s'" $dbId ) $config.username.valueFrom.secretKeyRef.key | quote }}
       {{-   else }}
@@ -96,7 +130,7 @@
 - name: CONFIG_DB_PASSWORD
   valueFrom:
     secretKeyRef:
-      {{- if $config.password.valueFrom.secretKeyRef.name }}
+      {{- if (($config.password.valueFrom).secretKeyRef).name }}
       name: {{ $config.password.valueFrom.secretKeyRef.name | quote }}
       key: {{ required ( printf "Must specify password.valueFrom.secretKeyRef.key for database '%s'" $dbId ) $config.password.valueFrom.secretKeyRef.key | quote }}
       {{-   else }}
@@ -113,7 +147,7 @@
 {{- define "corda.db.workerCredentialsSecretName" -}}
 {{- $ := index . 0 -}}
 {{- $workerName := index . 1 -}}
-{{ printf "%s-worker-%s-db" ( include "corda.fullname" $ ) ( kebabcase $workerName ) }}
+{{ printf "%s-%s-worker-db" ( include "corda.fullname" $ ) ( kebabcase $workerName ) }}
 {{- end -}}
 
 

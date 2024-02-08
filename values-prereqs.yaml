@@ -42,10 +42,6 @@ bootstrap:
       - id: "default"
         username:
           value: "postgres"
-          valueFrom:
-            secretKeyRef:
-              name: ""
-              key: ""
         password:
           valueFrom:
             secretKeyRef:

@@ -327,10 +327,18 @@ spec:
               echo 'Creating config users and granting permissions'
               # TODO: config users should be created and configured for each of the five worker types
               psql -v ON_ERROR_STOP=1 -h "${CONFIG_DB_HOST}" -p "${CONFIG_DB_PORT}" --dbname "${CONFIG_DB_NAME}" << SQL
-                GRANT USAGE ON SCHEMA ${CONFIG_DB_SCHEMA} TO "${DB_CLUSTER_USERNAME}";
-                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${CONFIG_DB_SCHEMA} TO "${DB_CLUSTER_USERNAME}";
-                GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA ${CONFIG_DB_SCHEMA} TO "${DB_CLUSTER_USERNAME}";
-                ALTER ROLE "${DB_CLUSTER_USERNAME}" SET search_path TO ${CONFIG_DB_SCHEMA}, STATE_MANAGER;
+{{- range $workerName, $workerValues := $.Values.workers }}
+{{-   if $workerValues.config }}
+{{-     $configValues := $workerValues.config }}
+{{-     $usernameEnv := printf "CONFIG_%s_DB_USERNAME" ( upper ( snakecase $workerName ) ) }}
+{{-     $passwordEnv := printf "CONFIG_%s_DB_PASSWORD" ( upper ( snakecase $workerName ) ) }}
+                DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${{ $usernameEnv }}') THEN RAISE NOTICE 'Role "${{ $usernameEnv }}" already exists'; ELSE CREATE USER "${{ $usernameEnv }}" WITH ENCRYPTED PASSWORD '${{ $passwordEnv }}'; END IF; END \$\$;
+                GRANT USAGE ON SCHEMA ${CONFIG_DB_SCHEMA} TO "${{ $usernameEnv }}";
+                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${CONFIG_DB_SCHEMA} TO "${{ $usernameEnv }}";
+                GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA ${CONFIG_DB_SCHEMA} TO "${{ $usernameEnv }}";
+                ALTER ROLE "${{ $usernameEnv }}" SET search_path TO ${CONFIG_DB_SCHEMA};
+{{-   end }}
+{{- end }}
               SQL
 
               echo 'Applying crypto DB specification'
@@ -396,6 +404,7 @@ spec:
             {{- include "corda.db.bootstrapEnvironment" ( list $ "config" $.Values.config.storageId $configBootstrapSettings ) | nindent 12 }}
             {{- include "corda.db.bootstrapEnvironment" ( list $ "crypto" $.Values.bootstrap.db.crypto.storageId $cryptoBootstrapSettings ) | nindent 12 }}
             {{- include "corda.db.bootstrapEnvironment" ( list $ "rbac" $.Values.bootstrap.db.rbac.storageId $rbacBootstrapSettings ) | nindent 12 }}
+            {{- include "corda.db.runtimeConfigEnvironment" ( list $ ) | nindent 12 }}
             {{- include "corda.db.runtimeEnvironment" ( list $ "crypto" $.Values.bootstrap.db.crypto ) | nindent 12 }}
             {{- include "corda.db.runtimeEnvironment" ( list $ "rbac" $.Values.bootstrap.db.rbac ) | nindent 12 }}
             {{- include "corda.db.runtimeEnvironment" ( list $ "virtualNodes" $.Values.bootstrap.db.virtualNodes ) | nindent 12 }}

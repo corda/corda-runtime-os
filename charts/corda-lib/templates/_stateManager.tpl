@@ -57,7 +57,7 @@
 - name: STATE_MANAGER_USERNAME
   valueFrom:
     secretKeyRef:
-      {{- if $runtimeSettings.username.valueFrom.secretKeyRef.name }}
+      {{- if (($runtimeSettings.username.valueFrom).secretKeyRef).name }}
       name: {{ $runtimeSettings.username.valueFrom.secretKeyRef.name | quote }}
       key: {{ required ( printf "Must specify workers.%s.stateManager.%s.username.valueFrom.secretKeyRef.key" $workerName $stateType ) $runtimeSettings.username.valueFrom.secretKeyRef.key | quote }}
       {{-   else }}
@@ -67,7 +67,7 @@
 - name: STATE_MANAGER_PASSWORD
   valueFrom:
     secretKeyRef:
-      {{- if $runtimeSettings.password.valueFrom.secretKeyRef.name }}
+      {{- if (($runtimeSettings.password.valueFrom).secretKeyRef).name }}
       name: {{ $runtimeSettings.password.valueFrom.secretKeyRef.name | quote }}
       key: {{ required ( printf "Must specify workers.%s.stateManager.%s.password.valueFrom.secretKeyRef.key" $workerName $stateType ) $runtimeSettings.password.valueFrom.secretKeyRef.key | quote }}
       {{-   else }}
@@ -171,7 +171,7 @@
   projected:
     sources:
       - secret:
-{{-   if $runtimeSettings.username.valueFrom.secretKeyRef.name }}
+{{-   if (($runtimeSettings.username.valueFrom).secretKeyRef).name }}
           name: {{ $runtimeSettings.username.valueFrom.secretKeyRef.name | quote }}
           items:
             - key: {{ required ( printf "Must specify workers.%s.stateManager.%s.username.valueFrom.secretKeyRef.key" $workerName $stateType ) $runtimeSettings.username.valueFrom.secretKeyRef.key | quote }}
@@ -183,7 +183,7 @@
               path: "username"
 {{-   end }}
       - secret:
-{{-   if $runtimeSettings.password.valueFrom.secretKeyRef.name }}
+{{-   if (($runtimeSettings.password.valueFrom).secretKeyRef).name }}
           name: {{ $runtimeSettings.password.valueFrom.secretKeyRef.name | quote }}
           items:
             - key: {{ required ( printf "Must specify workers.%s.stateManager.%s.password.valueFrom.secretKeyRef.key" $workerName $stateType ) $runtimeSettings.password.valueFrom.secretKeyRef.key | quote }}
