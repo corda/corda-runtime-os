@@ -85,7 +85,9 @@ class StatefulSessionManagerImplTest {
         on { serialize(serialized.capture()) } doReturn ByteBuffer.wrap(byteArrayOf(0))
         on {
             deserialize(
-                any(), eq(ReEstablishSessionMessage::class.java), eq(null)
+                any(),
+                eq(ReEstablishSessionMessage::class.java),
+                eq(null),
             )
         } doReturn ReEstablishSessionMessage("test")
     }
@@ -156,20 +158,6 @@ class StatefulSessionManagerImplTest {
             verify(deadSessionMonitor).ackReceived(sessionId)
         }
     }
-
-    @Nested
-    inner class GetSessionsByIdTests {
-        @Test
-        fun `it returned sessions from the state manager`() {
-            val sessionIds = (1..4).map {
-                "session-$it"
-            }
-            val sessionIdsContainers = sessionIds.map {
-                Wrapper(it)
-            }
-            val savedStates = sessionIds.associateWith { sessionId ->
-            }
-        }
 
     @Nested
     inner class GetSessionsByIdTests {
@@ -275,7 +263,7 @@ class StatefulSessionManagerImplTest {
             )
 
             manager.getSessionsById(
-                setOf(Wrapper(testSessionId))
+                setOf(Wrapper(testSessionId)),
             ) { it.value }
 
             val publishedRecord = published.firstValue.single()
@@ -416,7 +404,7 @@ class StatefulSessionManagerImplTest {
 
             manager.deleteOutboundSession(
                 SessionManager.Counterparties(source, destination),
-                message
+                message,
             )
 
             verify(stateManager).get(listOf(knownStateKey))
