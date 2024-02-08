@@ -100,12 +100,4 @@ class FlowStatusLookupServiceImpl @Activate constructor(
             .map { deSerializer.deserialize(it.value.value) }
             .filterNotNull()
     }
-
-    override fun registerFlowStatusListener(
-        clientRequestId: String,
-        holdingIdentity: HoldingIdentity,
-        listener: FlowStatusUpdateListener
-    ): AutoCloseable {
-        TODO("Not yet implemented")
-    }
 }
