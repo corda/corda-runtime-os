@@ -127,7 +127,7 @@ class StartFlowTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                notNullStateRecord()
+                nullStateRecord()
                 markedForDlq()
                 noFlowEvents()
                 flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
