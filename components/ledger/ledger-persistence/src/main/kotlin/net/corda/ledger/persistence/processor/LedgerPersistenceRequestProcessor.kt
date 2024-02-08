@@ -14,10 +14,13 @@ import net.corda.persistence.common.ResponseFactory
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
+import net.corda.utilities.MDC_VNODE_ID
+import net.corda.utilities.setMDC
 import net.corda.utilities.translateFlowContextToMDC
 import net.corda.utilities.withMDC
 import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
 import net.corda.virtualnode.toCorda
+import org.slf4j.LoggerFactory
 import java.time.Duration
 
 /**
@@ -30,6 +33,10 @@ class LedgerPersistenceRequestProcessor(
     private val delegatedRequestHandlerSelector: DelegatedRequestHandlerSelector,
     private val responseFactory: ResponseFactory
 ) : SyncRPCProcessor<LedgerPersistenceRequest, FlowEvent> {
+
+    private companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     override val requestClass = LedgerPersistenceRequest::class.java
     override val responseClass = FlowEvent::class.java
@@ -56,10 +63,13 @@ class LedgerPersistenceRequestProcessor(
 
                     val sandbox = entitySandboxService.get(holdingIdentity, cpkFileHashes)
 
+                    setMDC(mapOf(MDC_VNODE_ID to sandbox.virtualNodeContext.holdingIdentity.shortHash.toString()))
+
                     currentSandboxGroupContext.set(sandbox)
 
                     delegatedRequestHandlerSelector.selectHandler(sandbox, request).execute()
                 } catch (e: Exception) {
+                    logger.error("${e.message}", e)
                     listOf(
                         when (e) {
                             is UnsupportedLedgerTypeException,

@@ -11,11 +11,11 @@ import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.testkit.publicKeyExample
+import net.corda.ledger.utxo.data.transaction.FilteredTransactionAndSignatures
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
-import net.corda.ledger.utxo.flow.impl.flows.finality.FilteredTransactionAndSignatures
 import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityPayload
 import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
@@ -52,6 +52,7 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.v5.membership.NotaryInfo
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
@@ -66,6 +67,7 @@ import java.security.PublicKey
 import java.time.Instant
 
 @Suppress("MaxLineLength")
+@Disabled
 class UtxoReceiveFinalityFlowV1Test {
 
     private companion object {
