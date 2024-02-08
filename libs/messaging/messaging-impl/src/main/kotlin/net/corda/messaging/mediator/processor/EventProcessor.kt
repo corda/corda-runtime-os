@@ -87,16 +87,6 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                 getMostRecentState(key, e.partiallyProcessedState, processorState, inputState),
                 "unable to contact Corda services while processing events"
             )
-        } catch (e: CordaMessageAPIIntermittentException) {
-            // If an intermittent error occurs here, the RPC client has failed to deliver a message to another part
-            // of the system despite the retry loop implemented there. This should trigger individual processing to
-            // fail.
-            asyncOutputs.clear()
-            stateManagerHelper.failStateProcessing(
-                key.toString(),
-                inputState,
-                "unable to contact Corda services while processing events"
-            )
         }
 
         val stateChangeAndOperation = stateChangeAndOperation(inputState, processed)
@@ -106,16 +96,22 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     private fun getMostRecentState(
         key: K,
         partiallyProcessedState: StateAndEventProcessor.State<*>?,
-        lastSuccessfulProcessorState: StateAndEventProcessor.State<S>?,
+        currentProcessorState: StateAndEventProcessor.State<S>?,
         inputState: State?
     ): State? {
-        return if (partiallyProcessedState != null) {
-            @Suppress("unchecked_cast")
-            stateManagerHelper.createOrUpdateState(key.toString(), inputState, partiallyProcessedState as StateAndEventProcessor.State<S>)
-        } else if (lastSuccessfulProcessorState != null) {
-            stateManagerHelper.createOrUpdateState(key.toString(), inputState, lastSuccessfulProcessorState)
-        } else {
-            inputState
+        return when {
+            partiallyProcessedState != null -> {
+                @Suppress("unchecked_cast")
+                stateManagerHelper.createOrUpdateState(
+                    key.toString(),
+                    inputState,
+                    partiallyProcessedState as StateAndEventProcessor.State<S>
+                )
+            }
+
+            currentProcessorState != null -> stateManagerHelper.createOrUpdateState(key.toString(), inputState, currentProcessorState)
+
+            else -> inputState
         }
     }
 
