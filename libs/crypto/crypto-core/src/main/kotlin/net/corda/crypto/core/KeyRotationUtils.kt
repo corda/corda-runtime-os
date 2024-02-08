@@ -33,6 +33,6 @@ object KeyRotationKeyType {
     const val UNMANAGED: String = "unmanaged"
 }
 
-fun getKeyRotationStatusRecordKey(keyAlias: String, tenantId: String) =
-    keyAlias + tenantId + KeyRotationRecordType.KEY_ROTATION
+fun getKeyRotationStatusRecordKey(keyIdentifier: String, tenantId: String) =
+    keyIdentifier + tenantId + KeyRotationRecordType.KEY_ROTATION
 
