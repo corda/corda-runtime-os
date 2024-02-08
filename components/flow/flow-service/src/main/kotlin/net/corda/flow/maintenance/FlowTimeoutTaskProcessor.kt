@@ -82,7 +82,7 @@ class FlowTimeoutTaskProcessor(
         // Flows timed out by the messaging layer + sessions timed out
         stateManager.findByMetadataMatchingAny(
             listOf(
-                // Time out signaled by the messaging layer
+                // Failure or time out signaled by the messaging layer
                 MetadataFilter(PROCESSING_FAILURE, Operation.Equals, true),
                 // Session expired
                 MetadataFilter(STATE_META_SESSION_EXPIRY_KEY, Operation.LesserThan, now().epochSecond),
