@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@5.2') _
+@Library('corda-shared-build-pipeline-steps@cluster-db/CORE-19372') _
 
 cordaPipelineKubernetesAgent(
     dailyBuildCron: 'H H/6 * * *',
