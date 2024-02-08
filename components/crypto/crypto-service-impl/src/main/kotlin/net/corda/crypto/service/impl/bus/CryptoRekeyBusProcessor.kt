@@ -258,7 +258,7 @@ class CryptoRekeyBusProcessor(
                     1,
                     Metadata(
                         mapOf(
-                            KeyRotationMetadataValues.ROOT_KEY_ALIAS to defaultUnmanagedWrappingKeyName,
+                            KeyRotationMetadataValues.DEFAULT_MASTER_KEY_ALIAS to defaultUnmanagedWrappingKeyName,
                             KeyRotationMetadataValues.STATUS_TYPE to KeyRotationRecordType.KEY_ROTATION,
                             KeyRotationMetadataValues.STATUS to KeyRotationStatus.IN_PROGRESS,
                             KeyRotationMetadataValues.KEY_TYPE to KeyRotationKeyType.UNMANAGED,
@@ -275,7 +275,7 @@ class CryptoRekeyBusProcessor(
             if (!deleteStateManagerRecords(
                     listOf(
                         MetadataFilter(
-                            KeyRotationMetadataValues.ROOT_KEY_ALIAS,
+                            KeyRotationMetadataValues.DEFAULT_MASTER_KEY_ALIAS,
                             Operation.Equals,
                             defaultUnmanagedWrappingKeyName,
                         ),
