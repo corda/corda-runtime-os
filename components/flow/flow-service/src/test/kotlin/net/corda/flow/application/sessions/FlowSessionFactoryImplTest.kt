@@ -1,7 +1,7 @@
 package net.corda.flow.application.sessions
 
 import net.corda.flow.BOB_X500_NAME
-import net.corda.flow.application.serialization.SerializationServiceInternal
+import net.corda.flow.application.serialization.FlowSerializationService
 import net.corda.flow.application.services.MockFlowFiberService
 import net.corda.flow.application.sessions.factory.FlowSessionFactoryImpl
 import net.corda.flow.fiber.FlowIORequest
@@ -31,7 +31,7 @@ class FlowSessionFactoryImplTest {
 
     private val mockFlowFiberService = MockFlowFiberService()
     private val flowFiber = mockFlowFiberService.flowFiber
-    private val serializationService = mock<SerializationServiceInternal>()
+    private val serializationService = mock<FlowSerializationService>()
     private val flowSessionFactory = FlowSessionFactoryImpl(mockFlowFiberService, serializationService)
 
     @Suppress("Unused")

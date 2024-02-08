@@ -38,6 +38,7 @@ dependencies {
     implementation project(':libs:platform-info')
     implementation project(':libs:sandbox')
     implementation project(':libs:serialization:serialization-amqp')
+    implementation project(':libs:serialization:serialization-amqp-api')
     implementation project(':libs:serialization:serialization-checkpoint-api')
     implementation project(':libs:state-manager:state-manager-api')
     implementation project(':libs:utilities')

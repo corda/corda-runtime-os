@@ -33,7 +33,6 @@ dependencies {
     implementation project(":libs:sandbox")
     implementation project(path: ':libs:serialization:serialization-encoding', configuration: 'bundle')
     implementation project(":libs:utilities")
-    implementation project(":libs:serialization:serialization-amqp-api")
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "com.google.guava:guava:$guavaVersion"

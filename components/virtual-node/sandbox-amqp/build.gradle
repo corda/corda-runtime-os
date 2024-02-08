@@ -15,6 +15,7 @@ dependencies {
     implementation 'net.corda:corda-serialization'
     implementation project(':libs:metrics')
     implementation project(':libs:serialization:serialization-amqp')
+    implementation project(':libs:serialization:serialization-amqp-api')
     implementation project(':libs:serialization:serialization-internal')
     implementation project(':libs:virtual-node:sandbox-group-context')
 }
