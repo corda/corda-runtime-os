@@ -46,7 +46,7 @@ class StateManagerWrapperTest {
     }
 
     @Test
-    fun `get returns the correct valuer`() {
+    fun `get returns the correct value`() {
         val ret = wrapper.get(keys)
 
         assertThat(ret).isEqualTo(keysToStates)
@@ -67,7 +67,7 @@ class StateManagerWrapperTest {
     }
 
     @Test
-    fun `findStatesMatchingAny returns the correct valuer`() {
+    fun `findStatesMatchingAny returns the correct value`() {
         val ret = wrapper.findStatesMatchingAny(filters)
 
         assertThat(ret).isEqualTo(keysToStates)
@@ -83,8 +83,8 @@ class StateManagerWrapperTest {
 
     @Test
     fun `upsert with create will set the beforeUpdate to false`() {
-        val update = CreateAction(state)
-        wrapper.upsert(listOf(update))
+        val create = CreateAction(state)
+        wrapper.upsert(listOf(create))
 
         verify(sessionCache).validateStateAndScheduleExpiry(state, false)
     }
@@ -107,18 +107,18 @@ class StateManagerWrapperTest {
     }
 
     @Test
-    fun `create with update will not create expired sessions`() {
-        val update = CreateAction(state)
-        wrapper.upsert(listOf(update))
+    fun `upsert with create will not create expired sessions`() {
+        val create = CreateAction(state)
+        wrapper.upsert(listOf(create))
 
         verify(stateManager, never()).create(any())
     }
 
     @Test
-    fun `create with update will update valid sessions`() {
+    fun `upsert with create will create valid sessions`() {
         whenever(sessionCache.validateStateAndScheduleExpiry(state, false)).doReturn(state)
-        val update = CreateAction(state)
-        wrapper.upsert(listOf(update))
+        val create = CreateAction(state)
+        wrapper.upsert(listOf(create))
 
         verify(stateManager).create(listOf(state))
     }
