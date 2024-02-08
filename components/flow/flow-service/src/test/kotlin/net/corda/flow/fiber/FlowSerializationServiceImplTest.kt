@@ -37,7 +37,8 @@ class FlowSerializationServiceImplTest {
     @BeforeEach
     fun setup() {
         whenever(currentSandboxGroupContext.get()).thenReturn(sandboxGroupContext)
-        whenever(sandboxGroupContext.get(AMQP_SERIALIZATION_SERVICE, SerializationServiceInternal::class.java)).thenReturn(serializationService)
+        whenever(sandboxGroupContext.get(AMQP_SERIALIZATION_SERVICE, SerializationServiceInternal::class.java))
+            .thenReturn(serializationService)
         whenever(serializationService.serialize(any<Any>())).thenReturn(serializedBytes)
         whenever(sandboxGroupContext.virtualNodeContext).thenReturn(virtualNodeContext)
         whenever(virtualNodeContext.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
