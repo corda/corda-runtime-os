@@ -7,7 +7,6 @@ import net.corda.internal.serialization.amqp.api.SerializationServiceInternal
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE
 import net.corda.sandboxgroupcontext.VirtualNodeContext
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.serialization.SerializedBytes
 import net.corda.virtualnode.toCorda
