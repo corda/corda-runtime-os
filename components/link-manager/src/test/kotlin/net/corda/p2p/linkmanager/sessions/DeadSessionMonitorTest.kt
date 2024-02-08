@@ -102,7 +102,7 @@ class DeadSessionMonitorTest {
     }
 
     @Test
-    fun `when an error message is received then any existing deletion action is canceled`() {
+    fun `when a session is removed then any existing deletion action is canceled`() {
         val sessionId = "s1"
         val timeout = 10L
         val deleteActionFuture1 = mock<ScheduledFuture<Unit>>()
@@ -112,7 +112,7 @@ class DeadSessionMonitorTest {
 
         target.onConfigChange(timeout)
         target.messageSent(sessionId)
-        target.sessionErrorReceived(sessionId)
+        target.sessionRemoved(sessionId)
 
         verify(deleteActionFuture1).cancel(false)
     }

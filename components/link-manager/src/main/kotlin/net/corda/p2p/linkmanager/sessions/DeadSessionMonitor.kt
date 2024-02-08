@@ -41,12 +41,12 @@ class DeadSessionMonitor(
         cancelScheduledDeletion(sessionId)
     }
 
-    fun sessionErrorReceived(sessionId: String) {
+    fun sessionRemoved(sessionId: String) {
         cancelScheduledDeletion(sessionId)
     }
 
     private fun cancelScheduledDeletion(sessionId: String) {
-        scheduledSessionDeletions.remove(sessionId)?.let { it.cancel(false) }
+        scheduledSessionDeletions.remove(sessionId)?.cancel(false)
     }
 
     private fun createScheduledDeletion(sessionId: String): ScheduledFuture<*> {
@@ -57,7 +57,8 @@ class DeadSessionMonitor(
         return scheduledExecutorService.schedule(
             {
                 log.warn(
-                    "No acks received for session '$sessionId' after '$delay' seconds. the session is assumed dead and will be recreated.",
+                    "No acks received for session '$sessionId' after '$delay' seconds. the session is " +
+                        "assumed dead and will be recreated.",
                 )
                 sessionExpiredAction(sessionId)
             },

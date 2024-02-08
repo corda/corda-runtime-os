@@ -408,6 +408,7 @@ class StatefulSessionManagerImplTest {
             )
 
             verify(stateManager).get(listOf(knownStateKey))
+            verify(deadSessionMonitor).sessionRemoved("test")
         }
     }
 }

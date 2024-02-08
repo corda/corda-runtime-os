@@ -401,6 +401,9 @@ internal class StatefulSessionManagerImpl(
         )?.let { serial ->
             calculateOutboundSessionKey(counterParties.ourId, counterParties.counterpartyId, serial)
         }
+
+        deadSessionMonitor.sessionRemoved(sessionId)
+
         if (key == null) {
             logger.warn("Could not delete outbound session '{}' lost by counterparty.", sessionId)
             return
