@@ -279,7 +279,7 @@ class CryptoRekeyBusProcessor(
                             Operation.Equals,
                             KeyRotationKeyType.UNMANAGED
                         )
-                    ), "master wrapping key key."
+                    ), "master wrapping key."
                 )
             ) {
                 return false
