@@ -1,8 +1,8 @@
 @Library('corda-shared-build-pipeline-steps@ES-1795') _
 
-import static com.r3.build.BuildControl.killAnyBuildsInQueue
+import static com.r3.build.BuildControl.cancelQueuedJobByName
 
-killAnyBuildsInQueue(env.JOB_NAME)
+cancelQueuedJobByName(env.JOB_NAME)
 
 githubCommentBuildTests(
     branch: 'release/5.2',
