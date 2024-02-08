@@ -13,6 +13,7 @@ import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.PLATFORM_ERROR
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
+import net.corda.flow.pipeline.handlers.addTerminationKeyToMeta
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
@@ -49,7 +50,8 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         context.checkpoint.markDeleted()
         return context.copy(
             outputRecords = listOf(),
-            sendToDlq = true
+            sendToDlq = true,
+            metadata = addTerminationKeyToMeta(context.metadata)
         )
     }
 
@@ -73,7 +75,8 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
         context.copy(
             outputRecords = cleanupRecords,
-            sendToDlq = true
+            sendToDlq = true,
+            metadata = addTerminationKeyToMeta(context.metadata)
         )
     }
 
@@ -133,7 +136,8 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
             context.copy(
                 outputRecords =  cleanupRecords,
-                sendToDlq = false // killed flows do not go to DLQ
+                sendToDlq = false, // killed flows do not go to DLQ
+                metadata = addTerminationKeyToMeta(context.metadata)
             )
         }
     }

@@ -8,6 +8,7 @@ import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_FAILED
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
+import net.corda.flow.pipeline.handlers.addTerminationKeyToMeta
 import net.corda.flow.pipeline.handlers.requests.helper.getRecords
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
@@ -33,8 +34,8 @@ class FlowFailedRequestHandler @Activate constructor(
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.FlowFailed): WaitingFor {
-        return WaitingFor(null)
+    override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.FlowFailed): WaitingFor? {
+        return null
     }
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.FlowFailed): FlowEventContext<Any> {
@@ -70,6 +71,6 @@ class FlowFailedRequestHandler @Activate constructor(
 
         context.flowMetrics.flowFailed()
 
-        return context.copy(outputRecords = context.outputRecords + records)
+        return context.copy(outputRecords = context.outputRecords + records, metadata = addTerminationKeyToMeta(context.metadata))
     }
 }
