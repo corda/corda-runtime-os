@@ -39,6 +39,7 @@ class EntityConverterImpl(
     override fun toClaimQuery(avroPoolKey: TokenPoolCacheKey, tokenClaimQuery: TokenClaimQuery): ClaimQuery {
         return ClaimQuery(
             tokenClaimQuery.requestContext.requestId,
+            tokenClaimQuery.deduplicationId,
             tokenClaimQuery.requestContext.flowId,
             amountToBigDecimal(tokenClaimQuery.targetAmount),
             tokenClaimQuery.tagRegex,

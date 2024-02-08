@@ -79,8 +79,8 @@ class RequestsIdsRepositoryTest {
 
     @Test
     fun `inserts into request ids table`() {
-        val requestId1 = UUID.randomUUID()
-        val requestId2 = UUID.randomUUID()
+        val requestId1 = UUID.randomUUID().toString()
+        val requestId2 = UUID.randomUUID().toString()
         entityManagerFactory.createEntityManager().transaction { em ->
             requestsIdsRepository.persist(requestId1, em)
         }
@@ -102,8 +102,8 @@ class RequestsIdsRepositoryTest {
 
     @Test
     fun `deletes older requests`() {
-        val requestId1 = UUID.randomUUID()
-        val requestId2 = UUID.randomUUID()
+        val requestId1 = UUID.randomUUID().toString()
+        val requestId2 = UUID.randomUUID().toString()
         dbConfig.dataSource.connection.use { con ->
             con.autoCommit = true
             con.prepareStatement(
@@ -112,7 +112,7 @@ class RequestsIdsRepositoryTest {
                 VALUES (?,?)
                 """.trimIndent()
             ).also {
-                it.setString(1, requestId1.toString())
+                it.setString(1, requestId1)
                 it.setTimestamp(2, Timestamp.from(Instant.now().minusSeconds(10)))
             }.executeUpdate()
             con.prepareStatement(
@@ -121,7 +121,7 @@ class RequestsIdsRepositoryTest {
                 VALUES (?,?)
                 """.trimIndent()
             ).also {
-                it.setString(1, requestId2.toString())
+                it.setString(1, requestId2)
                 it.setTimestamp(2, Timestamp.from(Instant.now().plusSeconds(10)))
             }.executeUpdate()
         }
@@ -142,7 +142,7 @@ class RequestsIdsRepositoryTest {
             return stmt.use {
                 val rs = stmt.executeQuery()
 
-                val list = mutableListOf<Pair<UUID, java.sql.Timestamp>>()
+                val list = mutableListOf<Pair<UUID, Timestamp>>()
                 while (rs.next()) {
                     list.add(
                         Pair(

@@ -18,7 +18,7 @@ class SimpleTokenFilterStrategyTest {
     private val token3 = createToken("s3", "t4", null)
     private val inputTokens = listOf(token1, token2, token3)
     private val target = SimpleTokenFilterStrategy()
-
+    private val dedupeId = "d1"
     /**
      * Matching rule:
      * null value in the query criteria matches anything
@@ -26,7 +26,7 @@ class SimpleTokenFilterStrategyTest {
     @Test
     fun `null tag and owner criteria should match all`() {
         val tc = TokenCacheImpl()
-        val query = ClaimQuery("r1", "f1", BigDecimal(1), null, null, POOL_KEY)
+        val query = ClaimQuery("r1", "f1", dedupeId, BigDecimal(1), null, null, POOL_KEY)
 
         val result = target.filterTokens(tc, query).toList()
         println(result)
@@ -34,21 +34,21 @@ class SimpleTokenFilterStrategyTest {
 
     @Test
     fun `tag regex should match token tag null owner matches anything`() {
-        val query = ClaimQuery("r1", "f1", BigDecimal(1), "(t1)", null, POOL_KEY)
+        val query = ClaimQuery("r1", "f1", dedupeId, BigDecimal(1), "(t1)", null, POOL_KEY)
 
         assertThat(target.filterTokens(inputTokens, query)).containsOnly(token1, token2)
     }
 
     @Test
     fun `owner hash should match token owner hash null tag regex matches anything`() {
-        val query = ClaimQuery("r1", "f1", BigDecimal(1), null, "h1", POOL_KEY)
+        val query = ClaimQuery("r1", "f1", dedupeId, BigDecimal(1), null, "h1", POOL_KEY)
 
         assertThat(target.filterTokens(inputTokens, query)).containsOnly(token1, token2)
     }
 
     @Test
     fun `owner hash and tag should match token owner hash and tag`() {
-        val query = ClaimQuery("r1", "f1", BigDecimal(1), "t2", "h1", POOL_KEY)
+        val query = ClaimQuery("r1", "f1", dedupeId, BigDecimal(1), "t2", "h1", POOL_KEY)
 
         assertThat(target.filterTokens(inputTokens, query)).containsOnly(token2)
     }

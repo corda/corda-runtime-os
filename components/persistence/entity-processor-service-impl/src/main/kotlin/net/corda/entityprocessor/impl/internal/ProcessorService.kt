@@ -104,8 +104,7 @@ class ProcessorService {
 
         return when (val entityRequest = request.request) {
             is PersistEntities -> {
-                val requestId = UUID.fromString(request.flowExternalEventContext.requestId)
-                val entityResponse = withDeduplicationCheck(requestId, entityManager, onDuplication = {
+                val entityResponse = withDeduplicationCheck(entityRequest.deduplicationId, entityManager, onDuplication = {
                     EntityResponse(emptyList(), KeyValuePairList(emptyList()), null)
                 }, requestsIdsRepository) {
                     persistenceServiceInternal.persist(serializationService, it, entityRequest)
@@ -171,7 +170,7 @@ class ProcessorService {
 
     // We should require requestId to be a UUID to avoid request ids collisions
     private fun withDeduplicationCheck(
-        requestId: UUID,
+        requestId: String,
         entityManager: EntityManager,
         onDuplication: () -> EntityResponse,
         requestsIdsRepository: RequestsIdsRepository,

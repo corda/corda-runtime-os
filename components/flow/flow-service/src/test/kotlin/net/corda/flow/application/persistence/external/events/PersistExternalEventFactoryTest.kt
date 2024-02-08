@@ -5,6 +5,7 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.PersistEntities
 import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
+import net.corda.flow.application.services.MockFlowFiberService
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -23,7 +24,7 @@ class PersistExternalEventFactoryTest {
 
         whenever(checkpoint.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
 
-        val externalEventRecord = PersistExternalEventFactory().createExternalEvent(
+        val externalEventRecord = PersistExternalEventFactory(MockFlowFiberService()).createExternalEvent(
             checkpoint,
             externalEventContext,
             PersistParameters(listOf(ByteBuffer.wrap(byteArrayOf(1))))
@@ -32,7 +33,7 @@ class PersistExternalEventFactoryTest {
         assertEquals(
             EntityRequest(
                 ALICE_X500_HOLDING_IDENTITY,
-                PersistEntities(listOf(ByteBuffer.wrap(byteArrayOf(1)))),
+                PersistEntities(listOf(ByteBuffer.wrap(byteArrayOf(1))), ""),
                 externalEventContext
             ),
             externalEventRecord.payload

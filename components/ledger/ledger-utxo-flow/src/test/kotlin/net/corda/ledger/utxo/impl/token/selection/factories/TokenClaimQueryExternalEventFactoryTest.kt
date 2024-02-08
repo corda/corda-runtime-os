@@ -11,6 +11,7 @@ import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.ledger.utxo.impl.token.selection.factories.TokenClaimFactory
 import net.corda.ledger.utxo.impl.token.selection.factories.TokenClaimQueryExternalEventFactory
 import net.corda.ledger.utxo.impl.token.selection.impl.ALICE_X500_HOLDING_ID
@@ -18,12 +19,14 @@ import net.corda.ledger.utxo.impl.token.selection.impl.BOB_X500_NAME
 import net.corda.ledger.utxo.impl.token.selection.impl.toSecureHash
 import net.corda.ledger.utxo.impl.token.selection.services.TokenClaimCheckpointService
 import net.corda.schema.Schemas.Services.TOKEN_CACHE_EVENT
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.utxo.token.selection.ClaimedToken
 import net.corda.v5.ledger.utxo.token.selection.TokenClaim
 import net.corda.v5.ledger.utxo.token.selection.TokenClaimCriteria
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -46,6 +49,9 @@ class TokenClaimQueryExternalEventFactoryTest {
 
     private val checkpoint = mock<FlowCheckpoint>().apply {
         whenever(holdingIdentity).thenReturn(ALICE_X500_HOLDING_ID)
+    }
+    private val mockSerializationService: SerializationService = mock<SerializationService>().apply {
+        whenever(serialize<Any>(anyOrNull())).thenReturn(SerializedBytesImpl("bytes".toByteArray()))
     }
 
     @Test
@@ -78,7 +84,7 @@ class TokenClaimQueryExternalEventFactoryTest {
             TokenPoolCacheEvent(key, expectedClaimQuery)
         )
 
-        val target = TokenClaimQueryExternalEventFactory(mock(), mock())
+        val target = TokenClaimQueryExternalEventFactory(mock(), mock(), mockSerializationService)
 
         val result = target.createExternalEvent(checkpoint, flowExternalEventContext, parameters)
 
@@ -105,7 +111,7 @@ class TokenClaimQueryExternalEventFactoryTest {
             this.resultType = TokenClaimResultStatus.SUCCESS
         }
 
-        val target = TokenClaimQueryExternalEventFactory(tokenClaimFactory, tokenClaimCheckpointService)
+        val target = TokenClaimQueryExternalEventFactory(tokenClaimFactory, tokenClaimCheckpointService, mockSerializationService)
 
         val result = target.resumeWith(checkpoint, response)
 
@@ -124,7 +130,7 @@ class TokenClaimQueryExternalEventFactoryTest {
 
         val tokenClaimCheckpointService = mock<TokenClaimCheckpointService>()
 
-        val target = TokenClaimQueryExternalEventFactory(mock(), tokenClaimCheckpointService)
+        val target = TokenClaimQueryExternalEventFactory(mock(), tokenClaimCheckpointService, mockSerializationService)
 
         val result = target.resumeWith(checkpoint, response)
 

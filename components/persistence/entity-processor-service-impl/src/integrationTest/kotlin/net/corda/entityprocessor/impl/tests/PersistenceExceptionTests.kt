@@ -310,7 +310,7 @@ class PersistenceExceptionTests {
         val requestId = UUID.randomUUID().toString()
         return EntityRequest(
             virtualNodeInfo.holdingIdentity.toAvro(),
-            PersistEntities(serializedEntities),
+            PersistEntities(serializedEntities, UUID.randomUUID().toString()),
             ExternalEventContext(
                 requestId,
                 "flow id",

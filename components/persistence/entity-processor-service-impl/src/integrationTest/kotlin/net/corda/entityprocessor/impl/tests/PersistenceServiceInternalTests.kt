@@ -216,7 +216,7 @@ class PersistenceServiceInternalTests {
     fun `persist`() {
         val persistenceService = PersistenceServiceInternal(sandbox::getClass)
         val dog = sandbox.createDog("Rover").instance
-        val payload = PersistEntities(listOf(sandbox.serialize(dog)))
+        val payload = PersistEntities(listOf(sandbox.serialize(dog)), UUID.randomUUID().toString())
 
         val entityManager = Stubs.EntityManagerStub()
 
@@ -274,7 +274,7 @@ class PersistenceServiceInternalTests {
 
         val request = EntityRequest(
             virtualNodeInfoTwo.holdingIdentity.toAvro(),
-            PersistEntities(listOf(sandboxOne.serialize(dog.instance))),
+            PersistEntities(listOf(sandboxOne.serialize(dog.instance)), UUID.randomUUID().toString()),
             EXTERNAL_EVENT_CONTEXT.apply {
                 contextProperties = cpkFileHashesTwo.toKeyValuePairList(CPK_FILE_CHECKSUM)
             }
@@ -878,7 +878,7 @@ class PersistenceServiceInternalTests {
             processor.process(
                 createRequest(
                     virtualNodeInfo.holdingIdentity,
-                    PersistEntities(entities.map { sandbox.serialize(it) }),
+                    PersistEntities(entities.map { sandbox.serialize(it) }, UUID.randomUUID().toString()),
                     EXTERNAL_EVENT_CONTEXT.apply { this.requestId = requestId }
                 )
             )
