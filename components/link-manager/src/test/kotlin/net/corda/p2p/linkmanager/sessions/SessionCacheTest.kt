@@ -195,6 +195,35 @@ class SessionCacheTest {
                 )
 
                 on { key } doReturn "stateKey"
+
+                on { version } doReturn 2
+            }
+            sessionExpiryScheduler.validateStateAndScheduleExpiry(
+                validState,
+            )
+            sessionExpiryScheduler.validateStateAndScheduleExpiry(
+                stateTwo,
+            )
+
+            verify(future).cancel(any())
+        }
+
+        @Test
+        fun `it will cancel if the version is different`() {
+            val stateTwo = mock<State> {
+                on { metadata } doReturn Metadata(
+                    mapOf(
+                        "sourceVnode" to "O=Carol, L=London, C=GB",
+                        "destinationVnode" to "O=David, L=London, C=GB",
+                        "groupId" to "groupId",
+                        "lastSendTimestamp" to 100,
+                        "expiry" to 3100,
+                    ),
+                )
+
+                on { key } doReturn "stateKey"
+
+                on { version } doReturn 3
             }
             sessionExpiryScheduler.validateStateAndScheduleExpiry(
                 validState,
