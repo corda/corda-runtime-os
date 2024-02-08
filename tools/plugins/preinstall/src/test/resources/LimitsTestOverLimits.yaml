@@ -1,3 +1,10 @@
+bootstrap: { }
+config:
+  storageId: "default"
+databases: []
+kafka: { }
+workers: { }
+
 resources:
   requests:
     memory: "200E"

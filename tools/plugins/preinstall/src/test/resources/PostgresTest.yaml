@@ -1,11 +1,19 @@
-db:
-  cluster:
-    host: "preinstall-plugin-test-bad-host"
-    port: 5432
-    username:
-      value: "postgres"
-    password:
-      valueFrom:
-        secretKeyRef:
-          name: "postgres"
-          key: "postgres-password"
+bootstrap:
+  db:
+    databases:
+    - id: "default"
+      username:
+        value: "postgres"
+      password:
+        valueFrom:
+          secretKeyRef:
+            name: "postgres"
+            key: "postgres-password"
+config:
+  storageId: "default"
+databases:
+- id: "default"
+  host: "preinstall-plugin-test-bad-host"
+  port: 5432
+kafka: { }
+workers: { }

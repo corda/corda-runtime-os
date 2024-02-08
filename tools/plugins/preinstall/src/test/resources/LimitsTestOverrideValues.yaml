@@ -1,3 +1,8 @@
+config:
+  storageId: "default"
+databases: []
+kafka: { }
+
 resources:
   requests:
     memory: "50GB"

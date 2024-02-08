@@ -26,9 +26,6 @@ bootstrap:
   restApiAdmin:
     password:
       value: "admin"
-  # Disable pre-install check as we are not specifying resources
-  preinstallCheck:
-    enabled: false
   db:
     databases:
       - id: "default"
