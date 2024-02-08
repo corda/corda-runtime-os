@@ -61,6 +61,9 @@ class CryptoRekeyBusProcessor(
 
         events.mapNotNull { it.timestamp to it.value }.forEach { (timestamp, request) ->
             try {
+                check(stateManager.isRunning) {
+                    "State manager for key rotation is not initialised."
+                }
                 processEvent(request, timestamp)
             } catch (ex: Exception) {
                 logger.warn("A KeyRotationRequest event could not be processed:", ex)
@@ -76,10 +79,6 @@ class CryptoRekeyBusProcessor(
     ) {
         logger.debug("processing $request")
         require(request != null)
-
-        check(stateManager.isRunning) {
-            "State manager for key rotation is not initialised."
-        }
 
         when (request.managedKey) {
             KeyType.UNMANAGED -> {
