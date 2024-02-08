@@ -25,6 +25,7 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.AbstractUtxoL
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindFilteredTransactionsAndSignaturesExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedLedgerTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistFilteredTransactionsAndSignaturesExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionIfDoesNotExistExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedLedgerTransactionImpl
@@ -32,6 +33,7 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
+import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.NotarySignatureVerificationServiceInternal
 import net.corda.ledger.utxo.testkit.notaryX500Name
@@ -194,6 +196,20 @@ class UtxoLedgerPersistenceServiceImplTest {
     }
 
     @Test
+    fun `persistFilteredTransactionsAndSignatures executes successfully`() {
+        val filteredTransaction = mock<UtxoFilteredTransactionInternal>()
+        val signature = listOf(mock<DigitalSignatureAndMetadata>())
+
+        utxoLedgerPersistenceService.persistFilteredTransactionsAndSignatures(
+            mapOf(filteredTransaction to signature)
+        )
+
+        verify(serializationService).serialize(any<Any>())
+        assertThat(argumentCaptor.firstValue)
+            .isEqualTo(PersistFilteredTransactionsAndSignaturesExternalEventFactory::class.java)
+    }
+
+    @Test
     fun `findSignedTransaction executes successfully`() {
         val metadata = mock<TransactionMetadata>()
         whenever(metadata.ledgerModel).thenReturn(UtxoLedgerTransactionImpl::class.java.name)
@@ -267,7 +283,7 @@ class UtxoLedgerPersistenceServiceImplTest {
     }
 
     @Test
-    fun `findFilteredTransactionsAndSignatures executes successfully `() {
+    fun `findFilteredTransactionsAndSignatures executes successfully`() {
         val testId = parseSecureHash("SHA256:1234567890123456")
 
         val filteredTransaction = mock<FilteredTransaction>().also {
