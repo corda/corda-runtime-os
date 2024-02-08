@@ -9,6 +9,7 @@ import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Shutdown
 import net.corda.schema.configuration.BootConfig
+import net.corda.schema.configuration.BootConfig.BOOT_WORKER_SERVICE
 import net.corda.schema.configuration.ConfigDefaults
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
@@ -124,6 +125,9 @@ class WorkerHelpers {
                 Triple(ConfigKeys.TEMP_DIR, defaultParams.tempDir, ConfigDefaults.TEMP_DIR),
                 Triple(BootConfig.INSTANCE_ID, defaultParams.instanceId, Random.nextInt().absoluteValue),
                 Triple(BootConfig.TOPIC_PREFIX, defaultParams.topicPrefix, ""),
+                Triple("$BOOT_WORKER_SERVICE.mediatorReplicas.flowSession", defaultParams.mediatorReplicasFlowSession, FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT),
+                Triple("$BOOT_WORKER_SERVICE.mediatorReplicas.flowMapperSessionIn", defaultParams.mediatorReplicasFlowMapperSessionIn, FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT),
+                Triple("$BOOT_WORKER_SERVICE.mediatorReplicas.flowMapperSessionOut", defaultParams.mediatorReplicasFlowMapperSessionOut, FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT),
                 Triple(MAX_ALLOWED_MSG_SIZE, defaultParams.maxAllowedMessageSize, 972800),
             )
             val defaultParamsMap = defaultParamsAndValues

@@ -2,11 +2,13 @@ package net.corda.applications.workers.workercommon.internal
 
 import com.typesafe.config.ConfigFactory
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
+import net.corda.applications.workers.workercommon.FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT
 import net.corda.applications.workers.workercommon.WorkerHelpers
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.schema.configuration.BootConfig
+import net.corda.schema.configuration.BootConfig.BOOT_WORKER_SERVICE
 import net.corda.schema.configuration.ConfigDefaults
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.StateManagerConfig
@@ -80,6 +82,9 @@ class BootstrapConfigTest {
             DefaultWorkerParams(1234).also {
                 it.configFiles =
                     listOf(Path.of(this::class.java.classLoader.getResource("example-config.json")!!.toURI()))
+                it.mediatorReplicasFlowSession = 2
+                it.mediatorReplicasFlowMapperSessionIn = 3
+                it.mediatorReplicasFlowMapperSessionOut = 4
             },
             mockConfigurationValidator
         )
@@ -143,6 +148,10 @@ class BootstrapConfigTest {
                 driver = "flowStatus-driver",
                 minSize = 111, maxSize = 222, idleTimeout = 333, maxLifetime = 444, keepAlive = 555, validationTimeout = 666
             )
+
+            softly.assertThat(config.getInt("$BOOT_WORKER_SERVICE.mediatorReplicas.flowSession")).isEqualTo(2)
+            softly.assertThat(config.getInt("$BOOT_WORKER_SERVICE.mediatorReplicas.flowMapperSessionIn")).isEqualTo(3)
+            softly.assertThat(config.getInt("$BOOT_WORKER_SERVICE.mediatorReplicas.flowMapperSessionOut")).isEqualTo(4)
         }
     }
 
@@ -160,8 +169,10 @@ class BootstrapConfigTest {
             softly.assertThat(config.getInt("instanceId")).isNotNull
             softly.assertThat(config.getInt("maxAllowedMessageSize")).isEqualTo(972800)
             softly.assertThat(config.getString("topicPrefix")).isEqualTo("")
+            softly.assertThat(config.getInt("$BOOT_WORKER_SERVICE.mediatorReplicas.flowSession")).isEqualTo(FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT)
+            softly.assertThat(config.getInt("$BOOT_WORKER_SERVICE.mediatorReplicas.flowMapperSessionIn")).isEqualTo(FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT)
+            softly.assertThat(config.getInt("$BOOT_WORKER_SERVICE.mediatorReplicas.flowMapperSessionOut")).isEqualTo(FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT)
         }
-
     }
 
     @Test

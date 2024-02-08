@@ -76,11 +76,11 @@ class DefaultWorkerParams(healthPortOverride: Int = WORKER_SERVER_PORT) {
     var metricsDropLabels: String? = null
 
     @Option(names = ["--mediator-replicas-flow-session"], description = ["Sets the number of mediators that consume flow session messages"])
-    var mediatorReplicasFlowSession: Int = FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT
+    var mediatorReplicasFlowSession: Int? = null
 
     @Option(names = ["--mediator-replicas-flow-session-in"], description = ["Sets the number of mediators that consume flow mapper session in messages"])
-    var mediatorReplicasFlowMapperSessionIn: Int = FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT
+    var mediatorReplicasFlowMapperSessionIn: Int? = null
 
     @Option(names = ["--mediator-replicas-flow-session-out"], description = ["Sets the number of mediators that consume flow mapper session out messages"])
-    var mediatorReplicasFlowMapperSessionOut: Int = FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT
+    var mediatorReplicasFlowMapperSessionOut: Int? = null
 }
