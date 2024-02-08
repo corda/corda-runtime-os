@@ -1,5 +1,6 @@
 package net.corda.flow.maintenance
 
+import net.corda.data.flow.FlowCheckpointTermination
 import net.corda.data.flow.FlowTimeout
 import net.corda.data.scheduler.ScheduledTaskTrigger
 import net.corda.libs.configuration.SmartConfig
@@ -41,6 +42,8 @@ class FlowMaintenanceImplTests {
     }
     private val timeoutSubscription = mock<Subscription<String, FlowTimeout>>()
     private val scheduledTaskSubscription = mock<Subscription<String, ScheduledTaskTrigger>>()
+    private val checkpointDeletionTaskSubscription = mock<Subscription<String, ScheduledTaskTrigger>>()
+    private val checkpointDeletionExecutorSubscription = mock<Subscription<String, FlowCheckpointTermination>>()
 
     private val lifecycleCoordinator = mock<LifecycleCoordinator> {
         val captor = argumentCaptor<() -> Resource>()
@@ -57,6 +60,12 @@ class FlowMaintenanceImplTests {
         on {
             createDurableSubscription(any(), any<TimeoutEventCleanupProcessor>(), any(), anyOrNull())
         } doReturn (timeoutSubscription)
+        on {
+            createDurableSubscription(any(), any<FlowCheckpointTerminationTaskProcessor>(), any(), anyOrNull())
+        } doReturn (checkpointDeletionTaskSubscription)
+        on {
+            createDurableSubscription(any(), any<FlowCheckpointTerminationCleanupProcessor>(), any(), anyOrNull())
+        } doReturn (checkpointDeletionExecutorSubscription)
     }
 
     private val messagingConfig = mock<SmartConfig>().apply {
@@ -96,7 +105,7 @@ class FlowMaintenanceImplTests {
     fun `when config provided create subscription and start it`() {
         flowMaintenance.onConfigChange(config)
 
-        verify(lifecycleCoordinator, times(2)).createManagedResource(any(), any<() -> Resource>())
+        verify(lifecycleCoordinator, times(4)).createManagedResource(any(), any<() -> Resource>())
         verify(subscriptionFactory, times(1)).createDurableSubscription(
             argThat { it ->
                 it.eventTopic == Schemas.ScheduledTask.SCHEDULED_TASK_TOPIC_FLOW_PROCESSOR
@@ -159,7 +168,7 @@ class FlowMaintenanceImplTests {
         verify(stateManagerFactory).create(eq(newConfig), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT))
         verify(stateManager).stop()
         verify(lifecycleCoordinator).followStatusChangesByName(setOf(newStateManager.name))
-        verify(lifecycleCoordinator, times(4)).createManagedResource(any(), any<() -> Resource>())
+        verify(lifecycleCoordinator, times(8)).createManagedResource(any(), any<() -> Resource>())
     }
 
     @Test

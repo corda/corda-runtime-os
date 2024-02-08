@@ -106,7 +106,7 @@ class FlowTimeoutTaskProcessor(
         }
 
     override fun onNext(events: List<Record<String, ScheduledTaskTrigger>>): List<Record<*, *>> {
-        // If we receive multiple, there's probably an issue somewhere, and we can ignore all but the last one.
+        // Filter to the task that this processor cares about. There can be other tasks on this topic.
         return events.lastOrNull {
             it.key == ScheduledTask.SCHEDULED_TASK_NAME_SESSION_TIMEOUT
         }?.value?.let { trigger ->

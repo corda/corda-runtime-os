@@ -16,7 +16,7 @@ import net.corda.flow.state.FlowContext
 import net.corda.flow.state.FlowStack
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.records.Record
-import net.corda.schema.configuration.FlowConfig.PROCESSING_FLOW_CLEANUP_TIME
+import net.corda.schema.configuration.FlowConfig.PROCESSING_FLOW_MAPPER_CLEANUP_TIME
 import net.corda.schema.configuration.FlowConfig.SESSION_FLOW_CLEANUP_TIME
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.toCorda
@@ -41,7 +41,7 @@ class RequestHandlerTestContext<PAYLOAD>(val payload: PAYLOAD) {
     val flowContext = mock<FlowContext>()
     val flowConfig = SmartConfigImpl.empty()
         .withValue(SESSION_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(10000))
-        .withValue(PROCESSING_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(10000))
+        .withValue(PROCESSING_FLOW_MAPPER_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(10000))
     val flowSandboxService = mock<FlowSandboxService>()
     val initiateFlowReqService = mock<GenerateSessionService>()
     val isRetryEvent = false

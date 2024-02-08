@@ -30,7 +30,7 @@ class FlowFinishedRequestHandlerTest {
     @Test
     fun `Updates the waiting for to nothing`() {
         val waitingFor = handler.getUpdatedWaitingFor(testContext.flowEventContext, ioRequest)
-        assertThat(waitingFor.value).isNull()
+        assertThat(waitingFor?.value).isNull()
     }
 
     @Test
