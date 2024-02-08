@@ -68,5 +68,5 @@ dependencies {
 }
 
 quasar {
-    excludeLocations = [ 'PERSISTENCE/*' ]
+    excludeLocations = [ '*' ]
 }
