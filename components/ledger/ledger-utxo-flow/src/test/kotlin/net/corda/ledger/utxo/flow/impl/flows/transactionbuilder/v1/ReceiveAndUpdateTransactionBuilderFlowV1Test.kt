@@ -141,49 +141,54 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     }
 
     @Test
-    fun `called with empty builder and receiving empty returns an empty builder`() {
-        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer()
-        )
-        val ex = assertThrows<IllegalArgumentException> {
-            callSendFlow(builderOverride = utxoLedgerService.createTransactionBuilder())
-        }
-
-        verify(mockFlowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
-        assertThat(ex).hasStackTraceContaining("Notary name on transaction builder must not be null")
-    }
-
-    @Test
-    fun `called with original notary null and receives new notary returns a builder with the new notary`() {
+    fun `called with no notary initially but then receiving one should not throw exception`() {
+        // Receive a builder with notary
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
             UtxoTransactionBuilderContainer(notaryName = notaryX500Name)
         )
 
-        val returnedTransactionBuilder = callSendFlow()
+        // No notary initially
+        callSendFlow(builderOverride = utxoLedgerService.createTransactionBuilder())
 
-        assertEquals(notaryX500Name, returnedTransactionBuilder.notaryName)
-        assertEquals(publicKeyExample, returnedTransactionBuilder.notaryKey)
         verify(mockFlowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 
     @Test
-    fun `called with original notary and receives a different new notary returns with the original notary`() {
-        originalTransactionalBuilder.setNotary(notaryX500Name)
+    fun `called with no notary initially and then not receiving one should throw exception`() {
+        // null notary received
+        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
+            UtxoTransactionBuilderContainer()
+        )
+
+        // No notary initially
+        val ex = assertThrows<IllegalArgumentException> {
+            callSendFlow(builderOverride = utxoLedgerService.createTransactionBuilder())
+        }
+
+
+        verify(mockFlowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
+        assertThat(ex).hasStackTraceContaining(
+            "Notary name was null originally and the received transaction builder didn't provide one either"
+        )
+    }
+
+    @Test
+    fun `notary cannot change on the received builder`() {
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
             UtxoTransactionBuilderContainer(notaryName = anotherNotaryX500Name)
         )
+        val ex = assertThrows<IllegalArgumentException> {
+            callSendFlow()
+        }
 
-        val returnedTransactionBuilder = callSendFlow()
-
-        assertEquals(notaryX500Name, returnedTransactionBuilder.notaryName)
-        assertEquals(publicKeyExample, returnedTransactionBuilder.notaryKey)
         verify(mockFlowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
+        assertThat(ex).hasStackTraceContaining("Notary name changed in the received transaction builder")
     }
 
     @Test
     fun `called with original time window null and receives new time window returns a builder with the new time window`() {
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(timeWindow = utxoTimeWindowExample)
+            UtxoTransactionBuilderContainer(timeWindow = utxoTimeWindowExample, notaryName = notaryX500Name)
         )
         val returnedTransactionBuilder = callSendFlow()
 
@@ -195,7 +200,10 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     fun `Called with original time window and receives a different new time window returns with the original time window`() {
         originalTransactionalBuilder.setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(timeWindow = TimeWindowUntilImpl(Instant.MAX))
+            UtxoTransactionBuilderContainer(
+                timeWindow = TimeWindowUntilImpl(Instant.MAX),
+                notaryName = notaryX500Name
+            )
         )
 
         val returnedTransactionBuilder = callSendFlow()
@@ -207,7 +215,10 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     fun `receiving commands appends them (new, old, duplicated)`() {
         originalTransactionalBuilder.addCommand(command1)
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(commands = mutableListOf(command1, command1, command2))
+            UtxoTransactionBuilderContainer(
+                commands = mutableListOf(command1, command1, command2),
+                notaryName = notaryX500Name
+            )
         )
 
         val returnedTransactionBuilder = callSendFlow()
@@ -219,7 +230,10 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     @Test
     fun `receiving new signatories appends them`() {
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(signatories = mutableListOf(publicKeyExample, anotherPublicKeyExample))
+            UtxoTransactionBuilderContainer(
+                signatories = mutableListOf(publicKeyExample, anotherPublicKeyExample),
+                notaryName = notaryX500Name
+            )
         )
 
         val returnedTransactionBuilder = callSendFlow()
@@ -232,7 +246,10 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     fun `receiving existing signatories does not append it`() {
         originalTransactionalBuilder.addSignatories(publicKeyExample)
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(signatories = mutableListOf(publicKeyExample))
+            UtxoTransactionBuilderContainer(
+                signatories = mutableListOf(publicKeyExample),
+                notaryName = notaryX500Name
+            )
         )
 
         val returnedTransactionBuilder = callSendFlow()
@@ -250,7 +267,8 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
                     publicKeyExample,
                     anotherPublicKeyExample,
                     anotherPublicKeyExample
-                )
+                ),
+                notaryName = notaryX500Name
             )
         )
 
@@ -263,7 +281,10 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     @Test
     fun `receiving new input StateRefs appends them`() {
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(inputStateRefs = mutableListOf(stateRef1, stateRef2))
+            UtxoTransactionBuilderContainer(
+                inputStateRefs = mutableListOf(stateRef1, stateRef2),
+                notaryName = notaryX500Name
+            )
         )
 
         val returnedTransactionBuilder = callSendFlow()
@@ -284,7 +305,10 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     fun `receiving existing input StateRefs does not append it`() {
         originalTransactionalBuilder.addInputState(stateRef1)
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(inputStateRefs = mutableListOf(stateRef1))
+            UtxoTransactionBuilderContainer(
+                inputStateRefs = mutableListOf(stateRef1),
+                notaryName = notaryX500Name
+            )
         )
 
         val returnedTransactionBuilder = callSendFlow()
@@ -304,7 +328,10 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     fun `receiving duplicated input StateRefs appends once`() {
         originalTransactionalBuilder.addInputState(stateRef1)
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(inputStateRefs = mutableListOf(stateRef1, stateRef2, stateRef2))
+            UtxoTransactionBuilderContainer(
+                inputStateRefs = mutableListOf(stateRef1, stateRef2, stateRef2),
+                notaryName = notaryX500Name
+            )
         )
 
         val returnedTransactionBuilder = callSendFlow()
@@ -324,7 +351,10 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     @Test
     fun `receiving new reference StateRefs appends them`() {
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(referenceStateRefs = mutableListOf(stateRef1, stateRef2))
+            UtxoTransactionBuilderContainer(
+                referenceStateRefs = mutableListOf(stateRef1, stateRef2),
+                notaryName = notaryX500Name
+            )
         )
 
         val returnedTransactionBuilder = callSendFlow()
@@ -345,7 +375,10 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     fun `receiving existing reference StateRefs does not append it`() {
         originalTransactionalBuilder.addReferenceState(stateRef1)
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(referenceStateRefs = mutableListOf(stateRef1))
+            UtxoTransactionBuilderContainer(
+                referenceStateRefs = mutableListOf(stateRef1),
+                notaryName = notaryX500Name
+            )
         )
 
         val returnedTransactionBuilder = callSendFlow()
@@ -365,7 +398,10 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     fun `receiving duplicated reference StateRefs appends once`() {
         originalTransactionalBuilder.addReferenceState(stateRef1)
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(referenceStateRefs = mutableListOf(stateRef1, stateRef2, stateRef2))
+            UtxoTransactionBuilderContainer(
+                referenceStateRefs = mutableListOf(stateRef1, stateRef2, stateRef2),
+                notaryName = notaryX500Name
+            )
         )
 
         val returnedTransactionBuilder = callSendFlow()
@@ -386,7 +422,10 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     fun `receiving outputs appends them (new, old, duplicated)`() {
         originalTransactionalBuilder.addOutputState(state1)
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(outputStates = mutableListOf(stateWithEnc1, stateWithEnc1, stateWithEnc2))
+            UtxoTransactionBuilderContainer(
+                outputStates = mutableListOf(stateWithEnc1, stateWithEnc1, stateWithEnc2),
+                notaryName = notaryX500Name
+            )
         )
 
         val returnedTransactionBuilder = callSendFlow()
@@ -406,7 +445,8 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
             filteredDependencies = listOf(
                 UtxoFilteredTransactionAndSignaturesImpl(utxoFilteredTransaction, listOf(notarySignature)),
                 UtxoFilteredTransactionAndSignaturesImpl(utxoFilteredTransaction2, listOf(notarySignature))
-            )
+            ),
+            notaryName = notaryX500Name
         )
 
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
@@ -428,7 +468,8 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
             inputStateRefs = listOf(stateRef1),
             filteredDependencies = listOf(
                 UtxoFilteredTransactionAndSignaturesImpl(utxoFilteredTransactionInvalid, listOf(notarySignature)),
-            )
+            ),
+            notaryName = notaryX500Name
         )
 
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
@@ -450,7 +491,8 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
             inputStateRefs = listOf(stateRef1),
             filteredDependencies = listOf(
                 UtxoFilteredTransactionAndSignaturesImpl(utxoFilteredTransactionInvalidNotaryName, listOf(notarySignature)),
-            )
+            ),
+            notaryName = notaryX500Name
         )
 
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
@@ -475,7 +517,8 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
             inputStateRefs = listOf(stateRef1),
             filteredDependencies = listOf(
                 UtxoFilteredTransactionAndSignaturesImpl(utxoFilteredTransaction, listOf(notarySignature)),
-            )
+            ),
+            notaryName = notaryX500Name
         )
 
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(

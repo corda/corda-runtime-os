@@ -51,12 +51,19 @@ class ReceiveAndUpdateTransactionBuilderFlowV1(
         log.trace { "Waiting for transaction builder proposal from ${session.counterparty}." }
         val receivedTransactionBuilder = session.receive(UtxoTransactionBuilderContainer::class.java)
 
+        require(originalTransactionBuilder.notaryName == receivedTransactionBuilder.getNotaryName()
+                || originalTransactionBuilder.notaryName == null) {
+            "Notary name changed in the received transaction builder " +
+                    "from ${originalTransactionBuilder.notaryName} to ${receivedTransactionBuilder.getNotaryName()}."
+        }
+
         val updatedTransactionBuilder = originalTransactionBuilder.append(receivedTransactionBuilder)
 
         log.trace { "Transaction builder proposals have been applied. Result: $updatedTransactionBuilder" }
 
-        val notaryName = requireNotNull(originalTransactionBuilder.notaryName) {
-            "Notary name on transaction builder must not be null."
+        val notaryName = originalTransactionBuilder.notaryName ?: updatedTransactionBuilder.notaryName
+        requireNotNull(notaryName) {
+            "Notary name was null originally and the received transaction builder didn't provide one either."
         }
 
         val notaryInfo = requireNotNull(notaryLookup.lookup(notaryName)) {
