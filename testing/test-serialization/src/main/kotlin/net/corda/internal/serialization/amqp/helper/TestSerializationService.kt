@@ -10,7 +10,6 @@ import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.amqp.api.SerializationServiceInternal
 import net.corda.internal.serialization.amqp.currentSandboxGroup
 import net.corda.internal.serialization.registerCustomSerializers
-import net.corda.v5.application.serialization.SerializationService
 
 class TestSerializationService {
     companion object{
