@@ -243,8 +243,6 @@ class CryptoRekeyBusProcessor(
         targetWrappingKeys.groupBy { it.first }.forEach { (tenantId, wrappingKeys) ->
             logger.debug("Grouping wrapping keys by vNode/tenantId $tenantId")
             val status = UnmanagedKeyStatus(
-                defaultUnmanagedWrappingKeyName,
-                null,
                 tenantId,
                 wrappingKeys.size,
                 0,

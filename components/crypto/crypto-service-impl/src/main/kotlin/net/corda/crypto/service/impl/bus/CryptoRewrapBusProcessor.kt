@@ -204,8 +204,6 @@ class CryptoRewrapBusProcessor(
                     checkNotNull(
                         unmanagedSerializer.serialize(
                             UnmanagedKeyStatus(
-                                deserializedStatus.oldParentKeyAlias,
-                                null,
                                 deserializedStatus.tenantId,
                                 deserializedStatus.total,
                                 deserializedStatus.rotatedKeys + 1,
