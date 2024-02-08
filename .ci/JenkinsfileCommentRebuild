@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@ES-1795') _
+@Library('corda-shared-build-pipeline-steps@5.2') _
 
 import static com.r3.build.BuildControl.cancelQueuedJobByName
 
