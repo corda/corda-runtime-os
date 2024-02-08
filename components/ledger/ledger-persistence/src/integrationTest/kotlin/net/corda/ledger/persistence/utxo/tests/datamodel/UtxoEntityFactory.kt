@@ -22,18 +22,16 @@ class UtxoEntityFactory(private val entityManagerFactory: EntityManagerFactory) 
         created: Instant,
         status: String,
         updated: Instant,
-        utxoTransactionMetadata: Any,
-        isFiltered: Boolean = false
+        utxoTransactionMetadata: Any
     ): Any {
-        return utxoTransaction.constructors.single { it.parameterCount == 8 }.newInstance(
+        return utxoTransaction.constructors.single { it.parameterCount == 7 }.newInstance(
             transactionId,
             privacySalt,
             accountId,
             created,
             status,
             updated,
-            utxoTransactionMetadata,
-            isFiltered
+            utxoTransactionMetadata
         )
     }
 

@@ -13,6 +13,8 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
+import org.junit.jupiter.api.condition.DisabledOnOs
+import org.junit.jupiter.api.condition.OS
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -37,8 +39,9 @@ class CordaLifeCycleTasksTest : FunctionalBaseTest() {
     }
 
     @Test
+    @DisabledOnOs(OS.WINDOWS)
     @EnabledIfEnvironmentVariable(named = "CI", matches = "true", disabledReason = "Docker is expected to be running in local env")
-    fun shouldFailToStartCordaOnCiWithoutDocker() {
+    fun shouldFailToStartCordaOnLinuxCiWithoutDocker() {
         appendCordaRuntimeGradlePluginExtension()
         val result = executeAndFailWithRunner(START_CORDA_TASK_NAME)
         assertTrue(result.output.contains(CordaRuntimeGradlePluginException::class.java.name))

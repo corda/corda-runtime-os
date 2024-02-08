@@ -35,8 +35,6 @@ import net.corda.ledger.persistence.utxo.tests.datamodel.UtxoEntityFactory
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
-import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup.METADATA
-import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup.NOTARY
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionMetadata
@@ -60,7 +58,6 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
-import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.EncumbranceGroup
@@ -260,56 +257,6 @@ class UtxoPersistenceServiceImplTest {
         val retval = persistenceService.findSignedLedgerTransaction(transaction.id.toString(), VERIFIED)
 
         assertThat(retval).isEqualTo(null to "U")
-    }
-
-    @Test
-    fun `find filtered transaction and signatures that matches with stateRefs`() {
-        val entityFactory = UtxoEntityFactory(entityManagerFactory)
-        val transactions = listOf(
-            persistTransactionViaEntity(entityFactory, VERIFIED),
-            persistTransactionViaEntity(entityFactory, VERIFIED)
-        )
-
-        val stateRefs = listOf(
-            StateRef(transactions[0].id, 0),
-            StateRef(transactions[1].id, 1),
-        )
-        val txIdToIndexes = stateRefs.groupBy { it.transactionId }
-            .mapValues { (_, stateRefs) -> stateRefs.map { stateRef -> stateRef.index } }
-        val expectedRetval = stateRefs.associate {
-            val indexes = txIdToIndexes[it.transactionId]!!
-            val (wireTransaction, signatures) = persistenceService.findSignedTransaction(it.transactionId.toString(), VERIFIED).first!!
-            val filteredTransaction = filteredTransactionFactory.create(
-                wireTransaction,
-                listOf(
-                    ComponentGroupFilterParameters.AuditProof(
-                        METADATA.ordinal,
-                        TransactionMetadata::class.java,
-                        ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                    ),
-                    ComponentGroupFilterParameters.AuditProof(
-                        NOTARY.ordinal,
-                        Any::class.java,
-                        ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                    ),
-                    ComponentGroupFilterParameters.AuditProof(
-                        UtxoComponentGroup.OUTPUTS_INFO.ordinal,
-                        UtxoOutputInfoComponent::class.java,
-                        ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Index(indexes)
-                    ),
-                    ComponentGroupFilterParameters.AuditProof(
-                        UtxoComponentGroup.OUTPUTS.ordinal,
-                        ContractState::class.java,
-                        ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Index(indexes)
-                    )
-                )
-            )
-            it.transactionId to Pair(filteredTransaction, signatures)
-        }
-
-        val retval = persistenceService.findFilteredTransactionsAndSignatures(stateRefs)
-
-        assertThat(retval).isEqualTo(expectedRetval)
     }
 
     @Test
@@ -675,7 +622,7 @@ class UtxoPersistenceServiceImplTest {
 
         assertThat(filteredTxResults).hasSize(1)
 
-        val storedFilteredTransaction = filteredTxResults[filteredTransactionToStore.id]?.first
+        val storedFilteredTransaction = filteredTxResults[filteredTransactionToStore.id.toString()]?.first
 
         assertNotNull(storedFilteredTransaction)
 
@@ -725,24 +672,22 @@ class UtxoPersistenceServiceImplTest {
         entityFactory: UtxoEntityFactory,
         status: TransactionStatus = UNVERIFIED,
         inputStateRefs: List<StateRef> = defaultInputStateRefs,
-        referenceStateRefs: List<StateRef> = defaultReferenceStateRefs,
-        isFiltered: Boolean = false
+        referenceStateRefs: List<StateRef> = defaultReferenceStateRefs
+
     ): SignedTransactionContainer {
         val signedTransaction = createSignedTransaction(inputStateRefs = inputStateRefs, referenceStateRefs = referenceStateRefs)
         entityManagerFactory.transaction { em ->
-            em.persist(createTransactionEntity(entityFactory, signedTransaction, status = status, isFiltered = isFiltered))
+            em.persist(createTransactionEntity(entityFactory, signedTransaction, status = status))
         }
         return signedTransaction
     }
 
-    @Suppress("LongParameterList")
     private fun createTransactionEntity(
         entityFactory: UtxoEntityFactory,
         signedTransaction: SignedTransactionContainer,
         account: String = "Account",
         createdTs: Instant = testClock.instant(),
-        status: TransactionStatus = UNVERIFIED,
-        isFiltered: Boolean = false
+        status: TransactionStatus = UNVERIFIED
     ): Any {
         val metadataBytes = signedTransaction.wireTransaction.componentGroupLists[0][0]
         val metadata = entityFactory.createOrFindUtxoTransactionMetadataEntity(
@@ -759,8 +704,7 @@ class UtxoPersistenceServiceImplTest {
             createdTs,
             status.value,
             createdTs,
-            metadata,
-            isFiltered
+            metadata
         ).also { transaction ->
             transaction.field<MutableCollection<Any>>("components").addAll(
                 signedTransaction.wireTransaction.componentGroupLists.flatMapIndexed { groupIndex, componentGroup ->
@@ -819,7 +763,7 @@ class UtxoPersistenceServiceImplTest {
         inputStateRefs: List<StateRef> = defaultInputStateRefs,
         referenceStateRefs: List<StateRef> = defaultReferenceStateRefs
     ): SignedTransactionContainer {
-        val transactionMetadata = utxoTransactionMetadataExample(cpkPackageSeed = seed)
+        val transactionMetadata = utxoTransactionMetadataExample(cpkPackageSeed = seed,)
         val timeWindow = Instant.now().plusMillis(Duration.ofDays(1).toMillis())
         val componentGroupLists: List<List<ByteArray>> = listOf(
             listOf(jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetadata)).toByteArray()),
