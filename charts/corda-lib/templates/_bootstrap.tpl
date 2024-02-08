@@ -226,7 +226,7 @@ spec:
               mkdir /tmp/vnodes
               {{- $virtualNodesDbSettings := fromYaml ( include "corda.db.configuration" ( list $ $.Values.bootstrap.db.virtualNodes.storageId "bootstrap.db.virtualNodes.storageId" ) ) }}
               java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar initial-config create-db-config \
-                -a -u "${VIRTUAL_NODES_USERNAME}" -p "${VIRTUAL_NODES_PASSWORD}" \
+                -a -u "${VIRTUAL_NODES_DB_USERNAME}" -p "${VIRTUAL_NODES_DB_PASSWORD}" \
                 --name "corda-virtual-nodes" \
                 --jdbc-url {{ include "corda.db.connectionUrl" $virtualNodesDbSettings | quote }} \
                 --jdbc-pool-max-size {{ .Values.bootstrap.db.virtualNodes.connectionPool.maxSize | quote }} \
