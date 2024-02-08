@@ -159,10 +159,10 @@ class SessionCacheTest {
 
                 on { version } doReturn 3
             }
-            sessionExpiryScheduler.checkStateValidateAndRememberIt(
+            sessionExpiryScheduler.validateStateAndScheduleExpiry(
                 validState,
             )
-            sessionExpiryScheduler.checkStateValidateAndRememberIt(
+            sessionExpiryScheduler.validateStateAndScheduleExpiry(
                 stateTwo,
             )
 
@@ -226,7 +226,7 @@ class SessionCacheTest {
                 on { key } doReturn "stateKey"
             }
             whenever(validState.copy(version = 3)).doReturn(nextState)
-            sessionExpiryScheduler.checkStateValidateAndRememberIt(
+            sessionExpiryScheduler.validateStateAndScheduleExpiry(
                 validState,
                 beforeUpdate = true,
             )

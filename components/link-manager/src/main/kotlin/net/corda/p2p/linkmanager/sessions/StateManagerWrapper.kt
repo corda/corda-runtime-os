@@ -12,7 +12,6 @@ internal class StateManagerWrapper(
 ) {
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(StateManagerWrapper::class.java)
-
     }
     fun get(
         keys: Collection<String>,

@@ -22,13 +22,13 @@ class StateManagerWrapperTest {
         on { get(keys) } doReturn keysToStates
         on { findByMetadataMatchingAny(filters) } doReturn keysToStates
     }
-    private val sessionExpiryScheduler = mock<SessionExpiryScheduler> {
-        on { checkStatesValidateAndRememberThem(keysToStates) } doReturn keysToStates
+    private val sessionCache = mock<SessionCache> {
+        on { validateStatesAndScheduleExpiry(keysToStates) } doReturn keysToStates
     }
 
     private val wrapper = StateManagerWrapper(
         stateManager,
-        sessionExpiryScheduler,
+        sessionCache,
     )
 
     @Test
@@ -42,7 +42,7 @@ class StateManagerWrapperTest {
     fun `get calls the scheduler`() {
         wrapper.get(keys)
 
-        verify(sessionExpiryScheduler).checkStatesValidateAndRememberThem(keysToStates)
+        verify(sessionCache).validateStatesAndScheduleExpiry(keysToStates)
     }
 
     @Test
@@ -63,7 +63,7 @@ class StateManagerWrapperTest {
     fun `findStatesMatchingAny calls the scheduler`() {
         wrapper.findStatesMatchingAny(filters)
 
-        verify(sessionExpiryScheduler).checkStatesValidateAndRememberThem(keysToStates)
+        verify(sessionCache).validateStatesAndScheduleExpiry(keysToStates)
     }
 
     @Test
@@ -78,7 +78,7 @@ class StateManagerWrapperTest {
         val update = UpdateAction(state)
         wrapper.upsert(listOf(update))
 
-        verify(sessionExpiryScheduler).checkStateValidateAndRememberIt(state, true)
+        verify(sessionCache).validateStateAndScheduleExpiry(state, true)
     }
 
     @Test
@@ -86,7 +86,7 @@ class StateManagerWrapperTest {
         val update = CreateAction(state)
         wrapper.upsert(listOf(update))
 
-        verify(sessionExpiryScheduler).checkStateValidateAndRememberIt(state, false)
+        verify(sessionCache).validateStateAndScheduleExpiry(state, false)
     }
 
     @Test
@@ -99,7 +99,7 @@ class StateManagerWrapperTest {
 
     @Test
     fun `upsert with update will update valid sessions`() {
-        whenever(sessionExpiryScheduler.checkStateValidateAndRememberIt(state, true)).doReturn(state)
+        whenever(sessionCache.validateStateAndScheduleExpiry(state, true)).doReturn(state)
         val update = UpdateAction(state)
         wrapper.upsert(listOf(update))
 
@@ -116,7 +116,7 @@ class StateManagerWrapperTest {
 
     @Test
     fun `create with update will update valid sessions`() {
-        whenever(sessionExpiryScheduler.checkStateValidateAndRememberIt(state, false)).doReturn(state)
+        whenever(sessionCache.validateStateAndScheduleExpiry(state, false)).doReturn(state)
         val update = CreateAction(state)
         wrapper.upsert(listOf(update))
 
@@ -125,7 +125,7 @@ class StateManagerWrapperTest {
 
     @Test
     fun `upsert with return the failures of the updates and creates`() {
-        whenever(sessionExpiryScheduler.checkStateValidateAndRememberIt(any(), any())).doReturn(state)
+        whenever(sessionCache.validateStateAndScheduleExpiry(any(), any())).doReturn(state)
         whenever(stateManager.create(any())).doReturn(setOf("key3", "key4"))
         whenever(stateManager.update(any())).doReturn(mapOf("key1" to state, "key2" to state))
         val update = UpdateAction(state)

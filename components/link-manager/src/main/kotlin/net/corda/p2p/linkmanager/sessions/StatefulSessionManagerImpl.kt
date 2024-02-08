@@ -11,6 +11,8 @@ import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.data.p2p.event.SessionDirection
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.State
@@ -19,7 +21,9 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
@@ -32,6 +36,8 @@ import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.SessionAlr
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.SessionEstablished
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.alreadySessionWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.noSessionWarning
+import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventProcessor
+import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata
 import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata.Companion.toCommonMetadata
 import net.corda.p2p.linkmanager.sessions.metadata.InboundSessionMetadata
@@ -54,12 +60,6 @@ import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.time.Duration
 import java.util.Base64
-import net.corda.data.p2p.event.SessionDirection
-import net.corda.libs.configuration.SmartConfig
-import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventProcessor
-import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 import java.util.UUID
 import net.corda.data.p2p.crypto.InitiatorHandshakeMessage as AvroInitiatorHandshakeMessage
 import net.corda.data.p2p.crypto.InitiatorHelloMessage as AvroInitiatorHelloMessage
@@ -172,7 +172,7 @@ internal class StatefulSessionManagerImpl(
                     state.state.retrieveEstablishedSession(counterparties)?.let { establishedState ->
                         sessionCache.putOutboundSession(
                             state.key,
-                            SessionManager.SessionDirection.Outbound(state.state.toCounterparties(), establishedState.session)
+                            SessionManager.SessionDirection.Outbound(state.state.toCounterparties(), establishedState.session),
                         )
                         state.toResults(establishedState)
                     } ?: state.toResults(CannotEstablishSession)
@@ -211,7 +211,7 @@ internal class StatefulSessionManagerImpl(
                     state.state.retrieveEstablishedSession(counterparties)?.let { established ->
                         sessionCache.putOutboundSession(
                             state.key,
-                            SessionManager.SessionDirection.Outbound(state.state.toCounterparties(), established.session)
+                            SessionManager.SessionDirection.Outbound(state.state.toCounterparties(), established.session),
                         )
                         state.toResults(
                             established,
@@ -297,7 +297,7 @@ internal class StatefulSessionManagerImpl(
                 }
         }
 
-        return (allCached.values + inboundSessionsFromStateManager + outboundSessionsFromStateManager).flatMap {  (traceables, direction) ->
+        return (allCached.values + inboundSessionsFromStateManager + outboundSessionsFromStateManager).flatMap { (traceables, direction) ->
             traceables.map {
                 it to direction
             }
@@ -337,7 +337,7 @@ internal class StatefulSessionManagerImpl(
                         val key = result.result.stateAction.state.key
                         val outboundSession = SessionManager.SessionDirection.Outbound(
                             result.result.stateAction.state.toCounterparties(),
-                            sessionToCache
+                            sessionToCache,
                         )
                         sessionCache.putOutboundSession(key, outboundSession)
                         sessionEventPublisher.sessionCreated(key, SessionDirection.OUTBOUND)
@@ -374,11 +374,14 @@ internal class StatefulSessionManagerImpl(
     }
 
     override fun deleteOutboundSession(
-        counterParties: SessionManager.Counterparties, message: AuthenticatedMessage
+        counterParties: SessionManager.Counterparties,
+        message: AuthenticatedMessage,
     ) {
         val sessionId = try {
             schemaRegistry.deserialize(
-                message.payload, ReEstablishSessionMessage::class.java, null
+                message.payload,
+                ReEstablishSessionMessage::class.java,
+                null,
             ).sessionId
         } catch (e: Exception) {
             logger.warn("Could not deserialize '{}'. Outbound session will not be deleted.", ReEstablishSessionMessage::class.simpleName)
@@ -386,7 +389,9 @@ internal class StatefulSessionManagerImpl(
         }
 
         val key = sessionCache.getKeyForOutboundSessionId(sessionId) ?: getCounterpartySerial(
-            counterParties.ourId, counterParties.counterpartyId, message.header.statusFilter
+            counterParties.ourId,
+            counterParties.counterpartyId,
+            message.header.statusFilter,
         )?.let { serial ->
             calculateOutboundSessionKey(counterParties.ourId, counterParties.counterpartyId, serial)
         }
@@ -1098,7 +1103,7 @@ internal class StatefulSessionManagerImpl(
         sessionId: String,
     ) {
         val messageBytes = schemaRegistry.serialize(
-            ReEstablishSessionMessage(sessionId)
+            ReEstablishSessionMessage(sessionId),
         ).array()
         val record = createAuthenticatedMessageRecord(source, destination, messageBytes)
         logger.info("Sending '{}' to session initiator '{}'.", ReEstablishSessionMessage::class.simpleName, destination)
@@ -1156,7 +1161,7 @@ internal class StatefulSessionManagerImpl(
                 sessionManagerImpl.dominoTile.coordinatorName,
                 LifecycleCoordinatorName.forComponent<SessionEncryptionOpsClient>(),
                 sessionEventPublisher.dominoTile.coordinatorName,
-                sessionEventListener.dominoTile.coordinatorName
+                sessionEventListener.dominoTile.coordinatorName,
             ),
             managedChildren =
             setOf(

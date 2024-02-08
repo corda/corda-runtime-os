@@ -2,10 +2,13 @@ package net.corda.p2p.linkmanager.sessions
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
+import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata.Companion.toCommonMetadata
 import net.corda.utilities.time.Clock
+import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.Instant
 import java.util.Random
@@ -14,9 +17,6 @@ import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
-import net.corda.cache.caffeine.CacheFactoryImpl
-import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
-import org.slf4j.LoggerFactory
 
 internal class SessionCache(
     private val stateManager: StateManager,
@@ -124,9 +124,10 @@ internal class SessionCache(
                     SavedState(
                         expiry = expiry,
                         version = stateToForget.version,
-                        future = scheduler.schedule({
-                            forgetState(stateToForget)
-                        },
+                        future = scheduler.schedule(
+                            {
+                                forgetState(stateToForget)
+                            },
                             duration.toMillis(),
                             TimeUnit.MILLISECONDS,
                         ),
