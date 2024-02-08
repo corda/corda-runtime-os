@@ -50,7 +50,7 @@ class FlowStatusLookupServiceImpl @Activate constructor(
 
     override fun start() = lifecycleCoordinator.start()
     override fun stop() = lifecycleCoordinator.stop()
-    override val isRunning = true
+    override val isRunning = lifecycleCoordinator.isRunning
 
     override fun initialise(
         messagingConfig: SmartConfig,
