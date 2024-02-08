@@ -5,6 +5,6 @@ import static com.r3.build.BuildControl.cancelQueuedJobByName
 cancelQueuedJobByName(env.JOB_NAME)
 
 githubCommentBuildTests(
-    branch: 'jennyang/CORE-19328-storing-ftx',
+    branch: 'release/5.2/jennyang/CORE-19328-storing-ftx',
     chartVersion: '^5.2.0-alpha',
 )
