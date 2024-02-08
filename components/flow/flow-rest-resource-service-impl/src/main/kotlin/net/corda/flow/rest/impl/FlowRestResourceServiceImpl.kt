@@ -3,7 +3,7 @@ package net.corda.flow.rest.impl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.flow.rest.FlowRestResourceService
-import net.corda.flow.rest.FlowStatusCacheService
+import net.corda.flow.rest.FlowStatusLookupService
 import net.corda.flow.rest.v1.FlowRestResource
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.DependentComponents
@@ -35,8 +35,8 @@ internal class FlowRestResourceServiceImpl @Activate constructor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = FlowRestResource::class)
     private val flowRestResource: FlowRestResource,
-    @Reference(service = FlowStatusCacheService::class)
-    private val flowStatusCacheService: FlowStatusCacheService,
+    @Reference(service = FlowStatusLookupService::class)
+    private val flowStatusLookupService: FlowStatusLookupService,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory
 ) : FlowRestResourceService {
@@ -51,7 +51,7 @@ internal class FlowRestResourceServiceImpl @Activate constructor(
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
         ::virtualNodeInfoReadService,
-        ::flowStatusCacheService
+        ::flowStatusLookupService
     )
 
     override val isRunning get() = lifecycleCoordinator.isRunning
@@ -75,7 +75,7 @@ internal class FlowRestResourceServiceImpl @Activate constructor(
             is ConfigChangedEvent -> {
                 with(event.config) {
                     flowRestResource.initialise(getConfig(MESSAGING_CONFIG), ::signalErrorStatus)
-                    flowStatusCacheService.initialise(
+                    flowStatusLookupService.initialise(
                         getConfig(MESSAGING_CONFIG),
                         getConfig(STATE_MANAGER_CONFIG),
                         getConfig(REST_CONFIG)
@@ -83,7 +83,7 @@ internal class FlowRestResourceServiceImpl @Activate constructor(
                 }
             }
             is StopEvent -> {
-                flowStatusCacheService.stop()
+                flowStatusLookupService.stop()
             }
             else -> {
                 log.error("Unexpected event $event!")

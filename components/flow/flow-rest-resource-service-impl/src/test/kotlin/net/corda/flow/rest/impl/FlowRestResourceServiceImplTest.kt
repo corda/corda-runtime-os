@@ -3,7 +3,7 @@ package net.corda.flow.rest.impl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.flow.rest.FlowRestResourceService
-import net.corda.flow.rest.FlowStatusCacheService
+import net.corda.flow.rest.FlowStatusLookupService
 import net.corda.flow.rest.v1.FlowRestResource
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -30,7 +30,7 @@ class FlowRestResourceServiceImplTest {
     private val configurationReadService = mock<ConfigurationReadService>()
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
     private val flowRestResource = mock<FlowRestResource>()
-    private val flowStatusCacheService = mock<FlowStatusCacheService>()
+    private val flowStatusLookupService = mock<FlowStatusLookupService>()
 
     private val lifecycleTestContext = LifecycleTestContext()
     private val lifecycleCoordinator = lifecycleTestContext.lifecycleCoordinator
@@ -58,7 +58,7 @@ class FlowRestResourceServiceImplTest {
             configurationReadService,
             virtualNodeInfoReadService,
             flowRestResource,
-            flowStatusCacheService,
+            flowStatusLookupService,
             lifecycleTestContext.lifecycleCoordinatorFactory
         )
 
@@ -90,14 +90,14 @@ class FlowRestResourceServiceImplTest {
                 setOf(
                     LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                     LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
-                    LifecycleCoordinatorName.forComponent<FlowStatusCacheService>(),
+                    LifecycleCoordinatorName.forComponent<FlowStatusLookupService>(),
                 )
             )
         )
 
         verify(configurationReadService).start()
         verify(virtualNodeInfoReadService).start()
-        verify(flowStatusCacheService).start()
+        verify(flowStatusLookupService).start()
     }
 
     @Test
@@ -113,7 +113,7 @@ class FlowRestResourceServiceImplTest {
     @Test
     fun `Test configuration changes initialise flow status cache service`() {
         eventHandler.processEvent(configChangeEvent, lifecycleCoordinator)
-        verify(flowStatusCacheService).initialise(eq(messagingConfig), eq(stateManagerConfig), eq(restConfig))
+        verify(flowStatusLookupService).initialise(eq(messagingConfig), eq(stateManagerConfig), eq(restConfig))
     }
 
     @Test
@@ -136,6 +136,6 @@ class FlowRestResourceServiceImplTest {
     @Test
     fun `Test stop event closes flow status cache service`() {
         eventHandler.processEvent(StopEvent(), lifecycleCoordinator)
-        verify(flowStatusCacheService).stop()
+        verify(flowStatusLookupService).stop()
     }
 }
