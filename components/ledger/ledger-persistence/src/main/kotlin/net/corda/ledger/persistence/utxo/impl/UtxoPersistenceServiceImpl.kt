@@ -464,7 +464,7 @@ class UtxoPersistenceServiceImpl(
     }
 
     @VisibleForTesting
-    private fun persistFilteredTransactionsAndSignatures(
+    internal fun persistFilteredTransactionsAndSignatures(
         filteredTransactionsAndSignatures: Map<FilteredTransaction, List<DigitalSignatureAndMetadata>>,
         account: String
     ) {

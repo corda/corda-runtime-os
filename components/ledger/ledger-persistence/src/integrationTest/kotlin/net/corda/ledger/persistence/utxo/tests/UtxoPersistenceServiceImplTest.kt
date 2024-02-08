@@ -316,8 +316,8 @@ class UtxoPersistenceServiceImplTest {
     fun `find unconsumed visible transaction states`() {
         val createdTs = testClock.instant()
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
-        val transaction1 = createSignedTransaction(createdTs)
-        val transaction2 = createSignedTransaction(createdTs)
+        val transaction1 = createSignedTransaction()
+        val transaction2 = createSignedTransaction()
         entityManagerFactory.transaction { em ->
 
             em.createNativeQuery("DELETE FROM {h-schema}utxo_visible_transaction_output").executeUpdate()
@@ -441,7 +441,7 @@ class UtxoPersistenceServiceImplTest {
     fun `persist signed transaction`() {
         val account = "Account"
         val transactionStatus = VERIFIED
-        val signedTransaction = createSignedTransaction(Instant.now())
+        val signedTransaction = createSignedTransaction(signatures = createSignatures(Instant.now()))
         val visibleStatesIndexes = listOf(0)
 
         // Persist transaction
@@ -635,7 +635,8 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `persist and find filtered transactions`() {
-        val signedTransaction = createSignedTransaction(Instant.now())
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(signatures = signatures)
         val account = "Account"
 
         val filteredTransactionToStore = filteredTransactionFactory.create(
@@ -664,8 +665,8 @@ class UtxoPersistenceServiceImplTest {
             )
         )
 
-        persistenceService.persistFilteredTransactionsAndSignaturesIfDoNotExist(
-            mapOf(filteredTransactionToStore to emptyList()),
+        (persistenceService as UtxoPersistenceServiceImpl).persistFilteredTransactionsAndSignatures(
+            mapOf(filteredTransactionToStore to signatures),
             account
         )
 
@@ -814,10 +815,10 @@ class UtxoPersistenceServiceImplTest {
     }
 
     private fun createSignedTransaction(
-        createdTs: Instant = testClock.instant(),
         seed: String = seedSequence.incrementAndGet().toString(),
         inputStateRefs: List<StateRef> = defaultInputStateRefs,
-        referenceStateRefs: List<StateRef> = defaultReferenceStateRefs
+        referenceStateRefs: List<StateRef> = defaultReferenceStateRefs,
+        signatures: List<DigitalSignatureAndMetadata> = createSignatures()
     ): SignedTransactionContainer {
         val transactionMetadata = utxoTransactionMetadataExample(cpkPackageSeed = seed)
         val timeWindow = Instant.now().plusMillis(Duration.ofDays(1).toMillis())
@@ -855,11 +856,15 @@ class UtxoPersistenceServiceImplTest {
             componentGroupLists,
             getPrivacySalt()
         )
+
+        return SignedTransactionContainer(wireTransaction, signatures)
+    }
+
+    private fun createSignatures(createdTs: Instant = testClock.instant()): List<DigitalSignatureAndMetadata> {
         val publicKey = KeyPairGenerator.getInstance("EC")
             .apply { initialize(ECGenParameterSpec("secp256r1")) }
             .generateKeyPair().public
-        val signatures = listOf(getSignatureWithMetadataExample(publicKey, createdTs))
-        return SignedTransactionContainer(wireTransaction, signatures)
+        return listOf(getSignatureWithMetadataExample(publicKey, createdTs))
     }
 
     private class TestUtxoTransactionReader(
