@@ -149,7 +149,7 @@ class KeyRotationRestResourceTest {
     fun `get key rotation status throws when state manager is not initialised`() {
         val keyRotationRestResource =
             createKeyRotationRestResource(initialiseKafkaPublisher = true, initialiseStateManager = false)
-        assertThrows<IllegalStateException> {
+        assertThrows<InternalServerException> {
             keyRotationRestResource.getKeyRotationStatus(MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER)
         }
         verify(stateManager, never()).findByMetadataMatchingAll(any())

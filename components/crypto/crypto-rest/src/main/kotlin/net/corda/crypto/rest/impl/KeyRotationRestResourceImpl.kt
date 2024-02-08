@@ -178,8 +178,10 @@ class KeyRotationRestResourceImpl @Activate constructor(
     }
 
     override fun getKeyRotationStatus(tenantId: String): KeyRotationStatusResponse {
-        check(::stateManager.isInitialized) {
-            "State manager for key rotation is not initialised."
+        tryWithExceptionHandling(logger, "retrieve key rotation status") {
+            check(::stateManager.isInitialized) {
+                "State manager for key rotation is not initialised."
+            }
         }
 
         when (tenantId) {
