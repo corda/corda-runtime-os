@@ -178,15 +178,14 @@ class KeyRotationRestResourceImpl @Activate constructor(
     }
 
     override fun getKeyRotationStatus(tenantId: String): KeyRotationStatusResponse {
+        check(::stateManager.isInitialized) {
+            "State manager for key rotation is not initialised."
+        }
 
         when (tenantId) {
             MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER -> { // do unmanaged key rotation status
-                check(::stateManager.isInitialized) {
-            "State manager for key rotation is not initialised."
-        }
-        val records = stateManager.findByMetadataMatchingAll(
-            listOf(
-
+                val records = stateManager.findByMetadataMatchingAll(
+                    listOf(
                         MetadataFilter(
                             KeyRotationMetadataValues.STATUS_TYPE,
                             Operation.Equals,
@@ -255,22 +254,19 @@ class KeyRotationRestResourceImpl @Activate constructor(
     override fun startKeyRotation(tenantId: String): ResponseEntity<KeyRotationResponse> {
         tryWithExceptionHandling(logger, "start key rotation") {
             checkNotNull(publishToKafka)
+            check(::stateManager.isInitialized) {
+                "State manager for key rotation is not initialised."
+            }
         }
 
         if (tenantId.isEmpty()) throw InvalidInputDataException(
             "Cannot start key rotation. TenantId is not specified."
         )
 
-        check(::stateManager.isInitialized) {
-            "State manager for key rotation is not initialised."
-        }
 
         return if (tenantId == MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER) {
             doKeyRotation(publishRequests = { publishToKafka!!.publish(it) })
         } else {
-            if (tenantId.isEmpty()) throw InvalidInputDataException(
-                "Cannot start key rotation. TenantId is not specified."
-            )
             doManagedKeyRotation(
                 tenantId,
                 publishRequests = { publishToKafka!!.publish(it) }
@@ -308,19 +304,6 @@ class KeyRotationRestResourceImpl @Activate constructor(
 
     private fun getLatestTimestamp(records: Collection<State>): Instant {
         return records.maxBy { it.modifiedTime }.modifiedTime
-    }
-
-    @Suppress("ThrowsCount")
-    private fun validateInputParams(oldKeyAlias: String, newKeyAlias: String) {
-        if (oldKeyAlias == newKeyAlias) throw InvalidInputDataException(
-            "Cannot start key rotation. The old key alias must be different to the new key alias."
-        )
-        if (oldKeyAlias.isEmpty()) throw InvalidInputDataException(
-            "Cannot start key rotation. The old key alias is not specified."
-        )
-        if (newKeyAlias.isEmpty()) throw InvalidInputDataException(
-            "Cannot start key rotation. The new key alias is not specified."
-        )
     }
 }
 
