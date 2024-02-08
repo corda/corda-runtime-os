@@ -4,6 +4,7 @@ import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.LinkOutMessage
+import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.virtualnode.HoldingIdentity
@@ -19,6 +20,7 @@ internal interface SessionManager : LifecycleWithDominoTile {
     fun messageAcknowledged(sessionId: String)
     fun dataMessageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity)
     fun dataMessageSent(session: Session)
+    fun deleteOutboundSession(counterParties: Counterparties, message: AuthenticatedMessage)
 
     data class SessionCounterparties(
         override val ourId: HoldingIdentity,
@@ -31,7 +33,9 @@ internal interface SessionManager : LifecycleWithDominoTile {
     data class Counterparties(
         override val ourId: HoldingIdentity,
         override val counterpartyId: HoldingIdentity,
-    ): BaseCounterparties
+    ): BaseCounterparties {
+        fun reverse() = Counterparties(ourId = counterpartyId, counterpartyId = ourId)
+    }
 
     interface BaseCounterparties {
         val ourId: HoldingIdentity
