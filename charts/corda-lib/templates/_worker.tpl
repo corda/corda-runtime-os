@@ -273,7 +273,7 @@ spec:
         {{- include "corda.configSaltAndPassphraseEnv" $ | nindent 10 }}
         {{- end }}
         {{- if .config }}
-        {{- include "corda.db.workerConfigEnvironment" ( list $ $workerName .config ) | nindent 10 }}
+        {{- include "corda.db.workerConfigEnvironment" ( list $ $worker .config ) | nindent 10 }}
         {{- end }}
         args:
           - "--workspace-dir=/work"
