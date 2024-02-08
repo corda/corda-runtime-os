@@ -1,4 +1,4 @@
-package net.corda.flow.pipeline.handlers
+package net.corda.flow.pipeline
 
 import net.corda.flow.state.impl.CheckpointMetadataKeys
 import net.corda.libs.statemanager.api.Metadata

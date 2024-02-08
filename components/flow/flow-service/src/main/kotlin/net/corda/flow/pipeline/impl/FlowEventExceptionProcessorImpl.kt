@@ -13,7 +13,7 @@ import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.PLATFORM_ERROR
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
-import net.corda.flow.pipeline.handlers.addTerminationKeyToMeta
+import net.corda.flow.pipeline.addTerminationKeyToMeta
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig

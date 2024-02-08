@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.handlers
 
+import net.corda.flow.pipeline.addTerminationKeyToMeta
 import net.corda.flow.state.impl.CheckpointMetadataKeys.STATE_META_CHECKPOINT_TERMINATED_KEY
 import net.corda.libs.statemanager.api.Metadata
 import org.assertj.core.api.Assertions.assertThat

@@ -5,7 +5,7 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
-import net.corda.flow.pipeline.handlers.addTerminationKeyToMeta
+import net.corda.flow.pipeline.addTerminationKeyToMeta
 import net.corda.flow.pipeline.handlers.requests.helper.getRecords
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -44,7 +44,7 @@ class FlowFinishedRequestHandler @Activate constructor(
         checkpoint.markDeleted()
 
         context.flowMetrics.flowCompletedSuccessfully()
-
-        return context.copy(outputRecords = context.outputRecords + records, metadata = addTerminationKeyToMeta(context.metadata))
+        val metaDataWithTermination = addTerminationKeyToMeta(context.metadata)
+        return context.copy(outputRecords = context.outputRecords + records, metadata = metaDataWithTermination)
     }
 }
