@@ -330,8 +330,9 @@ class DynamicMemberRegistrationService @Activate constructor(
                     }.toWire()
                 )
 
+                // The group reader might not know about the MGM yet.
                 val mgm = groupReader.lookup().firstOrNull { it.isMgm }
-                    ?: throw IllegalArgumentException("Failed to look up MGM information.")
+                    ?: throw NotReadyMembershipRegistrationException("Failed to look up MGM information.")
 
                 val serialInfo = context[SERIAL]?.toLong()
                     ?: previousInfo?.serial
@@ -410,6 +411,8 @@ class DynamicMemberRegistrationService @Activate constructor(
                     "Registration failed. Reason: ${e.message}",
                     e,
                 )
+            } catch (e: NotReadyMembershipRegistrationException) {
+                throw e
             } catch (e: MembershipPersistenceResult.PersistenceRequestException) {
                 registrationLogger.warn("Registration failed.", e)
                 throw NotReadyMembershipRegistrationException("Could not persist request: ${e.message}", e)

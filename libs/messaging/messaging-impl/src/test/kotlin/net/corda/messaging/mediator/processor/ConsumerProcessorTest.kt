@@ -107,7 +107,7 @@ class ConsumerProcessorTest {
             getGroups(2, 4),
             listOf()
         )
-        whenever(stateManagerHelper.createOrUpdateState(any(), any(), any(), any())).thenReturn(mock())
+        whenever(stateManagerHelper.createOrUpdateState(any(), any(), any())).thenReturn(mock())
         whenever(stateManager.get(any())).thenReturn(mapOf())
 
         consumerProcessor.processTopic(getConsumerFactory(), getConsumerConfig())
@@ -238,7 +238,8 @@ class ConsumerProcessorTest {
     private fun buildStringTestConfig() = EventMediatorConfig(
         "",
         SmartConfigImpl.empty()
-            .withValue(MessagingConfig.Subscription.MEDIATOR_PROCESSING_POLL_TIMEOUT, ConfigValueFactory.fromAnyRef(10)),
+            .withValue(MessagingConfig.Subscription.MEDIATOR_PROCESSING_POLL_TIMEOUT, ConfigValueFactory.fromAnyRef(10))
+            .withValue(MessagingConfig.Subscription.MEDIATOR_PROCESSING_PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(1000)),
         emptyList(),
         emptyList(),
         mock<StateAndEventProcessor<String, String, String>>(),

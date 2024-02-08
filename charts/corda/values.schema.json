@@ -5,10 +5,11 @@
     "default": {},
     "title": "Corda helm chart schema",
     "additionalProperties": false,
-    "$comment": "TODO-[CORE-19372]: make 'databases' and 'stateManager' required",
     "required": [
         "db",
-        "kafka"
+        "kafka",
+        "databases",
+        "stateManager"
     ],
     "properties": {
         "corda-lib": {
@@ -68,6 +69,17 @@
             "type": "object",
             "default": {},
             "title": "extra labels to add to all deployed objects",
+            "additionalProperties": {
+                "type": [
+                    "string",
+                    "null"
+                ]
+            }
+        },
+        "commonPodLabels": {
+            "type": "object",
+            "default": {},
+            "title": "extra labels to add to all pods created by deployments",
             "additionalProperties": {
                 "type": [
                     "string",
@@ -135,12 +147,12 @@
                     ]
                 },
                 "runAsNonRoot": {
-                    "type": "boolean", 
+                    "type": "boolean",
                     "description": "indicates that the container must run as a non-root user",
                     "examples": [
                         true
                     ]
-                }, 
+                },
                 "runAsGroup": {
                     "type": "integer",
                     "title": "specify what group ID that processes will run with",
@@ -163,12 +175,12 @@
                     ]
                 },
                 "procMount": {
-                    "type": "string", 
-                    "description": "denotes the type of proc mount to use for the containers - cannot be set when spec.os.name is windows", 
+                    "type": "string",
+                    "description": "denotes the type of proc mount to use for the containers - cannot be set when spec.os.name is windows",
                     "examples": [
                         "DefaultProcMount"
                     ]
-                }, 
+                },
                 "privileged": {
                     "type": "boolean",
                     "title": "run container in privileged mode",
@@ -184,27 +196,27 @@
                         "add": {
                             "items": {
                                 "type": [
-                                    "string", 
+                                    "string",
                                     "null"
                                 ]
-                            }, 
+                            },
                             "type": [
-                                "array", 
+                                "array",
                                 "null"
-                            ], 
+                            ],
                             "description": "added capabilities"
-                        }, 
+                        },
                         "drop": {
                             "items": {
                                 "type": [
-                                    "string", 
+                                    "string",
                                     "null"
                                 ]
-                            }, 
+                            },
                             "type": [
-                                "array", 
+                                "array",
                                 "null"
-                            ], 
+                            ],
                             "description": "removed capabilities"
                         }
                     }
@@ -275,25 +287,25 @@
             "title": "define privilege and access control settings for a pod",
             "properties": {
                 "runAsNonRoot": {
-                    "type": "boolean", 
+                    "type": "boolean",
                     "description": "indicates that the container must run as a non-root user",
                     "examples": [
                         true
                     ]
-                }, 
+                },
                 "fsGroup": {
-                    "type": "integer", 
-                    "description": "a special supplemental group that applies to all containers in a pod", 
+                    "type": "integer",
+                    "description": "a special supplemental group that applies to all containers in a pod",
                     "format": "int64",
                     "examples": [
                         "1000"
                     ]
                 },
                 "fsGroupChangePolicy": {
-                    "type": "string", 
-                    "description": "defines behavior of changing ownership and permission of the volume before being exposed inside Pod", 
+                    "type": "string",
+                    "description": "defines behavior of changing ownership and permission of the volume before being exposed inside Pod",
                     "enum": ["Always", "OnRootMismatch"]
-                }, 
+                },
                 "seccompProfile": {
                     "type": "object",
                     "description": "the seccomp options to use by the containers in this pod - this field cannot be set if spec.os.name is windows",
@@ -379,26 +391,26 @@
                 },
                 "supplementalGroups": {
                     "items": {
-                        "type": "integer", 
+                        "type": "integer",
                         "format": "int64"
-                    }, 
+                    },
                     "type": [
-                        "array", 
+                        "array",
                         "null"
-                    ], 
+                    ],
                     "description": "a list of groups applied to the first process run in each container, in addition to the container's primary GID"
-                }, 
+                },
                 "runAsUser": {
-                    "type": "integer", 
-                    "description": "The UID to run the entrypoint of the container process", 
+                    "type": "integer",
+                    "description": "The UID to run the entrypoint of the container process",
                     "format": "int64",
                     "examples": [
                         "10001"
                     ]
                 },
                 "runAsGroup": {
-                    "type": "integer", 
-                    "description": "The GID to run the entrypoint of the container process", 
+                    "type": "integer",
+                    "description": "The GID to run the entrypoint of the container process",
                     "format": "int64",
                     "examples": [
                         "10002"
@@ -1005,16 +1017,17 @@
                     }
                 ],
                 "required": [
+                    "name",
                     "host",
                     "port",
                     "type"
                 ]
             },
-            "$comment": "At least one database with name 'default' must be defined",
+            "$comment": "At least one 'default' database must be defined",
             "contains": {
                 "type": "object",
                 "properties": {
-                    "name": {
+                    "id": {
                         "type": "string",
                         "const": "default"
                     }
@@ -1032,7 +1045,8 @@
                 "kafka",
                 "image",
                 "resources",
-                "nodeSelector"
+                "nodeSelector",
+                "commonPodLabels"
             ],
             "additionalProperties": false,
             "properties": {
@@ -1392,58 +1406,6 @@
                                 }
                             }]
                         },
-                        "stateManager": {
-                            "$comment": "TODO-[CORE-19372]: remove the entire 'stateManager' section",
-                            "flow": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/basicAuthConfig"
-                                    }
-                                ]
-                            },
-                            "flowMapper": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/basicAuthConfig"
-                                    }
-                                ]
-                            },
-                            "flowStatus": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/basicAuthConfig"
-                                    }
-                                ]
-                            },
-                            "tokenSelection": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/basicAuthConfig"
-                                    }
-                                ]
-                            },
-                            "rest": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/basicAuthConfig"
-                                    }
-                                ]
-                            },
-                            "crypto": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/basicAuthConfig"
-                                    }
-                                ]
-                            },
-                            "p2pLinkManager": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/basicAuthConfig"
-                                    }
-                                ]
-                            }
-                        },
                         "databases": {
                             "type": "array",
                             "title": "Administrator credentials per database, used to configure users/roles and grant required runtime permissions",
@@ -1695,6 +1657,17 @@
                     "examples": [{
                         "enabled": true
                     }]
+                },
+                "commonPodLabels": {
+                    "type": "object",
+                    "default": {},
+                    "title": "extra labels to add to all pods created by bootstrap jobs",
+                    "additionalProperties": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
                 }
             }
         },
@@ -1766,25 +1739,17 @@
                                 "resources": {},
                                 "kafka": {},
                                 "stateManager": {
-                                    "$comment": "TODO-[CORE-19372]: remove the condition and leave 'keyRotation' only.",
-                                    "oneOf": [
-                                        {
-                                            "$ref": "#/$defs/stateManager"
-                                        },
-                                        {
+                                    "type": "object",
+                                    "required": [
+                                        "keyRotation"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "keyRotation": {
                                             "type": "object",
-                                            "required": [
-                                                "keyRotation"
-                                            ],
-                                            "additionalProperties": false,
-                                            "properties": {
-                                                "keyRotation": {
-                                                    "type": "object",
-                                                    "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
-                                                }
-                                            }
+                                            "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
                                         }
-                                    ]
+                                    }
                                 },
                                 "clusterDbConnectionPool": {
                                     "type": "object",
@@ -1980,25 +1945,17 @@
                                 "resources": {},
                                 "kafka": {},
                                 "stateManager": {
-                                    "$comment": "TODO-[CORE-19372]: remove the condition and leave 'flowCheckpoint' only.",
-                                    "oneOf": [
-                                        {
-                                            "$ref": "#/$defs/stateManager"
-                                        },
-                                        {
+                                    "type": "object",
+                                    "required": [
+                                        "flowCheckpoint"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "flowCheckpoint": {
                                             "type": "object",
-                                            "required": [
-                                                "flowCheckpoint"
-                                            ],
-                                            "additionalProperties": false,
-                                            "properties": {
-                                                "flowCheckpoint": {
-                                                    "type": "object",
-                                                    "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
-                                                }
-                                            }
+                                            "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
                                         }
-                                    ]
+                                    }
                                 },
                                 "verifyInstrumentation": {
                                     "type": "boolean",
@@ -2062,25 +2019,17 @@
                                 "resources": {},
                                 "kafka": {},
                                 "stateManager": {
-                                    "$comment": "TODO-[CORE-19372]: remove the condition and leave 'flowMapping' only.",
-                                    "oneOf": [
-                                        {
-                                            "$ref": "#/$defs/stateManager"
-                                        },
-                                        {
+                                    "type": "object",
+                                    "required": [
+                                        "flowMapping"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "flowMapping": {
                                             "type": "object",
-                                            "required": [
-                                                "flowMapping"
-                                            ],
-                                            "additionalProperties": false,
-                                            "properties": {
-                                                "flowMapping": {
-                                                    "type": "object",
-                                                    "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
-                                                }
-                                            }
+                                            "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
                                         }
-                                    ]
+                                    }
                                 },
                                 "verifyInstrumentation": {
                                     "type": "boolean",
@@ -2226,30 +2175,22 @@
                                 "resources": {},
                                 "kafka": {},
                                 "stateManager": {
-                                    "$comment": "TODO-[CORE-19372]: remove the condition and leave 'keyRotation' only.",
-                                    "oneOf": [
-                                        {
-                                            "$ref": "#/$defs/stateManager"
-                                        },
-                                        {
+                                    "type": "object",
+                                    "required": [
+                                        "flowStatus",
+                                        "keyRotation"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "keyRotation": {
                                             "type": "object",
-                                            "required": [
-                                                "flowStatus",
-                                                "keyRotation"
-                                            ],
-                                            "additionalProperties": false,
-                                            "properties": {
-                                                "keyRotation": {
-                                                    "type": "object",
-                                                    "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
-                                                },
-                                                "flowStatus": {
-                                                    "type": "object",
-                                                    "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
-                                                }
-                                            }
+                                            "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
+                                        },
+                                        "flowStatus": {
+                                            "type": "object",
+                                            "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
                                         }
-                                    ]
+                                    }
                                 },
                                 "service": {
                                     "type": "object",
@@ -2499,25 +2440,17 @@
                                 "resources": {},
                                 "kafka": {},
                                 "stateManager": {
-                                    "$comment": "TODO-[CORE-19372]: remove the condition and leave 'p2pSession' only.",
-                                    "oneOf": [
-                                        {
-                                            "$ref": "#/$defs/stateManager"
-                                        },
-                                        {
+                                    "type": "object",
+                                    "required": [
+                                        "p2pSession"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "p2pSession": {
                                             "type": "object",
-                                            "required": [
-                                                "p2pSession"
-                                            ],
-                                            "additionalProperties": false,
-                                            "properties": {
-                                                "p2pSession": {
-                                                    "type": "object",
-                                                    "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
-                                                }
-                                            }
+                                            "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
                                         }
-                                    ]
+                                    }
                                 }
                             },
                             "examples": [
@@ -2813,25 +2746,17 @@
                                 "profiling": {},
                                 "resources": {},
                                 "stateManager": {
-                                    "$comment": "TODO-[CORE-19372]: remove the condition and leave 'tokenPoolCache' only.",
-                                    "oneOf": [
-                                        {
-                                            "$ref": "#/$defs/stateManager"
-                                        },
-                                        {
+                                    "type": "object",
+                                    "required": [
+                                        "tokenPoolCache"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "tokenPoolCache": {
                                             "type": "object",
-                                            "required": [
-                                                "tokenPoolCache"
-                                            ],
-                                            "additionalProperties": false,
-                                            "properties": {
-                                                "tokenPoolCache": {
-                                                    "type": "object",
-                                                    "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
-                                                }
-                                            }
+                                            "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
                                         }
-                                    ]
+                                    }
                                 },
                                 "kafka": {},
                                 "sharding": {
@@ -3780,91 +3705,6 @@
                 "postgresql"
             ]
         },
-        "stateManager": {
-            "type": "object",
-            "default": {},
-            "title": "State Manager configuration",
-            "additionalProperties": false,
-            "properties": {
-                "type": {
-                    "type": "string",
-                    "default": "DATABASE",
-                    "title": "The type of State Manager",
-                    "examples": [
-                        "DATABASE"
-                    ],
-                    "enum": ["DATABASE"]
-                },
-                "db": {
-                    "type": "object",
-                    "default": {},
-                    "title": "State Manager database configuration",
-                    "additionalProperties": false,
-                    "properties": {
-                        "username": {
-                            "$ref": "#/$defs/config"
-                        },
-                        "password": {
-                            "$ref": "#/$defs/config"
-                        },
-                        "host": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "format": "hostname"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "default": null,
-                            "title": "the State Manager database host",
-                            "examples": [
-                                "postgresql.example.com"
-                            ]
-                        },
-                        "type": {
-                            "$ref": "#/$defs/databaseEngine"
-                        },
-                        "port": {
-                            "type": "integer",
-                            "default": 5432,
-                            "title": "the State Manager database port",
-                            "examples": [
-                                5432
-                            ]
-                        },
-                        "name": {
-                            "type": "string",
-                            "default": "state-manager",
-                            "title": "the name of the State Manager database",
-                            "examples": [
-                                "state-manager"
-                            ],
-                            "minLength": 1
-                        },
-                        "connectionPool": {
-                            "$ref": "#/$defs/connectionPool",
-                            "default": {},
-                            "title": "JDBC connection pool configuration for State Manager DB"
-                        }
-                    },
-                    "examples": [{
-                        "host": "postgresql.example.com",
-                        "type": "postgresql",
-                        "port": 5432,
-                        "username": {
-                            "value": "user"
-                        },
-                        "password": {
-                            "value": "password"
-                        },
-                        "database": "state-manager",
-                        "connectionPool": {}
-                    }]
-                }
-            }
-        },
         "basicAuthConfig": {
             "type": "object",
             "default": {},
@@ -3945,11 +3785,15 @@
             "title": "Connection settings for databases used by the Platform",
             "additionalProperties": false,
             "required": [
-                "name",
+                "id",
                 "username",
                 "password"
             ],
             "properties": {
+                "id": {
+                    "type": "string",
+                    "minLength": 1
+                },
                 "name": {
                     "type": "string",
                     "minLength": 1

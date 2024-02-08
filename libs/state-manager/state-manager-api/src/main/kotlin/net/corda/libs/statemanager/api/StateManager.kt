@@ -27,6 +27,8 @@ interface StateManager : Lifecycle {
      * Control is only returned to the caller once all [states] that were successfully created have been fully
      * persisted and replicas of the underlying persistent storage, if any, are synced.
      *
+     * If the [states] contains more than one state with the same key, an exception will be thrown.
+     *
      * @param states Collection of states to be persisted.
      * @return Collection of keys for all those states that could not be persisted on the underlying persistent storage.
      */

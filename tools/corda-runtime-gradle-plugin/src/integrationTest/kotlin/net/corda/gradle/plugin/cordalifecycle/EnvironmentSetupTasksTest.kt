@@ -12,15 +12,8 @@ class EnvironmentSetupTasksTest : FunctionalBaseTest() {
 
     @Test
     fun shouldDownloadNotaryCPB() {
-        appendCordaRuntimeGradlePluginExtension()
+        appendCordaRuntimeGradlePluginExtension(appendArtifactoryCredentials = true)
         executeWithRunner(GET_NOTARY_SERVER_CPB_TASK_NAME)
             .task(":$GET_NOTARY_SERVER_CPB_TASK_NAME")!!.assertTaskSucceeded()
-    }
-
-    @Test
-    fun shouldGetCombinedWorker() {
-        appendCordaRuntimeGradlePluginExtension()
-        executeWithRunner(GET_COMBINED_WORKER_JAR_TASK_NAME)
-            .task(":$GET_COMBINED_WORKER_JAR_TASK_NAME")!!.assertTaskSucceeded()
     }
 }

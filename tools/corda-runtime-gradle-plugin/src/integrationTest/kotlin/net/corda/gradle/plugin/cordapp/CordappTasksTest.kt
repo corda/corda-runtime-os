@@ -3,6 +3,7 @@ package net.corda.gradle.plugin.cordapp
 import net.corda.gradle.plugin.FunctionalBaseTest
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
 
 class CordappTasksTest : FunctionalBaseTest() {
 
@@ -12,6 +13,7 @@ class CordappTasksTest : FunctionalBaseTest() {
     }
 
     @Test
+    @EnabledIfEnvironmentVariable(named = "CI", matches = "true", disabledReason = "Corda CLI is expected to be available on local env")
     fun shouldFailCreateGroupPolicyWithNoCordaCli() {
         val result = executeAndFailWithRunner(CREATE_GROUP_POLICY_TASK_NAME)
         assertTrue(result.output.contains("Unable to find the Corda CLI, has it been installed?"))
