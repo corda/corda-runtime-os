@@ -70,7 +70,7 @@ class FlowFailedRequestHandler @Activate constructor(
         checkpoint.markDeleted()
 
         context.flowMetrics.flowFailed()
-
-        return context.copy(outputRecords = context.outputRecords + records, metadata = addTerminationKeyToMeta(context.metadata))
+        val metaWithTermination = addTerminationKeyToMeta(context.metadata)
+        return context.copy(outputRecords = context.outputRecords + records, metadata = metaWithTermination)
     }
 }

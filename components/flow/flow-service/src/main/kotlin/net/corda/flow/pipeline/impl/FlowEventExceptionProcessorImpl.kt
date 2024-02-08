@@ -48,10 +48,11 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
     override fun process(throwable: Throwable, context: FlowEventContext<*>): FlowEventContext<*> {
         log.warn("Unexpected exception while processing flow, the flow will be sent to the DLQ", throwable)
         context.checkpoint.markDeleted()
+        val metaWithTermination = addTerminationKeyToMeta(context.metadata)
         return context.copy(
             outputRecords = listOf(),
             sendToDlq = true,
-            metadata = addTerminationKeyToMeta(context.metadata)
+            metadata = metaWithTermination
         )
     }
 
@@ -73,10 +74,11 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         removeCachedFlowFiber(checkpoint)
         val cleanupRecords = checkpointCleanupHandler.cleanupCheckpoint(checkpoint, context.flowConfig, exception)
 
+        val metaWithTermination = addTerminationKeyToMeta(context.metadata)
         context.copy(
             outputRecords = cleanupRecords,
             sendToDlq = true,
-            metadata = addTerminationKeyToMeta(context.metadata)
+            metadata = metaWithTermination
         )
     }
 
@@ -133,11 +135,11 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
             removeCachedFlowFiber(checkpoint)
             val cleanupRecords = checkpointCleanupHandler.cleanupCheckpoint(checkpoint, context.flowConfig, exception)
-
+            val metaWithTermination = addTerminationKeyToMeta(context.metadata)
             context.copy(
                 outputRecords =  cleanupRecords,
                 sendToDlq = false, // killed flows do not go to DLQ
-                metadata = addTerminationKeyToMeta(context.metadata)
+                metadata = metaWithTermination
             )
         }
     }
