@@ -4,12 +4,13 @@ import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.data.transaction.MerkleProofDto
+import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionDto
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef
-import java.math.BigDecimal
+import net.corda.v5.ledger.utxo.observer.UtxoToken
 import java.time.Instant
 import javax.persistence.EntityManager
 
@@ -88,52 +89,45 @@ interface UtxoRepository {
 
     /** Persists transaction source (operation is idempotent) */
     @Suppress("LongParameterList")
-    fun persistTransactionSource(
+    fun persistTransactionSources(
         entityManager: EntityManager,
         transactionId: String,
-        groupIndex: Int,
-        leafIndex: Int,
-        sourceStateTransactionId: String,
-        sourceStateIndex: Int
+        transactionSources: List<TransactionSource>
     )
 
-    /** Persists transaction component leaf [data] (operation is idempotent) */
-    @Suppress("LongParameterList")
-    fun persistTransactionComponentLeaf(
+    data class TransactionSource(
+        val group: UtxoComponentGroup,
+        val index: Int,
+        val sourceTransactionId: String,
+        val sourceIndex: Int
+    )
+
+    fun persistTransactionComponents(
         entityManager: EntityManager,
         transactionId: String,
-        groupIndex: Int,
-        leafIndex: Int,
-        data: ByteArray,
-        hash: String
+        components: List<List<ByteArray>>,
+        hash: (ByteArray) -> String
+    )
+
+    fun persistTransactionComponents(
+        entityManager: EntityManager,
+        components: List<TransactionComponent>,
+        hash: (ByteArray) -> String
     )
 
     /** Persists transaction output (operation is idempotent) */
-    @Suppress("LongParameterList")
-    fun persistVisibleTransactionOutput(
+    fun persistVisibleTransactionOutputs(
         entityManager: EntityManager,
         transactionId: String,
-        groupIndex: Int,
-        leafIndex: Int,
-        type: String,
         timestamp: Instant,
-        consumed: Boolean,
-        customRepresentation: CustomRepresentation,
-        tokenType: String? = null,
-        tokenIssuerHash: String? = null,
-        tokenNotaryX500Name: String? = null,
-        tokenSymbol: String? = null,
-        tokenTag: String? = null,
-        tokenOwnerHash: String? = null,
-        tokenAmount: BigDecimal? = null
+        visibleTransactionOutputs: List<VisibleTransactionOutput>
     )
 
     /** Persists transaction [signature] (operation is idempotent) */
-    fun persistTransactionSignature(
+    fun persistTransactionSignatures(
         entityManager: EntityManager,
         transactionId: String,
-        index: Int,
-        signature: DigitalSignatureAndMetadata,
+        signatures: List<TransactionSignature>,
         timestamp: Instant
     )
 
@@ -166,21 +160,12 @@ interface UtxoRepository {
     )
 
     /** Persists a merkle proof and returns its ID */
-    @Suppress("LongParameterList")
-    fun persistMerkleProof(
-        entityManager: EntityManager,
-        transactionId: String,
-        groupIndex: Int,
-        treeSize: Int,
-        leaves: List<Int>,
-        hashes: List<String>
-    ): String
+    fun persistMerkleProofs(entityManager: EntityManager, merkleProofs: List<TransactionMerkleProof>)
 
     /** Persist a leaf index that belongs to a given merkle proof with ID [merkleProofId] */
-    fun persistMerkleProofLeaf(
+    fun persistMerkleProofLeaves(
         entityManager: EntityManager,
-        merkleProofId: String,
-        leafIndex: Int
+        leaves: List<TransactionMerkleProofLeaf>
     )
 
     /** Find all the merkle proofs for a given list of transaction IDs */
@@ -194,4 +179,28 @@ interface UtxoRepository {
         entityManager: EntityManager,
         ids: List<String>
     ): Map<String, UtxoFilteredTransactionDto>
+
+    data class TransactionComponent(val transactionId: String, val groupIndex: Int, val leafIndex: Int, val leafData: ByteArray)
+
+    data class VisibleTransactionOutput(
+        val stateIndex: Int,
+        val className: String,
+        val customRepresentation: CustomRepresentation,
+        val token: UtxoToken?,
+        val notaryName: String,
+    )
+
+    data class TransactionSignature(val index: Int, val signatureBytes: ByteArray, val publicKeyHash: SecureHash)
+
+    data class TransactionMerkleProof(
+        val transactionId: String,
+        val groupIndex: Int,
+        val treeSize: Int,
+        val leafIndexes: List<Int>,
+        val leafHashes: List<String>
+    ) {
+        val merkleProofId: String = "$transactionId;$groupIndex;${leafIndexes.joinToString(separator = ",")}"
+    }
+
+    data class TransactionMerkleProofLeaf(val merkleProofId: String, val leafIndex: Int)
 }

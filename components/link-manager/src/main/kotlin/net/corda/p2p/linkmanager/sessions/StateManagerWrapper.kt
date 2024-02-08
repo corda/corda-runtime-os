@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory
 
 internal class StateManagerWrapper(
     private val stateManager: StateManager,
-    private val sessionExpiryScheduler: SessionExpiryScheduler,
+    private val sessionCache: SessionCache,
 ) {
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(StateManagerWrapper::class.java)
@@ -16,13 +16,13 @@ internal class StateManagerWrapper(
     }
     fun get(
         keys: Collection<String>,
-    ) = sessionExpiryScheduler.checkStatesValidateAndRememberThem(
+    ) = sessionCache.validateStatesAndScheduleExpiry(
         stateManager.get(keys),
     )
 
     fun findStatesMatchingAny(
         filters: Collection<MetadataFilter>,
-    ) = sessionExpiryScheduler.checkStatesValidateAndRememberThem(
+    ) = sessionCache.validateStatesAndScheduleExpiry(
         stateManager.findByMetadataMatchingAny(filters),
     )
 
@@ -33,7 +33,7 @@ internal class StateManagerWrapper(
             .map {
                 it.state
             }.mapNotNull {
-                sessionExpiryScheduler.checkStateValidateAndRememberIt(
+                sessionCache.validateStateAndScheduleExpiry(
                     state = it,
                     beforeUpdate = true,
                 )
@@ -42,7 +42,7 @@ internal class StateManagerWrapper(
             .map {
                 it.state
             }.mapNotNull {
-                sessionExpiryScheduler.checkStateValidateAndRememberIt(it)
+                sessionCache.validateStateAndScheduleExpiry(it)
             }
         val failedUpdates = if (updates.isNotEmpty()) {
             stateManager.update(updates).onEach {
