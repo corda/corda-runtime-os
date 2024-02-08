@@ -22,13 +22,13 @@
 
 {{/*
     Name for Secrets Containing State Manager Runtime Credentials (defined at the worker level)
-    The resulting secret name is "chartName-runtime-workerNameKebabCase-stateTypeKebabCase-db"
+    The resulting secret name is "chartName-workerNameKebabCase-stateTypeKebabCase-db"
 */}}
 {{- define "corda.sm.runtimeCredentialsSecretName" -}}
 {{- $ := index . 0 -}}
 {{- $stateType := index . 1 -}}
 {{- $workerName := index . 2 -}}
-{{ printf "%s-runtime-%s-%s-db" ( include "corda.fullname" $ ) ( include "corda.kebabCase" $workerName ) ( include "corda.kebabCase" $stateType ) }}
+{{ printf "%s-%s-%s-db" ( include "corda.fullname" $ ) ( include "corda.kebabCase" $workerName ) ( include "corda.kebabCase" $stateType ) }}
 {{- end -}}
 
 
