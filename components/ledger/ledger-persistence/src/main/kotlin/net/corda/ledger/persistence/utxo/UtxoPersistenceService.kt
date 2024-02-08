@@ -75,7 +75,7 @@ interface UtxoPersistenceService {
      * @param filteredTransactionsAndSignatures The list of [FilteredTransaction]s to persist and their signature list
      * @param account The account to persist for the [FilteredTransaction]s
      */
-    fun persistFilteredTransactions(
+    fun persistFilteredTransactionsAndSignaturesIfDoNotExist(
         filteredTransactionsAndSignatures: Map<FilteredTransaction, List<DigitalSignatureAndMetadata>>,
         account: String
     )
@@ -83,12 +83,12 @@ interface UtxoPersistenceService {
     fun persistTransactionSignatures(id: String, signatures: List<ByteArray>, startingIndex: Int)
 
     /**
-     * Retrieve filtered transactions and its signatures with the given a list of state references.
+     * Retrieve matching filtered transactions and signatures a list of state references.
      *
      * @param stateRefs The list of [StateRef]
      *
-     * @return A map of the filtered transaction ID to a pair of a found [FilteredTransaction] and a corresponding signatures.
-     * If a [FilteredTransaction] with a given stateRef ID is not found, it will be null.
+     * @return A map of results of fetching filtered transaction and signatures of [StateRef].
+     * Each [FilteredTransaction] can be null when it's not found in DB.
      */
     fun findFilteredTransactionsAndSignatures(
         stateRefs: List<StateRef>

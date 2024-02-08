@@ -118,6 +118,10 @@ class UtxoPersistenceServiceImpl(
             val indexesOfTxId = requireNotNull(txIdToIndexesMap[transactionId])
 
             if (wireTransaction != null) {
+                if (wireTransaction.id != transactionId) {
+                    return@forEach
+                }
+
                 /** filter wire transaction that is equivalent to:
                  * var filteredTxBuilder = filteredTransactionBuilder
                  *   .withTimeWindow()
@@ -161,7 +165,7 @@ class UtxoPersistenceServiceImpl(
             if (transactionIdsToFind.isNotEmpty()) {
                 findFilteredTransactions(transactionIdsToFind)
             } else {
-                emptyMap<SecureHash, Pair<FilteredTransaction?, List<DigitalSignatureAndMetadata>>>()
+                emptyMap()
             }
 
         return (txIdToFilteredTxAndSignature + txIdToFilteredTxSignaturePairFromMerkleTable).toMap()
@@ -442,7 +446,25 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
-    override fun persistFilteredTransactions(
+    override fun persistFilteredTransactionsAndSignaturesIfDoNotExist(
+        filteredTransactionsAndSignatures: Map<FilteredTransaction, List<DigitalSignatureAndMetadata>>,
+        account: String
+    ) {
+        val filteredTransactionIds = filteredTransactionsAndSignatures.keys.map { it.id.toString() }
+
+        // find filtered transactions that are not in the DB yet
+        val foundFilteredTransactionIds = findFilteredTransactions(filteredTransactionIds).keys.map { it.toString() }.toSet()
+        val filteredTransactionIdsToPersist: Set<String> = (filteredTransactionIds - foundFilteredTransactionIds).toSet()
+
+        if (filteredTransactionIdsToPersist.isNotEmpty()) {
+            val filteredTransactionsToPersist =
+                filteredTransactionsAndSignatures.filter { filteredTransactionIdsToPersist.contains(it.key.id.toString()) }
+            persistFilteredTransactionsAndSignatures(filteredTransactionsToPersist, account)
+        }
+    }
+
+    @VisibleForTesting
+    private fun persistFilteredTransactionsAndSignatures(
         filteredTransactionsAndSignatures: Map<FilteredTransaction, List<DigitalSignatureAndMetadata>>,
         account: String
     ) {
@@ -563,15 +585,25 @@ class UtxoPersistenceServiceImpl(
     @VisibleForTesting
     internal fun findFilteredTransactions(
         ids: List<String>
-    ): Map<SecureHash, Pair<FilteredTransaction, List<DigitalSignatureAndMetadata>>> {
+    ): Map<SecureHash, Pair<FilteredTransaction?, List<DigitalSignatureAndMetadata>>> {
         return entityManagerFactory.transaction { em ->
             repository.findFilteredTransactions(em, ids)
         }.map { (transactionId, ftxDto) ->
             // Map through each found transaction
 
+            val nullOrEmptyField = ftxDto.takeIf {
+                it.topLevelMerkleProofs.isEmpty() || it.componentMerkleProofMap.isEmpty() || it.privacySalt == null ||
+                    it.metadataBytes == null || it.signatures.isEmpty()
+            }
+
+            // If any of the fields in dto are empty or null, skip to next iteration since we can't create filtered transaction.
+            if (nullOrEmptyField != null) {
+                return@map null
+            }
+
             // 1. Parse the metadata bytes
             val filteredTransactionMetadata = parseMetadata(
-                ftxDto.metadataBytes,
+                ftxDto.metadataBytes!!,
                 jsonValidator,
                 jsonMarshallingService
             )
@@ -583,7 +615,7 @@ class UtxoPersistenceServiceImpl(
 
             val mergedMerkleProofs = ftxDto.componentMerkleProofMap.mapValues { (componentGroupIndex, merkleProofDtoList) ->
                 val componentGroupHashDigestProvider = filteredTransactionMetadata.getComponentGroupMerkleTreeDigestProvider(
-                    ftxDto.privacySalt,
+                    ftxDto.privacySalt!!,
                     componentGroupIndex,
                     merkleTreeProvider,
                     digestService
@@ -593,7 +625,7 @@ class UtxoPersistenceServiceImpl(
                     // Transform the MerkleProofDto objects to MerkleProof objects
                     // If the merkle proof is metadata, we need to add the bytes because it's not part of the component table
                     val merkleProofDtoOverride = if (merkleProofDto.groupIndex == 0) {
-                        merkleProofDto.copy(leavesWithData = mapOf(0 to ftxDto.metadataBytes))
+                        merkleProofDto.copy(leavesWithData = mapOf(0 to ftxDto.metadataBytes!!))
                     } else {
                         merkleProofDto
                     }
@@ -660,12 +692,12 @@ class UtxoPersistenceServiceImpl(
                 mergedMerkleProofs.map {
                     it.key to FilteredComponentGroup(it.key, it.value)
                 }.toMap(),
-                ftxDto.privacySalt.bytes
+                ftxDto.privacySalt!!.bytes
             )
 
             // 6. Map the transaction id to the filtered transaction object and signatures
             filteredTransaction.id to Pair(filteredTransaction, ftxDto.signatures)
-        }.toMap()
+        }.filterNotNull().toMap()
     }
 
     private data class TransactionMerkleProofToPersist(

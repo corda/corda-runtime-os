@@ -180,6 +180,9 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         notaryName: MemberX500Name
     ): Map<SecureHash, UtxoFilteredTransactionAndSignatures> {
         return recordSuspendable({ ledgerPersistenceFlowTimer(FindFilteredTransactionsAndSignatures) }) @Suspendable {
+            if (stateRefs.isEmpty()) {
+                emptyMap<SecureHash, Map<UtxoFilteredTransaction, List<DigitalSignatureAndMetadata>>>()
+            }
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     FindFilteredTransactionsAndSignaturesExternalEventFactory::class.java,

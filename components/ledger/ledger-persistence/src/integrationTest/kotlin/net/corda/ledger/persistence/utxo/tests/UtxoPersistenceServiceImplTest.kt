@@ -664,7 +664,7 @@ class UtxoPersistenceServiceImplTest {
             )
         )
 
-        persistenceService.persistFilteredTransactions(
+        persistenceService.persistFilteredTransactionsAndSignaturesIfDoNotExist(
             mapOf(filteredTransactionToStore to emptyList()),
             account
         )
