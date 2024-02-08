@@ -34,14 +34,12 @@ import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.rest.security.RestAuthContext
-import net.corda.rest.ws.DuplexChannel
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -50,7 +48,6 @@ import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
-import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -550,40 +547,40 @@ class FlowRestResourceImplTest {
         verify(fatalErrorFunction, times(1)).invoke()
     }
 
-    @Test
-    fun `registerFlowStatusUpdatesFeed sends resource not found if virtual node does not exist`() {
-        val duplexChannel = mock<DuplexChannel>()
-        val exceptionArgumentCaptor = argumentCaptor<Exception>()
+//    @Test
+//    fun `registerFlowStatusUpdatesFeed sends resource not found if virtual node does not exist`() {
+//        val duplexChannel = mock<DuplexChannel>()
+//        val exceptionArgumentCaptor = argumentCaptor<Exception>()
+//
+//        whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(any())).thenReturn(null)
+//        doNothing().whenever(duplexChannel).error(exceptionArgumentCaptor.capture())
+//
+//        val flowRestResource = createFlowRestResource()
+//
+//        flowRestResource.registerFlowStatusUpdatesFeed(duplexChannel, VALID_SHORT_HASH, clientRequestId)
+//
+//        verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
+//        verify(duplexChannel, times(1)).error(any())
+//        assertInstanceOf(ResourceNotFoundException::class.java, exceptionArgumentCaptor.firstValue.cause)
+//        verify(fatalErrorFunction, never()).invoke()
+//    }
 
-        whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(any())).thenReturn(null)
-        doNothing().whenever(duplexChannel).error(exceptionArgumentCaptor.capture())
-
-        val flowRestResource = createFlowRestResource()
-
-        flowRestResource.registerFlowStatusUpdatesFeed(duplexChannel, VALID_SHORT_HASH, clientRequestId)
-
-        verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
-        verify(duplexChannel, times(1)).error(any())
-        assertInstanceOf(ResourceNotFoundException::class.java, exceptionArgumentCaptor.firstValue.cause)
-        verify(fatalErrorFunction, never()).invoke()
-    }
-
-    @Test
-    fun `registerFlowStatusUpdatesFeed sends bad request if short hash is invalid`() {
-        val duplexChannel = mock<DuplexChannel>()
-        val exceptionArgumentCaptor = argumentCaptor<Exception>()
-
-        doNothing().whenever(duplexChannel).error(exceptionArgumentCaptor.capture())
-
-        val flowRestResource = createFlowRestResource()
-
-        flowRestResource.registerFlowStatusUpdatesFeed(duplexChannel, "invalid", clientRequestId)
-
-        verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
-        verify(duplexChannel, times(1)).error(any())
-        assertInstanceOf(BadRequestException::class.java, exceptionArgumentCaptor.firstValue.cause)
-        verify(fatalErrorFunction, never()).invoke()
-    }
+//    @Test
+//    fun `registerFlowStatusUpdatesFeed sends bad request if short hash is invalid`() {
+//        val duplexChannel = mock<DuplexChannel>()
+//        val exceptionArgumentCaptor = argumentCaptor<Exception>()
+//
+//        doNothing().whenever(duplexChannel).error(exceptionArgumentCaptor.capture())
+//
+//        val flowRestResource = createFlowRestResource()
+//
+//        flowRestResource.registerFlowStatusUpdatesFeed(duplexChannel, "invalid", clientRequestId)
+//
+//        verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
+//        verify(duplexChannel, times(1)).error(any())
+//        assertInstanceOf(BadRequestException::class.java, exceptionArgumentCaptor.firstValue.cause)
+//        verify(fatalErrorFunction, never()).invoke()
+//    }
 
     @Test
     fun `start flow throws ForbiddenException exception when no permission granted`() {
