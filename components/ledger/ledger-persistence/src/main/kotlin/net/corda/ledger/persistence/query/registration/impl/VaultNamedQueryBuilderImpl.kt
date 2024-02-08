@@ -101,7 +101,7 @@ class VaultNamedQueryBuilderImpl(
         val notNullQuery =
             "${requireNotNull(query) { "Vault named query: $name does not have its query statement set" }}${
                 if (unconumedStatesOnly) {
-                    " AND (visible_states.consumed IS NULL OR visible_states.consumed < :${TIMESTAMP_LIMIT_PARAM_NAME})"
+                    " AND (visible_states.consumed IS NULL OR visible_states.consumed >= :${TIMESTAMP_LIMIT_PARAM_NAME})"
                 } else {
                     ""
                 }
