@@ -26,6 +26,7 @@ dependencies {
     implementation "net.corda:corda-application"
 
     api project(':libs:base-internal')
+    api project(':libs:serialization:serialization-amqp-api')
     implementation project(":libs:packaging:packaging")
     implementation "net.corda:corda-serialization"
     implementation project(':libs:serialization:serialization-internal')
