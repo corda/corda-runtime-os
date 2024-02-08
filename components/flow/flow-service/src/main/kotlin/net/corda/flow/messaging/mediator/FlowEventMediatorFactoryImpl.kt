@@ -28,6 +28,7 @@ import net.corda.messaging.api.mediator.RoutingDestination.Companion.routeTo
 import net.corda.messaging.api.mediator.RoutingDestination.Type.ASYNCHRONOUS
 import net.corda.messaging.api.mediator.RoutingDestination.Type.SYNCHRONOUS
 import net.corda.messaging.api.mediator.config.EventMediatorConfigBuilder
+import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactoryFactory
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFactoryFactory
@@ -43,11 +44,13 @@ import net.corda.schema.configuration.BootConfig.PERSISTENCE_WORKER_REST_ENDPOIN
 import net.corda.schema.configuration.BootConfig.TOKEN_SELECTION_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.UNIQUENESS_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.VERIFICATION_WORKER_REST_ENDPOINT
+import net.corda.schema.configuration.BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_SESSION
 import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT
 import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_THREAD_POOL_SIZE
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 @Component(service = [FlowEventMediatorFactory::class])
@@ -69,6 +72,8 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         private const val CONSUMER_GROUP = "FlowEventConsumer"
         private const val MESSAGE_BUS_CLIENT = "MessageBusClient"
         private const val RPC_CLIENT = "RpcClient"
+
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val deserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
@@ -93,15 +98,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         .name("FlowEventMediator")
         .messagingConfig(messagingConfig)
         .consumerFactories(
-            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_START, CONSUMER_GROUP, messagingConfig
-            ),
-            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_SESSION, CONSUMER_GROUP, messagingConfig
-            ),
-            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_EVENT_TOPIC, CONSUMER_GROUP, messagingConfig
-            ),
+            *createMediatorConsumerFactories(messagingConfig).toTypedArray()
         )
         .clientFactories(
             messagingClientFactoryFactory.createMessageBusClientFactory(
@@ -118,6 +115,30 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         .stateManager(stateManager)
         .minGroupSize(messagingConfig.getInt(MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT))
         .build()
+
+    private fun createMediatorConsumerFactories(messagingConfig: SmartConfig): List<MediatorConsumerFactory> {
+        val mediatorConsumerFactory: MutableList<MediatorConsumerFactory> = mutableListOf(
+            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
+                FLOW_START, CONSUMER_GROUP, messagingConfig
+            ),
+            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
+                FLOW_EVENT_TOPIC, CONSUMER_GROUP, messagingConfig
+            )
+        )
+
+        val mediatorReplicas = messagingConfig.getInt(WORKER_MEDIATOR_REPLICAS_FLOW_SESSION)
+        logger.info("Creating $mediatorReplicas mediator(s) consumer factories for flow session")
+        for(i in 1..mediatorReplicas) {
+            mediatorConsumerFactory.add(
+                mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
+                    FLOW_SESSION, CONSUMER_GROUP, messagingConfig
+                )
+            )
+        }
+
+        return mediatorConsumerFactory
+    }
+
 
     private fun createMessageRouterFactory(messagingConfig: SmartConfig) = MessageRouterFactory { clientFinder ->
         val messageBusClient = clientFinder.find(MESSAGE_BUS_CLIENT)
