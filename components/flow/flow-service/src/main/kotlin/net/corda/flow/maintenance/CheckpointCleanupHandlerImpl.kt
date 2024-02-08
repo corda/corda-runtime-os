@@ -106,7 +106,7 @@ class CheckpointCleanupHandlerImpl @Activate constructor(
         currentTime: Instant
     ): List<Record<*, *>> {
         return if (checkpoint.flowStartContext.initiatorType == FlowInitiatorType.RPC) {
-            val cleanupWindow = config.getLong(FlowConfig.PROCESSING_FLOW_CLEANUP_TIME)
+            val cleanupWindow = config.getLong(FlowConfig.PROCESSING_FLOW_MAPPER_CLEANUP_TIME)
             val expiryTime = currentTime.plusMillis(cleanupWindow).toEpochMilli()
             listOf(flowRecordFactory.createFlowMapperEventRecord(
                 getRPCMapperKey(checkpoint.flowKey),

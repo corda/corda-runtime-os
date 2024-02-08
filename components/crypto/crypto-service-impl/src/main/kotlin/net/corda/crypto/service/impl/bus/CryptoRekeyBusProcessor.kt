@@ -189,7 +189,9 @@ class CryptoRekeyBusProcessor(
             )
 
             State(
-                getKeyRotationStatusRecordKey(wrappingKeyAlias, request.tenantId),
+                // Using wrapping key's uuid and tenantId as SM key because wrapping key's alias is not available
+                // in re-wrap bus processor where we also update SM records.
+                getKeyRotationStatusRecordKey(it.first.toString(), request.tenantId),
                 checkNotNull(managedKeyStatusSerializer.serialize(status)),
                 1,
                 Metadata(
@@ -273,16 +275,11 @@ class CryptoRekeyBusProcessor(
             if (!deleteStateManagerRecords(
                     listOf(
                         MetadataFilter(
-                            KeyRotationMetadataValues.DEFAULT_MASTER_KEY_ALIAS,
-                            Operation.Equals,
-                            defaultUnmanagedWrappingKeyName,
-                        ),
-                        MetadataFilter(
                             KeyRotationMetadataValues.KEY_TYPE,
                             Operation.Equals,
                             KeyRotationKeyType.UNMANAGED
                         )
-                    ), "default master wrapping key $defaultUnmanagedWrappingKeyName"
+                    ), "master wrapping key."
                 )
             ) {
                 return false

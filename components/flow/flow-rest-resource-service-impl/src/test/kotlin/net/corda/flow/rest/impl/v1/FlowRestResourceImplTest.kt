@@ -5,7 +5,7 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
-import net.corda.flow.rest.FlowStatusCacheService
+import net.corda.flow.rest.FlowStatusLookupService
 import net.corda.flow.rest.factory.MessageFactory
 import net.corda.flow.rest.v1.FlowRestResource
 import net.corda.flow.rest.v1.types.request.StartFlowParameters
@@ -34,14 +34,12 @@ import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.rest.security.RestAuthContext
-import net.corda.rest.ws.DuplexChannel
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -50,7 +48,6 @@ import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
-import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -65,7 +62,7 @@ import kotlin.test.assertNotNull
 
 class FlowRestResourceImplTest {
 
-    private lateinit var flowStatusCacheService: FlowStatusCacheService
+    private lateinit var flowStatusLookupService: FlowStatusLookupService
     private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
     private lateinit var publisherFactory: PublisherFactory
     private lateinit var messageFactory: MessageFactory
@@ -125,7 +122,7 @@ class FlowRestResourceImplTest {
 
     @BeforeEach
     fun setup() {
-        flowStatusCacheService = mock()
+        flowStatusLookupService = mock()
         publisherFactory = mock()
         publisher = mock()
         messageFactory = mock()
@@ -138,7 +135,7 @@ class FlowRestResourceImplTest {
         val cpiMetadata = getMockCPIMeta()
         whenever(cpiInfoReadService.get(any())).thenReturn(cpiMetadata)
         whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(any())).thenReturn(getStubVirtualNode())
-        whenever(flowStatusCacheService.getStatus(any(), any())).thenReturn(null)
+        whenever(flowStatusLookupService.getStatus(any(), any())).thenReturn(null)
         whenever(messageFactory.createStartFlowStatus(any(), any(), any())).thenReturn(FlowStatus().apply {
             key = FlowKey()
         })
@@ -175,7 +172,7 @@ class FlowRestResourceImplTest {
     private fun createFlowRestResource(initialise: Boolean = true): FlowRestResource {
         return FlowRestResourceImpl(
             virtualNodeInfoReadService,
-            flowStatusCacheService,
+            flowStatusLookupService,
             publisherFactory,
             messageFactory,
             cpiInfoReadService,
@@ -192,12 +189,12 @@ class FlowRestResourceImplTest {
 
     @Test
     fun `get flow status`() {
-        whenever(flowStatusCacheService.getStatus(any(), any())).thenReturn(FlowStatus())
+        whenever(flowStatusLookupService.getStatus(any(), any())).thenReturn(FlowStatus())
         val flowRestResource = createFlowRestResource()
         flowRestResource.getFlowStatus(VALID_SHORT_HASH, clientRequestId)
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
-        verify(flowStatusCacheService, times(1)).getStatus(any(), any())
+        verify(flowStatusLookupService, times(1)).getStatus(any(), any())
         verify(messageFactory, times(1)).createFlowStatusResponse(any())
         verify(fatalErrorFunction, never()).invoke()
     }
@@ -213,7 +210,7 @@ class FlowRestResourceImplTest {
         }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
-        verify(flowStatusCacheService, never()).getStatus(any(), any())
+        verify(flowStatusLookupService, never()).getStatus(any(), any())
         verify(messageFactory, never()).createFlowStatusResponse(any())
         verify(fatalErrorFunction, never()).invoke()
     }
@@ -228,19 +225,19 @@ class FlowRestResourceImplTest {
         }
 
         verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
-        verify(flowStatusCacheService, never()).getStatus(any(), any())
+        verify(flowStatusLookupService, never()).getStatus(any(), any())
         verify(messageFactory, never()).createFlowStatusResponse(any())
         verify(fatalErrorFunction, never()).invoke()
     }
 
     @Test
     fun `get multiple flow status`() {
-        whenever(flowStatusCacheService.getStatusesPerIdentity(any())).thenReturn(listOf(FlowStatus(), FlowStatus()))
+        whenever(flowStatusLookupService.getStatusesPerIdentity(any())).thenReturn(listOf(FlowStatus(), FlowStatus()))
         val flowRestResource = createFlowRestResource()
         flowRestResource.getMultipleFlowStatus(VALID_SHORT_HASH)
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
-        verify(flowStatusCacheService, times(1)).getStatusesPerIdentity(any())
+        verify(flowStatusLookupService, times(1)).getStatusesPerIdentity(any())
         verify(messageFactory, times(2)).createFlowStatusResponse(any())
         verify(fatalErrorFunction, never()).invoke()
     }
@@ -252,12 +249,12 @@ class FlowRestResourceImplTest {
         val failed = FlowStatus()
         failed.flowStatus = FlowStates.FAILED
 
-        whenever(flowStatusCacheService.getStatusesPerIdentity(any())).thenReturn(listOf(completed, failed))
+        whenever(flowStatusLookupService.getStatusesPerIdentity(any())).thenReturn(listOf(completed, failed))
         val flowRestResource = createFlowRestResource()
         val responses = flowRestResource.getMultipleFlowStatus(VALID_SHORT_HASH, "COMPLETED")
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
-        verify(flowStatusCacheService, times(1)).getStatusesPerIdentity(any())
+        verify(flowStatusLookupService, times(1)).getStatusesPerIdentity(any())
         verify(messageFactory, times(1)).createFlowStatusResponse(any())
         verify(fatalErrorFunction, never()).invoke()
         assertNotNull(responses.flowStatusResponses)
@@ -272,12 +269,12 @@ class FlowRestResourceImplTest {
         val failed = FlowStatus()
         failed.flowStatus = FlowStates.FAILED
 
-        whenever(flowStatusCacheService.getStatusesPerIdentity(any())).thenReturn(listOf(completed, failed))
+        whenever(flowStatusLookupService.getStatusesPerIdentity(any())).thenReturn(listOf(completed, failed))
         val flowRestResource = createFlowRestResource()
         val responses = flowRestResource.getMultipleFlowStatus(VALID_SHORT_HASH, "FAILED")
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
-        verify(flowStatusCacheService, times(1)).getStatusesPerIdentity(any())
+        verify(flowStatusLookupService, times(1)).getStatusesPerIdentity(any())
         verify(messageFactory, times(1)).createFlowStatusResponse(any())
         verify(fatalErrorFunction, never()).invoke()
         assertNotNull(responses.flowStatusResponses)
@@ -296,7 +293,7 @@ class FlowRestResourceImplTest {
         }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
-        verify(flowStatusCacheService, never()).getStatusesPerIdentity(any())
+        verify(flowStatusLookupService, never()).getStatusesPerIdentity(any())
         verify(messageFactory, never()).createFlowStatusResponse(any())
         verify(fatalErrorFunction, never()).invoke()
     }
@@ -311,7 +308,7 @@ class FlowRestResourceImplTest {
         }
 
         verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
-        verify(flowStatusCacheService, never()).getStatusesPerIdentity(any())
+        verify(flowStatusLookupService, never()).getStatusesPerIdentity(any())
         verify(messageFactory, never()).createFlowStatusResponse(any())
         verify(fatalErrorFunction, never()).invoke()
     }
@@ -329,7 +326,7 @@ class FlowRestResourceImplTest {
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(cpiInfoReadService, times(1)).get(any())
-        verify(flowStatusCacheService, times(1)).getStatus(any(), any())
+        verify(flowStatusLookupService, times(1)).getStatus(any(), any())
         verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), platformPropertiesCaptor.capture())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(publisher, times(1)).batchPublish(any())
@@ -362,7 +359,7 @@ class FlowRestResourceImplTest {
 
         verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
         verify(cpiInfoReadService, never()).get(any())
-        verify(flowStatusCacheService, never()).getStatus(any(), any())
+        verify(flowStatusLookupService, never()).getStatus(any(), any())
         verify(messageFactory, never()).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, never()).createStartFlowStatus(any(), any(), any())
         verify(publisher, never()).publish(any())
@@ -379,7 +376,7 @@ class FlowRestResourceImplTest {
             flowRestResource.startFlow(invalidShortHash, StartFlowParameters(clientRequestId, "", TestJsonObject()))
         }
 
-        verify(flowStatusCacheService, never()).getStatus(any(), any())
+        verify(flowStatusLookupService, never()).getStatus(any(), any())
         verify(messageFactory, never()).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, never()).createStartFlowStatus(any(), any(), any())
         verify(publisher, never()).publish(any())
@@ -397,7 +394,7 @@ class FlowRestResourceImplTest {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, "", TestJsonObject()))
         }
 
-        verify(flowStatusCacheService, never()).getStatus(any(), any())
+        verify(flowStatusLookupService, never()).getStatus(any(), any())
         verify(messageFactory, never()).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, never()).createStartFlowStatus(any(), any(), any())
         verify(publisher, never()).publish(any())
@@ -409,13 +406,13 @@ class FlowRestResourceImplTest {
     fun `start flow throws resource exists exception for same criteria`() {
         val flowRestResource = createFlowRestResource()
 
-        whenever(flowStatusCacheService.getStatus(any(), any())).thenReturn(mock())
+        whenever(flowStatusLookupService.getStatus(any(), any())).thenReturn(mock())
         assertThrows<ResourceAlreadyExistsException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
-        verify(flowStatusCacheService, times(1)).getStatus(any(), any())
+        verify(flowStatusLookupService, times(1)).getStatus(any(), any())
         verify(cpiInfoReadService, times(0)).get(any())
         verify(messageFactory, times(0)).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, times(0)).createStartFlowStatus(any(), any(), any())
@@ -435,7 +432,7 @@ class FlowRestResourceImplTest {
         }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
-        verify(flowStatusCacheService, times(1)).getStatus(any(), any())
+        verify(flowStatusLookupService, times(1)).getStatus(any(), any())
         verify(cpiInfoReadService, atLeastOnce()).get(any())
         verify(messageFactory, never()).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, never()).createStartFlowStatus(any(), any(), any())
@@ -454,7 +451,7 @@ class FlowRestResourceImplTest {
         }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
-        verify(flowStatusCacheService, times(1)).getStatus(any(), any())
+        verify(flowStatusLookupService, times(1)).getStatus(any(), any())
         verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(publisher, times(1)).batchPublish(any())
@@ -474,7 +471,7 @@ class FlowRestResourceImplTest {
         flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
-        verify(flowStatusCacheService, times(1)).getStatus(any(), any())
+        verify(flowStatusLookupService, times(1)).getStatus(any(), any())
         verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(publisher, times(1)).batchPublish(any())
@@ -492,7 +489,7 @@ class FlowRestResourceImplTest {
         }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
-        verify(flowStatusCacheService, times(1)).getStatus(any(), any())
+        verify(flowStatusLookupService, times(1)).getStatus(any(), any())
         verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(publisher, times(1)).batchPublish(any())
@@ -507,7 +504,7 @@ class FlowRestResourceImplTest {
         }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
-        verify(flowStatusCacheService, times(1)).getStatus(any(), any())
+        verify(flowStatusLookupService, times(1)).getStatus(any(), any())
         verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(publisher, times(1)).batchPublish(any())
@@ -527,7 +524,7 @@ class FlowRestResourceImplTest {
         flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
-        verify(flowStatusCacheService, times(1)).getStatus(any(), any())
+        verify(flowStatusLookupService, times(1)).getStatus(any(), any())
         verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(publisher, times(1)).batchPublish(any())
@@ -542,47 +539,12 @@ class FlowRestResourceImplTest {
         }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
-        verify(flowStatusCacheService, times(1)).getStatus(any(), any())
+        verify(flowStatusLookupService, times(1)).getStatus(any(), any())
         verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(publisher, times(1)).batchPublish(any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(fatalErrorFunction, times(1)).invoke()
-    }
-
-    @Test
-    fun `registerFlowStatusUpdatesFeed sends resource not found if virtual node does not exist`() {
-        val duplexChannel = mock<DuplexChannel>()
-        val exceptionArgumentCaptor = argumentCaptor<Exception>()
-
-        whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(any())).thenReturn(null)
-        doNothing().whenever(duplexChannel).error(exceptionArgumentCaptor.capture())
-
-        val flowRestResource = createFlowRestResource()
-
-        flowRestResource.registerFlowStatusUpdatesFeed(duplexChannel, VALID_SHORT_HASH, clientRequestId)
-
-        verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
-        verify(duplexChannel, times(1)).error(any())
-        assertInstanceOf(ResourceNotFoundException::class.java, exceptionArgumentCaptor.firstValue.cause)
-        verify(fatalErrorFunction, never()).invoke()
-    }
-
-    @Test
-    fun `registerFlowStatusUpdatesFeed sends bad request if short hash is invalid`() {
-        val duplexChannel = mock<DuplexChannel>()
-        val exceptionArgumentCaptor = argumentCaptor<Exception>()
-
-        doNothing().whenever(duplexChannel).error(exceptionArgumentCaptor.capture())
-
-        val flowRestResource = createFlowRestResource()
-
-        flowRestResource.registerFlowStatusUpdatesFeed(duplexChannel, "invalid", clientRequestId)
-
-        verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
-        verify(duplexChannel, times(1)).error(any())
-        assertInstanceOf(BadRequestException::class.java, exceptionArgumentCaptor.firstValue.cause)
-        verify(fatalErrorFunction, never()).invoke()
     }
 
     @Test

@@ -70,11 +70,11 @@ class TransactionBackchainVerifierImpl @Activate constructor(
                         return false
                     }
                     try {
-                        log.trace { "Backchain resolution of $initialTransactionIds - Verifying transaction $transactionId" }
+                        log.info("Backchain resolution of $initialTransactionIds - Verifying transaction $transactionId")
                         transaction.verifySignatorySignatures()
                         transaction.verifyAttachedNotarySignature()
                         utxoLedgerTransactionVerificationService.verify(transaction)
-                        log.trace { "Backchain resolution of $initialTransactionIds - Verified transaction $transactionId" }
+                        log.info("Backchain resolution of $initialTransactionIds - Verified transaction $transactionId")
                     } catch (e: Exception) {
                         // TODO revisit what exceptions get caught
                         log.warn(
@@ -85,7 +85,7 @@ class TransactionBackchainVerifierImpl @Activate constructor(
                     }
                     val visibleStatesIndexes = transaction.getVisibleStateIndexes(visibilityChecker)
                     utxoLedgerPersistenceService.persist(transaction, VERIFIED, visibleStatesIndexes)
-                    log.trace { "Backchain resolution of $initialTransactionIds - Stored transaction $transactionId as verified" }
+                    log.info("Backchain resolution of $initialTransactionIds - Stored transaction $transactionId as verified")
                 }
 
                 else -> {
