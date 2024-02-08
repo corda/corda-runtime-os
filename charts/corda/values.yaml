@@ -460,7 +460,7 @@ bootstrap:
       # the username configuration
       username:
         # -- the username, defaults to a value randomly-generated on install
-        value: "virtual_node_user"
+        value: "virtual_nodes_user"
         # the username secret configuration; used in preference to value if name is set
         valueFrom:
           # the username secret key reference

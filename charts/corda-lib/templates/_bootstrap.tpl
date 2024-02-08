@@ -325,7 +325,6 @@ spec:
               -h "${CONFIG_DB_HOST}" -p "${CONFIG_DB_PORT}" --dbname "${CONFIG_DB_NAME}"
 
               echo 'Creating config users and granting permissions'
-              # TODO: config users should be created and configured for each of the five worker types
               psql -v ON_ERROR_STOP=1 -h "${CONFIG_DB_HOST}" -p "${CONFIG_DB_PORT}" --dbname "${CONFIG_DB_NAME}" << SQL
 {{- range $workerName, $workerValues := $.Values.workers }}
 {{-   if $workerValues.config }}
@@ -372,6 +371,12 @@ spec:
                 ALTER ROLE "${RBAC_DB_USERNAME}" SET search_path TO ${RBAC_DB_SCHEMA};
               SQL
 
+              echo 'Creating virtual nodes user and granting permissions'
+              psql -v ON_ERROR_STOP=1 -h "${VIRTUAL_NODES_DB_HOST}" -p "${VIRTUAL_NODES_DB_PORT}" --dbname "${VIRTUAL_NODES_DB_NAME}" << SQL
+                DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${VIRTUAL_NODES_DB_USERNAME}') THEN RAISE NOTICE 'Role "${VIRTUAL_NODES_DB_USERNAME}" already exists'; ELSE CREATE USER "${VIRTUAL_NODES_DB_USERNAME}" WITH NOSUPERUSER CREATEROLE ENCRYPTED PASSWORD '${VIRTUAL_NODES_DB_PASSWORD}'; END IF; END \$\$;
+                GRANT CREATE ON DATABASE ${VIRTUAL_NODES_DB_NAME} TO "${VIRTUAL_NODES_DB_USERNAME}"
+              SQL
+
               echo 'DBs Bootstrapped'
           volumeMounts:
             - mountPath: /tmp
@@ -386,7 +391,7 @@ spec:
             - name: CONFIG_DB_SCHEMA
               value: {{ .Values.config.partition | quote }}
             - name: CRYPTO_DB_HOST
-              value: {{ required "A db host is required" $cryptoDbSettings.host | quote }}
+              value: {{ required "A crypto DB host is required" $cryptoDbSettings.host | quote }}
             - name: CRYPTO_DB_PORT
               value: {{ $cryptoDbSettings.port | quote }}
             - name: CRYPTO_DB_NAME
@@ -394,13 +399,19 @@ spec:
             - name: CRYPTO_DB_SCHEMA
               value: {{ .Values.bootstrap.db.crypto.partition | quote }}
             - name: RBAC_DB_HOST
-              value: {{ required "A db host is required" $rbacDbSettings.host | quote }}
+              value: {{ required "An RBAC DB host is required" $rbacDbSettings.host | quote }}
             - name: RBAC_DB_PORT
               value: {{ $rbacDbSettings.port | quote }}
             - name: RBAC_DB_NAME
               value: {{ $rbacDbSettings.name | quote }}
             - name: RBAC_DB_SCHEMA
               value: {{ .Values.bootstrap.db.rbac.partition | quote }}
+            - name: VIRTUAL_NODES_DB_HOST
+              value: {{ required "A virtual nodes DB host is required" $virtualNodesDbSettings.host | quote }}
+            - name: VIRTUAL_NODES_DB_PORT
+              value: {{ $virtualNodesDbSettings.port | quote }}
+            - name: VIRTUAL_NODES_DB_NAME
+              value: {{ $virtualNodesDbSettings.name | quote }}
             {{- include "corda.db.bootstrapEnvironment" ( list $ "config" $.Values.config.storageId $configBootstrapSettings ) | nindent 12 }}
             {{- include "corda.db.bootstrapEnvironment" ( list $ "crypto" $.Values.bootstrap.db.crypto.storageId $cryptoBootstrapSettings ) | nindent 12 }}
             {{- include "corda.db.bootstrapEnvironment" ( list $ "rbac" $.Values.bootstrap.db.rbac.storageId $rbacBootstrapSettings ) | nindent 12 }}
