@@ -277,16 +277,11 @@ class CryptoRekeyBusProcessor(
             if (!deleteStateManagerRecords(
                     listOf(
                         MetadataFilter(
-                            KeyRotationMetadataValues.DEFAULT_MASTER_KEY_ALIAS,
-                            Operation.Equals,
-                            defaultUnmanagedWrappingKeyName,
-                        ),
-                        MetadataFilter(
                             KeyRotationMetadataValues.KEY_TYPE,
                             Operation.Equals,
                             KeyRotationKeyType.UNMANAGED
                         )
-                    ), "default master wrapping key $defaultUnmanagedWrappingKeyName"
+                    ), "master wrapping key."
                 )
             ) {
                 return false
