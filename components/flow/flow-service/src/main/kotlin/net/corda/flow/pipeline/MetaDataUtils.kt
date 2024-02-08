@@ -10,5 +10,6 @@ fun addTerminationKeyToMeta(metaData: Metadata?): Metadata {
     val newMeta = mapOf(CheckpointMetadataKeys.STATE_META_CHECKPOINT_TERMINATED_KEY to true)
     return metaData?.let {
         Metadata(it + newMeta)
+
     } ?: Metadata(newMeta)
 }
