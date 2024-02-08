@@ -230,6 +230,7 @@ spec:
     metadata:
       labels:
         {{- include "corda.nginxLabels" ( list . $workerName ) | nindent 8 }}
+        {{- include "corda.workerCommonPodLabels" . | nindent 8 }}
       {{- with .Values.annotations }}
       annotations:
         {{- toYaml . | nindent 8 }}

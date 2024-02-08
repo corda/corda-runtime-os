@@ -30,6 +30,6 @@ postgresql:
       requests:
         memory: 256Mi
         cpu: 300m
-      limits:  
+      limits:
         memory: 512Mi
         cpu: 600m

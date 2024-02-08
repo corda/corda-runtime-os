@@ -62,12 +62,13 @@ internal class SessionExpiryScheduler(
         }.toMap()
     }
 
-    private fun forgetState(state: State) {
+    fun forgetState(state: State) {
         val key = state.key
         stateManager.delete(listOf(state))
         caches.forEach {
             it.invalidate(key)
         }
+        tasks[key]?.future?.cancel(false)
         tasks.remove(key)
     }
 }
