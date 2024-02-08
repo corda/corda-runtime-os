@@ -81,8 +81,6 @@ internal class StatefulSessionManagerImpl(
 ) : SessionManager {
     companion object {
         const val LINK_MANAGER_SUBSYSTEM = "link-manager"
-
-        private const val CACHE_SIZE = 10_000L
         private val SESSION_VALIDITY_PERIOD: Duration = Duration.ofDays(7)
         private val logger: Logger = LoggerFactory.getLogger(StatefulSessionManagerImpl::class.java)
     }
@@ -295,10 +293,7 @@ internal class StatefulSessionManagerImpl(
                                 state.toCounterparties(),
                                 session,
                             )
-                        sessionCache.putOutboundSession(
-                            key,
-                            SessionManager.SessionDirection.Outbound(outboundSession.counterparties, session)
-                        )
+                        sessionCache.putOutboundSession(key, outboundSession)
                         it to outboundSession
                     }
                 }
