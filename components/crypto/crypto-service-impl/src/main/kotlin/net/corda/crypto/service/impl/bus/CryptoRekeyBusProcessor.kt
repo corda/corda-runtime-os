@@ -189,7 +189,8 @@ class CryptoRekeyBusProcessor(
             )
 
             State(
-                // using key's uuid and tenantId as key's alias is not available re-wrap processor
+                // Using wrapping key's uuid and tenantId as SM key because wrapping key's alias is not available
+                // in re-wrap bus processor where we also update SM records.
                 getKeyRotationStatusRecordKey(it.first.toString(), request.tenantId),
                 checkNotNull(managedKeyStatusSerializer.serialize(status)),
                 1,
