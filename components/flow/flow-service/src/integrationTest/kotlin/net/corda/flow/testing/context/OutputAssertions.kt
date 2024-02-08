@@ -81,6 +81,7 @@ interface OutputAssertions {
     )
 
     fun nullStateRecord()
+
     fun notNullStateRecord()
 
     fun markedForDlq()
