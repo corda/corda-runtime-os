@@ -81,4 +81,16 @@ interface UtxoPersistenceService {
     )
 
     fun persistTransactionSignatures(id: String, signatures: List<ByteArray>, startingIndex: Int)
+
+    /**
+     * Retrieve filtered transactions and its signatures with the given a list of state references.
+     *
+     * @param stateRefs The list of [StateRef]
+     *
+     * @return A map of the filtered transaction ID to a pair of a found [FilteredTransaction] and a corresponding signatures.
+     * If a [FilteredTransaction] with a given stateRef ID is not found, it will be null.
+     */
+    fun findFilteredTransactionsAndSignatures(
+        stateRefs: List<StateRef>
+    ): Map<SecureHash, Pair<FilteredTransaction?, List<DigitalSignatureAndMetadata>>>
 }

@@ -66,6 +66,7 @@ spec:
     metadata:
       labels:
         {{- include "corda.selectorLabels" . | nindent 8 }}
+        {{- include "corda.commonBootstrapPodLabels" . | nindent 8 }}
     spec:
       {{- include "corda.imagePullSecrets" . | indent 6 }}
       {{- include "corda.tolerations" . | nindent 6 }}
@@ -131,6 +132,7 @@ spec:
     metadata:
       labels:
         {{- include "corda.selectorLabels" . | nindent 8 }}
+        {{- include "corda.commonBootstrapPodLabels" . | nindent 8 }}
     spec:
       {{- include "corda.imagePullSecrets" . | indent 6 }}
       {{- include "corda.tolerations" $ | indent 6 }}
@@ -372,6 +374,7 @@ spec:
     metadata:
       labels:
         {{- include "corda.selectorLabels" . | nindent 8 }}
+        {{- include "corda.commonBootstrapPodLabels" . | nindent 8 }}
     spec:
       {{- include "corda.imagePullSecrets" . | indent 6 }}
       {{- include "corda.tolerations" . | indent 6 }}
@@ -522,6 +525,7 @@ spec:
     metadata:
       labels:
         {{- include "corda.selectorLabels" . | nindent 8 }}
+        {{- include "corda.commonBootstrapPodLabels" . | nindent 8 }}
     spec:
       {{- include "corda.imagePullSecrets" . | indent 6 }}
       {{- include "corda.tolerations" . | indent 6 }}
