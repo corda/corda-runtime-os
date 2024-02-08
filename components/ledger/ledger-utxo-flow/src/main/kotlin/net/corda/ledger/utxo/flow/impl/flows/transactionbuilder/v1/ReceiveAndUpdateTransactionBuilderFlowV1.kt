@@ -15,7 +15,6 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
-import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndSignatures
 import net.corda.v5.membership.GroupParametersLookup
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -73,9 +72,7 @@ class ReceiveAndUpdateTransactionBuilderFlowV1(
                 flowEngine.subFlow(TransactionBackchainResolutionFlow(newTransactionIds, session))
             }
         } else {
-            val receivedFilteredTransactions = session.receive(List::class.java)
-                .filterIsInstance<UtxoFilteredTransactionAndSignatures>()
-
+            val receivedFilteredTransactions = receivedTransactionBuilder.filteredDependencies
             require(receivedFilteredTransactions.size == newTransactionIds.size) {
                 "The number of filtered transactions received didn't match the number of dependencies."
             }

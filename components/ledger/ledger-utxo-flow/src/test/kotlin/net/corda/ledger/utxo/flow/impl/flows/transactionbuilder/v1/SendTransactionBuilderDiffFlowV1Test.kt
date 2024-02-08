@@ -302,7 +302,9 @@ class SendTransactionBuilderDiffFlowV1Test {
 
         callSendFlow()
 
-        verify(session, times(1)).send(eq(filteredTransactionsAndSignatures.values.toList()))
+        verify(session).send(UtxoTransactionBuilderContainer(
+            filteredDependencies = filteredTransactionsAndSignatures.values.toList()
+        ))
     }
 
     @Test
@@ -336,10 +338,11 @@ class SendTransactionBuilderDiffFlowV1Test {
     private fun callSendFlow() {
         val flow = SendTransactionBuilderDiffFlowV1(
             UtxoBaselinedTransactionBuilder(currentTransactionBuilder).diff(),
-            session,
-            notaryLookup,
-            utxoLedgerPersistenceService
-        )
+            session
+        ).also {
+            it.notaryLookup = notaryLookup
+            it.persistenceService = utxoLedgerPersistenceService
+        }
 
         flow.flowEngine = flowEngine
         flow.call()

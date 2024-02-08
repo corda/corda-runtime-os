@@ -45,31 +45,32 @@ class SendTransactionBuilderDiffFlowV1(
             "Could not find notary service with name: $notaryName"
         }
 
-        log.trace { "Sending proposed transaction builder components to ${session.counterparty}." }
-        session.send(transactionBuilder)
-
         val newTransactionIds = transactionBuilder.dependencies
 
         // If we couldn't find the notary we default to backchain resolution
         if (notaryInfo.isBackchainRequired) {
+
+            log.trace { "Sending proposed transaction builder components to ${session.counterparty}." }
+            session.send(transactionBuilder)
+
             if (newTransactionIds.isEmpty()) {
                 log.trace { "There are no new states transferred, therefore no backchains need to be resolved." }
             } else {
                 flowEngine.subFlow(TransactionBackchainSenderFlow(newTransactionIds, session))
             }
         } else {
-            val dependencies = transactionBuilder.inputStateRefs + transactionBuilder.referenceStateRefs
             val filteredTransactionsAndSignatures = persistenceService.findFilteredTransactionsAndSignatures(
-                dependencies,
+                transactionBuilder.inputStateRefs + transactionBuilder.referenceStateRefs,
                 notaryInfo.publicKey,
                 notaryInfo.name
             ).values.toList()
 
-            require(dependencies.size == filteredTransactionsAndSignatures.size) {
+            require(newTransactionIds.size == filteredTransactionsAndSignatures.size) {
                 "The number of filtered transactions didn't match the number of dependencies."
             }
 
-            session.send(filteredTransactionsAndSignatures)
+            log.trace { "Sending proposed transaction builder components with filtered dependencies to ${session.counterparty}." }
+            session.send(transactionBuilder.copy(filteredDependencies = filteredTransactionsAndSignatures))
         }
     }
 }

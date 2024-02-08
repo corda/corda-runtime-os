@@ -6,6 +6,7 @@ import net.corda.data.ledger.persistence.PersistFilteredTransactionsAndSignature
 import net.corda.data.persistence.EntityResponse
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
+import net.corda.ledger.persistence.common.LedgerPersistenceUtils.findAccount
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.messaging.api.records.Record
@@ -21,19 +22,7 @@ class UtxoPersistFilteredTransactionRequestHandler(
     private val serializationService: SerializationService
 ) : RequestHandler {
 
-    private companion object {
-        const val CORDA_ACCOUNT = "corda.account"
-    }
-
     override fun execute(): List<Record<*, *>> {
-
-        val accountString = externalEventContext.contextProperties.items.find {
-            it.key == CORDA_ACCOUNT
-        }?.value
-
-        requireNotNull(accountString) {
-            "Account cannot be null"
-        }
 
         val filteredTransactionsAndSignatures = serializationService.deserialize<Map<FilteredTransaction, List<DigitalSignatureAndMetadata>>>(
             persistFilteredTransactions.filteredTransactionsAndSignatures.array()
@@ -41,7 +30,7 @@ class UtxoPersistFilteredTransactionRequestHandler(
 
         persistenceService.persistFilteredTransactions(
             filteredTransactionsAndSignatures,
-            accountString
+            externalEventContext.findAccount()
         )
 
         return listOf(

@@ -16,7 +16,8 @@ data class UtxoTransactionBuilderContainer(
     override val signatories: List<PublicKey> = listOf(),
     override val inputStateRefs: List<StateRef> = listOf(),
     override val referenceStateRefs: List<StateRef> = listOf(),
-    override val outputStates: List<ContractStateAndEncumbranceTag> = listOf()
+    override val outputStates: List<ContractStateAndEncumbranceTag> = listOf(),
+    val filteredDependencies: List<UtxoFilteredTransactionAndSignatures> = listOf()
 ) : UtxoTransactionBuilderData {
     override fun getNotaryName(): MemberX500Name? {
         return notaryName
