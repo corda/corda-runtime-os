@@ -23,8 +23,7 @@ fun UtxoFilteredTransactionAndSignatures.verifyFilteredTransactionAndSignatures(
 
     require(signatures.isNotEmpty()) { "No notary signatures were received" }
 
-    // TODO Since the notary already verified, we don't need this?
-    // filteredTransaction.verify()
+    filteredTransaction.verify()
 
     require(notary.name == filteredTransaction.notaryName) {
         "Notary name of filtered transaction \"${filteredTransaction.notaryName}\" doesn't match with " +

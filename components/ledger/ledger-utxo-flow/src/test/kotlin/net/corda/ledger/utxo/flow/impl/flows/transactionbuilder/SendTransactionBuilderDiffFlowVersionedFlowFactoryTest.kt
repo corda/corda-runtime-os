@@ -8,11 +8,7 @@ import org.mockito.kotlin.mock
 
 class SendTransactionBuilderDiffFlowVersionedFlowFactoryTest {
 
-    private val factory = SendTransactionBuilderDiffFlowVersionedFlowFactory(
-        mock(),
-        mock(),
-        mock()
-    )
+    private val factory = SendTransactionBuilderDiffFlowVersionedFlowFactory(mock())
 
     @Test
     fun `with platform version 1 creates SendTransactionBuilderDiffFlowV1`() {
