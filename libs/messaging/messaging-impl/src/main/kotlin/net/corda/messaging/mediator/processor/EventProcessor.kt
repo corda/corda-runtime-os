@@ -14,7 +14,6 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.tracing.addTraceContextToRecord
-import org.slf4j.LoggerFactory
 
 /**
  * Class to process records received from the consumer.
@@ -29,8 +28,6 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     private val messageRouter: MessageRouter,
     private val mediatorInputService: MediatorInputService,
 ) {
-
-    private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.name}")
 
     /**
      * Process a group of events.
@@ -80,6 +77,16 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                 asyncOutputs.addOutputs(consumerInputEvent, newAsyncOutputs)
             }
             stateManagerHelper.createOrUpdateState(key.toString(), inputState, processorState)
+        } catch (e: EventProcessorSyncEventsIntermittentException) {
+            // If an intermittent error occurs here, the RPC client has failed to deliver a message to another part
+            // of the system despite the retry loop implemented there. The exception may contain any state that has been output
+            // from the processing of consumer input.
+            asyncOutputs.clear()
+            stateManagerHelper.failStateProcessing(
+                key.toString(),
+                getMostRecentState(key, e.partiallyProcessedState, processorState, inputState),
+                "unable to contact Corda services while processing events"
+            )
         } catch (e: CordaMessageAPIIntermittentException) {
             // If an intermittent error occurs here, the RPC client has failed to deliver a message to another part
             // of the system despite the retry loop implemented there. This should trigger individual processing to
@@ -94,6 +101,22 @@ class EventProcessor<K : Any, S : Any, E : Any>(
 
         val stateChangeAndOperation = stateChangeAndOperation(inputState, processed)
         return EventProcessingOutput(asyncOutputs.values.flatten(), stateChangeAndOperation)
+    }
+
+    private fun getMostRecentState(
+        key: K,
+        partiallyProcessedState: StateAndEventProcessor.State<*>?,
+        lastSuccessfulProcessorState: StateAndEventProcessor.State<S>?,
+        inputState: State?
+    ): State? {
+        return if (partiallyProcessedState != null) {
+            @Suppress("unchecked_cast")
+            stateManagerHelper.createOrUpdateState(key.toString(), inputState, partiallyProcessedState as StateAndEventProcessor.State<S>)
+        } else if (lastSuccessfulProcessorState != null) {
+            stateManagerHelper.createOrUpdateState(key.toString(), inputState, lastSuccessfulProcessorState)
+        } else {
+            inputState
+        }
     }
 
     private fun processConsumerInput(
@@ -113,7 +136,11 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                 messageRouter.getDestination(it).type == RoutingDestination.Type.SYNCHRONOUS
             }
             newAsyncOutputs.addAll(asyncEvents)
-            queue.addAll(processSyncEvents(key, syncEvents))
+            try {
+                queue.addAll(processSyncEvents(key, syncEvents))
+            } catch (e: CordaMessageAPIIntermittentException) {
+                throw EventProcessorSyncEventsIntermittentException(processorStateUpdated, e)
+            }
         }
         return Pair(processorStateUpdated, newAsyncOutputs)
     }
