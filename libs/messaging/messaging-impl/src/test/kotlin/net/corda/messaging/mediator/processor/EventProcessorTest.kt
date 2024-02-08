@@ -107,7 +107,7 @@ class EventProcessorTest {
     }
 
     @Test
-    fun `when rpc client fails, with partially created state, null input state, the output contains partially created state and processing failure`() {
+    fun `sync processing fails with partially created state, the output contains this state with processing failure`() {
         val mergedState = mock<State>()
         val mockState = mock<State>()
         val input = mapOf("key" to EventProcessingInput("key", getStringRecords(1, "key"), null))
@@ -134,7 +134,7 @@ class EventProcessorTest {
     }
 
     @Test
-    fun `when rpc client fails, with null inputState, null processingState, an empty state is output with processing failure`() {
+    fun `sync processing fails with no state, an empty state is output with processing failure`() {
         val mockedState = mock<State>()
         val input = mapOf("key" to EventProcessingInput("key", getStringRecords(1, "key"), null))
 
@@ -158,7 +158,7 @@ class EventProcessorTest {
     }
 
     @Test
-    fun `when rpc client fails on second loop, with null input state and no partially created state on second loop, it uses current processor state with processing failure`() {
+    fun `sync processing fails on second loop and uses current processor state with processing failure`() {
         val input = mapOf("key" to EventProcessingInput("key", getStringRecords(2, "key"), null))
         val firstLoopUpdatedState = mock<StateAndEventProcessor.State<String>>()
         val mergedState = mock<State>()
