@@ -1,12 +1,12 @@
 package net.corda.messaging.mediator
 
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.messaging.api.mediator.MediatorInputService
 import net.corda.messaging.api.records.Record
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.security.MessageDigest
 import java.util.Base64
 
 @Component(service = [MediatorInputService::class])
@@ -26,10 +26,7 @@ class MediatorInputServiceImpl @Activate constructor(
 
     private fun serialize(value: Any?) = value?.let { serializer.serialize(it) }
 
-    /**
-     * MD5 is a fast hash. Security implications are not a concern as this is just used as an identifier
-     */
-    private fun hash(bytes: ByteArray) = MessageDigest.getInstance("MD5").digest(bytes)
+    private fun hash(bytes: ByteArray) = bytes.sha256Bytes()
 
     private fun ByteArray.toBase64(): String =
         String(Base64.getEncoder().encode(this))
