@@ -1,86 +1,16 @@
-import aQute.bnd.gradle.Bundle
-
 plugins {
-    id 'corda.osgi-test-conventions'
     id 'corda.common-publishing'
     id 'corda.common-library'
 }
 
-description 'Corda AMQP serialization library'
-
-configurations {
-    cpbs {
-        canBeConsumed = false
-        transitive = false
-    }
-}
+description 'Corda AMQP serialization api'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:osgi.core'
-    compileOnly 'org.osgi:org.osgi.service.component.annotations'
-    compileOnly "biz.aQute.bnd:biz.aQute.bnd.annotation:$bndlibVersion"
-    compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-application"
 
-    api project(':libs:base-internal')
-    implementation project(":libs:packaging:packaging")
-    implementation "net.corda:corda-serialization"
-    implementation project(':libs:serialization:serialization-internal')
-    implementation project(path: ':libs:kotlin-reflection', configuration: 'bundle')
-    implementation project(":libs:sandbox")
-    implementation project(path: ':libs:serialization:serialization-encoding', configuration: 'bundle')
-    implementation project(":libs:utilities")
-
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "com.google.guava:guava:$guavaVersion"
-    implementation "org.apache.qpid:proton-j:$protonjVersion"
-    implementation 'org.slf4j:slf4j-api'
-
-    testImplementation project(':libs:crypto:cipher-suite')
-    testImplementation project(':libs:crypto:cipher-suite-impl')
-    testImplementation project(':libs:crypto:crypto-core')
-    testImplementation project(':libs:crypto:crypto-serialization-impl')
-    testImplementation project(':testing:test-serialization')
-    testImplementation project(':libs:crypto:cipher-suite')
-    testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
-    testImplementation libs.jackson.databind
-    testRuntimeOnly libs.slf4j.simple
-    testRuntimeOnly 'org.osgi:osgi.core'
-
-    cpbs project(path: ':libs:serialization:serialization-amqp:cpk-four', configuration: 'cordaCPB')
-
-    cpbs project(path: ':libs:serialization:serialization-amqp:cpk-using-lib', configuration: 'cordaCPB')
-    cpbs project(path: ':libs:serialization:serialization-amqp:cpk-platform-type-custom-serializer', configuration: 'cordaCPB')
-
-    cpbs project(path: ':libs:serialization:serialization-amqp:cpk-swap-original', configuration: 'cordaCPB')
-    cpbs project(path: ':libs:serialization:serialization-amqp:cpk-swap-replacement', configuration: 'cordaCPB')
-    cpbs project(path: ':libs:serialization:serialization-amqp:cpk-evolution-newer', configuration: 'cordaCPB')
-    cpbs project(path: ':libs:serialization:serialization-amqp:cpk-evolution-older', configuration: 'cordaCPB')
-
-    integrationTestImplementation project(':components:security-manager')
-    integrationTestImplementation project(':testing:sandboxes')
-    integrationTestImplementation "net.corda:corda-application"
-    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
-    integrationTestRuntimeOnly project(':libs:crypto:crypto-core')
-    integrationTestRuntimeOnly project(':libs:crypto:cipher-suite-impl')
-    integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
-    integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
-    integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
-    integrationTestRuntimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
-        exclude group: 'org.osgi'
-    }
-}
-
-def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
-    from(configurations.cpbs) {
-        into 'META-INF'
-        rename "(.*)-\\Q${version}\\E-package.cpb", "\$1.cpb"
-    }
-}
-
-tasks.named('testingBundle', Bundle) {
-    dependsOn integrationTestResources
 }
