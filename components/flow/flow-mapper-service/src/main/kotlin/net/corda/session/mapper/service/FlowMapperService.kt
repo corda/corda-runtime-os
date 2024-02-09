@@ -142,7 +142,7 @@ class FlowMapperService @Activate constructor(
         flowConfig: SmartConfig,
         stateManager: StateManager
     ) {
-        val window = flowConfig.getLong(FlowConfig.PROCESSING_FLOW_CLEANUP_TIME)
+        val window = flowConfig.getLong(FlowConfig.PROCESSING_FLOW_MAPPER_CLEANUP_TIME)
         val scheduledTaskProcessor = ScheduledTaskProcessor(
             stateManager,
             Clock.systemUTC(),

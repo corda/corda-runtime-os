@@ -10,12 +10,10 @@ import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.HttpRestResource
-import net.corda.rest.annotations.HttpWS
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.annotations.RestQueryParameter
 import net.corda.rest.response.ResponseEntity
-import net.corda.rest.ws.DuplexChannel
 
 /** Rest operations for flow management. */
 @HttpRestResource(
@@ -165,18 +163,4 @@ interface FlowRestResource : RestResource {
         @RestPathParameter(description = "Client provided flow identifier")
         clientRequestId: String
     ): ResponseEntity<FlowResultResponse>
-
-    @HttpWS(
-        path = "{holdingIdentityShortHash}/{clientRequestId}",
-        title = "Get status updates for a flow via websockets.",
-        description = "Gets a stream of status updates for a given flow.",
-        responseDescription = "Flow status updates."
-    )
-    fun registerFlowStatusUpdatesFeed(
-        channel: DuplexChannel,
-        @RestPathParameter(description = "The short hash of the holding identity; obtained during node registration")
-        holdingIdentityShortHash: String,
-        @RestPathParameter(description = "Client provided flow identifier")
-        clientRequestId: String
-    )
 }

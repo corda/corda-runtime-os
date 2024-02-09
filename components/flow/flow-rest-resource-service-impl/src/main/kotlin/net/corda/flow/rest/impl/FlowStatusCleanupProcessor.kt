@@ -1,4 +1,4 @@
-package net.corda.processors.rest
+package net.corda.flow.rest.impl
 
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.rest.ExecuteFlowStatusCleanup

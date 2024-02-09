@@ -252,7 +252,8 @@ class FlowCheckpointImpl(
     }
 
     override fun toAvro(): Checkpoint? {
-        if (!checkpointLive) {
+        if (flowStateManager == null) {
+            //set to null when rollback to initial null state or not initialized
             return null
         }
 

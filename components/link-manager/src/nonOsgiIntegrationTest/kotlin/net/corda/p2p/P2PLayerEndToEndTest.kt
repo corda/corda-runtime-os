@@ -716,7 +716,14 @@ class P2PLayerEndToEndTest {
                         if (value == null) {
                             throw CordaRuntimeException("Could not update non existing state!")
                         }
-                        it
+                        if (value.version != it.version) {
+                            throw CordaRuntimeException(
+                                "Could not update state with version ${it.version}, known version is ${value.version}"
+                            )
+                        }
+                        it.copy(
+                            version = it.version + 1
+                        )
                     }
                 }
                 emptyMap()

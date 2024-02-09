@@ -14,6 +14,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.time.Duration
 import java.time.Instant
 import java.util.Random
@@ -67,6 +68,8 @@ class SessionCacheTest {
         )
 
         on { key } doReturn "stateKey"
+
+        on { version } doReturn 2
     }
 
     private val sessionExpiryScheduler = SessionCache(
@@ -147,6 +150,26 @@ class SessionCacheTest {
         }
 
         @Test
+        fun `it will schedule different time if the version is different`() {
+            val validMetadata = validState.metadata
+            val stateTwo = mock<State> {
+                on { metadata } doReturn validMetadata
+
+                on { key } doReturn "stateKey"
+
+                on { version } doReturn 3
+            }
+            sessionExpiryScheduler.validateStateAndScheduleExpiry(
+                validState,
+            )
+            sessionExpiryScheduler.validateStateAndScheduleExpiry(
+                stateTwo,
+            )
+
+            verify(scheduler, times(2)).schedule(any(), any(), any())
+        }
+
+        @Test
         fun `it will not cancel the clean up for the same state`() {
             sessionExpiryScheduler.validateStateAndScheduleExpiry(
                 validState,
@@ -172,6 +195,35 @@ class SessionCacheTest {
                 )
 
                 on { key } doReturn "stateKey"
+
+                on { version } doReturn 2
+            }
+            sessionExpiryScheduler.validateStateAndScheduleExpiry(
+                validState,
+            )
+            sessionExpiryScheduler.validateStateAndScheduleExpiry(
+                stateTwo,
+            )
+
+            verify(future).cancel(any())
+        }
+
+        @Test
+        fun `it will cancel if the version is different`() {
+            val stateTwo = mock<State> {
+                on { metadata } doReturn Metadata(
+                    mapOf(
+                        "sourceVnode" to "O=Carol, L=London, C=GB",
+                        "destinationVnode" to "O=David, L=London, C=GB",
+                        "groupId" to "groupId",
+                        "lastSendTimestamp" to 100,
+                        "expiry" to 3100,
+                    ),
+                )
+
+                on { key } doReturn "stateKey"
+
+                on { version } doReturn 3
             }
             sessionExpiryScheduler.validateStateAndScheduleExpiry(
                 validState,
@@ -194,6 +246,22 @@ class SessionCacheTest {
             task.firstValue.run()
 
             verify(stateManager).delete(listOf(validState))
+        }
+
+        @Test
+        fun `it will delete the state with the next version from the state manager if needed`() {
+            val nextState = mock<State> {
+                on { version } doReturn 3
+                on { key } doReturn "stateKey"
+            }
+            whenever(validState.copy(version = 3)).doReturn(nextState)
+            sessionExpiryScheduler.validateStateAndScheduleExpiry(
+                validState,
+                beforeUpdate = true,
+            )
+            task.firstValue.run()
+
+            verify(stateManager).delete(listOf(nextState))
         }
 
         @Test
