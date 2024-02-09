@@ -45,7 +45,7 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                nullStateRecord()
+                notNullStateRecord()
                 flowStatus(FlowStates.COMPLETED, result = DONE)
                 scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY_MAPPER)
             }
@@ -61,7 +61,7 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                nullStateRecord()
+                notNullStateRecord()
                 flowStatus(FlowStates.COMPLETED, result = DONE)
                 scheduleFlowMapperCleanupEvents(BOB_FLOW_KEY_MAPPER)
                 flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
@@ -78,7 +78,7 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                nullStateRecord()
+                notNullStateRecord()
                 flowStatus(FlowStates.COMPLETED, result = DONE)
                 flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, INITIATED_SESSION_ID_1)
             }

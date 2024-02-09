@@ -46,6 +46,8 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
+import org.junit.jupiter.api.AfterEach
+import org.mockito.Mockito
 
 class StatefulSessionManagerImplTest {
     private val coordinator = mock<LifecycleCoordinator>()
@@ -70,6 +72,12 @@ class StatefulSessionManagerImplTest {
     private val clock = mock<Clock> {
         on { instant() } doReturn now
     }
+    private val publisherWithDominoLogic = Mockito.mockConstruction(PublisherWithDominoLogic::class.java) { mock, _ ->
+        val mockDominoTile = mock<ComplexDominoTile> {
+            whenever(it.toNamedLifecycle()).thenReturn(mock())
+        }
+        whenever(mock.dominoTile).thenReturn(mockDominoTile)
+    }
     private val serialized = argumentCaptor<ReEstablishSessionMessage>()
     private val schemaRegistry = mock<AvroSchemaRegistry> {
         on { serialize(serialized.capture()) } doReturn ByteBuffer.wrap(byteArrayOf(0))
@@ -81,6 +89,9 @@ class StatefulSessionManagerImplTest {
     }
 
     private val manager = StatefulSessionManagerImpl(
+        mock(),
+        mock(),
+        mock(),
         coordinatorFactory,
         stateManager,
         sessionManagerImpl,
@@ -94,9 +105,13 @@ class StatefulSessionManagerImplTest {
         val value: T,
     )
 
-    private fun mockState(sessionId: String): State {
+    @AfterEach
+    fun cleanUp() {
+        publisherWithDominoLogic.close()
+    }
+    private fun mockState(id: String): State {
         val state = mock<State> {
-            on { value } doReturn sessionId.toByteArray()
+            on { value } doReturn id.toByteArray()
             on { metadata } doReturn Metadata(
                 mapOf(
                     "sourceVnode" to "O=Alice, L=London, C=GB",
@@ -111,7 +126,9 @@ class StatefulSessionManagerImplTest {
             )
             on { key } doReturn "stateKey"
         }
-        val serialisableSessionData = mock<AuthenticatedSession>()
+        val serialisableSessionData = mock<AuthenticatedSession> {
+            on { sessionId } doReturn id
+        }
         val sessionState = mock<SessionState> {
             on { sessionData } doReturn serialisableSessionData
         }
@@ -231,6 +248,25 @@ class StatefulSessionManagerImplTest {
             val publishedMessageHeader = ((publishedRecord.value as AppMessage).message as AuthenticatedMessage).header
             assertThat(publishedMessageHeader.subsystem).isEqualTo(LINK_MANAGER_SUBSYSTEM)
             assertThat(serialized.firstValue.sessionId).isEqualTo(testSessionId)
+        }
+
+        @Test
+        fun `it returns NoSession for sessions not found in the cache or state manager`() {
+            val sessionIds = (1..4).map {
+                "session-$it"
+            }
+            val sessionIdsContainers = sessionIds.map {
+                Wrapper(it)
+            }
+
+            val sessions = manager.getSessionsById(sessionIdsContainers) {
+                it.value
+            }
+
+            assertSoftly {
+                assertThat(sessions.map { it.first.value }).containsExactlyInAnyOrderElementsOf(sessionIds)
+                assertThat(sessions.mapNotNull { it.second as? SessionManager.SessionDirection.NoSession }).hasSize(4)
+            }
         }
     }
 

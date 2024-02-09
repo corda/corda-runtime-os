@@ -26,6 +26,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.time.Clock
 
 @Component(service = [FlowMaintenance::class])
 class FlowMaintenanceImpl @Activate constructor(
@@ -59,16 +60,20 @@ class FlowMaintenanceImpl @Activate constructor(
             subscriptionRegistrationHandle?.close()
             stateManager?.stop()
 
-            stateManager = stateManagerFactory.create(newStateManagerConfig, StateManagerConfig.StateType.FLOW_CHECKPOINT)
+            val stateManagerInstance = stateManagerFactory.create(newStateManagerConfig, StateManagerConfig.StateType.FLOW_CHECKPOINT)
                 .also { it.start() }
+            stateManager = stateManagerInstance
 
+            /**
+             * Task and executor for the cleanup of checkpoints that are idle or timed out.
+             */
             coordinator.createManagedResource("FLOW_MAINTENANCE_SUBSCRIPTION") {
                 subscriptionFactory.createDurableSubscription(
                     SubscriptionConfig(
                         "flow.maintenance.tasks",
                         Schemas.ScheduledTask.SCHEDULED_TASK_TOPIC_FLOW_PROCESSOR
                     ),
-                    flowMaintenanceHandlersFactory.createScheduledTaskHandler(stateManager!!, flowConfig),
+                    flowMaintenanceHandlersFactory.createScheduledTaskHandler(stateManagerInstance, flowConfig),
                     messagingConfig,
                     null
                 )
@@ -80,13 +85,40 @@ class FlowMaintenanceImpl @Activate constructor(
                         "flow.timeout.task",
                         Schemas.Flow.FLOW_TIMEOUT_TOPIC
                     ),
-                    flowMaintenanceHandlersFactory.createTimeoutEventHandler(stateManager!!, flowConfig),
+                    flowMaintenanceHandlersFactory.createTimeoutEventHandler(stateManagerInstance, flowConfig),
                     messagingConfig,
                     null
                 )
             }.start()
 
-            subscriptionRegistrationHandle = coordinator.followStatusChangesByName(setOf(stateManager!!.name))
+            /**
+             * Task and executor for the deleteion of checkpoints that have reached their terminal state within the flow engine.
+             */
+            coordinator.createManagedResource("FLOW_CHECKPOINT_TERMINATION_TASK_SUBSCRIPTION") {
+                subscriptionFactory.createDurableSubscription(
+                    SubscriptionConfig(
+                        "flow.checkpoint.termination.task",
+                        Schemas.ScheduledTask.SCHEDULED_TASK_TOPIC_FLOW_PROCESSOR
+                    ),
+                    FlowCheckpointTerminationTaskProcessor(stateManagerInstance, flowConfig, Clock.systemUTC()),
+                    messagingConfig,
+                    null
+                )
+            }.start()
+
+            coordinator.createManagedResource("FLOW_CHECKPOINT_TERMINATION_CLEANUP_SUBSCRIPTION") {
+                subscriptionFactory.createDurableSubscription(
+                    SubscriptionConfig(
+                        "flow.checkpoint.termination.executor",
+                        Schemas.Flow.FLOW_CHECKPOINT_TERMINATION
+                    ),
+                    FlowCheckpointTerminationCleanupProcessor(stateManagerInstance),
+                    messagingConfig,
+                    null
+                )
+            }.start()
+
+            subscriptionRegistrationHandle = coordinator.followStatusChangesByName(setOf(stateManagerInstance.name))
         }
     }
 

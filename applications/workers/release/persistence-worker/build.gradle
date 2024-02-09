@@ -66,3 +66,7 @@ dependencies {
     // NOTE: PLEASE MAKE SURE NOT TO PUBLISH A DOCKER IMAGE PUBLICLY WITH THESE WRAPPED DRIVERS,
     //             UNLESS ABSOLUTELY SURE WE CAN DISTRIBUTE IT!!
 }
+
+quasar {
+    excludeLocations = [ '*' ]
+}

@@ -18,18 +18,16 @@ import java.time.Duration
  * Return a config manager for a collection of clusters.
  */
 fun managedConfig(clusters: Collection<ClusterInfo> = emptyList()): TestConfigManager {
-    return if(clusters.size > 1) {
+    return if (clusters.size > 1) {
         MultiClusterTestConfigManager(clusters)
     } else {
         SingleClusterTestConfigManager(clusters.firstOrNull() ?: DEFAULT_CLUSTER)
     }
 }
 
-fun JsonNode.sourceConfigNode(): JsonNode =
-    this["sourceConfig"].textValue().toJson()
+fun JsonNode.sourceConfigNode(): JsonNode = this["sourceConfig"].textValue().toJson()
 
-fun JsonNode.configWithDefaultsNode(): JsonNode =
-    this["configWithDefaults"].textValue().toJson()
+fun JsonNode.configWithDefaultsNode(): JsonNode = this["configWithDefaults"].textValue().toJson()
 
 /**
  * Get the current configuration (as a [JsonNode]) for the specified [section].
@@ -42,6 +40,52 @@ fun ClusterInfo.getConfig(section: String): JsonNode {
             command { getConfig(section) }
             condition { it.code == OK.statusCode }
         }.body.toJson()
+    }
+}
+
+/**
+ * This method updates corda config with user provided configuration and call setConfig with user prefered values.
+ */
+fun ClusterInfo.updateConfig(config: JsonNode, section: String) {
+    return cluster {
+        val newConfig: JsonNode = config.get("sourceConfig")
+        val configVersion: String = config.get("version").toString()
+        val schemaMajorVersion: String = config.get("schemaVersion").get("major").toString()
+        val schemaMinorVersion: String = config.get("schemaVersion").get("minor").toString()
+        setConfig(newConfig, section, configVersion, schemaMajorVersion, schemaMinorVersion)
+    }
+}
+
+fun setConfig(
+    newConfig: JsonNode,
+    section: String,
+    configVersion: String,
+    schemaMajorVersion: String,
+    schemaMinorVersion: String
+) {
+    return cluster {
+        try {
+            val result = putConfig(
+                newConfig.toString(),
+                section,
+                configVersion,
+                schemaMajorVersion,
+                schemaMinorVersion
+            )
+
+            if (result.code != 202) {
+                fail<String>("Config update did not return 202. returned ${result.code} instead. Result ${result.body}")
+            }
+
+        } catch (ex: UnirestException) {
+            //When a config request is sent with the section set to "corda.messaging" nearly all components in the system will respond to
+            // this config change. This will cause the HttpGateway to go down bringing down the HttpServer. This will close all the
+            // connections open from clients such as the one used in this test resulting in a UniRestException thrown
+            // for the purposes of the test we will this exception and allow the test to proceed.
+            // One solution would be for the config endpoint to return a successful result as soon as it receives confirmation the config
+            // request is on kafka and to not bother to try return the updated config.
+            // https://r3-cev.atlassian.net/browse/CORE-7930
+        }
     }
 }
 
@@ -59,7 +103,8 @@ internal fun ClusterInfo.updateConfig(config: String, section: String) {
                 section,
                 currentConfig["version"].toString(),
                 currentSchemaVersion["major"].toString(),
-                currentSchemaVersion["minor"].toString())
+                currentSchemaVersion["minor"].toString()
+            )
 
             if (result.code != 202) {
                 fail<String>("Config update did not return 202. returned ${result.code} instead. Result ${result.body}")
@@ -113,8 +158,7 @@ fun ClusterInfo.waitForConfigurationChange(
             condition {
                 val bodyJSON = it.body.toJson()
                 it.code == OK.statusCode && bodyJSON["sourceConfig"] != null
-                        && bodyJSON.sourceConfigNode()[key] != null
-                        && bodyJSON.sourceConfigNode()[key].toString() == value
+                        && bodyJSON.sourceConfigNode()[key] != null && bodyJSON.sourceConfigNode()[key].toString() == value
             }
         }
     }

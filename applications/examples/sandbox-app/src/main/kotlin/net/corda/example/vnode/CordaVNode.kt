@@ -21,7 +21,7 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.schema.Schemas.Flow.FLOW_START
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
-import net.corda.schema.configuration.FlowConfig.PROCESSING_FLOW_CLEANUP_TIME
+import net.corda.schema.configuration.FlowConfig.PROCESSING_FLOW_MAPPER_CLEANUP_TIME
 import net.corda.schema.configuration.FlowConfig.SESSION_FLOW_CLEANUP_TIME
 import net.corda.schema.configuration.FlowConfig.SESSION_TIMEOUT_WINDOW
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
@@ -86,7 +86,7 @@ class CordaVNode @Activate constructor(
             val configFactory = SmartConfigFactory.createWithoutSecurityServices()
 
             val config = ConfigFactory.empty()
-                .withValue(PROCESSING_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(5000L))
+                .withValue(PROCESSING_FLOW_MAPPER_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(5000L))
                 .withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(60000L))
                 .withValue(SESSION_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(5000L))
                 .withValue(SESSION_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
