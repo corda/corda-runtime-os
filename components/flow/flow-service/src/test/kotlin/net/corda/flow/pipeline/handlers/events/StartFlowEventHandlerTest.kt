@@ -3,9 +3,9 @@ package net.corda.flow.pipeline.handlers.events
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.state.waiting.WaitingFor
+import net.corda.data.flow.state.waiting.WaitingForStartFlow
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.pipeline.CheckpointInitializer
-import net.corda.data.flow.state.waiting.WaitingForStartFlow
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.v5.crypto.SecureHash
@@ -27,7 +27,7 @@ class StartFlowEventHandlerTest {
 
     @Test
     fun `initialises the flow checkpoint from the avro checkpoint`() {
-        val waitingForExpected = WaitingFor(WaitingForStartFlow)
+        val waitingForExpected = WaitingFor(WaitingForStartFlow())
         val contextExpected = buildFlowEventContext(mock(), inputEventPayload = startFlow, flowId = flowId)
         val fakeCheckpointInitializer = FakeCheckpointInitializerService(
             startFlow.startContext,
