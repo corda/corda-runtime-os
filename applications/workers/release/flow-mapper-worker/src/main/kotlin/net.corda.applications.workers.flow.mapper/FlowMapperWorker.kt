@@ -5,7 +5,7 @@ import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.Health
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
 import net.corda.applications.workers.workercommon.Metrics
-import net.corda.applications.workers.workercommon.WorkerHelpers
+import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.createConfigFromParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
@@ -17,7 +17,7 @@ import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.flow.mapper.FlowMapperProcessor
-import net.corda.schema.configuration.BootConfig
+import net.corda.schema.configuration.BootConfig.BOOT_WORKER_SERVICE
 import net.corda.tracing.configureTracing
 import net.corda.tracing.shutdownTracing
 import net.corda.web.api.WebServer
@@ -84,8 +84,14 @@ class FlowMapperWorker @Activate constructor(
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
             listOf(
-                WorkerHelpers.createConfigFromParams(BootConfig.BOOT_WORKER_SERVICE, params.mediatorReplicasFlowMapperSessionIn),
-                WorkerHelpers.createConfigFromParams(BootConfig.BOOT_WORKER_SERVICE, params.mediatorReplicasFlowMapperSessionOut)
+                createConfigFromParams(
+                    BOOT_WORKER_SERVICE,
+                    mapOf("mediatorReplicas.flowMapperSessionIn" to params.mediatorReplicasFlowMapperSessionIn.toString())
+                ),
+                createConfigFromParams(
+                    BOOT_WORKER_SERVICE,
+                    mapOf("mediatorReplicas.flowMapperSessionOut" to params.mediatorReplicasFlowMapperSessionOut.toString())
+                ),
             )
         )
 
@@ -107,9 +113,9 @@ private class FlowMapperWorkerParams {
 
     @Option(names = ["--mediator-replicas-flow-session-in"], description = ["Sets the number of mediators that " +
             "consume flow.mapper.session.in messages"])
-    var mediatorReplicasFlowMapperSessionIn: Map<String, String> = emptyMap()
+    var mediatorReplicasFlowMapperSessionIn: Int? = null
 
     @Option(names = ["--mediator-replicas-flow-session-out"], description = ["Sets the number of mediators that " +
             "consume flow.mapper.session.out messages"])
-    var mediatorReplicasFlowMapperSessionOut: Map<String, String> = emptyMap()
+    var mediatorReplicasFlowMapperSessionOut: Int? = null
 }

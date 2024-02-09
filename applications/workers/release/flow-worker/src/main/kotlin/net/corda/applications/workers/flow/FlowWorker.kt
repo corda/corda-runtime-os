@@ -87,8 +87,12 @@ class FlowWorker @Activate constructor(
             configurationValidatorFactory.createConfigValidator(),
             listOf(
                 WorkerHelpers.createConfigFromParams(BOOT_WORKER_SERVICE, params.workerEndpoints),
-                WorkerHelpers.createConfigFromParams(BOOT_WORKER_SERVICE, params.mediatorReplicasFlowSession)
-            ))
+                WorkerHelpers.createConfigFromParams(
+                    BOOT_WORKER_SERVICE,
+                    mapOf("mediatorReplicas.flowSession" to params.mediatorReplicasFlowSession.toString())
+                )
+            )
+        )
 
         flowProcessor.start(config)
     }
@@ -111,5 +115,5 @@ private class FlowWorkerParams {
 
     @Option(names = ["--mediator-replicas-flow-session"], description = ["Sets the number of mediators that consume " +
             "flow.session messages"])
-    var mediatorReplicasFlowSession: Map<String, String> = emptyMap()
+    var mediatorReplicasFlowSession: Int? = null
 }

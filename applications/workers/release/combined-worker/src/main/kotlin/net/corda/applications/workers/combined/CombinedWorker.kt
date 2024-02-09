@@ -145,7 +145,19 @@ class CombinedWorker @Activate constructor(
                 createConfigFromParams(BootConfig.BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId)),
                 createConfigFromParams(BootConfig.BOOT_REST, params.restParams),
                 stateManagerConfig,
-                createConfigFromParams(BOOT_WORKER_SERVICE, params.workerEndpoints)
+                createConfigFromParams(BOOT_WORKER_SERVICE, params.workerEndpoints),
+                createConfigFromParams(
+                    BOOT_WORKER_SERVICE,
+                    mapOf("mediatorReplicas.flowSession" to params.mediatorReplicasFlowSession.toString())
+                ),
+                createConfigFromParams(
+                    BOOT_WORKER_SERVICE,
+                    mapOf("mediatorReplicas.flowMapperSessionIn" to params.mediatorReplicasFlowMapperSessionIn.toString())
+                ),
+                createConfigFromParams(
+                    BOOT_WORKER_SERVICE,
+                    mapOf("mediatorReplicas.flowMapperSessionOut" to params.mediatorReplicasFlowMapperSessionOut.toString())
+                ),
             )
         )
 
@@ -267,4 +279,16 @@ private class CombinedWorkerParams {
         listOf("crypto", "verification", "uniqueness", "persistence", "tokenSelection", "p2pLinkManager")
             .associate { "endpoints.$it" to "localhost:7004" }
             .toMap()
+
+    @Option(names = ["--mediator-replicas-flow-session"], description = ["Sets the number of mediators that consume " +
+            "flow.session messages"])
+    var mediatorReplicasFlowSession: Int? = null
+
+    @Option(names = ["--mediator-replicas-flow-session-in"], description = ["Sets the number of mediators that " +
+            "consume flow.mapper.session.in messages"])
+    var mediatorReplicasFlowMapperSessionIn: Int? = null
+
+    @Option(names = ["--mediator-replicas-flow-session-out"], description = ["Sets the number of mediators that " +
+            "consume flow.mapper.session.out messages"])
+    var mediatorReplicasFlowMapperSessionOut: Int? = null
 }
