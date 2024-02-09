@@ -4,6 +4,7 @@ kotlinVersion = "1.8.21"
 bouncycastleVersion = "1.77"
 braveVersion = "6.0.0"
 caffeineVersion = "3.1.8"
+guavaVersion = "32.1.1-jre"
 hikariCpVersion = "5.1.0"
 jacksonVersion = "2.16.1"
 javalinVersion = "4.6.8"
@@ -60,6 +61,7 @@ bouncycastle-prov = { group = "org.bouncycastle", name = "bcprov-jdk18on", versi
 brave-context-slf4j = { group = "io.zipkin.brave", name = "brave-context-slf4j", version.ref = "braveVersion" }
 brave-instrumentation-servlet = { group = "io.zipkin.brave", name = "brave-instrumentation-servlet", version.ref = "braveVersion" }
 caffeine = { group = "com.github.ben-manes.caffeine", name = "caffeine", version.ref = "caffeineVersion" }
+guava = { group = "com.google.guava", name = "guava", version.ref = "guavaVersion" }
 hikaricp = { group = "com.zaxxer", name = "HikariCP", version.ref = "hikariCpVersion" }
 jackson-annotations = { group = "com.fasterxml.jackson.core", name = "jackson-annotations", version.ref = "jacksonVersion" }
 jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jacksonVersion" }
