@@ -24,9 +24,11 @@ import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
 import net.corda.p2p.linkmanager.sessions.DeadSessionMonitor
 import net.corda.p2p.linkmanager.sessions.DeadSessionMonitorConfigurationHandler
 import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueuesImpl
+import net.corda.p2p.linkmanager.sessions.SessionCache
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.linkmanager.sessions.StateConvertor
 import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl
+import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 import net.corda.schema.Schemas
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.flags.Features
@@ -77,16 +79,28 @@ internal class CommonComponents(
         messageConverter,
     )
 
+    private val sessionEventPublisher = StatefulSessionEventPublisher(
+        lifecycleCoordinatorFactory,
+        publisherFactory,
+        messagingConfiguration,
+    )
+
+    private val sessionCache = SessionCache(
+        stateManager,
+        clock,
+        sessionEventPublisher,
+    )
+
     private val deadSessionMonitor = DeadSessionMonitor(
         Executors.newSingleThreadScheduledExecutor { runnable -> Thread(runnable, "Dead Session Monitor") },
-    ) { _ -> /* TODO Integrate with session manager and cache signalling here */ }
+        sessionCache,
+    )
 
     private val deadSessionMonitorConfigHandler =
         DeadSessionMonitorConfigurationHandler(deadSessionMonitor, configurationReaderService)
 
     internal val sessionManager = if (features.useStatefulSessionManager) {
         StatefulSessionManagerImpl(
-            publisherFactory,
             subscriptionFactory,
             messagingConfiguration,
             lifecycleCoordinatorFactory,
@@ -113,6 +127,8 @@ internal class CommonComponents(
             membershipGroupReaderProvider,
             deadSessionMonitor,
             schemaRegistry,
+            sessionCache,
+            sessionEventPublisher,
         )
     } else {
         SessionManagerImpl(

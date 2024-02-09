@@ -95,7 +95,6 @@ class StatefulSessionManagerImplTest {
     private val manager = StatefulSessionManagerImpl(
         mock(),
         mock(),
-        mock(),
         coordinatorFactory,
         stateManager,
         sessionManagerImpl,
@@ -104,6 +103,8 @@ class StatefulSessionManagerImplTest {
         membershipGroupReaderProvider,
         deadSessionMonitor,
         schemaRegistry,
+        mock(),
+        mock(),
     )
 
     private data class Wrapper<T>(

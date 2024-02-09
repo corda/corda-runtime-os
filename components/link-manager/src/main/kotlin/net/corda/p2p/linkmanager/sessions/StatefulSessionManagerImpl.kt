@@ -68,7 +68,6 @@ import net.corda.data.p2p.crypto.ResponderHelloMessage as AvroResponderHelloMess
 
 @Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 internal class StatefulSessionManagerImpl(
-    publisherFactory: PublisherFactory,
     subscriptionFactory: SubscriptionFactory,
     messagingConfig: SmartConfig,
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -79,6 +78,8 @@ internal class StatefulSessionManagerImpl(
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val deadSessionMonitor: DeadSessionMonitor,
     private val schemaRegistry: AvroSchemaRegistry,
+    private val sessionCache: SessionCache,
+    private val sessionEventPublisher: StatefulSessionEventPublisher,
 ) : SessionManager {
     companion object {
         const val LINK_MANAGER_SUBSYSTEM = "link-manager"
@@ -170,6 +171,7 @@ internal class StatefulSessionManagerImpl(
                         SessionAlreadyPending(counterparties),
                     )
                 }
+
                 OutboundSessionStatus.SessionReady -> {
                     state.state.retrieveEstablishedSession(counterparties)?.let { establishedState ->
                         sessionCache.putOutboundSession(
@@ -213,6 +215,10 @@ internal class StatefulSessionManagerImpl(
                     state.state.retrieveEstablishedSession(counterparties)?.let { established ->
                         sessionCache.putOutboundSession(
                             state.key,
+                            SessionManager.SessionDirection.Outbound(
+                                state.state.toCounterparties(),
+                                established.session,
+                            ),
                             SessionManager.SessionDirection.Outbound(state.state.toCounterparties(), established.session),
                         )
                         state.toResults(
@@ -408,9 +414,8 @@ internal class StatefulSessionManagerImpl(
             logger.warn("Could not delete outbound session '{}' lost by counterparty.", sessionId)
             return
         }
-        stateManager.get(listOf(key)).values.firstOrNull()?.let {
-            sessionCache.invalidateAndRemoveFromSchedular(it.key)
-        }
+
+        sessionCache.deleteByKey(key)
     }
 
     private data class InboundSessionMessageContext<T>(
@@ -1095,17 +1100,6 @@ internal class StatefulSessionManagerImpl(
             metadata.communicationWithMgm,
         )
     }
-
-    private val sessionEventPublisher = StatefulSessionEventPublisher(
-        coordinatorFactory,
-        publisherFactory,
-        messagingConfig,
-    )
-    private val sessionCache = SessionCache(
-        stateManager,
-        clock,
-        sessionEventPublisher,
-    )
 
     private fun sendSessionReEstablishmentMessage(
         source: HoldingIdentity,

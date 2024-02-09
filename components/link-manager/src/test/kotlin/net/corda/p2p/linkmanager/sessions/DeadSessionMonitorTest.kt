@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager.sessions
 
-import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatIllegalStateException
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -16,9 +15,9 @@ import java.util.concurrent.TimeUnit
 
 class DeadSessionMonitorTest {
     private val scheduledExecutorService = mock<ScheduledExecutorService>()
-    private val defaultSessionExpiredAction: (String) -> Unit = { _ -> }
+    private val sessionCache = mock<SessionCache>()
 
-    private val target = DeadSessionMonitor(scheduledExecutorService, defaultSessionExpiredAction)
+    private val target = DeadSessionMonitor(scheduledExecutorService, sessionCache)
 
     @Test
     fun `when a data message is sent called before configuration then throw`() {
@@ -31,20 +30,20 @@ class DeadSessionMonitorTest {
     fun `when a data message is sent then a session deletion is scheduled for the configured time`() {
         val sessionId = "s1"
         val timeout = 10L
-        val assertedDeleteAction: (String) -> Unit = { id -> assertThat(id).isEqualTo(sessionId) }
         val deleteActionFuture = mock<ScheduledFuture<Unit>>()
 
         val deleteAction = argumentCaptor<Runnable>()
         whenever(scheduledExecutorService.schedule(deleteAction.capture(), any(), any()))
             .thenReturn(deleteActionFuture)
 
-        val monitor = DeadSessionMonitor(scheduledExecutorService, assertedDeleteAction)
-
-        monitor.onConfigChange(timeout)
-        monitor.messageSent(sessionId)
+        target.onConfigChange(timeout)
+        target.messageSent(sessionId)
 
         verify(scheduledExecutorService).schedule(any(), eq(timeout), eq(TimeUnit.SECONDS))
+
+        // Trigger the scheduled action to validate it clears the cache.
         deleteAction.firstValue.run()
+        verify(sessionCache).deleteBySessionId(sessionId)
     }
 
     @Test

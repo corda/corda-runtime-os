@@ -18,6 +18,7 @@ import java.util.concurrent.Future
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
+@Suppress("TooManyFunctions")
 internal class SessionCache(
     private val stateManager: StateManager,
     private val clock: Clock,
@@ -27,8 +28,9 @@ internal class SessionCache(
 ) {
     private companion object {
         const val CACHE_SIZE = 10_000L
-        val logger = LoggerFactory.getLogger(SessionCache::class.java)
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
+
     private val tasks = ConcurrentHashMap<String, SavedState>()
 
     private data class SavedState(
@@ -84,9 +86,23 @@ internal class SessionCache(
         cachedInboundSessions.put(inboundSession.session.sessionId, inboundSession)
     }
 
-    fun invalidateAndRemoveFromSchedular(key: String) {
+    fun invalidateAndRemoveFromScheduler(key: String) {
         invalidate(key)
         removeFromScheduler(key)
+    }
+
+    fun deleteBySessionId(sessionId: String) {
+        val key = counterpartiesForSessionId[sessionId]
+        if (key == null) {
+            logger.warn("Failed to find associated state key for session ID '$sessionId'")
+            return
+        }
+        deleteByKey(key)
+    }
+
+    fun deleteByKey(key: String) {
+        invalidateAndRemoveFromScheduler(key)
+        deleteStateByKey(key)
     }
 
     private fun invalidate(key: String) {
@@ -137,6 +153,7 @@ internal class SessionCache(
             state
         }
     }
+
     fun validateStatesAndScheduleExpiry(states: Map<String, State>): Map<String, State> {
         return states.mapNotNull { (key, state) ->
             validateStateAndScheduleExpiry(state)?.let {
@@ -153,14 +170,40 @@ internal class SessionCache(
     }
 
     private fun forgetState(state: State) {
+        var stateToDelete = state
         val key = state.key
-        val failedDeleted = stateManager.delete(listOf(state))
-        if (failedDeleted.isNotEmpty()) {
-            logger.info("Failed to delete state: ${failedDeleted.keys.first()}, trying to delete the latest version")
-            stateManager.delete(failedDeleted.values)
+        var retryCount = 0
+        var failedDeletes = mapOf<String, State>()
+        do {
+            try {
+                failedDeletes = stateManager.delete(listOf(stateToDelete))
+            } catch (e: Exception) {
+                logger.error("Unexpected error while trying to delete a session from the state manager.", e)
+            }
+            if (failedDeletes.isNotEmpty()) {
+                stateToDelete = failedDeletes.values.first()
+            }
+        } while (retryCount++ < 3 && failedDeletes.isNotEmpty())
+
+        if (failedDeletes.isNotEmpty()) {
+            logger.error("Failed to delete the state for key $key after $retryCount attempts.")
         }
+
         invalidate(key)
         eventPublisher.sessionDeleted(key)
         tasks.remove(key)
+    }
+
+    private fun deleteStateByKey(key: String) {
+        try {
+            val state = stateManager.get(listOf(key)).values.firstOrNull()
+            if (state == null) {
+                logger.warn("Failed to delete session state for '$key', state does not exist")
+                return
+            }
+            forgetState(state)
+        } catch (e: Exception) {
+            logger.error("Unexpected error while trying to fetch session state for '$key'.", e)
+        }
     }
 }

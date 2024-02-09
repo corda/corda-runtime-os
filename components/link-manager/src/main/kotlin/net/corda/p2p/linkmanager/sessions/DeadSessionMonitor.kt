@@ -17,9 +17,9 @@ import java.util.concurrent.TimeUnit
  * The monitor can also receive a session error signal from the receiving side, this will delete the session from the
  * monitor.
  */
-class DeadSessionMonitor(
+internal class DeadSessionMonitor(
     private val scheduledExecutorService: ScheduledExecutorService,
-    private val sessionExpiredAction: (String) -> Unit,
+    private val sessionCache: SessionCache,
 ) {
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -60,7 +60,7 @@ class DeadSessionMonitor(
                     "No acks received for session '$sessionId' after '$delay' seconds. the session is " +
                         "assumed dead and will be recreated.",
                 )
-                sessionExpiredAction(sessionId)
+                sessionCache.deleteBySessionId(sessionId)
             },
             delay,
             TimeUnit.SECONDS,
