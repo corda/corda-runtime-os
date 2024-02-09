@@ -18,6 +18,7 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.flow.FlowProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_WORKER_SERVICE
+import net.corda.schema.configuration.BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_SESSION
 import net.corda.tracing.configureTracing
 import net.corda.tracing.shutdownTracing
 import net.corda.web.api.WebServer
@@ -84,7 +85,10 @@ class FlowWorker @Activate constructor(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
-            listOf(WorkerHelpers.createConfigFromParams(BOOT_WORKER_SERVICE, params.workerEndpoints)))
+            listOf(
+                WorkerHelpers.createConfigFromParams(BOOT_WORKER_SERVICE, params.workerEndpoints),
+                WorkerHelpers.createConfigFromParams(BOOT_WORKER_SERVICE, params.mediatorReplicasFlowSession)
+            ))
 
         flowProcessor.start(config)
     }
@@ -107,5 +111,5 @@ private class FlowWorkerParams {
 
     @Option(names = ["--mediator-replicas-flow-session"], description = ["Sets the number of mediators that consume " +
             "flow.session messages"])
-    var mediatorReplicasFlowSession: Int? = null
+    var mediatorReplicasFlowSession: Map<String, String> = emptyMap()
 }

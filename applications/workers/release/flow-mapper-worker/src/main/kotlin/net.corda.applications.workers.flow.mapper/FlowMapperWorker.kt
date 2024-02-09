@@ -5,6 +5,7 @@ import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.Health
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
 import net.corda.applications.workers.workercommon.Metrics
+import net.corda.applications.workers.workercommon.WorkerHelpers
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
@@ -16,6 +17,7 @@ import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.flow.mapper.FlowMapperProcessor
+import net.corda.schema.configuration.BootConfig
 import net.corda.tracing.configureTracing
 import net.corda.tracing.shutdownTracing
 import net.corda.web.api.WebServer
@@ -80,7 +82,12 @@ class FlowMapperWorker @Activate constructor(
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
-            configurationValidatorFactory.createConfigValidator())
+            configurationValidatorFactory.createConfigValidator(),
+            listOf(
+                WorkerHelpers.createConfigFromParams(BootConfig.BOOT_WORKER_SERVICE, params.mediatorReplicasFlowMapperSessionIn),
+                WorkerHelpers.createConfigFromParams(BootConfig.BOOT_WORKER_SERVICE, params.mediatorReplicasFlowMapperSessionOut)
+            )
+        )
 
         flowMapperProcessor.start(config)
     }
@@ -100,9 +107,9 @@ private class FlowMapperWorkerParams {
 
     @Option(names = ["--mediator-replicas-flow-session-in"], description = ["Sets the number of mediators that " +
             "consume flow.mapper.session.in messages"])
-    var mediatorReplicasFlowMapperSessionIn: Int? = null
+    var mediatorReplicasFlowMapperSessionIn: Map<String, String> = emptyMap()
 
     @Option(names = ["--mediator-replicas-flow-session-out"], description = ["Sets the number of mediators that " +
             "consume flow.mapper.session.out messages"])
-    var mediatorReplicasFlowMapperSessionOut: Int? = null
+    var mediatorReplicasFlowMapperSessionOut: Map<String, String> = emptyMap()
 }
