@@ -124,21 +124,6 @@ class WorkerHelpers {
                 Triple(ConfigKeys.TEMP_DIR, defaultParams.tempDir, ConfigDefaults.TEMP_DIR),
                 Triple(BootConfig.INSTANCE_ID, defaultParams.instanceId, Random.nextInt().absoluteValue),
                 Triple(BootConfig.TOPIC_PREFIX, defaultParams.topicPrefix, ""),
-                Triple(
-                    BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_SESSION,
-                    defaultParams.mediatorReplicasFlowSession,
-                    FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT
-                ),
-                Triple(
-                    BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_MAPPER_SESSION_IN,
-                    defaultParams.mediatorReplicasFlowMapperSessionIn,
-                    FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT
-                ),
-                Triple(
-                    BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_MAPPER_SESSION_OUT,
-                    defaultParams.mediatorReplicasFlowMapperSessionOut,
-                    FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT
-                ),
                 Triple(MAX_ALLOWED_MSG_SIZE, defaultParams.maxAllowedMessageSize, 972800),
             )
             val defaultParamsMap = defaultParamsAndValues
