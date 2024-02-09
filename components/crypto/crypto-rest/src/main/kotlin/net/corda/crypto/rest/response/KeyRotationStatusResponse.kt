@@ -5,39 +5,20 @@ import java.time.Instant
 /**
  * The result of a key rotation status request.
  *
- * @param oldParentKeyAlias Alias of the key to be rotated.
- * @param newParentKeyAlias Alias of the key we are rotating to.
+ * @param tenantId Either a holding identity ID, the value 'master' for master wrapping key or one of the values
+*          'p2p', 'rest', 'crypto' for corresponding cluster-level tenant.
  * @param status Overall status of the key rotation. Either In Progress or Done.
  * @param createdTimestamp Timestamp of then the key rotation request was received.
  * @param lastUpdatedTimestamp The last updated timestamp.
- * @param wrappingKeys Number of wrapping keys needs rotating grouped by tenantId.
+ * @param rotatedKeyStatus Number of keys needs rotating grouped by tenantId or wrapping key.
  */
 
 data class KeyRotationStatusResponse(
-    val oldParentKeyAlias: String,
-    val newParentKeyAlias: String,
-    val status: String,
-    val createdTimestamp: Instant,
-    val lastUpdatedTimestamp: Instant,
-    val wrappingKeys: List<Pair<String, RotatedKeysStatus>>,
-)
-
-/**
- * The result of a managed key rotation status request.
- *
- * @param tenantId TenantId whose wrapping keys are rotating.
- * @param status Overall status of the key rotation. Either In Progress or Done.
- * @param createdTimestamp Timestamp of then the key rotation request was received.
- * @param lastUpdatedTimestamp The last updated timestamp.
- * @param signingKeys Number of signing keys needs rotating grouped by wrapping key.
- */
-
-data class ManagedKeyRotationStatusResponse(
     val tenantId: String,
     val status: String,
     val createdTimestamp: Instant,
     val lastUpdatedTimestamp: Instant,
-    val signingKeys: List<Pair<String, RotatedKeysStatus>>,
+    val rotatedKeyStatus: List<Pair<String, RotatedKeysStatus>>,
 )
 
 /**

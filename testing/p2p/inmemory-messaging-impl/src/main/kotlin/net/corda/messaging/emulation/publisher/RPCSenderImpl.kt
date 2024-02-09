@@ -12,8 +12,8 @@ import net.corda.messaging.emulation.rpc.RPCTopicService
 class RPCSenderImpl<REQUEST, RESPONSE>(
     private val rpcConfig: RPCConfig<REQUEST, RESPONSE>,
     private val rpcTopicService: RPCTopicService,
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    private val clientIdCounter: String
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    clientIdCounter: String
 ) : RPCSender<REQUEST, RESPONSE> {
 
     private var running = false

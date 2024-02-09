@@ -19,8 +19,8 @@ class InMemoryStateAndEventSubscription<K : Any, S : Any, E : Any>(
     internal val processor: StateAndEventProcessor<K, S, E>,
     internal val stateAndEventListener: StateAndEventListener<K, S>?,
     internal val topicService: TopicService,
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    private val instanceId: Int
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    instanceId: Int
 ) :
     StateAndEventSubscription<K, S, E> {
 
