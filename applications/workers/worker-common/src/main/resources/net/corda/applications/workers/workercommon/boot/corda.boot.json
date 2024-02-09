@@ -238,18 +238,15 @@
           "properties": {
             "flowSession": {
               "description": "Number of mediator replicas that consume the flow session messages.",
-              "type": "integer",
-              "default": 1
+              "type": "integer"
             },
             "flowMapperSessionIn": {
               "description": "Number of mediator replicas that consume the flow mapper session in messages.",
-              "type": "integer",
-              "default": 1
+              "type": "integer"
             },
             "flowMapperSessionOut": {
               "description": "Number of mediator replicas that consume the flow mapper session out messages.",
-              "type": "integer",
-              "default": 1
+              "type": "integer"
             }
           },
           "additionalProperties": false

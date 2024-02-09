@@ -7,6 +7,7 @@ import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.p2p.app.AppMessage
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.getIntOrDefault
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.RoutingDestination.Companion.routeTo
@@ -123,7 +124,7 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
         configName: String,
         topicName: String
     ): List<MediatorConsumerFactory> {
-        val mediatorReplicas = bootConfig.getInt(configName)
+        val mediatorReplicas = bootConfig.getIntOrDefault(configName, 1)
         logger.info("Creating $mediatorReplicas mediator(s) consumer factories for $topicName")
 
         val mediatorConsumerFactory: MutableList<MediatorConsumerFactory> = mutableListOf()

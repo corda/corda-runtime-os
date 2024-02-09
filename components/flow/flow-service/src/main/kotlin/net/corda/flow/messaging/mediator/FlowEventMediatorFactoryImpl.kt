@@ -13,6 +13,7 @@ import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.getIntOrDefault
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.constants.WorkerRPCPaths.CRYPTO_PATH
@@ -130,7 +131,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
             )
         )
 
-        val mediatorReplicas = bootConfig.getInt(WORKER_MEDIATOR_REPLICAS_FLOW_SESSION)
+        val mediatorReplicas = bootConfig.getIntOrDefault(WORKER_MEDIATOR_REPLICAS_FLOW_SESSION, 1)
         logger.info("Creating $mediatorReplicas mediator(s) consumer factories for $FLOW_SESSION")
         for(i in 1..mediatorReplicas) {
             mediatorConsumerFactory.add(
