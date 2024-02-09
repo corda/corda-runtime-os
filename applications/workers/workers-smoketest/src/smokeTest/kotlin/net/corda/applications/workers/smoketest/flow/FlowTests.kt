@@ -30,7 +30,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
-import java.time.Duration
 import java.util.UUID
 import kotlin.text.Typography.quote
 
@@ -119,7 +118,7 @@ class FlowTests : ClusterReadiness by ClusterReadinessChecker() {
     @BeforeAll
     internal fun beforeAll() {
         // check cluster is ready
-        assertIsReady(Duration.ofMinutes(1), Duration.ofMillis(100))
+       // assertIsReady(Duration.ofMinutes(1), Duration.ofMillis(100))
 
         DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
 

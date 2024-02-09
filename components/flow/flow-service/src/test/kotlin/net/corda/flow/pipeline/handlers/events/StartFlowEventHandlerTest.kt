@@ -3,7 +3,7 @@ package net.corda.flow.pipeline.handlers.events
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.state.waiting.WaitingFor
-import net.corda.data.flow.state.waiting.WaitingForStartFlow
+import net.corda.data.flow.state.waiting.start.WaitingForStartFlow
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.pipeline.CheckpointInitializer
 import net.corda.flow.state.FlowCheckpoint

@@ -12,7 +12,7 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowStackItemSession
 import net.corda.data.flow.state.waiting.WaitingFor
-import net.corda.data.flow.state.waiting.WaitingForStartFlow
+import net.corda.data.flow.state.waiting.start.WaitingForStartFlow
 import net.corda.data.flow.state.waiting.external.ExternalEventResponse
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY

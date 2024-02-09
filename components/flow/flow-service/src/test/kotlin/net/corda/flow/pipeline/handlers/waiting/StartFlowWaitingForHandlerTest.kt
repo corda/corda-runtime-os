@@ -1,7 +1,7 @@
 package net.corda.flow.pipeline.handlers.waiting
 
 import net.corda.data.flow.event.StartFlow
-import net.corda.data.flow.state.waiting.WaitingForStartFlow
+import net.corda.data.flow.state.waiting.start.WaitingForStartFlow
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.test.utils.buildFlowEventContext
 import org.junit.jupiter.api.Assertions.assertEquals
