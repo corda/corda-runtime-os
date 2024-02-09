@@ -21,7 +21,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
@@ -219,7 +218,6 @@ internal class StatefulSessionManagerImpl(
                                 state.state.toCounterparties(),
                                 established.session,
                             ),
-                            SessionManager.SessionDirection.Outbound(state.state.toCounterparties(), established.session),
                         )
                         state.toResults(
                             established,
