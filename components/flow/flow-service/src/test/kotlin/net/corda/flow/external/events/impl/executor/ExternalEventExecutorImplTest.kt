@@ -1,11 +1,11 @@
 package net.corda.flow.external.events.impl.executor
 
 import net.corda.data.flow.event.external.ExternalEventResponse
-import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.services.MockFlowFiberService
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.internal.serialization.SerializedBytesImpl
+import net.corda.internal.serialization.amqp.api.SerializationServiceInternal
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertEquals
