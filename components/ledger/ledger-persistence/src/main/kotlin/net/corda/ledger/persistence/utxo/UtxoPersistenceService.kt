@@ -75,7 +75,7 @@ interface UtxoPersistenceService {
      * @param filteredTransactionsAndSignatures The list of [FilteredTransaction]s to persist and their signature list
      * @param account The account to persist for the [FilteredTransaction]s
      */
-    fun persistFilteredTransactionsAndSignatures(
+    fun persistFilteredTransactions(
         filteredTransactionsAndSignatures: Map<FilteredTransaction, List<DigitalSignatureAndMetadata>>,
         account: String
     )

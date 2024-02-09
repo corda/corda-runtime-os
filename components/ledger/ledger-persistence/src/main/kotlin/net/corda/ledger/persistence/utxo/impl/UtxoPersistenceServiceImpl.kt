@@ -446,7 +446,7 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
-    override fun persistFilteredTransactionsAndSignatures(
+    override fun persistFilteredTransactions(
         filteredTransactionsAndSignatures: Map<FilteredTransaction, List<DigitalSignatureAndMetadata>>,
         account: String
     ) {
