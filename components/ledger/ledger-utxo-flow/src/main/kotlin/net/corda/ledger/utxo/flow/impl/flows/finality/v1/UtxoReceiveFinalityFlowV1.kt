@@ -206,8 +206,7 @@ class UtxoReceiveFinalityFlowV1(
             }
         }
 
-        log.info("Persisting $filteredTransactionsAndSignatures")
-        persistenceService.persistFilteredTransactionsAndSignatures(filteredTransactionsAndSignatures.toMap())
+        persistenceService.persistFilteredTransactionsAndSignatures(filteredTransactionsAndSignatures)
 
         return InitialTransactionPayload(
             initialTransaction,
