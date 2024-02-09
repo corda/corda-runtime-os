@@ -140,8 +140,7 @@ class WorkerHelpers {
                     defaultParams.mediatorReplicasFlowMapperSessionOut,
                     FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT
                 ),
-                Triple(MAX_ALLOWED_MSG_SIZE, defaultParams.maxAll
-                        owedMessageSize, 972800),
+                Triple(MAX_ALLOWED_MSG_SIZE, defaultParams.maxAllowedMessageSize, 972800),
             )
             val defaultParamsMap = defaultParamsAndValues
                 .mapNotNull { t -> t.second?.let { t.first to t.second } }
