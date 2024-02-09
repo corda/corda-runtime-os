@@ -9,7 +9,6 @@ import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Shutdown
 import net.corda.schema.configuration.BootConfig
-import net.corda.schema.configuration.BootConfig.BOOT_WORKER_SERVICE
 import net.corda.schema.configuration.ConfigDefaults
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
