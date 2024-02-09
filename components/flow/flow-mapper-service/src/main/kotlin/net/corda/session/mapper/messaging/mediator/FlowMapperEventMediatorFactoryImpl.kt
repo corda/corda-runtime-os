@@ -128,8 +128,10 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
 
         val mediatorConsumerFactory: MutableList<MediatorConsumerFactory> = mutableListOf()
         for (i in 1..mediatorReplicas) {
-            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                topicName, CONSUMER_GROUP, messagingConfig
+            mediatorConsumerFactory.add(
+                mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
+                    topicName, CONSUMER_GROUP, messagingConfig
+                )
             )
         }
 
