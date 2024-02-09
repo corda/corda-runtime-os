@@ -1,5 +1,7 @@
 package net.corda.messaging.api.mediator
 
+import java.util.concurrent.CompletableFuture
+
 /**
  * Multi-source event mediator messaging client.
  */
@@ -26,5 +28,5 @@ interface MessagingClient : AutoCloseable {
      * @param message The [MediatorMessage] to send.
      * @return Computation result, or null if the destination doesn't provide a response.
      * */
-    fun send(message: MediatorMessage<*>): MediatorMessage<*>?
+    fun send(message: MediatorMessage<*>): CompletableFuture<*>?
 }

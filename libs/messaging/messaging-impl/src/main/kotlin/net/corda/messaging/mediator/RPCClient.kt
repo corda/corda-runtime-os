@@ -26,7 +26,9 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.util.EnumMap
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeoutException
+import kotlin.concurrent.withLock
 
 const val CORDA_REQUEST_KEY_HEADER = "corda-request-key"
 
@@ -44,12 +46,14 @@ class RPCClient(
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun send(message: MediatorMessage<*>): MediatorMessage<*>? {
+    override fun send(message: MediatorMessage<*>): CompletableFuture<MediatorMessage<*>>? {
+        val future = CompletableFuture<MediatorMessage<*>>()
         return try {
-            log.trace { "Received RPC external event send request for endpoint ${message.endpoint()}" }
-            processMessage(message)
+            future.complete(processMessage(message))
+            //
         } catch (e: Exception) {
-            handleExceptions(e, message.endpoint())
+            future.completeExceptionally(handleExceptions(e, message.endpoint()))
+            //
         }
     }
 
@@ -146,7 +150,7 @@ class RPCClient(
             .build()
     }
 
-    private fun handleExceptions(e: Exception, endpoint: String): Nothing {
+    private fun handleExceptions(e: Exception, endpoint: String): Exception {
         val exceptionToThrow = when (e) {
             is IOException,
             is InterruptedException,
@@ -169,7 +173,7 @@ class RPCClient(
             }
         }
 
-        throw exceptionToThrow
+        return exceptionToThrow
     }
 
     override fun close() {
