@@ -1,4 +1,4 @@
- package net.corda.applications.workers.workercommon.internal
+package net.corda.applications.workers.workercommon.internal
 
 import com.typesafe.config.ConfigFactory
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
