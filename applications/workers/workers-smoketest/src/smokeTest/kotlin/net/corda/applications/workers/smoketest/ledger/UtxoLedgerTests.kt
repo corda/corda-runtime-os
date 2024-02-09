@@ -163,7 +163,7 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
         var currentTransactionId = checkNotNull(utxoFlowResult.flowResult)
         var message = input
         var prevInput = ""
-        val mode: EvolveMode = EvolveMode.ADD
+        val mode: EvolveMode = EvolveMode.ADD_AND_REMOVE
         for (stage in 1 until 100) {
             val start = Instant.now()
             val evolvedMessage = "evolved input $stage"
@@ -172,7 +172,7 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
                 EvolveMode.NO_EXTRAS -> emptyList()
             }
             val removeList: List<String> = when(mode) {
-                EvolveMode.ADD_AND_REMOVE -> if (stage > 2) listOf(extraPartiesX500[stage-2]) else emptyList()
+                EvolveMode.ADD_AND_REMOVE -> if (stage > 2 && stage < extraPartiesX500.size - 2) listOf(extraPartiesX500[stage-2]) else emptyList()
                 EvolveMode.ADD, EvolveMode.NO_EXTRAS -> emptyList()
             }
             println("mode ${mode.name} adding participants $addList  and removing participants $removeList")
