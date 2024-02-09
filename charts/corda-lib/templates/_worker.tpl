@@ -273,8 +273,8 @@ spec:
         {{- if not (($.Values).vault).url }}
         {{- include "corda.configSaltAndPassphraseEnv" $ | nindent 10 }}
         {{- end }}
-        {{- if $optionalArgs.clusterDbAccess }}
-        {{- include "corda.clusterDbEnv" $ | nindent 10 }}
+        {{- if .config }}
+        {{- include "corda.db.workerConfigEnvironment" ( list $ $worker .config ) | nindent 10 }}
         {{- end }}
         args:
           - "--workspace-dir=/work"
@@ -306,19 +306,22 @@ spec:
           {{- end }}
           - "-spassphrase=$(PASSPHRASE)"
           - "-ssalt=$(SALT)"
-          {{- if $optionalArgs.clusterDbAccess }}
-          - "-ddatabase.user=$(DB_CLUSTER_USERNAME)"
-          - "-ddatabase.pass=$(DB_CLUSTER_PASSWORD)"
-          - "-ddatabase.jdbc.url=jdbc:postgresql://{{ required "Must specify db.cluster.host" $.Values.db.cluster.host }}:{{ $.Values.db.cluster.port }}/{{ $.Values.db.cluster.database }}"
+          {{- if .config }}
+          - "-ddatabase.user=$(CONFIG_DB_USERNAME)"
+          - "-ddatabase.pass=$(CONFIG_DB_PASSWORD)"
+          {{- $connectionSettings := fromYaml ( include "corda.db.configuration" ( list $ $.Values.config.storageId "config.storageId" ) ) }}
+          - "-ddatabase.jdbc.url={{ include "corda.db.connectionUrl" $connectionSettings }}"
           - "-ddatabase.jdbc.directory=/opt/jdbc-driver"
-          - "-ddatabase.pool.max_size={{ .clusterDbConnectionPool.maxSize }}"
-          {{- if .clusterDbConnectionPool.minSize }}
-          - "-ddatabase.pool.min_size={{ .clusterDbConnectionPool.minSize }}"
-          {{- end }}
-          - "-ddatabase.pool.idleTimeoutSeconds={{ .clusterDbConnectionPool.idleTimeoutSeconds }}"
-          - "-ddatabase.pool.maxLifetimeSeconds={{ .clusterDbConnectionPool.maxLifetimeSeconds }}"
-          - "-ddatabase.pool.keepaliveTimeSeconds={{ .clusterDbConnectionPool.keepaliveTimeSeconds }}"
-          - "-ddatabase.pool.validationTimeoutSeconds={{ .clusterDbConnectionPool.validationTimeoutSeconds }}"
+          {{-   with .config.connectionPool }}
+          - "-ddatabase.pool.max_size={{ .maxSize }}"
+          {{-     if not ( kindIs "invalid" .minSize ) }}
+          - "-ddatabase.pool.min_size={{ .minSize }}"
+          {{-     end }}
+          - "-ddatabase.pool.idleTimeoutSeconds={{ .idleTimeoutSeconds }}"
+          - "-ddatabase.pool.maxLifetimeSeconds={{ .maxLifetimeSeconds }}"
+          - "-ddatabase.pool.keepaliveTimeSeconds={{ .keepAliveTimeSeconds }}"
+          - "-ddatabase.pool.validationTimeoutSeconds={{ .validationTimeoutSeconds }}"
+          {{-   end }}
           {{- end }}
           {{- if $.Values.tracing.endpoint }}
           - "--send-trace-to={{ $.Values.tracing.endpoint }}"

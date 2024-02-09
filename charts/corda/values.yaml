@@ -133,44 +133,6 @@ annotations: {}
 # tolerations to schedule worker and bootstrap pods on nodes with matching taints
 tolerations: []
 
-# Database configuration
-db:
-  # Cluster database configuration
-  cluster:
-    # -- the cluster database host (required)
-    host: ""
-    # -- the cluster database type
-    type: "postgresql"
-    # -- the cluster database port
-    port: 5432
-    # the cluster database user configuration
-    username:
-      # -- the cluster database user
-      value: ""
-      # the cluster database user secret configuration; used in preference to value if name is set
-      valueFrom:
-        # the cluster database user secret key reference
-        secretKeyRef:
-          # -- the cluster database user secret name
-          name: ""
-          # -- the cluster database user secret key
-          key: ""
-    # the cluster database password configuration
-    password:
-      # -- the cluster database password
-      value: ""
-      # the cluster database password secret configuration; used in preference to value if name is set
-      valueFrom:
-        # the cluster database password secret key reference
-        secretKeyRef:
-          # -- the cluster database password secret name
-          name: ""
-          # -- the cluster database password secret key
-          key: ""
-    database: cordacluster
-    # -- the schema in which the cluster database config entities will be stored, passed to workers on startup
-    schema: CONFIG
-
 # Kafka configuration
 kafka:
   # -- comma-separated list of Kafka bootstrap servers (required); for example: "broker1.example.com:9092,broker2.example.com:9092,broker3.example.com:9092"
@@ -248,30 +210,6 @@ databases:
     port: 5432
     # -- the default database type
     type: "postgresql"
-    # The default database user configuration
-    username:
-      # -- the default database user
-      value: ""
-      # The default database user secret configuration; used in preference to value if name is set
-      valueFrom:
-        # The default database user secret key reference
-        secretKeyRef:
-          # -- the default database user secret name
-          name: ""
-          # -- the default database user secret key
-          key: ""
-    # The default database password configuration
-    password:
-      # -- the default database password
-      value: ""
-      # The default database password secret configuration; used in preference to value if name is set
-      valueFrom:
-        # The default database password secret key reference
-        secretKeyRef:
-          # -- the default database password secret name
-          name: ""
-          # -- the default database password secret key
-          key: ""
 
 # Persistent Storage configuration to be used by each State type known by the Platform
 stateManager:
@@ -406,39 +344,16 @@ bootstrap:
               # -- the bootstrap default database password secret key
               key: ""
 
-    # Bootstrap cluster database configuration
-    cluster:
-      # the bootstrap cluster database password configuration
-      password:
-        # -- the bootstrap cluster database password
-        value: ""
-        # the bootstrap cluster database password secret configuration; used in preference to value if name is set
-        valueFrom:
-          # the bootstrap cluster database password secret key reference
-          secretKeyRef:
-            # -- the bootstrap cluster database password secret name
-            name: ""
-            # -- the bootstrap cluster database password secret key
-            key: ""
-      # the bootstrap cluster database user configuration
-      username:
-        # -- the bootstrap cluster database user
-        value: ""
-        # the bootstrap cluster database user secret configuration; used in preference to value if name is set
-        valueFrom:
-          # the bootstrap cluster database user secret key reference
-          secretKeyRef:
-            # -- the bootstrap cluster database user secret name
-            name: ""
-            # -- the bootstrap cluster database user secret key
-            key: ""
-
     # crypto configuration
     crypto:
-      # -- the schema in which the cluster database crypto entities will be stored
-      schema: CRYPTO
+      # -- persistent storage type
+      type: Database
+      # -- name of the persistent storage to use. When using 'Database' as the type, an element with the given id should exist under the databases section
+      storageId: "default"
+      # -- name of the partition to use. When using 'Database' as the type, the 'partition' represents the name of the database schema
+      partition: "CRYPTO"
       # JDBC connection pool configuration for crypto DB
-      dbConnectionPool:
+      connectionPool:
         # -- maximum JDBC connection pool size for crypto DB
         maxSize: 5
         # -- minimum JDBC connection pool size for crypto DB; null value means pool's min size will default to pool's max size value
@@ -448,12 +363,12 @@ bootstrap:
         # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
         maxLifetimeSeconds: 1800
         # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
-        keepaliveTimeSeconds: 0
+        keepAliveTimeSeconds: 0
         # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
         validationTimeoutSeconds: 5
       # the username configuration
       username:
-        # -- the username, defaults to a value randomly-generated on install
+        # -- the username
         value: "crypto_user"
         # the username secret configuration; used in preference to value if name is set
         valueFrom:
@@ -478,10 +393,14 @@ bootstrap:
 
     # RBAC configuration
     rbac:
-      # -- the schema in which the cluster database rbac entities will be stored
-      schema: RBAC
+      # -- persistent storage type
+      type: Database
+      # -- name of the persistent storage to use. When using 'Database' as the type, an element with the given id should exist under the databases section
+      storageId: "default"
+      # -- name of the partition to use. When using 'Database' as the type, the 'partition' represents the name of the database schema
+      partition: "RBAC"
       # JDBC connection pool configuration for RBAC DB
-      dbConnectionPool:
+      connectionPool:
         # -- maximum JDBC connection pool size for RBAC DB
         maxSize: 5
         # -- minimum JDBC connection pool size for RBAC DB; null value means pool's min size will default to pool's max size value
@@ -491,13 +410,60 @@ bootstrap:
         # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
         maxLifetimeSeconds: 1800
         # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
-        keepaliveTimeSeconds: 0
+        keepAliveTimeSeconds: 0
         # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
         validationTimeoutSeconds: 5
       # the username configuration
       username:
         # -- the username, defaults to a value randomly-generated on install
         value: "rbac_user"
+        # the username secret configuration; used in preference to value if name is set
+        valueFrom:
+          # the username secret key reference
+          secretKeyRef:
+            # -- the username secret name
+            name: ""
+            # -- the username secret key
+            key: ""
+      # password configuration
+      password:
+        # -- the password, defaults to a value randomly-generated on install
+        value: ""
+        # the password secret configuration
+        valueFrom:
+          # the password secret key reference
+          secretKeyRef:
+            # -- the password secret name
+            name: ""
+            # -- the password secret key
+            key: ""
+
+    # Virtual nodes configuration
+    virtualNodes:
+      # -- persistent storage type
+      type: Database
+      # -- name of the persistent storage to use. When using 'Database' as the type, an element with the given id should exist under the databases section
+      storageId: "default"
+      # -- name of the partition to use. When using 'Database' as the type, the 'partition' represents the name of the database schema
+      partition: "VIRTUAL_NODE"
+      # JDBC connection pool configuration for virtual node DB
+      connectionPool:
+        # -- maximum JDBC connection pool size for virtual node DB
+        maxSize: 5
+        # -- minimum JDBC connection pool size for virtual node DB; null value means pool's min size will default to pool's max size value
+        minSize: null
+        # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
+        idleTimeoutSeconds: 120
+        # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+        maxLifetimeSeconds: 1800
+        # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
+        keepAliveTimeSeconds: 0
+        # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+        validationTimeoutSeconds: 5
+      # the username configuration
+      username:
+        # -- the username, defaults to a value randomly-generated on install
+        value: "virtual_nodes_user"
         # the username secret configuration; used in preference to value if name is set
         valueFrom:
           # the username secret key reference
@@ -589,6 +555,13 @@ bootstrap:
 
 # config service configuration
 config:
+  # -- persistent storage type
+  type: Database
+  # -- name of the persistent storage to use. When using 'Database' as the type, an element with the given id should exist under the databases section
+  storageId: "default"
+  # -- name of the partition to use. When using 'Database' as the type, the 'partition' represents the name of the database schema
+  partition: "CONFIG"
+
   # the configuration for encryption of configuration
   encryption:
     # the salt configuration for encryption of configuration
@@ -655,20 +628,48 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the crypto worker containers
       limits: {}
-    # crypto worker JDBC connection pool configuration for cluster DB
-    clusterDbConnectionPool:
-      # -- crypto worker maximum JDBC connection pool size for cluster DB
-      maxSize: 5
-      # -- crypto worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value
-      minSize: null
-      # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
-      idleTimeoutSeconds: 120
-      # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
-      maxLifetimeSeconds: 1800
-      # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
-      keepaliveTimeSeconds: 0
-      # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
-      validationTimeoutSeconds: 5
+    # crypto worker configuration for the config service
+    config:
+      # -- persistent storage type
+      type: Database
+      # Database user, empty values instructs the chart to use the default settings configured for the associated persistent storage
+      username:
+        # -- the crypto worker config database user
+        value: "crypto_worker"
+        # The crypto worker config database username secret configuration; used in preference to value if name is set
+        valueFrom:
+          # The crypto worker config database password secret key reference
+          secretKeyRef:
+            # -- the crypto worker config database password secret name
+            name: ""
+            # -- the crypto worker config database password secret key
+            key: ""
+      # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
+      password:
+        # -- the crypto worker config database user
+        value: ""
+        # The crypto worker config database password secret configuration; used in preference to value if name is set
+        valueFrom:
+          # The crypto worker config database password secret key reference
+          secretKeyRef:
+            # -- the crypto worker config database password secret name
+            name: ""
+            # -- the crypto worker config database password secret key
+            key: ""
+      # Connection pool configuration for the config service
+      connectionPool:
+        # -- crypto worker maximum JDBC connection pool size for cluster DB
+        maxSize: 5
+        # -- crypto worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value
+        minSize: null
+        # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
+        idleTimeoutSeconds: 120
+        # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+        maxLifetimeSeconds: 1800
+        # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
+        keepAliveTimeSeconds: 0
+        # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+        validationTimeoutSeconds: 5
     # crypto worker Kafka configuration
     kafka:
       # if kafka.sasl.enabled, the credentials to connect to Kafka with for the crypto worker
@@ -779,20 +780,48 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the DB worker containers
       limits: {}
-    # DB worker JDBC connection pool configuration for cluster DB
-    clusterDbConnectionPool:
-      # -- DB worker maximum JDBC connection pool size for cluster DB
-      maxSize: 5
-      # -- DB worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value
-      minSize: null
-      # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
-      idleTimeoutSeconds: 120
-      # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
-      maxLifetimeSeconds: 1800
-      # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
-      keepaliveTimeSeconds: 0
-      # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
-      validationTimeoutSeconds: 5
+    # DB worker configuration for the config service
+    config:
+      # -- persistent storage type
+      type: Database
+      # Database user, empty values instructs the chart to use the default settings configured for the associated persistent storage
+      username:
+        # -- the DB worker config database user
+        value: "db_worker"
+        # The DB worker config database username secret configuration; used in preference to value if name is set
+        valueFrom:
+          # The DB worker config database password secret key reference
+          secretKeyRef:
+            # -- the DB worker config database password secret name
+            name: ""
+            # -- the DB worker config database password secret key
+            key: ""
+      # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
+      password:
+        # -- the DB worker config database user
+        value: ""
+        # The DB worker config database password secret configuration; used in preference to value if name is set
+        valueFrom:
+          # The DB worker config database password secret key reference
+          secretKeyRef:
+            # -- the DB worker config database password secret name
+            name: ""
+            # -- the DB worker config database password secret key
+            key: ""
+      # Connection pool configuration for the config service
+      connectionPool:
+        # -- DB worker maximum JDBC connection pool size for cluster DB
+        maxSize: 5
+        # -- DB worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value
+        minSize: null
+        # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
+        idleTimeoutSeconds: 120
+        # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+        maxLifetimeSeconds: 1800
+        # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
+        keepAliveTimeSeconds: 0
+        # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+        validationTimeoutSeconds: 5
     # DB worker Kafka configuration
     kafka:
       # if kafka.sasl.enabled, the credentials to connect to Kafka with for the DB worker
@@ -1594,20 +1623,48 @@ workers:
       requests: { }
       # -- the CPU/memory resource limits for the persistence worker containers
       limits: { }
-    # persistence worker JDBC connection pool configuration for cluster DB
-    clusterDbConnectionPool:
-      # -- persistence worker maximum JDBC connection pool size for cluster DB
-      maxSize: 5
-      # -- persistence worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value
-      minSize: null
-      # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
-      idleTimeoutSeconds: 120
-      # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
-      maxLifetimeSeconds: 1800
-      # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
-      keepaliveTimeSeconds: 0
-      # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
-      validationTimeoutSeconds: 5
+    # persistence worker configuration for the config service
+    config:
+      # -- persistent storage type
+      type: Database
+      # Database user, empty values instructs the chart to use the default settings configured for the associated persistent storage
+      username:
+        # -- the persistence worker config database user
+        value: "persistence_worker"
+        # The persistence worker config database username secret configuration; used in preference to value if name is set
+        valueFrom:
+          # The persistence worker config database password secret key reference
+          secretKeyRef:
+            # -- the persistence worker config database password secret name
+            name: ""
+            # -- the persistence worker config database password secret key
+            key: ""
+      # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
+      password:
+        # -- the persistence worker config database user
+        value: ""
+        # The persistence worker config database password secret configuration; used in preference to value if name is set
+        valueFrom:
+          # The persistence worker config database password secret key reference
+          secretKeyRef:
+            # -- the persistence worker config database password secret name
+            name: ""
+            # -- the persistence worker config database password secret key
+            key: ""
+      # Connection pool configuration for the config service
+      connectionPool:
+        # -- persistence worker maximum JDBC connection pool size for cluster DB
+        maxSize: 5
+        # -- persistence worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value
+        minSize: null
+        # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
+        idleTimeoutSeconds: 120
+        # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+        maxLifetimeSeconds: 1800
+        # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
+        keepAliveTimeSeconds: 0
+        # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+        validationTimeoutSeconds: 5
     # persistence worker Kafka configuration
     kafka:
       # if kafka.sasl.enabled, the credentials to connect to Kafka with for the persistence worker
@@ -1674,20 +1731,48 @@ workers:
       requests: { }
       # -- the CPU/memory resource limits for the token selection worker containers
       limits: { }
-    # token selection worker JDBC connection pool configuration for cluster DB
-    clusterDbConnectionPool:
-      # -- token selection worker maximum JDBC connection pool size for cluster DB
-      maxSize: 5
-      # -- token selection worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value
-      minSize: null
-      # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
-      idleTimeoutSeconds: 120
-      # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
-      maxLifetimeSeconds: 1800
-      # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
-      keepaliveTimeSeconds: 0
-      # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
-      validationTimeoutSeconds: 5
+    # token selection worker configuration for the config service
+    config:
+      # -- persistent storage type
+      type: Database
+      # Database user, empty values instructs the chart to use the default settings configured for the associated persistent storage
+      username:
+        # -- the token selection worker config database user
+        value: "token_selection_worker"
+        # The token selection worker config database username secret configuration; used in preference to value if name is set
+        valueFrom:
+          # The token selection worker config database password secret key reference
+          secretKeyRef:
+            # -- the token selection worker config database password secret name
+            name: ""
+            # -- the token selection worker config database password secret key
+            key: ""
+      # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
+      password:
+        # -- the token selection worker config database user
+        value: ""
+        # The token selection worker config database password secret configuration; used in preference to value if name is set
+        valueFrom:
+          # The token selection worker config database password secret key reference
+          secretKeyRef:
+            # -- the token selection worker config database password secret name
+            name: ""
+            # -- the token selection worker config database password secret key
+            key: ""
+      # Connection pool configuration for the config service
+      connectionPool:
+        # -- token selection worker maximum JDBC connection pool size for cluster DB
+        maxSize: 5
+        # -- token selection worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value
+        minSize: null
+        # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
+        idleTimeoutSeconds: 120
+        # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+        maxLifetimeSeconds: 1800
+        # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
+        keepAliveTimeSeconds: 0
+        # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+        validationTimeoutSeconds: 5
     stateManager:
       # Runtime configuration settings for the State Manager used to interact with 'tokenPoolCache' states
       tokenPoolCache:
@@ -1810,20 +1895,48 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the uniqueness worker containers
       limits: {}
-    # uniqueness worker JDBC connection pool configuration for cluster DB
-    clusterDbConnectionPool:
-      # -- uniqueness worker maximum JDBC connection pool size for cluster DB
-      maxSize: 5
-      # -- uniqueness worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value
-      minSize: null
-      # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
-      idleTimeoutSeconds: 120
-      # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
-      maxLifetimeSeconds: 1800
-      # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
-      keepaliveTimeSeconds: 0
-      # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
-      validationTimeoutSeconds: 5
+    # uniqueness worker configuration for the config service
+    config:
+      # -- persistent storage type
+      type: Database
+      # Database user, empty values instructs the chart to use the default settings configured for the associated persistent storage
+      username:
+        # -- the uniqueness worker config database user
+        value: "uniqueness_worker"
+        # The uniqueness worker config database username secret configuration; used in preference to value if name is set
+        valueFrom:
+          # The uniqueness worker config database password secret key reference
+          secretKeyRef:
+            # -- the uniqueness worker config database password secret name
+            name: ""
+            # -- the uniqueness worker config database password secret key
+            key: ""
+      # Database password, empty values instructs the chart to use the default settings configured for the associated persistent storage
+      password:
+        # -- the uniqueness worker config database user
+        value: ""
+        # The uniqueness worker config database password secret configuration; used in preference to value if name is set
+        valueFrom:
+          # The uniqueness worker config database password secret key reference
+          secretKeyRef:
+            # -- the uniqueness worker config database password secret name
+            name: ""
+            # -- the uniqueness worker config database password secret key
+            key: ""
+      # Connection pool configuration for the config service
+      connectionPool:
+        # -- uniqueness worker maximum JDBC connection pool size for cluster DB
+        maxSize: 5
+        # -- uniqueness worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value
+        minSize: null
+        # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
+        idleTimeoutSeconds: 120
+        # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+        maxLifetimeSeconds: 1800
+        # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
+        keepAliveTimeSeconds: 0
+        # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+        validationTimeoutSeconds: 5
     # uniqueness worker Kafka configuration
     kafka:
       # if kafka.sasl.enabled, the credentials to connect to Kafka with for the uniqueness worker
