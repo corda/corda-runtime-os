@@ -35,6 +35,7 @@ import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
+import org.slf4j.LoggerFactory
 import java.nio.file.Path
 
 const val TIMEOUT_MILLIS = 30000L
@@ -44,6 +45,8 @@ const val TIMEOUT_MILLIS = 30000L
 abstract class CommonLedgerIntegrationTest {
     @RegisterExtension
     val lifecycle = AllTestsLifecycle()
+
+    private val logger = LoggerFactory.getLogger(this::class.java)
 
     open val testingCpb = "/META-INF/ledger-common-empty-app.cpb"
 
@@ -79,6 +82,8 @@ abstract class CommonLedgerIntegrationTest {
         // FlowSandboxService can use the correct VirtualNodeInfoReadService.
         val virtualNode = setup.fetchService<VirtualNodeService>(TIMEOUT_MILLIS)
         val virtualNodeInfo = virtualNode.loadVirtualNode(testingCpb)
+        logger.info("Created virtual node with ID ${virtualNodeInfo.holdingIdentity.shortHash}")
+        logger.info("Reading metadata for CPI ${virtualNodeInfo.cpiIdentifier}")
         val cpiLoader = setup.fetchService<CpiLoader>(TIMEOUT_MILLIS)
         val cpiMetadata = cpiLoader.getCpiMetadata(virtualNodeInfo.cpiIdentifier).get()
             ?: fail("CpiMetadata is null ${virtualNodeInfo.cpiIdentifier}")
