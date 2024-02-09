@@ -87,7 +87,7 @@ class FlowMapperService @Activate constructor(
                     coordinator.createManagedResource(CONFIG_HANDLE) {
                         configurationReadService.registerComponentForUpdates(
                             coordinator,
-                            setOf(FLOW_CONFIG, MESSAGING_CONFIG, STATE_MANAGER_CONFIG)
+                            setOf(FLOW_CONFIG, MESSAGING_CONFIG, BOOT_CONFIG, STATE_MANAGER_CONFIG)
                         )
                     }
                 } else {
