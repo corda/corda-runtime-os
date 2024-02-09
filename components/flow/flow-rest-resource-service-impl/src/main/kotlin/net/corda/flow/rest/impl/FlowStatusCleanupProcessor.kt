@@ -58,7 +58,7 @@ class FlowStatusCleanupProcessor(
             getStaleFlowStatuses()
                 .map { FlowStatusRecord(it.key, it.value.version) }
                 .chunked(batchSize)
-                .map { Record(REST_FLOW_STATUS_CLEANUP_TOPIC, UUID.randomUUID(), ExecuteFlowStatusCleanup(it)) }
+                .map { Record(REST_FLOW_STATUS_CLEANUP_TOPIC, UUID.randomUUID().toString(), ExecuteFlowStatusCleanup(it)) }
         } ?: emptyList()
     }
 
