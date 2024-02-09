@@ -617,7 +617,7 @@ class UtxoPersistenceServiceImplTest {
 
         val filteredTransactionToStore = createFilteredTransaction(signedTransaction)
 
-        (persistenceService as UtxoPersistenceServiceImpl).persistFilteredTransactionsAndSignatures(
+        (persistenceService as UtxoPersistenceServiceImpl).persistFilteredTransactions(
             mapOf(filteredTransactionToStore to signatures),
             account
         )
