@@ -136,29 +136,14 @@ class CombinedWorker @Activate constructor(
             params.hsmId = SOFT_HSM_ID
         }
 
+        val extraConfigs = mutableListOf(preparedDbConfig,stateManagerConfig)
+        extraConfigs.addAll(createExtraConfigs(params))
+
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
-            listOf(
-                preparedDbConfig,
-                createConfigFromParams(BootConfig.BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId)),
-                createConfigFromParams(BootConfig.BOOT_REST, params.restParams),
-                stateManagerConfig,
-                createConfigFromParams(BOOT_WORKER_SERVICE, params.workerEndpoints),
-                createConfigFromParams(
-                    BOOT_WORKER_SERVICE,
-                    mapOf("mediatorReplicas.flowSession" to params.mediatorReplicasFlowSession.toString())
-                ),
-                createConfigFromParams(
-                    BOOT_WORKER_SERVICE,
-                    mapOf("mediatorReplicas.flowMapperSessionIn" to params.mediatorReplicasFlowMapperSessionIn.toString())
-                ),
-                createConfigFromParams(
-                    BOOT_WORKER_SERVICE,
-                    mapOf("mediatorReplicas.flowMapperSessionOut" to params.mediatorReplicasFlowMapperSessionOut.toString())
-                ),
-            )
+            extraConfigs
         )
 
         val superUser = System.getenv("CORDA_DEV_POSTGRES_USER") ?: "postgres"
@@ -221,6 +206,43 @@ class CombinedWorker @Activate constructor(
         linkManagerProcessor.start(config)
         gatewayProcessor.start(config)
         schedulerProcessor.start(config)
+    }
+
+    private fun createExtraConfigs(params: CombinedWorkerParams): List<Config> {
+        val extraConfigs = mutableListOf(
+            createConfigFromParams(BootConfig.BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId)),
+            createConfigFromParams(BootConfig.BOOT_REST, params.restParams),
+            createConfigFromParams(BOOT_WORKER_SERVICE, params.workerEndpoints),
+        )
+
+        if(params.mediatorReplicasFlowSession != null) {
+            extraConfigs.add(
+                createConfigFromParams(
+                    BOOT_WORKER_SERVICE,
+                    mapOf("mediatorReplicas.flowSession" to params.mediatorReplicasFlowSession.toString())
+                )
+            )
+        }
+
+        if(params.mediatorReplicasFlowMapperSessionIn != null) {
+            extraConfigs.add(
+                createConfigFromParams(
+                    BOOT_WORKER_SERVICE,
+                    mapOf("mediatorReplicas.flowMapperSessionIn" to params.mediatorReplicasFlowMapperSessionIn.toString())
+                )
+            )
+        }
+
+        if(params.mediatorReplicasFlowMapperSessionOut != null) {
+            extraConfigs.add(
+                createConfigFromParams(
+                    BOOT_WORKER_SERVICE,
+                    mapOf("mediatorReplicas.flowMapperSessionOut" to params.mediatorReplicasFlowMapperSessionOut.toString())
+                )
+            )
+        }
+
+        return extraConfigs
     }
 
     /**

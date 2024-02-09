@@ -1,5 +1,6 @@
 package net.corda.applications.workers.flow
 
+import com.typesafe.config.Config
 import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.Health
@@ -81,17 +82,25 @@ class FlowWorker @Activate constructor(
 
         configureTracing("Flow Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
         webServer.start(params.defaultParams.workerServerPort)
-        val config = getBootstrapConfig(
-            secretsServiceFactoryResolver,
-            params.defaultParams,
-            configurationValidatorFactory.createConfigValidator(),
-            listOf(
-                WorkerHelpers.createConfigFromParams(BOOT_WORKER_SERVICE, params.workerEndpoints),
+
+        val extraConfigs = mutableListOf(
+            WorkerHelpers.createConfigFromParams(BOOT_WORKER_SERVICE, params.workerEndpoints)
+        )
+
+        if (params.mediatorReplicasFlowSession != null) {
+            extraConfigs.add(
                 WorkerHelpers.createConfigFromParams(
                     BOOT_WORKER_SERVICE,
                     mapOf("mediatorReplicas.flowSession" to params.mediatorReplicasFlowSession.toString())
                 )
             )
+        }
+
+        val config = getBootstrapConfig(
+            secretsServiceFactoryResolver,
+            params.defaultParams,
+            configurationValidatorFactory.createConfigValidator(),
+            extraConfigs
         )
 
         flowProcessor.start(config)

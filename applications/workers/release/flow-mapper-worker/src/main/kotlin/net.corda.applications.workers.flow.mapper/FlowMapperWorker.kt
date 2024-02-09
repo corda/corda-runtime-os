@@ -1,5 +1,6 @@
 package net.corda.applications.workers.flow.mapper
 
+import com.typesafe.config.Config
 import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.Health
@@ -79,20 +80,31 @@ class FlowMapperWorker @Activate constructor(
 
         configureTracing("Flow Mapper Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
         webServer.start(params.defaultParams.workerServerPort)
+
+        val extraConfigs = mutableListOf<Config>()
+        if (params.mediatorReplicasFlowMapperSessionIn != null) {
+            extraConfigs.add(
+                createConfigFromParams(
+                    BOOT_WORKER_SERVICE,
+                    mapOf("mediatorReplicas.flowMapperSessionIn" to params.mediatorReplicasFlowMapperSessionIn.toString())
+                )
+            )
+        }
+
+        if (params.mediatorReplicasFlowMapperSessionOut != null) {
+            extraConfigs.add(
+                createConfigFromParams(
+                    BOOT_WORKER_SERVICE,
+                    mapOf("mediatorReplicas.flowMapperSessionOut" to params.mediatorReplicasFlowMapperSessionOut.toString())
+                )
+            )
+        }
+
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
-            listOf(
-                createConfigFromParams(
-                    BOOT_WORKER_SERVICE,
-                    mapOf("mediatorReplicas.flowMapperSessionIn" to params.mediatorReplicasFlowMapperSessionIn.toString())
-                ),
-                createConfigFromParams(
-                    BOOT_WORKER_SERVICE,
-                    mapOf("mediatorReplicas.flowMapperSessionOut" to params.mediatorReplicasFlowMapperSessionOut.toString())
-                ),
-            )
+            extraConfigs
         )
 
         flowMapperProcessor.start(config)
