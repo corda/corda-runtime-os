@@ -1,4 +1,4 @@
-package net.corda.applications.workers.workercommon.internal
+ package net.corda.applications.workers.workercommon.internal
 
 import com.typesafe.config.ConfigFactory
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
@@ -149,9 +149,9 @@ class BootstrapConfigTest {
                 minSize = 111, maxSize = 222, idleTimeout = 333, maxLifetime = 444, keepAlive = 555, validationTimeout = 666
             )
 
-            softly.assertThat(config.getInt("$BOOT_WORKER_SERVICE.mediatorReplicas.flowSession")).isEqualTo(2)
-            softly.assertThat(config.getInt("$BOOT_WORKER_SERVICE.mediatorReplicas.flowMapperSessionIn")).isEqualTo(3)
-            softly.assertThat(config.getInt("$BOOT_WORKER_SERVICE.mediatorReplicas.flowMapperSessionOut")).isEqualTo(4)
+            softly.assertThat(config.getInt(BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_SESSION)).isEqualTo(2)
+            softly.assertThat(config.getInt(BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_MAPPER_SESSION_IN)).isEqualTo(3)
+            softly.assertThat(config.getInt(BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_MAPPER_SESSION_OUT)).isEqualTo(4)
         }
     }
 
