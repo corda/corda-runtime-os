@@ -2,7 +2,6 @@
 
 import com.typesafe.config.ConfigFactory
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
-import net.corda.applications.workers.workercommon.FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT
 import net.corda.applications.workers.workercommon.WorkerHelpers
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
@@ -81,9 +80,6 @@ class BootstrapConfigTest {
             DefaultWorkerParams(1234).also {
                 it.configFiles =
                     listOf(Path.of(this::class.java.classLoader.getResource("example-config.json")!!.toURI()))
-                it.mediatorReplicasFlowSession = 2
-                it.mediatorReplicasFlowMapperSessionIn = 3
-                it.mediatorReplicasFlowMapperSessionOut = 4
             },
             mockConfigurationValidator
         )
@@ -169,11 +165,11 @@ class BootstrapConfigTest {
             softly.assertThat(config.getInt("maxAllowedMessageSize")).isEqualTo(972800)
             softly.assertThat(config.getString("topicPrefix")).isEqualTo("")
             softly.assertThat(config.getInt(BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_SESSION))
-                .isEqualTo(FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT)
+                .isEqualTo(1)
             softly.assertThat(config.getInt(BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_MAPPER_SESSION_IN))
-                .isEqualTo(FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT)
+                .isEqualTo(1)
             softly.assertThat(config.getInt(BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_MAPPER_SESSION_OUT))
-                .isEqualTo(FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT)
+                .isEqualTo(1)
         }
 
     }
