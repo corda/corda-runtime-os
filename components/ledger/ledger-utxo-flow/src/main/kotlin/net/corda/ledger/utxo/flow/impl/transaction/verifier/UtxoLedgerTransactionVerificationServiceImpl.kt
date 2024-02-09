@@ -23,7 +23,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
-import java.nio.ByteBuffer
 
 @Component(
     service = [UtxoLedgerTransactionVerificationService::class, UsedByFlow::class],
@@ -83,7 +82,7 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
             (wireTransaction.metadata as TransactionMetadataInternal).getCpkMetadata()
         }
 
-    private fun serialize(payload: Any) = ByteBuffer.wrap(serializationService.serialize(payload).bytes)
+    private fun serialize(payload: Any) = serializationService.serialize(payload).bytes
 
     private fun transactionVerificationFlowTimer(): Timer {
         return CordaMetrics.Metric.Ledger.TransactionVerificationFlowTime

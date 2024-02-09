@@ -10,6 +10,7 @@ import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.SignedGroupParameters
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -62,4 +63,5 @@ class FindSignedGroupParametersExternalEventFactory(
     }
 }
 
+@CordaSerializable
 data class FindSignedGroupParametersParameters(val hash: String)

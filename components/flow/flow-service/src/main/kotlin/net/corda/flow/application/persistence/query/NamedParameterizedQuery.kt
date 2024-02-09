@@ -2,6 +2,7 @@ package net.corda.flow.application.persistence.query
 
 import net.corda.flow.application.persistence.external.events.NamedQueryExternalEventFactory
 import net.corda.flow.application.persistence.external.events.NamedQueryParameters
+import net.corda.utilities.toByteArrays
 import net.corda.flow.application.persistence.wrapWithPersistenceException
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.persistence.query.ResultSetFactory
@@ -56,7 +57,7 @@ class NamedParameterizedQuery<R : Any>(
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     NamedQueryExternalEventFactory::class.java,
-                    NamedQueryParameters(queryName, serializedParameters, offset, limit)
+                    NamedQueryParameters(queryName, serializedParameters.toByteArrays(), offset, limit)
                 )
             }
         }

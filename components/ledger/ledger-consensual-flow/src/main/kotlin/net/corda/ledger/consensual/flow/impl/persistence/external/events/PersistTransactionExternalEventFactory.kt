@@ -2,6 +2,7 @@ package net.corda.ledger.consensual.flow.impl.persistence.external.events
 
 import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.flow.external.events.factory.ExternalEventFactory
+import net.corda.v5.base.annotations.CordaSerializable
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import java.nio.ByteBuffer
@@ -15,8 +16,9 @@ class PersistTransactionExternalEventFactory :
     constructor(clock: Clock) : super(clock)
 
     override fun createRequest(parameters: PersistTransactionParameters): Any {
-        return PersistTransaction(parameters.transaction, parameters.transactionStatus, emptyList())
+        return PersistTransaction(ByteBuffer.wrap(parameters.transaction), parameters.transactionStatus, emptyList())
     }
 }
 
-data class PersistTransactionParameters(val transaction: ByteBuffer, val transactionStatus: String)
+@CordaSerializable
+data class PersistTransactionParameters(val transaction: ByteArray, val transactionStatus: String)
