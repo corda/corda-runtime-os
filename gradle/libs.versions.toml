@@ -34,7 +34,7 @@ okHttpVersion = { strictly = "4.9.2" }
 okioVersion = { strictly = "3.4.0" }
 pf4jVersion = "3.10.0"
 unirestVersion = "3.14.5"
-zipkinCoreVersion = "2.27.1"
+zipkinCoreVersion = "3.0.6"
 zipkinReporterVersion = "3.2.1"
 
 # Testing
