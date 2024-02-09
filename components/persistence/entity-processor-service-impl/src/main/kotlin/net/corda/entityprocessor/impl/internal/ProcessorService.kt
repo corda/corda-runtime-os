@@ -32,7 +32,6 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import java.time.Duration
-import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.PersistenceException
 
