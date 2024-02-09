@@ -29,7 +29,7 @@ private const val REWRAP_KEYS_OPERATION_NAME = "rewrapKeys"
 @Suppress("LongParameterList")
 class CryptoRewrapBusProcessor(
     val cryptoService: CryptoService,
-    private val stateManager: StateManager?,
+    private val stateManager: StateManager,
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val defaultUnmanagedWrappingKeyName: String,
 ) : DurableProcessor<String, IndividualKeyRotationRequest> {

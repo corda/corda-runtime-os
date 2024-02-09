@@ -45,7 +45,7 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                nullStateRecord()
+                notNullStateRecord()
                 flowStatus(FlowStates.FAILED, errorType = FLOW_FAILED, errorMessage = EXCEPTION.message)
                 scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY_MAPPER)
                 flowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
@@ -62,7 +62,7 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                nullStateRecord()
+                notNullStateRecord()
                 flowStatus(FlowStates.FAILED, errorType = FLOW_FAILED, errorMessage = EXCEPTION.message)
                 scheduleFlowMapperCleanupEvents(INITIATED_SESSION_ID_1)
                 flowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)

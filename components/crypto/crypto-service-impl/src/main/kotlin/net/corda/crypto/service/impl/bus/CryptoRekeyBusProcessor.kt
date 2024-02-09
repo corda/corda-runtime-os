@@ -42,7 +42,7 @@ class CryptoRekeyBusProcessor(
     private val wrappingRepositoryFactory: WrappingRepositoryFactory,
     private val signingRepositoryFactory: SigningRepositoryFactory,
     private val rekeyPublisher: Publisher,
-    private val stateManagerInit: StateManager?,
+    private val stateManager: StateManager,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val defaultUnmanagedWrappingKeyName: String,
 ) : DurableProcessor<String, KeyRotationRequest> {
@@ -54,10 +54,6 @@ class CryptoRekeyBusProcessor(
     override val valueClass = KeyRotationRequest::class.java
     private val unmanagedKeyStatusSerializer = cordaAvroSerializationFactory.createAvroSerializer<UnmanagedKeyStatus>()
     private val managedKeyStatusSerializer = cordaAvroSerializationFactory.createAvroSerializer<ManagedKeyStatus>()
-    private val stateManager: StateManager
-        get() = checkNotNull(stateManagerInit) {
-            "State manager for key rotation is not initialised."
-        }
 
     @Suppress("NestedBlockDepth")
     override fun onNext(events: List<Record<String, KeyRotationRequest>>): List<Record<*, *>> {
@@ -65,6 +61,9 @@ class CryptoRekeyBusProcessor(
 
         events.mapNotNull { it.timestamp to it.value }.forEach { (timestamp, request) ->
             try {
+                check(stateManager.isRunning) {
+                    "State manager for key rotation is not initialised."
+                }
                 processEvent(request, timestamp)
             } catch (ex: Exception) {
                 logger.warn("A KeyRotationRequest event could not be processed:", ex)
@@ -80,11 +79,6 @@ class CryptoRekeyBusProcessor(
     ) {
         logger.debug("processing $request")
         require(request != null)
-
-        if (!hasPreviousRotationFinished()) {
-            logger.info("A key rotation is already ongoing, ignoring request to start new one.")
-            return
-        }
 
         when (request.managedKey) {
             KeyType.UNMANAGED -> {
@@ -189,7 +183,9 @@ class CryptoRekeyBusProcessor(
             )
 
             State(
-                getKeyRotationStatusRecordKey(wrappingKeyAlias, request.tenantId),
+                // Using wrapping key's uuid and tenantId as SM key because wrapping key's alias is not available
+                // in re-wrap bus processor where we also update SM records.
+                getKeyRotationStatusRecordKey(it.first.toString(), request.tenantId),
                 checkNotNull(managedKeyStatusSerializer.serialize(status)),
                 1,
                 Metadata(
@@ -258,7 +254,7 @@ class CryptoRekeyBusProcessor(
                     1,
                     Metadata(
                         mapOf(
-                            KeyRotationMetadataValues.ROOT_KEY_ALIAS to defaultUnmanagedWrappingKeyName,
+                            KeyRotationMetadataValues.DEFAULT_MASTER_KEY_ALIAS to defaultUnmanagedWrappingKeyName,
                             KeyRotationMetadataValues.STATUS_TYPE to KeyRotationRecordType.KEY_ROTATION,
                             KeyRotationMetadataValues.STATUS to KeyRotationStatus.IN_PROGRESS,
                             KeyRotationMetadataValues.KEY_TYPE to KeyRotationKeyType.UNMANAGED,
@@ -275,16 +271,11 @@ class CryptoRekeyBusProcessor(
             if (!deleteStateManagerRecords(
                     listOf(
                         MetadataFilter(
-                            KeyRotationMetadataValues.ROOT_KEY_ALIAS,
-                            Operation.Equals,
-                            defaultUnmanagedWrappingKeyName,
-                        ),
-                        MetadataFilter(
                             KeyRotationMetadataValues.KEY_TYPE,
                             Operation.Equals,
                             KeyRotationKeyType.UNMANAGED
                         )
-                    ), "default master wrapping key $defaultUnmanagedWrappingKeyName"
+                    ), "master wrapping key."
                 )
             ) {
                 return false
@@ -338,26 +329,6 @@ class CryptoRekeyBusProcessor(
                 )
             }
         )
-    }
-
-    private fun hasPreviousRotationFinished(): Boolean {
-        // The current state of this method is to prevent any key rotations being started when any other one is in progress.
-        // Same check is done on the Rest worker side, but if user quickly issues two key rotation commands after each other,
-        // it will pass rest worker check as state manager was not yet populated.
-        // On that note, if the logic is changed here, it should also be changed to match in the Rest worker, see [KeyRotationRestResource]
-        // for the equivalent method.
-        stateManager.findByMetadataMatchingAll(
-            listOf(
-                MetadataFilter(
-                    KeyRotationMetadataValues.STATUS_TYPE,
-                    Operation.Equals,
-                    KeyRotationRecordType.KEY_ROTATION
-                )
-            )
-        ).forEach {
-            if (it.value.metadata[KeyRotationMetadataValues.STATUS] != KeyRotationStatus.DONE) return false
-        }
-        return true
     }
 
     /**

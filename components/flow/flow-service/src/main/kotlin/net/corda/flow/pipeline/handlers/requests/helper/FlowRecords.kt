@@ -32,7 +32,7 @@ fun getRecords(
 ): List<Record<*,*>> {
     val checkpoint = context.checkpoint
     val records = if (checkpoint.flowStartContext.initiatorType == FlowInitiatorType.RPC) {
-        val flowCleanupTime = context.flowConfig.getLong(FlowConfig.PROCESSING_FLOW_CLEANUP_TIME)
+        val flowCleanupTime = context.flowConfig.getLong(FlowConfig.PROCESSING_FLOW_MAPPER_CLEANUP_TIME)
         val expiryTime = Instant.now().plusMillis(flowCleanupTime).toEpochMilli()
         listOf(
             flowRecordFactory.createFlowStatusRecord(status), flowRecordFactory.createFlowMapperEventRecord(

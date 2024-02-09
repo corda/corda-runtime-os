@@ -36,7 +36,7 @@ class StartFlowTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowStatus(FlowStates.COMPLETED, result = "hello")
-                nullStateRecord()
+                notNullStateRecord()
                 flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
@@ -61,7 +61,7 @@ class StartFlowTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                nullStateRecord()
+                notNullStateRecord()
                 noFlowEvents()
                 flowStatus(
                     state = FlowStates.KILLED,
@@ -105,7 +105,7 @@ class StartFlowTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                nullStateRecord()
+                notNullStateRecord()
                 flowStatus(FlowStates.COMPLETED, result = "hello")
                 flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
             }

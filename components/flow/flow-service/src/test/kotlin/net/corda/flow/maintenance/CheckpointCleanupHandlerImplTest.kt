@@ -28,7 +28,7 @@ class CheckpointCleanupHandlerImplTest {
 
     private val config = SmartConfigImpl.empty()
         .withValue(FlowConfig.SESSION_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(1000))
-        .withValue(FlowConfig.PROCESSING_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(1000))
+        .withValue(FlowConfig.PROCESSING_FLOW_MAPPER_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(1000))
     private val flowRecordFactory = mock<FlowRecordFactory>()
     private val flowSessionManager = mock<FlowSessionManager>()
     private val flowMessageFactory = mock<FlowMessageFactory>()

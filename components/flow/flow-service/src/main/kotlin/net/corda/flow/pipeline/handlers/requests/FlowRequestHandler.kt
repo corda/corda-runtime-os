@@ -2,8 +2,8 @@ package net.corda.flow.pipeline.handlers.requests
 
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.FlowEventPipeline
+import net.corda.flow.pipeline.events.FlowEventContext
 
 /**
  * The [FlowRequestHandler] interface is implemented by services that process [FlowIORequest]s output by fibers when they suspend.
@@ -25,7 +25,7 @@ interface FlowRequestHandler<T : FlowIORequest<*>> {
      *
      * @return The new [WaitingFor] value.
      */
-    fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: T): WaitingFor
+    fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: T): WaitingFor?
 
     /**
      * Performs post-processing on a [FlowIORequest].
