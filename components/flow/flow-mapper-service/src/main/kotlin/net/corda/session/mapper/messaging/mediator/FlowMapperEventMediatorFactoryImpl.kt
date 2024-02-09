@@ -55,11 +55,13 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
     override fun create(
         flowConfig: SmartConfig,
         messagingConfig: SmartConfig,
+        bootConfig: SmartConfig,
         stateManager: StateManager,
     ) = eventMediatorFactory.create(
         createEventMediatorConfig(
             messagingConfig,
             FlowMapperMessageProcessor(flowMapperEventExecutorFactory, flowConfig),
+            bootConfig,
             stateManager,
         )
     )
@@ -67,12 +69,13 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
     private fun createEventMediatorConfig(
         messagingConfig: SmartConfig,
         messageProcessor: StateAndEventProcessor<String, FlowMapperState, FlowMapperEvent>,
+        bootConfig: SmartConfig,
         stateManager: StateManager,
     ) = EventMediatorConfigBuilder<String, FlowMapperState, FlowMapperEvent>()
         .name("FlowMapperEventMediator")
         .messagingConfig(messagingConfig)
         .consumerFactories(
-            *createMediatorConsumerFactories(messagingConfig).toTypedArray()
+            *createMediatorConsumerFactories(messagingConfig, bootConfig).toTypedArray()
         )
         .clientFactories(
             messagingClientFactoryFactory.createMessageBusClientFactory(
@@ -87,7 +90,7 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
         .minGroupSize(messagingConfig.getInt(MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT))
         .build()
 
-    private fun createMediatorConsumerFactories(messagingConfig: SmartConfig): List<MediatorConsumerFactory> {
+    private fun createMediatorConsumerFactories(messagingConfig: SmartConfig,  bootConfig: SmartConfig): List<MediatorConsumerFactory> {
         val mediatorConsumerFactory: MutableList<MediatorConsumerFactory> = mutableListOf(
             mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
                 FLOW_MAPPER_START, CONSUMER_GROUP, messagingConfig
@@ -97,6 +100,7 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
         mediatorConsumerFactory.addAll(
             createMediatorConsumerFactories(
                 messagingConfig,
+                bootConfig,
                 WORKER_MEDIATOR_REPLICAS_FLOW_MAPPER_SESSION_IN,
                 FLOW_MAPPER_SESSION_IN
             )
@@ -104,6 +108,7 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
         mediatorConsumerFactory.addAll(
             createMediatorConsumerFactories(
                 messagingConfig,
+                bootConfig,
                 WORKER_MEDIATOR_REPLICAS_FLOW_MAPPER_SESSION_OUT,
                 FLOW_MAPPER_SESSION_OUT
             )
@@ -114,10 +119,11 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
 
     private fun createMediatorConsumerFactories(
         messagingConfig: SmartConfig,
+        bootConfig: SmartConfig,
         configName: String,
         topicName: String
     ): List<MediatorConsumerFactory> {
-        val mediatorReplicas = messagingConfig.getInt(configName)
+        val mediatorReplicas = bootConfig.getInt(configName)
         logger.info("Creating $mediatorReplicas mediator(s) consumer factories for $topicName")
 
         val mediatorConsumerFactory: MutableList<MediatorConsumerFactory> = mutableListOf()

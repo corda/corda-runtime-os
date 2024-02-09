@@ -21,6 +21,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_CLEANUP_TOPIC
 import net.corda.schema.Schemas.ScheduledTask.SCHEDULED_TASK_TOPIC_MAPPER_PROCESSOR
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
@@ -113,6 +114,7 @@ class FlowMapperService @Activate constructor(
             val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
             val flowConfig = event.config.getConfig(FLOW_CONFIG)
             val stateManagerConfig = event.config.getConfig(STATE_MANAGER_CONFIG)
+            val bootConfig = event.config.getConfig(BOOT_CONFIG)
 
             stateManager?.stop()
             stateManager = stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.FLOW_MAPPING)
@@ -122,6 +124,7 @@ class FlowMapperService @Activate constructor(
                 flowMapperEventMediatorFactory.create(
                     flowConfig,
                     messagingConfig,
+                    bootConfig,
                     stateManager!!,
                 )
             }.also {

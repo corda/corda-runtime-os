@@ -125,9 +125,21 @@ class WorkerHelpers {
                 Triple(ConfigKeys.TEMP_DIR, defaultParams.tempDir, ConfigDefaults.TEMP_DIR),
                 Triple(BootConfig.INSTANCE_ID, defaultParams.instanceId, Random.nextInt().absoluteValue),
                 Triple(BootConfig.TOPIC_PREFIX, defaultParams.topicPrefix, ""),
-                Triple("$BOOT_WORKER_SERVICE.mediatorReplicas.flowSession", defaultParams.mediatorReplicasFlowSession, FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT),
-                Triple("$BOOT_WORKER_SERVICE.mediatorReplicas.flowMapperSessionIn", defaultParams.mediatorReplicasFlowMapperSessionIn, FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT),
-                Triple("$BOOT_WORKER_SERVICE.mediatorReplicas.flowMapperSessionOut", defaultParams.mediatorReplicasFlowMapperSessionOut, FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT),
+                Triple(
+                    BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_SESSION,
+                    defaultParams.mediatorReplicasFlowSession,
+                    FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT
+                ),
+                Triple(
+                    BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_MAPPER_SESSION_IN,
+                    defaultParams.mediatorReplicasFlowMapperSessionIn,
+                    FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT
+                ),
+                Triple(
+                    BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_MAPPER_SESSION_OUT,
+                    defaultParams.mediatorReplicasFlowMapperSessionOut,
+                    FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT
+                ),
                 Triple(MAX_ALLOWED_MSG_SIZE, defaultParams.maxAllowedMessageSize, 972800),
             )
             val defaultParamsMap = defaultParamsAndValues
@@ -242,8 +254,16 @@ class WorkerHelpers {
             }
 
             info("User: ${processInfo.user().orElse("Null")}")
-            info("StartInstant: ${if (processInfo.startInstant().isPresent) processInfo.startInstant().get() else "Null"}")
-            info("TotalCpuDuration: ${if (processInfo.totalCpuDuration().isPresent) processInfo.totalCpuDuration().get() else "Null"}")
+            info(
+                "StartInstant: ${
+                    if (processInfo.startInstant().isPresent) processInfo.startInstant().get() else "Null"
+                }"
+            )
+            info(
+                "TotalCpuDuration: ${
+                    if (processInfo.totalCpuDuration().isPresent) processInfo.totalCpuDuration().get() else "Null"
+                }"
+            )
 
             val mxBeanInfo = ManagementFactory.getRuntimeMXBean()
             info("classpath: ${mxBeanInfo.classPath}")

@@ -66,6 +66,7 @@ class FlowExecutorImplTest {
                 any(),
                 any(),
                 any(),
+                any()
             )
         ).thenReturn(multiSourceEventMediator)
 
@@ -158,6 +159,7 @@ class FlowExecutorImplTest {
                 any(),
                 any(),
                 any(),
+                any()
             )
         ).thenReturn(multiSourceEventMediator2)
         whenever(stateManagerFactory.create(any(), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT))).thenReturn(stateManager2)

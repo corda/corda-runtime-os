@@ -81,10 +81,12 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
     override fun create(
         configs: Map<String, SmartConfig>,
         messagingConfig: SmartConfig,
+        bootConfig: SmartConfig,
         stateManager: StateManager,
     ) = eventMediatorFactory.create(
         createEventMediatorConfig(
             messagingConfig,
+            bootConfig,
             flowEventProcessorFactory.create(configs),
             stateManager,
         )
@@ -92,13 +94,14 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
 
     private fun createEventMediatorConfig(
         messagingConfig: SmartConfig,
+        bootConfig: SmartConfig,
         messageProcessor: StateAndEventProcessor<String, Checkpoint, FlowEvent>,
         stateManager: StateManager,
     ) = EventMediatorConfigBuilder<String, Checkpoint, FlowEvent>()
         .name("FlowEventMediator")
         .messagingConfig(messagingConfig)
         .consumerFactories(
-            *createMediatorConsumerFactories(messagingConfig).toTypedArray()
+            *createMediatorConsumerFactories(messagingConfig, bootConfig).toTypedArray()
         )
         .clientFactories(
             messagingClientFactoryFactory.createMessageBusClientFactory(
@@ -116,7 +119,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         .minGroupSize(messagingConfig.getInt(MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT))
         .build()
 
-    private fun createMediatorConsumerFactories(messagingConfig: SmartConfig): List<MediatorConsumerFactory> {
+    private fun createMediatorConsumerFactories(messagingConfig: SmartConfig, bootConfig: SmartConfig): List<MediatorConsumerFactory> {
         val mediatorConsumerFactory: MutableList<MediatorConsumerFactory> = mutableListOf(
             mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
                 FLOW_START, CONSUMER_GROUP, messagingConfig
@@ -126,8 +129,8 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
             )
         )
 
-        val mediatorReplicas = messagingConfig.getInt(WORKER_MEDIATOR_REPLICAS_FLOW_SESSION)
-        logger.info("Creating $mediatorReplicas mediator(s) consumer factories for flow session")
+        val mediatorReplicas = bootConfig.getInt(WORKER_MEDIATOR_REPLICAS_FLOW_SESSION)
+        logger.info("Creating $mediatorReplicas mediator(s) consumer factories for $FLOW_SESSION")
         for(i in 1..mediatorReplicas) {
             mediatorConsumerFactory.add(
                 mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(

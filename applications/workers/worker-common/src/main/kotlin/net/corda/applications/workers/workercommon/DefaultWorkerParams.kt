@@ -75,12 +75,15 @@ class DefaultWorkerParams(healthPortOverride: Int = WORKER_SERVER_PORT) {
             "that Corda should drop; if unspecified, defaults to keeping all labels"])
     var metricsDropLabels: String? = null
 
-    @Option(names = ["--mediator-replicas-flow-session"], description = ["Sets the number of mediators that consume flow session messages"])
+    @Option(names = ["--mediator-replicas-flow-session"], description = ["Sets the number of mediators that consume " +
+            "flow session messages"])
     var mediatorReplicasFlowSession: Int? = null
 
-    @Option(names = ["--mediator-replicas-flow-session-in"], description = ["Sets the number of mediators that consume flow mapper session in messages"])
+    @Option(names = ["--mediator-replicas-flow-session-in"], description = ["Sets the number of mediators that " +
+            "consume flow mapper session in messages"])
     var mediatorReplicasFlowMapperSessionIn: Int? = null
 
-    @Option(names = ["--mediator-replicas-flow-session-out"], description = ["Sets the number of mediators that consume flow mapper session out messages"])
+    @Option(names = ["--mediator-replicas-flow-session-out"], description = ["Sets the number of mediators that " +
+            "consume flow mapper session out messages"])
     var mediatorReplicasFlowMapperSessionOut: Int? = null
 }
