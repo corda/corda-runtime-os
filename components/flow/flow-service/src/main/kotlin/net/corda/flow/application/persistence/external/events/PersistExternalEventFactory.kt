@@ -23,6 +23,9 @@ class PersistExternalEventFactory @Activate constructor(
         return PersistEntities(parameters.serializedEntities, deterministicID)
     }
 
+    /**
+     * Get deterministic id to be used by entity persistence worker to deduplicate requests when a fiber is re-run
+     */
     private fun getDeduplicationId(serializedEntities: List<ByteBuffer>, checkpoint: FlowCheckpoint): String {
        return toBase64("${checkpoint.flowId}${checkpoint.suspendCount}${serializedEntities.hashCode()}".toByteArray().sha256Bytes())
     }
