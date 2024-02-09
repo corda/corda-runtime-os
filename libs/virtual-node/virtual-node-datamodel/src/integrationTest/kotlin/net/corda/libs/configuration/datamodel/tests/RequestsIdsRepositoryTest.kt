@@ -79,8 +79,8 @@ class RequestsIdsRepositoryTest {
 
     @Test
     fun `inserts into request ids table`() {
-        val requestId1 = UUID.randomUUID()
-        val requestId2 = UUID.randomUUID()
+        val requestId1 = UUID.randomUUID().toString()
+        val requestId2 = UUID.randomUUID().toString()
         entityManagerFactory.createEntityManager().transaction { em ->
             requestsIdsRepository.persist(requestId1, em)
         }
@@ -133,7 +133,7 @@ class RequestsIdsRepositoryTest {
         assertEquals(1, storedRequestIds.size)
     }
 
-    private fun getStoredRequestIds(): List<Pair<UUID, java.sql.Timestamp>> =
+    private fun getStoredRequestIds(): List<Pair<String, java.sql.Timestamp>> =
         dbConfig.dataSource.connection.use {
             val stmt = it.prepareStatement(
                 "SELECT * FROM ${DbSchema.VNODE_PERSISTENCE_REQUEST_ID_TABLE} ORDER BY insert_ts"
@@ -142,11 +142,11 @@ class RequestsIdsRepositoryTest {
             return stmt.use {
                 val rs = stmt.executeQuery()
 
-                val list = mutableListOf<Pair<UUID, java.sql.Timestamp>>()
+                val list = mutableListOf<Pair<String, java.sql.Timestamp>>()
                 while (rs.next()) {
                     list.add(
                         Pair(
-                            UUID.fromString(rs.getString(1)),
+                            rs.getString(1),
                             rs.getTimestamp(2)
                         )
                     )

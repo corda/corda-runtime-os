@@ -39,7 +39,7 @@ class PersistTransactionExternalEventFactoryTest {
         val externalEventRecord = PersistTransactionExternalEventFactory(testClock).createExternalEvent(
             checkpoint,
             externalEventContext,
-            PersistTransactionParameters(transaction, transactionStatus, visibleStatesIndexes)
+            PersistTransactionParameters(transaction.array(), transactionStatus, visibleStatesIndexes)
         )
         assertNull(externalEventRecord.key)
         assertEquals(

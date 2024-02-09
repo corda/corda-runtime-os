@@ -23,7 +23,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
-import java.nio.ByteBuffer
 
 @Component(
     service = [ ConsensualLedgerPersistenceService::class, UsedByFlow::class ],
@@ -77,5 +76,5 @@ class ConsensualLedgerPersistenceServiceImpl @Activate constructor(
             SignedTransactionContainer(wireTransaction, signatures)
         }
 
-    private fun serialize(payload: Any) = ByteBuffer.wrap(serializationService.serialize(payload).bytes)
+    private fun serialize(payload: Any) = serializationService.serialize(payload).bytes
 }
