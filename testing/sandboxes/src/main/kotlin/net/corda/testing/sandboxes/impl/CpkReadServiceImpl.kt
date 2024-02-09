@@ -69,10 +69,8 @@ class CpkReadServiceImpl @Activate constructor(
             val cpiId = newCpi.metadata.cpiId
             cpis.putIfAbsent(cpiId, newCpi) ?: newCpi
         }.also {
-            logger.info("Updated CPIs list:")
-            cpis.values.forEach {
-                logger.info("${it.metadata}")
-            }
+            val cpis = cpis.values.joinToString(System.lineSeparator()) { "${it.metadata}" }
+            logger.info("Updated CPIs list: $cpis")
         }
     }
 
