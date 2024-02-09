@@ -2,7 +2,6 @@ package com.r3.corda.notary.plugin.contractverifying.client
 
 import com.r3.corda.notary.plugin.common.NotarizationResponse
 import com.r3.corda.notary.plugin.contractverifying.api.ContractVerifyingNotarizationPayload
-import com.r3.corda.notary.plugin.contractverifying.api.FilteredTransactionAndSignatures
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
@@ -11,11 +10,9 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
-import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import org.slf4j.LoggerFactory
 
 @InitiatingFlow(protocol = "com.r3.corda.notary.plugin.contractverifying", version = [1])
@@ -90,16 +87,6 @@ class ContractVerifyingNotaryClientFlowImpl(
     @Suspendable
     internal fun createPayload(): ContractVerifyingNotarizationPayload {
         val filteredTxAndSignatures = utxoLedgerService.findFilteredTransactionsAndSignatures(signedTransaction)
-            .toFilteredTransactionsAndSignatures()
-        return ContractVerifyingNotarizationPayload(signedTransaction, filteredTxAndSignatures)
-    }
-
-    private fun Map<SecureHash, Map<UtxoFilteredTransaction, List<DigitalSignatureAndMetadata>>>.toFilteredTransactionsAndSignatures()
-            : List<FilteredTransactionAndSignatures> {
-        return this.flatMap { (_, ftxAndSigs) ->
-            ftxAndSigs.map {
-                FilteredTransactionAndSignatures(it.key, it.value)
-            }
-        }
+        return ContractVerifyingNotarizationPayload(signedTransaction, filteredTxAndSignatures.values.toList())
     }
 }

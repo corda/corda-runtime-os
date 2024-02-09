@@ -32,6 +32,7 @@ dependencies {
 
     testImplementation project(":libs:crypto:crypto-core")
     testImplementation project(":libs:uniqueness:common")
+    testImplementation project(":libs:ledger:ledger-utxo-data")
     testImplementation project(":testing:crypto-testkit")
     testImplementation project(':testing:ledger:ledger-common-testkit')
 }
