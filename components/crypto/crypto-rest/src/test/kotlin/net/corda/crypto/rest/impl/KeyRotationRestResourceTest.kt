@@ -105,8 +105,6 @@ class KeyRotationRestResourceTest {
 
         deserializer = mock<CordaAvroDeserializer<UnmanagedKeyStatus>> {
             on { deserialize(any()) } doReturn UnmanagedKeyStatus(
-                MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER,
-                null,
                 tenantId,
                 10,
                 5,
@@ -184,7 +182,7 @@ class KeyRotationRestResourceTest {
     fun `start key rotation event throws when state manager is not initialised`() {
         val keyRotationRestResource =
             createKeyRotationRestResource(initialiseKafkaPublisher = true, initialiseStateManager = false)
-        assertThrows<IllegalStateException> {
+        assertThrows<InternalServerException> {
             keyRotationRestResource.startKeyRotation(tenantId)
         }
         verify(publishToKafka, never()).publish(any())

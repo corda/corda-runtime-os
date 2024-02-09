@@ -389,17 +389,24 @@ class CryptoProcessorImpl @Activate constructor(
         createFlowOpsSubscription(coordinator, retryingConfig)
         createRpcOpsSubscription(coordinator, messagingConfig, retryingConfig)
         createHsmRegSubscription(coordinator, messagingConfig, retryingConfig)
-        createRekeySubscription(
-            coordinator, messagingConfig, wrappingRepositoryFactory, signingRepositoryFactory,
-            stateManager, cordaAvroSerializationFactory, defaultUnmanagedWrappingKeyName
-        )
-        createRewrapSubscription(
-            coordinator,
-            messagingConfig,
-            stateManager,
-            cordaAvroSerializationFactory,
-            defaultUnmanagedWrappingKeyName
-        )
+        if (stateManager != null) {
+            createRekeySubscription(
+                coordinator,
+                messagingConfig,
+                wrappingRepositoryFactory,
+                signingRepositoryFactory,
+                stateManager,
+                cordaAvroSerializationFactory,
+                defaultUnmanagedWrappingKeyName
+            )
+            createRewrapSubscription(
+                coordinator,
+                messagingConfig,
+                stateManager,
+                cordaAvroSerializationFactory,
+                defaultUnmanagedWrappingKeyName
+            )
+        }
         createSessionEncryptionSubscription(coordinator, retryingConfig)
         createSessionDecryptionSubscription(coordinator, retryingConfig)
     }
@@ -409,7 +416,7 @@ class CryptoProcessorImpl @Activate constructor(
         messagingConfig: SmartConfig,
         wrappingRepositoryFactory: WrappingRepositoryFactory,
         signingRepositoryFactory: SigningRepositoryFactory,
-        stateManager: StateManager?,
+        stateManager: StateManager,
         cordaAvroSerializationFactory: CordaAvroSerializationFactory,
         defaultUnmanagedWrappingKeyName: String,
     ) {
@@ -424,7 +431,7 @@ class CryptoProcessorImpl @Activate constructor(
                     cryptoService,
                     virtualNodeInfoReadService,
                     wrappingRepositoryFactory,
-            	    signingRepositoryFactory,
+                    signingRepositoryFactory,
                     rekeyPublisher,
                     stateManager,
                     cordaAvroSerializationFactory,
@@ -455,7 +462,7 @@ class CryptoProcessorImpl @Activate constructor(
     private fun createRewrapSubscription(
         coordinator: LifecycleCoordinator,
         messagingConfig: SmartConfig,
-        stateManager: StateManager?,
+        stateManager: StateManager,
         cordaAvroSerializationFactory: CordaAvroSerializationFactory,
         defaultUnmanagedWrappingKeyName: String,
     ) {
