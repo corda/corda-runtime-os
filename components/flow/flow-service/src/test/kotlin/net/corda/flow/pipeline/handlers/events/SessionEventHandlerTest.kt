@@ -17,7 +17,7 @@ import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.pipeline.CheckpointInitializer
 import net.corda.flow.pipeline.exceptions.FlowEventException
-import net.corda.flow.pipeline.handlers.waiting.WaitingForStartFlow
+import net.corda.data.flow.state.waiting.WaitingForStartFlow
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sessions.FlowSessionManager

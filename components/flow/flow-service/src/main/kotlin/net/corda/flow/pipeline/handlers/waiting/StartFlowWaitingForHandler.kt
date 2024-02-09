@@ -4,8 +4,6 @@ import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.pipeline.events.FlowEventContext
 import org.osgi.service.component.annotations.Component
 
-object WaitingForStartFlow
-
 @Component(service = [FlowWaitingForHandler::class])
 class StartFlowWaitingForHandler : FlowWaitingForHandler<WaitingForStartFlow> {
 
