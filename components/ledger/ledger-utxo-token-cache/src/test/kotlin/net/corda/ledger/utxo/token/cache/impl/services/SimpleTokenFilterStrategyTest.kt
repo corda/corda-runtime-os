@@ -19,6 +19,7 @@ class SimpleTokenFilterStrategyTest {
     private val inputTokens = listOf(token1, token2, token3)
     private val target = SimpleTokenFilterStrategy()
     private val dedupeId = "d1"
+
     /**
      * Matching rule:
      * null value in the query criteria matches anything
