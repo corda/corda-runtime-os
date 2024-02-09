@@ -3,6 +3,7 @@ package net.corda.ledger.common.flow.impl.transaction
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.core.bytes
+import net.corda.internal.serialization.amqp.api.SerializationServiceInternal
 import net.corda.ledger.common.data.transaction.SignableData
 import net.corda.ledger.common.flow.transaction.TransactionSignatureVerificationServiceInternal
 import net.corda.sandbox.type.UsedByFlow
@@ -11,7 +12,6 @@ import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SignatureSpecService
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
@@ -35,8 +35,8 @@ import java.security.PublicKey
     scope = ServiceScope.PROTOTYPE
 )
 class TransactionSignatureVerificationServiceImpl @Activate constructor(
-    @Reference(service = SerializationService::class)
-    private val serializationService: SerializationService,
+    @Reference(service = SerializationServiceInternal::class)
+    private val serializationService: SerializationServiceInternal,
     @Reference(service = DigitalSignatureVerificationService::class)
     private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
     @Reference(service = SignatureSpecService::class)
@@ -96,7 +96,7 @@ class TransactionSignatureVerificationServiceImpl @Activate constructor(
         val signedData = SignableData(signedHash, signatureWithMetadata.metadata)
 
         return digitalSignatureVerificationService.verify(
-            serializationService.serialize(signedData).bytes,
+            serializationService.serialize(signedData, withCompression = false).bytes,
             signatureWithMetadata.signature.bytes,
             publicKey,
             signatureSpec

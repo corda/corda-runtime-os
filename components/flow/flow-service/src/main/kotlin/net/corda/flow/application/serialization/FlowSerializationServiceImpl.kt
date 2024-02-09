@@ -1,6 +1,7 @@
 package net.corda.flow.application.serialization
 
 import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.internal.serialization.amqp.api.SerializationServiceInternal
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE
 import net.corda.sandboxgroupcontext.getObjectByKey
@@ -17,15 +18,15 @@ import java.io.NotSerializableException
 /**
  * This is a platform singleton service that uses the current sandbox's [SerializationService].
  */
-@Component(service = [SerializationServiceInternal::class, SingletonSerializeAsToken::class])
-class SerializationServiceInternalImpl @Activate constructor(
+@Component(service = [FlowSerializationService::class, SingletonSerializeAsToken::class])
+class FlowSerializationServiceImpl @Activate constructor(
     @Reference(service = CurrentSandboxGroupContext::class)
     private val currentSandboxGroupContext: CurrentSandboxGroupContext
-) : SerializationServiceInternal, SingletonSerializeAsToken {
+) : FlowSerializationService, SingletonSerializeAsToken {
     private val log = LoggerFactory.getLogger(this::class.java)
 
     private val serializationService
-        get(): SerializationService {
+        get(): SerializationServiceInternal {
             return currentSandboxGroupContext.get().getObjectByKey(AMQP_SERIALIZATION_SERVICE)
                 ?: throw FlowFatalException(
                     "The flow sandbox has not been initialized with an AMQP serializer for " +
@@ -35,6 +36,10 @@ class SerializationServiceInternalImpl @Activate constructor(
 
     override fun <T : Any> serialize(obj: T): SerializedBytes<T> {
         return serializationService.serialize(obj)
+    }
+
+    override fun <T : Any> serialize(obj: T, withCompression: Boolean): SerializedBytes<T> {
+        return serializationService.serialize(obj, withCompression)
     }
 
     override fun <T : Any> deserialize(bytes: ByteArray, clazz: Class<T>): T {

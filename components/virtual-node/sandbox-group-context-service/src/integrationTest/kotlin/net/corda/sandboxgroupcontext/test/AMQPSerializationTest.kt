@@ -6,6 +6,7 @@ import java.security.KeyPairGenerator
 import kotlin.reflect.full.primaryConstructor
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.core.parseSecureHash
+import net.corda.internal.serialization.amqp.api.SerializationServiceInternal
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.utxo.data.state.EncumbranceGroupImpl
@@ -20,7 +21,6 @@ import net.corda.sandboxgroupcontext.getSandboxSingletonService
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.KeySchemeCodes
@@ -28,6 +28,7 @@ import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.serialization.SerializedBytes
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
@@ -90,8 +91,8 @@ class AMQPSerializationTest {
         }
     }
 
-    private fun SandboxGroupContext.getSerializationService(): SerializationService {
-         return getObjectByKey<SerializationService>(AMQP_SERIALIZATION_SERVICE)
+    private fun SandboxGroupContext.getSerializationService(): SerializationServiceInternal {
+         return getObjectByKey<SerializationServiceInternal>(AMQP_SERIALIZATION_SERVICE)
             ?: fail("No AMQP serialization service found")
     }
 
@@ -234,6 +235,48 @@ class AMQPSerializationTest {
             )
 
             assertEquals(origWireTx, wireTx)
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(SandboxGroupType::class)
+    @DisplayName("Serialize & Deserialize with snappy compression: {0}")
+    fun `serialize and deserialize uses snappy compression by default`(sandboxGroupType: SandboxGroupType) {
+        virtualNode.withSandbox(CONTRACT_CPB, sandboxGroupType) { _, ctx ->
+            val serializationService = ctx.getSerializationService()
+
+            val transaction = getWireTransactionExample(
+                digestService = ctx.getSandboxSingletonService(),
+                merkleTreeProvider = ctx.getSandboxSingletonService(),
+                jsonMarshallingService = ctx.getSandboxSingletonService(),
+                jsonValidator = ctx.getSandboxSingletonService()
+            )
+
+            val serializedBytes = serializationService.serialize(transaction)
+            assertThat(serializedBytes.bytes.toString(Charsets.UTF_8)).contains("sNaPpY")
+            val deserialized = serializationService.deserialize(serializedBytes, WireTransaction::class.java)
+            assertThat(transaction).isEqualTo(deserialized)
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(SandboxGroupType::class)
+    @DisplayName("Serialize & Deserialize with snappy compression: {0}")
+    fun `serialize and deserialize without compression`(sandboxGroupType: SandboxGroupType) {
+        virtualNode.withSandbox(CONTRACT_CPB, sandboxGroupType) { _, ctx ->
+            val serializationService = ctx.getSerializationService()
+
+            val transaction = getWireTransactionExample(
+                digestService = ctx.getSandboxSingletonService(),
+                merkleTreeProvider = ctx.getSandboxSingletonService(),
+                jsonMarshallingService = ctx.getSandboxSingletonService(),
+                jsonValidator = ctx.getSandboxSingletonService()
+            )
+
+            val serializedBytes = serializationService.serialize(transaction, withCompression = false)
+            assertThat(serializedBytes.bytes.toString(Charsets.UTF_8)).doesNotContain("sNaPpY")
+            val deserialized = serializationService.deserialize(serializedBytes, WireTransaction::class.java)
+            assertThat(transaction).isEqualTo(deserialized)
         }
     }
 

@@ -1,14 +1,15 @@
 package net.corda.flow.application.serialization
 
+import net.corda.internal.serialization.amqp.api.SerializationServiceInternal
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.serialization.SerializedBytes
 
 /**
- * [SerializationServiceInternal] provides simplified access to the AMQP [SerializationService] assigned to the
+ * [FlowSerializationService] provides simplified access to the AMQP [SerializationService] assigned to the
  * currently executing flow's sandbox.
  */
-interface SerializationServiceInternal : SerializationService {
+interface FlowSerializationService : SerializationServiceInternal {
 
     /**
      * Deserializes the input serialized bytes into an object of type [T].

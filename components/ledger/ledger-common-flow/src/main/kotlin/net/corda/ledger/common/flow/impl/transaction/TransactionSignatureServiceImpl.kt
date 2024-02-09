@@ -2,6 +2,7 @@ package net.corda.ledger.common.flow.impl.transaction
 
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.core.bytes
+import net.corda.internal.serialization.amqp.api.SerializationServiceInternal
 import net.corda.ledger.common.data.transaction.SignableData
 import net.corda.ledger.common.data.transaction.getBatchMerkleTreeDigestProvider
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
@@ -13,7 +14,6 @@ import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.FlowEngine
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
@@ -33,8 +33,8 @@ import java.time.Instant
     scope = ServiceScope.PROTOTYPE
 )
 class TransactionSignatureServiceImpl @Activate constructor(
-    @Reference(service = SerializationService::class)
-    private val serializationService: SerializationService,
+    @Reference(service = SerializationServiceInternal::class)
+    private val serializationService: SerializationServiceInternal,
     @Reference(service = SigningService::class)
     private val signingService: SigningService,
     @Reference(service = SignatureSpecService::class)
@@ -65,7 +65,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
             val signatureMetadata = getSignatureMetadata(signatureSpec)
             val signableData = SignableData(transaction.id, signatureMetadata)
             val signature = signingService.sign(
-                serializationService.serialize(signableData).bytes,
+                serializationService.serialize(signableData, withCompression = false).bytes,
                 publicKey,
                 signatureSpec
             )
@@ -95,7 +95,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
             val signableData = SignableData(batchTree.root, signatureMetadata)
 
             signingService.sign(
-                serializationService.serialize(signableData).bytes,
+                serializationService.serialize(signableData, withCompression = false).bytes,
                 publicKey,
                 signatureSpec
             ) to signatureMetadata
