@@ -23,6 +23,7 @@ import net.corda.data.p2p.crypto.CommonHeader
 import net.corda.data.p2p.crypto.MessageType
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.data.p2p.gateway.GatewayResponse
+import net.corda.data.p2p.linkmanager.LinkManagerResponse
 import net.corda.data.p2p.mtls.gateway.ClientCertificateSubjects
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.platform.PlatformInfoProvider
@@ -31,14 +32,13 @@ import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.processor.EventLogProcessor
+import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
-import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
-import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
-import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
-import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
+import net.corda.messaging.api.subscription.config.SyncRPCConfig
+import net.corda.messaging.emulation.EmulatorFactory
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.GatewayServerConfiguration
@@ -70,6 +70,7 @@ import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.test.util.eventually
 import net.corda.test.util.lifecycle.usingLifecycle
 import net.corda.utilities.concurrent.getOrThrow
+import net.corda.utilities.flags.Features
 import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.EncodingUtils.toHex
@@ -83,7 +84,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.api.fail
 import org.slf4j.LoggerFactory
 import java.io.StringWriter
 import java.net.ConnectException
@@ -98,14 +98,17 @@ import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.locks.ReentrantLock
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
 import kotlin.concurrent.thread
+import kotlin.concurrent.withLock
 import java.net.http.HttpClient as JavaHttpClient
 import java.net.http.HttpRequest as JavaHttpRequest
 
@@ -144,15 +147,16 @@ internal class GatewayIntegrationTest : TestBase() {
         )
 
     private inner class Node(private val name: String) {
-        private val topicService = TopicServiceImpl().also {
-            keep(it)
-        }
-        private val rpcTopicService = RPCTopicServiceImpl()
-
         val lifecycleCoordinatorFactory =
             LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
-        val subscriptionFactory = InMemSubscriptionFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
-        val publisherFactory = CordaPublisherFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
+        private val emulator = EmulatorFactory.create(
+            lifecycleCoordinatorFactory
+        ).also {
+            keep(it)
+        }
+
+        val subscriptionFactory = emulator.subscriptionFactory
+        val publisherFactory = emulator.publisherFactory
         val publisher = publisherFactory.createPublisher(PublisherConfig("$name.id", false), baseMessagingConfig)
         val cryptoOpsClient = TestCryptoOpsClient(lifecycleCoordinatorFactory)
 
@@ -164,7 +168,23 @@ internal class GatewayIntegrationTest : TestBase() {
             return publisher.publish(records.toList())
         }
 
-        fun getRecords(topic: String, size: Int): Collection<EventLogRecord<Any, Any>> {
+        fun getLinkInMessages(size: Int): Collection<LinkInMessage> {
+            return if (Features().enableP2PGatewayToLinkManagerOverHttp) {
+                while (sentToLinkManager.size < size) {
+                    lock.withLock {
+                        newMessageNotification.await(1, TimeUnit.SECONDS)
+                    }
+                }
+                sentToLinkManager
+            } else {
+                getRecords(LINK_IN_TOPIC, size)
+                    .mapNotNull {
+                        it.value as? LinkInMessage
+                    }
+            }
+        }
+
+        private fun getRecords(topic: String, size: Int): Collection<EventLogRecord<Any, Any>> {
             val stop = CountDownLatch(size)
             val records = ConcurrentHashMap.newKeySet<EventLogRecord<Any, Any>>()
             subscriptionFactory.createEventLogSubscription(
@@ -243,10 +263,40 @@ internal class GatewayIntegrationTest : TestBase() {
                 it.join()
             }
         }
+
+        private val sentToLinkManager = ConcurrentLinkedDeque<LinkInMessage>()
+        private val lock = ReentrantLock()
+        private val newMessageNotification = lock.newCondition()
+        fun listenToLinkManagerRpc() {
+            val config = SyncRPCConfig(
+                name = UUID.randomUUID().toString(),
+                endpoint = "/p2p-link-manager"
+            )
+
+            val processor = object : SyncRPCProcessor<LinkInMessage, LinkManagerResponse> {
+                override fun process(request: LinkInMessage): LinkManagerResponse {
+                    sentToLinkManager.push(request)
+                    lock.withLock {
+                        newMessageNotification.signalAll()
+                    }
+                    return LinkManagerResponse(null)
+                }
+
+                override val requestClass = LinkInMessage::class.java
+                override val responseClass = LinkManagerResponse::class.java
+
+            }
+
+
+            emulator.subscriptionFactory.createHttpRPCSubscription(
+                config,
+                processor,
+            ).start()
+        }
     }
 
-    private val alice = Node("alice")
-    private val bob = Node("bob")
+    private val alice = Node("alice").also { it.listenToLinkManagerRpc() }
+    private val bob = Node("bob").also { it.listenToLinkManagerRpc() }
 
     @AfterEach
     fun setup() {
@@ -363,15 +413,13 @@ internal class GatewayIntegrationTest : TestBase() {
             }
 
             // Verify Gateway has successfully forwarded the message to the P2P_IN topic
-            val publishedRecords = alice.getRecords(LINK_IN_TOPIC, 1)
+            val publishedRecords = alice.getLinkInMessages(1)
             assertThatIterable(publishedRecords)
                 .hasSize(1).allSatisfy {
-                    assertThat(it.value).isInstanceOfSatisfying(LinkInMessage::class.java) {
                         assertThat(it.payload).isInstanceOfSatisfying(AuthenticatedDataMessage::class.java) {
                             assertThat(it).isEqualTo(linkInMessage.payload)
                         }
                     }
-                }
         }
 
         @Test
@@ -435,9 +483,7 @@ internal class GatewayIntegrationTest : TestBase() {
             }
 
             // Verify Gateway has successfully forwarded the message to the P2P_IN topic
-            val publishedRecords = alice.getRecords(LINK_IN_TOPIC, serverCount).mapNotNull {
-                it.value as? LinkInMessage
-            }.mapNotNull {
+            val publishedRecords = alice.getLinkInMessages(serverCount).mapNotNull {
                 it.payload as? AuthenticatedDataMessage
             }.map {
                 it.payload
@@ -512,9 +558,7 @@ internal class GatewayIntegrationTest : TestBase() {
             }
 
             // Verify Gateway has successfully forwarded the message to the P2P_IN topic
-            val publishedRecords = alice.getRecords(LINK_IN_TOPIC, pathsCount).mapNotNull {
-                it.value as? LinkInMessage
-            }.mapNotNull {
+            val publishedRecords = alice.getLinkInMessages(pathsCount).mapNotNull {
                 it.payload as? AuthenticatedDataMessage
             }.map {
                 it.payload
@@ -621,9 +665,7 @@ internal class GatewayIntegrationTest : TestBase() {
             }
 
             // Verify Gateway has successfully forwarded the messages to the P2P_IN topic
-            val publishedRecords = alice.getRecords(LINK_IN_TOPIC, 2).mapNotNull {
-                it.value as? LinkInMessage
-            }.mapNotNull {
+            val publishedRecords = alice.getLinkInMessages(2).mapNotNull {
                 it.payload as? AuthenticatedDataMessage
             }.map {
                 it.payload
@@ -736,19 +778,18 @@ internal class GatewayIntegrationTest : TestBase() {
                     val httpResponse = client.write(avroSchemaRegistry.serialize(gatewayMessage).array()).get()
                     assertThat(httpResponse.statusCode).isEqualTo(HttpResponseStatus.OK)
                     assertThat(httpResponse.payload).isNotNull
-                    val gatewayResponse = avroSchemaRegistry.deserialize<GatewayResponse>(ByteBuffer.wrap(httpResponse.payload))
+                    val gatewayResponse =
+                        avroSchemaRegistry.deserialize<GatewayResponse>(ByteBuffer.wrap(httpResponse.payload))
                     assertThat(gatewayResponse.id).isEqualTo(gatewayMessage.id)
                 }
             }
 
             // Verify Gateway has successfully forwarded the message to the P2P_IN topic
-            val publishedRecords = alice.getRecords(LINK_IN_TOPIC, 1)
+            val publishedRecords = alice.getLinkInMessages(1)
             assertThatIterable(publishedRecords)
                 .hasSize(1).allSatisfy {
-                    assertThat(it.value).isInstanceOfSatisfying(LinkInMessage::class.java) {
-                        assertThat(it.payload).isInstanceOfSatisfying(AuthenticatedDataMessage::class.java) {
-                            assertThat(it).isEqualTo(linkInMessage.payload)
-                        }
+                    assertThat(it.payload).isInstanceOfSatisfying(AuthenticatedDataMessage::class.java) {
+                        assertThat(it).isEqualTo(linkInMessage.payload)
                     }
                 }
         }
@@ -932,10 +973,8 @@ internal class GatewayIntegrationTest : TestBase() {
             }
 
             // Verify Gateway has received all [clientNumber] messages and that they were forwarded to the P2P_IN topic
-            val publishedRecords = alice.getRecords(LINK_IN_TOPIC, clientNumber)
+            val publishedRecords = alice.getLinkInMessages(clientNumber)
                 .asSequence()
-                .map { it.value }
-                .filterIsInstance<LinkInMessage>()
                 .map { it.payload }
                 .filterIsInstance<AuthenticatedDataMessage>()
                 .map { it.payload.array() }
@@ -1068,48 +1107,6 @@ internal class GatewayIntegrationTest : TestBase() {
             alice.publishKeyStoreCertificatesAndKeys(chipKeyStore, aliceHoldingIdentity)
             bob.publishKeyStoreCertificatesAndKeys(daleKeyStore, bobHoldingIdentity)
 
-            val receivedLatch = CountDownLatch(messageCount * 2)
-            var bobReceivedMessages = 0
-            var aliceReceivedMessages = 0
-            val bobSubscription = bob.subscriptionFactory.createEventLogSubscription(
-                subscriptionConfig = SubscriptionConfig("bob.intest", LINK_IN_TOPIC),
-                processor = object : EventLogProcessor<Any, Any> {
-                    override fun onNext(events: List<EventLogRecord<Any, Any>>): List<Record<*, *>> {
-                        bobReceivedMessages += events.size
-                        repeat(events.size) {
-                            receivedLatch.countDown()
-                        }
-
-                        return emptyList()
-                    }
-
-                    override val keyClass = Any::class.java
-                    override val valueClass = Any::class.java
-                },
-                messagingConfig = messagingConfig(),
-                partitionAssignmentListener = null
-            )
-            bobSubscription.start()
-            val aliceSubscription = alice.subscriptionFactory.createEventLogSubscription(
-                subscriptionConfig = SubscriptionConfig("alice.intest", LINK_IN_TOPIC),
-                processor = object : EventLogProcessor<Any, Any> {
-                    override fun onNext(events: List<EventLogRecord<Any, Any>>): List<Record<*, *>> {
-                        aliceReceivedMessages += events.size
-                        repeat(events.size) {
-                            receivedLatch.countDown()
-                        }
-
-                        return emptyList()
-                    }
-
-                    override val keyClass = Any::class.java
-                    override val valueClass = Any::class.java
-                },
-                messagingConfig = messagingConfig(),
-                partitionAssignmentListener = null
-            )
-            aliceSubscription.start()
-
             val startTime = Instant.now().toEpochMilli()
             // Start the gateways and let them run until all messages have been processed
             val gateways = listOf(
@@ -1192,17 +1189,14 @@ internal class GatewayIntegrationTest : TestBase() {
             }
             (messagesFromAlice + messagesFromBob).flatten().forEach { it.join() }
 
-            val allMessagesDelivered = receivedLatch.await(30, TimeUnit.SECONDS)
-            if (!allMessagesDelivered) {
-                fail(
-                    "Not all messages were delivered successfully. Bob received $bobReceivedMessages messages (expected $messageCount), " +
-                            "Alice received $aliceReceivedMessages (expected $messageCount)"
-                )
-            }
-
+            val aliceReceivedMessages = alice.getLinkInMessages(messageCount)
+            assertThat(aliceReceivedMessages)
+                .hasSize(messageCount)
+            val bobReceivedMessages = bob.getLinkInMessages(messageCount)
+            assertThat(bobReceivedMessages)
+                .hasSize(messageCount)
             val endTime = Instant.now().toEpochMilli()
             logger.info("Done processing ${messageCount * 2} in ${endTime - startTime} milliseconds.")
-            receivedLatch.await()
             gateways.map {
                 thread {
                     it.stop()
@@ -1385,6 +1379,7 @@ internal class GatewayIntegrationTest : TestBase() {
             server.publish(
                 Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))
             )
+            server.listenToLinkManagerRpc()
             Gateway(
                 configPublisher.readerService,
                 server.subscriptionFactory,
@@ -1559,7 +1554,7 @@ internal class GatewayIntegrationTest : TestBase() {
             server.publish(
                 Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))
             )
-
+            server.listenToLinkManagerRpc()
 
             Gateway(
                 configPublisher.readerService,
@@ -1619,48 +1614,8 @@ internal class GatewayIntegrationTest : TestBase() {
             bob.publishKeyStoreCertificatesAndKeys(chipKeyStore, bobHoldingIdentity)
             bob.allowCertificates(ipKeyStore)
             alice.allowCertificates(chipKeyStore)
-
-            val receivedLatch = CountDownLatch(messageCount * 2)
-            var bobReceivedMessages = 0
-            var aliceReceivedMessages = 0
-            val bobSubscription = bob.subscriptionFactory.createEventLogSubscription(
-                subscriptionConfig = SubscriptionConfig("bob.intest", LINK_IN_TOPIC),
-                processor = object : EventLogProcessor<Any, Any> {
-                    override fun onNext(events: List<EventLogRecord<Any, Any>>): List<Record<*, *>> {
-                        bobReceivedMessages += events.size
-                        repeat(events.size) {
-                            receivedLatch.countDown()
-                        }
-
-                        return emptyList()
-                    }
-
-                    override val keyClass = Any::class.java
-                    override val valueClass = Any::class.java
-                },
-                messagingConfig = messagingConfig(),
-                partitionAssignmentListener = null
-            )
-            bobSubscription.start()
-            val aliceSubscription = alice.subscriptionFactory.createEventLogSubscription(
-                subscriptionConfig = SubscriptionConfig("alice.intest", LINK_IN_TOPIC),
-                processor = object : EventLogProcessor<Any, Any> {
-                    override fun onNext(events: List<EventLogRecord<Any, Any>>): List<Record<*, *>> {
-                        aliceReceivedMessages += events.size
-                        repeat(events.size) {
-                            receivedLatch.countDown()
-                        }
-
-                        return emptyList()
-                    }
-
-                    override val keyClass = Any::class.java
-                    override val valueClass = Any::class.java
-                },
-                messagingConfig = messagingConfig(),
-                partitionAssignmentListener = null
-            )
-            aliceSubscription.start()
+            alice.listenToLinkManagerRpc()
+            bob.listenToLinkManagerRpc()
 
             val startTime = Instant.now().toEpochMilli()
             // Start the gateways and let them run until all messages have been processed
@@ -1743,17 +1698,14 @@ internal class GatewayIntegrationTest : TestBase() {
             }
             (messagesFromAlice + messagesFromBob).flatten().forEach { it.join() }
 
-            val allMessagesDelivered = receivedLatch.await(30, TimeUnit.SECONDS)
-            if (!allMessagesDelivered) {
-                fail(
-                    "Not all messages were delivered successfully. Bob received $bobReceivedMessages messages (expected $messageCount), " +
-                        "Alice received $aliceReceivedMessages (expected $messageCount)"
-                )
-            }
+            val aliceReceivedMessages = alice.getLinkInMessages(messageCount)
+            assertThat(aliceReceivedMessages).hasSize(messageCount)
+            val bobReceivedMessages = bob.getLinkInMessages(messageCount)
+            assertThat(bobReceivedMessages).hasSize(messageCount)
 
             val endTime = Instant.now().toEpochMilli()
             logger.info("Done processing ${messageCount * 2} in ${endTime - startTime} milliseconds.")
-            receivedLatch.await()
+
             gateways.map {
                 thread {
                     it.stop()

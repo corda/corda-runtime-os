@@ -61,6 +61,8 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import net.corda.p2p.linkmanager.TraceableItem
 import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl.Companion.LINK_MANAGER_SUBSYSTEM
+import net.corda.utilities.flags.Features
+import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 
@@ -92,6 +94,9 @@ class InboundMessageProcessorTest {
         on { isValidInbound(any(), any()) } doReturn true
         on { validateInbound(any(), any()) } doReturn Either.Left(Unit)
     }
+    private val features = mock<Features> {
+        on { enableP2PGatewayToLinkManagerOverHttp } doReturn false
+    }
 
     private val processor = InboundMessageProcessor(
         sessionManager,
@@ -99,7 +104,8 @@ class InboundMessageProcessorTest {
         membersAndGroups.first,
         assignedListener,
         mockTimeFacilitiesProvider.clock,
-        networkMessagingValidator
+        networkMessagingValidator,
+        features,
     )
 
     private val status = MembershipStatusFilter.ACTIVE
@@ -110,7 +116,7 @@ class InboundMessageProcessorTest {
     }
 
     private fun setupGetSessionsById(direction: SessionManager.SessionDirection) {
-        val captor = argumentCaptor<List<InboundMessageProcessor.SessionIdAndMessage>>()
+        val captor = argumentCaptor<List<InboundMessageProcessor.SessionIdAndMessage<*>>>()
         whenever(sessionManager.getSessionsById(captor.capture(), any())).thenAnswer {
             captor.firstValue.map { it to direction }
         }
@@ -211,6 +217,81 @@ class InboundMessageProcessorTest {
                 false
             }
             verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
+        }
+
+        @Test
+        fun `AuthenticatedDataMessage with Inbound session will produce a message on the P2P_IN_TOPIC topics and a response`() {
+            val features = mock<Features> {
+                on { enableP2PGatewayToLinkManagerOverHttp } doReturn true
+            }
+
+            val processor = InboundMessageProcessor(
+                sessionManager,
+                membersAndGroups.second,
+                membersAndGroups.first,
+                assignedListener,
+                mockTimeFacilitiesProvider.clock,
+                networkMessagingValidator,
+                features,
+            )
+
+            val authenticatedMsg = AuthenticatedMessage(
+                AuthenticatedMessageHeader(
+                    remoteIdentity.toAvro(),
+                    myIdentity.toAvro(),
+                    null, MESSAGE_ID, "trace-id", "system-1", status
+                ),
+                ByteBuffer.wrap("payload".toByteArray())
+            )
+            val authenticatedMessageAndKey = AuthenticatedMessageAndKey(
+                authenticatedMsg,
+                "key"
+            )
+            val messageAndPayload = DataMessagePayload(authenticatedMessageAndKey)
+            val authenticationResult = mock<AuthenticationResult> {
+                on { header } doReturn commonHeader
+                on { mac } doReturn byteArrayOf()
+            }
+            val session = mock<AuthenticatedSession> {
+                on { createMac(any()) } doReturn authenticationResult
+            }
+            setupGetSessionsById(
+                SessionManager.SessionDirection.Inbound(
+                    SessionManager.Counterparties(
+                        remoteIdentity,
+                        myIdentity
+                    ),
+                    session
+                )
+            )
+            val dataMessage = AuthenticatedDataMessage(
+                commonHeader,
+                messageAndPayload.toByteBuffer(), ByteBuffer.wrap(byteArrayOf())
+            )
+            val message = object: InboundMessage {
+                override val message = LinkInMessage(dataMessage)
+            }
+
+            val replies = processor.handleRequests(
+                listOf(
+                    message,
+                )
+            )
+
+            assertSoftly {
+                assertThat(replies).hasSize(1)
+                val reply = replies.firstOrNull()
+                val record = reply?.item?.records?.firstOrNull()
+                val value = record?.value as? AppMessage
+                assertThat(record?.topic).isEqualTo(P2P_IN_TOPIC)
+                assertThat(record?.key).isEqualTo("key")
+                assertThat(value?.message).isEqualTo(authenticatedMsg)
+                val payload = reply?.item?.httpReply?.payload as? AuthenticatedDataMessage
+                val messageAck = MessageAck.fromByteBuffer(payload?.payload)
+                val ack = messageAck.ack as? AuthenticatedMessageAck
+                assertThat(ack?.messageId).isEqualTo(MESSAGE_ID)
+                verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
+            }
         }
 
         @Test
@@ -558,6 +639,84 @@ class InboundMessageProcessorTest {
             }
             verify(sessionManager).inboundSessionEstablished(anyOrNull())
             verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
+        }
+        @Test
+        fun `receiving data message with Inbound session will produce a message on the P2P_IN_TOPIC and a response`() {
+            val features = mock<Features> {
+                on { enableP2PGatewayToLinkManagerOverHttp } doReturn true
+            }
+
+            val processor = InboundMessageProcessor(
+                sessionManager,
+                membersAndGroups.second,
+                membersAndGroups.first,
+                assignedListener,
+                mockTimeFacilitiesProvider.clock,
+                networkMessagingValidator,
+                features,
+            )
+            val authenticatedMsg = AuthenticatedMessage(
+                AuthenticatedMessageHeader(
+                    remoteIdentity.toAvro(),
+                    myIdentity.toAvro(),
+                    null, MESSAGE_ID, "trace-id", "system-1", status
+                ),
+                ByteBuffer.wrap("payload".toByteArray())
+            )
+            val authenticatedMessageAndKey = AuthenticatedMessageAndKey(
+                authenticatedMsg,
+                "key"
+            )
+            val messageAndPayload = DataMessagePayload(authenticatedMessageAndKey)
+            val encryptionResult = mock<EncryptionResult> {
+                on { header } doReturn commonHeader
+                on { authTag } doReturn byteArrayOf()
+                on { encryptedPayload } doReturn messageAndPayload.toByteBuffer().array()
+            }
+            val dataMessage = AuthenticatedEncryptedDataMessage(
+                commonHeader,
+                messageAndPayload.toByteBuffer(), ByteBuffer.wrap(byteArrayOf())
+            )
+            val session = mock<AuthenticatedEncryptionSession> {
+                on { encryptData(any()) } doReturn encryptionResult
+                on {
+                    decryptData(
+                        commonHeader, messageAndPayload.toByteBuffer().array(), byteArrayOf()
+                    )
+                } doReturn messageAndPayload.toByteBuffer().array()
+            }
+            setupGetSessionsById(
+                SessionManager.SessionDirection.Inbound(
+                    SessionManager.Counterparties(
+                        remoteIdentity,
+                        myIdentity
+                    ),
+                    session
+                )
+            )
+            val message = object: InboundMessage {
+                override val message = LinkInMessage(dataMessage)
+            }
+
+            val replies = processor.handleRequests(
+                listOf(
+                    message,
+                )
+            )
+
+            assertSoftly {
+                assertThat(replies).hasSize(1)
+                val record = replies.firstOrNull()?.item?.records?.firstOrNull()
+                assertThat(record?.topic).isEqualTo(P2P_IN_TOPIC)
+                assertThat(record?.key).isEqualTo("key")
+                val value = record?.value as? AppMessage
+                assertThat(value?.message).isEqualTo(authenticatedMsg)
+                val payload = replies.firstOrNull()?.item?.httpReply?.payload as? AuthenticatedEncryptedDataMessage
+                assertThat(payload?.header).isEqualTo(commonHeader)
+                assertThat(payload?.encryptedPayload).isEqualTo(messageAndPayload.toByteBuffer())
+                verify(sessionManager).inboundSessionEstablished(anyOrNull())
+                verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
+            }
         }
 
         @Test
