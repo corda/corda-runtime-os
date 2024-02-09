@@ -23,9 +23,6 @@ import net.corda.schema.configuration.BootConfig.BOOT_KAFKA_COMMON
 import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
-import net.corda.schema.configuration.BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_SESSION
-import net.corda.schema.configuration.BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_MAPPER_SESSION_IN
-import net.corda.schema.configuration.BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_MAPPER_SESSION_OUT
 import net.corda.v5.base.versioning.Version
 import net.corda.web.api.Endpoint
 import net.corda.web.api.WebServer
@@ -84,10 +81,7 @@ class ConfigTests {
             WORKSPACE_DIR,
             TEMP_DIR,
             "$BOOT_KAFKA_COMMON.$MSG_KEY_ONE",
-            "$BOOT_DB.$DB_KEY_ONE",
-            WORKER_MEDIATOR_REPLICAS_FLOW_SESSION,
-            WORKER_MEDIATOR_REPLICAS_FLOW_MAPPER_SESSION_IN,
-            WORKER_MEDIATOR_REPLICAS_FLOW_MAPPER_SESSION_OUT
+            "$BOOT_DB.$DB_KEY_ONE"
         )
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
@@ -126,10 +120,7 @@ class ConfigTests {
             TOPIC_PREFIX,
             BOOT_MAX_ALLOWED_MSG_SIZE,
             WORKSPACE_DIR,
-            TEMP_DIR,
-            WORKER_MEDIATOR_REPLICAS_FLOW_SESSION,
-            WORKER_MEDIATOR_REPLICAS_FLOW_MAPPER_SESSION_IN,
-            WORKER_MEDIATOR_REPLICAS_FLOW_MAPPER_SESSION_OUT
+            TEMP_DIR
         )
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
@@ -158,10 +149,7 @@ class ConfigTests {
             TOPIC_PREFIX,
             BOOT_MAX_ALLOWED_MSG_SIZE,
             WORKSPACE_DIR,
-            TEMP_DIR,
-            WORKER_MEDIATOR_REPLICAS_FLOW_SESSION,
-            WORKER_MEDIATOR_REPLICAS_FLOW_MAPPER_SESSION_IN,
-            WORKER_MEDIATOR_REPLICAS_FLOW_MAPPER_SESSION_OUT
+            TEMP_DIR
         )
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)

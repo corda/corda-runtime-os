@@ -143,10 +143,6 @@ class BootstrapConfigTest {
                 driver = "flowStatus-driver",
                 minSize = 111, maxSize = 222, idleTimeout = 333, maxLifetime = 444, keepAlive = 555, validationTimeout = 666
             )
-
-            softly.assertThat(config.getInt(BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_SESSION)).isEqualTo(2)
-            softly.assertThat(config.getInt(BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_MAPPER_SESSION_IN)).isEqualTo(3)
-            softly.assertThat(config.getInt(BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_MAPPER_SESSION_OUT)).isEqualTo(4)
         }
     }
 
@@ -164,12 +160,6 @@ class BootstrapConfigTest {
             softly.assertThat(config.getInt("instanceId")).isNotNull
             softly.assertThat(config.getInt("maxAllowedMessageSize")).isEqualTo(972800)
             softly.assertThat(config.getString("topicPrefix")).isEqualTo("")
-            softly.assertThat(config.getInt(BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_SESSION))
-                .isEqualTo(1)
-            softly.assertThat(config.getInt(BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_MAPPER_SESSION_IN))
-                .isEqualTo(1)
-            softly.assertThat(config.getInt(BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_MAPPER_SESSION_OUT))
-                .isEqualTo(1)
         }
 
     }
