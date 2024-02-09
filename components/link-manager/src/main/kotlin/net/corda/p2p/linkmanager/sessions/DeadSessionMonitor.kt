@@ -27,6 +27,7 @@ internal class DeadSessionMonitor(
 
     private val scheduledSessionDeletions = ConcurrentHashMap<String, ScheduledFuture<*>>()
 
+    @Volatile
     private var sessionInactivityLimitSeconds: Long? = null
 
     fun onConfigChange(sessionInactivityLimitSeconds: Long) {
