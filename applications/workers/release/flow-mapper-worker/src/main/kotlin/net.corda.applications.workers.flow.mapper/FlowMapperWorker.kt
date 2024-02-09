@@ -23,6 +23,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import picocli.CommandLine.Option
 import picocli.CommandLine.Mixin
 
 /** The worker for handling mapping of sessions to flows. */
@@ -96,4 +97,12 @@ class FlowMapperWorker @Activate constructor(
 private class FlowMapperWorkerParams {
     @Mixin
     var defaultParams = DefaultWorkerParams()
+
+    @Option(names = ["--mediator-replicas-flow-session-in"], description = ["Sets the number of mediators that " +
+            "consume flow.mapper.session.in messages"])
+    var mediatorReplicasFlowMapperSessionIn: Int? = null
+
+    @Option(names = ["--mediator-replicas-flow-session-out"], description = ["Sets the number of mediators that " +
+            "consume flow.mapper.session.out messages"])
+    var mediatorReplicasFlowMapperSessionOut: Int? = null
 }

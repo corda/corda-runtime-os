@@ -104,4 +104,8 @@ private class FlowWorkerParams {
 
     @Option(names = ["--serviceEndpoint"], description = ["Internal REST endpoints for Corda workers"], required = true)
     val workerEndpoints: Map<String, String> = emptyMap()
+
+    @Option(names = ["--mediator-replicas-flow-session"], description = ["Sets the number of mediators that consume " +
+            "flow.session messages"])
+    var mediatorReplicasFlowSession: Int? = null
 }
