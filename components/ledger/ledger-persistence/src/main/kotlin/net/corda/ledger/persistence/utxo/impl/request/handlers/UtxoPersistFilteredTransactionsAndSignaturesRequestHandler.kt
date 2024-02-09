@@ -34,7 +34,7 @@ class UtxoPersistFilteredTransactionsAndSignaturesRequestHandler(
         val filteredTransactionsAndSignatures = serializationService.deserialize<Map<FilteredTransaction, List<DigitalSignatureAndMetadata>>>(
             request.filteredTransactionsAndSignatures.array()
         )
-        persistenceService.persistFilteredTransactionsAndSignaturesIfDoNotExist(filteredTransactionsAndSignatures, accountString)
+        persistenceService.persistFilteredTransactionsAndSignatures(filteredTransactionsAndSignatures, accountString)
 
         return listOf(utxoOutputRecordFactory.getPersistTransactionSuccessRecord(externalEventContext))
     }

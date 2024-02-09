@@ -610,46 +610,6 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
-    fun `persist filtered transactions and signatures with persistFilteredTransactionsAndSignaturesIfDoNotExist `() {
-        val signatures = createSignatures(Instant.now())
-        val signedTransaction = createSignedTransaction(signatures = signatures)
-        val account = "Account"
-
-        val filteredTransactionToStore = createFilteredTransaction(signedTransaction)
-
-        (persistenceService as UtxoPersistenceServiceImpl).persistFilteredTransactionsAndSignaturesIfDoNotExist(
-            mapOf(filteredTransactionToStore to signatures),
-            account
-        )
-
-        val filteredTxResults = (persistenceService as UtxoPersistenceServiceImpl).findFilteredTransactions(
-            listOf(filteredTransactionToStore.id.toString())
-        )
-
-        assertThat(filteredTxResults).hasSize(1)
-
-        val storedFilteredTransaction = filteredTxResults[filteredTransactionToStore.id]?.first
-
-        assertNotNull(storedFilteredTransaction)
-
-        assertThat(storedFilteredTransaction!!.id).isEqualTo(filteredTransactionToStore.id)
-        assertThat(storedFilteredTransaction.metadata).isEqualTo(filteredTransactionToStore.metadata)
-        assertThat(storedFilteredTransaction.privacySalt).isEqualTo(filteredTransactionToStore.privacySalt)
-        assertThat(storedFilteredTransaction.filteredComponentGroups).isEqualTo(filteredTransactionToStore.filteredComponentGroups)
-        assertThat(storedFilteredTransaction.topLevelMerkleProof).isEqualTo(filteredTransactionToStore.topLevelMerkleProof)
-
-        // Check that outputs / outputs_info merkle proofs are matching
-        assertThat(storedFilteredTransaction.filteredComponentGroups[UtxoComponentGroup.OUTPUTS.ordinal]?.merkleProof).isEqualTo(
-            filteredTransactionToStore.filteredComponentGroups[UtxoComponentGroup.OUTPUTS.ordinal]?.merkleProof
-        )
-        assertThat(storedFilteredTransaction.filteredComponentGroups[UtxoComponentGroup.OUTPUTS_INFO.ordinal]?.merkleProof).isEqualTo(
-            filteredTransactionToStore.filteredComponentGroups[UtxoComponentGroup.OUTPUTS_INFO.ordinal]?.merkleProof
-        )
-
-        storedFilteredTransaction.verify()
-    }
-
-    @Test
     fun `persist and find filtered transactions`() {
         val signatures = createSignatures(Instant.now())
         val signedTransaction = createSignedTransaction(signatures = signatures)

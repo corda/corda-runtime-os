@@ -446,25 +446,7 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
-    override fun persistFilteredTransactionsAndSignaturesIfDoNotExist(
-        filteredTransactionsAndSignatures: Map<FilteredTransaction, List<DigitalSignatureAndMetadata>>,
-        account: String
-    ) {
-        val filteredTransactionIds = filteredTransactionsAndSignatures.keys.map { it.id.toString() }
-
-        // find filtered transactions that are not in the DB yet
-        val foundFilteredTransactionIds = findFilteredTransactions(filteredTransactionIds).keys.map { it.toString() }.toSet()
-        val filteredTransactionIdsToPersist: Set<String> = (filteredTransactionIds - foundFilteredTransactionIds).toSet()
-
-        if (filteredTransactionIdsToPersist.isNotEmpty()) {
-            val filteredTransactionsToPersist =
-                filteredTransactionsAndSignatures.filter { filteredTransactionIdsToPersist.contains(it.key.id.toString()) }
-            persistFilteredTransactionsAndSignatures(filteredTransactionsToPersist, account)
-        }
-    }
-
-    @VisibleForTesting
-    internal fun persistFilteredTransactionsAndSignatures(
+     override fun persistFilteredTransactionsAndSignatures(
         filteredTransactionsAndSignatures: Map<FilteredTransaction, List<DigitalSignatureAndMetadata>>,
         account: String
     ) {
@@ -598,6 +580,12 @@ class UtxoPersistenceServiceImpl(
 
             // If any of the fields in dto are empty or null, skip to next iteration since we can't create filtered transaction.
             if (nullOrEmptyField != null) {
+                log.warn("The filtered transaction $transactionId is missing data for any of " +
+                        "topLevelMerkleProofs = ${ftxDto.topLevelMerkleProofs}, " +
+                        "componentMerkleProofMap = ${ftxDto.componentMerkleProofMap}, " +
+                        "privacySalt = ${ftxDto.privacySalt}, " +
+                        "metadataBytes = ${ftxDto.metadataBytes}, " +
+                        "signatures = ${ftxDto.signatures}.")
                 return@map null
             }
 
