@@ -168,7 +168,6 @@ class ProcessorService {
         }
     }
 
-    // We should require requestId to be a UUID to avoid request ids collisions
     private fun withDeduplicationCheck(
         requestId: String,
         entityManager: EntityManager,
