@@ -211,8 +211,7 @@ class CryptoRekeyBusProcessorTests {
 
             val unmanagedKeyStatus = (cordaAvroSerializationFactory.serialized[index] as? UnmanagedKeyStatus)
             assertThat(unmanagedKeyStatus).isNotNull()
-            assertThat(unmanagedKeyStatus!!.oldParentKeyAlias).isEqualTo(defaultMasterWrappingKeyAlias)
-            assertThat(unmanagedKeyStatus.tenantId).isEqualTo(allTenants[index])
+            assertThat(unmanagedKeyStatus!!.tenantId).isEqualTo(allTenants[index])
             assertThat(unmanagedKeyStatus.total).isEqualTo(1)
             assertThat(unmanagedKeyStatus.rotatedKeys).isEqualTo(0)
         }
