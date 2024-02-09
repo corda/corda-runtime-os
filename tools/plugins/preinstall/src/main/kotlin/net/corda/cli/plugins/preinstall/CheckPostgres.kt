@@ -80,7 +80,10 @@ class CheckPostgres : Callable<Int>, PluginContext() {
             val dbConfig = yaml.databases.first { it.id == yaml.config.storageId }
             yaml.workers.forEach { (name, worker) ->
                 if (worker.config != null) {
-                    checkWorkerConnection(worker.config, name, dbConfig, yaml.config.storageId)
+                    checkConnection(worker.config, "worker $name config DB", dbConfig, yaml.config.storageId)
+                }
+                if (worker.stateManager != null) {
+                    checkStateManagerConnections(worker.stateManager, yaml, name)
                 }
             }
         }
@@ -94,22 +97,34 @@ class CheckPostgres : Callable<Int>, PluginContext() {
         }
     }
 
-    private fun checkWorkerConnection(
-        workerConfig: PreInstallPlugin.WorkerConfig,
+    private fun checkStateManagerConnections(
+        stateManager: Map<String, PreInstallPlugin.Credentials>,
+        yaml: CordaValues,
+        name: String
+    ) {
+        stateManager.forEach { (type, credentials) ->
+            val storage = yaml.stateManager[type]!!
+            val stateManagerDatabase = yaml.databases.first { it.id == storage.storageId }
+            checkConnection(credentials, "worker $name state type $type DB", stateManagerDatabase, storage.storageId)
+        }
+    }
+
+    private fun checkConnection(
+        credentials: PreInstallPlugin.Credentials,
         name: String,
         dbConfig: PreInstallPlugin.Database,
         dbId: String
     ) {
         try {
-            val username = getCredential(workerConfig.username, namespace)
-            val password = getCredential(workerConfig.password, namespace)
-            report.addEntry(PreInstallPlugin.ReportEntry("Get config DB PostgreSQL credentials for worker $name", true))
+            val username = getCredential(credentials.username, namespace)
+            val password = getCredential(credentials.password, namespace)
+            report.addEntry(PreInstallPlugin.ReportEntry("Get PostgreSQL credentials for $name", true))
             val postgresUrl = "jdbc:postgresql://${dbConfig.host}:${dbConfig.port}/${dbConfig.name}"
-            connect(postgresUrl, username, password, dbId, "worker $name")
+            connect(postgresUrl, username, password, dbId, name)
         } catch (e: Exception) {
             report.addEntry(
                 PreInstallPlugin.ReportEntry(
-                    "Get config DB PostgreSQL credentials for worker $name",
+                    "Get config DB PostgreSQL credentials for $name",
                     false,
                     e
                 )

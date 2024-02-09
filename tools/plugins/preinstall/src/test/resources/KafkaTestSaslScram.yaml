@@ -2,7 +2,7 @@ bootstrap: { }
 config:
   storageId: "default"
 databases: []
-workers: { }
+stateManager: { }
 
 kafka:
   bootstrapServers: "localhost:9093"

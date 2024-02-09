@@ -237,13 +237,15 @@ class PreInstallPlugin : Plugin() {
         @JsonProperty("bootstrap")
         val bootstrap: Bootstrap,
         @JsonProperty("config")
-        val config: Config,
+        val config: PersistentStorage,
         @JsonProperty("databases")
         val databases: List<Database>,
         @JsonProperty("kafka")
         val kafka: Kafka,
         @JsonProperty("resources")
         val resources: Resources?,
+        @JsonProperty("stateManager")
+        val stateManager: Map<String, PersistentStorage>,
         @JsonProperty("workers")
         val workers: Map<String, Worker>
     )
@@ -271,7 +273,7 @@ class PreInstallPlugin : Plugin() {
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    data class Config(
+    data class PersistentStorage(
         @JsonProperty("storageId")
         val storageId: String,
     )
@@ -316,15 +318,17 @@ class PreInstallPlugin : Plugin() {
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class Worker(
         @JsonProperty("config")
-        val config: WorkerConfig?,
+        val config: Credentials?,
         @JsonProperty("resources")
         val resources: Resources?,
         @JsonProperty("kafka")
-        val kafka: WorkerKafka?
+        val kafka: WorkerKafka?,
+        @JsonProperty("stateManager")
+        val stateManager: Map<String, Credentials>?
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    data class WorkerConfig(
+    data class Credentials(
         @JsonProperty("username")
         val username: SecretValues?,
         @JsonProperty("password")

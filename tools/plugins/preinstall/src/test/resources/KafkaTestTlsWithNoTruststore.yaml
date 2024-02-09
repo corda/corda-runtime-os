@@ -2,6 +2,7 @@ bootstrap: { }
 config:
   storageId: "default"
 databases: []
+stateManager: { }
 workers: { }
 
 kafka:

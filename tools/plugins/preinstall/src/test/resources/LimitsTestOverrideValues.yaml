@@ -1,6 +1,7 @@
 config:
   storageId: "default"
 databases: []
+stateManager: { }
 kafka: { }
 
 resources:
