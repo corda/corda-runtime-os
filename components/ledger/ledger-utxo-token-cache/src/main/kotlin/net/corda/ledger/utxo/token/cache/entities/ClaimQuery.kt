@@ -4,7 +4,6 @@ import java.math.BigDecimal
 
 data class ClaimQuery(
     override val externalEventRequestId: String,
-    val deduplicationId: String,
     override val flowId: String,
     val targetAmount: BigDecimal,
     override val tagRegex: String?,

@@ -60,7 +60,6 @@ class TokenClaimQueryEventHandlerTest {
     private val claimQueryResult = Record<String, FlowEvent>("", "", null)
     private val claimId = "r1"
     private val flowId = "f1"
-    private val dedupeId = "d1"
 
     @BeforeEach
     fun setup() {
@@ -220,6 +219,6 @@ class TokenClaimQueryEventHandlerTest {
     }
 
     private fun createClaimQuery(targetAmount: Int, tag: String? = null, ownerHash: String? = null): ClaimQuery {
-        return ClaimQuery(claimId, flowId, dedupeId, BigDecimal(targetAmount), tag, ownerHash, POOL_KEY)
+        return ClaimQuery(claimId, flowId, BigDecimal(targetAmount), tag, ownerHash, POOL_KEY)
     }
 }

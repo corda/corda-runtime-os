@@ -49,8 +49,7 @@ class TokenClaimQueryExternalEventFactory @Activate constructor(
 
         val claimQuery = TokenClaimQuery().apply {
             this.poolKey = key
-            this.requestContext = flowExternalEventContext
-            this.deduplicationId = getDeduplicationId(parameters, checkpoint)
+            this.requestContext = getContext(parameters, flowExternalEventContext, checkpoint)
             this.ownerHash = parameters.ownerHash?.toString()
             this.tagRegex = parameters.tagRegex
             this.targetAmount = TokenAmount(
@@ -60,6 +59,16 @@ class TokenClaimQueryExternalEventFactory @Activate constructor(
         }
 
         return ExternalEventRecord(Schemas.Services.TOKEN_CACHE_EVENT, key, TokenPoolCacheEvent(key, claimQuery))
+    }
+
+    private fun getContext(
+        parameters: TokenClaimCriteria,
+        flowExternalEventContext: ExternalEventContext,
+        checkpoint: FlowCheckpoint
+    ): ExternalEventContext {
+        return ExternalEventContext.newBuilder(flowExternalEventContext)
+            .setRequestId(getDeduplicationId(parameters, checkpoint))
+            .build()
     }
 
     override fun resumeWith(checkpoint: FlowCheckpoint, response: TokenClaimQueryResult): TokenClaim? {

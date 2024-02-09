@@ -25,7 +25,7 @@ import java.math.BigDecimal
 class EventConverterImplTest {
 
     private val entityConverter = mock<EntityConverter>()
-    private val claimQuery = ClaimQuery("", "", "", BigDecimal(0), "", "", POOL_KEY)
+    private val claimQuery = ClaimQuery("", "", BigDecimal(0), "", "", POOL_KEY)
     private val claimRelease = ClaimRelease("", "", "", setOf(), POOL_KEY)
     private val forceClaimRelease = ForceClaimRelease("", POOL_KEY)
     private val ledgerChange = LedgerChange(POOL_KEY, "", "", "", listOf(), listOf())
