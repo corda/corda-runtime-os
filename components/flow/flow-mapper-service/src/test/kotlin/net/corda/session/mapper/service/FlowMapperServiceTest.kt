@@ -18,7 +18,6 @@ import net.corda.messaging.api.exception.CordaMessageAPIConfigException
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG

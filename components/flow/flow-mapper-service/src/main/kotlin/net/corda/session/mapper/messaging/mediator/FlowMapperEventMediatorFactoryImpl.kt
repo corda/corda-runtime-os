@@ -18,7 +18,6 @@ import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFactoryFactory
 import net.corda.messaging.api.mediator.factory.MultiSourceEventMediatorFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_IN
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_OUT
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_START
