@@ -33,7 +33,7 @@ class PersistExternalEventFactoryTest {
         assertEquals(
             EntityRequest(
                 ALICE_X500_HOLDING_IDENTITY,
-                PersistEntities(listOf(ByteBuffer.wrap(byteArrayOf(1))), ""),
+                PersistEntities(listOf(ByteBuffer.wrap(byteArrayOf(1))), "wYwdxbhLOBK6P0N2HVbc6oXo4/uzkzhZ4OnCzNlKV/M="),
                 externalEventContext
             ),
             externalEventRecord.payload
