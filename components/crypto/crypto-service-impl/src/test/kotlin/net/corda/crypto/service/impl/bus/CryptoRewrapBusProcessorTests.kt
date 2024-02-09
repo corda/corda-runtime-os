@@ -49,7 +49,6 @@ class CryptoRewrapBusProcessorTests {
     companion object {
         private val tenantId = UUID.randomUUID().toString()
         private const val OLD_PARENT_KEY_ALIAS = "alias1"
-        private const val NEW_PARENT_KEY_ALIAS = "alias2"
         private const val WRAPPING_KEY_ALIAS = "alias"
         private const val DEFAULT_MASTER_WRAP_KEY_ALIAS = "defaultKeyAlias"
     }
@@ -65,8 +64,6 @@ class CryptoRewrapBusProcessorTests {
         }
         unmanagedDeserializer = mock<CordaAvroDeserializer<UnmanagedKeyStatus>> {
             on { deserialize(any()) } doReturn UnmanagedKeyStatus(
-                OLD_PARENT_KEY_ALIAS,
-                NEW_PARENT_KEY_ALIAS,
                 tenantId,
                 10,
                 5,

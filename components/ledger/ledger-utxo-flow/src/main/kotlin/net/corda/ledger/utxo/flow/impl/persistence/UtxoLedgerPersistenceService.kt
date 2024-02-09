@@ -11,6 +11,7 @@ import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndSignatures
 import java.security.PublicKey
 
 /**
@@ -101,7 +102,7 @@ interface UtxoLedgerPersistenceService {
         stateRefs: List<StateRef>,
         notaryKey: PublicKey,
         notaryName: MemberX500Name
-    ): Map<SecureHash, Map<UtxoFilteredTransaction, List<DigitalSignatureAndMetadata>>>
+    ): Map<SecureHash, UtxoFilteredTransactionAndSignatures>
 
     /**
      * Persist a [UtxoSignedTransaction] to the store.
@@ -142,4 +143,17 @@ interface UtxoLedgerPersistenceService {
 
     @Suspendable
     fun persistTransactionSignatures(id: SecureHash, startingIndex: Int, signatures: List<DigitalSignatureAndMetadata>)
+
+    /**
+     * Persists a list of filtered transactions and their signatures represented as [UtxoFilteredTransactionAndSignatures]
+     * objects.
+     *
+     * @param filteredTransactionsAndSignatures A list containing the filtered transactions and signatures to persist.
+     *
+     * @throws CordaPersistenceException if an error happens during persist operation.
+     */
+    @Suspendable
+    fun persistFilteredTransactionsAndSignatures(
+        filteredTransactionsAndSignatures: List<UtxoFilteredTransactionAndSignatures>
+    )
 }

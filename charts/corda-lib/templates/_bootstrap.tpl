@@ -153,31 +153,70 @@ spec:
               #!/bin/sh
               set -ev
 
-              JDBC_URL="jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}"
-
-              echo 'Generating Cluster DB specification'
               mkdir /tmp/db
+
+              echo 'Generating config DB specification'
+              {{- $configDbSettings := fromYaml ( include "corda.db.configuration" ( list $ $.Values.config.storageId "config.storageId" ) ) }}
               java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
-                -s "config,rbac,crypto" \
-                -g "config:${DB_CLUSTER_SCHEMA},rbac:${DB_RBAC_SCHEMA},crypto:${DB_CRYPTO_SCHEMA}" \
-                -u "${CLUSTER_PGUSER}" -p "${CLUSTER_PGPASSWORD}" \
-                --jdbc-url "${JDBC_URL}" \
+                -s "config" \
+                -g "config:${CONFIG_DB_SCHEMA}" \
+                -u "${BOOTSTRAP_CONFIG_DB_USERNAME}" -p "${BOOTSTRAP_CONFIG_DB_PASSWORD}" \
+                --jdbc-url {{ include "corda.db.connectionUrl" $configDbSettings | quote }} \
                 -c -l /tmp/db
+
+              echo 'Generating crypto DB specification'
+              {{- $cryptoDbSettings := fromYaml ( include "corda.db.configuration" ( list $ $.Values.bootstrap.db.crypto.storageId "bootstrap.db.crypto.storageId" ) ) }}
+              java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
+                -s "crypto" \
+                -g "crypto:${CRYPTO_DB_SCHEMA}" \
+                -u "${BOOTSTRAP_CRYPTO_DB_USERNAME}" -p "${BOOTSTRAP_CRYPTO_DB_PASSWORD}" \
+                --jdbc-url {{ include "corda.db.connectionUrl" $cryptoDbSettings | quote }} \
+                -c -l /tmp/db
+
+              echo 'Generating rbac DB specification'
+              {{- $rbacDbSettings := fromYaml ( include "corda.db.configuration" ( list $ $.Values.bootstrap.db.rbac.storageId "bootstrap.db.rbac.storageId" ) ) }}
+              java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
+                -s "rbac" \
+                -g "rbac:${RBAC_DB_SCHEMA}" \
+                -u "${BOOTSTRAP_RBAC_DB_USERNAME}" -p "${BOOTSTRAP_RBAC_DB_PASSWORD}" \
+                --jdbc-url {{ include "corda.db.connectionUrl" $rbacDbSettings | quote }} \
+                -c -l /tmp/db
+
+              echo 'Generating crypto initial DB configuration'
+              mkdir /tmp/crypto
+              java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar initial-config create-db-config \
+                -u "${CRYPTO_DB_USERNAME}" -p "${CRYPTO_DB_PASSWORD}" \
+                --name "corda-crypto" \
+                --jdbc-url {{ include "corda.db.connectionUrl" $cryptoDbSettings | quote }} \
+                --jdbc-pool-max-size {{ .Values.bootstrap.db.crypto.connectionPool.maxSize | quote }} \
+              {{- if not ( kindIs "invalid" .Values.bootstrap.db.crypto.connectionPool.minSize ) }}
+                --jdbc-pool-min-size {{ .Values.bootstrap.db.crypto.connectionPool.minSize | quote }}
+              {{- end }}
+                --idle-timeout {{ .Values.bootstrap.db.crypto.connectionPool.idleTimeoutSeconds | quote }} \
+                --max-lifetime {{ .Values.bootstrap.db.crypto.connectionPool.maxLifetimeSeconds | quote }} \
+                --keepalive-time {{ .Values.bootstrap.db.crypto.connectionPool.keepAliveTimeSeconds | quote }} \
+                --validation-timeout {{ .Values.bootstrap.db.crypto.connectionPool.validationTimeoutSeconds | quote }} \
+              {{- if (((.Values).config).vault).url }}
+                -t "VAULT" --vault-path "dbsecrets" --key "crypto-db-password" \
+              {{- else }}
+                --salt "${SALT}" --passphrase "${PASSPHRASE}" \
+              {{- end }}
+                -l /tmp/crypto
 
               echo 'Generating RBAC initial DB configuration'
               mkdir /tmp/rbac
               java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar initial-config create-db-config \
-                -u "${RBAC_DB_USER_USERNAME}" -p "${RBAC_DB_USER_PASSWORD}" \
+                -u "${RBAC_DB_USERNAME}" -p "${RBAC_DB_PASSWORD}" \
                 --name "corda-rbac" \
-                --jdbc-url "${JDBC_URL}" \
-                --jdbc-pool-max-size {{ .Values.bootstrap.db.rbac.dbConnectionPool.maxSize | quote }} \
-              {{- if not ( kindIs "invalid" .Values.bootstrap.db.rbac.dbConnectionPool.minSize ) }}
-                --jdbc-pool-min-size {{ .Values.bootstrap.db.rbac.dbConnectionPool.minSize | quote }}
+                --jdbc-url {{ include "corda.db.connectionUrl" $rbacDbSettings | quote }} \
+                --jdbc-pool-max-size {{ .Values.bootstrap.db.rbac.connectionPool.maxSize | quote }} \
+              {{- if not ( kindIs "invalid" .Values.bootstrap.db.rbac.connectionPool.minSize ) }}
+                --jdbc-pool-min-size {{ .Values.bootstrap.db.rbac.connectionPool.minSize | quote }}
               {{- end }}
-                --idle-timeout {{ .Values.bootstrap.db.rbac.dbConnectionPool.idleTimeoutSeconds | quote }} \
-                --max-lifetime {{ .Values.bootstrap.db.rbac.dbConnectionPool.maxLifetimeSeconds | quote }} \
-                --keepalive-time {{ .Values.bootstrap.db.rbac.dbConnectionPool.keepaliveTimeSeconds | quote }} \
-                --validation-timeout {{ .Values.bootstrap.db.rbac.dbConnectionPool.validationTimeoutSeconds | quote }} \
+                --idle-timeout {{ .Values.bootstrap.db.rbac.connectionPool.idleTimeoutSeconds | quote }} \
+                --max-lifetime {{ .Values.bootstrap.db.rbac.connectionPool.maxLifetimeSeconds | quote }} \
+                --keepalive-time {{ .Values.bootstrap.db.rbac.connectionPool.keepAliveTimeSeconds | quote }} \
+                --validation-timeout {{ .Values.bootstrap.db.rbac.connectionPool.validationTimeoutSeconds | quote }} \
               {{- if (((.Values).config).vault).url }}
                 -t "VAULT" --vault-path "dbsecrets" --key "rbac-db-password" \
               {{- else }}
@@ -187,45 +226,25 @@ spec:
 
               echo 'Generating virtual nodes initial DB configuration'
               mkdir /tmp/vnodes
+              {{- $virtualNodesDbSettings := fromYaml ( include "corda.db.configuration" ( list $ $.Values.bootstrap.db.virtualNodes.storageId "bootstrap.db.virtualNodes.storageId" ) ) }}
               java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar initial-config create-db-config \
-                -a -u "${DB_CLUSTER_USERNAME}" -p "${DB_CLUSTER_PASSWORD}" \
+                -a -u "${VIRTUAL_NODES_DB_USERNAME}" -p "${VIRTUAL_NODES_DB_PASSWORD}" \
                 --name "corda-virtual-nodes" \
-                --jdbc-url "${JDBC_URL}" \
-                --jdbc-pool-max-size {{ .Values.bootstrap.db.rbac.dbConnectionPool.maxSize | quote }} \
-              {{- if not ( kindIs "invalid" .Values.bootstrap.db.rbac.dbConnectionPool.minSize ) }}
-                --jdbc-pool-min-size {{ .Values.bootstrap.db.rbac.dbConnectionPool.minSize | quote }}
+                --jdbc-url {{ include "corda.db.connectionUrl" $virtualNodesDbSettings | quote }} \
+                --jdbc-pool-max-size {{ .Values.bootstrap.db.virtualNodes.connectionPool.maxSize | quote }} \
+              {{- if not ( kindIs "invalid" .Values.bootstrap.db.virtualNodes.connectionPool.minSize ) }}
+                --jdbc-pool-min-size {{ .Values.bootstrap.db.virtualNodes.connectionPool.minSize | quote }}
               {{- end }}
-                --idle-timeout {{ .Values.bootstrap.db.rbac.dbConnectionPool.idleTimeoutSeconds | quote }} \
-                --max-lifetime {{ .Values.bootstrap.db.rbac.dbConnectionPool.maxLifetimeSeconds | quote }} \
-                --keepalive-time {{ .Values.bootstrap.db.rbac.dbConnectionPool.keepaliveTimeSeconds | quote }} \
-                --validation-timeout {{ .Values.bootstrap.db.rbac.dbConnectionPool.validationTimeoutSeconds | quote }} \
+                --idle-timeout {{ .Values.bootstrap.db.virtualNodes.connectionPool.idleTimeoutSeconds | quote }} \
+                --max-lifetime {{ .Values.bootstrap.db.virtualNodes.connectionPool.maxLifetimeSeconds | quote }} \
+                --keepalive-time {{ .Values.bootstrap.db.virtualNodes.connectionPool.keepAliveTimeSeconds | quote }} \
+                --validation-timeout {{ .Values.bootstrap.db.virtualNodes.connectionPool.validationTimeoutSeconds | quote }} \
               {{- if (((.Values).config).vault).url }}
                 -t "VAULT" --vault-path "dbsecrets" --key "vnodes-db-password" \
               {{- else }}
                 --salt "${SALT}" --passphrase "${PASSPHRASE}" \
               {{- end }}
                 -l /tmp/vnodes
-
-              echo 'Generating crypto initial DB configuration'
-              mkdir /tmp/crypto
-              java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar initial-config create-db-config \
-                -u "${CRYPTO_DB_USER_USERNAME}" -p "${CRYPTO_DB_USER_PASSWORD}" \
-                --name "corda-crypto" \
-                --jdbc-url "${JDBC_URL}" \
-                --jdbc-pool-max-size {{ .Values.bootstrap.db.crypto.dbConnectionPool.maxSize | quote }} \
-              {{- if not ( kindIs "invalid" .Values.bootstrap.db.crypto.dbConnectionPool.minSize ) }}
-                --jdbc-pool-min-size {{ .Values.bootstrap.db.crypto.dbConnectionPool.minSize | quote }}
-              {{- end }}
-                --idle-timeout {{ .Values.bootstrap.db.crypto.dbConnectionPool.idleTimeoutSeconds | quote }} \
-                --max-lifetime {{ .Values.bootstrap.db.crypto.dbConnectionPool.maxLifetimeSeconds | quote }} \
-                --keepalive-time {{ .Values.bootstrap.db.crypto.dbConnectionPool.keepaliveTimeSeconds | quote }} \
-                --validation-timeout {{ .Values.bootstrap.db.crypto.dbConnectionPool.validationTimeoutSeconds | quote }} \
-              {{- if (((.Values).config).vault).url }}
-                -t "VAULT" --vault-path "dbsecrets" --key "crypto-db-password" \
-              {{- else }}
-                --salt "${SALT}" --passphrase "${PASSPHRASE}" \
-              {{- end }}
-                -l /tmp/crypto
 
               echo 'Generating REST API user initial configuration'
               java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar initial-config create-user-config \
@@ -245,20 +264,24 @@ spec:
               name: temp
             {{- include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
-            - name: DB_CLUSTER_SCHEMA
-              value: {{ .Values.db.cluster.schema | quote }}
-            - name: DB_RBAC_SCHEMA
-              value: {{ .Values.bootstrap.db.rbac.schema | quote }}
-            - name: DB_CRYPTO_SCHEMA
-              value: {{ .Values.bootstrap.db.crypto.schema | quote }}
-            {{- include "corda.bootstrapClusterDbEnv" . | nindent 12 }}
+            - name: CONFIG_DB_SCHEMA
+              value: {{ .Values.config.partition | quote }}
+            - name: RBAC_DB_SCHEMA
+              value: {{ .Values.bootstrap.db.rbac.partition | quote }}
+            - name: CRYPTO_DB_SCHEMA
+              value: {{ .Values.bootstrap.db.crypto.partition | quote }}
             {{- include "corda.configSaltAndPassphraseEnv" . | nindent 12 }}
             {{- include "corda.bootstrapCliEnv" . | nindent 12 }}
-            {{- include "corda.rbacDbUserEnv" . | nindent 12 }}
-            {{- include "corda.clusterDbEnv" . | nindent 12 }}
+            {{- $configBootstrapSettings := fromYaml ( include "corda.db.bootstrapConfiguration" ( list $ $.Values.config.storageId "config.storageId" ) ) -}}
+            {{- include "corda.db.bootstrapEnvironment" ( list $ "config" $.Values.config.storageId $configBootstrapSettings ) | nindent 12 }}
+            {{- $cryptoBootstrapSettings := fromYaml ( include "corda.db.bootstrapConfiguration" ( list $ $.Values.bootstrap.db.crypto.storageId "bootstrap.db.crypto.storageId" ) ) -}}
+            {{- include "corda.db.bootstrapEnvironment" ( list $ "crypto" $.Values.bootstrap.db.crypto.storageId $cryptoBootstrapSettings ) | nindent 12 }}
+            {{- $rbacBootstrapSettings := fromYaml ( include "corda.db.bootstrapConfiguration" ( list $ $.Values.bootstrap.db.rbac.storageId "bootstrap.db.rbac.storageId" ) ) -}}
+            {{- include "corda.db.bootstrapEnvironment" ( list $ "rbac" $.Values.bootstrap.db.rbac.storageId $rbacBootstrapSettings ) | nindent 12 }}
+            {{- include "corda.db.runtimeEnvironment" ( list $ "crypto" $.Values.bootstrap.db.crypto ) | nindent 12 }}
+            {{- include "corda.db.runtimeEnvironment" ( list $ "rbac" $.Values.bootstrap.db.rbac ) | nindent 12 }}
+            {{- include "corda.db.runtimeEnvironment" ( list $ "virtualNodes" $.Values.bootstrap.db.virtualNodes ) | nindent 12 }}
             {{- include "corda.restApiAdminSecretEnv" . | nindent 12 }}
-            {{- include "corda.cryptoDbUsernameEnv" . | nindent 12 }}
-            {{- include "corda.cryptoDbPasswordEnv" . | nindent 12 }}
             {{/* Bootstrap State Manager Databases */}}
             {{- range $stateType, $stateTypeConfig  := .Values.stateManager -}}
             {{-   $storageId := $stateTypeConfig.storageId -}}
@@ -290,61 +313,114 @@ spec:
               #!/bin/sh
               set -ev
 
-              echo 'Applying DB specification'
-              export PGPASSWORD="${CLUSTER_PGPASSWORD}"
-              find /tmp/db -iname "*.sql" | xargs printf -- ' -f %s' | xargs psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -U "${CLUSTER_PGUSER}" --dbname "${DB_CLUSTER_NAME}"
+              echo 'Applying config DB specification'
+              export PGPASSWORD="${BOOTSTRAP_CONFIG_DB_PASSWORD}"
+              export PGUSER="${BOOTSTRAP_CONFIG_DB_USERNAME}"
+              psql -v ON_ERROR_STOP=1 -h "${CONFIG_DB_HOST}" -p "${CONFIG_DB_PORT}" --dbname "${CONFIG_DB_NAME}" -f /tmp/db/config.sql
 
               echo 'Applying initial configurations'
-              (echo "SET search_path TO ${DB_CLUSTER_SCHEMA};";
+              (echo "SET search_path TO ${CONFIG_DB_SCHEMA};";
               cat /tmp/rbac/db-config.sql;
               cat /tmp/vnodes/db-config.sql;
               cat /tmp/crypto/db-config.sql;
               cat /tmp/crypto-config.sql) | psql -v ON_ERROR_STOP=1 \
-              -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -U "${CLUSTER_PGUSER}" --dbname "dbname=${DB_CLUSTER_NAME}"
+              -h "${CONFIG_DB_HOST}" -p "${CONFIG_DB_PORT}" --dbname "${CONFIG_DB_NAME}"
 
-              echo 'Applying initial RBAC configuration'
-              (echo "SET search_path TO ${DB_RBAC_SCHEMA};";
-              cat  /tmp/rbac-config.sql) | psql -v ON_ERROR_STOP=1 \
-              -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -U "${CLUSTER_PGUSER}" --dbname "dbname=${DB_CLUSTER_NAME}"
-
-              echo 'Creating users and granting permissions'
-              psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -U "${CLUSTER_PGUSER}" "${DB_CLUSTER_NAME}" << SQL
-                GRANT USAGE ON SCHEMA ${DB_CLUSTER_SCHEMA} TO "${DB_CLUSTER_USERNAME}";
-                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${DB_CLUSTER_SCHEMA} TO "${DB_CLUSTER_USERNAME}";
-                GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA ${DB_CLUSTER_SCHEMA} TO "${DB_CLUSTER_USERNAME}";
-                ALTER ROLE "${DB_CLUSTER_USERNAME}" SET search_path TO ${DB_CLUSTER_SCHEMA}, STATE_MANAGER;
-                DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${RBAC_DB_USER_USERNAME}') THEN RAISE NOTICE 'Role "${RBAC_DB_USER_USERNAME}" already exists'; ELSE CREATE USER "${RBAC_DB_USER_USERNAME}" WITH ENCRYPTED PASSWORD '${RBAC_DB_USER_PASSWORD}'; END IF; END \$\$;
-                GRANT USAGE ON SCHEMA ${DB_RBAC_SCHEMA} TO "$RBAC_DB_USER_USERNAME";
-                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${DB_RBAC_SCHEMA} TO "$RBAC_DB_USER_USERNAME";
-                ALTER ROLE "${RBAC_DB_USER_USERNAME}" SET search_path TO ${DB_RBAC_SCHEMA};
-                DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${CRYPTO_DB_USER_USERNAME}') THEN RAISE NOTICE 'Role "${CRYPTO_DB_USER_USERNAME}" already exists'; ELSE CREATE USER "${CRYPTO_DB_USER_USERNAME}" WITH ENCRYPTED PASSWORD '$CRYPTO_DB_USER_PASSWORD'; END IF; END \$\$;
-                GRANT USAGE ON SCHEMA ${DB_CRYPTO_SCHEMA} TO "${CRYPTO_DB_USER_USERNAME}";
-                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${DB_CRYPTO_SCHEMA} TO "${CRYPTO_DB_USER_USERNAME}";
-                ALTER ROLE "${CRYPTO_DB_USER_USERNAME}" SET search_path TO ${DB_CRYPTO_SCHEMA};
+              echo 'Creating config users and granting permissions'
+              psql -v ON_ERROR_STOP=1 -h "${CONFIG_DB_HOST}" -p "${CONFIG_DB_PORT}" --dbname "${CONFIG_DB_NAME}" << SQL
+{{- range $workerName, $workerValues := $.Values.workers }}
+{{-   if $workerValues.config }}
+{{-     $configValues := $workerValues.config }}
+{{-     $usernameEnv := printf "CONFIG_%s_DB_USERNAME" ( upper ( snakecase $workerName ) ) }}
+{{-     $passwordEnv := printf "CONFIG_%s_DB_PASSWORD" ( upper ( snakecase $workerName ) ) }}
+                DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${{ $usernameEnv }}') THEN RAISE NOTICE 'Role "${{ $usernameEnv }}" already exists'; ELSE CREATE USER "${{ $usernameEnv }}" WITH ENCRYPTED PASSWORD '${{ $passwordEnv }}'; END IF; END \$\$;
+                GRANT USAGE ON SCHEMA ${CONFIG_DB_SCHEMA} TO "${{ $usernameEnv }}";
+                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${CONFIG_DB_SCHEMA} TO "${{ $usernameEnv }}";
+                GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA ${CONFIG_DB_SCHEMA} TO "${{ $usernameEnv }}";
+                ALTER ROLE "${{ $usernameEnv }}" SET search_path TO ${CONFIG_DB_SCHEMA};
+{{-   end }}
+{{- end }}
               SQL
 
-              echo 'DB Bootstrapped'
+              echo 'Applying crypto DB specification'
+              export PGPASSWORD="${BOOTSTRAP_CRYPTO_DB_PASSWORD}"
+              export PGUSER="${BOOTSTRAP_CRYPTO_DB_USERNAME}"
+              psql -v ON_ERROR_STOP=1 -h "${CRYPTO_DB_HOST}" -p "${CRYPTO_DB_PORT}" --dbname "${CRYPTO_DB_NAME}" -f /tmp/db/crypto.sql
+
+              echo 'Creating crypto user and granting permissions'
+              psql -v ON_ERROR_STOP=1 -h "${CRYPTO_DB_HOST}" -p "${CRYPTO_DB_PORT}" --dbname "${CRYPTO_DB_NAME}" << SQL
+                DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${CRYPTO_DB_USERNAME}') THEN RAISE NOTICE 'Role "${CRYPTO_DB_USERNAME}" already exists'; ELSE CREATE USER "${CRYPTO_DB_USERNAME}" WITH ENCRYPTED PASSWORD '$CRYPTO_DB_PASSWORD'; END IF; END \$\$;
+                GRANT USAGE ON SCHEMA ${CRYPTO_DB_SCHEMA} TO "${CRYPTO_DB_USERNAME}";
+                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${CRYPTO_DB_SCHEMA} TO "${CRYPTO_DB_USERNAME}";
+                ALTER ROLE "${CRYPTO_DB_USERNAME}" SET search_path TO ${CRYPTO_DB_SCHEMA};
+              SQL
+
+              echo 'Applying RBAC DB specification'
+              export PGPASSWORD="${BOOTSTRAP_RBAC_DB_PASSWORD}"
+              export PGUSER="${BOOTSTRAP_RBAC_DB_USERNAME}"
+              psql -v ON_ERROR_STOP=1 -h "${RBAC_DB_HOST}" -p "${RBAC_DB_PORT}" --dbname "${RBAC_DB_NAME}" -f /tmp/db/rbac.sql
+
+              echo 'Applying initial RBAC configuration'
+              (echo "SET search_path TO ${RBAC_DB_SCHEMA};";
+              cat  /tmp/rbac-config.sql) | psql -v ON_ERROR_STOP=1 \
+                -h "${RBAC_DB_HOST}" -p "${RBAC_DB_PORT}" --dbname "${RBAC_DB_NAME}"
+
+              echo 'Creating RBAC user and granting permissions'
+              psql -v ON_ERROR_STOP=1 -h "${RBAC_DB_HOST}" -p "${RBAC_DB_PORT}" --dbname "${RBAC_DB_NAME}" << SQL
+                DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${RBAC_DB_USERNAME}') THEN RAISE NOTICE 'Role "${RBAC_DB_USERNAME}" already exists'; ELSE CREATE USER "${RBAC_DB_USERNAME}" WITH ENCRYPTED PASSWORD '${RBAC_DB_PASSWORD}'; END IF; END \$\$;
+                GRANT USAGE ON SCHEMA ${RBAC_DB_SCHEMA} TO "$RBAC_DB_USERNAME";
+                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${RBAC_DB_SCHEMA} TO "$RBAC_DB_USERNAME";
+                ALTER ROLE "${RBAC_DB_USERNAME}" SET search_path TO ${RBAC_DB_SCHEMA};
+              SQL
+
+              echo 'Creating virtual nodes user and granting permissions'
+              psql -v ON_ERROR_STOP=1 -h "${VIRTUAL_NODES_DB_HOST}" -p "${VIRTUAL_NODES_DB_PORT}" --dbname "${VIRTUAL_NODES_DB_NAME}" << SQL
+                DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${VIRTUAL_NODES_DB_USERNAME}') THEN RAISE NOTICE 'Role "${VIRTUAL_NODES_DB_USERNAME}" already exists'; ELSE CREATE USER "${VIRTUAL_NODES_DB_USERNAME}" WITH NOSUPERUSER CREATEROLE ENCRYPTED PASSWORD '${VIRTUAL_NODES_DB_PASSWORD}'; END IF; END \$\$;
+                GRANT CREATE ON DATABASE ${VIRTUAL_NODES_DB_NAME} TO "${VIRTUAL_NODES_DB_USERNAME}"
+              SQL
+
+              echo 'DBs Bootstrapped'
           volumeMounts:
             - mountPath: /tmp
               name: temp
           env:
-            - name: DB_CLUSTER_HOST
-              value: {{ required "A db host is required" .Values.db.cluster.host | quote }}
-            - name: DB_CLUSTER_PORT
-              value: {{ include "corda.clusterDbPort" . | quote }}
-            - name: DB_CLUSTER_NAME
-              value: {{ include "corda.clusterDbName" . | quote }}
-            - name: DB_CLUSTER_SCHEMA
-              value: {{ .Values.db.cluster.schema | quote }}
-            - name: DB_RBAC_SCHEMA
-              value: {{ .Values.bootstrap.db.rbac.schema | quote }}
-            - name: DB_CRYPTO_SCHEMA
-              value: {{ .Values.bootstrap.db.crypto.schema | quote }}
-            {{- include "corda.bootstrapClusterDbEnv" . | nindent 12 }}
-            {{- include "corda.rbacDbUserEnv" . | nindent 12 }}
-            {{- include "corda.cryptoDbUsernameEnv" . | nindent 12 }}
-            {{- include "corda.cryptoDbPasswordEnv" . | nindent 12 }}
-            {{- include "corda.clusterDbEnv" . | nindent 12 }}
+            - name: CONFIG_DB_HOST
+              value: {{ required "A db host is required" $configDbSettings.host | quote }}
+            - name: CONFIG_DB_PORT
+              value: {{ $configDbSettings.port | quote }}
+            - name: CONFIG_DB_NAME
+              value: {{ $configDbSettings.name | quote }}
+            - name: CONFIG_DB_SCHEMA
+              value: {{ .Values.config.partition | quote }}
+            - name: CRYPTO_DB_HOST
+              value: {{ required "A crypto DB host is required" $cryptoDbSettings.host | quote }}
+            - name: CRYPTO_DB_PORT
+              value: {{ $cryptoDbSettings.port | quote }}
+            - name: CRYPTO_DB_NAME
+              value: {{ $cryptoDbSettings.name | quote }}
+            - name: CRYPTO_DB_SCHEMA
+              value: {{ .Values.bootstrap.db.crypto.partition | quote }}
+            - name: RBAC_DB_HOST
+              value: {{ required "An RBAC DB host is required" $rbacDbSettings.host | quote }}
+            - name: RBAC_DB_PORT
+              value: {{ $rbacDbSettings.port | quote }}
+            - name: RBAC_DB_NAME
+              value: {{ $rbacDbSettings.name | quote }}
+            - name: RBAC_DB_SCHEMA
+              value: {{ .Values.bootstrap.db.rbac.partition | quote }}
+            - name: VIRTUAL_NODES_DB_HOST
+              value: {{ required "A virtual nodes DB host is required" $virtualNodesDbSettings.host | quote }}
+            - name: VIRTUAL_NODES_DB_PORT
+              value: {{ $virtualNodesDbSettings.port | quote }}
+            - name: VIRTUAL_NODES_DB_NAME
+              value: {{ $virtualNodesDbSettings.name | quote }}
+            {{- include "corda.db.bootstrapEnvironment" ( list $ "config" $.Values.config.storageId $configBootstrapSettings ) | nindent 12 }}
+            {{- include "corda.db.bootstrapEnvironment" ( list $ "crypto" $.Values.bootstrap.db.crypto.storageId $cryptoBootstrapSettings ) | nindent 12 }}
+            {{- include "corda.db.bootstrapEnvironment" ( list $ "rbac" $.Values.bootstrap.db.rbac.storageId $rbacBootstrapSettings ) | nindent 12 }}
+            {{- include "corda.db.runtimeConfigEnvironment" ( list $ ) | nindent 12 }}
+            {{- include "corda.db.runtimeEnvironment" ( list $ "crypto" $.Values.bootstrap.db.crypto ) | nindent 12 }}
+            {{- include "corda.db.runtimeEnvironment" ( list $ "rbac" $.Values.bootstrap.db.rbac ) | nindent 12 }}
+            {{- include "corda.db.runtimeEnvironment" ( list $ "virtualNodes" $.Values.bootstrap.db.virtualNodes ) | nindent 12 }}
       volumes:
         - name: temp
           emptyDir: {}

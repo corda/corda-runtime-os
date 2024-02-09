@@ -35,7 +35,7 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     implementation libs.typesafe.config
-    implementation "com.google.guava:guava:$guavaVersion"
+    implementation libs.guava
 
     testImplementation project(":testing:test-utilities")
     testImplementation project(':libs:platform-info')

@@ -35,7 +35,7 @@ dependencies {
     implementation project(":libs:utilities")
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "com.google.guava:guava:$guavaVersion"
+    implementation libs.guava
     implementation "org.apache.qpid:proton-j:$protonjVersion"
     implementation 'org.slf4j:slf4j-api'
 

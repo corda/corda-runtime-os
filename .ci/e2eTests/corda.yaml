@@ -4,33 +4,11 @@ databases:
     host: null  # passed in from jenkins pipeline
     port: 5432
     type: "postgresql"
-    username:
-      value: "user"
-      valueFrom:
-        secretKeyRef:
-          name: ""
-          key: ""
-    password:
-      valueFrom:
-        secretKeyRef:
-          key: "password"
-          name: "" # passed in from jenkins pipeline
   - id: "isolated-state-manager"
     name: "state-manager"
     host: null # passed in from jenkins pipeline
     port: 5432
     type: "postgresql"
-    username:
-      value: "state-manager-user"
-      valueFrom:
-        secretKeyRef:
-          name: ""
-          key: ""
-    password:
-      valueFrom:
-        secretKeyRef:
-          key: "password"
-          name: "" # passed in from jenkins pipeline
 
 # Fields 'type' and 'partition' already have defaults set by the Helm Chart, adding them here just for clarity
 stateManager:
@@ -61,21 +39,10 @@ stateManager:
 
 bootstrap:
   db:
-    cluster:
-      username:
-        value: "postgres"
-      password:
-        valueFrom:
-          secretKeyRef:
-            key: "postgres-password"
     databases:
       - id: "default"
         username:
           value: "postgres"
-          valueFrom:
-            secretKeyRef:
-              name: ""
-              key: ""
         password:
           valueFrom:
             secretKeyRef:
@@ -84,10 +51,6 @@ bootstrap:
       - id: "isolated-state-manager"
         username:
           value: "state-manager-user"
-          valueFrom:
-            secretKeyRef:
-              name: ""
-              key: ""
         password:
           valueFrom:
             secretKeyRef:
@@ -106,15 +69,6 @@ bootstrap:
 
 logging:
   format: "text"
-
-db:
-  cluster:
-    password:
-      valueFrom:
-        secretKeyRef:
-          key: "password"
-    username:
-      value: "user"
 
 kafka:
   bootstrapServers: "prereqs-kafka:9092"

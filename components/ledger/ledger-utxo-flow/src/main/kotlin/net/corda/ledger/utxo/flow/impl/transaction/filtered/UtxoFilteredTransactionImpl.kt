@@ -20,13 +20,14 @@ import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.transaction.filtered.FilteredDataInconsistencyException
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import java.security.PublicKey
 
 @Suppress("TooManyFunctions")
 class UtxoFilteredTransactionImpl(
     private val serializationService: SerializationService,
-    override val filteredTransaction: FilteredTransaction
-) : UtxoFilteredTransactionInternal {
+    val filteredTransaction: FilteredTransaction
+) : UtxoFilteredTransaction {
 
     override fun getId(): SecureHash {
         return filteredTransaction.id

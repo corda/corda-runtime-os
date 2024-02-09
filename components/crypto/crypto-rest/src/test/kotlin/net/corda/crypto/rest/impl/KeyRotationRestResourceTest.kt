@@ -105,8 +105,6 @@ class KeyRotationRestResourceTest {
 
         deserializer = mock<CordaAvroDeserializer<UnmanagedKeyStatus>> {
             on { deserialize(any()) } doReturn UnmanagedKeyStatus(
-                MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER,
-                null,
                 tenantId,
                 10,
                 5,

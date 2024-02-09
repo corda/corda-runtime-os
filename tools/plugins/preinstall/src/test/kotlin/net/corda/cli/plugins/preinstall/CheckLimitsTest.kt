@@ -47,6 +47,7 @@ class CheckLimitsTest {
         val limits = CheckLimits()
         val ret = CommandLine(limits).execute(path)
 
+        println(limits.report.toString())
         assertTrue(limits.report.toString().contains("Parse \"bootstrap\" cpu resource strings: FAILED"))
         assertTrue(limits.report.toString().contains("Parse \"bootstrap\" memory resource strings: FAILED"))
         assertEquals(1, ret)

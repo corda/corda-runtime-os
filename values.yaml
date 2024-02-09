@@ -26,26 +26,11 @@ bootstrap:
   restApiAdmin:
     password:
       value: "admin"
-  # Disable pre-install check as we are not specifying resources
-  preinstallCheck:
-    enabled: false
   db:
-    cluster:
-      password:
-        valueFrom:
-          secretKeyRef:
-            name: "prereqs-postgresql"
-            key: "postgres-password"
-      username:
-        value: "postgres"
     databases:
       - id: "default"
         username:
           value: "postgres"
-          valueFrom:
-            secretKeyRef:
-              name: ""
-              key: ""
         password:
           valueFrom:
             secretKeyRef:
@@ -73,31 +58,9 @@ kafka:
           name: "prereqs-kafka-0-tls"
           key: "ca.crt"
 
-db:
-  cluster:
-    host: "prereqs-postgresql"
-    password:
-      valueFrom:
-        secretKeyRef:
-          name: "prereqs-postgresql"
-          key: "password"
-    username:
-      value: "user"
-
 databases:
   - id: "default"
     name: "cordacluster"
     port: 5432
     type: "postgresql"
     host: "prereqs-postgresql"
-    username:
-      value: "user"
-      valueFrom:
-        secretKeyRef:
-          name: ""
-          key: ""
-    password:
-      valueFrom:
-        secretKeyRef:
-          name: "prereqs-postgresql"
-          key: "password"

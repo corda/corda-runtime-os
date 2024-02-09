@@ -225,37 +225,38 @@ fun ClusterInfo.whenNoKeyExists(
 }
 
 /**
- * This method triggers rotation of keys for crypto unmanaged wrapping keys.
- * It takes 3 input parameters, the old and new KeyAlias (in string type) and the status code (Int type)
- *   @param oldKeyAlias Old unmanaged root key alias that needs to be rotated.
- *   @param newKeyAlias New unmanaged root key alias.
+ * This method triggers rotation of keys for master and managed crypto wrapping keys.
+ * It takes 2 input parameters, the tenantId (in string type) and the status code (Int type)
+ *   @param tenantId The tenantId whose wrapping keys will be rotated, or value 'master' for master wrapping key
+ *          rotation, or one of the values 'p2p', 'rest', 'crypto' for corresponding cluster-level tenant rotation.
  *   @param expectedHttpStatusCode Status code that should be displayed when the API is hit,
  *   helps to validate both positive or negative scenarios.
  */
 fun ClusterInfo.rotateCryptoUnmanagedWrappingKeys(
-    oldKeyAlias: String,
-    newKeyAlias: String,
+    tenantId: String,
     expectedHttpStatusCode: Int
 ) = cluster {
     assertWithRetry {
-        command { doRotateCryptoUnmanagedWrappingKeys(oldKeyAlias, newKeyAlias) }
+        command { doRotateCryptoWrappingKeys(tenantId) }
         condition { it.code == expectedHttpStatusCode }
     }
 }
 
 /**
- * This method fetch the status of keys for unmanaged wrapping key rotation.
- * It takes 2 input parameters, the keyAlias (in String type) and the status code (in Int type)
- *  @param keyAlias The root key alias of which the status of the last key rotation will be shown.
+ * This method fetch the status of keys for master and managed crypto wrapping key rotation.
+ * It takes 2 input parameters, the tenantId (in String type) and the status code (in Int type)
+ *  @param tenantId The tenantId of which the status of the last key rotation will be shown. TenantId can either be
+ *         a holding identity ID, the value 'master' for master wrapping key or one of the values 'p2p', 'rest',
+ *         'crypto' for corresponding cluster-level services.
  *  @param expectedHttpStatusCode Status code that should be displayed when the API is hit,
- *  helps to validate both positive or negative scenarios.
+ *      helps to validate both positive or negative scenarios.
  */
-fun ClusterInfo.getStatusForUnmanagedWrappingKeysRotation(
-    keyAlias: String,
+fun ClusterInfo.getStatusForWrappingKeysRotation(
+    tenantId: String,
     expectedHttpStatusCode: Int
 ) = cluster {
     assertWithRetry {
-        command { getCryptoUnmanagedWrappingKeysRotationStatus(keyAlias) }
+        command { getCryptoWrappingKeysRotationStatus(tenantId) }
         condition { it.code == expectedHttpStatusCode }
     }
 }
@@ -263,7 +264,7 @@ fun ClusterInfo.getStatusForUnmanagedWrappingKeysRotation(
 /**
  * This method fetch the protocol version for unmanaged key Rotation.
  */
-fun ClusterInfo.getProtocolVersionForUnmanagedKeyRotation(
+fun ClusterInfo.getProtocolVersionForKeyRotation(
 ) = cluster {
     assertWithRetry {
         command { getWrappingKeysProtocolVersion() }

@@ -27,7 +27,6 @@ import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.utilities.time.UTCClock
-import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.persistence.PagedQuery
@@ -48,7 +47,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
-import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndSignatures
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionBuilder
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -142,7 +141,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Suspendable
     override fun findFilteredTransactionsAndSignatures(
         signedTransaction: UtxoSignedTransaction
-    ): Map<SecureHash, Map<UtxoFilteredTransaction, List<DigitalSignatureAndMetadata>>> {
+    ): Map<SecureHash, UtxoFilteredTransactionAndSignatures> {
         return utxoLedgerPersistenceService.findFilteredTransactionsAndSignatures(
             signedTransaction.inputStateRefs + signedTransaction.referenceStateRefs,
             signedTransaction.notaryKey,
