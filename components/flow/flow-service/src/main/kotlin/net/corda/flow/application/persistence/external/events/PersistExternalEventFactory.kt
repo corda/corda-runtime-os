@@ -4,7 +4,6 @@ import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.data.persistence.PersistEntities
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.fiber.FlowFiberService
-import net.corda.flow.state.FlowCheckpoint
 import net.corda.v5.base.util.EncodingUtils.toBase64
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -18,16 +17,16 @@ class PersistExternalEventFactory @Activate constructor(
 ) : AbstractPersistenceExternalEventFactory<PersistParameters>() {
 
     override fun createRequest(parameters: PersistParameters): Any {
-        val checkpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
-        val deterministicID = getDeduplicationId(parameters.serializedEntities, checkpoint)
+        val deterministicID = getDeduplicationId(parameters.serializedEntities)
         return PersistEntities(parameters.serializedEntities, deterministicID)
     }
 
     /**
      * Get deterministic id to be used by entity persistence worker to deduplicate requests when a fiber is re-run
      */
-    private fun getDeduplicationId(serializedEntities: List<ByteBuffer>, checkpoint: FlowCheckpoint): String {
-       return toBase64("${checkpoint.flowId}${checkpoint.suspendCount}${serializedEntities.hashCode()}".toByteArray().sha256Bytes())
+    private fun getDeduplicationId(serializedEntities: List<ByteBuffer>): String {
+        val checkpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
+        return toBase64("${checkpoint.flowId}${checkpoint.suspendCount}${serializedEntities.hashCode()}".toByteArray().sha256Bytes())
     }
 }
 
