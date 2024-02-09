@@ -32,6 +32,7 @@ dependencies {
     implementation project(':libs:serialization:serialization-internal')
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:serialization:json-validator')
+    implementation project(':libs:serialization:serialization-amqp-api')
     implementation project(':libs:sandbox-types')
     implementation project(':libs:platform-info')
     implementation project(':libs:virtual-node:sandbox-group-context')

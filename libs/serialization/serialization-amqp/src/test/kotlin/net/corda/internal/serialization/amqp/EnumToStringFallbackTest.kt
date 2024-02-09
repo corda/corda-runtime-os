@@ -44,7 +44,7 @@ class EnumToStringFallbackTest {
      */
     @Suppress("unchecked_cast")
     private fun SerializedBytes<BrokenContainer>.rewriteAsWorking(): SerializedBytes<WorkingContainer> {
-        val envelope = DeserializationInput.getEnvelope(this.unwrap()).apply {
+        val envelope = DeserializationInput.getEnvelope(this.unwrap(), testSerializationContext.encodingAllowList).apply {
             val compositeType = schema.types[0] as CompositeType
             (schema.types as MutableList<TypeNotation>)[0] = compositeType.copy(
                 name = toWorking(compositeType.name),

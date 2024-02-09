@@ -7,9 +7,9 @@ import net.corda.internal.serialization.amqp.DefaultDescriptorBasedSerializerReg
 import net.corda.internal.serialization.amqp.DescriptorBasedSerializerRegistry
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
+import net.corda.internal.serialization.amqp.api.SerializationServiceInternal
 import net.corda.internal.serialization.amqp.currentSandboxGroup
 import net.corda.internal.serialization.registerCustomSerializers
-import net.corda.v5.application.serialization.SerializationService
 
 class TestSerializationService {
     companion object{
@@ -32,14 +32,15 @@ class TestSerializationService {
         fun getTestSerializationService(
             registerMoreSerializers: (it: SerializerFactory) -> Unit,
             cipherSchemeMetadata: CipherSchemeMetadata
-        ) : SerializationService {
+        ) : SerializationServiceInternal {
             val factory = getTestDefaultFactoryNoEvolution(registerMoreSerializers, cipherSchemeMetadata)
             val context = testSerializationContext
 
             return SerializationServiceImpl(
                 outputFactory = factory,
                 inputFactory = factory,
-                context
+                context,
+                testSerializationContextWithoutCompression
             )
         }
     }

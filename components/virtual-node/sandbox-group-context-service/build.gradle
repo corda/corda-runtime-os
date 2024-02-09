@@ -64,6 +64,7 @@ dependencies {
     integrationTestImplementation project(':components:security-manager')
     integrationTestImplementation project(':libs:ledger:ledger-common-data')
     integrationTestImplementation project(':libs:ledger:ledger-utxo-data')
+    integrationTestImplementation project(':libs:serialization:serialization-amqp-api')
     integrationTestImplementation project(':testing:ledger:ledger-utxo-testkit')
     integrationTestImplementation project(':testing:security-manager-utilities')
     integrationTestImplementation project(':testing:test-utilities')
