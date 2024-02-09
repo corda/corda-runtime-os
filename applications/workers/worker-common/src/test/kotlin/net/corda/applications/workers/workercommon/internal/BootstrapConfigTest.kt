@@ -169,9 +169,9 @@ class BootstrapConfigTest {
             softly.assertThat(config.getInt("instanceId")).isNotNull
             softly.assertThat(config.getInt("maxAllowedMessageSize")).isEqualTo(972800)
             softly.assertThat(config.getString("topicPrefix")).isEqualTo("")
-            softly.assertThat(config.getInt("$BOOT_WORKER_SERVICE.mediatorReplicas.flowSession")).isEqualTo(FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT)
-            softly.assertThat(config.getInt("$BOOT_WORKER_SERVICE.mediatorReplicas.flowMapperSessionIn")).isEqualTo(FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT)
-            softly.assertThat(config.getInt("$BOOT_WORKER_SERVICE.mediatorReplicas.flowMapperSessionOut")).isEqualTo(FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT)
+            softly.assertThat(config.getInt(BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_SESSION)).isEqualTo(FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT)
+            softly.assertThat(config.getInt(BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_MAPPER_SESSION_IN)).isEqualTo(FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT)
+            softly.assertThat(config.getInt(BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_MAPPER_SESSION_OUT)).isEqualTo(FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT)
         }
 
     }
