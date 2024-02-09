@@ -92,6 +92,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         )
     )
 
+    @Suppress("SpreadOperator")
     private fun createEventMediatorConfig(
         messagingConfig: SmartConfig,
         bootConfig: SmartConfig,
