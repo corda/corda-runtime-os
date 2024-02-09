@@ -16,7 +16,6 @@ import net.corda.metrics.CordaMetrics
 import net.corda.tracing.addTraceContextToHttpRequest
 import net.corda.tracing.addTraceContextToMediatorMessage
 import net.corda.tracing.traceSend
-import net.corda.utilities.trace
 import net.corda.v5.crypto.DigestAlgorithmName
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -26,9 +25,9 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.util.EnumMap
+import java.util.LinkedList
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeoutException
-import kotlin.concurrent.withLock
 
 const val CORDA_REQUEST_KEY_HEADER = "corda-request-key"
 
@@ -46,14 +45,22 @@ class RPCClient(
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
+    private val pendingResponses = LinkedList<CompletableFuture<MediatorMessage<*>>>()
+
     override fun send(message: MediatorMessage<*>): CompletableFuture<MediatorMessage<*>>? {
         val future = CompletableFuture<MediatorMessage<*>>()
-        return try {
-            future.complete(processMessage(message))
-            //
-        } catch (e: Exception) {
-            future.completeExceptionally(handleExceptions(e, message.endpoint()))
-            //
+        pendingResponses.addLast(future)
+        pollPendingResponses(future)
+        return future
+    }
+
+    private fun pollPendingResponses(future: CompletableFuture<MediatorMessage<*>>?, message: MediatorMessage<*>) {
+        if (pendingResponses.isNotEmpty()) {
+            try {
+                future.complete(processMessage(message))
+            } catch (e: Exception) {
+                future.completeExceptionally(handleExceptions(e, message.endpoint()))
+            }
         }
     }
 
