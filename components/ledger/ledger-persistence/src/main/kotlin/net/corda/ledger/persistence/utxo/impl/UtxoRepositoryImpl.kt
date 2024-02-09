@@ -4,14 +4,16 @@ import net.corda.crypto.core.parseSecureHash
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedGroupParameters
+import net.corda.db.core.utils.BatchPersistenceService
+import net.corda.db.core.utils.BatchPersistenceServiceImpl
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.persistence.common.mapToComponentGroups
-import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.utxo.data.transaction.MerkleProofDto
+import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionDto
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
@@ -22,13 +24,16 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef
+import org.hibernate.Session
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import org.slf4j.LoggerFactory
-import java.math.BigDecimal
 import java.nio.ByteBuffer
+import java.sql.Connection
+import java.sql.Timestamp
+import java.sql.Types
 import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.Query
@@ -46,12 +51,10 @@ import javax.persistence.Tuple
     property = [ CORDA_MARKER_ONLY_SERVICE ],
     scope = PROTOTYPE
 )
-class UtxoRepositoryImpl @Activate constructor(
-    @Reference
+class UtxoRepositoryImpl(
+    private val batchPersistenceService: BatchPersistenceService,
     private val serializationService: SerializationService,
-    @Reference
     private val wireTransactionFactory: WireTransactionFactory,
-    @Reference
     private val queryProvider: UtxoQueryProvider
 ) : UtxoRepository, UsedByPersistence {
     private companion object {
@@ -59,6 +62,17 @@ class UtxoRepositoryImpl @Activate constructor(
 
         const val TOP_LEVEL_MERKLE_PROOF_INDEX = -1
     }
+
+    @Suppress("Unused")
+    @Activate
+    constructor(
+        @Reference(service = SerializationService::class)
+        serializationService: SerializationService,
+        @Reference(service = WireTransactionFactory::class)
+        wireTransactionFactory: WireTransactionFactory,
+        @Reference(service = UtxoQueryProvider::class)
+        queryProvider: UtxoQueryProvider
+    ) : this(BatchPersistenceServiceImpl(), serializationService, wireTransactionFactory, queryProvider)
 
     override fun findTransaction(
         entityManager: EntityManager,
@@ -208,100 +222,142 @@ class UtxoRepositoryImpl @Activate constructor(
             .logResult("transaction metadata [$hash]")
     }
 
-    override fun persistTransactionSource(
+    override fun persistTransactionSources(
         entityManager: EntityManager,
         transactionId: String,
-        groupIndex: Int,
-        leafIndex: Int,
-        sourceStateTransactionId: String,
-        sourceStateIndex: Int
+        transactionSources: List<UtxoRepository.TransactionSource>
     ) {
-        entityManager.createNativeQuery(queryProvider.persistTransactionSource)
-            .setParameter("transactionId", transactionId)
-            .setParameter("groupIndex", groupIndex)
-            .setParameter("leafIndex", leafIndex)
-            .setParameter("sourceStateTransactionId", sourceStateTransactionId)
-            .setParameter("sourceStateIndex", sourceStateIndex)
-            .executeUpdate()
-            .logResult("transaction source [$transactionId, $groupIndex, $leafIndex]")
-    }
-
-    override fun persistTransactionComponentLeaf(
-        entityManager: EntityManager,
-        transactionId: String,
-        groupIndex: Int,
-        leafIndex: Int,
-        data: ByteArray,
-        hash: String
-    ) {
-        // Metadata is not stored with the other components. See persistTransactionMetadata().
-        if (groupIndex == 0 && leafIndex == 0) {
-            return
+        entityManager.connection { connection ->
+            batchPersistenceService.persistBatch(
+                connection,
+                queryProvider.persistTransactionSources,
+                transactionSources
+            ) { statement, parameterIndex, transactionSource ->
+                statement.setString(parameterIndex.next(), transactionId)
+                statement.setInt(parameterIndex.next(), transactionSource.group.ordinal)
+                statement.setInt(parameterIndex.next(), transactionSource.index)
+                statement.setString(parameterIndex.next(), transactionSource.sourceTransactionId)
+                statement.setInt(parameterIndex.next(), transactionSource.sourceIndex)
+            }
         }
-        entityManager.createNativeQuery(queryProvider.persistTransactionComponentLeaf)
-            .setParameter("transactionId", transactionId)
-            .setParameter("groupIndex", groupIndex)
-            .setParameter("leafIndex", leafIndex)
-            .setParameter("data", data)
-            .setParameter("hash", hash)
-            .executeUpdate()
-            .logResult("transaction component [$transactionId, $groupIndex, $leafIndex]")
     }
 
-    override fun persistVisibleTransactionOutput(
+    override fun persistTransactionComponents(
         entityManager: EntityManager,
         transactionId: String,
-        groupIndex: Int,
-        leafIndex: Int,
-        type: String,
-        timestamp: Instant,
-        consumed: Boolean,
-        customRepresentation: CustomRepresentation,
-        tokenType: String?,
-        tokenIssuerHash: String?,
-        tokenNotaryX500Name: String?,
-        tokenSymbol: String?,
-        tokenTag: String?,
-        tokenOwnerHash: String?,
-        tokenAmount: BigDecimal?
+        components: List<List<ByteArray>>,
+        hash: (ByteArray) -> String
     ) {
-        entityManager.createNativeQuery(queryProvider.persistVisibleTransactionOutput(consumed))
-            .setParameter("transactionId", transactionId)
-            .setParameter("groupIndex", groupIndex)
-            .setParameter("leafIndex", leafIndex)
-            .setParameter("type", type)
-            .setParameter("tokenType", tokenType)
-            .setParameter("tokenIssuerHash", tokenIssuerHash)
-            .setParameter("tokenNotaryX500Name", tokenNotaryX500Name)
-            .setParameter("tokenSymbol", tokenSymbol)
-            .setParameter("tokenTag", tokenTag)
-            .setParameter("tokenOwnerHash", tokenOwnerHash)
-            // This is a workaround for avoiding error when tokenAmount is null, see:
-            // https://stackoverflow.com/questions/53648865/postgresql-spring-data-jpa-integer-null-interpreted-as-bytea
-            .setParameter("tokenAmount", BigDecimal.ZERO)
-            .setParameter("tokenAmount", tokenAmount)
-            .setParameter("createdAt", timestamp)
-            .setParameter("customRepresentation", customRepresentation.json)
-            .run { if (consumed) setParameter("consumedAt", timestamp) else this }
-            .executeUpdate()
-            .logResult("transaction output [$transactionId, $leafIndex]")
+        fun isMetadata(groupIndex: Int, leafIndex: Int) = groupIndex == 0 && leafIndex == 0
+
+        val flattenedComponentList = components.mapIndexed { groupIndex, leaves ->
+            leaves.mapIndexedNotNull { leafIndex, data ->
+                if (isMetadata(groupIndex, leafIndex)) {
+                    null
+                } else {
+                    Triple(groupIndex, leafIndex, data)
+                }
+            }
+        }.flatten()
+        entityManager.connection { connection ->
+            batchPersistenceService.persistBatch(
+                connection,
+                queryProvider.persistTransactionComponents,
+                flattenedComponentList
+            ) { statement, parameterIndex, component ->
+                statement.setString(parameterIndex.next(), transactionId)
+                statement.setInt(parameterIndex.next(), component.first)
+                statement.setInt(parameterIndex.next(), component.second)
+                statement.setBytes(parameterIndex.next(), component.third)
+                statement.setString(parameterIndex.next(), hash(component.third))
+            }
+        }
     }
 
-    override fun persistTransactionSignature(
+    override fun persistTransactionComponents(
+        entityManager: EntityManager,
+        components: List<UtxoRepository.TransactionComponent>,
+        hash: (ByteArray) -> String
+    ) {
+        fun isMetadata(groupIndex: Int, leafIndex: Int) = groupIndex == 0 && leafIndex == 0
+
+        val componentsWithMetadataRemoved = components.mapNotNull { component ->
+            val (_, groupIndex, leafIndex) = component
+            if (isMetadata(groupIndex, leafIndex)) {
+                null
+            } else {
+                component
+            }
+        }
+        entityManager.connection { connection ->
+            batchPersistenceService.persistBatch(
+                connection,
+                queryProvider.persistTransactionComponents,
+                componentsWithMetadataRemoved
+            ) { statement, parameterIndex, component ->
+                statement.setString(parameterIndex.next(), component.transactionId)
+                statement.setInt(parameterIndex.next(), component.groupIndex)
+                statement.setInt(parameterIndex.next(), component.leafIndex)
+                statement.setBytes(parameterIndex.next(), component.leafData)
+                statement.setString(parameterIndex.next(), hash(component.leafData))
+            }
+        }
+    }
+
+    override fun persistVisibleTransactionOutputs(
         entityManager: EntityManager,
         transactionId: String,
-        index: Int,
-        signature: DigitalSignatureAndMetadata,
+        timestamp: Instant,
+        visibleTransactionOutputs: List<UtxoRepository.VisibleTransactionOutput>
+    ) {
+        entityManager.connection { connection ->
+            batchPersistenceService.persistBatch(
+                connection,
+                queryProvider.persistVisibleTransactionOutputs,
+                visibleTransactionOutputs
+            ) { statement, parameterIndex, visibleTransactionOutput ->
+                statement.setString(parameterIndex.next(), transactionId)
+                statement.setInt(parameterIndex.next(), UtxoComponentGroup.OUTPUTS.ordinal)
+                statement.setInt(parameterIndex.next(), visibleTransactionOutput.stateIndex)
+                statement.setString(parameterIndex.next(), visibleTransactionOutput.className)
+                statement.setString(parameterIndex.next(), visibleTransactionOutput.token?.poolKey?.tokenType)
+                statement.setString(parameterIndex.next(), visibleTransactionOutput.token?.poolKey?.issuerHash?.toString())
+                statement.setString(parameterIndex.next(), visibleTransactionOutput.notaryName)
+                statement.setString(parameterIndex.next(), visibleTransactionOutput.token?.poolKey?.symbol)
+                statement.setString(parameterIndex.next(), visibleTransactionOutput.token?.filterFields?.tag)
+                statement.setString(parameterIndex.next(), visibleTransactionOutput.token?.filterFields?.ownerHash?.toString())
+                if (visibleTransactionOutput.token != null) {
+                    statement.setBigDecimal(parameterIndex.next(), visibleTransactionOutput.token.amount)
+                } else {
+                    statement.setNull(parameterIndex.next(), Types.NUMERIC)
+                }
+
+                statement.setTimestamp(parameterIndex.next(), Timestamp.from(timestamp))
+                statement.setNull(parameterIndex.next(), Types.TIMESTAMP)
+                statement.setString(parameterIndex.next(), visibleTransactionOutput.customRepresentation.json)
+            }
+        }
+    }
+
+    override fun persistTransactionSignatures(
+        entityManager: EntityManager,
+        transactionId: String,
+        signatures: List<UtxoRepository.TransactionSignature>,
         timestamp: Instant
     ) {
-        entityManager.createNativeQuery(queryProvider.persistTransactionSignature)
-            .setParameter("transactionId", transactionId)
-            .setParameter("signatureIdx", index)
-            .setParameter("signature", serializationService.serialize(signature).bytes)
-            .setParameter("publicKeyHash", signature.by.toString())
-            .setParameter("createdAt", timestamp)
-            .executeUpdate()
-            .logResult("transaction signature [$transactionId, $index]")
+        entityManager.connection { connection ->
+            batchPersistenceService.persistBatch(
+                connection,
+                queryProvider.persistTransactionSignatures,
+                signatures
+            ) { statement, parameterIndex, signature ->
+                statement.setString(parameterIndex.next(), transactionId)
+                statement.setInt(parameterIndex.next(), signature.index)
+                statement.setBytes(parameterIndex.next(), signature.signatureBytes)
+                statement.setString(parameterIndex.next(), signature.publicKeyHash.toString())
+                statement.setTimestamp(parameterIndex.next(), Timestamp.from(timestamp))
+            }
+        }
     }
 
     override fun updateTransactionStatus(
@@ -357,35 +413,33 @@ class UtxoRepositoryImpl @Activate constructor(
             .logResult("signed group parameters [$hash]")
     }
 
-    override fun persistMerkleProof(
-        entityManager: EntityManager,
-        transactionId: String,
-        groupIndex: Int,
-        treeSize: Int,
-        leaves: List<Int>,
-        hashes: List<String>
-    ): String {
-        // Generate an ID by concatenating transaction ID - group index - leaves
-        val merkleProofId = "$transactionId;$groupIndex;${leaves.joinToString(separator = ",")}"
-
-        entityManager.createNativeQuery(queryProvider.persistMerkleProof)
-            .setParameter("merkleProofId", merkleProofId)
-            .setParameter("transactionId", transactionId)
-            .setParameter("groupIndex", groupIndex)
-            .setParameter("treeSize", treeSize)
-            .setParameter("hashes", hashes.joinToString(","))
-            .executeUpdate()
-            .logResult("merkle proof for transaction: $transactionId")
-
-        return merkleProofId
+    override fun persistMerkleProofs(entityManager: EntityManager, merkleProofs: List<UtxoRepository.TransactionMerkleProof>) {
+        entityManager.connection { connection ->
+            batchPersistenceService.persistBatch(
+                connection,
+                queryProvider.persistMerkleProofs,
+                merkleProofs
+            ) { statement, parameterIndex, merkleProof ->
+                statement.setString(parameterIndex.next(), merkleProof.merkleProofId)
+                statement.setString(parameterIndex.next(), merkleProof.transactionId)
+                statement.setInt(parameterIndex.next(), merkleProof.groupIndex)
+                statement.setInt(parameterIndex.next(), merkleProof.treeSize)
+                statement.setString(parameterIndex.next(), merkleProof.leafHashes.joinToString(","))
+            }
+        }
     }
 
-    override fun persistMerkleProofLeaf(entityManager: EntityManager, merkleProofId: String, leafIndex: Int) {
-        entityManager.createNativeQuery(queryProvider.persistMerkleProofLeaf)
-            .setParameter("merkleProofId", merkleProofId)
-            .setParameter("leafIndex", leafIndex)
-            .executeUpdate()
-            .logResult("merkle proof leaf for merkle proof: $merkleProofId")
+    override fun persistMerkleProofLeaves(entityManager: EntityManager, leaves: List<UtxoRepository.TransactionMerkleProofLeaf>) {
+        entityManager.connection { connection ->
+            batchPersistenceService.persistBatch(
+                connection,
+                queryProvider.persistMerkleProofLeaves,
+                leaves
+            ) { statement, parameterIndex, leaf ->
+                statement.setString(parameterIndex.next(), leaf.merkleProofId)
+                statement.setInt(parameterIndex.next(), leaf.leafIndex)
+            }
+        }
     }
 
     override fun findMerkleProofs(
@@ -484,6 +538,13 @@ class UtxoRepositoryImpl @Activate constructor(
                 metadataBytes = transactionPrivacySaltAndMetadata.second,
                 signatures = transactionSignatures
             )
+        }
+    }
+
+    private fun <T> EntityManager.connection(block: (connection: Connection) -> T) {
+        val hibernateSession = unwrap(Session::class.java)
+        hibernateSession.doWork { connection ->
+            block(connection)
         }
     }
 

@@ -1,13 +1,5 @@
 package net.corda.processors.db.internal.reconcile.db
 
-import java.util.UUID
-import javax.persistence.EntityManager
-import javax.persistence.EntityManagerFactory
-import javax.persistence.EntityTransaction
-import javax.persistence.TypedQuery
-import javax.persistence.criteria.CriteriaBuilder
-import javax.persistence.criteria.CriteriaQuery
-import javax.persistence.criteria.Root
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigChangedEvent
@@ -67,6 +59,14 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.util.UUID
+import javax.persistence.EntityManager
+import javax.persistence.EntityManagerFactory
+import javax.persistence.EntityTransaction
+import javax.persistence.TypedQuery
+import javax.persistence.criteria.CriteriaBuilder
+import javax.persistence.criteria.CriteriaQuery
+import javax.persistence.criteria.Root
 import net.corda.data.identity.HoldingIdentity as AvroHoldingIdentity
 
 class MemberInfoReconcilerTest {
@@ -97,7 +97,7 @@ class MemberInfoReconcilerTest {
         on { createEntityManager() } doReturn entityManager
     }
     private val dbConnectionManager = mock<DbConnectionManager> {
-        on { createEntityManagerFactory(connectionId, entitySet) } doReturn entityManagerFactory
+        on { createEntityManagerFactory(eq(connectionId), eq(entitySet), any()) } doReturn entityManagerFactory
     }
     private val virtualNodeInfo = mock<VirtualNodeInfo> {
         on { vaultDmlConnectionId } doReturn connectionId

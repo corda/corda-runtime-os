@@ -1,15 +1,14 @@
-{{/* TODO-[CORE-19372]: remove stateManagerDbAccess and all references to it */}}
 {{- include "corda.worker" ( list $ .Values.workers.crypto "crypto"
-  ( dict "clusterDbAccess" true "stateManagerDbAccess" true "additionalWorkerArgs" ( list "--hsm-id=SOFT" ) )
+  ( dict "clusterDbAccess" true "additionalWorkerArgs" ( list "--hsm-id=SOFT" ) )
 ) }}
 {{- include "corda.worker" ( list $ .Values.workers.db "db"
   ( dict "clusterDbAccess" true )
 ) }}
 {{- include "corda.worker" ( list $ .Values.workers.flow "flow"
-  ( dict "stateManagerDbAccess" true "servicesAccessed" ( list "crypto" "verification" "uniqueness" "persistence" "tokenSelection" ) )
+  ( dict "servicesAccessed" ( list "crypto" "verification" "uniqueness" "persistence" "tokenSelection" ) )
 ) }}
 {{- include "corda.worker" ( list $ .Values.workers.flowMapper "flowMapper" 
-  ( dict "stateManagerDbAccess" true )
+  ( dict )
 ) }}
 {{- include "corda.worker" ( list $ .Values.workers.verification "verification" ) }}
 {{- include "corda.worker" ( list $ .Values.workers.membership "membership" ) }}
@@ -17,16 +16,16 @@
     ( dict "httpPort" 8080 "servicesAccessed" ( list "p2pLinkManager" ) )
   ) }}
 {{- include "corda.worker" ( list $ .Values.workers.p2pLinkManager "p2pLinkManager"
-    ( dict "stateManagerDbAccess" true "servicesAccessed" ( list "crypto" ) )
+    ( dict "servicesAccessed" ( list "crypto" ) )
 ) }}
 {{- include "corda.worker" ( list $ .Values.workers.persistence "persistence"
     ( dict "clusterDbAccess" true )
 ) }}
 {{- include "corda.worker" ( list $ .Values.workers.tokenSelection "tokenSelection"
-    ( dict "clusterDbAccess" true "stateManagerDbAccess" true )
+    ( dict "clusterDbAccess" true )
 ) }}
 {{- include "corda.worker" ( list $ .Values.workers.rest "rest"
-  ( dict "stateManagerDbAccess" true "httpPort" 8888 "tlsSecretName" ( include "corda.restTlsSecretName" $ ) "additionalWorkerArgs" ( list "-rtls.crt.path=/tls/tls.crt" "-rtls.key.path=/tls/tls.key" "-rtls.ca.crt.path=/tls/ca.crt"  ) )
+  ( dict "httpPort" 8888 "tlsSecretName" ( include "corda.restTlsSecretName" $ ) "additionalWorkerArgs" ( list "-rtls.crt.path=/tls/tls.crt" "-rtls.key.path=/tls/tls.key" "-rtls.ca.crt.path=/tls/ca.crt"  ) )
 ) }}
 {{- include "corda.worker" ( list $ .Values.workers.uniqueness "uniqueness"
   ( dict "clusterDbAccess" true )

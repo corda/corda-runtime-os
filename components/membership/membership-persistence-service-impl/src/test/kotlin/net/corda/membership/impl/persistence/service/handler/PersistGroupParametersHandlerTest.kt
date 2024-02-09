@@ -160,7 +160,8 @@ class PersistGroupParametersHandlerTest {
         on {
             getOrCreateEntityManagerFactory(
                 vaultDmlConnectionId,
-                entitySet
+                entitySet,
+                false
             )
         } doReturn entityManagerFactory
     }

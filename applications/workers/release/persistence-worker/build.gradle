@@ -1,6 +1,6 @@
 plugins {
     id 'corda.common-publishing'
-    id 'corda.common-app'
+    id 'corda.quasar-app'
     id 'corda.docker-app'
 }
 
@@ -65,4 +65,8 @@ dependencies {
     //
     // NOTE: PLEASE MAKE SURE NOT TO PUBLISH A DOCKER IMAGE PUBLICLY WITH THESE WRAPPED DRIVERS,
     //             UNLESS ABSOLUTELY SURE WE CAN DISTRIBUTE IT!!
+}
+
+quasar {
+    excludeLocations = [ '*' ]
 }

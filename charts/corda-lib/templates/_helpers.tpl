@@ -63,6 +63,24 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
+Custom labels for bootstrap pods
+*/}}
+{{- define  "corda.commonBootstrapPodLabels" -}}
+{{- with .Values.bootstrap.commonPodLabels }}
+{{- . | toYaml }}
+{{- end }}
+{{- end }}
+
+{{/*
+Custom labels for deployments pods
+*/}}
+{{- define  "corda.workerCommonPodLabels" -}}
+{{- with .Values.commonPodLabels }}
+{{- . | toYaml }}
+{{- end }}
+{{- end }}
+
+{{/*
 Image pull secrets
 */}}
 {{- define  "corda.imagePullSecrets" -}}
@@ -521,7 +539,7 @@ metadata:
   annotations:
     "helm.sh/hook-weight": "-1"
     "helm.sh/hook": pre-install
-{{- if $options.cleanup }}   
+{{- if $options.cleanup }}
     "helm.sh/hook-delete-policy": hook-succeeded
 {{- end }}
   labels:
@@ -568,6 +586,17 @@ metadata:
 spec:
   podMetricsEndpoints:
   - port: monitor
+    metricRelabelings:
+    {{- with .Values.metrics.keepNames }}
+    - sourceLabels:
+      - "__name__"
+      regex: {{ join "|" . | quote }}
+      action: "keep"
+    {{- end }}
+    {{- with .Values.metrics.dropLabels }}
+    - regex: {{ join "|" . | quote }}
+      action: "labeldrop"
+    {{- end }}
   jobLabel: {{ $.Release.Name }}-{{ include "corda.name" . }}
   selector:
     matchLabels:

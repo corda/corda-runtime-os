@@ -8,6 +8,7 @@ import net.corda.libs.statemanager.impl.metrics.MetricsRecorderImpl
 import net.corda.libs.statemanager.impl.repository.StateRepository
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.Assertions.entry
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -46,6 +47,20 @@ class StateManagerImplTest {
             .whenever(stateRepository).create(connection, listOf(stateOne, stateTwo))
         assertThat(stateManager.create(listOf(stateOne, stateTwo))).isEmpty()
         verify(stateRepository).create(connection, listOf(stateOne, stateTwo))
+    }
+
+    @Test
+    fun `create throws an error if two states with the same key are created`() {
+        val states = listOf(
+            stateOne,
+            stateTwo,
+            stateOne,
+        )
+
+        assertThatThrownBy {
+            stateManager.create(states)
+        }.isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining("Creating multiple states with the same key is not supported")
     }
 
     @Test

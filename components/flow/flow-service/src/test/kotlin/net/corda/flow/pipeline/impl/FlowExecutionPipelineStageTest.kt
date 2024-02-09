@@ -102,11 +102,11 @@ class FlowExecutionPipelineStageTest {
         val checkpoint = mock<FlowCheckpoint>()
         val newCheckpoint = mock<FlowCheckpoint>()
         val newContext = createContext(checkpoint = newCheckpoint, waitingFor = WaitingFor(ExternalEventResponse()))
-        val secondContext = createContext(waitingFor = WaitingFor(null))
+        val secondContext = createContext(waitingFor = null)
         val requestHandlers = createRequestHandlerMap(
             mapOf(
                 fiberOutput to Pair(WaitingFor(ExternalEventResponse()), newContext),
-                FlowIORequest.FlowFinished("bar") to Pair(WaitingFor(null), secondContext)
+                FlowIORequest.FlowFinished("bar") to Pair(null, secondContext)
                 )
         )
         val fiberOutputs = listOf(flowSuspended, FlowIORequest.FlowFinished("bar"))
@@ -129,7 +129,7 @@ class FlowExecutionPipelineStageTest {
         verifyInteractions(fiberOutputs)
         verify(checkpoint).waitingFor = WaitingFor(ExternalEventResponse())
         verify(checkpoint).suspendedOn = fiberOutput::class.qualifiedName
-        verify(newCheckpoint).waitingFor = WaitingFor(null)
+        verify(newCheckpoint).waitingFor = null
         verify(newCheckpoint).suspendedOn = FlowIORequest.FlowFinished::class.qualifiedName
     }
 
@@ -208,9 +208,9 @@ class FlowExecutionPipelineStageTest {
             )
         )
         val checkpoint = mock<FlowCheckpoint>()
-        val newContext = createContext(waitingFor = WaitingFor(null))
+        val newContext = createContext(waitingFor = null)
         val requestHandlers = createRequestHandlerMap(
-            mapOf(FlowIORequest.FlowFailed(IllegalArgumentException()) to Pair(WaitingFor(null), newContext))
+            mapOf(FlowIORequest.FlowFailed(IllegalArgumentException()) to Pair(null, newContext))
         )
         val fiberOutputs = listOf(FlowIORequest.FlowFailed(IllegalArgumentException()))
         val flowRunner = createFlowRunner(fiberOutputs)
@@ -226,7 +226,7 @@ class FlowExecutionPipelineStageTest {
         val outputContext = stage.runFlow(context, TIMEOUT) {}
         assertEquals(newContext, outputContext)
         verifyInteractions(fiberOutputs)
-        verify(checkpoint).waitingFor = WaitingFor(null)
+        verify(checkpoint).waitingFor = null
         verify(checkpoint).suspendedOn = FlowIORequest.FlowFailed::class.qualifiedName
     }
 
@@ -243,7 +243,7 @@ class FlowExecutionPipelineStageTest {
         val requestHandlers = createRequestHandlerMap(
             mapOf(
                 fiberOutput to Pair(WaitingFor(ExternalEventResponse()), newContext),
-                FlowIORequest.FlowFailed(IllegalArgumentException()) to Pair(WaitingFor(null), newContext)
+                FlowIORequest.FlowFailed(IllegalArgumentException()) to Pair(null, newContext)
             )
         )
         val fiberOutputs = listOf(FlowIORequest.FlowFailed(IllegalArgumentException()))
@@ -261,7 +261,7 @@ class FlowExecutionPipelineStageTest {
         val outputContext = stage.runFlow(context, TIMEOUT) {}
         assertEquals(newContext, outputContext)
         verifyInteractions(fiberOutputs)
-        verify(checkpoint).waitingFor = WaitingFor(null)
+        verify(checkpoint).waitingFor = null
         verify(checkpoint).suspendedOn = FlowIORequest.FlowFailed::class.qualifiedName
         verify(fiberFuture).interruptable
     }
@@ -328,10 +328,10 @@ class FlowExecutionPipelineStageTest {
             )
         )
         val checkpoint = mock<FlowCheckpoint>()
-        val secondContext = createContext(waitingFor = WaitingFor(null))
+        val secondContext = createContext(waitingFor = null)
         val requestHandlers = createRequestHandlerMap(
             mapOf(
-                FlowIORequest.FlowFinished("bar") to Pair(WaitingFor(null), secondContext)
+                FlowIORequest.FlowFinished("bar") to Pair(null, secondContext)
             ),
             mapOf(
                 fiberOutput to Pair(WaitingFor(ExternalEventResponse()), FlowPlatformException("foo"))
@@ -382,8 +382,8 @@ class FlowExecutionPipelineStageTest {
     }
 
     private fun createRequestHandlerMap(
-        requiredHandlers: Map<FlowIORequest<*>, Pair<WaitingFor, FlowEventContext<Any>>>,
-        failedHandlers: Map<FlowIORequest<*>, Pair<WaitingFor, Exception>> = mapOf()
+        requiredHandlers: Map<FlowIORequest<*>, Pair<WaitingFor?, FlowEventContext<Any>>>,
+        failedHandlers: Map<FlowIORequest<*>, Pair<WaitingFor?, Exception>> = mapOf()
     ): Map<Class<out FlowIORequest<*>>, FlowRequestHandler<out FlowIORequest<*>>> {
         val working = requiredHandlers.map {
             val handler = mock<FlowRequestHandler<FlowIORequest<*>>>()

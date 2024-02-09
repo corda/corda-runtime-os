@@ -295,7 +295,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 sessionErrorEvents(SESSION_ID_1)
                 scheduleFlowMapperCleanupEvents(SESSION_ID_1, ALICE_FLOW_KEY_MAPPER)
-                nullStateRecord()
+                notNullStateRecord()
                 flowStatus(state = FlowStates.FAILED,  errorType = FLOW_FAILED,
                     errorMessage = "Session: BrokenSession does not exist when executing session operation that " +
                             "requires an existing session")

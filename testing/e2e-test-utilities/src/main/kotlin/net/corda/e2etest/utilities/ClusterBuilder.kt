@@ -696,8 +696,10 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         return trace("flowStart") {
             traceVirtualNodeId(holdingIdentityShortHash)
             traceRequestId(clientRequestId)
-            logger.info("Sending flowStart, vNode: '$holdingIdentityShortHash', " +
-                    "clientRequestId: '$clientRequestId', traceId: '$traceIdString'")
+            logger.info(
+                "Sending flowStart, vNode: '$holdingIdentityShortHash', " +
+                        "clientRequestId: '$clientRequestId', traceId: '$traceIdString'"
+            )
             post(
                 "/api/$REST_API_VERSION_PATH/flow/$holdingIdentityShortHash",
                 flowStartBody(clientRequestId, flowClassName, requestData)
@@ -771,29 +773,14 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         )
     }
 
-    fun doRotateCryptoUnmanagedWrappingKeys(
-        oldKeyAlias: String,
-        newKeyAlias: String
-    ): SimpleResponse {
-        return post(
-            "/api/$REST_API_VERSION_PATH/wrappingkey/unmanaged/rotation/${oldKeyAlias}",
-            body = """{
-                "newKeyAlias": "$newKeyAlias"
-            }""".trimMargin()
-        )
-    }
+    fun doRotateCryptoWrappingKeys(tenantId: String) =
+        post("/api/$REST_API_VERSION_PATH/wrappingkey/rotation/${tenantId}", "")
 
-    fun getCryptoUnmanagedWrappingKeysRotationStatus(keyAlias: String): SimpleResponse {
-        return get(
-            "/api/$REST_API_VERSION_PATH/wrappingkey/unmanaged/rotation/${keyAlias}",
-        )
-    }
+    fun getCryptoWrappingKeysRotationStatus(tenantId: String) =
+        get("/api/$REST_API_VERSION_PATH/wrappingkey/rotation/${tenantId}")
 
-    fun getWrappingKeysProtocolVersion(): SimpleResponse {
-        return get(
-            "/api/$REST_API_VERSION_PATH/wrappingkey/getprotocolversion",
-        )
-    }
+    fun getWrappingKeysProtocolVersion() = get("/api/$REST_API_VERSION_PATH/wrappingkey/getprotocolversion")
+
 }
 
 fun <T> cluster(

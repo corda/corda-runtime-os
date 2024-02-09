@@ -73,6 +73,17 @@ class StateManagerImpl(
 
     override fun create(states: Collection<State>): Set<String> {
         if (states.isEmpty()) return emptySet()
+        val duplicateStatesKeys = states.groupBy {
+            it.key
+        }.filter {
+            it.value.size > 1
+        }.keys
+        if (duplicateStatesKeys.isNotEmpty()) {
+            throw IllegalArgumentException(
+                "Creating multiple states with the same key is not supported," +
+                    " duplicated keys found: $duplicateStatesKeys"
+            )
+        }
 
         return metricsRecorder.recordProcessingTime(CREATE) {
             val successfulKeys = dataSource.connection.transaction { connection ->

@@ -6,10 +6,9 @@ import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.data.virtualnode.VirtualNodeOperationalState
-import net.corda.flow.rest.FlowStatusCacheService
+import net.corda.flow.rest.FlowStatusLookupService
 import net.corda.flow.rest.factory.MessageFactory
 import net.corda.flow.rest.impl.FlowRestExceptionConstants
-import net.corda.flow.rest.impl.flowstatus.websocket.WebSocketFlowStatusUpdateListener
 import net.corda.flow.rest.v1.FlowRestResource
 import net.corda.flow.rest.v1.types.request.StartFlowParameters
 import net.corda.flow.rest.v1.types.response.FlowResultResponse
@@ -40,8 +39,6 @@ import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.rest.response.ResponseEntity
 import net.corda.rest.security.CURRENT_REST_CONTEXT
-import net.corda.rest.ws.DuplexChannel
-import net.corda.rest.ws.WebSocketValidationException
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_START
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import net.corda.tracing.TraceTag
@@ -62,8 +59,8 @@ import org.slf4j.LoggerFactory
 class FlowRestResourceImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
-    @Reference(service = FlowStatusCacheService::class)
-    private val flowStatusCacheService: FlowStatusCacheService,
+    @Reference(service = FlowStatusLookupService::class)
+    private val flowStatusLookupService: FlowStatusLookupService,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     @Reference(service = MessageFactory::class)
@@ -141,7 +138,7 @@ class FlowRestResourceImpl @Activate constructor(
 
             traceRequestId(clientRequestId)
 
-            val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
+            val flowStatus = flowStatusLookupService.getStatus(clientRequestId, vNode.holdingIdentity)
 
             validateClientRequestId(clientRequestId)
 
@@ -265,7 +262,7 @@ class FlowRestResourceImpl @Activate constructor(
 
     override fun getFlowStatus(holdingIdentityShortHash: String, clientRequestId: String): FlowStatusResponse {
         val vNode = getVirtualNode(holdingIdentityShortHash)
-        val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
+        val flowStatus = flowStatusLookupService.getStatus(clientRequestId, vNode.holdingIdentity)
             ?: throw ResourceNotFoundException(
                 FlowRestExceptionConstants.FLOW_STATUS_NOT_FOUND.format(
                     holdingIdentityShortHash, clientRequestId
@@ -280,7 +277,7 @@ class FlowRestResourceImpl @Activate constructor(
 
     override fun getMultipleFlowStatus(holdingIdentityShortHash: String, status: String?): FlowStatusResponses {
         val vNode = getVirtualNode(holdingIdentityShortHash)
-        val flowStatuses = flowStatusCacheService.getStatusesPerIdentity(vNode.holdingIdentity)
+        val flowStatuses = flowStatusLookupService.getStatusesPerIdentity(vNode.holdingIdentity)
 
         val filteredStatuses = status?.let {
             val flowState = try {
@@ -305,55 +302,13 @@ class FlowRestResourceImpl @Activate constructor(
         clientRequestId: String
     ): ResponseEntity<FlowResultResponse> {
         val vNode = getVirtualNode(holdingIdentityShortHash)
-        val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
+        val flowStatus = flowStatusLookupService.getStatus(clientRequestId, vNode.holdingIdentity)
             ?: throw ResourceNotFoundException(
                 FlowRestExceptionConstants.FLOW_STATUS_NOT_FOUND.format(
                     holdingIdentityShortHash, clientRequestId
                 )
             )
         return messageFactory.createFlowResultResponse(flowStatus)
-    }
-
-    override fun registerFlowStatusUpdatesFeed(
-        channel: DuplexChannel,
-        holdingIdentityShortHash: String,
-        clientRequestId: String
-    ) {
-        val sessionId = channel.id
-        val holdingIdentity = try {
-            getVirtualNode(holdingIdentityShortHash).holdingIdentity
-        } catch (e: BadRequestException) {
-            channel.error(WebSocketValidationException(e.message, e))
-            return
-        } catch (e: ResourceNotFoundException) {
-            channel.error(WebSocketValidationException(e.message, e))
-            return
-        }
-        try {
-            val flowStatusFeedRegistration = flowStatusCacheService.registerFlowStatusListener(
-                clientRequestId,
-                holdingIdentity,
-                WebSocketFlowStatusUpdateListener(clientRequestId, holdingIdentity, channel)
-            )
-
-            channel.onClose = { statusCode, reason ->
-                log.info(
-                    "Close hook called for duplex channel $sessionId with status $statusCode, reason: $reason " +
-                            "(clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash)"
-                )
-                flowStatusFeedRegistration.close()
-            }
-        } catch (e: WebSocketValidationException) {
-            log.warn(
-                FlowRestExceptionConstants.VALIDATION_ERROR.format(
-                    e.cause?.message ?: FlowRestExceptionConstants.NO_EXCEPTION_MESSAGE
-                )
-            )
-            error(e)
-        } catch (e: Exception) {
-            log.error(FlowRestExceptionConstants.UNEXPECTED_ERROR)
-            error(e)
-        }
     }
 
     override fun start() = Unit

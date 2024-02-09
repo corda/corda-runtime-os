@@ -51,7 +51,10 @@ class FakeDbConnectionManager(
         NamedDataSources(it.first, it.second, schemaName, source)
     }
 
-    override fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet):
+    override fun createEntityManagerFactory(
+        connectionId: UUID,
+        entitiesSet: JpaEntitiesSet,
+        enablePool: Boolean,):
             EntityManagerFactory {
         var source = dbSources.single { it.id == connectionId }
         // During sandbox tests, the dataSources may get closed when sandboxes are evicted. Upon sandbox being re-created,
@@ -84,7 +87,8 @@ class FakeDbConnectionManager(
 
     override fun getOrCreateEntityManagerFactory(
         connectionId: UUID,
-        entitiesSet: JpaEntitiesSet
+        entitiesSet: JpaEntitiesSet,
+        enablePool: Boolean,
     ): EntityManagerFactory {
         TODO("Not yet implemented")
     }

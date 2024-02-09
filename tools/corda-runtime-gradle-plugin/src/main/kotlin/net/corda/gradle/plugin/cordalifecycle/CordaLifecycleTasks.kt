@@ -10,7 +10,7 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
 import javax.inject.Inject
 
-const val CLUSTER_TASKS_GROUP = "corda-runtime-plugin"
+const val CLUSTER_TASKS_GROUP = "corda-runtime-plugin-local-environment"
 const val START_CORDA_TASK_NAME = "startCorda"
 const val STOP_CORDA_TASK_NAME = "stopCorda"
 const val STOP_CORDA_AND_CLEAN_TASK_NAME = "stopCordaAndCleanWorkspace"
@@ -22,7 +22,7 @@ fun createCordaLifeCycleTasks(project: Project, pluginConfig: PluginConfiguratio
 
         project.tasks.create(START_CORDA_TASK_NAME, StartCorda::class.java) {
             it.group = CLUSTER_TASKS_GROUP
-            it.dependsOn(PROJINIT_TASK_NAME, GET_POSTGRES_JDBC_TASK_NAME, GET_COMBINED_WORKER_JAR_TASK_NAME)
+            it.dependsOn(PROJINIT_TASK_NAME)
             it.pluginConfig.set(pluginConfig)
         }
 

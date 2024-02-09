@@ -32,4 +32,5 @@ class FlowEventContextConverterImplTest {
         assertThat(result.updatedState?.value).isSameAs(avroCheckpoint)
         assertThat(result.responseEvents).isSameAs(records)
     }
+
 }

@@ -41,7 +41,7 @@
   "topicPrefix": "prefix",
   "stateManager": {
     "flowCheckpoint": {
-      "type": "DATABASE",
+      "type": "Database",
       "database": {
         "jdbc": {
           "url": "flowCheckpoint-url",
@@ -60,7 +60,7 @@
       }
     },
     "flowMapping": {
-      "type": "DATABASE",
+      "type": "Database",
       "database": {
         "jdbc": {
           "url": "flowMapping-url",
@@ -79,7 +79,7 @@
       }
     },
     "flowStatus": {
-      "type": "DATABASE",
+      "type": "Database",
       "database": {
         "jdbc": {
           "url": "flowStatus-url",
@@ -98,7 +98,7 @@
       }
     },
     "keyRotation": {
-      "type": "DATABASE",
+      "type": "Database",
       "database": {
         "jdbc": {
           "url": "keyRotation-url",
@@ -117,7 +117,7 @@
       }
     },
     "p2pSession": {
-      "type": "DATABASE",
+      "type": "Database",
       "database": {
         "jdbc": {
           "url": "p2pSession-url",
@@ -136,7 +136,7 @@
       }
     },
     "tokenPoolCache": {
-      "type": "DATABASE",
+      "type": "Database",
       "database": {
         "jdbc": {
           "url": "tokenPoolCache-url",

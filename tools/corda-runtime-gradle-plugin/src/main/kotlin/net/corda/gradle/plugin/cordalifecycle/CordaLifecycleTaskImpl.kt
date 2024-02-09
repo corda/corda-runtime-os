@@ -26,33 +26,20 @@ class CordaLifecycleTaskImpl(var pc: ProjectContext) {
             throw CordaRuntimeGradlePluginException(it)
         }
 
-        pc.logger.quiet("Starting Docker postgres container.")
-        val dockerProcess = cordaLifecycleHelper.startPostgresContainer(pc.cordaDbContainerName)
-        val dockerCmdError = dockerProcess.errorStream.bufferedReader().use { it.readText() }
-        pc.logger.quiet(dockerCmdError)
-
-        // Fail if Docker is not running before going on to start Corda
-        val dockerNotRunningError = "the docker daemon"
-
-        if (dockerCmdError.contains(dockerNotRunningError)) {
-            throw CordaRuntimeGradlePluginException(dockerCmdError)
-        }
-
-        // Wait for the container to be running before starting Corda
-        pc.logger.quiet("Waiting for the Db Docker container to be running")
-        cordaLifecycleHelper.waitForContainerStatus(pc.cordaDbContainerName)
-        val cordaProcess = cordaLifecycleHelper.startCombinedWorkerProcess(
+        pc.logger.quiet("Starting Corda Combined Worker in Docker.")
+        val cordaProcess = cordaLifecycleHelper.startCombinedWorkerWithDockerCompose(
             pc.cordaPidCache,
-            pc.combinedWorkerFilePath,
-            pc.javaBinDir,
-            pc.jdbcDir,
-            pc.project.rootDir.absolutePath
+            "${pc.project.rootDir}/${pc.composeFilePath}",
+            pc.composeNetworkName
         )
-        pc.logger.quiet("Corda Process-id=" + cordaProcess.pid())
+        cordaProcess.waitFor()
+        if (cordaProcess.exitValue() != 0) {
+            stopCorda()
+            throw CordaRuntimeGradlePluginException("Corda process did not start successfully, please check the logs.")
+        }
     }
 
     fun stopCorda() {
-        cordaLifecycleHelper.stopDockerContainer(pc.cordaDbContainerName)
         val cordaPIDFile = File(pc.cordaPidCache)
         if (!cordaPIDFile.exists()) {
             throw CordaRuntimeGradlePluginException(
@@ -60,6 +47,10 @@ class CordaLifecycleTaskImpl(var pc: ProjectContext) {
                         "Was the combined worker not started?"
             )
         }
+        cordaLifecycleHelper.stopCombinedWorkerWithDockerCompose(
+            "${pc.project.rootDir}/${pc.composeFilePath}",
+            pc.composeNetworkName
+        )
         cordaLifecycleHelper.stopCombinedWorkerProcess(pc.cordaPidCache)
     }
 

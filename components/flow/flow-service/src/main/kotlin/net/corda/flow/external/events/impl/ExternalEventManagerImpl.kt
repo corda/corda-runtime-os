@@ -197,9 +197,7 @@ class ExternalEventManagerImpl(
     private fun generateRecord(externalEventState: ExternalEventState, instant: Instant) : Record<*, *> {
         val eventToSend = externalEventState.eventToSend
         eventToSend.timestamp = instant
-
-        // The below placeholder is needed until the Record.topic field is made optional as part of CORE-17887
-        val topic = eventToSend.topic ?: "EMPTY_TOPIC_PLACEHOLDER"
+        val topic = eventToSend.topic
         log.trace { "Dispatching external event with id '${externalEventState.requestId}' to '$topic'" }
         return Record(topic, eventToSend.key.array(), eventToSend.payload.array())
     }

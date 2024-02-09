@@ -38,7 +38,7 @@ internal class FlowMapperServiceTest {
 
     private val configFactory = SmartConfigFactory.createWithoutSecurityServices()
     private val flowConfig = SmartConfigImpl.empty().withValue(FlowConfig.SESSION_P2P_TTL, ConfigValueFactory.fromAnyRef(10000))
-        .withValue(FlowConfig.PROCESSING_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(1000L))
+        .withValue(FlowConfig.PROCESSING_FLOW_MAPPER_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(1000L))
 
     private val messagingConfig = configFactory.create(
         ConfigFactory.parseString(

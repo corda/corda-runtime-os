@@ -9,6 +9,7 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.checkpoint.FlowState
+import net.corda.data.flow.state.checkpoint.SavedOutputs
 import net.corda.data.flow.state.external.ExternalEventState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
@@ -148,6 +149,9 @@ class FlowCheckpointImpl(
         get() = checkNotNull(flowStateManager)
         { "Attempt to access context before flow state has been created" }.suspendCount
 
+    override val outputs: List<SavedOutputs>
+        get() = checkpoint.savedOutputs ?: emptyList()
+
     override val ledgerSaltCounter: Int
         get() = ledgerSaltIncrementor.getAndIncrement()
 
@@ -234,6 +238,11 @@ class FlowCheckpointImpl(
             .build()
     }
 
+    override fun saveOutputs(savedOutputs: SavedOutputs) {
+        val existingOutputs = checkpoint.savedOutputs ?: emptyList()
+        checkpoint.savedOutputs = existingOutputs.plus(savedOutputs)
+    }
+
     override fun <T> readCustomState(clazz: Class<T>): T? {
         return checkpoint.customState.items
             .firstOrNull { it.key == clazz.name }
@@ -243,7 +252,8 @@ class FlowCheckpointImpl(
     }
 
     override fun toAvro(): Checkpoint? {
-        if (!checkpointLive) {
+        if (flowStateManager == null) {
+            //set to null when rollback to initial null state or not initialized
             return null
         }
 

@@ -20,7 +20,6 @@ import net.corda.taskmanager.TaskManager
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
-import java.time.Duration
 import java.util.concurrent.CompletionException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -47,7 +46,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     private val stateManagerHelper: StateManagerHelper<S>
 ) {
     private companion object {
-        private const val EVENT_PROCESSING_TIMEOUT_MILLIS = 30000L // 30 seconds
+        private const val EVENT_PROCESSING_TIMEOUT_MILLIS = 120000L // 120 seconds
     }
 
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.name}")
@@ -124,7 +123,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                     Pair(future, group)
                 }.map { (future, group) ->
                     try {
-                        future.getOrThrow(Duration.ofMillis(EVENT_PROCESSING_TIMEOUT_MILLIS))
+                        future.getOrThrow(config.processorTimeout)
                     } catch (e: TimeoutException) {
                         group.mapValues { (key, input) ->
                             val oldState = input.state

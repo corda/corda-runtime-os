@@ -10,11 +10,15 @@ import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.CheckRevocation
 import net.corda.p2p.linkmanager.state.SessionState
 import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.v5.crypto.exceptions.CryptoException
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
 import java.security.Security
@@ -88,8 +92,41 @@ class StateConvertorTest {
             checkRevocation,
         )
 
-        assertThat(result.message).isEqualTo(linkOutMessage)
-        assertThat(result.sessionData).isInstanceOf(AuthenticatedSession::class.java)
+        assertThat(result?.message).isEqualTo(linkOutMessage)
+        assertThat(result?.sessionData).isInstanceOf(AuthenticatedSession::class.java)
+    }
+
+    @Test
+    fun `toCordaSessionState returns null on failure to decrypt session data`() {
+        val avroSessionState = mock<AvroSessionState> {
+            on { encryptedSessionData } doReturn ByteBuffer.wrap(byteArrayOf(0))
+        }
+        val schemaRegistry = mock<AvroSchemaRegistry> {
+            on {
+                deserialize(
+                    any(),
+                    eq(AvroSessionState::class.java),
+                    eq(null),
+                )
+            } doReturn avroSessionState
+        }
+        val sessionEncryptionOpsClient = mock<SessionEncryptionOpsClient> {
+            on { decryptSessionData(any(), eq(null)) } doThrow CryptoException("error")
+        }
+        val convertor = StateConvertor(
+            schemaRegistry,
+            sessionEncryptionOpsClient,
+        )
+        val mockState = mock<State> {
+            on { value } doReturn byteArrayOf(0)
+        }
+
+        val result = convertor.toCordaSessionState(
+            mockState,
+            mock(),
+        )
+
+        assertThat(result).isNull()
     }
 
     @Test

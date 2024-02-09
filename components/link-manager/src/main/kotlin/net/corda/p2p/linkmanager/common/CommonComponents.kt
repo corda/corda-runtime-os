@@ -73,8 +73,11 @@ internal class CommonComponents(
         messageConverter,
     )
 
-    internal val sessionManager = if(features.useStatefulSessionManager) {
+    internal val sessionManager = if (features.useStatefulSessionManager) {
         StatefulSessionManagerImpl(
+            publisherFactory,
+            subscriptionFactory,
+            messagingConfiguration,
             lifecycleCoordinatorFactory,
             stateManager,
             SessionManagerImpl(
@@ -97,6 +100,7 @@ internal class CommonComponents(
             ),
             clock,
             membershipGroupReaderProvider,
+            schemaRegistry,
         )
     } else {
         SessionManagerImpl(

@@ -37,7 +37,7 @@
     "description" : "The Keys Management API consists of endpoints used to manage public and private key pairs. The API allows you to list scheme codes which are supported by the associated HSM integration, retrieve information about key pairs owned by a tenant, generate a key pair for a tenant, and retrieve a tenant's public key in PEM format."
   }, {
     "name" : "Key Rotation API",
-    "description" : "Contains operations related to rotation of the wrapping keys."
+    "description" : "Contains operations related to rotation of the master, cluster-level and vNode wrapping keys."
   }, {
     "name" : "MGM API",
     "description" : "The MGM API consists of a number of endpoints used to manage membership groups. A membership group is a logical grouping of a number of Corda Identities to communicate and transact with one another with a specific set of CorDapps. The API allows you to generate the group policy for a membership group, required for new members to join the group."
@@ -4351,98 +4351,26 @@
         }
       }
     },
-    "/wrappingkey/managed/rotation/{tenantid}" : {
+    "/wrappingkey/rotation/{tenantid}" : {
       "get" : {
         "tags" : [ "Key Rotation API" ],
         "description" : "This method gets the status of the latest key rotation for [tenantId].",
-        "operationId" : "get_wrappingkey_managed_rotation__tenantid_",
+        "operationId" : "get_wrappingkey_rotation__tenantid_",
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "The tenantId whose wrapping keys are rotating.",
+          "description" : "Can either be a holding identity ID, the value 'master' for master wrapping key or one of the values 'p2p', 'rest', 'crypto' for corresponding cluster-level services.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The tenantId whose wrapping keys are rotating.",
+            "description" : "Can either be a holding identity ID, the value 'master' for master wrapping key or one of the values 'p2p', 'rest', 'crypto' for corresponding cluster-level services.",
             "nullable" : false,
             "example" : "string"
           }
         } ],
         "responses" : {
           "200" : {
-            "description" : "Number of signing keys which need rotating grouped by tenantId's wrapping keys",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ManagedKeyRotationStatusResponse"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      },
-      "post" : {
-        "tags" : [ "Key Rotation API" ],
-        "description" : "This method enables to rotate all wrapping keys for tenantId.",
-        "operationId" : "post_wrappingkey_managed_rotation__tenantid_",
-        "parameters" : [ {
-          "name" : "tenantid",
-          "in" : "path",
-          "description" : "The tenantId whose wrapping keys are requested to be rotated.",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "The tenantId whose wrapping keys are requested to be rotated.",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "responses" : {
-          "202" : {
-            "description" : "Key rotation response",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ManagedKeyRotationResponse"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
-    "/wrappingkey/unmanaged/rotation/{keyalias}" : {
-      "get" : {
-        "tags" : [ "Key Rotation API" ],
-        "description" : "This method gets the status of the latest key rotation.",
-        "operationId" : "get_wrappingkey_unmanaged_rotation__keyalias_",
-        "parameters" : [ {
-          "name" : "keyalias",
-          "in" : "path",
-          "description" : "The keyAlias we are rotating away from.",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "The keyAlias we are rotating away from.",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Number of wrapping keys needs rotating grouped by vNode.",
+            "description" : "Number of keys which need rotating grouped by tenantId or tenantId's wrapping keys.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -4458,45 +4386,23 @@
             "description" : "Forbidden"
           }
         }
-      }
-    },
-    "/wrappingkey/unmanaged/rotation/{oldkeyalias}" : {
+      },
       "post" : {
         "tags" : [ "Key Rotation API" ],
-        "description" : "This method enables to rotate a current wrapping key with a new wrapping key.",
-        "operationId" : "post_wrappingkey_unmanaged_rotation__oldkeyalias_",
+        "description" : "This method enables to rotate master wrapping key or all wrapping keys for tenantId (holding identity ID or cluster-level tenant).",
+        "operationId" : "post_wrappingkey_rotation__tenantid_",
         "parameters" : [ {
-          "name" : "oldkeyalias",
+          "name" : "tenantid",
           "in" : "path",
-          "description" : "The alias of the current wrapping key to be rotated.",
+          "description" : "Can either be a holding identity ID, the value 'master' for master wrapping key or one of the values 'p2p', 'rest', 'crypto' for corresponding cluster-level services.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The alias of the current wrapping key to be rotated.",
+            "description" : "Can either be a holding identity ID, the value 'master' for master wrapping key or one of the values 'p2p', 'rest', 'crypto' for corresponding cluster-level services.",
             "nullable" : false,
             "example" : "string"
           }
         } ],
-        "requestBody" : {
-          "description" : "requestBody",
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "required" : [ "newKeyAlias" ],
-                "type" : "object",
-                "properties" : {
-                  "newKeyAlias" : {
-                    "type" : "string",
-                    "description" : "The alias of the new wrapping key that old one will be rotated with.",
-                    "nullable" : false,
-                    "example" : "string"
-                  }
-                }
-              }
-            }
-          },
-          "required" : true
-        },
         "responses" : {
           "202" : {
             "description" : "Key rotation response",
@@ -5359,79 +5265,6 @@
         }
       },
       "KeyRotationResponse" : {
-        "required" : [ "newKeyAlias", "oldKeyAlias", "requestId" ],
-        "type" : "object",
-        "properties" : {
-          "newKeyAlias" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "oldKeyAlias" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "requestId" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        }
-      },
-      "KeyRotationStatusResponse" : {
-        "required" : [ "createdTimestamp", "lastUpdatedTimestamp", "newParentKeyAlias", "oldParentKeyAlias", "status", "wrappingKeys" ],
-        "type" : "object",
-        "properties" : {
-          "createdTimestamp" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : false,
-            "example" : "2022-06-24T10:15:30Z"
-          },
-          "lastUpdatedTimestamp" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : false,
-            "example" : "2022-06-24T10:15:30Z"
-          },
-          "newParentKeyAlias" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "oldParentKeyAlias" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "status" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "wrappingKeys" : {
-            "uniqueItems" : false,
-            "type" : "array",
-            "nullable" : false,
-            "items" : {
-              "type" : "object",
-              "properties" : {
-                "first" : {
-                  "type" : "string",
-                  "nullable" : false,
-                  "example" : "string"
-                },
-                "second" : {
-                  "$ref" : "#/components/schemas/RotatedKeysStatus"
-                }
-              },
-              "example" : "No example available for this type"
-            }
-          }
-        }
-      },
-      "ManagedKeyRotationResponse" : {
         "required" : [ "requestId", "tenantId" ],
         "type" : "object",
         "properties" : {
@@ -5447,8 +5280,8 @@
           }
         }
       },
-      "ManagedKeyRotationStatusResponse" : {
-        "required" : [ "createdTimestamp", "lastUpdatedTimestamp", "signingKeys", "status", "tenantId" ],
+      "KeyRotationStatusResponse" : {
+        "required" : [ "createdTimestamp", "lastUpdatedTimestamp", "rotatedKeyStatus", "status", "tenantId" ],
         "type" : "object",
         "properties" : {
           "createdTimestamp" : {
@@ -5463,7 +5296,7 @@
             "nullable" : false,
             "example" : "2022-06-24T10:15:30Z"
           },
-          "signingKeys" : {
+          "rotatedKeyStatus" : {
             "uniqueItems" : false,
             "type" : "array",
             "nullable" : false,
