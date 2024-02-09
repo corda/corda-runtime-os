@@ -533,6 +533,7 @@
                     "type": "object",
                     "default": {},
                     "title": "Pod monitor configuration",
+                    "additionalProperties": false,
                     "required": [
                         "enabled"
                     ],
