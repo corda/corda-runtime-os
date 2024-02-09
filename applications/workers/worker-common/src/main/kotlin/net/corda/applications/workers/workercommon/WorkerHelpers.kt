@@ -140,7 +140,8 @@ class WorkerHelpers {
                     defaultParams.mediatorReplicasFlowMapperSessionOut,
                     FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT
                 ),
-                Triple(MAX_ALLOWED_MSG_SIZE, defaultParams.maxAllowedMessageSize, 972800),
+                Triple(MAX_ALLOWED_MSG_SIZE, defaultParams.maxAll
+                        owedMessageSize, 972800),
             )
             val defaultParamsMap = defaultParamsAndValues
                 .mapNotNull { t -> t.second?.let { t.first to t.second } }
@@ -254,16 +255,8 @@ class WorkerHelpers {
             }
 
             info("User: ${processInfo.user().orElse("Null")}")
-            info(
-                "StartInstant: ${
-                    if (processInfo.startInstant().isPresent) processInfo.startInstant().get() else "Null"
-                }"
-            )
-            info(
-                "TotalCpuDuration: ${
-                    if (processInfo.totalCpuDuration().isPresent) processInfo.totalCpuDuration().get() else "Null"
-                }"
-            )
+            info("StartInstant: ${if (processInfo.startInstant().isPresent) processInfo.startInstant().get() else "Null"}")
+            info("TotalCpuDuration: ${if (processInfo.totalCpuDuration().isPresent) processInfo.totalCpuDuration().get() else "Null"}")
 
             val mxBeanInfo = ManagementFactory.getRuntimeMXBean()
             info("classpath: ${mxBeanInfo.classPath}")
