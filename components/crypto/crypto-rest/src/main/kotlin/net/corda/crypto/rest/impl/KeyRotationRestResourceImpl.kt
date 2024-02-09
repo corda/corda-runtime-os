@@ -322,8 +322,6 @@ fun doKeyRotation(
     val keyRotationRequest = KeyRotationRequest(
         requestId,
         KeyType.UNMANAGED,
-        null,
-        null,
         null
     )
 
@@ -339,8 +337,6 @@ fun doManagedKeyRotation(
     val keyRotationRequest = KeyRotationRequest(
         requestId,
         KeyType.MANAGED,
-        null,
-        null,
         tenantId
     )
 

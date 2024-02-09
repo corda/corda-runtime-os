@@ -401,8 +401,6 @@ class CryptoRekeyBusProcessorTests {
     }
 
     private fun getUnmanagedKeyRotationKafkaRecord(
-        oldParentKeyAlias: String? = oldKeyAlias,
-        newParentKeyAlias: String? = newKeyAlias,
         tenantId: String? = null
     ): Record<String, KeyRotationRequest> = Record(
         "TBC",
@@ -410,8 +408,6 @@ class CryptoRekeyBusProcessorTests {
         KeyRotationRequest(
             UUID.randomUUID().toString(),
             KeyType.UNMANAGED,
-            oldParentKeyAlias,
-            newParentKeyAlias,
             tenantId,
         )
     )
@@ -449,8 +445,6 @@ class CryptoRekeyBusProcessorTests {
         rewrapPublishCapture.firstValue.map { it.value as IndividualKeyRotationRequest }.forEach {
             assertThat(it.keyType).isEqualTo(KeyType.MANAGED)
             assertThat(it.tenantId).isEqualTo(tenantId)
-            assertThat(it.oldParentKeyAlias).isNull()
-            assertThat(it.newParentKeyAlias).isNull()
             assertThat(dummyUuidsAndAliases.map { it.first }.toSet()).contains(UUID.fromString(it.keyUuid))
         }
 
@@ -504,8 +498,6 @@ class CryptoRekeyBusProcessorTests {
     }
 
     private fun getManagedKeyRotationKafkaRecord(
-        oldParentKeyAlias: String? = null,
-        newParentKeyAlias: String? = null,
         tenantId: String? = this.tenantId
     ): Record<String, KeyRotationRequest> = Record(
         "TBC",
@@ -513,8 +505,6 @@ class CryptoRekeyBusProcessorTests {
         KeyRotationRequest(
             UUID.randomUUID().toString(),
             KeyType.MANAGED,
-            oldParentKeyAlias,
-            newParentKeyAlias,
             tenantId,
         )
     )
