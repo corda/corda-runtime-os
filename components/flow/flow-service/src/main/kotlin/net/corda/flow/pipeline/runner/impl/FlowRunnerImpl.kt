@@ -17,7 +17,7 @@ import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
-import net.corda.flow.pipeline.handlers.waiting.WaitingForStartFlow
+import net.corda.data.flow.state.waiting.start.WaitingForStartFlow
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList

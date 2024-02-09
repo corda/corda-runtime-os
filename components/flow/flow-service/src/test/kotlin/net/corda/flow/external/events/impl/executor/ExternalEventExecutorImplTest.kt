@@ -1,7 +1,7 @@
 package net.corda.flow.external.events.impl.executor
 
 import net.corda.data.flow.event.external.ExternalEventResponse
-import net.corda.flow.application.serialization.SerializationServiceInternal
+import net.corda.flow.application.serialization.FlowSerializationService
 import net.corda.flow.application.services.MockFlowFiberService
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.fiber.FlowIORequest
@@ -21,7 +21,7 @@ import kotlin.test.assertNotEquals
 
 class ExternalEventExecutorImplTest {
     private lateinit var mockFlowFiberService: MockFlowFiberService
-    private lateinit var serializationService: SerializationServiceInternal
+    private lateinit var serializationService: FlowSerializationService
     private lateinit var externalEventExecutorImpl: ExternalEventExecutorImpl
 
     private val capturedArguments = mutableListOf<FlowIORequest.ExternalEvent>()
@@ -55,7 +55,7 @@ class ExternalEventExecutorImplTest {
         mockFlowFiberService = MockFlowFiberService()
         whenever(mockFlowFiberService.flowCheckpoint.flowId).thenReturn(flowId)
         whenever(mockFlowFiberService.flowCheckpoint.suspendCount).thenReturn(suspendCount)
-        serializationService = mock<SerializationServiceInternal>().apply {
+        serializationService = mock<FlowSerializationService>().apply {
             whenever(serialize<Any>(anyOrNull())).doAnswer { inv ->
                 SerializedBytesImpl(inv.getArgument<Any>(0).toString().toByteArray())
             }

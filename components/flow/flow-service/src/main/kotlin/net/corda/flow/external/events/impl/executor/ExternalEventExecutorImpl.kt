@@ -1,7 +1,7 @@
 package net.corda.flow.external.events.impl.executor
 
 import net.corda.crypto.cipher.suite.sha256Bytes
-import net.corda.flow.application.serialization.SerializationServiceInternal
+import net.corda.flow.application.serialization.FlowSerializationService
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.fiber.FlowFiber
@@ -18,8 +18,8 @@ import org.osgi.service.component.annotations.Reference
 class ExternalEventExecutorImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService,
-    @Reference(service = SerializationServiceInternal::class)
-    private val serializationService: SerializationServiceInternal,
+    @Reference(service = FlowSerializationService::class)
+    private val serializationService: FlowSerializationService,
 ) : ExternalEventExecutor, SingletonSerializeAsToken {
 
     @Suspendable

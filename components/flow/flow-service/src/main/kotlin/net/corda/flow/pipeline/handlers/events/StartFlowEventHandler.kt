@@ -4,7 +4,7 @@ import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.pipeline.CheckpointInitializer
 import net.corda.flow.pipeline.events.FlowEventContext
-import net.corda.flow.pipeline.handlers.waiting.WaitingForStartFlow
+import net.corda.data.flow.state.waiting.start.WaitingForStartFlow
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -28,7 +28,7 @@ class StartFlowEventHandler @Activate constructor(
 
         checkpointInitializer.initialize(
             context.checkpoint,
-            WaitingFor(WaitingForStartFlow),
+            WaitingFor(WaitingForStartFlow()),
             context.inputEventPayload.startContext.identity.toCorda(),
         ) {
             context.inputEventPayload.startContext
