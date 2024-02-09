@@ -40,7 +40,6 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.rest.PluggableRestResource
-import net.corda.rest.exception.ForbiddenException
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
@@ -85,7 +84,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
     )
 
     private var publishToKafka: Publisher? = null
-    private var stateManagerInit: StateManager? = null
+    private lateinit var stateManager: StateManager
     private val unmanagedKeyStatusDeserializer =
         cordaAvroSerializationFactory.createAvroDeserializer({}, UnmanagedKeyStatus::class.java)
     private val managedKeyStatusDeserializer =
@@ -110,11 +109,6 @@ class KeyRotationRestResourceImpl @Activate constructor(
     override fun stop() {
         lifecycleCoordinator.stop()
     }
-
-    private val stateManager: StateManager
-        get() = checkNotNull(stateManagerInit) {
-            "State manager for key rotation is not initialised."
-        }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("Handling KeyRotationRestResource event, $event.")
@@ -175,13 +169,18 @@ class KeyRotationRestResourceImpl @Activate constructor(
     fun initialiseStateManager(config: Map<String, SmartConfig>) {
         val stateManagerConfig = config.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)
 
-        stateManagerInit?.stop()
-        stateManagerInit = stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION)
+        if (::stateManager.isInitialized) {
+            stateManager.stop()
+        }
+        stateManager = stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION)
             .also { it.start() }
         logger.debug("State manager created and started {}", stateManager.name)
     }
 
     override fun getKeyRotationStatus(tenantId: String): KeyRotationStatusResponse {
+        check(::stateManager.isInitialized) {
+            "State manager for key rotation is not initialised."
+        }
 
         when (tenantId) {
             MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER -> { // do unmanaged key rotation status
@@ -255,18 +254,19 @@ class KeyRotationRestResourceImpl @Activate constructor(
     override fun startKeyRotation(tenantId: String): ResponseEntity<KeyRotationResponse> {
         tryWithExceptionHandling(logger, "start key rotation") {
             checkNotNull(publishToKafka)
+            check(::stateManager.isInitialized) {
+                "State manager for key rotation is not initialised."
+            }
         }
 
-        if (!hasPreviousRotationFinished()) {
-            throw ForbiddenException("A key rotation operation is already ongoing, a new one cannot be started until it completes.")
-        }
+        if (tenantId.isEmpty()) throw InvalidInputDataException(
+            "Cannot start key rotation. TenantId is not specified."
+        )
+
 
         return if (tenantId == MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER) {
             doKeyRotation(publishRequests = { publishToKafka!!.publish(it) })
         } else {
-            if (tenantId.isEmpty()) throw InvalidInputDataException(
-                "Cannot start key rotation. TenantId is not specified."
-            )
             doManagedKeyRotation(
                 tenantId,
                 publishRequests = { publishToKafka!!.publish(it) }
@@ -304,26 +304,6 @@ class KeyRotationRestResourceImpl @Activate constructor(
 
     private fun getLatestTimestamp(records: Collection<State>): Instant {
         return records.maxBy { it.modifiedTime }.modifiedTime
-    }
-
-    private fun hasPreviousRotationFinished(): Boolean {
-        // The current state of this method is to prevent any key rotations being started when any other one is in progress.
-        // Same check is done on the Crypto worker side because if user quickly issues two key rotation commands after each other,
-        // it will pass rest worker check as state manager was not yet populated.
-        // On that note, if the logic is changed here, it should also be changed to match in the Crypto worker, see [CryptoRekeyBusProcessor]
-        // for the equivalent method.
-        stateManager.findByMetadataMatchingAll(
-            listOf(
-                MetadataFilter(
-                    KeyRotationMetadataValues.STATUS_TYPE,
-                    Operation.Equals,
-                    KeyRotationRecordType.KEY_ROTATION
-                )
-            )
-        ).forEach {
-            if (it.value.metadata[KeyRotationMetadataValues.STATUS] != KeyRotationStatus.DONE) return false
-        }
-        return true
     }
 }
 
