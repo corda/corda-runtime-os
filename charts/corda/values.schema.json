@@ -5,10 +5,10 @@
     "default": {},
     "title": "Corda helm chart schema",
     "additionalProperties": false,
-    "$comment": "TODO-[CORE-19372]: make 'databases' and 'stateManager' required",
     "required": [
-        "db",
-        "kafka"
+        "kafka",
+        "databases",
+        "stateManager"
     ],
     "properties": {
         "corda-lib": {
@@ -68,6 +68,17 @@
             "type": "object",
             "default": {},
             "title": "extra labels to add to all deployed objects",
+            "additionalProperties": {
+                "type": [
+                    "string",
+                    "null"
+                ]
+            }
+        },
+        "commonPodLabels": {
+            "type": "object",
+            "default": {},
+            "title": "extra labels to add to all pods created by deployments",
             "additionalProperties": {
                 "type": [
                     "string",
@@ -135,12 +146,12 @@
                     ]
                 },
                 "runAsNonRoot": {
-                    "type": "boolean", 
+                    "type": "boolean",
                     "description": "indicates that the container must run as a non-root user",
                     "examples": [
                         true
                     ]
-                }, 
+                },
                 "runAsGroup": {
                     "type": "integer",
                     "title": "specify what group ID that processes will run with",
@@ -163,12 +174,12 @@
                     ]
                 },
                 "procMount": {
-                    "type": "string", 
-                    "description": "denotes the type of proc mount to use for the containers - cannot be set when spec.os.name is windows", 
+                    "type": "string",
+                    "description": "denotes the type of proc mount to use for the containers - cannot be set when spec.os.name is windows",
                     "examples": [
                         "DefaultProcMount"
                     ]
-                }, 
+                },
                 "privileged": {
                     "type": "boolean",
                     "title": "run container in privileged mode",
@@ -184,27 +195,27 @@
                         "add": {
                             "items": {
                                 "type": [
-                                    "string", 
+                                    "string",
                                     "null"
                                 ]
-                            }, 
+                            },
                             "type": [
-                                "array", 
+                                "array",
                                 "null"
-                            ], 
+                            ],
                             "description": "added capabilities"
-                        }, 
+                        },
                         "drop": {
                             "items": {
                                 "type": [
-                                    "string", 
+                                    "string",
                                     "null"
                                 ]
-                            }, 
+                            },
                             "type": [
-                                "array", 
+                                "array",
                                 "null"
-                            ], 
+                            ],
                             "description": "removed capabilities"
                         }
                     }
@@ -275,25 +286,25 @@
             "title": "define privilege and access control settings for a pod",
             "properties": {
                 "runAsNonRoot": {
-                    "type": "boolean", 
+                    "type": "boolean",
                     "description": "indicates that the container must run as a non-root user",
                     "examples": [
                         true
                     ]
-                }, 
+                },
                 "fsGroup": {
-                    "type": "integer", 
-                    "description": "a special supplemental group that applies to all containers in a pod", 
+                    "type": "integer",
+                    "description": "a special supplemental group that applies to all containers in a pod",
                     "format": "int64",
                     "examples": [
                         "1000"
                     ]
                 },
                 "fsGroupChangePolicy": {
-                    "type": "string", 
-                    "description": "defines behavior of changing ownership and permission of the volume before being exposed inside Pod", 
+                    "type": "string",
+                    "description": "defines behavior of changing ownership and permission of the volume before being exposed inside Pod",
                     "enum": ["Always", "OnRootMismatch"]
-                }, 
+                },
                 "seccompProfile": {
                     "type": "object",
                     "description": "the seccomp options to use by the containers in this pod - this field cannot be set if spec.os.name is windows",
@@ -379,26 +390,26 @@
                 },
                 "supplementalGroups": {
                     "items": {
-                        "type": "integer", 
+                        "type": "integer",
                         "format": "int64"
-                    }, 
+                    },
                     "type": [
-                        "array", 
+                        "array",
                         "null"
-                    ], 
+                    ],
                     "description": "a list of groups applied to the first process run in each container, in addition to the container's primary GID"
-                }, 
+                },
                 "runAsUser": {
-                    "type": "integer", 
-                    "description": "The UID to run the entrypoint of the container process", 
+                    "type": "integer",
+                    "description": "The UID to run the entrypoint of the container process",
                     "format": "int64",
                     "examples": [
                         "10001"
                     ]
                 },
                 "runAsGroup": {
-                    "type": "integer", 
-                    "description": "The GID to run the entrypoint of the container process", 
+                    "type": "integer",
+                    "description": "The GID to run the entrypoint of the container process",
                     "format": "int64",
                     "examples": [
                         "10002"
@@ -522,6 +533,7 @@
                     "type": "object",
                     "default": {},
                     "title": "Pod monitor configuration",
+                    "additionalProperties": false,
                     "required": [
                         "enabled"
                     ],
@@ -698,103 +710,6 @@
                 "effect": "NoSchedule"
             }]
         },
-        "db": {
-            "$comment": "TODO-[CORE-19372]: should we replace this by the new 'databases' instead?.",
-            "type": "object",
-            "default": {},
-            "title": "cluster database configuration",
-            "required": [
-                "cluster"
-            ],
-            "additionalProperties": false,
-            "properties": {
-                "cluster": {
-                    "type": "object",
-                    "default": {},
-                    "title": "cluster database configuration",
-                    "required": [
-                        "host",
-                        "type",
-                        "port",
-                        "username",
-                        "database",
-                        "schema"
-                    ],
-                    "additionalProperties": false,
-                    "properties": {
-                        "username": {
-                            "$ref": "#/$defs/config"
-                        },
-                        "password": {
-                            "$ref": "#/$defs/config"
-                        },
-                        "host": {
-                            "type": "string",
-                            "format": "hostname",
-                            "default": "",
-                            "title": "the cluster database host",
-                            "examples": [
-                                "postgresql.example.com"
-                            ]
-                        },
-                        "type": {
-                            "$ref": "#/$defs/databaseEngine",
-                            "title": "the cluster database type"
-                        },
-                        "port": {
-                            "type": "integer",
-                            "default": 5432,
-                            "title": "the cluster database port",
-                            "examples": [
-                                5432
-                            ]
-                        },
-                        "database": {
-                            "type": "string",
-                            "default": "cordacluster",
-                            "title": "the name of the cluster database",
-                            "examples": [
-                                "cordacluster"
-                            ],
-                            "minLength": 1
-                        },
-                        "schema": {
-                            "type": "string",
-                            "default": "CONFIG",
-                            "title": "the schema in which the cluster database config entities will be stored, passed to workers on startup",
-                            "examples": [
-                                "CONFIG"
-                            ],
-                            "minLength": 1
-                        }
-                    },
-                    "examples": [{
-                        "host": "postgresql.example.com",
-                        "type": "postgresql",
-                        "port": 5432,
-                        "username": {
-                            "value": "user"
-                        },
-                        "password": {
-                            "value": "password"
-                        },
-                        "database": "cordacluster",
-                        "schema": "CONFIG"
-                    }]
-                }
-            },
-            "examples": [{
-                "cluster": {
-                    "host": "prereqs-postgresql",
-                    "type": "postgresql",
-                    "port": 5432,
-                    "user": "user",
-                    "database": "cordacluster",
-                    "schema": "CONFIG",
-                    "existingSecret": "postgresql-secret"
-                }
-            }]
-        },
         "kafka": {
             "type": "object",
             "default": {},
@@ -963,32 +878,32 @@
             "properties": {
                 "flowCheckpoint": {
                     "type": "object",
-                    "$ref": "#/$defs/stateTypePersistentStorageMapping",
+                    "$ref": "#/$defs/persistentStorageMapping",
                     "title": "Persistent Storage configuration to be used by the State Manager when dealing with 'flowCheckpoint' states"
                 },
                 "flowMapping": {
                     "type": "object",
-                    "$ref": "#/$defs/stateTypePersistentStorageMapping",
+                    "$ref": "#/$defs/persistentStorageMapping",
                     "title": "Persistent Storage configuration to be used by the State Manager when dealing with 'flowMapping' states"
                 },
                 "flowStatus": {
                     "type": "object",
-                    "$ref": "#/$defs/stateTypePersistentStorageMapping",
+                    "$ref": "#/$defs/persistentStorageMapping",
                     "title": "Persistent Storage configuration to be used by the State Manager when dealing with 'flowStatus' states"
                 },
                 "keyRotation": {
                     "type": "object",
-                    "$ref": "#/$defs/stateTypePersistentStorageMapping",
+                    "$ref": "#/$defs/persistentStorageMapping",
                     "title": "Persistent Storage configuration to be used by the State Manager when dealing with 'keyRotation' states"
                 },
                 "p2pSession": {
                     "type": "object",
-                    "$ref": "#/$defs/stateTypePersistentStorageMapping",
+                    "$ref": "#/$defs/persistentStorageMapping",
                     "title": "Persistent Storage configuration to be used by the State Manager when dealing with 'peerToPeerSession' states"
                 },
                 "tokenPoolCache": {
                     "type": "object",
-                    "$ref": "#/$defs/stateTypePersistentStorageMapping",
+                    "$ref": "#/$defs/persistentStorageMapping",
                     "title": "Persistent Storage configuration to be used by the State Manager when dealing with 'tokenPoolCache' states"
                 }
             }
@@ -1005,16 +920,17 @@
                     }
                 ],
                 "required": [
+                    "name",
                     "host",
                     "port",
                     "type"
                 ]
             },
-            "$comment": "At least one database with name 'default' must be defined",
+            "$comment": "At least one 'default' database must be defined",
             "contains": {
                 "type": "object",
                 "properties": {
-                    "name": {
+                    "id": {
                         "type": "string",
                         "const": "default"
                     }
@@ -1032,7 +948,8 @@
                 "kafka",
                 "image",
                 "resources",
-                "nodeSelector"
+                "nodeSelector",
+                "commonPodLabels"
             ],
             "additionalProperties": false,
             "properties": {
@@ -1109,7 +1026,6 @@
                         "enabled"
                     ],
                     "additionalProperties": false,
-                    "$comment": "TODO-[CORE-19372]: should we replace 'cluster', 'crypto' and 'rbac' by the new 'databases' section instead?.",
                     "properties": {
                         "enabled": {
                             "type": "boolean",
@@ -1164,309 +1080,64 @@
                                 "tag": "14.4"
                             }]
                         },
-                        "cluster": {
-                            "type": "object",
-                            "default": {},
-                            "title": "bootstrap cluster database configuration",
-                            "required": [
-                                "username",
-                                "password"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "password": {
-                                    "$ref": "#/$defs/config"
-                                },
-                                "username": {
-                                    "$ref": "#/$defs/config"
-                                }
-                            },
-                            "examples": [{
-                                "password": {
-                                    "value": "password"
-                                },
-                                "username": {
-                                    "value": "username"
-                                }
-                            }]
-                        },
                         "crypto": {
-                            "type": "object",
-                            "default": {},
-                            "title": "crypto configuration",
-                            "required": [
-                                "dbConnectionPool",
-                                "schema"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "schema": {
-                                    "type": "string",
-                                    "default": "CRYPTO",
-                                    "title": "the schema in which the cluster database crypto entities will be stored",
-                                    "examples": [
-                                        "CRYPTO"
-                                    ],
-                                    "minLength": 1
+                            "allOf": [
+                                {
+                                    "$ref": "#/$defs/persistentStorageMapping"
                                 },
-                                "username": {
-                                    "$ref": "#/$defs/config"
-                                },
-                                "password": {
-                                    "$ref": "#/$defs/config"
-                                },
-                                "dbConnectionPool": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "JDBC connection pool configuration for crypto DB",
-                                    "required": [
-                                        "maxSize",
-                                        "idleTimeoutSeconds",
-                                        "maxLifetimeSeconds",
-                                        "keepaliveTimeSeconds",
-                                        "validationTimeoutSeconds"
-                                    ],
-                                    "additionalProperties": false,
-                                    "properties": {
-                                        "maxSize": {
-                                            "type": "integer",
-                                            "default": 5,
-                                            "title": "maximum JDBC connection pool size for crypto DB",
-                                            "examples": [
-                                                5
-                                            ]
-                                        },
-                                        "minSize": {
-                                            "anyOf": [
-                                                {
-                                                    "type": "integer",
-                                                    "minimum": 0
-                                                },
-                                                {
-                                                    "type": "null"
-                                                }
-                                            ],
-                                            "default": null,
-                                            "title": "minimum JDBC connection pool size for crypto DB; null value means pool's min size will default to pool's max size value"
-                                        },
-                                        "idleTimeoutSeconds": {
-                                            "type": "integer",
-                                            "default": 120,
-                                            "minimum": 0,
-                                            "title": "maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool"
-                                        },
-                                        "maxLifetimeSeconds": {
-                                            "type": "integer",
-                                            "default": 1800,
-                                            "minimum": 1,
-                                            "title": "maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle"
-                                        },
-                                        "keepaliveTimeSeconds": {
-                                            "type": "integer",
-                                            "default": 0,
-                                            "minimum": 0,
-                                            "title": "interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled"
-                                        },
-                                        "validationTimeoutSeconds": {
-                                            "type": "integer",
-                                            "minimum": 1,
-                                            "default": 5,
-                                            "title": "maximum time (in seconds) that the pool will wait for a connection to be validated as alive"
-                                        }
-                                    },
-                                    "examples": [{
-                                        "maxSize": 5
-                                    }]
+                                {
+                                    "$ref": "#/$defs/persistentStorageRuntimeConnectionSettings"
                                 }
-                            },
-                            "examples": [{
-                                "schema": "CRYPTO",
-                                "password": {
-                                    "value": "password"
-                                },
-                                "username": {
-                                    "value": "username"
-                                },
-                                "dbConnectionPool": {
-                                    "maxSize": 5
-                                }
-                            }]
+                            ]
                         },
                         "rbac": {
-                            "type": "object",
-                            "default": {},
-                            "title": "RBAC configuration",
-                            "required": [
-                                "dbConnectionPool",
-                                "schema"
-                            ],
-                            "properties": {
-                                "schema": {
-                                    "type": "string",
-                                    "default": "RBAC",
-                                    "title": "the schema in which the cluster database rbac entities will be stored",
-                                    "examples": [
-                                        "RBAC"
-                                    ],
-                                    "minLength": 1
+                            "allOf": [
+                                {
+                                    "$ref": "#/$defs/persistentStorageMapping"
                                 },
-                                "username": {
-                                    "$ref": "#/$defs/config"
-                                },
-                                "password": {
-                                    "$ref": "#/$defs/config"
-                                },
-                                "dbConnectionPool": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "JDBC connection pool configuration for RBAC DB",
-                                    "required": [
-                                        "maxSize",
-                                        "idleTimeoutSeconds",
-                                        "maxLifetimeSeconds",
-                                        "keepaliveTimeSeconds",
-                                        "validationTimeoutSeconds"
-                                    ],
-                                    "properties": {
-                                        "maxSize": {
-                                            "type": "integer",
-                                            "default": 5,
-                                            "title": "maximum JDBC connection pool size for RBAC DB",
-                                            "examples": [
-                                                5
-                                            ]
-                                        },
-                                        "minSize": {
-                                            "anyOf": [
-                                                {
-                                                    "type": "integer",
-                                                    "minimum": 0
-                                                },
-                                                {
-                                                    "type": "null"
-                                                }
-                                            ],
-                                            "default": null,
-                                            "title": "minimum JDBC connection pool size for RBAC DB; null value means pool's min size will default to pool's max size value"
-                                        },
-                                        "idleTimeoutSeconds": {
-                                            "type": "integer",
-                                            "default": 120,
-                                            "minimum": 0,
-                                            "title": "maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool"
-                                        },
-                                        "maxLifetimeSeconds": {
-                                            "type": "integer",
-                                            "default": 1800,
-                                            "minimum": 1,
-                                            "title": "maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle"
-                                        },
-                                        "keepaliveTimeSeconds": {
-                                            "type": "integer",
-                                            "default": 0,
-                                            "minimum": 0,
-                                            "title": "interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled"
-                                        },
-                                        "validationTimeoutSeconds": {
-                                            "type": "integer",
-                                            "minimum": 1,
-                                            "default": 5,
-                                            "title": "maximum time (in seconds) that the pool will wait for a connection to be validated as alive"
-                                        }
-                                    },
-                                    "examples": [{
-                                        "maxSize": 5
-                                    }]
+                                {
+                                    "$ref": "#/$defs/persistentStorageRuntimeConnectionSettings"
                                 }
-                            },
-                            "examples": [{
-                                "schema": "RBAC",
-                                "password": {
-                                    "value": "password"
-                                },
-                                "username": {
-                                    "value": "username"
-                                },
-                                "dbConnectionPool": {
-                                    "maxSize": 5
-                                }
-                            }]
+                            ]
                         },
-                        "stateManager": {
-                            "$comment": "TODO-[CORE-19372]: remove the entire 'stateManager' section",
-                            "flow": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/basicAuthConfig"
-                                    }
-                                ]
-                            },
-                            "flowMapper": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/basicAuthConfig"
-                                    }
-                                ]
-                            },
-                            "flowStatus": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/basicAuthConfig"
-                                    }
-                                ]
-                            },
-                            "tokenSelection": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/basicAuthConfig"
-                                    }
-                                ]
-                            },
-                            "rest": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/basicAuthConfig"
-                                    }
-                                ]
-                            },
-                            "crypto": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/basicAuthConfig"
-                                    }
-                                ]
-                            },
-                            "p2pLinkManager": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/basicAuthConfig"
-                                    }
-                                ]
-                            }
+                        "virtualNodes": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/$defs/persistentStorageMapping"
+                                },
+                                {
+                                    "$ref": "#/$defs/persistentStorageRuntimeConnectionSettings"
+                                }
+                            ]
                         },
                         "databases": {
                             "type": "array",
                             "title": "Administrator credentials per database, used to configure users/roles and grant required runtime permissions",
                             "items": {
-                                "$ref": "#/$defs/databaseTemplate"
+                                "type": "object",
+                                "default": {},
+                                "title": "Connection settings for databases used by the Platform",
+                                "additionalProperties": false,
+                                "required": [
+                                    "id",
+                                    "username",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "minLength": 1
+                                    },
+                                    "username": {
+                                        "$ref": "#/$defs/config"
+                                    },
+                                    "password": {
+                                        "$ref": "#/$defs/config"
+                                    }
+                                }
                             }
                         }
-                    },
-                    "examples": [{
-                        "enabled": true,
-                        "crypto": {
-                            "schema": "CRYPTO",
-                            "dbConnectionPool": {
-                                "maxSize": 5
-                            }
-                        },
-                        "rbac": {
-                            "schema": "RBAC",
-                            "dbConnectionPool": {
-                                "maxSize": 5
-                            }
-                        }
-                    }]
+                    }
                 },
                 "kafka": {
                     "type": "object",
@@ -1695,6 +1366,17 @@
                     "examples": [{
                         "enabled": true
                     }]
+                },
+                "commonPodLabels": {
+                    "type": "object",
+                    "default": {},
+                    "title": "extra labels to add to all pods created by bootstrap jobs",
+                    "additionalProperties": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
                 }
             }
         },
@@ -1702,28 +1384,37 @@
             "type": "object",
             "title": "config service configuration",
             "required": [
-                "encryption"
+                "encryption",
+                "partition",
+                "storageId",
+                "type"
             ],
-            "additionalProperties": false,
-            "properties": {
-                "encryption": {
-                    "type": "object",
-                    "title": "configuration for encryption of configuration",
-                    "required": [
-                        "salt",
-                        "passphrase"
-                    ],
-                    "additionalProperties": false,
+            "allOf": [
+                {
+                    "$ref": "#/$defs/persistentStorageMapping"
+                },
+                {
                     "properties": {
-                        "salt": {
-                            "$ref": "#/$defs/config"
-                        },
-                        "passphrase": {
-                            "$ref": "#/$defs/config"
+                        "encryption": {
+                            "type": "object",
+                            "title": "configuration for encryption of configuration",
+                            "required": [
+                                "salt",
+                                "passphrase"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                                "salt": {
+                                    "$ref": "#/$defs/config"
+                                },
+                                "passphrase": {
+                                    "$ref": "#/$defs/config"
+                                }
+                            }
                         }
                     }
                 }
-            }
+            ]
         },
         "workers": {
             "type": "object",
@@ -1753,7 +1444,7 @@
                             "additionalProperties": false,
                             "required": [
                                 "stateManager",
-                                "clusterDbConnectionPool"
+                                "config"
                             ],
                             "properties": {
                                 "image": {},
@@ -1765,84 +1456,19 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
-                                "stateManager": {
-                                    "$comment": "TODO-[CORE-19372]: remove the condition and leave 'keyRotation' only.",
-                                    "oneOf": [
-                                        {
-                                            "$ref": "#/$defs/stateManager"
-                                        },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "keyRotation"
-                                            ],
-                                            "additionalProperties": false,
-                                            "properties": {
-                                                "keyRotation": {
-                                                    "type": "object",
-                                                    "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
-                                                }
-                                            }
-                                        }
-                                    ]
+                                "config": {
+                                    "$ref": "#/$defs/persistentStorageRuntimeConnectionSettings"
                                 },
-                                "clusterDbConnectionPool": {
+                                "stateManager": {
                                     "type": "object",
-                                    "default": {},
-                                    "title": "crypto worker JDBC connection pool configuration for cluster DB",
                                     "required": [
-                                        "maxSize",
-                                        "idleTimeoutSeconds",
-                                        "maxLifetimeSeconds",
-                                        "keepaliveTimeSeconds",
-                                        "validationTimeoutSeconds"
+                                        "keyRotation"
                                     ],
                                     "additionalProperties": false,
                                     "properties": {
-                                        "maxSize": {
-                                            "type": "integer",
-                                            "default": 5,
-                                            "title": "crypto worker maximum JDBC connection pool size for cluster DB",
-                                            "examples": [
-                                                5
-                                            ]
-                                        },
-                                        "minSize": {
-                                            "anyOf": [
-                                                {
-                                                    "type": "integer",
-                                                    "minimum": 0
-                                                },
-                                                {
-                                                    "type": "null"
-                                                }
-                                            ],
-                                            "default": null,
-                                            "title": "crypto worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value"
-                                        },
-                                        "idleTimeoutSeconds": {
-                                            "type": "integer",
-                                            "default": 120,
-                                            "minimum": 0,
-                                            "title": "maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool"
-                                        },
-                                        "maxLifetimeSeconds": {
-                                            "type": "integer",
-                                            "default": 1800,
-                                            "minimum": 1,
-                                            "title": "maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle"
-                                        },
-                                        "keepaliveTimeSeconds": {
-                                            "type": "integer",
-                                            "default": 0,
-                                            "minimum": 0,
-                                            "title": "interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled"
-                                        },
-                                        "validationTimeoutSeconds": {
-                                            "type": "integer",
-                                            "minimum": 1,
-                                            "default": 5,
-                                            "title": "maximum time (in seconds) that the pool will wait for a connection to be validated as alive"
+                                        "keyRotation": {
+                                            "type": "object",
+                                            "$ref": "#/$defs/persistentStorageRuntimeConnectionSettings"
                                         }
                                     }
                                 }
@@ -1867,65 +1493,8 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
-                                "clusterDbConnectionPool": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "DB worker JDBC connection pool configuration for cluster DB",
-                                    "required": [
-                                        "maxSize",
-                                        "idleTimeoutSeconds",
-                                        "maxLifetimeSeconds",
-                                        "keepaliveTimeSeconds",
-                                        "validationTimeoutSeconds"
-                                    ],
-                                    "additionalProperties": false,
-                                    "properties": {
-                                        "maxSize": {
-                                            "type": "integer",
-                                            "default": 5,
-                                            "title": "DB worker maximum JDBC connection pool size for cluster DB",
-                                            "examples": [
-                                                5
-                                            ]
-                                        },
-                                        "minSize": {
-                                            "anyOf": [
-                                                {
-                                                    "type": "integer",
-                                                    "minimum": 0
-                                                },
-                                                {
-                                                    "type": "null"
-                                                }
-                                            ],
-                                            "default": null,
-                                            "title": "DB worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value"
-                                        },
-                                        "idleTimeoutSeconds": {
-                                            "type": "integer",
-                                            "default": 120,
-                                            "minimum": 0,
-                                            "title": "maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool"
-                                        },
-                                        "maxLifetimeSeconds": {
-                                            "type": "integer",
-                                            "default": 1800,
-                                            "minimum": 1,
-                                            "title": "maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle"
-                                        },
-                                        "keepaliveTimeSeconds": {
-                                            "type": "integer",
-                                            "default": 0,
-                                            "minimum": 0,
-                                            "title": "interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled"
-                                        },
-                                        "validationTimeoutSeconds": {
-                                            "type": "integer",
-                                            "minimum": 1,
-                                            "default": 5,
-                                            "title": "maximum time (in seconds) that the pool will wait for a connection to be validated as alive"
-                                        }
-                                    }
+                                "config": {
+                                    "$ref": "#/$defs/persistentStorageRuntimeConnectionSettings"
                                 }
                             },
                             "examples": [{
@@ -1980,25 +1549,17 @@
                                 "resources": {},
                                 "kafka": {},
                                 "stateManager": {
-                                    "$comment": "TODO-[CORE-19372]: remove the condition and leave 'flowCheckpoint' only.",
-                                    "oneOf": [
-                                        {
-                                            "$ref": "#/$defs/stateManager"
-                                        },
-                                        {
+                                    "type": "object",
+                                    "required": [
+                                        "flowCheckpoint"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "flowCheckpoint": {
                                             "type": "object",
-                                            "required": [
-                                                "flowCheckpoint"
-                                            ],
-                                            "additionalProperties": false,
-                                            "properties": {
-                                                "flowCheckpoint": {
-                                                    "type": "object",
-                                                    "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
-                                                }
-                                            }
+                                            "$ref": "#/$defs/persistentStorageRuntimeConnectionSettings"
                                         }
-                                    ]
+                                    }
                                 },
                                 "verifyInstrumentation": {
                                     "type": "boolean",
@@ -2062,25 +1623,17 @@
                                 "resources": {},
                                 "kafka": {},
                                 "stateManager": {
-                                    "$comment": "TODO-[CORE-19372]: remove the condition and leave 'flowMapping' only.",
-                                    "oneOf": [
-                                        {
-                                            "$ref": "#/$defs/stateManager"
-                                        },
-                                        {
+                                    "type": "object",
+                                    "required": [
+                                        "flowMapping"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "flowMapping": {
                                             "type": "object",
-                                            "required": [
-                                                "flowMapping"
-                                            ],
-                                            "additionalProperties": false,
-                                            "properties": {
-                                                "flowMapping": {
-                                                    "type": "object",
-                                                    "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
-                                                }
-                                            }
+                                            "$ref": "#/$defs/persistentStorageRuntimeConnectionSettings"
                                         }
-                                    ]
+                                    }
                                 },
                                 "verifyInstrumentation": {
                                     "type": "boolean",
@@ -2226,30 +1779,22 @@
                                 "resources": {},
                                 "kafka": {},
                                 "stateManager": {
-                                    "$comment": "TODO-[CORE-19372]: remove the condition and leave 'keyRotation' only.",
-                                    "oneOf": [
-                                        {
-                                            "$ref": "#/$defs/stateManager"
-                                        },
-                                        {
+                                    "type": "object",
+                                    "required": [
+                                        "flowStatus",
+                                        "keyRotation"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "keyRotation": {
                                             "type": "object",
-                                            "required": [
-                                                "flowStatus",
-                                                "keyRotation"
-                                            ],
-                                            "additionalProperties": false,
-                                            "properties": {
-                                                "keyRotation": {
-                                                    "type": "object",
-                                                    "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
-                                                },
-                                                "flowStatus": {
-                                                    "type": "object",
-                                                    "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
-                                                }
-                                            }
+                                            "$ref": "#/$defs/persistentStorageRuntimeConnectionSettings"
+                                        },
+                                        "flowStatus": {
+                                            "type": "object",
+                                            "$ref": "#/$defs/persistentStorageRuntimeConnectionSettings"
                                         }
-                                    ]
+                                    }
                                 },
                                 "service": {
                                     "type": "object",
@@ -2499,25 +2044,17 @@
                                 "resources": {},
                                 "kafka": {},
                                 "stateManager": {
-                                    "$comment": "TODO-[CORE-19372]: remove the condition and leave 'p2pSession' only.",
-                                    "oneOf": [
-                                        {
-                                            "$ref": "#/$defs/stateManager"
-                                        },
-                                        {
+                                    "type": "object",
+                                    "required": [
+                                        "p2pSession"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "p2pSession": {
                                             "type": "object",
-                                            "required": [
-                                                "p2pSession"
-                                            ],
-                                            "additionalProperties": false,
-                                            "properties": {
-                                                "p2pSession": {
-                                                    "type": "object",
-                                                    "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
-                                                }
-                                            }
+                                            "$ref": "#/$defs/persistentStorageRuntimeConnectionSettings"
                                         }
-                                    ]
+                                    }
                                 }
                             },
                             "examples": [
@@ -2689,7 +2226,7 @@
                         {
                             "additionalProperties": false,
                             "required": [
-                                "clusterDbConnectionPool"
+                                "config"
                             ],
                             "properties": {
                                 "image": {},
@@ -2701,65 +2238,8 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
-                                "clusterDbConnectionPool": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "persistence worker JDBC connection pool configuration for cluster DB",
-                                    "required": [
-                                        "maxSize",
-                                        "idleTimeoutSeconds",
-                                        "maxLifetimeSeconds",
-                                        "keepaliveTimeSeconds",
-                                        "validationTimeoutSeconds"
-                                    ],
-                                    "additionalProperties": false,
-                                    "properties": {
-                                        "maxSize": {
-                                            "type": "integer",
-                                            "default": 5,
-                                            "title": "persistence worker maximum JDBC connection pool size for cluster DB",
-                                            "examples": [
-                                                5
-                                            ]
-                                        },
-                                        "minSize": {
-                                            "anyOf": [
-                                                {
-                                                    "type": "integer",
-                                                    "minimum": 0
-                                                },
-                                                {
-                                                    "type": "null"
-                                                }
-                                            ],
-                                            "default": null,
-                                            "title": "persistence worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value"
-                                        },
-                                        "idleTimeoutSeconds": {
-                                            "type": "integer",
-                                            "default": 120,
-                                            "minimum": 0,
-                                            "title": "maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool"
-                                        },
-                                        "maxLifetimeSeconds": {
-                                            "type": "integer",
-                                            "default": 1800,
-                                            "minimum": 1,
-                                            "title": "maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle"
-                                        },
-                                        "keepaliveTimeSeconds": {
-                                            "type": "integer",
-                                            "default": 0,
-                                            "minimum": 0,
-                                            "title": "interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled"
-                                        },
-                                        "validationTimeoutSeconds": {
-                                            "type": "integer",
-                                            "minimum": 1,
-                                            "default": 5,
-                                            "title": "maximum time (in seconds) that the pool will wait for a connection to be validated as alive"
-                                        }
-                                    }
+                                "config": {
+                                    "$ref": "#/$defs/persistentStorageRuntimeConnectionSettings"
                                 }
                             },
                             "examples": [{
@@ -2801,7 +2281,7 @@
                         {
                             "additionalProperties": false,
                             "required": [
-                                "clusterDbConnectionPool"
+                                "config"
                             ],
                             "properties": {
                                 "image": {},
@@ -2813,25 +2293,17 @@
                                 "profiling": {},
                                 "resources": {},
                                 "stateManager": {
-                                    "$comment": "TODO-[CORE-19372]: remove the condition and leave 'tokenPoolCache' only.",
-                                    "oneOf": [
-                                        {
-                                            "$ref": "#/$defs/stateManager"
-                                        },
-                                        {
+                                    "type": "object",
+                                    "required": [
+                                        "tokenPoolCache"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "tokenPoolCache": {
                                             "type": "object",
-                                            "required": [
-                                                "tokenPoolCache"
-                                            ],
-                                            "additionalProperties": false,
-                                            "properties": {
-                                                "tokenPoolCache": {
-                                                    "type": "object",
-                                                    "$ref": "#/$defs/stateManagerRuntimeConnectionSettings"
-                                                }
-                                            }
+                                            "$ref": "#/$defs/persistentStorageRuntimeConnectionSettings"
                                         }
-                                    ]
+                                    }
                                 },
                                 "kafka": {},
                                 "sharding": {
@@ -2916,65 +2388,8 @@
                                         }
                                     }
                                 },
-                                "clusterDbConnectionPool": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "token selection worker JDBC connection pool configuration for cluster DB",
-                                    "required": [
-                                        "maxSize",
-                                        "idleTimeoutSeconds",
-                                        "maxLifetimeSeconds",
-                                        "keepaliveTimeSeconds",
-                                        "validationTimeoutSeconds"
-                                    ],
-                                    "additionalProperties": false,
-                                    "properties": {
-                                        "maxSize": {
-                                            "type": "integer",
-                                            "default": 5,
-                                            "title": "token selection worker maximum JDBC connection pool size for cluster DB",
-                                            "examples": [
-                                                5
-                                            ]
-                                        },
-                                        "minSize": {
-                                            "anyOf": [
-                                                {
-                                                    "type": "integer",
-                                                    "minimum": 0
-                                                },
-                                                {
-                                                    "type": "null"
-                                                }
-                                            ],
-                                            "default": null,
-                                            "title": "token selection worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value"
-                                        },
-                                        "idleTimeoutSeconds": {
-                                            "type": "integer",
-                                            "default": 120,
-                                            "minimum": 0,
-                                            "title": "maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool"
-                                        },
-                                        "maxLifetimeSeconds": {
-                                            "type": "integer",
-                                            "default": 1800,
-                                            "minimum": 1,
-                                            "title": "maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle"
-                                        },
-                                        "keepaliveTimeSeconds": {
-                                            "type": "integer",
-                                            "default": 0,
-                                            "minimum": 0,
-                                            "title": "interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled"
-                                        },
-                                        "validationTimeoutSeconds": {
-                                            "type": "integer",
-                                            "minimum": 1,
-                                            "default": 5,
-                                            "title": "maximum time (in seconds) that the pool will wait for a connection to be validated as alive"
-                                        }
-                                    }
+                                "config": {
+                                    "$ref": "#/$defs/persistentStorageRuntimeConnectionSettings"
                                 }
                             },
                             "examples": [{
@@ -3016,7 +2431,7 @@
                         {
                             "additionalProperties": false,
                             "required": [
-                                "clusterDbConnectionPool"
+                                "config"
                             ],
                             "properties": {
                                 "image": {},
@@ -3028,65 +2443,8 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
-                                "clusterDbConnectionPool": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "uniqueness worker JDBC connection pool configuration for cluster DB",
-                                    "required": [
-                                        "maxSize",
-                                        "idleTimeoutSeconds",
-                                        "maxLifetimeSeconds",
-                                        "keepaliveTimeSeconds",
-                                        "validationTimeoutSeconds"
-                                    ],
-                                    "additionalProperties": false,
-                                    "properties": {
-                                        "maxSize": {
-                                            "type": "integer",
-                                            "default": 5,
-                                            "title": "uniqueness worker maximum JDBC connection pool size for cluster DB",
-                                            "examples": [
-                                                5
-                                            ]
-                                        },
-                                        "minSize": {
-                                            "anyOf": [
-                                                {
-                                                    "type": "integer",
-                                                    "minimum": 0
-                                                },
-                                                {
-                                                    "type": "null"
-                                                }
-                                            ],
-                                            "default": null,
-                                            "title": "uniqueness worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value"
-                                        },
-                                        "idleTimeoutSeconds": {
-                                            "type": "integer",
-                                            "default": 120,
-                                            "minimum": 0,
-                                            "title": "maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool"
-                                        },
-                                        "maxLifetimeSeconds": {
-                                            "type": "integer",
-                                            "default": 1800,
-                                            "minimum": 1,
-                                            "title": "maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle"
-                                        },
-                                        "keepaliveTimeSeconds": {
-                                            "type": "integer",
-                                            "default": 0,
-                                            "minimum": 0,
-                                            "title": "interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled"
-                                        },
-                                        "validationTimeoutSeconds": {
-                                            "type": "integer",
-                                            "minimum": 1,
-                                            "default": 5,
-                                            "title": "maximum time (in seconds) that the pool will wait for a connection to be validated as alive"
-                                        }
-                                    }
+                                "config": {
+                                    "$ref": "#/$defs/persistentStorageRuntimeConnectionSettings"
                                 }
                             },
                             "examples": [{
@@ -3456,19 +2814,6 @@
             }]
         }
     },
-    "examples": [{
-        "imagePullSecrets": ["docker-registry-cred"],
-        "db": {
-            "cluster": {
-                "existingSecret": "prereqs-postgresql",
-                "host": "db.cluster.host=prereqs-postgresql"
-            }
-        },
-        "kafka": {
-            "bootstrapServers": "prereqs-kafka:9092"
-        }
-    }
-    ],
     "$defs": {
         "worker": {
             "type": "object",
@@ -3780,91 +3125,6 @@
                 "postgresql"
             ]
         },
-        "stateManager": {
-            "type": "object",
-            "default": {},
-            "title": "State Manager configuration",
-            "additionalProperties": false,
-            "properties": {
-                "type": {
-                    "type": "string",
-                    "default": "DATABASE",
-                    "title": "The type of State Manager",
-                    "examples": [
-                        "DATABASE"
-                    ],
-                    "enum": ["DATABASE"]
-                },
-                "db": {
-                    "type": "object",
-                    "default": {},
-                    "title": "State Manager database configuration",
-                    "additionalProperties": false,
-                    "properties": {
-                        "username": {
-                            "$ref": "#/$defs/config"
-                        },
-                        "password": {
-                            "$ref": "#/$defs/config"
-                        },
-                        "host": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "format": "hostname"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "default": null,
-                            "title": "the State Manager database host",
-                            "examples": [
-                                "postgresql.example.com"
-                            ]
-                        },
-                        "type": {
-                            "$ref": "#/$defs/databaseEngine"
-                        },
-                        "port": {
-                            "type": "integer",
-                            "default": 5432,
-                            "title": "the State Manager database port",
-                            "examples": [
-                                5432
-                            ]
-                        },
-                        "name": {
-                            "type": "string",
-                            "default": "state-manager",
-                            "title": "the name of the State Manager database",
-                            "examples": [
-                                "state-manager"
-                            ],
-                            "minLength": 1
-                        },
-                        "connectionPool": {
-                            "$ref": "#/$defs/connectionPool",
-                            "default": {},
-                            "title": "JDBC connection pool configuration for State Manager DB"
-                        }
-                    },
-                    "examples": [{
-                        "host": "postgresql.example.com",
-                        "type": "postgresql",
-                        "port": 5432,
-                        "username": {
-                            "value": "user"
-                        },
-                        "password": {
-                            "value": "password"
-                        },
-                        "database": "state-manager",
-                        "connectionPool": {}
-                    }]
-                }
-            }
-        },
         "basicAuthConfig": {
             "type": "object",
             "default": {},
@@ -3945,11 +3205,13 @@
             "title": "Connection settings for databases used by the Platform",
             "additionalProperties": false,
             "required": [
-                "name",
-                "username",
-                "password"
+                "id"
             ],
             "properties": {
+                "id": {
+                    "type": "string",
+                    "minLength": 1
+                },
                 "name": {
                     "type": "string",
                     "minLength": 1
@@ -3977,20 +3239,13 @@
                 },
                 "type": {
                     "$ref": "#/$defs/databaseEngine"
-                },
-                "username": {
-                    "$ref": "#/$defs/config"
-                },
-                "password": {
-                    "$ref": "#/$defs/config"
                 }
             }
         },
-        "stateTypePersistentStorageMapping": {
+        "persistentStorageMapping": {
             "type": "object",
             "default": {},
-            "title": "Association between a State Type managed by the State Manager and a defined Persistent Storage",
-            "additionalProperties": false,
+            "title": "Mapping to a defined Persistent Storage",
             "required": [
                 "type",
                 "storageId",
@@ -4000,7 +3255,7 @@
                 "type": {
                     "type": "string",
                     "default": "Database",
-                    "title": "The type of the persistent storage used by the State Manager instance",
+                    "title": "The type of the persistent storage",
                     "enum": [
                         "Database"
                     ]
@@ -4009,21 +3264,20 @@
                     "type": "string",
                     "minLength": 1,
                     "default": "default",
-                    "title": "The id of the persistent storage, defined elsewhere, that will be used to manage states"
+                    "title": "The id of the persistent storage, defined elsewhere"
                 },
                 "partition": {
                     "type": "string",
                     "minLength": 1,
                     "default": "default",
-                    "title": "The name of the internal representation (schema, region, partition, namespace, etc.) within the persistent storage that will be used to manage states"
+                    "title": "The name of the internal representation (schema, region, partition, namespace, etc.) within the persistent storage"
                 }
             }
         },
-        "stateManagerRuntimeConnectionSettings": {
+        "persistentStorageRuntimeConnectionSettings": {
             "type": "object",
             "default": {},
-            "title": "Runtime connection settings for a given State Manager instance and Persistent Storage",
-            "additionalProperties": false,
+            "title": "Runtime connection settings for a given Persistent Storage",
             "required": [
                 "type"
             ],
@@ -4031,7 +3285,7 @@
                 "type": {
                     "type": "string",
                     "default": "Database",
-                    "title": "The type of the persistent storage used by the State Manager instance",
+                    "title": "The type of the persistent storage",
                     "enum": [
                         "Database"
                     ]
@@ -4070,7 +3324,7 @@
                     "connectionPool": {
                         "$ref": "#/$defs/connectionPool",
                         "default": {},
-                        "title": "JDBC connection pool configuration for the State Manager instance"
+                        "title": "JDBC connection pool configuration for the persistent storage"
                     }
                 }
             }

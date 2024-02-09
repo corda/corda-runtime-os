@@ -44,7 +44,7 @@ class WrappingRepositoryTest : CryptoRepositoryTest() {
             it
                 .createQuery(
                     "FROM ${WrappingKeyEntity::class.simpleName} AS k " +
-                        "WHERE k.alias = :alias", WrappingKeyEntity::class.java
+                            "WHERE k.alias = :alias", WrappingKeyEntity::class.java
                 )
                 .setParameter("alias", keyAlias)
                 .singleResult
@@ -156,7 +156,7 @@ class WrappingRepositoryTest : CryptoRepositoryTest() {
 
     @ParameterizedTest
     @MethodSource("emfs")
-    fun `findKeysWrappedByParentKey returns latest generation key`(emf: EntityManagerFactory) {
+    fun `findKeysNotWrappedByParentKey returns latest generation key`(emf: EntityManagerFactory) {
         val repo = WrappingRepositoryImpl(emf, "test")
 
         // Pairs are parent key alias, number of generations of wrapping key to create
@@ -180,31 +180,31 @@ class WrappingRepositoryTest : CryptoRepositoryTest() {
         // We have no control over what order the results come back in, so we make sure the correct generation wrapping
         // keys are returned in any order where required
 
-        val resultsPka1 = repo.findKeysWrappedByParentKey("pka1")
-        assertThat(resultsPka1.size).isEqualTo(2)
+        val resultsPka1 = repo.findKeysNotWrappedByParentKey("pka1")
+
+        val resultPka1filtered1 = resultsPka1.filter { it.parentKeyAlias == "pka2" }
+        assertThat(resultPka1filtered1.size).isEqualTo(1)
+        assertThat(resultPka1filtered1[0].generation).isEqualTo(wrappingKeyInfo.generation + 1)
+
+        val resultPka1filtered2 = resultsPka1.filter { it.parentKeyAlias == "pka3" }
+        assertThat(resultPka1filtered2.size).isEqualTo(3)
         val generationSetPka1 = mutableSetOf<Int>()
-        resultsPka1.forEach {
-            assertThat(it.parentKeyAlias).isEqualTo("pka1")
+        resultPka1filtered2.forEach {
             generationSetPka1 += it.generation
         }
         assertThat(generationSetPka1).contains(wrappingKeyInfo.generation)
+        assertThat(generationSetPka1).contains(wrappingKeyInfo.generation + 1)
         assertThat(generationSetPka1).contains(wrappingKeyInfo.generation + 2)
 
-        val resultsPka2 = repo.findKeysWrappedByParentKey("pka2")
-        assertThat(resultsPka2.size).isEqualTo(1)
-        assertThat(resultsPka2[0].parentKeyAlias).isEqualTo("pka2")
-        assertThat(resultsPka2[0].generation).isEqualTo(wrappingKeyInfo.generation + 1)
-
-        val resultsPka3 = repo.findKeysWrappedByParentKey("pka3")
-        assertThat(resultsPka3.size).isEqualTo(3)
-        val generationSetPka3 = mutableSetOf<Int>()
-        resultsPka3.forEach {
-            assertThat(it.parentKeyAlias).isEqualTo("pka3")
-            generationSetPka3 += it.generation
+        val resultsPka2 = repo.findKeysNotWrappedByParentKey("pka2")
+        val resultPka2filtered1 = resultsPka2.filter { it.parentKeyAlias == "pka1" }
+        assertThat(resultPka2filtered1.size).isEqualTo(2)
+        val generationSetPka2 = mutableSetOf<Int>()
+        resultPka1filtered2.forEach {
+            generationSetPka2 += it.generation
         }
-        assertThat(generationSetPka3).contains(wrappingKeyInfo.generation)
-        assertThat(generationSetPka3).contains(wrappingKeyInfo.generation + 1)
-        assertThat(generationSetPka3).contains(wrappingKeyInfo.generation + 2)
+        assertThat(generationSetPka2).contains(wrappingKeyInfo.generation)
+        assertThat(generationSetPka2).contains(wrappingKeyInfo.generation + 1)
     }
 
     @ParameterizedTest

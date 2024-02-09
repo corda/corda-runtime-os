@@ -3,9 +3,13 @@ package net.corda.cli.plugins.preinstall
 import java.util.Properties
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutionException
-import net.corda.cli.plugins.preinstall.PreInstallPlugin.Kafka
+import net.corda.cli.plugins.preinstall.PreInstallPlugin.ClientSASL
+import net.corda.cli.plugins.preinstall.PreInstallPlugin.CordaValues
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.PluginContext
+import net.corda.cli.plugins.preinstall.PreInstallPlugin.Report
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.ReportEntry
+import net.corda.cli.plugins.preinstall.PreInstallPlugin.SASL
+import net.corda.cli.plugins.preinstall.PreInstallPlugin.SecretValues
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.Node
@@ -38,7 +42,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
     )
     var timeout: Int = 3000
 
-    open class KafkaAdmin(props: Properties, report: PreInstallPlugin.Report) {
+    open class KafkaAdmin(props: Properties, report: Report) {
         private val admin: AdminClient?
 
         init {
@@ -140,8 +144,8 @@ class CheckKafka : Callable<Int>, PluginContext() {
         }
     }
 
-    private fun checkKafka(kafkaProperties : KafkaProperties, component: String, defaultSasl: PreInstallPlugin.SASL?,
-                           clientSasl: PreInstallPlugin.ClientSASL?, replicas: Int) {
+    private fun checkKafka(kafkaProperties : KafkaProperties, component: String, defaultSasl: SASL?,
+                           clientSasl: ClientSASL?, replicas: Int) {
 
         val kafkaPropertiesWithCredentials = kafkaProperties.copy()
         if (kafkaProperties.saslEnabled) {
@@ -174,7 +178,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
     }
 
     override fun call(): Int {
-        val yaml: Kafka
+        val yaml: CordaValues
         try {
             yaml = parseYaml(path)
             report.addEntry(ReportEntry("Parse Kafka properties from YAML", true))
@@ -190,21 +194,14 @@ class CheckKafka : Callable<Int>, PluginContext() {
             return 1
         }
 
-        val replicas = yaml.bootstrap?.kafka?.replicas ?: 3
-        if (yaml.bootstrap?.kafka?.enabled == true) {
+        val replicas = yaml.bootstrap.kafka?.replicas ?: 3
+        if (yaml.bootstrap.kafka?.enabled == true) {
             checkKafka(kafkaProperties, "bootstrap", yaml.kafka.sasl, yaml.bootstrap.kafka.sasl, replicas)
         }
-        checkKafka(kafkaProperties, "crypto", yaml.kafka.sasl, yaml.workers?.crypto?.kafka?.sasl, replicas)
-        checkKafka(kafkaProperties, "db", yaml.kafka.sasl, yaml.workers?.db?.kafka?.sasl, replicas)
-        checkKafka(kafkaProperties, "flow", yaml.kafka.sasl, yaml.workers?.flow?.kafka?.sasl, replicas)
-        checkKafka(kafkaProperties, "flowMapper", yaml.kafka.sasl, yaml.workers?.flowMapper?.kafka?.sasl, replicas)
-        checkKafka(kafkaProperties, "verification", yaml.kafka.sasl, yaml.workers?.verification?.kafka?.sasl, replicas)
-        checkKafka(kafkaProperties, "membership", yaml.kafka.sasl, yaml.workers?.membership?.kafka?.sasl, replicas)
-        checkKafka(kafkaProperties, "rest", yaml.kafka.sasl, yaml.workers?.rest?.kafka?.sasl, replicas)
-        checkKafka(kafkaProperties, "p2pGateway", yaml.kafka.sasl, yaml.workers?.p2pGateway?.kafka?.sasl, replicas)
-        checkKafka(kafkaProperties, "p2pLinkManager", yaml.kafka.sasl, yaml.workers?.p2pLinkManager?.kafka?.sasl, replicas)
-        checkKafka(kafkaProperties, "persistence", yaml.kafka.sasl, yaml.workers?.persistence?.kafka?.sasl, replicas)
-        checkKafka(kafkaProperties, "uniqueness", yaml.kafka.sasl, yaml.workers?.uniqueness?.kafka?.sasl, replicas)
+
+        yaml.workers.forEach {
+            checkKafka(kafkaProperties, it.key, yaml.kafka.sasl, it.value.kafka?.sasl, replicas)
+        }
 
         return if (report.testsPassed()) {
             logger.info(report.toString())
@@ -215,7 +212,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
         }
     }
 
-    fun getKafkaProperties(yaml: Kafka) : KafkaProperties? {
+    fun getKafkaProperties(yaml: CordaValues) : KafkaProperties? {
         if (yaml.kafka.bootstrapServers.isNullOrEmpty()) {
             report.addEntry(ReportEntry("Bootstrap servers have not been defined under Kafka", false))
             return null
@@ -240,7 +237,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
                 }
             }
             if (!yaml.kafka.tls.truststore?.valueFrom?.secretKeyRef?.name.isNullOrEmpty()) {
-                val secret = PreInstallPlugin.SecretValues(yaml.kafka.tls.truststore?.valueFrom, null)
+                val secret = SecretValues(yaml.kafka.tls.truststore?.valueFrom, null)
                 try {
                     kafkaProperties.truststoreFile = getCredential(secret, namespace)
                     report.addEntry(ReportEntry("Get TLS truststore certificate", true))
@@ -261,7 +258,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
         return kafkaProperties
     }
 
-    private fun providesValueOrSecret(password: PreInstallPlugin.SecretValues) =
+    private fun providesValueOrSecret(password: SecretValues) =
         !(password.valueFrom?.secretKeyRef?.name.isNullOrEmpty() &&
                 password.value.isNullOrEmpty())
 }

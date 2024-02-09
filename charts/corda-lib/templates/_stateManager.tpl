@@ -1,232 +1,289 @@
 {{/*
     State Manager Named Templates
-    Most of the templates verify the value set for the [workerName.stateManager.db.host] property as that's the main
-    indication of whether the user has configured the stateManager for the individual worker or not. When not configured,
-    the templates use the cluster database details by default.
 */}}
 
-{{/* State Manager Database Type */}}
-{{- define "corda.stateManagerDbType" -}}
-{{- $ := index . 0 }}
-{{- $workerConfig := index . 1 }}
-{{-     if $workerConfig.stateManager.db.host -}}
-{{-         $workerConfig.stateManager.db.type -}}
-{{-     else -}}
-{{-         include "corda.clusterDbType" . -}}
-{{-     end -}}
-{{- end -}}
 
-{{/* State Manager Database Host */}}
-{{- define "corda.stateManagerDbHost" -}}
-{{- $ := index . 0 }}
-{{- $workerConfig := index . 1 }}
-{{-     if $workerConfig.stateManager.db.host -}}
-{{-         $workerConfig.stateManager.db.host -}}
-{{-     else -}}
-{{-         $.Values.db.cluster.host -}}
-{{-     end -}}
-{{- end -}}
-
-
-{{/* State Manager Database Port */}}
-{{- define "corda.stateManagerDbPort" -}}
-{{- $ := index . 0 }}
-{{- $workerConfig := index . 1 }}
-{{-     if $workerConfig.stateManager.db.host -}}
-{{-         $workerConfig.stateManager.db.port -}}
-{{-     else }}
-{{-         include "corda.clusterDbPort" $ -}}
-{{-     end }}
-{{- end -}}
-
-
-{{/* State Manager Database Name */}}
-{{- define "corda.stateManagerDbName" -}}
-{{- $ := index . 0 }}
-{{- $workerConfig := index . 1 }}
-{{-     if $workerConfig.stateManager.db.host -}}
-{{-         $workerConfig.stateManager.db.name -}}
-{{-     else }}
-{{-         include "corda.clusterDbName" $ -}}
-{{-     end }}
-{{- end -}}
-
-
-{{/* State Manager JDBC URL */}}
-{{- define "corda.stateManagerJdbcUrl" -}}
-{{- $ := index . 0 }}
-{{- $workerConfig := index . 1 }}
-{{- if $workerConfig.stateManager.db.host -}}
-jdbc:{{- include "corda.stateManagerDbType" (list $ $workerConfig) -}}://{{- $workerConfig.stateManager.db.host -}}:{{- include "corda.stateManagerDbPort" (list $ $workerConfig) -}}/{{- include "corda.stateManagerDbName" (list $ $workerConfig) -}}
-{{- else -}}
-jdbc:{{- include "corda.clusterDbType" $ -}}://{{- $.Values.db.cluster.host -}}:{{- include "corda.clusterDbPort" $ -}}/{{- include "corda.clusterDbName" $ -}}
-{{- end -}}
-{{- end -}}
-
-
-{{/* State Manager Default Worker Secret Name */}}
-{{- define "corda.stateManagerDefaultSecretName" -}}
-{{- $ := index . 0 }}
-{{- $workerKey := index . 1 }}
-{{- $workerName := printf "%s-worker" ( include "corda.workerTypeKebabCase" $workerKey ) }}
-{{- printf "%s-%s-state-manager-secret" (include "corda.fullname" $) $workerName  }}
-{{- end -}}
-
-
-{{/* State Manager Default Worker Secret Name */}}
-{{- define "corda.stateManagerDefaultBootSecretName" -}}
-{{- $ := index . 0 }}
-{{- $workerKey := index . 1 }}
-{{- $workerName := printf "%s-worker" ( include "corda.workerTypeKebabCase" $workerKey ) }}
-{{- printf "%s-%s-state-manager-boot-secret" (include "corda.fullname" $) $workerName  }}
-{{- end -}}
-
-
-{{- define "corda.bootstrapStateManagerDbEnv" -}}
+{{/*
+    Checks whether there's at least one state type configured under the specified 'workerConfig'
+*/}}
+{{- define "corda.sm.required" -}}
 {{- $ := index . 0 -}}
-{{- $worker := index . 1 -}}
-{{- $workerKey := index . 2 -}}
-{{- $bootConfig := index . 3 -}}
-- name: STATE_MANAGER_PGUSER
-  valueFrom:
-    secretKeyRef:
-      {{- if $worker.stateManager.db.host }}
-      {{-   if $bootConfig.username.valueFrom.secretKeyRef.name }}
-      name: {{ $bootConfig.username.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required (printf "Must specify bootstrap.db.stateManager.%s.username.valueFrom.secretKeyRef.key" $workerKey) $bootConfig.username.valueFrom.secretKeyRef.key | quote }}
-      {{-   else }}
-      name: {{ include "corda.stateManagerDefaultBootSecretName" ( list $ $workerKey ) | quote }}
-      key: "username"
-      {{-  end }}
-      {{- else }}
-      {{- include "corda.bootstrapClusterPgUser" $ | nindent 6 }}
-      {{- end }}
-- name: STATE_MANAGER_PGPASSWORD
-  valueFrom:
-    secretKeyRef:
-      {{- if $worker.stateManager.db.host }}
-      {{-   if $bootConfig.password.valueFrom.secretKeyRef.name }}
-      name: {{ $bootConfig.password.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required (printf "Must specify bootstrap.db.stateManager.%s.password.valueFrom.secretKeyRef.key" $workerKey) $bootConfig.password.valueFrom.secretKeyRef.key | quote }}
-      {{-   else }}
-      name: {{ include "corda.stateManagerDefaultBootSecretName" ( list $ $workerKey ) | quote }}
-      key: "password"
-      {{-  end }}
-      {{- else }}
-      {{- include "corda.bootstrapClusterPgPassword" $ | nindent 6 }}
-      {{- end }}
+{{- $workerConfig := index . 1 -}}
+{{- $stateManagerV2 := false -}}
+{{- range $stateType, $stateTypeConfig  := $.Values.stateManager }}
+{{-   $stateManagerSettings := ( index $workerConfig "stateManager" ) -}}
+{{-   if and $stateManagerSettings ( index $stateManagerSettings $stateType ) -}}
+{{-     $stateManagerV2 = true -}}
+{{-   end -}}
+{{- end }}
+{{- $stateManagerV2 -}}
 {{- end -}}
 
 
-{{/* State Manager Database Credentials Environment Variables */}}
-{{- define "corda.stateManagerDbEnv" -}}
+{{/*
+    Name for Secrets Containing State Manager Runtime Credentials (defined at the worker level)
+    The resulting secret name is "chartName-workerNameKebabCase-stateTypeKebabCase-db"
+*/}}
+{{- define "corda.sm.runtimeCredentialsSecretName" -}}
 {{- $ := index . 0 -}}
-{{- $worker := index . 1 -}}
-{{- $workerKey := index . 2 -}}
+{{- $stateType := index . 1 -}}
+{{- $workerName := index . 2 -}}
+{{ printf "%s-%s-%s-db" ( include "corda.fullname" $ ) ( include "corda.kebabCase" $workerName ) ( include "corda.kebabCase" $stateType ) }}
+{{- end -}}
+
+
+{{/*
+    Name for Volumes Containing State Manager Runtime Credentials (defined at the worker level)
+*/}}
+{{- define "corda.sm.runtimeCredentialsVolumeName" -}}
+{{ printf "%s-volume" ( include "corda.kebabCase" . ) }}
+{{- end -}}
+
+
+{{/*
+    Environment variables to be used when using state manager databases (STATE_MANAGER_USERNAME and STATE_MANAGER_PASSWORD)
+    The order of preference when choosing the actual values (username and password) are shown below:
+        - Custom, set at the worker level through a kubernetes secret provided by the user.
+        - Custom, set at the worker level through a plain value provided by the user (transformed into a Secret by the chart)
+        - Default, set at the root "databases" level through a kubernetes secret provided by the user.
+        - Default, set at the root "databases" level through a plain value provided by the user (transformed into a Secret by the chart)
+*/}}
+{{- define "corda.sm.db.runtimeEnvironment" -}}
+{{- $ := index . 0 -}}
+{{- $dbId := index . 1 -}}
+{{- $stateType := index . 2 -}}
+{{- $workerName := index . 3 -}}
+{{- $runtimeSettings := index . 4 -}}
 - name: STATE_MANAGER_USERNAME
   valueFrom:
     secretKeyRef:
-      {{- if $worker.stateManager.db.host }}
-      {{-   if $worker.stateManager.db.username.valueFrom.secretKeyRef.name }}
-      name: {{ $worker.stateManager.db.username.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required (printf "Must specify workers.%s.stateManager.db.username.valueFrom.secretKeyRef.key" $workerKey) $worker.stateManager.db.username.valueFrom.secretKeyRef.key | quote }}
+      {{- if (($runtimeSettings.username.valueFrom).secretKeyRef).name }}
+      name: {{ $runtimeSettings.username.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required ( printf "Must specify workers.%s.stateManager.%s.username.valueFrom.secretKeyRef.key" $workerName $stateType ) $runtimeSettings.username.valueFrom.secretKeyRef.key | quote }}
       {{-   else }}
-      name: {{ include "corda.stateManagerDefaultSecretName" ( list $ $workerKey ) | quote }}
+      name: {{ include "corda.sm.runtimeCredentialsSecretName" ( list $ $stateType $workerName ) | quote }}
       key: "username"
-      {{-  end }}
-      {{- else }}
-      {{- include "corda.clusterDbUsername" $ | nindent 6 }}
-      {{- end }}
+      {{-   end }}
 - name: STATE_MANAGER_PASSWORD
   valueFrom:
     secretKeyRef:
-      {{- if $worker.stateManager.db.host }}
-      {{-   if $worker.stateManager.db.password.valueFrom.secretKeyRef.name }}
-      name: {{ $worker.stateManager.db.password.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required (printf "Must specify workers.%s.stateManager.db.password.valueFrom.secretKeyRef.key" $workerKey) $worker.stateManager.db.password.valueFrom.secretKeyRef.key | quote }}
+      {{- if (($runtimeSettings.password.valueFrom).secretKeyRef).name }}
+      name: {{ $runtimeSettings.password.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required ( printf "Must specify workers.%s.stateManager.%s.password.valueFrom.secretKeyRef.key" $workerName $stateType ) $runtimeSettings.password.valueFrom.secretKeyRef.key | quote }}
       {{-   else }}
-      name: {{ include "corda.stateManagerDefaultSecretName" ( list $ $workerKey ) | quote }}
+      name: {{ include "corda.sm.runtimeCredentialsSecretName" ( list $ $stateType $workerName ) | quote }}
       key: "password"
-      {{-  end }}
-      {{- else }}
-      {{- include "corda.clusterDbPassword" $ | nindent 6 }}
-      {{- end }}
+      {{-   end }}
 {{- end -}}
 
 
-{{/* State Manager Containers to Create & Apply Database Schemas Within The Bootstrap Job */}}
-{{- define "corda.bootstrapStateManagerDb" -}}
+{{/*
+    State Manager Containers to Create & Apply Database Schemas Within The Bootstrap Job
+*/}}
+{{- define "corda.sm.db.bootstrapContainers" -}}
 {{- $ := index . 0 -}}
-{{- $workerKey := index . 1 -}}
-{{- $authConfig := index . 2 -}}
-{{- $worker := (index $.Values.workers $workerKey) -}}
-{{- $workerName := printf "%s-worker" ( include "corda.workerTypeKebabCase" $workerKey ) -}}
+{{- $stateType := index . 1 -}}
+{{- $workerName := index . 2 -}}
+{{- $schemaName := index . 3 -}}
+{{- $databaseConfig := index . 4 -}}
+{{- $runtimeSettings := index . 5 -}}
+{{- $bootstrapSettings := index . 6 -}}
 {{- with index . 0 -}}
-{{/* We use two init-containers for serial execution to prevent issues at applying the same Liquibase files at the same time (developer use case where all workers use the same state manager database)  */}}
-        - name: generate-state-manager-{{ $workerName }}
+{{- $dbId := $databaseConfig.id -}}
+{{- $workerKebabCase := include "corda.kebabCase" $workerName -}}
+{{- $stateTypeKebabCase := include "corda.kebabCase" $stateType -}}
+{{/*    -- We use two init-containers for serial execution to prevent issues when applying the same Liquibase files at the same time (developer use case where multiple workers use the same state manager database) */}}
+        - name: generate-db-schema-{{ $workerKebabCase }}-{{ $stateTypeKebabCase }}
           image: {{ include "corda.bootstrapCliImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
           {{- include "corda.containerSecurityContext" . | nindent 10 }}
           env:
             {{- include "corda.bootstrapCliEnv" . | nindent 12 }}
-            {{- include "corda.bootstrapStateManagerDbEnv" ( list $ $worker $workerKey $authConfig ) | nindent 12 }}
+            {{- include "corda.db.bootstrapEnvironment" ( list $ "config" $dbId $bootstrapSettings ) | nindent 12 }}
           command: [ 'sh', '-c', '-e' ]
           args:
             - |
               #!/bin/sh
               set -ev
-
-              echo 'Generating State Manager DB specification for {{ $workerName }}...'
-              STATE_MANAGER_JDBC_URL="{{- include "corda.stateManagerJdbcUrl" ( list . $worker ) -}}"
-              mkdir /tmp/stateManager-{{ $workerKey }}
+              echo "Generating Database Specification for Database '{{ $dbId }}'..."
+              JDBC_URL={{ include "corda.db.connectionUrl" $databaseConfig | quote }}
+              mkdir /tmp/database-{{ $workerKebabCase }}-{{ $stateTypeKebabCase }}
               java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
-                -s "statemanager" -g "statemanager:state_manager" \
-                -u "${STATE_MANAGER_PGUSER}" -p "${STATE_MANAGER_PGPASSWORD}" \
-                --jdbc-url "${STATE_MANAGER_JDBC_URL}" \
-                -c -l /tmp/stateManager-{{ $workerKey }}
-              echo 'Generating State Manager DB specification for {{ $workerName }}... Done'
+                -s "statemanager" -g "statemanager:{{ $schemaName }}" \
+                -u "${BOOTSTRAP_CONFIG_DB_USERNAME}" -p "${BOOTSTRAP_CONFIG_DB_PASSWORD}" \
+                --jdbc-url "${JDBC_URL}" \
+                -c -l /tmp/database-{{ $workerKebabCase }}-{{ $stateTypeKebabCase }}
+              echo "Generating Database Specification for Database '{{ $dbId }}'... Done"
           workingDir: /tmp
           volumeMounts:
             - mountPath: /tmp
               name: temp
             {{- include "corda.log4jVolumeMount" . | nindent 12 }}
-        - name: apply-state-manager-{{ $workerName }}
+        - name: apply-db-schema-{{ $workerKebabCase }}-{{ $stateTypeKebabCase }}
           image: {{ include "corda.bootstrapDbClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
           {{- include "corda.containerSecurityContext" . | nindent 10 }}
           env:
-            - name: STATE_MANAGER_DB_HOST
-              value: {{ include "corda.stateManagerDbHost" ( list . $worker ) | quote }}
-            - name: STATE_MANAGER_DB_PORT
-              value: {{ include "corda.stateManagerDbPort" ( list . $worker ) | quote }}
-            - name: STATE_MANAGER_DB_NAME
-              value: {{ include "corda.stateManagerDbName" ( list . $worker ) | quote }}
-            {{- include "corda.stateManagerDbEnv" ( list $ $worker $workerKey ) | nindent 12 }}
-            {{- include "corda.bootstrapStateManagerDbEnv" ( list $ $worker $workerKey $authConfig ) | nindent 12 }}
+            {{- include "corda.db.bootstrapEnvironment" ( list $ "config" $dbId $bootstrapSettings ) | nindent 12 }}
+            {{- include "corda.sm.db.runtimeEnvironment" ( list $ $dbId $stateType $workerName $runtimeSettings ) | nindent 12 }}
           command: [ 'sh', '-c', '-e' ]
           args:
             - |
               #!/bin/sh
               set -ev
-              echo 'Applying State Manager Specification for {{ $workerName }}...'
-              export PGPASSWORD="${STATE_MANAGER_PGPASSWORD}"
-              find /tmp/stateManager-{{ $workerKey }} -iname "*.sql" | xargs printf -- ' -f %s' | xargs psql -v ON_ERROR_STOP=1 -h "${STATE_MANAGER_DB_HOST}" -p "${STATE_MANAGER_DB_PORT}" -U "${STATE_MANAGER_PGUSER}" --dbname "${STATE_MANAGER_DB_NAME}"
+              echo "Applying State Manager Specification for Database '{{ $dbId }}'..."
+              export PGPASSWORD="${BOOTSTRAP_CONFIG_DB_PASSWORD}"
+              find /tmp/database-{{ $workerKebabCase }}-{{ $stateTypeKebabCase }} -iname "*.sql" | xargs printf -- ' -f %s' | xargs psql -v ON_ERROR_STOP=1 -h "{{- required ( printf "Must specify a host for database '%s'" $dbId ) $databaseConfig.host -}}" -p "{{- $databaseConfig.port -}}" -U "${BOOTSTRAP_CONFIG_DB_USERNAME}" --dbname "{{- $databaseConfig.name -}}"
               echo 'Applying State Manager Specification for {{ $workerName }}... Done!'
 
               echo 'Creating users and granting permissions for State Manager in {{ $workerName }}...'
-              psql -v ON_ERROR_STOP=1 -h "${STATE_MANAGER_DB_HOST}" -p "${STATE_MANAGER_DB_PORT}" -U "${STATE_MANAGER_PGUSER}" "${STATE_MANAGER_DB_NAME}" << SQL
+              psql -v ON_ERROR_STOP=1 -h "{{- required ( printf "Must specify a host for database '%s'" $dbId ) $databaseConfig.host -}}" -p "{{- $databaseConfig.port -}}" -U "${BOOTSTRAP_CONFIG_DB_USERNAME}" "{{- $databaseConfig.name -}}" << SQL
                 DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${STATE_MANAGER_USERNAME}') THEN RAISE NOTICE 'Role "${STATE_MANAGER_USERNAME}" already exists'; ELSE CREATE USER "${STATE_MANAGER_USERNAME}" WITH ENCRYPTED PASSWORD '${STATE_MANAGER_PASSWORD}'; END IF; END \$\$;
-                GRANT USAGE ON SCHEMA STATE_MANAGER TO "${STATE_MANAGER_USERNAME}";
-                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA STATE_MANAGER TO "${STATE_MANAGER_USERNAME}";
-                GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA STATE_MANAGER TO "${STATE_MANAGER_USERNAME}";
-                ALTER ROLE "${STATE_MANAGER_USERNAME}" SET search_path TO STATE_MANAGER;
+                GRANT USAGE ON SCHEMA "{{- $schemaName -}}" TO "${STATE_MANAGER_USERNAME}";
+                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA "{{- $schemaName -}}" TO "${STATE_MANAGER_USERNAME}";
+                GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA "{{- $schemaName -}}" TO "${STATE_MANAGER_USERNAME}";
+                GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA "{{- $schemaName -}}" TO "${STATE_MANAGER_USERNAME}";
+                ALTER ROLE "${STATE_MANAGER_USERNAME}" SET search_path TO "{{- $schemaName -}}";
               SQL
 
-              echo 'Creating users and granting permissions for State Manager in {{ $workerName }}... Done!'
+              echo "Applying State Manager Specification for Database '{{ $dbId }}'... Done!"
           volumeMounts:
             - mountPath: /tmp
               name: temp
+{{- end -}}
+{{- end -}}
+
+
+{{/*
+    Volumes Containing State Manager Runtime Credentials for Each State Type Used by The Worker
+    The template defines a single 'volume' per State Type, with two projections pointing to the Secrets where the
+    username and password are configured.
+*/}}
+{{- define "corda.sm.runtimeCredentialVolumes" -}}
+{{- $ := index . 0 -}}
+{{- $workerName := index . 1 -}}
+{{- $workerConfig := index . 2 -}}
+{{- range $stateType, $runtimeSettings := $workerConfig.stateManager }}
+{{-   $volumeName := include "corda.sm.runtimeCredentialsVolumeName" $stateType }}
+{{-   $stateTypeRootConfig := ( index $.Values.stateManager $stateType ) }}
+- name: {{ $volumeName }}
+  projected:
+    sources:
+      - secret:
+{{-   if (($runtimeSettings.username.valueFrom).secretKeyRef).name }}
+          name: {{ $runtimeSettings.username.valueFrom.secretKeyRef.name | quote }}
+          items:
+            - key: {{ required ( printf "Must specify workers.%s.stateManager.%s.username.valueFrom.secretKeyRef.key" $workerName $stateType ) $runtimeSettings.username.valueFrom.secretKeyRef.key | quote }}
+              path: "username"
+{{-   else }}
+          name: {{ include "corda.sm.runtimeCredentialsSecretName" ( list $ $stateType $workerName ) | quote }}
+          items:
+            - key: "username"
+              path: "username"
+{{-   end }}
+      - secret:
+{{-   if (($runtimeSettings.password.valueFrom).secretKeyRef).name }}
+          name: {{ $runtimeSettings.password.valueFrom.secretKeyRef.name | quote }}
+          items:
+            - key: {{ required ( printf "Must specify workers.%s.stateManager.%s.password.valueFrom.secretKeyRef.key" $workerName $stateType ) $runtimeSettings.password.valueFrom.secretKeyRef.key | quote }}
+              path: "password"
+{{-   else }}
+          name: {{ include "corda.sm.runtimeCredentialsSecretName" ( list $ $stateType $workerName ) | quote }}
+          items:
+            - key: "password"
+              path: "password"
+{{-   end }}
 {{- end }}
+{{- end -}}
+
+
+{{/*
+    Volume Mounts for Each State Type Used by The Worker
+*/}}
+{{- define "corda.sm.runtimeCredentialsVolumeMounts" -}}
+{{- $ := index . 0 -}}
+{{- $workerConfig := index . 1 -}}
+{{- range $stateType, $runtimeSettings := $workerConfig.stateManager }}
+{{-   $volumeName := include "corda.sm.runtimeCredentialsVolumeName" $stateType }}
+- mountPath: "/tmp/{{- $stateType -}}-mount"
+  name: {{ $volumeName | quote }}
+  readOnly: true
 {{- end }}
+{{- end -}}
+
+
+{{/*
+    State Manager Container to Create Worker Startup Configuration File
+    There is one configuration file generated for each State Type used by the Worker:
+        - Connection settings are obtained from the database configuration.
+        - Connection Pool settings are obtained from the worker runtime configuration.
+        - Credentials are obtained worker runtime configuration and, if not found, from the database configuration.
+*/}}
+{{- define "corda.sm.db.runtimeConfigurationContainer" -}}
+{{- $ := index . 0 -}}
+{{- $workerName := index . 1 -}}
+{{- $workerConfig := index . 2 -}}
+{{- $workerKebabCase := include "corda.kebabCase" $workerName -}}
+{{- with index . 0 }}
+- name: {{ ( printf "generate-%s-runtime-configuration" $workerKebabCase ) | quote }}
+  image: {{ include "corda.workerImage" ( list $ $workerConfig ) }}
+  imagePullPolicy: {{ $.Values.imagePullPolicy }}
+  {{- include "corda.containerSecurityContext" $ | nindent 2 }}
+  command: [ 'sh', '-c', '-e' ]
+  args:
+    - |
+      #!/bin/sh
+      set -ev
+      echo 'Generating State Manger Configuration Settings...'
+
+      {{ range $stateType, $stateTypeRuntimeConfig  := $workerConfig.stateManager }}
+      {{-   $stateTypeRootConfig := ( index $.Values.stateManager $stateType ) -}}
+      {{-   $connectionSettings := fromYaml ( include "corda.db.configuration" ( list $ $stateTypeRootConfig.storageId ( printf "stateManager.%s.storageId" $stateType ) ) ) -}}
+      cat << EOF >> "/work/{{- $stateType -}}-config.json"
+      {
+        "stateManager": {
+          "{{- $stateType -}}": {
+            "type": "{{- $stateTypeRuntimeConfig.type -}}",
+            "database": {
+              "jdbc": {
+                "url": {{ include "corda.db.connectionUrl" $connectionSettings | quote }},
+                "driver": {{ include "corda.db.driverClassName" $connectionSettings | quote }}
+              },
+              "pool": {
+              {{- if not ( kindIs "invalid" $stateTypeRuntimeConfig.connectionPool.minSize ) }}
+                "minSize": {{ $stateTypeRuntimeConfig.connectionPool.minSize }},
+              {{- end }}
+                "maxSize": {{ $stateTypeRuntimeConfig.connectionPool.maxSize -}},
+                "idleTimeoutSeconds": {{ $stateTypeRuntimeConfig.connectionPool.idleTimeoutSeconds -}},
+                "maxLifetimeSeconds": {{ $stateTypeRuntimeConfig.connectionPool.maxLifetimeSeconds -}},
+                "keepAliveTimeSeconds": {{ $stateTypeRuntimeConfig.connectionPool.keepAliveTimeSeconds -}},
+                "validationTimeoutSeconds": {{ $stateTypeRuntimeConfig.connectionPool.validationTimeoutSeconds }}
+              },
+              "user": "$(cat /tmp/{{ $stateType }}-mount/username)",
+              "pass": "$(cat /tmp/{{ $stateType }}-mount/password)"
+            }
+          }
+        }
+      }
+      EOF
+      {{ end }}
+      echo 'Generating State Manger Configuration Settings... Done!'
+  volumeMounts:
+    - mountPath: "/work"
+      name: "work"
+      readOnly: false
+  {{- include "corda.sm.runtimeCredentialsVolumeMounts" ( list $ $workerConfig )  | nindent 4 -}}
+{{- end -}}
+{{- end -}}
+
+
+{{/*
+    State Manager Startup Configuration File Parameters
+*/}}
+{{- define "corda.sm.runtimeConfigurationParameters" -}}
+{{-  range $stateType, $stateTypeRuntimeConfig  := .stateManager }}
+- "--values=/work/{{- $stateType -}}-config.json"
+{{- end }}
+{{- end -}}

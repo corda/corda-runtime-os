@@ -3,7 +3,6 @@ package net.corda.flow.maintenance
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.data.flow.FlowTimeout
 import net.corda.data.flow.state.checkpoint.Checkpoint
-import net.corda.data.messaging.mediator.MediatorState
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.state.impl.FlowCheckpointFactory
 import net.corda.libs.configuration.SmartConfig
@@ -19,7 +18,6 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
 import java.time.Instant
 
 class TimeoutEventCleanupProcessorTest {
@@ -28,12 +26,10 @@ class TimeoutEventCleanupProcessorTest {
     private val flowCheckpointFactory = mock<FlowCheckpointFactory>()
     private val checkpointCleanupHandler = mock<CheckpointCleanupHandler>()
     private val checkpointCordaAvroDeserializer = mock<CordaAvroDeserializer<Checkpoint>>()
-    private val mediatorDeserializer = mock<CordaAvroDeserializer<MediatorState>>()
     private val exceptionCaptor = argumentCaptor<FlowFatalException>()
     private val processor = TimeoutEventCleanupProcessor(
         checkpointCleanupHandler,
         stateManager,
-        mediatorDeserializer,
         checkpointCordaAvroDeserializer,
         flowCheckpointFactory,
         config
@@ -46,18 +42,10 @@ class TimeoutEventCleanupProcessorTest {
 
     @BeforeEach
     fun setup() {
-        val checkpointBytes = mock<ByteBuffer>().apply {
-            whenever(array()).thenReturn("bytes".toByteArray())
-        }
         val checkpoint = mock<Checkpoint>().apply {
             whenever(flowId).thenReturn("flowID")
         }
-        val mediatorState = mock<MediatorState>().apply {
-            whenever(state).thenReturn(checkpointBytes)
-        }
-
         whenever(checkpointCordaAvroDeserializer.deserialize(any())).thenReturn(checkpoint)
-        whenever(mediatorDeserializer.deserialize(any())).thenReturn(mediatorState)
         whenever(flowCheckpointFactory.create(any(), any(), any())).thenReturn(mock())
         whenever(checkpointCleanupHandler.cleanupCheckpoint(any(), any(), any())).thenReturn(listOf(mock()))
     }

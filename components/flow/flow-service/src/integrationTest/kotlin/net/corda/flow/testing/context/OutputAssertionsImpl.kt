@@ -349,6 +349,12 @@ class OutputAssertionsImpl(
         }
     }
 
+    override fun notNullStateRecord() {
+        asserts.add {
+            assertNotNull(it.response?.updatedState?.value, "Expected output state not to be null")
+        }
+    }
+
     override fun markedForDlq() {
         asserts.add {
             assertThat(it.response?.markForDLQ).isTrue

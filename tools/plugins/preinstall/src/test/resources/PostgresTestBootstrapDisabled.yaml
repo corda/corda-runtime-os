@@ -1,0 +1,36 @@
+bootstrap:
+  db:
+    enabled: false
+    databases: []
+config:
+  storageId: "default"
+databases:
+  - id: "default"
+    host: "preinstall-plugin-test-bad-host"
+    port: 5432
+  - id: "state-manager"
+    host: "preinstall-plugin-test-another-bad-host"
+    port: 5432
+kafka: { }
+stateManager:
+  keyRotation:
+    storageId: "state-manager"
+workers:
+  crypto:
+    config:
+      username:
+        value: "crypto_user"
+      password:
+        valueFrom:
+          secretKeyRef:
+            name: "postgres-test-crypto-config"
+            key: "password"
+    stateManager:
+      keyRotation:
+        username:
+          value: "key_rotation"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "postgres-test-crypto-key-rotation"
+              key: "password"

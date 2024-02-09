@@ -325,38 +325,38 @@ class UtxoPersistenceServiceImplTest {
             createTransactionEntity(entityFactory, transaction1, status = VERIFIED).also { em.persist(it) }
             createTransactionEntity(entityFactory, transaction2, status = VERIFIED).also { em.persist(it) }
 
-            repository.persistVisibleTransactionOutput(
-                em,
-                transaction1.id.toString(),
-                UtxoComponentGroup.OUTPUTS.ordinal,
-                1,
-                ContractState::class.java.name,
-                timestamp = createdTs,
-                consumed = false,
-                customRepresentation = CustomRepresentation("{}")
+            em.flush()
+
+            val outputs = listOf(
+                UtxoRepository.VisibleTransactionOutput(
+                    1,
+                    ContractState::class.java.name,
+                    CustomRepresentation("{}"),
+                    null,
+                    notaryX500Name.toString()
+                )
             )
 
-            repository.persistVisibleTransactionOutput(
-                em,
-                transaction2.id.toString(),
-                UtxoComponentGroup.OUTPUTS.ordinal,
-                0,
-                ContractState::class.java.name,
-                timestamp = createdTs,
-                consumed = false,
-                customRepresentation = CustomRepresentation("{}")
+            val outputs2 = listOf(
+                UtxoRepository.VisibleTransactionOutput(
+                    0,
+                    ContractState::class.java.name,
+                    CustomRepresentation("{}"),
+                    null,
+                    notaryX500Name.toString()
+                ),
+                UtxoRepository.VisibleTransactionOutput(
+                    1,
+                    ContractState::class.java.name,
+                    CustomRepresentation("{}"),
+                    null,
+                    notaryX500Name.toString()
+                )
             )
 
-            repository.persistVisibleTransactionOutput(
-                em,
-                transaction2.id.toString(),
-                UtxoComponentGroup.OUTPUTS.ordinal,
-                1,
-                ContractState::class.java.name,
-                timestamp = createdTs,
-                consumed = true,
-                customRepresentation = CustomRepresentation("{}")
-            )
+            repository.persistVisibleTransactionOutputs(em, transaction1.id.toString(), Instant.now(), outputs)
+            repository.persistVisibleTransactionOutputs(em, transaction2.id.toString(), Instant.now(), outputs2)
+            repository.markTransactionVisibleStatesConsumed(em, listOf(StateRef(transaction2.id, 1)), Instant.now())
         }
 
         val stateClass = TestContractState2::class.java

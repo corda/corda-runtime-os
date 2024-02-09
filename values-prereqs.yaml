@@ -1,10 +1,19 @@
 # Override file suitable for local deployment of the Corda Helm chart against version 0.2.0 of the corda-dev-prereqs Helm chart.
 #
+# Create local docker images:
+#   ./gradlew publishOSGiImage --parallel
+#
+# Deploy corda-dev-prereqs Helm Chart:
+#   helm -n corda install prereqs  oci://registry-1.docker.io/corda/corda-dev-prereqs --version 0.2.0 --timeout 10m --wait
+#
+# Deploy corda Helm Chart:
+#   helm dependency build charts/corda && helm -n corda upgrade --install corda charts/corda --values debug.yaml --values values-prereqs.yaml --wait
+#
 # See `debug.yaml` for debug settings.
 #
 # NOTE: The below assumes you deploy Kafka and the PostgreSQL database in the same namespace, so that domain names containing just the service name are resolved (i.e. prereqs-postgresql instead of prereqs-postgresql.<namespace>)
 #       If that is not the case, you might need to add the namespace as a suffix.
-
+#
 imagePullPolicy: "IfNotPresent"
 image:
   registry: "corda-os-docker-dev.software.r3.com"
@@ -14,35 +23,29 @@ logging:
   format: "text"
   level: "info"
 
+databases:
+  - id: "default"
+    name: "cordacluster"
+    port: 5432
+    type: "postgresql"
+    host: "prereqs-postgres"
+
 bootstrap:
   restApiAdmin:
     password:
       value: "admin"
-  # Disable pre-install check as we are not specifying resources
-  preinstallCheck:
-    enabled: false
   db:
-    cluster:
-      password:
-        valueFrom:
-          secretKeyRef:
-            name: "prereqs-postgres"
-            key: "postgres-password"
-      username:
-        value: "postgres"
+    databases:
+      - id: "default"
+        username:
+          value: "postgres"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "prereqs-postgres"
+              key: "postgres-password"
   kafka:
     replicas: 1
-
-db:
-  cluster:
-    host: "prereqs-postgres"
-    username:
-      value: "corda"
-    password:
-      valueFrom:
-        secretKeyRef:
-          name: "prereqs-postgres"
-          key: "corda-password"
 
 kafka:
   bootstrapServers: "prereqs-kafka:9092"

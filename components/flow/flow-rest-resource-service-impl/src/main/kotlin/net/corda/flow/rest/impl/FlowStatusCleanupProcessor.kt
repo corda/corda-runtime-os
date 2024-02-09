@@ -1,4 +1,4 @@
-package net.corda.processors.rest
+package net.corda.flow.rest.impl
 
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.rest.ExecuteFlowStatusCleanup
@@ -58,7 +58,7 @@ class FlowStatusCleanupProcessor(
             getStaleFlowStatuses()
                 .map { FlowStatusRecord(it.key, it.value.version) }
                 .chunked(batchSize)
-                .map { Record(REST_FLOW_STATUS_CLEANUP_TOPIC, UUID.randomUUID(), ExecuteFlowStatusCleanup(it)) }
+                .map { Record(REST_FLOW_STATUS_CLEANUP_TOPIC, UUID.randomUUID().toString(), ExecuteFlowStatusCleanup(it)) }
         } ?: emptyList()
     }
 

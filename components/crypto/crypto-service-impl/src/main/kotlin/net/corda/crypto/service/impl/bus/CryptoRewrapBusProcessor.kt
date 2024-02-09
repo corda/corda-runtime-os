@@ -29,8 +29,9 @@ private const val REWRAP_KEYS_OPERATION_NAME = "rewrapKeys"
 @Suppress("LongParameterList")
 class CryptoRewrapBusProcessor(
     val cryptoService: CryptoService,
-    private val stateManager: StateManager?,
+    private val stateManager: StateManager,
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    private val defaultUnmanagedWrappingKeyName: String,
 ) : DurableProcessor<String, IndividualKeyRotationRequest> {
 
     companion object {
@@ -69,14 +70,6 @@ class CryptoRewrapBusProcessor(
 
         when (request.keyType) {
             KeyType.UNMANAGED -> {
-                if (request.oldParentKeyAlias.isNullOrEmpty()) {
-                    logger.info("oldParentKeyAlias missing from unmanaged IndividualKeyRotationRequest, ignoring.")
-                    return
-                }
-                if (request.newParentKeyAlias.isNullOrEmpty()) {
-                    logger.info("newParentKeyAlias missing from unmanaged IndividualKeyRotationRequest, ignoring.")
-                    return
-                }
                 if (request.targetKeyAlias.isNullOrEmpty()) {
                     logger.info("targetKeyAlias missing from unmanaged IndividualKeyRotationRequest, ignoring.")
                     return
@@ -90,7 +83,7 @@ class CryptoRewrapBusProcessor(
                     cryptoService.rewrapWrappingKey(
                         request.tenantId,
                         request.targetKeyAlias,
-                        request.newParentKeyAlias
+                        defaultUnmanagedWrappingKeyName
                     )
                 }
 
@@ -98,14 +91,6 @@ class CryptoRewrapBusProcessor(
             }
 
             KeyType.MANAGED -> {
-                if (request.oldParentKeyAlias != null) {
-                    logger.info("oldParentKeyAlias provided for managed IndividualKeyRotationRequest, ignoring.")
-                    return
-                }
-                if (request.newParentKeyAlias != null) {
-                    logger.info("newParentKeyAlias provided for managed IndividualKeyRotationRequest, ignoring.")
-                    return
-                }
                 if (request.targetKeyAlias != null) {
                     logger.info("targetKeyAlias provided for managed IndividualKeyRotationRequest, ignoring.")
                     return
@@ -198,14 +183,15 @@ class CryptoRewrapBusProcessor(
                 stateManager.get(
                     listOf(
                         getKeyRotationStatusRecordKey(
-                            request.oldParentKeyAlias,
+                            defaultUnmanagedWrappingKeyName,
                             request.tenantId
                         )
                     )
                 )
             check(tenantIdWrappingKeysRecords.size == 1) {
                 "Found none or more than 1 ${request.tenantId} record " +
-                    "in the database for rootKeyAlias ${request.oldParentKeyAlias}. Found records $tenantIdWrappingKeysRecords."
+                        "in the database for new master wrapping key $defaultUnmanagedWrappingKeyName. " +
+                        "Found records $tenantIdWrappingKeysRecords."
             }
 
             tenantIdWrappingKeysRecords.forEach { (_, state) ->
@@ -218,8 +204,6 @@ class CryptoRewrapBusProcessor(
                     checkNotNull(
                         unmanagedSerializer.serialize(
                             UnmanagedKeyStatus(
-                                deserializedStatus.oldParentKeyAlias,
-                                deserializedStatus.newParentKeyAlias,
                                 deserializedStatus.tenantId,
                                 deserializedStatus.total,
                                 deserializedStatus.rotatedKeys + 1,

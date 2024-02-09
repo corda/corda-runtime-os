@@ -36,6 +36,8 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.statemanager.api.StateManager
+import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.test.impl.LifecycleTest
 import net.corda.messaging.api.publisher.Publisher
@@ -51,6 +53,7 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.StateManagerConfig
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
@@ -193,6 +196,10 @@ class CryptoProcessorImplTest {
         }
 
         val mockDbConnectionManager = mockDbConnectionManager()
+        val stateManager: StateManager = mock()
+        val stateManagerFactory: StateManagerFactory = mock {
+            on { create(any(), any()) } doReturn stateManager
+        }
 
         // Keep track of any publishers created
         val publisherList = mutableListOf<Publisher>()
@@ -213,6 +220,7 @@ class CryptoProcessorImplTest {
             addDependency<VirtualNodeInfoReadService>()
             addDependency<SubscriptionFactory>()
 
+
             val cryptoProcessor = CryptoProcessorImpl(
                 coordinatorFactory = coordinatorFactory,
                 configurationReadService = configReadService,
@@ -228,11 +236,14 @@ class CryptoProcessorImplTest {
                 digestService = mock(),
                 schemeMetadata = mock(),
                 publisherFactory = publisherFactory,
-                stateManagerFactory = mock(),
+                stateManagerFactory = stateManagerFactory,
                 cordaAvroSerializationFactory = mock()
             ).apply {
                 // Must start and pass some sort of boot config
-                start(mock())
+                start(mock {
+                    on { hasPath(StateManagerConfig.STATE_MANAGER) } doReturn true
+                    on { getConfig(StateManagerConfig.STATE_MANAGER) } doReturn mock()
+                })
             }
             cryptoProcessor.lifecycleCoordinator
         }.run {

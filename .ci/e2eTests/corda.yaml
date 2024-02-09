@@ -1,55 +1,61 @@
+databases:
+  - id: "default"
+    name: "cordacluster"
+    host: null  # passed in from jenkins pipeline
+    port: 5432
+    type: "postgresql"
+  - id: "isolated-state-manager"
+    name: "state-manager"
+    host: null # passed in from jenkins pipeline
+    port: 5432
+    type: "postgresql"
+
+# Fields 'type' and 'partition' already have defaults set by the Helm Chart, adding them here just for clarity
+stateManager:
+  flowCheckpoint:
+    type: Database
+    storageId: "isolated-state-manager"
+    partition: "sm_flow_checkpoint"
+  flowMapping:
+    type: Database
+    storageId: "isolated-state-manager"
+    partition: "sm_flow_mapping"
+  flowStatus:
+    type: Database
+    storageId: "isolated-state-manager"
+    partition: "sm_flow_status"
+  keyRotation:
+    type: Database
+    storageId: "isolated-state-manager"
+    partition: "sm_key_rotation"
+  p2pSession:
+    type: Database
+    storageId: "isolated-state-manager"
+    partition: "sm_p2p_session"
+  tokenPoolCache:
+    type: Database
+    storageId: "isolated-state-manager"
+    partition: "sm_token_pool_cache"
+
 bootstrap:
   db:
-    cluster:
-      username:
-        value: "postgres"
-      password:
-        valueFrom:
-          secretKeyRef:
-            key: "postgres-password"
-    stateManager:
-      flow:
+    databases:
+      - id: "default"
+        username:
+          value: "postgres"
+        password:
+          valueFrom:
+            secretKeyRef:
+              key: "postgres-password"
+              name: "" # passed in from jenkins pipeline
+      - id: "isolated-state-manager"
         username:
           value: "state-manager-user"
         password:
           valueFrom:
             secretKeyRef:
               key: "password"
-      flowMapper:
-        username:
-          value: "state-manager-user"
-        password:
-          valueFrom:
-            secretKeyRef:
-              key: "password"
-      tokenSelection:
-        username:
-          value: "state-manager-user"
-        password:
-          valueFrom:
-            secretKeyRef:
-              key: "password"
-      crypto:
-        username:
-          value: "state-manager-user"
-        password:
-          valueFrom:
-            secretKeyRef:
-              key: "password"
-      rest:
-        username:
-          value: "state-manager-user"
-        password:
-          valueFrom:
-            secretKeyRef:
-              key: "password"
-      p2pLinkManager:
-        username:
-          value: "state-manager-user"
-        password:
-          valueFrom:
-            secretKeyRef:
-              key: "password"
+              name: "" # passed in from jenkins pipeline
   kafka:
     sasl:
       username:
@@ -63,15 +69,6 @@ bootstrap:
 
 logging:
   format: "text"
-
-db:
-  cluster:
-    password:
-      valueFrom:
-        secretKeyRef:
-          key: "password"
-    username:
-      value: "user"
 
 kafka:
   bootstrapServers: "prereqs-kafka:9092"
@@ -96,15 +93,6 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "crypto"
-    stateManager:
-      db:
-        name: state-manager
-        username:
-          value: "state-manager-user"
-        password:
-          valueFrom:
-            secretKeyRef:
-              key: "password"
   db:
     kafka:
       sasl:
@@ -125,15 +113,6 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "flow"
-    stateManager:
-      db:
-        name: state-manager
-        username:
-          value: "state-manager-user"
-        password:
-          valueFrom:
-            secretKeyRef:
-              key: "password"
   flowMapper:
     kafka:
       sasl:
@@ -144,15 +123,6 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "flowMapper"
-    stateManager:
-      db:
-        name: state-manager
-        username:
-          value: "state-manager-user"
-        password:
-          valueFrom:
-            secretKeyRef:
-              key: "password"
   verification:
     kafka:
       sasl:
@@ -193,15 +163,6 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "p2pLinkManager"
-    stateManager:
-      db:
-        name: state-manager
-        username:
-          value: "state-manager-user"
-        password:
-          valueFrom:
-            secretKeyRef:
-              key: "password"
   persistence:
     kafka:
       sasl:
@@ -222,15 +183,6 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "tokenSelection"
-    stateManager:
-      db:
-        name: state-manager
-        username:
-          value: "state-manager-user"
-        password:
-          valueFrom:
-            secretKeyRef:
-              key: "password"
   rest:
     kafka:
       sasl:
@@ -241,15 +193,6 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "rest"
-    stateManager:
-      db:
-        name: state-manager
-        username:
-          value: "state-manager-user"
-        password:
-          valueFrom:
-            secretKeyRef:
-              key: "password"
   uniqueness:
     kafka:
       sasl:

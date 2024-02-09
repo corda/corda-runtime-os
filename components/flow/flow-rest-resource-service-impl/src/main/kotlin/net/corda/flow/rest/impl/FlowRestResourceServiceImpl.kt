@@ -3,10 +3,9 @@ package net.corda.flow.rest.impl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.flow.rest.FlowRestResourceService
-import net.corda.flow.rest.FlowStatusCacheService
+import net.corda.flow.rest.FlowStatusLookupService
 import net.corda.flow.rest.v1.FlowRestResource
 import net.corda.libs.configuration.helper.getConfig
-import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -18,6 +17,8 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.REST_CONFIG
+import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -34,8 +35,8 @@ internal class FlowRestResourceServiceImpl @Activate constructor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = FlowRestResource::class)
     private val flowRestResource: FlowRestResource,
-    @Reference(service = FlowStatusCacheService::class)
-    private val flowStatusCacheService: FlowStatusCacheService,
+    @Reference(service = FlowStatusLookupService::class)
+    private val flowStatusLookupService: FlowStatusLookupService,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory
 ) : FlowRestResourceService {
@@ -45,16 +46,15 @@ internal class FlowRestResourceServiceImpl @Activate constructor(
     }
 
     private var isUp = false
-    private var isCacheLoaded = false
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<FlowRestResourceService>(::eventHandler)
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
         ::virtualNodeInfoReadService,
-        ::flowStatusCacheService
+        ::flowStatusLookupService
     )
 
-    override val isRunning get() = isCacheLoaded && isUp
+    override val isRunning get() = lifecycleCoordinator.isRunning
 
     override fun start() = lifecycleCoordinator.start()
 
@@ -64,47 +64,30 @@ internal class FlowRestResourceServiceImpl @Activate constructor(
         when (event) {
             is StartEvent -> {
                 dependentComponents.registerAndStartAll(coordinator)
-                if(!isUp){
-                    isUp=true
-                    signalUpStatus()
-                }
-            }
-            is CustomEvent -> {
-                val cacheLoadCompeted = event.payload as? CacheLoadCompleteEvent
-                if (cacheLoadCompeted != null) {
-                    lifecycleCoordinator.postEvent(cacheLoadCompeted)
-                }
-            }
-            is CacheLoadCompleteEvent -> {
-                if(!isCacheLoaded){
-                    isCacheLoaded=true
-                    signalUpStatus()
-                }
+                lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
             }
             is RegistrationStatusChangeEvent -> {
                 configurationReadService.registerComponentForUpdates(
                     lifecycleCoordinator,
-                    setOf(BOOT_CONFIG, MESSAGING_CONFIG)
+                    setOf(BOOT_CONFIG, MESSAGING_CONFIG, STATE_MANAGER_CONFIG, REST_CONFIG)
                 )
             }
             is ConfigChangedEvent -> {
-                event.config.getConfig(MESSAGING_CONFIG).apply {
-                    flowRestResource.initialise(this, ::signalErrorStatus)
-                    flowStatusCacheService.initialise(this)
+                with(event.config) {
+                    flowRestResource.initialise(getConfig(MESSAGING_CONFIG), ::signalErrorStatus)
+                    flowStatusLookupService.initialise(
+                        getConfig(MESSAGING_CONFIG),
+                        getConfig(STATE_MANAGER_CONFIG),
+                        getConfig(REST_CONFIG)
+                    )
                 }
             }
             is StopEvent -> {
-                flowStatusCacheService.stop()
+                flowStatusLookupService.stop()
             }
             else -> {
                 log.error("Unexpected event $event!")
             }
-        }
-    }
-
-    private fun signalUpStatus() {
-        if(isRunning){
-            lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         }
     }
 

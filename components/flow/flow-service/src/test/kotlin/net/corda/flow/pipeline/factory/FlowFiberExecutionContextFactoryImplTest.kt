@@ -55,7 +55,7 @@ class FlowFiberExecutionContextFactoryImplTest {
             identity = BOB_X500_HOLDING_IDENTITY
         }
 
-        val context = buildFlowEventContext<Any>(ExternalEventResponse())
+        val context = buildFlowEventContext<Any>(checkpoint = mock(), inputEventPayload = ExternalEventResponse())
 
         whenever(context.checkpoint.flowStartContext).thenReturn(flowStartContext)
         whenever(context.checkpoint.holdingIdentity).thenReturn(BOB_X500_HOLDING_IDENTITY.toCorda())

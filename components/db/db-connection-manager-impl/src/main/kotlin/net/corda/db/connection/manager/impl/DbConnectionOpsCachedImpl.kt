@@ -46,10 +46,15 @@ class DbConnectionOpsCachedImpl(
             entitiesRegistry.get(db.persistenceUnitName) ?:
             throw DBConfigurationException("Entity set for ${db.persistenceUnitName} not found")
 
-        return getOrCreateEntityManagerFactory(
+        val emf = getOrCreateEntityManagerFactory(
             db.persistenceUnitName,
             privilege,
             entitiesSet)
+        return object : EntityManagerFactory by emf {
+            override fun close() {
+                // consumers of this function are not responsible for closing the EMF. Calling close becomes a no-op.
+            }
+        }
     }
 
     override fun getOrCreateEntityManagerFactory(
@@ -57,8 +62,13 @@ class DbConnectionOpsCachedImpl(
         privilege: DbPrivilege,
         entitiesSet: JpaEntitiesSet
     ): EntityManagerFactory {
-        return cache.computeIfAbsent(Pair(name,privilege)) {
+        val emf = cache.computeIfAbsent(Pair(name,privilege)) {
             delegate.getOrCreateEntityManagerFactory(name, privilege, entitiesSet)
+        }
+        return object : EntityManagerFactory by emf {
+            override fun close() {
+                // consumers of this function are not responsible for closing the EMF. Calling close becomes a no-op.
+            }
         }
     }
 

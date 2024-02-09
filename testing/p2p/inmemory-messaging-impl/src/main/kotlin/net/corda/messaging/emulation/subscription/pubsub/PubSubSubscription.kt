@@ -29,7 +29,7 @@ class PubSubSubscription<K : Any, V : Any>(
     private val processor: PubSubProcessor<K, V>,
     private val topicService: TopicService,
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    private val clientIdCounter: String
+    clientIdCounter: String
 ) : Subscription<K, V> {
 
     companion object {

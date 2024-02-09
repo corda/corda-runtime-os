@@ -1,10 +1,12 @@
 package net.corda.crypto.core
 
+const val MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER = "master"
+
 /**
  * Metadata keys used when storing key rotation status in state manager
  */
 object KeyRotationMetadataValues {
-    const val ROOT_KEY_ALIAS: String = "rootKeyAlias" // only for unmanaged key rotation
+    const val DEFAULT_MASTER_KEY_ALIAS: String = "defaultMasterKeyAlias" // only for unmanaged key rotation
     const val TENANT_ID: String = "tenantId"
     const val STATUS: String = "status"
     const val STATUS_TYPE: String = "type"
@@ -31,6 +33,6 @@ object KeyRotationKeyType {
     const val UNMANAGED: String = "unmanaged"
 }
 
-fun getKeyRotationStatusRecordKey(keyAlias: String, tenantId: String) =
-    keyAlias + tenantId + KeyRotationRecordType.KEY_ROTATION
+fun getKeyRotationStatusRecordKey(keyIdentifier: String, tenantId: String) =
+    keyIdentifier + tenantId + KeyRotationRecordType.KEY_ROTATION
 

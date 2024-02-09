@@ -16,7 +16,7 @@ import net.corda.messaging.emulation.topic.service.TopicService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * In-memory implementation for Publisher Factory.
@@ -31,6 +31,9 @@ class CordaPublisherFactory @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : PublisherFactory {
+    private companion object {
+        val instanceIndex = AtomicInteger()
+    }
 
     override fun createPublisher(
         publisherConfig: PublisherConfig,
@@ -47,7 +50,7 @@ class CordaPublisherFactory @Activate constructor(
             rpcConfig,
             rpcTopicService,
             lifecycleCoordinatorFactory,
-            UUID.randomUUID().toString()
+            instanceIndex.incrementAndGet().toString(),
         )
     }
 

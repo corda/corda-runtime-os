@@ -40,6 +40,9 @@ dependencies {
     runtimeOnly project(":libs:sandbox-internal")
     runtimeOnly project(':libs:schema-registry:schema-registry-impl')
 
+    // For TimeWindow implementations
+    runtimeOnly project(':components:ledger:ledger-utxo-flow')
+
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
 
