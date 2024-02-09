@@ -173,6 +173,7 @@ class BootstrapConfigTest {
             softly.assertThat(config.getInt("$BOOT_WORKER_SERVICE.mediatorReplicas.flowMapperSessionIn")).isEqualTo(FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT)
             softly.assertThat(config.getInt("$BOOT_WORKER_SERVICE.mediatorReplicas.flowMapperSessionOut")).isEqualTo(FLOW_WORKER_MEDIATOR_REPLICAS_DEFAULT)
         }
+
     }
 
     @Test
