@@ -138,8 +138,6 @@ class CryptoRewrapBusProcessorTests {
                     IndividualKeyRotationRequest(
                         UUID.randomUUID().toString(),
                         tenantId,
-                        OLD_PARENT_KEY_ALIAS,
-                        "root2",
                         "alias1",
                         null,
                         KeyType.UNMANAGED
@@ -162,8 +160,6 @@ class CryptoRewrapBusProcessorTests {
                         IndividualKeyRotationRequest(
                             UUID.randomUUID().toString(),
                             null,
-                            OLD_PARENT_KEY_ALIAS,
-                            "root2",
                             "alias1",
                             null,
                             KeyType.UNMANAGED
@@ -188,8 +184,6 @@ class CryptoRewrapBusProcessorTests {
                         IndividualKeyRotationRequest(
                             UUID.randomUUID().toString(),
                             "",
-                            OLD_PARENT_KEY_ALIAS,
-                            "root2",
                             "alias1",
                             null,
                             KeyType.UNMANAGED
@@ -214,8 +208,6 @@ class CryptoRewrapBusProcessorTests {
                         IndividualKeyRotationRequest(
                             UUID.randomUUID().toString(),
                             tenantId,
-                            OLD_PARENT_KEY_ALIAS,
-                            "root2",
                             null,
                             null,
                             KeyType.UNMANAGED
@@ -240,8 +232,6 @@ class CryptoRewrapBusProcessorTests {
                         IndividualKeyRotationRequest(
                             UUID.randomUUID().toString(),
                             tenantId,
-                            OLD_PARENT_KEY_ALIAS,
-                            "root2",
                             "",
                             "",
                             KeyType.UNMANAGED
@@ -266,8 +256,6 @@ class CryptoRewrapBusProcessorTests {
                         IndividualKeyRotationRequest(
                             UUID.randomUUID().toString(),
                             tenantId,
-                            OLD_PARENT_KEY_ALIAS,
-                            "root2",
                             "alias1",
                             UUID.randomUUID().toString(),
                             KeyType.UNMANAGED
@@ -293,8 +281,6 @@ class CryptoRewrapBusProcessorTests {
                         UUID.randomUUID().toString(),
                         tenantId,
                         null,
-                        null,
-                        null,
                         uuid.toString(),
                         KeyType.MANAGED
                     )
@@ -314,8 +300,6 @@ class CryptoRewrapBusProcessorTests {
                         UUID.randomUUID().toString(),
                         IndividualKeyRotationRequest(
                             UUID.randomUUID().toString(),
-                            null,
-                            null,
                             null,
                             null,
                             UUID.randomUUID().toString(),
@@ -342,8 +326,6 @@ class CryptoRewrapBusProcessorTests {
                             UUID.randomUUID().toString(),
                             "",
                             null,
-                            null,
-                            null,
                             UUID.randomUUID().toString(),
                             KeyType.MANAGED
                         )
@@ -367,8 +349,6 @@ class CryptoRewrapBusProcessorTests {
                         IndividualKeyRotationRequest(
                             UUID.randomUUID().toString(),
                             tenantId,
-                            null,
-                            null,
                             "alias1",
                             UUID.randomUUID().toString(),
                             KeyType.MANAGED
@@ -395,8 +375,6 @@ class CryptoRewrapBusProcessorTests {
                             tenantId,
                             null,
                             null,
-                            null,
-                            null,
                             KeyType.MANAGED
                         )
                     )
@@ -419,8 +397,6 @@ class CryptoRewrapBusProcessorTests {
                         IndividualKeyRotationRequest(
                             UUID.randomUUID().toString(),
                             tenantId,
-                            null,
-                            null,
                             null,
                             "",
                             KeyType.MANAGED
@@ -446,8 +422,6 @@ class CryptoRewrapBusProcessorTests {
                             UUID.randomUUID().toString(),
                             tenantId,
                             null,
-                            null,
-                            null,
                             "invalid uuid",
                             KeyType.MANAGED
                         )
@@ -471,8 +445,6 @@ class CryptoRewrapBusProcessorTests {
                     IndividualKeyRotationRequest(
                         UUID.randomUUID().toString(),
                         tenantId,
-                        null,
-                        null,
                         null,
                         uuid.toString(),
                         KeyType.MANAGED
