@@ -56,7 +56,7 @@ class StartFlowEventHandlerTest {
         ) {
             val startContext = contextBuilder(emptySet())
             assertThat(checkpoint).isEqualTo(checkpointExpected)
-            assertThat(waitingFor).isEqualTo(waitingForExpected)
+            assertThat(waitingFor.value).isEqualTo(waitingForExpected.value)
             assertThat(holdingIdentity).isEqualTo(holdingIdentityExpected)
             assertThat(startContext).isEqualTo(startContextExpected)
 
