@@ -1,3 +1,8 @@
+# Modules to be audited by Ledger SMEs
+/components/ledger/                                             @corda/ledger
+/libs/ledger/                                                   @corda/ledger
+/testing/ledger/                                                @corda/ledger
+
 # Modules to be audited by Notary SMEs
 /components/uniqueness/                                         @corda/notaries
 /libs/uniqueness/                                               @corda/notaries
