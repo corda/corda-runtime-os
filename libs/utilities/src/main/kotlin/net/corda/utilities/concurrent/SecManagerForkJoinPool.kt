@@ -7,8 +7,11 @@ import java.util.concurrent.ForkJoinWorkerThread
 /**
  * [ForkJoinPool] that doesn't change permissions of threads when [SecurityManager] is enabled.
  */
-class SecManagerForkJoinPool(val name: String): ForkJoinPool(
-    Runtime.getRuntime().availableProcessors(),
+class SecManagerForkJoinPool(
+    val name: String,
+    parallelism: Int = Runtime.getRuntime().availableProcessors(),
+): ForkJoinPool(
+    parallelism,
     ForkJoinWorkerThreadFactoryImpl(name),
     null,
     false

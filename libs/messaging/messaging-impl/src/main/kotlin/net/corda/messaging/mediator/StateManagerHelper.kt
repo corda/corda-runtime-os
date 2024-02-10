@@ -9,6 +9,7 @@ import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.metadata
 import net.corda.messaging.api.constants.MessagingMetadataKeys.PROCESSING_FAILURE
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.mediator.processor.StateChangeAndOperation
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -16,6 +17,7 @@ import org.slf4j.LoggerFactory
  * Helper for working with [StateManager], used by [MultiSourceEventMediatorImpl].
  */
 class StateManagerHelper<S : Any>(
+    private val stateManager: StateManager,
     private val serializer: CordaAvroSerializer<Any>,
     private val stateDeserializer: CordaAvroDeserializer<S>,
 ) {
@@ -43,6 +45,20 @@ class StateManagerHelper<S : Any>(
             persistedState?.version ?: State.VERSION_INITIAL_VALUE,
             mergeMetadata(persistedState?.metadata, newState.metadata, stateType),
         )
+    }
+
+    fun persistState(
+        stateChangeAndOperation: StateChangeAndOperation,
+    ) {
+        stateChangeAndOperation.outputState?.let {
+            val state = listOf(it)
+            when (stateChangeAndOperation) {
+                is StateChangeAndOperation.Create -> stateManager.create(state)
+                is StateChangeAndOperation.Update -> stateManager.update(state)
+                is StateChangeAndOperation.Delete -> stateManager.delete(state)
+                is StateChangeAndOperation.Noop -> {} // Do nothing.
+            }
+        }
     }
 
     /**

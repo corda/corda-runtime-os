@@ -15,4 +15,8 @@ data class Record<K : Any, V : Any>(
     val value: V?,
     val timestamp: Long = 0,
     val headers: List<Pair<String, String>> = listOf()
-)
+) {
+    fun header(name: String) = headers.find { it.first == name }?.second
+
+    fun withHeader(name: String, value: String) = copy(headers = headers.plus(name to value))
+}

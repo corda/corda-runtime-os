@@ -20,14 +20,13 @@ class MessageBusClient(
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun send(message: MediatorMessage<*>): MediatorMessage<*> {
-        val future = CompletableFuture<Unit>()
+    override fun send(message: MediatorMessage<*>): CompletableFuture<MediatorMessage<*>?> {
+        val future = CompletableFuture<MediatorMessage<*>?>()
         val record = message.toCordaProducerRecord()
         producer.send(record) { ex ->
             setFutureFromResponse(ex, future, record.topic)
         }
-
-        return MediatorMessage(future)
+        return future
     }
 
     /**
@@ -35,11 +34,11 @@ class MessageBusClient(
      */
     private fun setFutureFromResponse(
         exception: Exception?,
-        future: CompletableFuture<Unit>,
+        future: CompletableFuture<MediatorMessage<*>?>,
         topic: String
     ) {
         if (exception == null) {
-            future.complete(Unit)
+            future.complete(null)
         } else {
             val message = "Producer clientId $id for topic $topic failed to send."
             log.warn(message, exception)

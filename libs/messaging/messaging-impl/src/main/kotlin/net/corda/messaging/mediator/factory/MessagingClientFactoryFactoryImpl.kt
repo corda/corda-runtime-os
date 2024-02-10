@@ -8,6 +8,7 @@ import net.corda.messaging.api.mediator.factory.MessagingClientFactoryFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.concurrent.Executor
 
 /**
  * Factory for creating multi-source event mediator messaging clients.
@@ -31,10 +32,12 @@ class MessagingClientFactoryFactoryImpl @Activate constructor(
     )
 
     override fun createRPCClientFactory(
-        id: String
+        id: String,
+        executor: Executor,
     ) = RPCClientFactory(
         id,
         cordaSerializationFactory,
-        platformDigestService
+        platformDigestService,
+        executor,
     )
 }

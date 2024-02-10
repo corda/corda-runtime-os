@@ -32,7 +32,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     )
 
     override fun start() {
-        log.debug { "Starting multi-source event mediator with config: $config" }
+        log.info("Starting multi-source event mediator")
         lifecycleCoordinator.start()
         taskManager.executeLongRunningTask(::runMediator)
     }
@@ -47,7 +47,8 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         config.consumerFactories.map { consumerFactory ->
             taskManager.executeLongRunningTask {
                 val consumerProcessor =
-                    mediatorComponentFactory.createConsumerProcessor(config, taskManager, messageRouter, mediatorSubscriptionState)
+                    mediatorComponentFactory.createConsumerProcessor(
+                        config, mediatorSubscriptionState, messageRouter, config.executor)
                 consumerProcessor.processTopic(consumerFactory, consumerConfig)
             }.exceptionally { exception ->
                 handleTaskException(exception)

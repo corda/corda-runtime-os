@@ -1,7 +1,6 @@
 package net.corda.messaging.mediator.processor
 
 import net.corda.libs.statemanager.api.State
-import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorInputService
 import net.corda.messaging.api.mediator.MediatorInputService.Companion.INPUT_HASH_HEADER
 import net.corda.messaging.api.mediator.MediatorInputService.Companion.SYNC_RESPONSE_HEADER
@@ -13,7 +12,12 @@ import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.StateManagerHelper
+import net.corda.tracing.addTraceContextToMediatorMessage
 import net.corda.tracing.addTraceContextToRecord
+import org.slf4j.LoggerFactory
+import java.util.*
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executor
 
 /**
  * Class to process records received from the consumer.
@@ -27,172 +31,133 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     private val stateManagerHelper: StateManagerHelper<S>,
     private val messageRouter: MessageRouter,
     private val mediatorInputService: MediatorInputService,
+    private val executor: Executor,
 ) {
+    private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.name}")
 
-    /**
-     * Process a group of events.
-     *
-     * When the mediator is configured with an idempotence processor, and a duplicate or replayed record is detected, based on a hash of
-     * the record payload, then the asynchronous outputs from the previous invocation  of the processor will be retrieved
-     * from the [MediatorState].In this case, the message processor is not executed again,
-     * and the previously retrieved outputs are returned for resending.
-     *
-     * Otherwise, the message processor is executed and any synchronous calls are sent and responses are processed immediately.
-     *
-     * Finally, any asynchronous outputs are returned, as well as the [State] object to update.
-     *
-     * @param inputs Group of records of various keys along with their respective states
-     * @return The asynchronous outputs and state updates grouped by record key
-     */
     fun processEvents(
-        inputs: Map<K, EventProcessingInput<K, E>>
-    ): Map<K, EventProcessingOutput> {
-        return inputs.mapValues { (key, input) ->
-            val inputState = input.state
-            val allConsumerInputs = input.records
-            val processorState = stateManagerHelper.deserializeValue(inputState)?.let { stateValue ->
+        key: K,
+        inputRecords: List<Record<K, E>>,
+        state: State?,
+    ) {
+        val context = EventContext<K, S>(key, state)
+        val future = CompletableFuture<EventContext<K, S>>()
+        CompletableFuture.supplyAsync({
+            log.info("Processing events for key ${context.key}")
+            val persistedState = context.inputState
+            context.processorState = stateManagerHelper.deserializeValue(persistedState)?.let { stateValue ->
                 StateAndEventProcessor.State(
                     stateValue,
-                    inputState?.metadata
+                    persistedState?.metadata
                 )
             }
-
-            val newInputs = EventProcessingInput(key, allConsumerInputs, inputState)
-            processRecords(newInputs, processorState)
-        }
-    }
-
-    private fun processRecords(
-        input: EventProcessingInput<K, E>,
-        inputProcessorState: StateAndEventProcessor.State<S>?,
-    ): EventProcessingOutput {
-        val key = input.key
-        val inputState = input.state
-        var processorState = inputProcessorState
-        val asyncOutputs = mutableMapOf<Record<K, E>, MutableList<MediatorMessage<Any>>>()
-        val processed = try {
-            input.records.forEach { consumerInputEvent ->
-                val (updatedProcessorState, newAsyncOutputs) = processConsumerInput(consumerInputEvent, processorState, key)
-                processorState = updatedProcessorState
-                asyncOutputs.addOutputs(consumerInputEvent, newAsyncOutputs)
-            }
-            stateManagerHelper.createOrUpdateState(key.toString(), inputState, processorState)
-        } catch (e: EventProcessorSyncEventsIntermittentException) {
-            // If an intermittent error occurs here, the RPC client has failed to deliver a message to another part
-            // of the system despite the retry loop implemented there. The exception may contain any state that has been output
-            // from the processing of consumer input.
-            asyncOutputs.clear()
-            stateManagerHelper.failStateProcessing(
-                key.toString(),
-                getMostRecentState(key, e.partiallyProcessedState, processorState, inputState),
-                "unable to contact Corda services while processing events"
+            processEvent(
+                events = ArrayDeque(
+                    inputRecords.map { it.withHeader(INPUT_HASH_HEADER, mediatorInputService.getHash(it)) }
+                ),
+                onFinished = { future.complete(context) },
+                context
             )
-        }
-
-        val stateChangeAndOperation = stateChangeAndOperation(inputState, processed)
-        return EventProcessingOutput(asyncOutputs.values.flatten(), stateChangeAndOperation)
-    }
-
-    private fun getMostRecentState(
-        key: K,
-        partiallyProcessedState: StateAndEventProcessor.State<*>?,
-        currentProcessorState: StateAndEventProcessor.State<S>?,
-        inputState: State?
-    ): State? {
-        return when {
-            partiallyProcessedState != null -> {
-                @Suppress("unchecked_cast")
-                stateManagerHelper.createOrUpdateState(
-                    key.toString(),
-                    inputState,
-                    partiallyProcessedState as StateAndEventProcessor.State<S>
-                )
-            }
-
-            currentProcessorState != null -> stateManagerHelper.createOrUpdateState(key.toString(), inputState, currentProcessorState)
-
-            else -> inputState
+        }, executor)
+        future.thenCompose {
+            persistState(context)
+        }.thenCompose {
+            sendAsyncEvents(context)
         }
     }
 
-    private fun processConsumerInput(
-        consumerInputEvent: Record<K, E>,
-        processorState: StateAndEventProcessor.State<S>?,
-        key: K,
-    ): Pair<StateAndEventProcessor.State<S>?, List<MediatorMessage<Any>>> {
-        var processorStateUpdated = processorState
-        val newAsyncOutputs = mutableListOf<MediatorMessage<Any>>()
-        val consumerInputHash = mediatorInputService.getHash(consumerInputEvent)
-        val queue = ArrayDeque(listOf(consumerInputEvent))
-        while (queue.isNotEmpty()) {
-            val event = getNextEvent(queue, consumerInputHash)
-            val response = config.messageProcessor.onNext(processorStateUpdated, event)
-            processorStateUpdated = response.updatedState
+    private fun processEvent(
+        events: Deque<Record<K, E>>,
+        onFinished: () -> Unit,
+        context: EventContext<K, S>,
+    ) {
+        if (events.isEmpty()) {
+            onFinished()
+            return
+        }
+        CompletableFuture.supplyAsync({
+            val event = events.removeFirst()
+//            log.info("Processing event ${event.value?.javaClass?.simpleName} for key ${context.key}")
+            val response = config.messageProcessor.onNext(context.processorState, event)
+//            log.info("Got ${response.responseEvents.size} response events")
+            context.processorState = response.updatedState
             val (syncEvents, asyncEvents) = response.responseEvents.map { convertToMessage(it) }.partition {
                 messageRouter.getDestination(it).type == RoutingDestination.Type.SYNCHRONOUS
             }
-            newAsyncOutputs.addAll(asyncEvents)
-            try {
-                queue.addAll(processSyncEvents(key, syncEvents))
-            } catch (e: CordaMessageAPIIntermittentException) {
-                throw EventProcessorSyncEventsIntermittentException(processorStateUpdated, e)
+//            log.info("Got ${syncEvents.size} sync and ${asyncEvents.size} async events")
+            context.asyncOutputs.addAll(asyncEvents)
+            val inputInventHash = event.header(INPUT_HASH_HEADER)!!
+            Pair(syncEvents, inputInventHash)
+        }, executor).thenCompose { (syncEvents, inputInventHash) ->
+            processSyncEvents(context.key, syncEvents, inputInventHash)
+        }.thenApply { syncEventResponses ->
+            syncEventResponses.forEach {
+                events.addFirst(it)
             }
+            processEvent(events, onFinished, context)
         }
-        return Pair(processorStateUpdated, newAsyncOutputs)
     }
 
-    private fun getNextEvent(
-        queue: ArrayDeque<Record<K, E>>,
-        consumerInputHash: String
-    ): Record<K, E> {
-        val event = queue.removeFirst()
-        return event.copy(headers = event.headers.plus(Pair(INPUT_HASH_HEADER, consumerInputHash)))
-    }
-
-    private fun stateChangeAndOperation(
-        state: State?,
-        processed: State?
-    ) = when {
-        state == null && processed != null -> StateChangeAndOperation.Create(processed)
-        state != null && processed != null -> StateChangeAndOperation.Update(processed)
-        state != null && processed == null -> StateChangeAndOperation.Delete(state)
-        else -> StateChangeAndOperation.Noop
-    }
-
-
-    private fun MutableMap<Record<K, E>, MutableList<MediatorMessage<Any>>>.addOutputs(
-        inputEvent: Record<K, E>,
-        asyncEvents: List<MediatorMessage<Any>>
-    ) = computeIfAbsent(inputEvent) { mutableListOf() }.addAll(asyncEvents)
-
-    /**
-     * Send any synchronous events immediately and feed results back onto the queue.
-     */
     private fun processSyncEvents(
         key: K,
-        syncEvents: List<MediatorMessage<Any>>
-    ): List<Record<K, E>> {
-        return syncEvents.mapNotNull { message ->
-            val destination = messageRouter.getDestination(message)
+        syncEvents: List<MediatorMessage<Any>>,
+        inputInventHash: String,
+    ): CompletableFuture<List<Record<K, E>>> {
+        if (syncEvents.isEmpty()) {
+            return CompletableFuture.completedFuture(emptyList())
+        }
+//        log.info("=> processSyncEvents for key $key")
+        val syncResultFutures = syncEvents.map { processSyncEvent(it) }
+        @Suppress("SpreadOperator")
+        return CompletableFuture.allOf(*syncResultFutures.toTypedArray()).thenApply {
+//            log.info("Processing sync events for key $key")
+            syncResultFutures.mapNotNull { it.join() }
+                .map { it.toRecord(key, inputInventHash) }
+        }
+    }
 
-            @Suppress("UNCHECKED_CAST")
-            val reply = with(destination) {
-                message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
-                client.send(message) as MediatorMessage<E>?
-            }
-            reply?.let {
-                addTraceContextToRecord(
-                    Record(
-                        "",
-                        key,
-                        reply.payload,
-                        0,
-                        listOf(Pair(SYNC_RESPONSE_HEADER, "true"))
-                    ),
-                    message.properties
-                )
+    private fun processSyncEvent(
+        message: MediatorMessage<Any>
+    ): CompletableFuture<MediatorMessage<E>?> {
+        val destination = messageRouter.getDestination(message)
+        @Suppress("UNCHECKED_CAST")
+        return with(destination) {
+            message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
+            client.send(message)
+        }.thenApply {
+            it?.let {
+                addTraceContextToMediatorMessage(it) as MediatorMessage<E>?
             }
         }
+    }
+
+    private fun persistState(
+        context: EventContext<K, S>,
+    ): CompletableFuture<Unit> {
+        return CompletableFuture.supplyAsync({
+//            log.info("Persisting state for key ${context.key}")
+            val newState = stateManagerHelper.createOrUpdateState(
+                context.key.toString(),
+                context.inputState,
+                context.processorState
+            )
+            val stateChangeAndOperation = StateChangeAndOperation.create(context.inputState, newState)
+            stateManagerHelper.persistState(stateChangeAndOperation)
+        }, executor)
+    }
+
+    private fun sendAsyncEvents(
+        context: EventContext<K, S>,
+    ): CompletableFuture<Unit> {
+        return CompletableFuture.supplyAsync({
+//            log.info("Sending ${context.asyncOutputs.size} async events for key ${context.key}")
+            context.asyncOutputs.forEach { message ->
+                with(messageRouter.getDestination(message)) {
+                    message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
+                    client.send(message)
+                }
+            }
+        }, executor)
     }
 
     private fun convertToMessage(record: Record<*, *>): MediatorMessage<Any> {
@@ -209,4 +174,19 @@ class EventProcessor<K : Any, S : Any, E : Any>(
 
     private fun List<Pair<String, String>>.toMessageProperties() =
         associateTo(mutableMapOf()) { (key, value) -> key to (value as Any) }
+
+    private fun MediatorMessage<E>.toRecord(key: K, eventHash: String) =
+        addTraceContextToRecord(
+            Record(
+                "",
+                key,
+                payload,
+                0,
+                listOf(
+                    SYNC_RESPONSE_HEADER to "true",
+                    INPUT_HASH_HEADER to eventHash
+                )
+            ),
+            properties
+        )
 }

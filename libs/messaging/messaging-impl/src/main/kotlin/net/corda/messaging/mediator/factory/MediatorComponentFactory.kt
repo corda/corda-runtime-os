@@ -16,7 +16,7 @@ import net.corda.messaging.mediator.MediatorSubscriptionState
 import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.messaging.mediator.processor.ConsumerProcessor
 import net.corda.messaging.mediator.processor.EventProcessor
-import net.corda.taskmanager.TaskManager
+import java.util.concurrent.Executor
 
 /**
  * Factory for creating various components used by Multi-Source Event Mediator.
@@ -102,19 +102,17 @@ class MediatorComponentFactory<K : Any, S : Any, E : Any>(
      */
     fun createConsumerProcessor(
         eventMediatorConfig: EventMediatorConfig<K, S, E>,
-        taskManager: TaskManager,
-        messageRouter: MessageRouter,
         mediatorSubscriptionState: MediatorSubscriptionState,
+        messageRouter: MessageRouter,
+        executor: Executor,
     ): ConsumerProcessor<K, S, E> {
-        val eventProcessor = EventProcessor(eventMediatorConfig, stateManagerHelper, messageRouter, mediatorInputService)
+        val eventProcessor = EventProcessor(
+            eventMediatorConfig, stateManagerHelper, messageRouter, mediatorInputService, executor
+        )
         return ConsumerProcessor(
             eventMediatorConfig,
-            groupAllocator,
-            taskManager,
-            messageRouter,
             mediatorSubscriptionState,
             eventProcessor,
-            stateManagerHelper
         )
     }
 }

@@ -9,6 +9,18 @@ data class EventProcessingOutput(
 )
 
 sealed interface StateChangeAndOperation {
+    companion object {
+        fun create(
+            oldState: State?,
+            newState: State?
+        ) = when {
+            oldState == null && newState != null -> Create(newState)
+            oldState != null && newState != null -> Update(newState)
+            oldState != null && newState == null -> Delete(oldState)
+            else -> Noop
+        }
+    }
+
     val outputState: State?
 
     class Create(override val outputState: State) : StateChangeAndOperation

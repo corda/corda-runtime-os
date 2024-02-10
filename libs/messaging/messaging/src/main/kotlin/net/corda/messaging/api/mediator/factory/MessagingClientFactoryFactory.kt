@@ -1,6 +1,7 @@
 package net.corda.messaging.api.mediator.factory
 
 import net.corda.libs.configuration.SmartConfig
+import java.util.concurrent.Executor
 
 /**
  * Factory for creating multi-source event mediator messaging client factories.
@@ -23,6 +24,7 @@ interface MessagingClientFactoryFactory {
      * @param id RPC client ID.
      */
     fun createRPCClientFactory(
-        id: String
+        id: String,
+        executor: Executor,
     ) : MessagingClientFactory
 }

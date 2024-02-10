@@ -10,6 +10,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_POLL_TIMEOUT
 import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_PROCESSOR_TIMEOUT
 import java.time.Duration
+import java.util.concurrent.Executor
 
 /**
  * Class to store configuration required to create a [MultiSourceEventMediator].
@@ -40,6 +41,7 @@ data class EventMediatorConfig<K: Any, S: Any, E: Any>(
     val threadName: String,
     val stateManager: StateManager,
     val minGroupSize: Int,
+    val executor: Executor,
 ) {
     /**
      * Timeout for polling consumers.

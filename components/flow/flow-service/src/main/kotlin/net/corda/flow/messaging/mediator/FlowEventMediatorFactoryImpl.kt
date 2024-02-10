@@ -45,9 +45,11 @@ import net.corda.schema.configuration.BootConfig.UNIQUENESS_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.VERIFICATION_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT
 import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_THREAD_POOL_SIZE
+import net.corda.utilities.concurrent.SecManagerForkJoinPool
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.concurrent.Executor
 
 @Suppress("LongParameterList")
 @Component(service = [FlowEventMediatorFactory::class])
@@ -82,6 +84,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
             messagingConfig,
             flowEventProcessorFactory.create(configs),
             stateManager,
+            SecManagerForkJoinPool("FlowEventMediator", messagingConfig.getInt(MEDIATOR_PROCESSING_THREAD_POOL_SIZE))
         )
     )
 
@@ -89,6 +92,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         messagingConfig: SmartConfig,
         messageProcessor: StateAndEventProcessor<String, Checkpoint, FlowEvent>,
         stateManager: StateManager,
+        executor: Executor,
     ) = EventMediatorConfigBuilder<String, Checkpoint, FlowEvent>()
         .name("FlowEventMediator")
         .messagingConfig(messagingConfig)
@@ -108,7 +112,8 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
                 MESSAGE_BUS_CLIENT, messagingConfig
             ),
             messagingClientFactoryFactory.createRPCClientFactory(
-                RPC_CLIENT
+                RPC_CLIENT,
+                executor
             )
         )
         .messageProcessor(messageProcessor)
@@ -117,6 +122,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         .threadName("flow-event-mediator")
         .stateManager(stateManager)
         .minGroupSize(messagingConfig.getInt(MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT))
+        .executor(executor)
         .build()
 
     private fun createMessageRouterFactory(messagingConfig: SmartConfig) = MessageRouterFactory { clientFinder ->

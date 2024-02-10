@@ -7,6 +7,7 @@ import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import java.util.concurrent.Executor
 
 /**
  * Builder for creating [EventMediatorConfig].
@@ -27,6 +28,7 @@ class EventMediatorConfigBuilder<K: Any, S: Any, E: Any> {
     private var threadName: String? = null
     private var stateManager: StateManager? = null
     private var minGroupSize: Int? = null
+    private var executor: Executor? = null
 
     /** Sets name for [MultiSourceEventMediator]. */
     fun name(name: String) =
@@ -74,6 +76,9 @@ class EventMediatorConfigBuilder<K: Any, S: Any, E: Any> {
     fun stateManager(stateManager: StateManager) =
         apply { this.stateManager = stateManager }
 
+    fun executor(executor: Executor) =
+        apply { this.executor = executor }
+
     /** Builds [EventMediatorConfig]. */
     fun build(): EventMediatorConfig<K, S, E> {
         check(consumerFactories.isNotEmpty()) { "At least on consumer factory has to be set" }
@@ -89,6 +94,7 @@ class EventMediatorConfigBuilder<K: Any, S: Any, E: Any> {
             threadName = checkNotNull(threadName) { "Thread name not set" },
             stateManager = checkNotNull(stateManager) { "State manager not set" },
             minGroupSize = checkNotNull(minGroupSize) { "Min group size not set" },
+            executor = checkNotNull(executor) { "Executor not set" },
         )
     }
 }
