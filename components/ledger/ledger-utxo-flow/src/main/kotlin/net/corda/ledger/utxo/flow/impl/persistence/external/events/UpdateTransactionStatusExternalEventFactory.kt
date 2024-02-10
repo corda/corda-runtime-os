@@ -3,6 +3,7 @@ package net.corda.ledger.utxo.flow.impl.persistence.external.events
 import net.corda.data.ledger.persistence.UpdateTransactionStatus
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.v5.base.annotations.CordaSerializable
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import java.time.Clock
@@ -18,4 +19,5 @@ class UpdateTransactionStatusExternalEventFactory : AbstractUtxoLedgerExternalEv
     }
 }
 
+@CordaSerializable
 data class UpdateTransactionStatusParameters(val id: String, val transactionStatus: TransactionStatus)
