@@ -1,17 +1,21 @@
 package net.corda.messaging.mediator.processor
 
+import net.corda.libs.statemanager.api.State
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorConsumer
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.config.MediatorConsumerConfig
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.MediatorSubscriptionState
 import net.corda.messaging.mediator.MultiSourceEventMediatorImpl
 import net.corda.messaging.mediator.metrics.EventMediatorMetrics
 import net.corda.messaging.utils.toRecord
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
 /**
@@ -38,13 +42,15 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
 
     private val stateManager = config.stateManager
 
+    private val inFlightStates = ConcurrentHashMap<K, CompletableFuture<State?>>()
+
     /**
      * Creates a message bus consumer and begins processing records from the subscribed topic.
      * @param consumerFactory used to create a message bus consumer
      * @param consumerConfig used to configure a consumer
      */
     fun processTopic(consumerFactory: MediatorConsumerFactory, consumerConfig: MediatorConsumerConfig<K, E>) {
-        log.info("Processing topic...")
+//        log.info("Processing topic...")
         var attempts = 0
         var consumer: MediatorConsumer<K, E>? = null
         while (!mediatorSubscriptionState.stopped()) {
@@ -83,11 +89,28 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val startTimestamp = System.nanoTime()
         val polledRecords = messages.map { it.toRecord() }.groupBy { it.key }
         if (messages.isNotEmpty()) {
-            log.info("Polled ${messages.size} messages")
-            val states = stateManager.get(polledRecords.keys.map { it.toString() })
-            log.info("Retrieved ${states.size} states")
-            polledRecords.forEach { (key, records) ->
-                eventProcessor.processEvents(key, records, states[key.toString()])
+//            log.info("Polled ${messages.size} messages")
+            val events = polledRecords.map { (key, records) ->
+                val stateSavedFuture = CompletableFuture<State?>()
+                val stateFuture = inFlightStates.put(key, stateSavedFuture)
+                stateSavedFuture.thenAccept {
+                    inFlightStates.remove(key, stateSavedFuture)
+                }
+                EventData(key, records, stateSavedFuture, stateFuture)
+            }
+            val (eventsInFlightState, eventsWithoutState) = events.partition { it.stateFuture != null }
+
+            eventsInFlightState.forEach {
+                it.stateFuture!!.thenAccept { state ->
+                    eventProcessor.processEvents(it.key, it.records, state, it.stateSavedFuture)
+                }
+            }
+
+            val states = stateManager.get(eventsWithoutState.map { it.key.toString() })
+//            log.info("Retrieved ${states.size} states")
+            eventsWithoutState.forEach {
+                val state = states[it.key.toString()]
+                eventProcessor.processEvents(it.key, it.records, state, it.stateSavedFuture)
             }
             metrics.commitTimer.recordCallable {
                 consumer.syncCommitOffsets()
@@ -95,4 +118,11 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         }
         metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
     }
+
+    private class EventData<K: Any, E: Any>(
+        val key: K,
+        val records: List<Record<K, E>>,
+        val stateSavedFuture: CompletableFuture<State?>,
+        val stateFuture: CompletableFuture<State?>?,
+    )
 }

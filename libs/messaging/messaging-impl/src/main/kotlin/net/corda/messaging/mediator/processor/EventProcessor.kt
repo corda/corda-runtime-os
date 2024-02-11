@@ -39,11 +39,12 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         key: K,
         inputRecords: List<Record<K, E>>,
         state: State?,
+        stateSavedFuture: CompletableFuture<State?>,
     ) {
-        val context = EventContext<K, S>(key, state)
-        val future = CompletableFuture<EventContext<K, S>>()
+        val context = EventContext<K, S>(key, state, stateSavedFuture)
+        val allEventsProcessedFuture = CompletableFuture<EventContext<K, S>>()
         CompletableFuture.supplyAsync({
-            log.info("Processing events for key ${context.key}")
+            log.info("Processing events for key ${context.key}, version ${state?.version}")
             val persistedState = context.inputState
             context.processorState = stateManagerHelper.deserializeValue(persistedState)?.let { stateValue ->
                 StateAndEventProcessor.State(
@@ -55,11 +56,11 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                 events = ArrayDeque(
                     inputRecords.map { it.withHeader(INPUT_HASH_HEADER, mediatorInputService.getHash(it)) }
                 ),
-                onFinished = { future.complete(context) },
+                onFinished = { allEventsProcessedFuture.complete(context) },
                 context
             )
         }, executor)
-        future.thenCompose {
+        allEventsProcessedFuture.thenCompose {
             persistState(context)
         }.thenCompose {
             sendAsyncEvents(context)
@@ -77,14 +78,14 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         }
         CompletableFuture.supplyAsync({
             val event = events.removeFirst()
-//            log.info("Processing event ${event.value?.javaClass?.simpleName} for key ${context.key}")
+            log.info("Processing event ${event.value?.javaClass?.simpleName} for key ${context.key}")
             val response = config.messageProcessor.onNext(context.processorState, event)
-//            log.info("Got ${response.responseEvents.size} response events")
+            log.info("Got ${response.responseEvents.size} response events")
             context.processorState = response.updatedState
             val (syncEvents, asyncEvents) = response.responseEvents.map { convertToMessage(it) }.partition {
                 messageRouter.getDestination(it).type == RoutingDestination.Type.SYNCHRONOUS
             }
-//            log.info("Got ${syncEvents.size} sync and ${asyncEvents.size} async events")
+            log.info("Got ${syncEvents.size} sync and ${asyncEvents.size} async events")
             context.asyncOutputs.addAll(asyncEvents)
             val inputInventHash = event.header(INPUT_HASH_HEADER)!!
             Pair(syncEvents, inputInventHash)
@@ -106,11 +107,11 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         if (syncEvents.isEmpty()) {
             return CompletableFuture.completedFuture(emptyList())
         }
-//        log.info("=> processSyncEvents for key $key")
+        log.info("=> processSyncEvents for key $key")
         val syncResultFutures = syncEvents.map { processSyncEvent(it) }
         @Suppress("SpreadOperator")
         return CompletableFuture.allOf(*syncResultFutures.toTypedArray()).thenApply {
-//            log.info("Processing sync events for key $key")
+            log.info("Processing sync events for key $key")
             syncResultFutures.mapNotNull { it.join() }
                 .map { it.toRecord(key, inputInventHash) }
         }
@@ -135,14 +136,16 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         context: EventContext<K, S>,
     ): CompletableFuture<Unit> {
         return CompletableFuture.supplyAsync({
-//            log.info("Persisting state for key ${context.key}")
             val newState = stateManagerHelper.createOrUpdateState(
                 context.key.toString(),
                 context.inputState,
                 context.processorState
             )
             val stateChangeAndOperation = StateChangeAndOperation.create(context.inputState, newState)
+            val version = stateChangeAndOperation.outputState?.version
+            log.info("Persisting state for key ${context.key}, version $version")
             stateManagerHelper.persistState(stateChangeAndOperation)
+            context.stateSavedFuture.complete(stateChangeAndOperation.persistedState())
         }, executor)
     }
 
@@ -159,6 +162,14 @@ class EventProcessor<K : Any, S : Any, E : Any>(
             }
         }, executor)
     }
+
+    private fun StateChangeAndOperation.persistedState() =
+        when (this)  {
+            is StateChangeAndOperation.Create -> outputState
+            is StateChangeAndOperation.Update -> outputState.copy(version = outputState.version + 1)
+            is StateChangeAndOperation.Delete -> null
+            is StateChangeAndOperation.Noop -> null
+        }
 
     private fun convertToMessage(record: Record<*, *>): MediatorMessage<Any> {
         return MediatorMessage(
