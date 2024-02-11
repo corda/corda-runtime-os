@@ -25,6 +25,7 @@ import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndS
 import net.corda.v5.membership.NotaryInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -136,6 +137,7 @@ class SendTransactionBuilderDiffFlowV1Test {
     }
 
     @Test
+    @Disabled("No longer relevant as notary always needs to be provided")
     fun `called with old notary and a different new notary sends back a builder without notary`() {
         whenever(originalTransactionalBuilder.getNotaryName()).thenReturn(anotherNotaryX500Name)
         whenever(currentTransactionBuilder.notaryName).thenReturn(notaryX500Name)
