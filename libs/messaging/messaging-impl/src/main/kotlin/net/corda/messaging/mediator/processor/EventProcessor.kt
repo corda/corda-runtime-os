@@ -14,6 +14,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.tracing.addTraceContextToMediatorMessage
 import net.corda.tracing.addTraceContextToRecord
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.CompletableFuture
@@ -44,7 +45,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         val context = EventContext<K, S>(key, state, stateSavedFuture)
         val allEventsProcessedFuture = CompletableFuture<EventContext<K, S>>()
         CompletableFuture.supplyAsync({
-            log.info("Processing events for key ${context.key}, version ${state?.version}")
+            log.debug { "Processing events for key ${context.key}, version ${state?.version}" }
             val persistedState = context.inputState
             context.processorState = stateManagerHelper.deserializeValue(persistedState)?.let { stateValue ->
                 StateAndEventProcessor.State(
@@ -78,14 +79,14 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         }
         CompletableFuture.supplyAsync({
             val event = events.removeFirst()
-            log.info("Processing event ${event.value?.javaClass?.simpleName} for key ${context.key}")
+            log.debug { "Processing event ${event.value?.javaClass?.simpleName} for key ${context.key}" }
             val response = config.messageProcessor.onNext(context.processorState, event)
-            log.info("Got ${response.responseEvents.size} response events")
+            log.debug { "Got ${response.responseEvents.size} response events" }
             context.processorState = response.updatedState
             val (syncEvents, asyncEvents) = response.responseEvents.map { convertToMessage(it) }.partition {
                 messageRouter.getDestination(it).type == RoutingDestination.Type.SYNCHRONOUS
             }
-            log.info("Got ${syncEvents.size} sync and ${asyncEvents.size} async events")
+            log.debug { "Got ${syncEvents.size} sync and ${asyncEvents.size} async events" }
             context.asyncOutputs.addAll(asyncEvents)
             val inputInventHash = event.header(INPUT_HASH_HEADER)!!
             Pair(syncEvents, inputInventHash)
@@ -99,6 +100,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         }
     }
 
+    @Suppress("SpreadOperator")
     private fun processSyncEvents(
         key: K,
         syncEvents: List<MediatorMessage<Any>>,
@@ -107,21 +109,19 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         if (syncEvents.isEmpty()) {
             return CompletableFuture.completedFuture(emptyList())
         }
-        log.info("=> processSyncEvents for key $key")
         val syncResultFutures = syncEvents.map { processSyncEvent(it) }
-        @Suppress("SpreadOperator")
+        log.debug { "Processing sync events for key $key" }
         return CompletableFuture.allOf(*syncResultFutures.toTypedArray()).thenApply {
-            log.info("Processing sync events for key $key")
             syncResultFutures.mapNotNull { it.join() }
                 .map { it.toRecord(key, inputInventHash) }
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun processSyncEvent(
         message: MediatorMessage<Any>
     ): CompletableFuture<MediatorMessage<E>?> {
         val destination = messageRouter.getDestination(message)
-        @Suppress("UNCHECKED_CAST")
         return with(destination) {
             message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
             client.send(message)
@@ -143,9 +143,9 @@ class EventProcessor<K : Any, S : Any, E : Any>(
             )
             val stateChangeAndOperation = StateChangeAndOperation.create(context.inputState, newState)
             val version = stateChangeAndOperation.outputState?.version
-            log.info("Persisting state for key ${context.key}, version $version")
+            log.debug { "Persisting state for key ${context.key}, version $version" }
             stateManagerHelper.persistState(stateChangeAndOperation)
-            context.stateSavedFuture.complete(stateChangeAndOperation.persistedState())
+            context.stateSavedFuture.complete(stateChangeAndOperation.toPersistedState())
         }, executor)
     }
 
@@ -153,7 +153,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         context: EventContext<K, S>,
     ): CompletableFuture<Unit> {
         return CompletableFuture.supplyAsync({
-//            log.info("Sending ${context.asyncOutputs.size} async events for key ${context.key}")
+            log.debug { "Sending ${context.asyncOutputs.size} async events for key ${context.key}" }
             context.asyncOutputs.forEach { message ->
                 with(messageRouter.getDestination(message)) {
                     message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
@@ -163,7 +163,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         }, executor)
     }
 
-    private fun StateChangeAndOperation.persistedState() =
+    private fun StateChangeAndOperation.toPersistedState() =
         when (this)  {
             is StateChangeAndOperation.Create -> outputState
             is StateChangeAndOperation.Update -> outputState.copy(version = outputState.version + 1)

@@ -26,11 +26,13 @@ import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT
 import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_THREAD_POOL_SIZE
 import net.corda.session.mapper.service.executor.FlowMapperMessageProcessor
-import net.corda.utilities.concurrent.SecManagerForkJoinPool
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.concurrent.Executor
+import java.util.concurrent.Executors
+import java.util.concurrent.ThreadFactory
+import java.util.concurrent.atomic.AtomicLong
 
 @Component(service = [FlowMapperEventMediatorFactory::class])
 class FlowMapperEventMediatorFactoryImpl @Activate constructor(
@@ -57,9 +59,22 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
             messagingConfig,
             FlowMapperMessageProcessor(flowMapperEventExecutorFactory, flowConfig),
             stateManager,
-            SecManagerForkJoinPool("FlowMapperEventMediator", messagingConfig.getInt(MEDIATOR_PROCESSING_THREAD_POOL_SIZE))
+            Executors.newFixedThreadPool(
+                messagingConfig.getInt(MEDIATOR_PROCESSING_THREAD_POOL_SIZE),
+                threadFactory("FlowMapperEventMediator")
+            ),
         )
     )
+
+    private fun threadFactory(threadName: String): ThreadFactory {
+        val backingThreadFactory = Executors.defaultThreadFactory()
+        val count = AtomicLong(0)
+        return ThreadFactory { runnable ->
+            backingThreadFactory.newThread(runnable).apply {
+                name = "$threadName-thread-${count.getAndIncrement()}"
+            }
+        }
+    }
 
     private fun createEventMediatorConfig(
         messagingConfig: SmartConfig,

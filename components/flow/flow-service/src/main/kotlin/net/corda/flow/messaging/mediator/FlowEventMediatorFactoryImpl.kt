@@ -45,11 +45,13 @@ import net.corda.schema.configuration.BootConfig.UNIQUENESS_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.VERIFICATION_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT
 import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_THREAD_POOL_SIZE
-import net.corda.utilities.concurrent.SecManagerForkJoinPool
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.concurrent.Executor
+import java.util.concurrent.Executors
+import java.util.concurrent.ThreadFactory
+import java.util.concurrent.atomic.AtomicLong
 
 @Suppress("LongParameterList")
 @Component(service = [FlowEventMediatorFactory::class])
@@ -84,9 +86,22 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
             messagingConfig,
             flowEventProcessorFactory.create(configs),
             stateManager,
-            SecManagerForkJoinPool("FlowEventMediator", messagingConfig.getInt(MEDIATOR_PROCESSING_THREAD_POOL_SIZE))
+            Executors.newFixedThreadPool(
+                messagingConfig.getInt(MEDIATOR_PROCESSING_THREAD_POOL_SIZE),
+                threadFactory("FlowEventMediator")
+            ),
         )
     )
+
+    private fun threadFactory(threadName: String): ThreadFactory {
+        val backingThreadFactory = Executors.defaultThreadFactory()
+        val count = AtomicLong(0)
+        return ThreadFactory { runnable ->
+            backingThreadFactory.newThread(runnable).apply {
+                name = "$threadName-thread-${count.getAndIncrement()}"
+            }
+        }
+    }
 
     private fun createEventMediatorConfig(
         messagingConfig: SmartConfig,

@@ -50,7 +50,6 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      * @param consumerConfig used to configure a consumer
      */
     fun processTopic(consumerFactory: MediatorConsumerFactory, consumerConfig: MediatorConsumerConfig<K, E>) {
-//        log.info("Processing topic...")
         var attempts = 0
         var consumer: MediatorConsumer<K, E>? = null
         while (!mediatorSubscriptionState.stopped()) {
@@ -89,7 +88,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val startTimestamp = System.nanoTime()
         val polledRecords = messages.map { it.toRecord() }.groupBy { it.key }
         if (messages.isNotEmpty()) {
-//            log.info("Polled ${messages.size} messages")
+            log.debug { "Polled ${messages.size} messages" }
             val events = polledRecords.map { (key, records) ->
                 val stateSavedFuture = CompletableFuture<State?>()
                 val stateFuture = inFlightStates.put(key, stateSavedFuture)
@@ -107,7 +106,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             }
 
             val states = stateManager.get(eventsWithoutState.map { it.key.toString() })
-//            log.info("Retrieved ${states.size} states")
+            log.debug { "Retrieved ${states.size} states" }
             eventsWithoutState.forEach {
                 val state = states[it.key.toString()]
                 eventProcessor.processEvents(it.key, it.records, state, it.stateSavedFuture)
