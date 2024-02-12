@@ -89,9 +89,7 @@ class ReceiveAndUpdateTransactionBuilderFlowV1(
             }
 
             // Persist the verified filtered transactions
-            receivedFilteredTransactions.let {
-                persistenceService.persistFilteredTransactionsAndSignatures(it)
-            }
+            persistenceService.persistFilteredTransactionsAndSignatures(receivedFilteredTransactions)
         }
 
         return updatedTransactionBuilder
