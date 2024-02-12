@@ -46,6 +46,7 @@ import net.corda.p2p.linkmanager.TraceableItem
 import net.corda.p2p.linkmanager.metrics.recordOutboundMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicLong
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class OutboundMessageProcessor(
@@ -67,6 +68,8 @@ internal class OutboundMessageProcessor(
 
     companion object {
         private const val tracingEventName = "P2P Link Manager Outbound Event"
+        private val MY_ID = UUID.randomUUID().toString().replace("-", "")
+        private val index = AtomicLong()
         fun recordsForNewSessions(
             state: SessionManager.SessionState.NewSessionsNeeded,
             inboundAssignmentListener: InboundAssignmentListener,
@@ -101,7 +104,8 @@ internal class OutboundMessageProcessor(
     }
 
     override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<String, *>> {
-        val id = UUID.randomUUID().toString()
+        val id = ":$MY_ID:$index:"
+        val started = System.currentTimeMillis()
         logger.info("QQQ starting looking at $id thread ${Thread.currentThread().id} with ${events.size}")
         val authenticatedMessages = mutableListOf<TraceableItem<AuthenticatedMessageAndKey, AppMessage>>()
         val unauthenticatedMessages = mutableListOf<TraceableItem<OutboundUnauthenticatedMessage, AppMessage>>()
@@ -135,8 +139,9 @@ internal class OutboundMessageProcessor(
             }
         }
         return results.map { it.item }.flatten().also {
+            val dur = System.currentTimeMillis() - started
             logger.info(
-                "QQQ Finished looking at $id thread ${Thread.currentThread().id} with ${events.size} -> ${it.size}"
+                "QQQ Finished looking at $id thread ${Thread.currentThread().id} got ${it.size} in $dur"
             )
         }
     }

@@ -24,6 +24,7 @@ import java.nio.ByteBuffer
 import java.time.Duration
 import java.time.Instant
 import java.util.Random
+import java.util.UUID
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantReadWriteLock
@@ -46,7 +47,7 @@ class Sender(
         private val random = Random()
         private val objectMapper = ObjectMapper().registerKotlinModule().registerModule(JavaTimeModule())
         private val idGenerator = AtomicLong()
-        private val created = random.nextLong()
+        private val created = UUID.randomUUID().toString()
     }
 
     private val writerThreads = mutableListOf<Thread>()
@@ -99,7 +100,7 @@ class Sender(
 
                             messagesWithIds.add(
                                 createMessage(
-                                    "$created:${senderHoldingId.x500Name}->${destination.x500Name}:${idGenerator.incrementAndGet()}",
+                                    "${senderHoldingId.x500Name}->${destination.x500Name}:${idGenerator.incrementAndGet()}:$created",
                                     senderId,
                                     destination,
                                     senderHoldingId,
@@ -115,6 +116,8 @@ class Sender(
                         }
                         stopLock.read {
                             if (!stop) {
+                                val started = System.currentTimeMillis()
+                                logger.info("QQQ Sending ${records.size} messaging for $created")
                                 val publishedIds = publisher.publish(records).zip(messagesWithIds).filter { (future, messageWithId) ->
                                     try {
                                         future.get()
@@ -124,6 +127,8 @@ class Sender(
                                         false
                                     }
                                 }.map { it.second.first }
+                                val dur = System.currentTimeMillis() - started
+                                logger.info("QQQ Sent ${records.size} messaging for $created in $dur")
                                 logger.info("Published ${publishedIds.size} messages")
                                 messagesSent += publishedIds.size
                                 publishedIds.forEach {
