@@ -136,17 +136,14 @@ class CombinedWorker @Activate constructor(
             params.hsmId = SOFT_HSM_ID
         }
 
+        val extraConfigs = mutableListOf(preparedDbConfig,stateManagerConfig)
+        extraConfigs.addAll(createExtraConfigs(params))
+
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
-            listOf(
-                preparedDbConfig,
-                createConfigFromParams(BootConfig.BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId)),
-                createConfigFromParams(BootConfig.BOOT_REST, params.restParams),
-                stateManagerConfig,
-                createConfigFromParams(BOOT_WORKER_SERVICE, params.workerEndpoints)
-            )
+            extraConfigs
         )
 
         val superUser = System.getenv("CORDA_DEV_POSTGRES_USER") ?: "postgres"
@@ -211,6 +208,43 @@ class CombinedWorker @Activate constructor(
         schedulerProcessor.start(config)
     }
 
+    private fun createExtraConfigs(params: CombinedWorkerParams): List<Config> {
+        val extraConfigs = mutableListOf(
+            createConfigFromParams(BootConfig.BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId)),
+            createConfigFromParams(BootConfig.BOOT_REST, params.restParams),
+            createConfigFromParams(BOOT_WORKER_SERVICE, params.workerEndpoints),
+        )
+
+        if (params.mediatorReplicasFlowSession != null) {
+            extraConfigs.add(
+                createConfigFromParams(
+                    BOOT_WORKER_SERVICE,
+                    mapOf("mediatorReplicas.flowSession" to params.mediatorReplicasFlowSession.toString())
+                )
+            )
+        }
+
+        if(params.mediatorReplicasFlowMapperSessionIn != null) {
+            extraConfigs.add(
+                createConfigFromParams(
+                    BOOT_WORKER_SERVICE,
+                    mapOf("mediatorReplicas.flowMapperSessionIn" to params.mediatorReplicasFlowMapperSessionIn.toString())
+                )
+            )
+        }
+
+        if(params.mediatorReplicasFlowMapperSessionOut != null) {
+            extraConfigs.add(
+                createConfigFromParams(
+                    BOOT_WORKER_SERVICE,
+                    mapOf("mediatorReplicas.flowMapperSessionOut" to params.mediatorReplicasFlowMapperSessionOut.toString())
+                )
+            )
+        }
+
+        return extraConfigs
+    }
+
     /**
      * Sets the JDBC URL (as schema agnostic). It is the DB users responsibility to have set their search_path context
      * to be able to see whichever schema they need to see.
@@ -267,4 +301,16 @@ private class CombinedWorkerParams {
         listOf("crypto", "verification", "uniqueness", "persistence", "tokenSelection", "p2pLinkManager")
             .associate { "endpoints.$it" to "localhost:7004" }
             .toMap()
+
+    @Option(names = ["--mediator-replicas-flow-session"], description = ["Sets the number of mediators that consume " +
+            "flow.session messages"])
+    var mediatorReplicasFlowSession: Int? = null
+
+    @Option(names = ["--mediator-replicas-flow-session-in"], description = ["Sets the number of mediators that " +
+            "consume flow.mapper.session.in messages"])
+    var mediatorReplicasFlowMapperSessionIn: Int? = null
+
+    @Option(names = ["--mediator-replicas-flow-session-out"], description = ["Sets the number of mediators that " +
+            "consume flow.mapper.session.out messages"])
+    var mediatorReplicasFlowMapperSessionOut: Int? = null
 }
