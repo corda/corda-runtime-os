@@ -24,7 +24,6 @@ import net.corda.schema.Schemas.Flow.FLOW_SESSION
 import net.corda.schema.Schemas.Flow.FLOW_START
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT
-import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_THREAD_POOL_SIZE
 import net.corda.session.mapper.service.executor.FlowMapperMessageProcessor
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -60,7 +59,7 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
             FlowMapperMessageProcessor(flowMapperEventExecutorFactory, flowConfig),
             stateManager,
             Executors.newFixedThreadPool(
-                messagingConfig.getInt(MEDIATOR_PROCESSING_THREAD_POOL_SIZE),
+                6, // messagingConfig.getInt(MEDIATOR_PROCESSING_THREAD_POOL_SIZE),
                 threadFactory("FlowMapperEventMediator")
             ),
         )
@@ -102,7 +101,7 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
         )
         .messageProcessor(messageProcessor)
         .messageRouterFactory(createMessageRouterFactory())
-        .threads(messagingConfig.getInt(MEDIATOR_PROCESSING_THREAD_POOL_SIZE))
+        .threads(6) //messagingConfig.getInt(MEDIATOR_PROCESSING_THREAD_POOL_SIZE))
         .threadName("flow-mapper-event-mediator")
         .stateManager(stateManager)
         .minGroupSize(messagingConfig.getInt(MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT))

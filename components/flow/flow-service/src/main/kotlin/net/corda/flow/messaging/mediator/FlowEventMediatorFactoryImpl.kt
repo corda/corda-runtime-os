@@ -44,7 +44,6 @@ import net.corda.schema.configuration.BootConfig.TOKEN_SELECTION_WORKER_REST_END
 import net.corda.schema.configuration.BootConfig.UNIQUENESS_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.VERIFICATION_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT
-import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_THREAD_POOL_SIZE
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -87,7 +86,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
             flowEventProcessorFactory.create(configs),
             stateManager,
             Executors.newFixedThreadPool(
-                messagingConfig.getInt(MEDIATOR_PROCESSING_THREAD_POOL_SIZE),
+                6, //messagingConfig.getInt(MEDIATOR_PROCESSING_THREAD_POOL_SIZE),
                 threadFactory("FlowEventMediator")
             ),
         )
@@ -133,7 +132,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         )
         .messageProcessor(messageProcessor)
         .messageRouterFactory(createMessageRouterFactory(messagingConfig))
-        .threads(messagingConfig.getInt(MEDIATOR_PROCESSING_THREAD_POOL_SIZE))
+        .threads(6) //messagingConfig.getInt(MEDIATOR_PROCESSING_THREAD_POOL_SIZE))
         .threadName("flow-event-mediator")
         .stateManager(stateManager)
         .minGroupSize(messagingConfig.getInt(MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT))
