@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.v2
+package net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.v1
 
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderContainer
 import net.corda.v5.base.annotations.ConstructorForDeserialization
