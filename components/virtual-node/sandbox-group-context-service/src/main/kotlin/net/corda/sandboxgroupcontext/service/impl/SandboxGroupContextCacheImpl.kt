@@ -113,6 +113,7 @@ internal class SandboxGroupContextCacheImpl private constructor(
             }
     )
 
+    
     /**
      * Creates the cache for the given [sandboxGroupType] with [newCapacity] maximum size, if not created yet.
      * Changes the maximum size for the [sandboxGroupType]'s cache to [newCapacity] if the cache already exists.
