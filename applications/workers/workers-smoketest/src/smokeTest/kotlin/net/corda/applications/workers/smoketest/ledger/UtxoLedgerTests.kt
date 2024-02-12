@@ -30,14 +30,8 @@ import org.junit.jupiter.api.TestInfo
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import java.time.Duration
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 import java.util.UUID
 
-
-enum class EvolveMode {
-    NO_EXTRAS, ADD, ADD_AND_REMOVE,
-}
 @Suppress("Unused", "FunctionName")
 @TestInstance(PER_CLASS)
 class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
@@ -56,8 +50,8 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
         }
     }
 
-    private val testRunUniqueId = "r1" // UUID.randomUUID()
-    private val groupId = "083edf6d-0f7d-435d-9dc3-b7db07b92821" // UUID.randomUUID().toString()
+    private val testRunUniqueId = UUID.randomUUID()
+    private val groupId = UUID.randomUUID().toString()
     private val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
     private val notaryCpiName = "${TEST_NOTARY_CPI_NAME}_$testRunUniqueId"
 
@@ -65,26 +59,23 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
     private val bobX500 = "CN=Bob-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
     private val charlieX500 = "CN=Charlie-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
     private val notaryX500 = "CN=Notary-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
-    private val extraParties = 20
-    private val extraPartiesX500 = (0 until extraParties).map { "CN=Extra-${it}-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB" }
 
     private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, groupId)
     private val bobHoldingId: String = getHoldingIdShortHash(bobX500, groupId)
     private val charlieHoldingId: String = getHoldingIdShortHash(charlieX500, groupId)
     private val notaryHoldingId: String = getHoldingIdShortHash(notaryX500, groupId)
-    private val extraPartiesHoldingIds: List<String> = extraPartiesX500.map { getHoldingIdShortHash(it, groupId) }
 
     private val staticMemberList = listOf(
         aliceX500,
         bobX500,
         charlieX500,
         notaryX500
-    ) + extraPartiesX500
+    )
 
     @BeforeAll
     fun beforeAll() {
         // check cluster is ready
-        //assertIsReady(Duration.ofMinutes(1), Duration.ofMillis(100))
+        assertIsReady(Duration.ofMinutes(2), Duration.ofMillis(100))
 
         DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
 
@@ -104,28 +95,22 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
         val aliceActualHoldingId = getOrCreateVirtualNodeFor(aliceX500, cpiName)
         val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, cpiName)
         val charlieActualHoldingId = getOrCreateVirtualNodeFor(charlieX500, cpiName)
-        val extraPartiesActualHoldingIds = extraPartiesX500.map { getOrCreateVirtualNodeFor(it, cpiName) }
         val notaryActualHoldingId = getOrCreateVirtualNodeFor(notaryX500, notaryCpiName)
 
         assertThat(aliceActualHoldingId).isEqualTo(aliceHoldingId)
         assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
         assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
-        (0 until extraParties).forEach {
-            assertThat(extraPartiesActualHoldingIds[it]).isEqualTo(extraPartiesHoldingIds[it])
-        }
         assertThat(notaryActualHoldingId).isEqualTo(notaryHoldingId)
 
         registerStaticMember(aliceHoldingId)
         registerStaticMember(bobHoldingId)
         registerStaticMember(charlieHoldingId)
-        extraPartiesHoldingIds.forEach { registerStaticMember(it) }
         registerStaticMember(notaryHoldingId, NOTARY_SERVICE_X500)
     }
 
 
     @Test
     fun `Utxo Ledger - create a transaction containing states and finalize it then evolve it`(testInfo: TestInfo) {
-        val timings = mutableListOf<Long>()
         val idGenerator = TestRequestIdGenerator(testInfo)
         val input = "test input"
         val utxoFlowRequestId = startRestFlow(
@@ -160,58 +145,28 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
             assertThat(parsedResult.transaction.states.flatMap { it.participants }).hasSize(3)
             assertThat(parsedResult.transaction.participants).hasSize(3)
         }
-        var currentTransactionId = checkNotNull(utxoFlowResult.flowResult)
-        var message = input
-        var prevInput = ""
-        val mode: EvolveMode = EvolveMode.ADD
-        for (stage in 1 until 20) {
-            val start = Instant.now()
-            val evolvedMessage = "evolved input $stage"
-            val addList: List<String> = when (mode) {
-                EvolveMode.ADD_AND_REMOVE, EvolveMode.ADD -> if (stage < extraParties) listOf(extraPartiesX500[stage-1]) else emptyList()
-                EvolveMode.NO_EXTRAS -> emptyList()
-            }
-            val removeList: List<String> = when(mode) {
-                EvolveMode.ADD_AND_REMOVE -> if (stage > 2 && stage < extraPartiesX500.size - 2) listOf(extraPartiesX500[stage-2]) else emptyList()
-                EvolveMode.ADD, EvolveMode.NO_EXTRAS -> emptyList()
-            }
-            println("mode ${mode.name} adding participants $addList  and removing participants $removeList")
-            val evolveRequestId = startRestFlow(
-                bobHoldingId,
-                mapOf(
-                    "update" to evolvedMessage, "transactionId" to currentTransactionId, "index" to "0",
-                    "addParticipants" to addList,
-                    "removeParticipants" to removeList
-                ),
-                "com.r3.corda.demo.utxo.UtxoDemoEvolveFlow",
-                requestId = idGenerator.nextId
 
-            )
-            val evolveFlowResult = awaitRestFlowFinished(bobHoldingId, evolveRequestId)
-            if (evolveFlowResult.flowError != null) {
-                println("flow error ${evolveFlowResult.flowError}")
-            }
-            val evolveFlowResultInner = checkNotNull(evolveFlowResult.flowResult) {"evolve failed ${evolveFlowResult.flowResult}"}
-            assertThat(evolveFlowResult.flowError).isNull()
-            // Peek into the last transaction
-            val parsedEvolveFlowResultInner = objectMapper.readValue(evolveFlowResultInner, EvolveResponse::class.java)
-            assertThat(parsedEvolveFlowResultInner.transactionId).isNotNull()
-            assertThat(parsedEvolveFlowResultInner.errorMessage).isNull()
+        val evolvedMessage = "evolved input"
+        val evolveRequestId = startRestFlow(
+            bobHoldingId,
+            mapOf("update" to evolvedMessage, "transactionId" to utxoFlowResult.flowResult!!, "index" to "0"),
+            "com.r3.corda.demo.utxo.UtxoDemoEvolveFlow",
+            requestId = idGenerator.nextId
 
-            currentTransactionId = checkNotNull(parsedEvolveFlowResultInner.transactionId) { "no flow result" }
-            prevInput = message
-            message = evolvedMessage
-            val end = Instant.now()
-            val duration = ChronoUnit.MILLIS.between(start, end)
-            println("TTTTTT completed stage $stage in ${duration}ms")
-            timings += duration
-            println(timings)
-        }
+        )
+        val evolveFlowResult = awaitRestFlowFinished(bobHoldingId, evolveRequestId)
 
+        val parsedEvolveFlowResult = objectMapper
+            .readValue(evolveFlowResult.flowResult!!, EvolveResponse::class.java)
+        assertThat(parsedEvolveFlowResult.transactionId).isNotNull()
+        assertThat(parsedEvolveFlowResult.errorMessage).isNull()
+        assertThat(evolveFlowResult.flowError).isNull()
+
+        // Peek into the last transaction
 
         val peekFlowId = startRestFlow(
             bobHoldingId,
-            mapOf("transactionId" to currentTransactionId),
+            mapOf("transactionId" to parsedEvolveFlowResult.transactionId!!),
             "com.r3.corda.demo.utxo.PeekTransactionFlow",
             requestId = idGenerator.nextId
         )
@@ -224,10 +179,8 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
             .readValue(peekFlowResult.flowResult, PeekTransactionResponse::class.java)
 
         assertThat(parsedPeekFlowResult.errorMessage).isNull()
-        assertThat(parsedPeekFlowResult.inputs).singleElement().extracting { it.testField }.isEqualTo(prevInput)
-        assertThat(parsedPeekFlowResult.outputs).singleElement().extracting { it.testField }.isEqualTo(message)
-        println("done; final timings are:")
-        println(timings)
+        assertThat(parsedPeekFlowResult.inputs).singleElement().extracting { it.testField }.isEqualTo(input)
+        assertThat(parsedPeekFlowResult.outputs).singleElement().extracting { it.testField }.isEqualTo(evolvedMessage)
     }
 
     @Test

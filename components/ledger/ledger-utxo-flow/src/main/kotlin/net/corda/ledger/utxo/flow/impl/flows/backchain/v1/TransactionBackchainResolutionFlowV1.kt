@@ -5,6 +5,7 @@ import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainVerif
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.utilities.debug
+import net.corda.utilities.trace
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
@@ -45,10 +46,10 @@ class TransactionBackchainResolutionFlowV1(
             initialTransactionIds.filter { utxoLedgerPersistenceService.findSignedTransaction(it, VERIFIED) != null }.toSet()
         val originalTransactionsToRetrieve = initialTransactionIds - alreadyVerifiedTransactions
         if (originalTransactionsToRetrieve.isNotEmpty()) {
-            log.info(
+            log.debug {
                 "Backchain resolution of $initialTransactionIds - Resolving unseen transactions $originalTransactionsToRetrieve" +
                     ", starting transaction backchain resolution"
-            )
+            }
             val topologicalSort = flowEngine.subFlow(
                 TransactionBackchainReceiverFlowV1(
                     initialTransactionIds = initialTransactionIds,
@@ -56,10 +57,10 @@ class TransactionBackchainResolutionFlowV1(
                     session
                 )
             )
-            log.info(
+            log.debug {
                 "Backchain resolution of $initialTransactionIds - Retrieved dependencies of $originalTransactionsToRetrieve from its " +
                     "backchain, beginning verification before storing the transactions locally"
-            )
+            }
             try {
                 if (!transactionBackchainVerifier.verify(initialTransactionIds, topologicalSort)) {
                     log.warn(
@@ -80,15 +81,15 @@ class TransactionBackchainResolutionFlowV1(
             }
         } else {
             if (initialTransactionIds.isEmpty()) {
-                log.info(
+                log.trace {
                     "Backchain resolution of $initialTransactionIds - Has no dependencies in its backchain, skipping transaction " +
                         "backchain resolution"
-                )
+                }
             } else {
-                log.info(
+                log.trace {
                     "Backchain resolution of $initialTransactionIds - Has dependencies $initialTransactionIds which have already " +
                         "been verified locally, skipping transaction backchain resolution"
-                )
+                }
             }
             session.send(TransactionBackchainRequestV1.Stop)
         }

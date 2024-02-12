@@ -17,14 +17,13 @@ import net.corda.v5.ledger.utxo.UtxoLedgerService
 import com.r3.corda.demo.utxo.contract.TestCommand
 import com.r3.corda.demo.utxo.contract.TestUtxoState
 import org.slf4j.LoggerFactory
-import java.security.PublicKey
 import java.time.Duration
 import java.time.Instant
 
 @InitiatingFlow(protocol = "utxo-evolve-protocol")
 class UtxoDemoEvolveFlow : ClientStartableFlow {
 
-    data class EvolveMessage(val update: String, val transactionId: String, val index: Int, val addParticipants: List<String>, val removeParticipants: List<String>)
+    data class EvolveMessage(val update: String, val transactionId: String, val index: Int)
     data class EvolveResponse( val transactionId: String?, val errorMessage: String?)
 
     class EvolveFlowError(message: String): Exception(message)
@@ -49,7 +48,7 @@ class UtxoDemoEvolveFlow : ClientStartableFlow {
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
-        log.info("Utxo flow demo starting... v5")
+        log.info("Utxo flow demo starting...")
         val response = try {
             val request = requestBody.getRequestBodyAs(jsonMarshallingService, EvolveMessage::class.java)
 
@@ -66,31 +65,11 @@ class UtxoDemoEvolveFlow : ClientStartableFlow {
             val inputState = input.state.contractState as? TestUtxoState ?:
                 throw EvolveFlowError( "State ${prevStates[request.index].ref} is not of type TestUtxoState")
 
-            val outParticipantKeys = (inputState.participants.filterIndexed { index, _ ->
-                inputState.participantNames[index] !in request.removeParticipants
-            }) + request.addParticipants.map {
-                log.info("adding new participant $it")
-                val newParticipantInfo = memberLookup.lookup(MemberX500Name.parse(it))
-                if (newParticipantInfo == null) {
-                    val msg = "new member $it not found"
-                    log.error(msg)
-                    throw IllegalStateException(msg)
-                } else {
-                    val newKey = newParticipantInfo.ledgerKeys.first()
-                    log.info("adding new participant ${it} key $newKey")
-                    newKey
-                }
-            }
-            val outParticipantNames =  inputState.participantNames.filter { it !in request.removeParticipants } + request.addParticipants
-            log.info("EEEEE evolve output state participant keys are ${outParticipantKeys.size} "
-                +"$outParticipantKeys + ${request.addParticipants} - ${request.removeParticipants}")
-            log.info("EEEEE evolve output state participant names are ${outParticipantNames.size} "
-                +"$outParticipantNames + ${request.addParticipants} - ${request.removeParticipants}")
             val output =
                 TestUtxoState(
                     request.update,
-                    outParticipantKeys,
-                    outParticipantNames
+                    inputState.participants,
+                    inputState.participantNames
                 )
 
             val members = output.participantNames.map { x500 ->
@@ -98,7 +77,6 @@ class UtxoDemoEvolveFlow : ClientStartableFlow {
                     "Member $x500 does not exist in the membership group"
                 }
             }
-            log.info("EEEEE evolve members are ${members.size} ${members.map { it.name }}")
 
             val signedTransaction = utxoLedgerService.createTransactionBuilder()
                 .addCommand(TestCommand())
@@ -110,7 +88,7 @@ class UtxoDemoEvolveFlow : ClientStartableFlow {
                 .toSignedTransaction()
 
             val sessions = (members - memberLookup.myInfo()).map { flowMessaging.initiateFlow(it.name) }
-            log.info("EEEEE sessions are ${sessions.size} $sessions")
+
             val finalizationResult = utxoLedgerService.finalize(
                     signedTransaction,
                     sessions
