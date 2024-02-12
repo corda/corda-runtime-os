@@ -63,7 +63,6 @@ data class State(
     }
 }
 
-
 data class StateMetadata(
     val stateKey: String,
     val key: String,

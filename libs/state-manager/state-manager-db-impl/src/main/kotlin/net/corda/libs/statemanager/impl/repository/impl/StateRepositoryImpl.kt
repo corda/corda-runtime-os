@@ -110,7 +110,6 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
         val updatedKeys = mutableListOf<String>()
         val metaCount = states.sumOf { it.metadata.entries.size }
 
-
         connection.prepareStatement(queryProvider.updateStates(states.size)).use { stmt ->
             states.forEach { state ->
                 stmt.setString(indices.next(), state.key)
@@ -133,7 +132,7 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
                     metadataStatement.setString(metadataIndices.next(), state.key)
                     metadataStatement.setString(metadataIndices.next(), key)
                     metadataStatement.setString(metadataIndices.next(), value.toString())
-                    metadataStatement.setInt(metadataIndices.next(), state.version+1)
+                    metadataStatement.setInt(metadataIndices.next(), state.version + 1)
                 }
             }
             metadataStatement.execute()
@@ -158,7 +157,6 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
             }
             statement.execute()
         }
-
 
         return connection.prepareStatement(queryProvider.deleteStatesByKey).use { statement ->
             // The actual state order doesn't matter, but we must ensure that the states are iterated over in the same

@@ -23,7 +23,6 @@ class PostgresQueryProvider : AbstractQueryProvider() {
         RETURNING $STATE_MANAGER_TABLE.$KEY_COLUMN;
     """.trimIndent()
 
-
     override fun createMetadataStates(size: Int): String = """
         WITH data (statekey, key, value, $VERSION_COLUMN, $MODIFIED_TIME_COLUMN) as (
             VALUES ${List(size) { "(?, ?, ?, ?, CURRENT_TIMESTAMP AT TIME ZONE 'UTC')" }.joinToString(",")}
@@ -87,7 +86,7 @@ class PostgresQueryProvider : AbstractQueryProvider() {
     fun metadataKeyFilters(filters: Collection<MetadataFilter>) =
         filters.map { "(${metadataKeyFilter(it)})" }
 
-    //doesnt work if key doesnt exist for not equals
+    // doesnt work if key doesnt exist for not equals
     fun metadataKeyFilter(filter: MetadataFilter) =
         "m.key = '${filter.key}' AND m.value ${filter.operation.toNativeOperator()} '${filter.value}'"
 
