@@ -104,7 +104,7 @@ slowest_messages() {
      -- env PGPASSWORD=$2 \
      psql -U postgres -d app_simulator -A -F", "\
      -c "select
-          *,
+          *
           FROM received_messages
           WHERE sent_timestamp > '$warm_up_ends'
           ORDER BY delivery_latency_ms DESC LIMIT 1000
@@ -196,6 +196,8 @@ interBatchDelay="PT0.3S"
 batchSize=40
 stop="no"
 latency="0.22"
+latency_a="0.22"
+latency_b="0.22"
 until (( $(echo "$latency > 1.0" |bc -l) || ($(echo "$latency_a > 1.0" |bc -l) || $(echo "$latency_b > 1.0" |bc -l)) ));  do
   echo 'Waiting a minute before starting sender'
   sleep 60

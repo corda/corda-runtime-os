@@ -24,8 +24,8 @@ import java.nio.ByteBuffer
 import java.time.Duration
 import java.time.Instant
 import java.util.Random
-import java.util.UUID
 import java.util.concurrent.ExecutionException
+import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.thread
@@ -43,10 +43,11 @@ class Sender(
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val random = Random()
+        private val objectMapper = ObjectMapper().registerKotlinModule().registerModule(JavaTimeModule())
+        private val idGenerator = AtomicLong()
+        private val created = random.nextLong()
     }
-
-    private val random = Random()
-    private val objectMapper = ObjectMapper().registerKotlinModule().registerModule(JavaTimeModule())
 
     private val writerThreads = mutableListOf<Thread>()
     private val stopLock = ReentrantReadWriteLock()
@@ -98,7 +99,7 @@ class Sender(
 
                             messagesWithIds.add(
                                 createMessage(
-                                    "$senderId:$client:${++messagesSent}",
+                                    "$created:${senderHoldingId.x500Name}->${destination.x500Name}:${idGenerator.incrementAndGet()}",
                                     senderId,
                                     destination,
                                     senderHoldingId,
@@ -124,6 +125,7 @@ class Sender(
                                     }
                                 }.map { it.second.first }
                                 logger.info("Published ${publishedIds.size} messages")
+                                messagesSent += publishedIds.size
                                 publishedIds.forEach {
                                     logger.info("QQQ \t Published message ID: ${it.messageId}")
                                 }
