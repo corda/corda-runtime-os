@@ -54,13 +54,6 @@ class ReceiveAndUpdateTransactionBuilderFlowV2(
         val updatedTransactionBuilder = originalTransactionBuilder.append(receivedTransactionBuilder)
         log.trace { "Transaction builder proposals have been applied. Result: $updatedTransactionBuilder" }
 
-       /* require(originalTransactionBuilder.notaryName == receivedTransactionBuilder.getNotaryName() ||
-                originalTransactionBuilder.notaryName == null
-        ) {
-            "Notary name changed in the received transaction builder " +
-                    "from ${originalTransactionBuilder.notaryName} to ${receivedTransactionBuilder.getNotaryName()}."
-        }*/
-
         val newTransactionIds = receivedTransactionBuilder.dependencies
 
         // If we have no dependencies then we just return the updated transaction builder because there's
