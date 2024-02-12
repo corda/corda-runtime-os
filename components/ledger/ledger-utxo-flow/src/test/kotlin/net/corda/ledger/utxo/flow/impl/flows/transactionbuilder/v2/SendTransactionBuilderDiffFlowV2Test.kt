@@ -70,7 +70,6 @@ class SendTransactionBuilderDiffFlowV2Test : SendTransactionBuilderDiffFlowCommo
         )
     }
 
-
     @Test
     fun `called with no dependencies will only send the transaction builder`() {
         callSendFlow()
@@ -102,11 +101,15 @@ class SendTransactionBuilderDiffFlowV2Test : SendTransactionBuilderDiffFlowCommo
         whenever(currentTransactionBuilder.inputStateRefs).thenReturn(listOf(stateRef1))
         whenever(currentTransactionBuilder.referenceStateRefs).thenReturn(listOf(stateRef2))
 
-        whenever(utxoLedgerPersistenceService.findFilteredTransactionsAndSignatures(listOf(stateRef1, stateRef2), notaryKey, notaryX500Name))
-            .thenReturn(mapOf(
-                stateRef1.transactionId to filteredTxAndSigs1,
-                stateRef2.transactionId to filteredTxAndSigs2,
-            ))
+        whenever(
+            utxoLedgerPersistenceService.findFilteredTransactionsAndSignatures(listOf(stateRef1, stateRef2), notaryKey, notaryX500Name)
+        )
+            .thenReturn(
+                mapOf(
+                    stateRef1.transactionId to filteredTxAndSigs1,
+                    stateRef2.transactionId to filteredTxAndSigs2,
+                )
+            )
         callSendFlow()
 
         verify(session).send(
@@ -148,7 +151,9 @@ class SendTransactionBuilderDiffFlowV2Test : SendTransactionBuilderDiffFlowCommo
         whenever(currentTransactionBuilder.inputStateRefs).thenReturn(listOf(stateRef1))
         whenever(currentTransactionBuilder.referenceStateRefs).thenReturn(listOf(stateRef2))
 
-        whenever(utxoLedgerPersistenceService.findFilteredTransactionsAndSignatures(listOf(stateRef1, stateRef2), notaryKey, notaryX500Name))
+        whenever(
+            utxoLedgerPersistenceService.findFilteredTransactionsAndSignatures(listOf(stateRef1, stateRef2), notaryKey, notaryX500Name)
+        )
             .thenReturn(emptyMap())
 
         val ex = assertThrows<IllegalArgumentException> {

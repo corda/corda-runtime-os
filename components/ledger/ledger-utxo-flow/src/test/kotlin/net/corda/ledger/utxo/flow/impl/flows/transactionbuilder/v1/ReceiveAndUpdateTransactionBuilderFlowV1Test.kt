@@ -27,5 +27,4 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : ReceiveAndUpdateTransaction
     }
 
     override val payloadWrapper: Class<*>? = null
-
 }

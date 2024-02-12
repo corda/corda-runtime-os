@@ -15,8 +15,9 @@ data class TransactionBuilderPayload @ConstructorForDeserialization constructor(
         mapOf(TRANSACTION_BUILDER to transactionBuilder)
     )
 
-    constructor(transactionBuilder: UtxoTransactionBuilderContainer,
-                filteredDependencies: List<UtxoFilteredTransactionAndSignatures>
+    constructor(
+        transactionBuilder: UtxoTransactionBuilderContainer,
+        filteredDependencies: List<UtxoFilteredTransactionAndSignatures>
     ) : this(
         mapOf(
             TRANSACTION_BUILDER to transactionBuilder,

@@ -121,12 +121,14 @@ class ReceiveAndUpdateTransactionBuilderFlowV2Test : ReceiveAndUpdateTransaction
                 listOf(filteredTransactionAndSignatures)
             )
         )
-        whenever(mockNotarySignatureVerificationService.verifyNotarySignatures(
-            any(),
-            any(),
-            any(),
-            any()
-        )).doAnswer {  }
+        whenever(
+            mockNotarySignatureVerificationService.verifyNotarySignatures(
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        ).doAnswer { }
 
         whenever(filteredTransactionAndSignatures.filteredTransaction).thenReturn(filteredTransaction)
         whenever(filteredTransactionAndSignatures.signatures).thenReturn(listOf(notarySignature))
@@ -155,12 +157,14 @@ class ReceiveAndUpdateTransactionBuilderFlowV2Test : ReceiveAndUpdateTransaction
                 listOf(filteredTransactionAndSignatures)
             )
         )
-        whenever(mockNotarySignatureVerificationService.verifyNotarySignatures(
-            any(),
-            any(),
-            any(),
-            any()
-        )).doAnswer {  }
+        whenever(
+            mockNotarySignatureVerificationService.verifyNotarySignatures(
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        ).doAnswer { }
 
         whenever(filteredTransactionAndSignatures.filteredTransaction).thenReturn(invalidFilteredTransaction)
         whenever(filteredTransactionAndSignatures.signatures).thenReturn(listOf(notarySignature))
@@ -183,12 +187,14 @@ class ReceiveAndUpdateTransactionBuilderFlowV2Test : ReceiveAndUpdateTransaction
                 listOf(filteredTransactionAndSignatures)
             )
         )
-        whenever(mockNotarySignatureVerificationService.verifyNotarySignatures(
-            any(),
-            any(),
-            any(),
-            any()
-        )).doAnswer {  }
+        whenever(
+            mockNotarySignatureVerificationService.verifyNotarySignatures(
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        ).doAnswer { }
 
         whenever(filteredTransactionAndSignatures.filteredTransaction).thenReturn(filteredTransaction)
         whenever(filteredTransactionAndSignatures.signatures).thenReturn(emptyList())
@@ -211,12 +217,14 @@ class ReceiveAndUpdateTransactionBuilderFlowV2Test : ReceiveAndUpdateTransaction
                 listOf(filteredTransactionAndSignatures)
             )
         )
-        whenever(mockNotarySignatureVerificationService.verifyNotarySignatures(
-            any(),
-            any(),
-            any(),
-            any()
-        )).doAnswer {  }
+        whenever(
+            mockNotarySignatureVerificationService.verifyNotarySignatures(
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        ).doAnswer { }
 
         whenever(filteredTransactionAndSignatures.filteredTransaction).thenReturn(filteredTransaction)
         whenever(filteredTransactionAndSignatures.signatures).thenReturn(listOf(notarySignature))
@@ -243,12 +251,14 @@ class ReceiveAndUpdateTransactionBuilderFlowV2Test : ReceiveAndUpdateTransaction
                 listOf(filteredTransactionAndSignatures)
             )
         )
-        whenever(mockNotarySignatureVerificationService.verifyNotarySignatures(
-            any(),
-            any(),
-            any(),
-            any()
-        )).doAnswer {  }
+        whenever(
+            mockNotarySignatureVerificationService.verifyNotarySignatures(
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        ).doAnswer { }
 
         whenever(filteredTransactionAndSignatures.filteredTransaction).thenReturn(filteredTransaction)
         whenever(filteredTransactionAndSignatures.signatures).thenReturn(listOf(notarySignature))
@@ -260,7 +270,7 @@ class ReceiveAndUpdateTransactionBuilderFlowV2Test : ReceiveAndUpdateTransaction
 
         assertThat(ex).hasStackTraceContaining(
             "Notary from initial transaction \"$anotherNotaryX500Name\" " +
-                    "cannot be found in group parameter notaries."
+                "cannot be found in group parameter notaries."
         )
     }
 
@@ -275,12 +285,14 @@ class ReceiveAndUpdateTransactionBuilderFlowV2Test : ReceiveAndUpdateTransaction
                 listOf(filteredTransactionAndSignatures, filteredTransactionAndSignatures2)
             )
         )
-        whenever(mockNotarySignatureVerificationService.verifyNotarySignatures(
-            any(),
-            any(),
-            any(),
-            any()
-        )).doAnswer {  }
+        whenever(
+            mockNotarySignatureVerificationService.verifyNotarySignatures(
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        ).doAnswer { }
 
         whenever(filteredTransactionAndSignatures.filteredTransaction).thenReturn(filteredTransaction)
         whenever(filteredTransactionAndSignatures.signatures).thenReturn(listOf(notarySignature))

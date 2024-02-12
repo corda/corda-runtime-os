@@ -163,7 +163,6 @@ abstract class ReceiveAndUpdateTransactionBuilderFlowCommonTest : UtxoLedgerTest
             )
         )
 
-
         val returnedTransactionBuilder = callSendFlow()
 
         assertContentEquals(listOf(publicKeyExample, anotherPublicKeyExample), returnedTransactionBuilder.signatories)
@@ -321,5 +320,4 @@ abstract class ReceiveAndUpdateTransactionBuilderFlowCommonTest : UtxoLedgerTest
             payloadWrapper?.getConstructor(UtxoTransactionBuilderContainer::class.java)?.newInstance(builder) ?: builder
         )
     }
-
 }

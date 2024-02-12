@@ -158,9 +158,11 @@ abstract class SendTransactionBuilderDiffFlowCommonTest {
         callSendFlow()
 
         verify(session).send(
-            UtxoTransactionBuilderContainer(signatories = mutableListOf(
-                anotherPublicKeyExample
-            )).wrapInPayload()
+            UtxoTransactionBuilderContainer(
+                signatories = mutableListOf(
+                    anotherPublicKeyExample
+                )
+            ).wrapInPayload()
         )
         verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
