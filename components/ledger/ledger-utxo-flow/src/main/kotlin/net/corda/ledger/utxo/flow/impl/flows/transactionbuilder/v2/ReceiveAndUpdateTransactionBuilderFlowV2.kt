@@ -51,54 +51,43 @@ class ReceiveAndUpdateTransactionBuilderFlowV2(
         val receivedTransactionBuilderPayload = session.receive(TransactionBuilderPayload::class.java)
         val receivedTransactionBuilder = receivedTransactionBuilderPayload.transactionBuilder
 
-        require(originalTransactionBuilder.notaryName == receivedTransactionBuilder.getNotaryName() ||
-                originalTransactionBuilder.notaryName == null
-        ) {
-            "Notary name changed in the received transaction builder " +
-                "from ${originalTransactionBuilder.notaryName} to ${receivedTransactionBuilder.getNotaryName()}."
-        }
-
         val updatedTransactionBuilder = originalTransactionBuilder.append(receivedTransactionBuilder)
-
         log.trace { "Transaction builder proposals have been applied. Result: $updatedTransactionBuilder" }
-
-        val notaryName = originalTransactionBuilder.notaryName ?: updatedTransactionBuilder.notaryName
-        requireNotNull(notaryName) {
-            "Notary name was null originally and the received transaction builder didn't provide one either."
-        }
-
-        val notaryInfo = requireNotNull(notaryLookup.lookup(notaryName)) {
-            "Could not find notary service with name: $notaryName"
-        }
 
         val newTransactionIds = receivedTransactionBuilder.dependencies
 
-        if (notaryInfo.isBackchainRequired) {
-            if (newTransactionIds.isEmpty()) {
-                log.trace { "There are no new states transferred, therefore no backchains need to be resolved." }
-            } else {
-                flowEngine.subFlow(TransactionBackchainResolutionFlow(newTransactionIds, session))
-            }
-        } else {
-            val receivedFilteredTransactions = receivedTransactionBuilderPayload.filteredDependencies
+        // If we have no dependencies then we just return the updated transaction builder because there's
+        // no need for backchain resolution or filtered transaction verification
+        if (newTransactionIds.isEmpty()) {
+            log.trace { "There are no new states transferred, therefore there's no need for backchain resolution " +
+                    "or filtered transaction verification." }
+            return updatedTransactionBuilder
+        }
 
-            require(receivedFilteredTransactions?.size == newTransactionIds.size) {
+        val receivedFilteredTransactions = receivedTransactionBuilderPayload.filteredDependencies
+
+        if (receivedFilteredTransactions == null) {
+            // If we have dependencies but no filtered dependencies it means we need backchain resolution
+            flowEngine.subFlow(TransactionBackchainResolutionFlow(newTransactionIds, session))
+        } else {
+            // If we have dependencies and filtered dependencies it means we need to verify filtered transactions
+            require(receivedFilteredTransactions.size == newTransactionIds.size) {
                 "The number of filtered transactions received didn't match the number of dependencies."
             }
 
             val groupParameters = groupParametersLookup.currentGroupParameters
             val notary = requireNotNull(groupParameters.notaries.first { it.name == updatedTransactionBuilder.notaryName }) {
                 "Notary from initial transaction \"${updatedTransactionBuilder.notaryName}\" " +
-                    "cannot be found in group parameter notaries."
+                        "cannot be found in group parameter notaries."
             }
 
             // Verify the received filtered transactions
-            receivedFilteredTransactions?.forEach {
+            receivedFilteredTransactions.forEach {
                 it.verifyFilteredTransactionAndSignatures(notary, notarySignatureVerificationService)
             }
 
             // Persist the verified filtered transactions
-            receivedFilteredTransactions?.let {
+            receivedFilteredTransactions.let {
                 persistenceService.persistFilteredTransactionsAndSignatures(it)
             }
         }

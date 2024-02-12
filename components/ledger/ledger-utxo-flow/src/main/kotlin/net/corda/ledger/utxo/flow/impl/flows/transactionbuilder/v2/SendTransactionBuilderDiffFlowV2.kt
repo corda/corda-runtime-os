@@ -73,9 +73,12 @@ class SendTransactionBuilderDiffFlowV2(
         if (notaryInfo.isBackchainRequired) {
             log.trace { "Sending proposed transaction builder components to ${session.counterparty}." }
 
+            // If we need backchain resolution we send the transaction builder and start the backchain sender flow
             session.send(TransactionBuilderPayload(transactionBuilder))
             flowEngine.subFlow(TransactionBackchainSenderFlow(newTransactionIds, session))
         } else {
+            // If we don't need backchain resolution we collect the filtered transactions for the given stateRefs
+            // and add them to the payload
             val filteredTransactionsAndSignatures = persistenceService.findFilteredTransactionsAndSignatures(
                 transactionBuilder.inputStateRefs + transactionBuilder.referenceStateRefs,
                 notaryInfo.publicKey,
