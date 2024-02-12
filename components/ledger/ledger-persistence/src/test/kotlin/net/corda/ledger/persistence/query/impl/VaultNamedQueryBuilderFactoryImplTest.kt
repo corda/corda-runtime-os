@@ -22,7 +22,7 @@ class VaultNamedQueryBuilderFactoryImplTest {
     private companion object {
         const val DUMMY_QUERY_NAME = "dummy"
         const val DUMMY_WHERE_CLAUSE_UNCONSUMED =
-            "original AND (visible_states.consumed IS NULL OR visible_states.consumed < :Corda_TimestampLimit)"
+            "original AND (visible_states.consumed IS NULL OR visible_states.consumed >= :Corda_TimestampLimit)"
         const val DUMMY_WHERE_CLAUSE = "original"
         const val PARSED_WHERE_CLAUSE = "parsed"
         const val ORDER_BY_CLAUSE = "order original"
