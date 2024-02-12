@@ -23,7 +23,7 @@ import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndSignatures
 import net.corda.v5.membership.NotaryInfo
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -403,7 +403,7 @@ class SendTransactionBuilderDiffFlowV1Test {
             callSendFlow()
         }
 
-        Assertions.assertThat(ex).hasStackTraceContaining("Every dependency needs to have the same notary")
+        assertThat(ex).hasStackTraceContaining("Every dependency needs to have the same notary")
     }
 
     @Test
@@ -425,7 +425,7 @@ class SendTransactionBuilderDiffFlowV1Test {
             callSendFlow()
         }
 
-        Assertions.assertThat(ex).hasStackTraceContaining("The number of filtered transactions didn't match the number of dependencies")
+        assertThat(ex).hasStackTraceContaining("The number of filtered transactions didn't match the number of dependencies")
     }
 
     @Test
@@ -441,7 +441,20 @@ class SendTransactionBuilderDiffFlowV1Test {
             callSendFlow()
         }
 
-        Assertions.assertThat(ex).hasStackTraceContaining("Could not find notary service with name: $notaryX500Name")
+        assertThat(ex).hasStackTraceContaining("Could not find notary service with name: $notaryX500Name")
+    }
+
+    @Test
+    fun `called with notary name set then no staterefs will be resolved`() {
+        whenever(currentTransactionBuilder.notaryName).thenReturn(notaryX500Name)
+        whenever(notaryLookup.lookup(notaryX500Name)).thenReturn(notaryInfo)
+
+        whenever(currentTransactionBuilder.inputStateRefs).thenReturn(listOf(stateRef1))
+        whenever(currentTransactionBuilder.referenceStateRefs).thenReturn(listOf(stateRef2))
+
+        callSendFlow()
+
+        verify(ledgerStateQueryService, never()).resolveStateRefs(any())
     }
 
     private fun callSendFlow() {

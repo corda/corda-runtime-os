@@ -52,18 +52,20 @@ class SendTransactionBuilderDiffFlowV1(
             return
         }
 
-        // Resolve the dependent state and refs
-        val dependentStateAndRefs = ledgerStateQueryService.resolveStateRefs(
-            transactionBuilder.inputStateRefs + transactionBuilder.referenceStateRefs
-        )
+        val notaryName = transactionBuilder.getNotaryName() ?: run {
+            // Resolve the dependent state and refs
+            val dependentStateAndRefs = ledgerStateQueryService.resolveStateRefs(
+                transactionBuilder.inputStateRefs + transactionBuilder.referenceStateRefs
+            )
 
-        // Make sure they all have the same notary
-        require(dependentStateAndRefs.map { it.state.notaryName }.toSet().size == 1) {
-            "Every dependency needs to have the same notary."
+            // Make sure they all have the same notary
+            require(dependentStateAndRefs.map { it.state.notaryName }.toSet().size == 1) {
+                "Every dependency needs to have the same notary."
+            }
+
+            // Get the notary from the state ref
+            dependentStateAndRefs.first().state.notaryName
         }
-
-        // Get the notary from the state ref
-        val notaryName = dependentStateAndRefs.first().state.notaryName
 
         // Lookup the notary by name
         val notaryInfo = requireNotNull(notaryLookup.lookup(notaryName)) {
