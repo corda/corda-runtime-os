@@ -1,6 +1,5 @@
 package net.corda.applications.workers.flow
 
-import com.typesafe.config.Config
 import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.Health
@@ -19,7 +18,6 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.flow.FlowProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_WORKER_SERVICE
-import net.corda.schema.configuration.BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_SESSION
 import net.corda.tracing.configureTracing
 import net.corda.tracing.shutdownTracing
 import net.corda.web.api.WebServer
