@@ -29,4 +29,5 @@ interface MessagingClient : AutoCloseable {
      * @return Computation result, or null if the destination doesn't provide a response.
      * */
     fun send(message: MediatorMessage<*>): CompletableFuture<*>?
+
 }

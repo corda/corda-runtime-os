@@ -45,21 +45,21 @@ class RPCClient(
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val pendingResponses = LinkedList<CompletableFuture<MediatorMessage<*>>>()
+  //  private val requestQueue = LinkedList<Pair<MediatorMessage<*>, CompletableFuture<MediatorMessage<*>>>>()
 
     override fun send(message: MediatorMessage<*>): CompletableFuture<MediatorMessage<*>>? {
         val future = CompletableFuture<MediatorMessage<*>>()
-        pendingResponses.addLast(future)
-        pollPendingResponses(future)
+       // requestQueue.offer(message to future)
         return future
     }
 
-    private fun pollPendingResponses(future: CompletableFuture<MediatorMessage<*>>?, message: MediatorMessage<*>) {
-        if (pendingResponses.isNotEmpty()) {
+    private fun pollPendingResponses(requestQueue: LinkedList<Pair<MediatorMessage<*>, CompletableFuture<MediatorMessage<*>>>>) {
+        while (requestQueue.isNotEmpty()) {
+            val (message, future) = requestQueue.removeFirst()
             try {
-                future.complete(processMessage(message))
+                future!!.complete(processMessage(message))
             } catch (e: Exception) {
-                future.completeExceptionally(handleExceptions(e, message.endpoint()))
+                future!!.completeExceptionally(handleExceptions(e, message.endpoint()))
             }
         }
     }
