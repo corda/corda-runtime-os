@@ -62,3 +62,12 @@ data class State(
         return result
     }
 }
+
+
+data class StateMetadata(
+    val stateKey: String,
+    val key: String,
+    val value: String,
+    val version: Int,
+    val modifiedTime: Instant = Instant.now(),
+)

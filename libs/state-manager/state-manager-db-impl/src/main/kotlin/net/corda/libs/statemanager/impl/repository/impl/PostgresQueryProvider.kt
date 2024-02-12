@@ -4,7 +4,6 @@ import net.corda.db.schema.DbSchema.STATE_MANAGER_TABLE
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.impl.model.v1.StateColumns.KEY_COLUMN
-import net.corda.libs.statemanager.impl.model.v1.StateColumns.METADATA_COLUMN
 import net.corda.libs.statemanager.impl.model.v1.StateColumns.MODIFIED_TIME_COLUMN
 import net.corda.libs.statemanager.impl.model.v1.StateColumns.VALUE_COLUMN
 import net.corda.libs.statemanager.impl.model.v1.StateColumns.VERSION_COLUMN
@@ -12,8 +11,8 @@ import net.corda.libs.statemanager.impl.model.v1.StateColumns.VERSION_COLUMN
 class PostgresQueryProvider : AbstractQueryProvider() {
 
     override fun createStates(size: Int): String = """
-        WITH data ($KEY_COLUMN, $VALUE_COLUMN, $VERSION_COLUMN, $METADATA_COLUMN, $MODIFIED_TIME_COLUMN) as (
-            VALUES ${List(size) { "(?, ?, ?, CAST(? AS JSONB), CURRENT_TIMESTAMP AT TIME ZONE 'UTC')" }.joinToString(",")}
+        WITH data ($KEY_COLUMN, $VALUE_COLUMN, $VERSION_COLUMN, $MODIFIED_TIME_COLUMN) as (
+            VALUES ${List(size) { "(?, ?, ?, CURRENT_TIMESTAMP AT TIME ZONE 'UTC')" }.joinToString(",")}
         )
         INSERT INTO $STATE_MANAGER_TABLE
         SELECT * FROM data d
@@ -24,33 +23,52 @@ class PostgresQueryProvider : AbstractQueryProvider() {
         RETURNING $STATE_MANAGER_TABLE.$KEY_COLUMN;
     """.trimIndent()
 
+
+    override fun createMetadataStates(size: Int): String = """
+        WITH data (statekey, key, value, $VERSION_COLUMN, $MODIFIED_TIME_COLUMN) as (
+            VALUES ${List(size) { "(?, ?, ?, ?, CURRENT_TIMESTAMP AT TIME ZONE 'UTC')" }.joinToString(",")}
+        )
+        INSERT INTO statemeta
+        SELECT * FROM data d
+    """.trimIndent()
+
+    override fun findMetadataByKey(numberOfKeys: Int): String {
+        val placeholders = List(numberOfKeys) { "?" }.joinToString(",")
+        return """
+            SELECT statekey, key, value
+            FROM statemeta
+            WHERE statekey IN ($placeholders)
+        """.trimIndent()
+    }
+
     override fun updateStates(size: Int): String = """
             UPDATE $STATE_MANAGER_TABLE AS s 
             SET 
                 $KEY_COLUMN = temp.key, 
                 $VALUE_COLUMN = temp.value, 
                 $VERSION_COLUMN = s.$VERSION_COLUMN + 1, 
-                $METADATA_COLUMN = CAST(temp.metadata as JSONB), 
                 $MODIFIED_TIME_COLUMN = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
             FROM
             (
-                VALUES ${List(size) { "(?, ?, ?, ?)" }.joinToString(",")}
-            ) AS temp(key, value, metadata, version)
+                VALUES ${List(size) { "(?, ?, ?)" }.joinToString(",")}
+            ) AS temp(key, value, version)
             WHERE temp.key = s.$KEY_COLUMN AND temp.version = s.$VERSION_COLUMN
             RETURNING s.$KEY_COLUMN
     """.trimIndent()
 
     override fun findStatesByMetadataMatchingAll(filters: Collection<MetadataFilter>) =
         """
-            SELECT s.$KEY_COLUMN, s.$VALUE_COLUMN, s.$METADATA_COLUMN, s.$VERSION_COLUMN, s.$MODIFIED_TIME_COLUMN 
+            SELECT s.*, m.key AS metadata_key, m.value AS metadata_value
             FROM $STATE_MANAGER_TABLE s
+            LEFT JOIN statemeta m ON s.key = m.statekey
             WHERE (${metadataKeyFilters(filters).joinToString(" AND ")})
         """.trimIndent()
 
     override fun findStatesByMetadataMatchingAny(filters: Collection<MetadataFilter>) =
         """
-            SELECT s.$KEY_COLUMN, s.$VALUE_COLUMN, s.$METADATA_COLUMN, s.$VERSION_COLUMN, s.$MODIFIED_TIME_COLUMN 
+            SELECT s.*, m.key AS metadata_key, m.value AS metadata_value
             FROM $STATE_MANAGER_TABLE s
+            LEFT JOIN statemeta m ON s.key = m.statekey
             WHERE (${metadataKeyFilters(filters).joinToString(" OR ")})
         """.trimIndent()
 
@@ -69,8 +87,9 @@ class PostgresQueryProvider : AbstractQueryProvider() {
     fun metadataKeyFilters(filters: Collection<MetadataFilter>) =
         filters.map { "(${metadataKeyFilter(it)})" }
 
+    //doesnt work if key doesnt exist for not equals
     fun metadataKeyFilter(filter: MetadataFilter) =
-        "(s.$METADATA_COLUMN->>'${filter.key}')::${filter.value.toNativeType()} ${filter.operation.toNativeOperator()} '${filter.value}'"
+        "m.key = '${filter.key}' AND m.value ${filter.operation.toNativeOperator()} '${filter.value}'"
 
     private fun Any.toNativeType() = when (this) {
         is String -> "text"

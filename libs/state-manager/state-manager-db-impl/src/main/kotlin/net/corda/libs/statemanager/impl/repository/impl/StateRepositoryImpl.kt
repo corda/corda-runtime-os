@@ -2,11 +2,13 @@ package net.corda.libs.statemanager.impl.repository.impl
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.libs.statemanager.api.IntervalFilter
+import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
-import net.corda.libs.statemanager.impl.model.v1.resultSetAsStateCollection
+import net.corda.libs.statemanager.impl.model.v1.StateColumns
 import net.corda.libs.statemanager.impl.repository.StateRepository
 import java.sql.Connection
+import java.sql.ResultSet
 import java.sql.Timestamp
 
 class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepository {
@@ -18,13 +20,27 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
 
     override fun create(connection: Connection, states: Collection<State>): Collection<String> {
         if (states.isEmpty()) return emptySet()
+
+        val metaCount = states.sumOf { it.metadata.entries.size }
+        connection.prepareStatement(queryProvider.createMetadataStates(metaCount)).use { metadataStatement ->
+            val metadataIndices = generateSequence(1) { it + 1 }.iterator()
+            states.flatMap { state ->
+                state.metadata.map { (key, value) ->
+                    metadataStatement.setString(metadataIndices.next(), state.key)
+                    metadataStatement.setString(metadataIndices.next(), key)
+                    metadataStatement.setString(metadataIndices.next(), value.toString())
+                    metadataStatement.setInt(metadataIndices.next(), state.version)
+                }
+            }
+            metadataStatement.execute()
+        }
+
         return connection.prepareStatement(queryProvider.createStates(states.size)).use { statement ->
             val indices = generateSequence(1) { it + 1 }.iterator()
             states.forEach { state ->
                 statement.setString(indices.next(), state.key)
                 statement.setBytes(indices.next(), state.value)
                 statement.setInt(indices.next(), state.version)
-                statement.setString(indices.next(), objectMapper.writeValueAsString(state.metadata))
             }
             statement.execute()
             val results = statement.resultSet
@@ -38,32 +54,91 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
 
     override fun get(connection: Connection, keys: Collection<String>): Collection<State> {
         if (keys.isEmpty()) return emptySet()
-        return connection.prepareStatement(queryProvider.findStatesByKey(keys.size)).use {
+
+        val query = queryProvider.findStatesByKey(keys.size)
+        return connection.prepareStatement(query).use { statement ->
             keys.forEachIndexed { index, key ->
-                it.setString(index + 1, key)
+                statement.setString(index + 1, key)
             }
 
-            it.executeQuery().resultSetAsStateCollection(objectMapper)
+            val resultSet = statement.executeQuery()
+            resultSet.resultSetAsStateCollection(objectMapper)
         }
+    }
+
+    private fun ResultSet.resultSetAsMetadataCollection(): Map<String, Map<String, Any>> {
+        val metadataMap = mutableMapOf<String, MutableMap<String, Any>>()
+
+        while (next()) {
+            val stateKey = getString("statekey")
+            val key = getString("key")
+            val value = getString("value")
+
+            metadataMap.computeIfAbsent(stateKey) { mutableMapOf() }[key] = value
+        }
+
+        return metadataMap
+    }
+
+    @Suppress("unused_parameter")
+    private fun ResultSet.resultSetAsStateCollection(objectMapper: ObjectMapper): Collection<State> {
+        val stateMap = mutableMapOf<String, State>()
+
+        while (next()) {
+            val key = getString(StateColumns.KEY_COLUMN)
+            val value = getBytes(StateColumns.VALUE_COLUMN)
+            val version = getInt(StateColumns.VERSION_COLUMN)
+            val modifiedTime = getTimestamp(StateColumns.MODIFIED_TIME_COLUMN).toInstant()
+
+            val state = stateMap[key] ?: State(key, value, version, Metadata(mutableMapOf()), modifiedTime)
+            stateMap[key] = state
+
+            // Check if metadata exists
+            val metadataKey = getString("metadata_key")
+            if (!metadataKey.isNullOrBlank()) {
+                val metadataValue = getString("metadata_value")
+                stateMap[key] = state.copy(metadata = Metadata(state.metadata + (metadataKey to metadataValue)))
+            }
+        }
+
+        return stateMap.values.toList()
     }
 
     override fun update(connection: Connection, states: Collection<State>): StateRepository.StateUpdateSummary {
         if (states.isEmpty()) return StateRepository.StateUpdateSummary(emptyList(), emptyList())
         val indices = generateSequence(1) { it + 1 }.iterator()
         val updatedKeys = mutableListOf<String>()
+        val metaCount = states.sumOf { it.metadata.entries.size }
+
+
         connection.prepareStatement(queryProvider.updateStates(states.size)).use { stmt ->
             states.forEach { state ->
                 stmt.setString(indices.next(), state.key)
                 stmt.setBytes(indices.next(), state.value)
-                stmt.setString(indices.next(), objectMapper.writeValueAsString(state.metadata))
                 stmt.setInt(indices.next(), state.version)
             }
+
             stmt.execute()
             val results = stmt.resultSet
             while (results.next()) {
                 updatedKeys.add(results.getString(1))
             }
         }
+
+        val updatedStates = states.filter { updatedKeys.contains(it.key) }
+        connection.prepareStatement(queryProvider.createMetadataStates(metaCount)).use { metadataStatement ->
+            val metadataIndices = generateSequence(1) { it + 1 }.iterator()
+            updatedStates.flatMap { state ->
+                state.metadata.map { (key, value) ->
+                    metadataStatement.setString(metadataIndices.next(), state.key)
+                    metadataStatement.setString(metadataIndices.next(), key)
+                    metadataStatement.setString(metadataIndices.next(), value.toString())
+                    metadataStatement.setInt(metadataIndices.next(), state.version+1)
+                }
+            }
+            metadataStatement.execute()
+        }
+
         return StateRepository.StateUpdateSummary(
             updatedKeys,
             states.map { it.key }.filterNot { updatedKeys.contains(it) }
@@ -72,13 +147,25 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
 
     override fun delete(connection: Connection, states: Collection<State>): Collection<String> {
         if (states.isEmpty()) return emptySet()
+
+        connection.prepareStatement(queryProvider.deleteMetaStatesByKey).use { statement ->
+            // The actual state order doesn't matter, but we must ensure that the states are iterated over in the same
+            // order when examining the result as when the statements were generated.
+            val statesOrdered = states.toList()
+            statesOrdered.forEach { state ->
+                statement.setString(1, state.key)
+                statement.addBatch()
+            }
+            statement.execute()
+        }
+
+
         return connection.prepareStatement(queryProvider.deleteStatesByKey).use { statement ->
             // The actual state order doesn't matter, but we must ensure that the states are iterated over in the same
             // order when examining the result as when the statements were generated.
             val statesOrdered = states.toList()
             statesOrdered.forEach { state ->
                 statement.setString(1, state.key)
-                statement.setInt(2, state.version)
                 statement.addBatch()
             }
             // For the delete case, it's safe to return anything other than a row update count of 1 as failed. The state

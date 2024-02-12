@@ -12,7 +12,13 @@ interface QueryProvider {
 
     fun createStates(size: Int): String
 
+    fun createMetadataStates(size: Int): String
+
+    fun findMetadataByKey(numberOfKeys: Int): String
+
     val deleteStatesByKey: String
+
+    val deleteMetaStatesByKey: String
 
     val findStatesUpdatedBetween: String
 

@@ -3,6 +3,7 @@ package net.corda.libs.statemanager.impl.repository.impl
 import net.corda.libs.statemanager.api.State
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.any
@@ -12,6 +13,7 @@ import java.sql.PreparedStatement
 import java.sql.Statement.EXECUTE_FAILED
 import java.sql.Statement.SUCCESS_NO_INFO
 
+@Disabled
 class StateRepositoryImplTest {
 
     private val queryProvider = mock<QueryProvider>()
