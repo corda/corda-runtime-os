@@ -13,7 +13,7 @@ internal class DeadSessionMonitorConfigurationHandler(
 ) : ConfigurationChangeHandler<Long>(
     configurationReaderService,
     P2P_LINK_MANAGER_CONFIG,
-    { cfg -> cfg.getLong(LinkManagerConfiguration.SESSION_REFRESH_THRESHOLD_KEY) },
+    { cfg -> cfg.getLong(LinkManagerConfiguration.SESSION_TIMEOUT_KEY) },
 ) {
     override fun applyNewConfiguration(
         newConfiguration: Long,
@@ -21,6 +21,6 @@ internal class DeadSessionMonitorConfigurationHandler(
         resources: ResourcesHolder,
     ): CompletableFuture<Unit> {
         deadSessionMonitor.onConfigChange(newConfiguration)
-        return CompletableFuture<Unit>().apply { complete(Unit) }
+        return CompletableFuture.completedFuture(Unit)
     }
 }

@@ -35,7 +35,7 @@ internal class DeadSessionMonitor(
     }
 
     fun messageSent(sessionId: String) {
-        scheduledSessionDeletions.compute(sessionId) { _, existing -> existing ?: createScheduledDeletion(sessionId) }
+        scheduledSessionDeletions.computeIfAbsent(sessionId) { _ -> createScheduledDeletion(sessionId) }
     }
 
     fun ackReceived(sessionId: String) {
