@@ -125,17 +125,19 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
         }
 
         val updatedStates = states.filter { updatedKeys.contains(it.key) }
-        connection.prepareStatement(queryProvider.createMetadataStates(metaCount)).use { metadataStatement ->
-            val metadataIndices = generateSequence(1) { it + 1 }.iterator()
-            updatedStates.flatMap { state ->
-                state.metadata.map { (key, value) ->
-                    metadataStatement.setString(metadataIndices.next(), state.key)
-                    metadataStatement.setString(metadataIndices.next(), key)
-                    metadataStatement.setString(metadataIndices.next(), value.toString())
-                    metadataStatement.setInt(metadataIndices.next(), state.version + 1)
+        if (updatedStates.isNotEmpty()) {
+            connection.prepareStatement(queryProvider.createMetadataStates(metaCount)).use { metadataStatement ->
+                val metadataIndices = generateSequence(1) { it + 1 }.iterator()
+                updatedStates.flatMap { state ->
+                    state.metadata.map { (key, value) ->
+                        metadataStatement.setString(metadataIndices.next(), state.key)
+                        metadataStatement.setString(metadataIndices.next(), key)
+                        metadataStatement.setString(metadataIndices.next(), value.toString())
+                        metadataStatement.setInt(metadataIndices.next(), state.version + 1)
+                    }
                 }
+                metadataStatement.execute()
             }
-            metadataStatement.execute()
         }
 
         return StateRepository.StateUpdateSummary(
