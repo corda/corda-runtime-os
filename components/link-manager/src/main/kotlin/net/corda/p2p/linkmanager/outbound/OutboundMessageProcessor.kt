@@ -45,6 +45,7 @@ import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.p2p.linkmanager.TraceableItem
 import net.corda.p2p.linkmanager.metrics.recordOutboundMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
+import java.util.UUID
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class OutboundMessageProcessor(
@@ -100,10 +101,12 @@ internal class OutboundMessageProcessor(
     }
 
     override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<String, *>> {
+        val id = UUID.randomUUID().toString()
+        logger.info("QQQ starting looking at $id thread ${Thread.currentThread().id} with ${events.size}")
         val authenticatedMessages = mutableListOf<TraceableItem<AuthenticatedMessageAndKey, AppMessage>>()
         val unauthenticatedMessages = mutableListOf<TraceableItem<OutboundUnauthenticatedMessage, AppMessage>>()
         for (event in events) {
-            logger.info("QQQ got message: ${event.key}")
+            logger.info("QQQ $id got message: ${event.key}")
             when (val message = event.value?.message) {
                 is AuthenticatedMessage -> {
                     authenticatedMessages += TraceableItem(AuthenticatedMessageAndKey(message, event.key), event)
@@ -131,7 +134,11 @@ internal class OutboundMessageProcessor(
                 traceEventProcessing(originalRecord, tracingEventName) { result.item }
             }
         }
-        return results.map { it.item }.flatten()
+        return results.map { it.item }.flatten().also {
+            logger.info(
+                "QQQ Finished looking at $id thread ${Thread.currentThread().id} with ${events.size} -> ${it.size}"
+            )
+        }
     }
 
     private fun checkSourceAndDestinationValid(
