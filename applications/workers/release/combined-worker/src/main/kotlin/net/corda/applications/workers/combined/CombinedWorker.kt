@@ -215,7 +215,7 @@ class CombinedWorker @Activate constructor(
             createConfigFromParams(BOOT_WORKER_SERVICE, params.workerEndpoints),
         )
 
-        if(params.mediatorReplicasFlowSession != null) {
+        if (params.mediatorReplicasFlowSession != null) {
             extraConfigs.add(
                 createConfigFromParams(
                     BOOT_WORKER_SERVICE,
