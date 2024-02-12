@@ -5,7 +5,6 @@ import net.corda.flow.application.versioning.VersionedReceiveFlowFactory
 import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.v1.ReceiveAndUpdateTransactionBuilderFlowV1
 import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.v2.ReceiveAndUpdateTransactionBuilderFlowV2
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
-import net.corda.libs.platform.PlatformVersion
 import net.corda.libs.platform.PlatformVersion.CORDA_5_2
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.flows.CordaInject
