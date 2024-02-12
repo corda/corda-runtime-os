@@ -7,6 +7,7 @@ import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.v2.SendTransacti
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoBaselinedTransactionBuilder
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderContainer
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
+import net.corda.libs.platform.PlatformVersion.CORDA_5_2
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
@@ -51,7 +52,7 @@ class SendTransactionBuilderDiffFlowVersionedFlowFactory(
 
     override fun create(version: Int, sessions: List<FlowSession>): SubFlow<Unit> {
         return when {
-            version > 1 -> SendTransactionBuilderDiffFlowV2(
+            version >= CORDA_5_2.value -> SendTransactionBuilderDiffFlowV2(
                 transactionBuilder,
                 sessions.single()
             )
