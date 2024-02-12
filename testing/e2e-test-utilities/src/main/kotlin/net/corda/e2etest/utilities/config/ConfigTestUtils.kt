@@ -46,7 +46,7 @@ fun ClusterInfo.getConfig(section: String): JsonNode {
 /**
  * This method updates corda config with user provided configuration and call setConfig with user prefered values.
  */
-fun ClusterInfo.updateConfig(config: JsonNode, section: String) {
+fun updateConfig(config: JsonNode, section: String) {
     return cluster {
         val newConfig: JsonNode = config.get("sourceConfig")
         val configVersion: String = config.get("version").toString()
@@ -72,7 +72,6 @@ fun setConfig(
                 schemaMajorVersion,
                 schemaMinorVersion
             )
-
             if (result.code != 202) {
                 fail<String>("Config update did not return 202. returned ${result.code} instead. Result ${result.body}")
             }
