@@ -3,6 +3,7 @@ package net.corda.ledger.utxo.flow.impl.flows.transactionbuilder
 import net.corda.flow.application.services.VersioningService
 import net.corda.flow.application.versioning.VersionedSendFlowFactory
 import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.v1.SendTransactionBuilderDiffFlowV1
+import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.v2.SendTransactionBuilderDiffFlowV2
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoBaselinedTransactionBuilder
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderContainer
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
@@ -50,11 +51,14 @@ class SendTransactionBuilderDiffFlowVersionedFlowFactory(
 
     override fun create(version: Int, sessions: List<FlowSession>): SubFlow<Unit> {
         return when {
-            version >= 1 -> SendTransactionBuilderDiffFlowV1(
+            version > 1 -> SendTransactionBuilderDiffFlowV2(
                 transactionBuilder,
                 sessions.single()
             )
-            else -> throw IllegalArgumentException()
+            else -> SendTransactionBuilderDiffFlowV1(
+                transactionBuilder,
+                sessions.single()
+            )
         }
     }
 }
