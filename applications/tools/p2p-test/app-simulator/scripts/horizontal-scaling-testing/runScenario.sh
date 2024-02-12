@@ -12,7 +12,7 @@ SCRIPT_DIR="$TESTING_DIR/.."
 
 
 if [ -z $1 ]; then
-  scenario_file="$TESTING_DIR"/scenarios/a.json
+  scenario_file="$TESTING_DIR"/scenarios/c.json
 else
   scenario_file=$1
 fi
@@ -82,7 +82,6 @@ count_received() {
 calculate_latency() {
   echo $(kubectl exec -n $1 db-postgresql-0 -- env PGPASSWORD=$2 psql -U postgres -d app_simulator -c "SELECT AVG(delivery_latency_ms)/1000.0 FROM received_messages WHERE sent_timestamp > '$3' AND sent_timestamp < '$4';" -t | xargs)
 }
-
 write_report_file() {
   kubectl exec -n $1 db-postgresql-0 \
      -- env PGPASSWORD=$2 \
@@ -100,7 +99,19 @@ write_report_file() {
          order by time_window asc
   ;" >> "$reportFile"
 }
+slowest_messages() {
+  kubectl exec -n $1 db-postgresql-0 \
+     -- env PGPASSWORD=$2 \
+     psql -U postgres -d app_simulator -A -F", "\
+     -c "select
+          *,
+          FROM received_messages
+          WHERE sent_timestamp > '$warm_up_ends'
+          ORDER BY delivery_latency_ms DESC LIMIT 1000
+  ;" >> "$3"
+}
 
+warm_up_ends=''
 run_sender() {
   echo "Running use case with $batchSize batch size and $totalNumberOfMessages messages"
   echo "---" >> "$reportFile"
@@ -170,6 +181,7 @@ run_sender() {
     latency=0
     latency_a=0
     latency_b=0
+    warm_up_ends=$(date -u '+%Y-%m-%d %H:%M:%S')
   fi
 }
 
@@ -200,8 +212,14 @@ else
   write_report_file $APP_SIMULATOR_DB_NAMESPACE_A $dbPasswordA
   echo "---cluster B---" >> "$reportFile"
   write_report_file $APP_SIMULATOR_DB_NAMESPACE_B $dbPasswordB
+  slowest_one="$SCRIPT_DIR/build/reports/slowest-a-b.txt"
+  echo "Slowest messages B -> A in $slowest_one"
+  slowest_messages $APP_SIMULATOR_DB_NAMESPACE_A $dbPasswordA $slowest_one
+  slowest_two="$SCRIPT_DIR/build/reports/slowest-b-a.txt"
+  echo "Slowest messages A -> B in $slowest_two"
+  slowest_messages $APP_SIMULATOR_DB_NAMESPACE_B $dbPasswordB $slowest_two
 fi
-
+#WHERE extract(epoch from sent_timestamp) > 1706879000
 
 echo "Tearing down previous clusters"
 "$SCRIPT_DIR"/tearDown.sh

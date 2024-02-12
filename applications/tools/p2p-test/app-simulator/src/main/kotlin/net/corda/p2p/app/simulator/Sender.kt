@@ -57,9 +57,6 @@ class Sender(
     private data class MessageMetaData(val senderId: String, val messageId: String)
 
     fun start() {
-        val senderIds = loadGenParams.senders.associateBy { _ -> UUID.randomUUID().toString() }
-        logger.info("Using sender IDs: $senderIds")
-
         val threads = (1..commonConfig.clients).map { client ->
             thread(isDaemon = true) {
                 val dbConnection = if (dbParams != null) {
@@ -80,7 +77,7 @@ class Sender(
                 val messagingConfig = configMerger.getMessagingConfig(configWithInstanceId)
                 val publisher = publisherFactory.createPublisher(PublisherConfig("app-simulator", false), messagingConfig)
                 publisher.use {
-                    val allPossibleCombinations = senderIds.flatMap { (_, senderHoldingId) ->
+                    val allPossibleCombinations = loadGenParams.senders.flatMap { senderHoldingId ->
                         loadGenParams.peers.map { destinationHoldingId ->
                             senderHoldingId to destinationHoldingId
                         }
@@ -95,9 +92,9 @@ class Sender(
                             val currentSenderDestinationPair = allPossibleCombinations[currentIndex]
                             val senderHoldingId = currentSenderDestinationPair.first
                             val destination = currentSenderDestinationPair.second
-                            val senderId = senderIds.entries.first {
-                                it.value == currentSenderDestinationPair.first
-                            }.key
+                            val senderId = currentSenderDestinationPair.first.let {
+                                "${it.groupId}-${it.x500Name}"
+                            }
 
                             messagesWithIds.add(
                                 createMessage(
@@ -127,6 +124,9 @@ class Sender(
                                     }
                                 }.map { it.second.first }
                                 logger.info("Published ${publishedIds.size} messages")
+                                publishedIds.forEach {
+                                    logger.info("QQQ \t Published message ID: ${it.messageId}")
+                                }
 
                                 if (dbConnection?.connection != null) {
                                     val messageSentEvents = publishedIds.map { messageMetaData ->

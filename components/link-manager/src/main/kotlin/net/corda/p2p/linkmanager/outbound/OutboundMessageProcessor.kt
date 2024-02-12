@@ -103,6 +103,7 @@ internal class OutboundMessageProcessor(
         val authenticatedMessages = mutableListOf<TraceableItem<AuthenticatedMessageAndKey, AppMessage>>()
         val unauthenticatedMessages = mutableListOf<TraceableItem<OutboundUnauthenticatedMessage, AppMessage>>()
         for (event in events) {
+            logger.info("QQQ got message: ${event.key}")
             when (val message = event.value?.message) {
                 is AuthenticatedMessage -> {
                     authenticatedMessages += TraceableItem(AuthenticatedMessageAndKey(message, event.key), event)
