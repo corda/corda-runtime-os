@@ -125,7 +125,7 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
         }
 
         val updatedStates = states.filter { updatedKeys.contains(it.key) }
-        if (updatedStates.isNotEmpty()) {
+        if (updatedStates.isNotEmpty() && updatedStates.any { it.metadata.isNotEmpty() }) {
             connection.prepareStatement(queryProvider.createMetadataStates(metaCount)).use { metadataStatement ->
                 val metadataIndices = generateSequence(1) { it + 1 }.iterator()
                 updatedStates.flatMap { state ->
