@@ -147,7 +147,7 @@ class UtxoFinalityFlowV1(
     @Suspendable
     private fun createFilteredTransactionsAndSignatures(notaryInfo: NotaryInfo): List<UtxoFilteredTransactionAndSignatures>? {
         return if (!notaryInfo.isBackchainRequired) {
-            return utxoLedgerService.findFilteredTransactionsAndSignatures(initialTransaction).values.toList()
+            utxoLedgerService.findFilteredTransactionsAndSignatures(initialTransaction).values.toList()
         } else {
             null
         }
