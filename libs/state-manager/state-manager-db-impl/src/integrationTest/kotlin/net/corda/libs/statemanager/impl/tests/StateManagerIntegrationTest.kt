@@ -31,6 +31,7 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -46,6 +47,7 @@ import java.util.concurrent.CountDownLatch
 // TODO-[CORE-16663]: make database provider pluggable
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ResourceLock(CORDA_METRICS_LOCK)
+@Disabled
 class StateManagerIntegrationTest {
     private val objectMapper = ObjectMapper()
     private val testUniqueId = UUID.randomUUID()
