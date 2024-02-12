@@ -1,0 +1,33 @@
+package net.corda.ledger.utxo.flow.impl.flows.common
+
+import net.corda.v5.base.annotations.ConstructorForDeserialization
+import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndSignatures
+
+@CordaSerializable
+data class TransactionAndFilteredDependencyPayload<T> @ConstructorForDeserialization constructor(
+    val map: Map<String, Any?>
+) {
+    private companion object {
+        const val TRANSACTION = "TRANSACTION"
+        const val FILTERED_DEPENDENCIES = "FILTERED_DEPENDENCIES"
+    }
+
+    constructor(transaction: T) : this(mapOf(TRANSACTION to transaction))
+
+    constructor(
+        transaction: T,
+        filteredDependencies: List<UtxoFilteredTransactionAndSignatures>
+    ) : this(
+        mapOf(
+            TRANSACTION to transaction,
+            FILTERED_DEPENDENCIES to filteredDependencies
+        )
+    )
+
+    @Suppress("UNCHECKED_CAST")
+    val transaction get() = map[TRANSACTION] as T?
+
+    @Suppress("UNCHECKED_CAST")
+    val filteredDependencies get() = map[FILTERED_DEPENDENCIES] as List<UtxoFilteredTransactionAndSignatures>?
+}

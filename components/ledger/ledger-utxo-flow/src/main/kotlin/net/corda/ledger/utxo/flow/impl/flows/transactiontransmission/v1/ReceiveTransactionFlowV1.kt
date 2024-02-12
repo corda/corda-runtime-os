@@ -5,6 +5,7 @@ import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.utxo.flow.impl.flows.backchain.InvalidBackchainException
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
+import net.corda.ledger.utxo.flow.impl.flows.common.TransactionAndFilteredDependencyPayload
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
@@ -18,6 +19,7 @@ import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.Logger
@@ -44,29 +46,43 @@ class ReceiveTransactionFlowV1(
     @CordaInject
     lateinit var visibilityChecker: VisibilityChecker
 
+    @CordaInject
+    lateinit var notaryLookup: NotaryLookup
+
     @Suspendable
     override fun call(): UtxoSignedTransaction {
-        val transaction = session.receive(UtxoSignedTransactionInternal::class.java)
 
-        val transactionDependencies = transaction.dependencies
+        @Suppress("unchecked_cast")
+        val transactionPayload = session.receive(TransactionAndFilteredDependencyPayload::class.java)
+                as TransactionAndFilteredDependencyPayload<UtxoSignedTransaction>
+
+        val receivedTransaction = transactionPayload.transaction
+
+        requireNotNull(receivedTransaction) {
+            "Didn't receive a transaction from counterparty."
+        }
+
+        val transactionDependencies = receivedTransaction.dependencies
+
         if (transactionDependencies.isNotEmpty()) {
-            try {
-                flowEngine.subFlow(TransactionBackchainResolutionFlow(transactionDependencies, session))
-            } catch (e: InvalidBackchainException) {
-                val message = "Invalid transaction: ${transaction.id} found during back-chain resolution."
-                log.warn(message, e)
-                session.send(Payload.Failure<List<DigitalSignatureAndMetadata>>(message))
-                throw e
-            }
-        } else {
-            log.trace {
-                "Transaction with id ${transaction.id} has no dependencies so backchain resolution will not be performed."
+            if (transactionPayload.filteredDependencies != null && transactionPayload.filteredDependencies!!.isNotEmpty()) {
+                // If we have filtered dependencies then we need to perform filtered transaction verification
+            } else {
+                // If we have no filtered dependencies then we need to perform backchain resolution
+                try {
+                    flowEngine.subFlow(TransactionBackchainResolutionFlow(transactionDependencies, session))
+                } catch (e: InvalidBackchainException) {
+                    val message = "Invalid transaction: ${receivedTransaction.id} found during back-chain resolution."
+                    log.warn(message, e)
+                    session.send(Payload.Failure<List<DigitalSignatureAndMetadata>>(message))
+                    throw e
+                }
             }
         }
 
         try {
-            transaction.verifySignatorySignatures()
-            transaction.verifyAttachedNotarySignature()
+            receivedTransaction.verifySignatorySignatures()
+            receivedTransaction.verifyAttachedNotarySignature()
             transactionVerificationService.verify(transaction.toLedgerTransaction())
         } catch (e: Exception) {
             val message = "Failed to verify transaction and signatures of transaction: ${transaction.id}"
