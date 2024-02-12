@@ -148,7 +148,7 @@ class UtxoReceiveFinalityFlowV1(
                 } catch (e: InvalidBackchainException) {
                     log.warn(
                         "Invalid transaction found during back-chain resolution, marking transaction with ID " +
-                            "${initialTransaction.id} as invalid.",
+                                "${initialTransaction.id} as invalid.",
                         e
                     )
                     persistInvalidTransaction(initialTransaction)
@@ -224,7 +224,7 @@ class UtxoReceiveFinalityFlowV1(
         if (txGroupParametersHash != currentGroupParameters.hash.toString()) {
             val message =
                 "Transactions can be created only with the latest membership group parameters. " +
-                    "Current: ${currentGroupParameters.hash} Transaction's: $txGroupParametersHash"
+                        "Current: ${currentGroupParameters.hash} Transaction's: $txGroupParametersHash"
             log.warn(message)
             persistInvalidTransaction(initialTransaction)
             throw CordaRuntimeException(message)
@@ -349,7 +349,7 @@ class UtxoReceiveFinalityFlowV1(
             is Payload.Success -> notarySignaturesPayload.getOrThrow()
             is Payload.Failure -> {
                 val message = "Notarization failed. Failure received from ${session.counterparty} for transaction " +
-                    "${transaction.id} with message: ${notarySignaturesPayload.message}"
+                        "${transaction.id} with message: ${notarySignaturesPayload.message}"
                 log.warn(message)
                 val reason = notarySignaturesPayload.reason
                 if (reason != null && reason.toFinalityNotarizationFailureType() == FinalityNotarizationFailureType.FATAL) {
