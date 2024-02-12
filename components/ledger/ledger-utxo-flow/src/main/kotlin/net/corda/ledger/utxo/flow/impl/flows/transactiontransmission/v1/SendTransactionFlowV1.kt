@@ -7,7 +7,6 @@ import net.corda.ledger.utxo.flow.impl.flows.common.TransactionAndFilteredDepend
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
-import net.corda.utilities.trace
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
@@ -50,7 +49,10 @@ class SendTransactionFlowV1(
         }
 
         if (notary.isBackchainRequired) {
-            flowMessaging.sendAll(TransactionAndFilteredDependencyPayload(transaction), sessions.toSet())
+            flowMessaging.sendAll(
+                TransactionAndFilteredDependencyPayload(transaction as UtxoSignedTransactionInternal),
+                sessions.toSet()
+            )
             sessions.forEach {
                 flowEngine.subFlow(TransactionBackchainSenderFlow(transaction.id, it))
 
