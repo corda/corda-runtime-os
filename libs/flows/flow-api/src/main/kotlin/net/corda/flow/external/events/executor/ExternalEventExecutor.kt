@@ -17,7 +17,7 @@ interface ExternalEventExecutor {
      *
      * @param factoryClass The [ExternalEventFactory] that is called to create the event to send and convert the
      * received response into an acceptable object to resume with.
-     * @param parameters The [PARAMETERS] object.
+     * @param parameters The [PARAMETERS] object. This object must be @CordaSerializable.
      *
      * @param PARAMETERS The type to pass to the factory just after suspending/creating the event.
      * @param RESPONSE The type received as a response from the external processor.

@@ -4,6 +4,7 @@ kotlinVersion = "1.8.21"
 bouncycastleVersion = "1.77"
 braveVersion = "6.0.0"
 caffeineVersion = "3.1.8"
+guavaVersion = "32.1.1-jre"
 hikariCpVersion = "5.1.0"
 jacksonVersion = "2.16.1"
 javalinVersion = "4.6.8"
@@ -24,7 +25,7 @@ slf4jVersion = { strictly = "1.7.36" }
 # Since slf4jVersion is "strictly" enforced from `corda-api`, in order to override version we need to specify
 # version strictly here as well
 slf4jV2Version = { strictly = "2.0.6" }
-snakeyamlVersion = "2.0"
+snakeyamlVersion = "2.2"
 # Please also update SWAGGERUI.version in net.corda.rest.server.impl.internal.OptionalDependency
 swaggeruiVersion = "5.10.3"
 # Note: We cannot go to the higher versions as they transitively depend on SLF4J 2.X
@@ -60,6 +61,7 @@ bouncycastle-prov = { group = "org.bouncycastle", name = "bcprov-jdk18on", versi
 brave-context-slf4j = { group = "io.zipkin.brave", name = "brave-context-slf4j", version.ref = "braveVersion" }
 brave-instrumentation-servlet = { group = "io.zipkin.brave", name = "brave-instrumentation-servlet", version.ref = "braveVersion" }
 caffeine = { group = "com.github.ben-manes.caffeine", name = "caffeine", version.ref = "caffeineVersion" }
+guava = { group = "com.google.guava", name = "guava", version.ref = "guavaVersion" }
 hikaricp = { group = "com.zaxxer", name = "HikariCP", version.ref = "hikariCpVersion" }
 jackson-annotations = { group = "com.fasterxml.jackson.core", name = "jackson-annotations", version.ref = "jacksonVersion" }
 jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jacksonVersion" }

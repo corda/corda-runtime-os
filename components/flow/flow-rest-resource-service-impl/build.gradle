@@ -37,7 +37,6 @@ dependencies {
     implementation 'net.corda:corda-rbac-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation libs.slf4j.api
-    implementation "com.google.guava:guava:$guavaVersion"
     implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
 
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")

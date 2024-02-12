@@ -8,13 +8,13 @@ import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTransactionStatus
+import net.corda.ledger.persistence.common.LedgerPersistenceUtils.findAccount
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.ledger.utxo.data.state.cast
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
-import net.corda.persistence.common.exceptions.MissingAccountContextPropertyException
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.utilities.serialization.deserialize
@@ -57,10 +57,6 @@ class UtxoTransactionReaderImpl(
         emptyList()
     )
 
-    private companion object {
-        const val CORDA_ACCOUNT = "corda.account"
-    }
-
     private val serializer = sandbox.getSerializationService()
     private val signedTransaction = serializer.deserialize<SignedTransactionContainer>(transaction)
     private val wrappedWireTransaction = WrappedUtxoWireTransaction(signedTransaction.wireTransaction, serializer)
@@ -69,8 +65,7 @@ class UtxoTransactionReaderImpl(
         get() = signedTransaction.id
 
     override val account: String
-        get() = externalEventContext.contextProperties.items.find { it.key == CORDA_ACCOUNT }?.value
-            ?: throw MissingAccountContextPropertyException()
+        get() = externalEventContext.findAccount()
 
     override val privacySalt: PrivacySalt
         get() = signedTransaction.wireTransaction.privacySalt

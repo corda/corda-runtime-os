@@ -58,11 +58,19 @@ class CpkReadServiceImpl @Activate constructor(
     }
 
     override fun loadCPI(resourceName: String): Cpi {
+        logger.info("Stored CPIs:")
+        cpis.values.forEach {
+            logger.info("$it")
+        }
         return getInputStream(resourceName).buffered().use { input ->
             TestCpbReaderV2.readCpi(input, expansionLocation = cpkDir)
         }.let { newCpi ->
+            logger.info("Storing CPI ${newCpi.metadata.cpiId}")
             val cpiId = newCpi.metadata.cpiId
             cpis.putIfAbsent(cpiId, newCpi) ?: newCpi
+        }.also {
+            val cpis = cpis.values.joinToString(System.lineSeparator()) { "${it.metadata}" }
+            logger.info("Updated CPIs list: $cpis")
         }
     }
 
@@ -81,7 +89,13 @@ class CpkReadServiceImpl @Activate constructor(
     }
 
     override fun getCpiMetadata(id: CpiIdentifier): CompletableFuture<CpiMetadata?> {
+        logger.info("Retrieving CPI metadata for $id")
         val legacyCpi: Cpi? = cpis[id]
+        if (legacyCpi != null) {
+            logger.info("Found CPI ${legacyCpi.metadata.cpiId}")
+        } else {
+            logger.warn("Did not find CPI $id")
+        }
         val cpi: CpiMetadata? = legacyCpi?.metadata
         return CompletableFuture.completedFuture(cpi)
     }

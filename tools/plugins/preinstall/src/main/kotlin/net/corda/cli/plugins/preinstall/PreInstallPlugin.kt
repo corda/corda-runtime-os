@@ -76,22 +76,16 @@ class PreInstallPlugin : Plugin() {
             if (!values?.value.isNullOrEmpty()) {
                 return values?.value!!
             }
-            if (!defaultValues?.valueFrom?.secretKeyRef?.name.isNullOrEmpty()) {
-                return getSecret(defaultValues?.valueFrom?.secretKeyRef?.name!!, defaultValues.valueFrom.secretKeyRef.key, namespace)
-            }
-            if (!defaultValues?.value.isNullOrEmpty()) {
-                return defaultValues?.value!!
-            }
-            throw SecretException("No secretKeyRef name or value provided.")
+            return getCredential(defaultValues, namespace)
         }
 
         // get the credentials (.value) or credentials from a secret (.valueFrom.secretKeyRef...) from a SecretValues
         // object, and a namespace (if the credential is in a secret)
         @Suppress("ThrowsCount")
-        fun getCredential(values: SecretValues, namespace: String?): String {
-            val secretName = values.valueFrom?.secretKeyRef?.name
+        fun getCredential(values: SecretValues?, namespace: String?): String {
+            val secretName = values?.valueFrom?.secretKeyRef?.name
             if (secretName.isNullOrEmpty())  {
-                val credential = values.value
+                val credential = values?.value
                 if (credential.isNullOrEmpty()) {
                     throw SecretException("No secretKeyRef name or value provided.")
                 }
@@ -174,31 +168,14 @@ class PreInstallPlugin : Plugin() {
 
     /* Jackson classes for yaml parsing */
 
-    //Kafka
     @JsonIgnoreProperties(ignoreUnknown = true)
-    data class Kafka(
-        @JsonProperty("kafka")
-        val kafka: KafkaConfiguration,
-        @JsonProperty("bootstrap")
-        val bootstrap: KafkaBootstrap?,
-        @JsonProperty("workers")
-        val workers: KafkaWorkers?
-    )
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    data class KafkaWorker(
-        @JsonProperty("kafka")
-        val kafka: KafkaWorkerKafka?
-    )
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    data class KafkaWorkerKafka(
+    data class WorkerKafka(
         @JsonProperty("sasl")
         val sasl: ClientSASL?
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    data class KafkaConfiguration(
+    data class Kafka(
         @JsonProperty("bootstrapServers")
         val bootstrapServers: String?,
         @JsonProperty("tls")
@@ -246,39 +223,7 @@ class PreInstallPlugin : Plugin() {
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    data class KafkaWorkers(
-        @JsonProperty("crypto")
-        val crypto: KafkaWorker?,
-        @JsonProperty("db")
-        val db: KafkaWorker?,
-        @JsonProperty("flow")
-        val flow: KafkaWorker?,
-        @JsonProperty("flowMapper")
-        val flowMapper: KafkaWorker?,
-        @JsonProperty("verification")
-        val verification: KafkaWorker?,
-        @JsonProperty("membership")
-        val membership: KafkaWorker?,
-        @JsonProperty("rest")
-        val rest: KafkaWorker?,
-        @JsonProperty("p2pLinkManager")
-        val p2pLinkManager: KafkaWorker?,
-        @JsonProperty("p2pGateway")
-        val p2pGateway: KafkaWorker?,
-        @JsonProperty("persistence")
-        val persistence: KafkaWorker?,
-        @JsonProperty("uniqueness")
-        val uniqueness: KafkaWorker?
-    )
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    data class KafkaBootstrap(
-        @JsonProperty("kafka")
-        val kafka: KafkaBootstrapConfiguration?
-    )
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    data class KafkaBootstrapConfiguration(
+    data class BootstrapKafka(
         @JsonProperty("enabled")
         val enabled: Boolean,
         @JsonProperty("replicas")
@@ -287,51 +232,64 @@ class PreInstallPlugin : Plugin() {
         val sasl: ClientSASL
     )
 
-    //DB
     @JsonIgnoreProperties(ignoreUnknown = true)
-    data class DB(
-        @JsonProperty("db")
-        val db: Cluster,
+    data class CordaValues(
         @JsonProperty("bootstrap")
-        val bootstrap: BootstrapDB?
+        val bootstrap: Bootstrap,
+        @JsonProperty("config")
+        val config: PersistentStorage,
+        @JsonProperty("databases")
+        val databases: List<Database>,
+        @JsonProperty("kafka")
+        val kafka: Kafka,
+        @JsonProperty("resources")
+        val resources: Resources?,
+        @JsonProperty("stateManager")
+        val stateManager: Map<String, PersistentStorage>,
+        @JsonProperty("workers")
+        val workers: Map<String, Worker>
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    data class Cluster(
-        @JsonProperty("cluster")
-        val cluster: Credentials
-    )
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    data class Credentials(
-        @JsonProperty("username")
-        val username: SecretValues,
-        @JsonProperty("password")
-        val password: SecretValues,
+    data class Database(
+        @JsonProperty("id")
+        val id: String,
         @JsonProperty("host")
         val host: String,
         @JsonProperty("port")
         val port: Int? = 5432,
-        @JsonProperty("database")
-        val database: String? = "cordacluster"
+        @JsonProperty("name")
+        val name: String? = "cordacluster"
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    data class BootstrapDB(
+    data class Bootstrap(
         @JsonProperty("db")
-        val db: BootstrapCluster?
+        val db: BootstrapDb?,
+        @JsonProperty("kafka")
+        val kafka: BootstrapKafka?,
+        @JsonProperty("resources")
+        val resources: Resources?
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    data class BootstrapCluster(
+    data class PersistentStorage(
+        @JsonProperty("storageId")
+        val storageId: String,
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class BootstrapDb(
         @JsonProperty("enabled")
         val enabled: Boolean,
-        @JsonProperty("cluster")
-        val cluster: BootstrapCredentials?
+        @JsonProperty("databases")
+        val databases: List<BootstrapDatabase>
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    data class BootstrapCredentials(
+    data class BootstrapDatabase(
+        @JsonProperty("id")
+        val id: String,
         @JsonProperty("username")
         val username: SecretValues?,
         @JsonProperty("password")
@@ -357,50 +315,27 @@ class PreInstallPlugin : Plugin() {
         val name: String?
     )
 
-    //Resource
     @JsonIgnoreProperties(ignoreUnknown = true)
-    data class Configurations(
-        @JsonProperty("bootstrap")
-        val bootstrap: Resources?,
-        @JsonProperty("workers")
-        val workers: Workers?,
+    data class Worker(
+        @JsonProperty("config")
+        val config: Credentials?,
         @JsonProperty("resources")
-        val resources: ResourceConfig?
+        val resources: Resources?,
+        @JsonProperty("kafka")
+        val kafka: WorkerKafka?,
+        @JsonProperty("stateManager")
+        val stateManager: Map<String, Credentials>?
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    data class Workers(
-        @JsonProperty("crypto")
-        val crypto: Resources?,
-        @JsonProperty("db")
-        val db: Resources?,
-        @JsonProperty("flow")
-        val flow: Resources?,
-        @JsonProperty("flowMapper")
-        val flowMapper: Resources?,
-        @JsonProperty("verification")
-        val verification: Resources?,
-        @JsonProperty("membership")
-        val membership: Resources?,
-        @JsonProperty("rest")
-        val rest: Resources?,
-        @JsonProperty("p2pLinkManager")
-        val p2pLinkManager: Resources?,
-        @JsonProperty("p2pGateway")
-        val p2pGateway: Resources?,
-        @JsonProperty("persistence")
-        val persistence: Resources?,
-        @JsonProperty("uniqueness")
-        val uniqueness: Resources?
+    data class Credentials(
+        @JsonProperty("username")
+        val username: SecretValues?,
+        @JsonProperty("password")
+        val password: SecretValues?
     )
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
     data class Resources(
-        @JsonProperty("resources")
-        val resources: ResourceConfig?
-    )
-
-    data class ResourceConfig(
         @JsonProperty("requests")
         val requests: ResourceValues?,
         @JsonProperty("limits")

@@ -9,6 +9,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTransactionStatus
 import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
+import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionAndSignaturesImpl
 import net.corda.ledger.utxo.flow.impl.cache.StateAndRefCache
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindFilteredTransactionsAndSignatures
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindSignedLedgerTransactionWithStatus
@@ -25,6 +26,8 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransacti
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionIdsAndStatusesExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionIdsAndStatusesParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionParameters
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistFilteredTransactionParameters
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistFilteredTransactionsExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionIfDoesNotExistExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionIfDoesNotExistParameters
@@ -38,6 +41,7 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedLedgerTransactionIm
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
+import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactory
 import net.corda.metrics.CordaMetrics
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
@@ -54,13 +58,12 @@ import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
-import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndSignatures
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
-import java.nio.ByteBuffer
 import java.security.PublicKey
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -175,7 +178,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         stateRefs: List<StateRef>,
         notaryKey: PublicKey,
         notaryName: MemberX500Name
-    ): Map<SecureHash, Map<UtxoFilteredTransaction, List<DigitalSignatureAndMetadata>>> {
+    ): Map<SecureHash, UtxoFilteredTransactionAndSignatures> {
         return recordSuspendable({ ledgerPersistenceFlowTimer(FindFilteredTransactionsAndSignatures) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
@@ -212,8 +215,9 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                         setOf(notaryKey.fullIdHash())
                     }
 
-                    mapOf(
-                        utxoFilteredTransaction to signatures.filter { signature -> newTxNotaryKeyIds.contains(signature.by) }
+                    UtxoFilteredTransactionAndSignaturesImpl(
+                        utxoFilteredTransaction,
+                        signatures.filter { signature -> newTxNotaryKeyIds.contains(signature.by) }
                     )
                 }
             }
@@ -289,6 +293,26 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         }
     }
 
+    @Suspendable
+    override fun persistFilteredTransactionsAndSignatures(
+        filteredTransactionsAndSignatures: List<UtxoFilteredTransactionAndSignatures>
+    ) {
+        val filteredTransactionAndSignatureMap = filteredTransactionsAndSignatures.associate {
+            (it.filteredTransaction as UtxoFilteredTransactionImpl).filteredTransaction to it.signatures
+        }
+
+        return recordSuspendable(
+            { ledgerPersistenceFlowTimer(LedgerPersistenceMetricOperationName.PersistFilteredTransaction) }
+        ) @Suspendable {
+            wrapWithPersistenceException {
+                externalEventExecutor.execute(
+                    PersistFilteredTransactionsExternalEventFactory::class.java,
+                    PersistFilteredTransactionParameters(serialize(filteredTransactionAndSignatureMap))
+                )
+            }
+        }
+    }
+
     private fun SignedTransactionContainer.toSignedTransaction(): UtxoSignedTransaction {
         return utxoSignedTransactionFactory.create(wireTransaction, signatures)
     }
@@ -310,7 +334,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         )
     }
 
-    private fun serialize(payload: Any) = ByteBuffer.wrap(serializationService.serialize(payload).bytes)
+    private fun serialize(payload: Any) = serializationService.serialize(payload).bytes
 
     private fun ledgerPersistenceFlowTimer(operationName: LedgerPersistenceMetricOperationName): Timer {
         return CordaMetrics.Metric.Ledger.PersistenceFlowTime

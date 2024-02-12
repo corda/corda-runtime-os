@@ -5,7 +5,7 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.ALICE_X500_NAME
 import net.corda.flow.application.serialization.DeserializedWrongAMQPObjectException
-import net.corda.flow.application.serialization.SerializationServiceInternal
+import net.corda.flow.application.serialization.FlowSerializationService
 import net.corda.flow.application.services.MockFlowFiberService
 import net.corda.flow.application.sessions.impl.FlowSessionImpl
 import net.corda.flow.fiber.FlowIORequest
@@ -41,7 +41,7 @@ class FlowSessionImplTest {
     }
 
     private val mockFlowFiberService = MockFlowFiberService()
-    private val serializationService = mock<SerializationServiceInternal>().apply {
+    private val serializationService = mock<FlowSerializationService>().apply {
         whenever(serialize(HELLO_THERE)).thenReturn(SerializedBytesImpl(HELLO_THERE.toByteArray()))
         whenever(serialize(HI)).thenReturn(SerializedBytesImpl(HI.toByteArray()))
         whenever(deserializeAndCheckType(HELLO_THERE.toByteArray(), String::class.java)).thenReturn(HELLO_THERE)

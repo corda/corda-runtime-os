@@ -69,7 +69,7 @@ class VirtualNodeRestTest : ClusterReadiness by ClusterReadinessChecker() {
     @BeforeAll
     fun setup() {
         // check cluster is ready
-        assertIsReady(Duration.ofMinutes(1), Duration.ofMillis(100))
+        assertIsReady(Duration.ofMinutes(2), Duration.ofMillis(100))
     }
 
     @BeforeEach

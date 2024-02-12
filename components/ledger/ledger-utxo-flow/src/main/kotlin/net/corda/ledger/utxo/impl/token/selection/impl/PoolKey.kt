@@ -1,7 +1,9 @@
 package net.corda.ledger.utxo.impl.token.selection.impl
 
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
+import net.corda.v5.base.annotations.CordaSerializable
 
+@CordaSerializable
 data class PoolKey(
     val shortHolderId: String,
     val tokenType: String,

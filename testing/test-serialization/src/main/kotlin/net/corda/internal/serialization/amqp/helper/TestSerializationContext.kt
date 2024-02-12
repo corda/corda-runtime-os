@@ -2,6 +2,7 @@
 
 package net.corda.internal.serialization.amqp.helper
 
+import net.corda.internal.serialization.CordaSerializationEncoding
 import java.util.UUID
 import java.util.function.Supplier
 import net.corda.internal.serialization.SerializationContextImpl
@@ -33,14 +34,26 @@ private class MockSandboxGroup(
     override fun getEvolvableTag(klass: Class<*>) = "E;bundle;sandbox"
 }
 
+private val mockSandboxGroup = MockSandboxGroup(UUID.randomUUID())
+
 @JvmField
 val testSerializationContext = SerializationContextImpl(
     preferredSerializationVersion = amqpMagic,
     properties = mutableMapOf(),
     objectReferencesEnabled = false,
     useCase = SerializationContext.UseCase.Testing,
+    encoding = CordaSerializationEncoding.SNAPPY,
+    sandboxGroup = mockSandboxGroup
+)
+
+@JvmField
+val testSerializationContextWithoutCompression = SerializationContextImpl(
+    preferredSerializationVersion = amqpMagic,
+    properties = mutableMapOf(),
+    objectReferencesEnabled = false,
+    useCase = SerializationContext.UseCase.Testing,
     encoding = null,
-    sandboxGroup = MockSandboxGroup(UUID.randomUUID())
+    sandboxGroup = mockSandboxGroup
 )
 
 /**

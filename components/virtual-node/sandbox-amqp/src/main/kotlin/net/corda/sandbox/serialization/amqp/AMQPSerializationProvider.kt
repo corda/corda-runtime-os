@@ -1,6 +1,7 @@
 package net.corda.sandbox.serialization.amqp
 
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
+import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT_NO_COMPRESSION
 import net.corda.internal.serialization.SerializationServiceImpl
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
@@ -73,7 +74,8 @@ class AMQPSerializationProvider @Activate constructor(
             serializationService = SerializationServiceImpl(
                 outputFactory = factory,
                 inputFactory = factory,
-                AMQP_STORAGE_CONTEXT.withSandboxGroup(context.sandboxGroup) //todo double check in CORE-12472
+                AMQP_STORAGE_CONTEXT.withSandboxGroup(context.sandboxGroup), //todo double check in CORE-12472
+                AMQP_STORAGE_CONTEXT_NO_COMPRESSION.withSandboxGroup(context.sandboxGroup) //todo double check in CORE-12472
             ),
             context
         )

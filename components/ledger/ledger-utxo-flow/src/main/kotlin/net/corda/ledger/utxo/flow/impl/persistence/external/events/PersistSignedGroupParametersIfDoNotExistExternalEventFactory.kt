@@ -6,6 +6,7 @@ import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.ledger.persistence.PersistSignedGroupParametersIfDoNotExist
 import net.corda.flow.external.events.factory.ExternalEventFactory
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.SignatureSpec
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -41,6 +42,7 @@ class PersistSignedGroupParametersIfDoNotExistExternalEventFactory constructor(
     }
 }
 
+@CordaSerializable
 data class PersistSignedGroupParametersIfDoNotExistParameters(
     val bytes: ByteArray,
     val signature: DigitalSignatureWithKey,

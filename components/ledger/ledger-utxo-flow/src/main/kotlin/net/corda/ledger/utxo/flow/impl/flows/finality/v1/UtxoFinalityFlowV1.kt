@@ -5,7 +5,6 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
-import net.corda.ledger.utxo.data.transaction.FilteredTransactionAndSignatures
 import net.corda.ledger.utxo.flow.impl.PluggableNotaryDetails
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
@@ -32,7 +31,7 @@ import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
 import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
-import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndSignatures
 import net.corda.v5.membership.NotaryInfo
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -146,21 +145,11 @@ class UtxoFinalityFlowV1(
     }
 
     @Suspendable
-    private fun createFilteredTransactionsAndSignatures(notaryInfo: NotaryInfo): List<FilteredTransactionAndSignatures>? {
+    private fun createFilteredTransactionsAndSignatures(notaryInfo: NotaryInfo): List<UtxoFilteredTransactionAndSignatures>? {
         return if (!notaryInfo.isBackchainRequired) {
-            return utxoLedgerService.findFilteredTransactionsAndSignatures(initialTransaction)
-                .toFilteredTransactionsAndSignatures()
+            return utxoLedgerService.findFilteredTransactionsAndSignatures(initialTransaction).values.toList()
         } else {
             null
-        }
-    }
-
-    @Suppress("MaxLineLength")
-    private fun Map<SecureHash, Map<UtxoFilteredTransaction, List<DigitalSignatureAndMetadata>>>.toFilteredTransactionsAndSignatures(): List<FilteredTransactionAndSignatures> {
-        return this.flatMap { (_, ftxAndSigs) ->
-            ftxAndSigs.map {
-                FilteredTransactionAndSignatures(it.key, it.value)
-            }
         }
     }
 

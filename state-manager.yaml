@@ -23,33 +23,11 @@ databases:
     port: 5432
     type: "postgresql"
     host: "prereqs-postgres"
-    username:
-      value: "corda"
-      valueFrom:
-        secretKeyRef:
-          name: ""
-          key: ""
-    password:
-      valueFrom:
-        secretKeyRef:
-          name: "prereqs-postgres"
-          key: "postgres-password"
   - id: "isolated-state-manager"
     name: "state-manager"
     port: 5432
     type: "postgresql"
     host: "state-manager-db-postgresql"
-    username:
-      value: "state-manager-user"
-      valueFrom:
-        secretKeyRef:
-          name: ""
-          key: ""
-    password:
-      valueFrom:
-        secretKeyRef:
-          name: "state-manager-db-postgresql"
-          key: "password"
 
 bootstrap:
   db:
@@ -57,10 +35,6 @@ bootstrap:
       - id: "default"
         username:
           value: "postgres"
-          valueFrom:
-            secretKeyRef:
-              name: ""
-              key: ""
         password:
           valueFrom:
             secretKeyRef:
@@ -69,10 +43,6 @@ bootstrap:
       - id: "isolated-state-manager"
         username:
           value: "postgres"
-          valueFrom:
-            secretKeyRef:
-              name: ""
-              key: ""
         password:
           valueFrom:
             secretKeyRef:

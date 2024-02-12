@@ -15,6 +15,7 @@ import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
+import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionAndSignaturesImpl
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
@@ -300,8 +301,8 @@ class UtxoLedgerPersistenceServiceImplTest {
             whenever(it.transactionId).thenReturn(testId)
         }
 
-        val expectedResultA = mapOf(testId to mapOf(utxoFilteredTransaction to listOf(signatureNotary1)))
-        val expectedResultB = mapOf(testId to mapOf(utxoFilteredTransaction to listOf(signatureNotary2)))
+        val expectedResultA = mapOf(testId to UtxoFilteredTransactionAndSignaturesImpl(utxoFilteredTransaction, listOf(signatureNotary1)))
+        val expectedResultB = mapOf(testId to UtxoFilteredTransactionAndSignaturesImpl(utxoFilteredTransaction, listOf(signatureNotary2)))
 
         // assert with notary composite key
         assertThat(

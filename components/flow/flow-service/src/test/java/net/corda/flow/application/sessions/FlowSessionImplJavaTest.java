@@ -1,7 +1,7 @@
 package net.corda.flow.application.sessions;
 
 import co.paralleluniverse.fibers.FiberScheduler;
-import net.corda.flow.application.serialization.SerializationServiceInternal;
+import net.corda.flow.application.serialization.FlowSerializationService;
 import net.corda.flow.application.sessions.impl.FlowSessionImpl;
 import net.corda.flow.fiber.FlowContinuation;
 import net.corda.flow.fiber.FlowFiber;
@@ -35,7 +35,7 @@ import static org.mockito.Mockito.when;
 public class FlowSessionImplJavaTest {
 
     private final FlowSandboxGroupContext flowSandboxGroupContext = mock(FlowSandboxGroupContext.class);
-    private final SerializationServiceInternal serializationService = mock(SerializationServiceInternal.class);
+    private final FlowSerializationService serializationService = mock(FlowSerializationService.class);
     private final SandboxDependencyInjector sandboxDependencyInjector = mock(SandboxDependencyInjector.class);
     private final CheckpointSerializer checkpointSerializer = mock(CheckpointSerializer.class);
     private final FlowFiberExecutionContext flowFiberExecutionContext = new FlowFiberExecutionContext(

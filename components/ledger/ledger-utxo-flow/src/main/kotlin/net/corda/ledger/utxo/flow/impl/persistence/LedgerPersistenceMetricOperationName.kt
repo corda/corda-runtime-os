@@ -10,6 +10,7 @@ enum class LedgerPersistenceMetricOperationName {
     FindWithNamedQuery,
     PersistSignedGroupParametersIfDoNotExist,
     PersistTransaction,
+    PersistFilteredTransaction,
     PersistTransactionIfDoesNotExist,
     PersistTransactionSignatures,
     ResolveStateRefs,

@@ -26,7 +26,7 @@ class FindExternalEventFactoryTest {
         val externalEventRecord = FindExternalEventFactory().createExternalEvent(
             checkpoint,
             externalEventContext,
-            FindParameters(String::class.java, listOf(ByteBuffer.wrap(byteArrayOf(1))))
+            FindParameters(String::class.java, listOf(byteArrayOf(1)))
         )
         assertNull(externalEventRecord.key)
         assertEquals(

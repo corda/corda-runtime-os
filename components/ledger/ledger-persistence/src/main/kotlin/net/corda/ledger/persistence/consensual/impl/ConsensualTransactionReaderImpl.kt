@@ -7,8 +7,8 @@ import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTransactionStatus
+import net.corda.ledger.persistence.common.LedgerPersistenceUtils.findAccount
 import net.corda.ledger.persistence.consensual.ConsensualTransactionReader
-import net.corda.persistence.common.exceptions.MissingAccountContextPropertyException
 import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
@@ -21,19 +21,13 @@ class ConsensualTransactionReaderImpl(
     private val transaction: PersistTransaction
 ) : ConsensualTransactionReader {
 
-    private companion object {
-        const val CORDA_ACCOUNT = "corda.account"
-        const val CORDA_INITIATOR_ACCOUNT = "corda.initiator.account"
-    }
-
     private val signedTransaction = serializer.deserialize<SignedTransactionContainer>(transaction.transaction.array())
 
     override val id: SecureHash
         get() = signedTransaction.id
 
     override val account: String
-        get() = externalEventContext.contextProperties.items.find { it.key == CORDA_ACCOUNT || it.key == CORDA_INITIATOR_ACCOUNT }?.value
-            ?: throw MissingAccountContextPropertyException()
+        get() = externalEventContext.findAccount()
 
     override val status: TransactionStatus
         get() = transaction.status.toTransactionStatus()

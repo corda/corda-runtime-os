@@ -28,7 +28,7 @@ class CheckKafkaTest {
         // Test SASL_SSL with non-PEM format truststore
         val kafka = CheckKafka()
         val path = "./src/test/resources/KafkaTestSaslTls.yaml"
-        val yaml: PreInstallPlugin.Kafka = kafka.parseYaml(path)
+        val yaml: PreInstallPlugin.CordaValues = kafka.parseYaml(path)
         val props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers!!)
         props.saslEnabled = yaml.kafka.sasl?.enabled ?: false
         props.saslUsername = "sasl-user"
@@ -56,7 +56,7 @@ class CheckKafkaTest {
         // Test SASL_SSL with PEM format truststore (i.e. no password required)
         val kafka = CheckKafka()
         val path = "./src/test/resources/KafkaTestSaslTlsPEM.yaml"
-        val yaml = kafka.parseYaml<PreInstallPlugin.Kafka>(path)
+        val yaml = kafka.parseYaml<PreInstallPlugin.CordaValues>(path)
         val props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers!!)
         props.saslEnabled = yaml.kafka.sasl?.enabled ?: false
         props.saslUsername = "sasl-user1"
@@ -82,7 +82,7 @@ class CheckKafkaTest {
         // Test SASL_PLAINTEXT
         val kafka = CheckKafka()
         val path = "./src/test/resources/KafkaTestSaslPlain.yaml"
-        val yaml = kafka.parseYaml<PreInstallPlugin.Kafka>(path)
+        val yaml = kafka.parseYaml<PreInstallPlugin.CordaValues>(path)
         val props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers!!)
         props.saslEnabled = yaml.kafka.sasl?.enabled ?: false
         props.saslUsername = "sasl-user"
@@ -99,7 +99,7 @@ class CheckKafkaTest {
         // Test SASL_PLAINTEXT
         val kafka = CheckKafka()
         val path = "./src/test/resources/KafkaTestSaslScram.yaml"
-        val yaml = kafka.parseYaml<PreInstallPlugin.Kafka>(path)
+        val yaml = kafka.parseYaml<PreInstallPlugin.CordaValues>(path)
         val props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers!!)
         props.saslEnabled = yaml.kafka.sasl?.enabled ?: false
         props.saslUsername = "sasl-user"
@@ -120,7 +120,7 @@ class CheckKafkaTest {
         // Test SSL
         val kafka = CheckKafka()
         val path = "./src/test/resources/KafkaTestTls.yaml"
-        val yaml = kafka.parseYaml<PreInstallPlugin.Kafka>(path)
+        val yaml = kafka.parseYaml<PreInstallPlugin.CordaValues>(path)
         val props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers!!)
         props.tlsEnabled = yaml.kafka.tls!!.enabled
         props.truststoreFile = "-----BEGIN CERTIFICATE-----"
@@ -166,7 +166,7 @@ class CheckKafkaTest {
     fun testKafkaConnectFails() {
         val kafka = CheckKafka()
         val path = "./src/test/resources/KafkaTestBadConnection.yaml"
-        val yaml = kafka.parseYaml<PreInstallPlugin.Kafka>(path)
+        val yaml = kafka.parseYaml<PreInstallPlugin.CordaValues>(path)
         val props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers!!)
         props.saslEnabled = yaml.kafka.sasl?.enabled ?: false
         props.saslUsername = "sasl-user"
@@ -206,7 +206,7 @@ class CheckKafkaTest {
     @Test
     fun testKafkaTlsWithNoTruststore() {
         val kafka = CheckKafka()
-        val yaml = kafka.parseYaml<PreInstallPlugin.Kafka>("./src/test/resources/KafkaTestTlsWithNoTruststore.yaml")
+        val yaml = kafka.parseYaml<PreInstallPlugin.CordaValues>("./src/test/resources/KafkaTestTlsWithNoTruststore.yaml")
         kafka.getKafkaProperties(yaml)
 
         assertTrue(kafka.report.testsPassed())

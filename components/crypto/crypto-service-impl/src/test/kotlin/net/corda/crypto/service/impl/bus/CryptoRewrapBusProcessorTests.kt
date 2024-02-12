@@ -49,7 +49,6 @@ class CryptoRewrapBusProcessorTests {
     companion object {
         private val tenantId = UUID.randomUUID().toString()
         private const val OLD_PARENT_KEY_ALIAS = "alias1"
-        private const val NEW_PARENT_KEY_ALIAS = "alias2"
         private const val WRAPPING_KEY_ALIAS = "alias"
         private const val DEFAULT_MASTER_WRAP_KEY_ALIAS = "defaultKeyAlias"
     }
@@ -65,8 +64,6 @@ class CryptoRewrapBusProcessorTests {
         }
         unmanagedDeserializer = mock<CordaAvroDeserializer<UnmanagedKeyStatus>> {
             on { deserialize(any()) } doReturn UnmanagedKeyStatus(
-                OLD_PARENT_KEY_ALIAS,
-                NEW_PARENT_KEY_ALIAS,
                 tenantId,
                 10,
                 5,
@@ -141,8 +138,6 @@ class CryptoRewrapBusProcessorTests {
                     IndividualKeyRotationRequest(
                         UUID.randomUUID().toString(),
                         tenantId,
-                        OLD_PARENT_KEY_ALIAS,
-                        "root2",
                         "alias1",
                         null,
                         KeyType.UNMANAGED
@@ -165,8 +160,6 @@ class CryptoRewrapBusProcessorTests {
                         IndividualKeyRotationRequest(
                             UUID.randomUUID().toString(),
                             null,
-                            OLD_PARENT_KEY_ALIAS,
-                            "root2",
                             "alias1",
                             null,
                             KeyType.UNMANAGED
@@ -191,8 +184,6 @@ class CryptoRewrapBusProcessorTests {
                         IndividualKeyRotationRequest(
                             UUID.randomUUID().toString(),
                             "",
-                            OLD_PARENT_KEY_ALIAS,
-                            "root2",
                             "alias1",
                             null,
                             KeyType.UNMANAGED
@@ -217,8 +208,6 @@ class CryptoRewrapBusProcessorTests {
                         IndividualKeyRotationRequest(
                             UUID.randomUUID().toString(),
                             tenantId,
-                            OLD_PARENT_KEY_ALIAS,
-                            "root2",
                             null,
                             null,
                             KeyType.UNMANAGED
@@ -243,8 +232,6 @@ class CryptoRewrapBusProcessorTests {
                         IndividualKeyRotationRequest(
                             UUID.randomUUID().toString(),
                             tenantId,
-                            OLD_PARENT_KEY_ALIAS,
-                            "root2",
                             "",
                             "",
                             KeyType.UNMANAGED
@@ -269,8 +256,6 @@ class CryptoRewrapBusProcessorTests {
                         IndividualKeyRotationRequest(
                             UUID.randomUUID().toString(),
                             tenantId,
-                            OLD_PARENT_KEY_ALIAS,
-                            "root2",
                             "alias1",
                             UUID.randomUUID().toString(),
                             KeyType.UNMANAGED
@@ -296,8 +281,6 @@ class CryptoRewrapBusProcessorTests {
                         UUID.randomUUID().toString(),
                         tenantId,
                         null,
-                        null,
-                        null,
                         uuid.toString(),
                         KeyType.MANAGED
                     )
@@ -317,8 +300,6 @@ class CryptoRewrapBusProcessorTests {
                         UUID.randomUUID().toString(),
                         IndividualKeyRotationRequest(
                             UUID.randomUUID().toString(),
-                            null,
-                            null,
                             null,
                             null,
                             UUID.randomUUID().toString(),
@@ -345,8 +326,6 @@ class CryptoRewrapBusProcessorTests {
                             UUID.randomUUID().toString(),
                             "",
                             null,
-                            null,
-                            null,
                             UUID.randomUUID().toString(),
                             KeyType.MANAGED
                         )
@@ -370,8 +349,6 @@ class CryptoRewrapBusProcessorTests {
                         IndividualKeyRotationRequest(
                             UUID.randomUUID().toString(),
                             tenantId,
-                            null,
-                            null,
                             "alias1",
                             UUID.randomUUID().toString(),
                             KeyType.MANAGED
@@ -398,8 +375,6 @@ class CryptoRewrapBusProcessorTests {
                             tenantId,
                             null,
                             null,
-                            null,
-                            null,
                             KeyType.MANAGED
                         )
                     )
@@ -422,8 +397,6 @@ class CryptoRewrapBusProcessorTests {
                         IndividualKeyRotationRequest(
                             UUID.randomUUID().toString(),
                             tenantId,
-                            null,
-                            null,
                             null,
                             "",
                             KeyType.MANAGED
@@ -449,8 +422,6 @@ class CryptoRewrapBusProcessorTests {
                             UUID.randomUUID().toString(),
                             tenantId,
                             null,
-                            null,
-                            null,
                             "invalid uuid",
                             KeyType.MANAGED
                         )
@@ -474,8 +445,6 @@ class CryptoRewrapBusProcessorTests {
                     IndividualKeyRotationRequest(
                         UUID.randomUUID().toString(),
                         tenantId,
-                        null,
-                        null,
                         null,
                         uuid.toString(),
                         KeyType.MANAGED

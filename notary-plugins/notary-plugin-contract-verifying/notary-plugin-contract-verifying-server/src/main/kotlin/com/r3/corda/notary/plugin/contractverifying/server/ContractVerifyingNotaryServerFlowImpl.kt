@@ -7,7 +7,6 @@ import com.r3.corda.notary.plugin.common.NotaryExceptionTransactionVerificationF
 import com.r3.corda.notary.plugin.common.NotaryTransactionDetails
 import com.r3.corda.notary.plugin.common.toNotarizationResponse
 import com.r3.corda.notary.plugin.contractverifying.api.ContractVerifyingNotarizationPayload
-import com.r3.corda.notary.plugin.contractverifying.api.FilteredTransactionAndSignatures
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
@@ -25,6 +24,7 @@ import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndSignatures
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
 import org.slf4j.LoggerFactory
 import java.security.PublicKey
@@ -164,20 +164,20 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
     @Suspendable
     fun verifySignatures(
         notaryKey: PublicKey,
-        filteredTransactionsAndSignatures: List<FilteredTransactionAndSignatures>,
+        filteredTransactionsAndSignatures: List<UtxoFilteredTransactionAndSignatures>,
         initialTransaction: UtxoSignedTransaction
     ) {
         initialTransaction.verifySignatorySignatures()
 
         val keyIdToNotaryKeys: MutableMap<String, MutableMap<SecureHash, PublicKey>> = mutableMapOf()
 
-        filteredTransactionsAndSignatures.forEach { (filteredTransaction, signatures) ->
-            filteredTransaction.verify()
+        filteredTransactionsAndSignatures.forEach {
+            it.filteredTransaction.verify()
             try {
                 notarySignatureVerificationService.verifyNotarySignatures(
-                    filteredTransaction,
+                    it.filteredTransaction,
                     notaryKey,
-                    signatures,
+                    it.signatures,
                     keyIdToNotaryKeys
                 )
             } catch (e: Exception) {
@@ -191,11 +191,11 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
     @Suspendable
     private fun verifyTransaction(
         initialTransaction: UtxoSignedTransaction,
-        filteredTransactionsAndSignatures: List<FilteredTransactionAndSignatures>
+        filteredTransactionsAndSignatures: List<UtxoFilteredTransactionAndSignatures>
     ) {
         try {
-            val dependentStateAndRefs = filteredTransactionsAndSignatures.flatMap { (filteredTransaction, _) ->
-                (filteredTransaction.outputStateAndRefs as UtxoFilteredData.Audit<StateAndRef<*>>).values.values
+            val dependentStateAndRefs = filteredTransactionsAndSignatures.flatMap {
+                (it.filteredTransaction.outputStateAndRefs as UtxoFilteredData.Audit<StateAndRef<*>>).values.values
             }.associateBy { it.ref }
 
             val inputStateAndRefs = initialTransaction.inputStateRefs.map { stateRef ->

@@ -8,6 +8,7 @@ import net.corda.data.ledger.persistence.FindTransactionIdsAndStatuses
 import net.corda.data.ledger.persistence.FindUnconsumedStatesByType
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
+import net.corda.data.ledger.persistence.PersistFilteredTransactionsAndSignatures
 import net.corda.data.ledger.persistence.PersistSignedGroupParametersIfDoNotExist
 import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.data.ledger.persistence.PersistTransactionIfDoesNotExist
@@ -28,6 +29,7 @@ import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedLed
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionIdsAndStatusesRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindUnconsumedStatesByTypeRequestHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistFilteredTransactionRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistSignedGroupParametersIfDoNotExistRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistTransactionIfDoesNotExistRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistTransactionRequestHandler
@@ -188,6 +190,15 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     externalEventContext,
                     persistenceService,
                     externalEventResponseFactory,
+                    serializationService
+                )
+            }
+            is PersistFilteredTransactionsAndSignatures -> {
+                UtxoPersistFilteredTransactionRequestHandler(
+                    req,
+                    externalEventContext,
+                    externalEventResponseFactory,
+                    persistenceService,
                     serializationService
                 )
             }
