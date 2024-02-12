@@ -165,16 +165,19 @@ class UtxoReceiveFinalityFlowV1(
             requireNotNull(filteredTransactionsAndSignatures) {
                 "filtered transaction and signatures cannot be found."
             }
-            verifyDependencies(filteredTransactionsAndSignatures, initialTransaction, transferAdditionalSignatures)
+            verifyDependenciesAndPersist(filteredTransactionsAndSignatures, initialTransaction, transferAdditionalSignatures)
         }
     }
 
     @Suspendable
-    private fun verifyDependencies(
+    private fun verifyDependenciesAndPersist(
         filteredTransactionsAndSignatures: List<UtxoFilteredTransactionAndSignatures>,
         initialTransaction: UtxoSignedTransactionInternal,
         transferAdditionalSignatures: Boolean
     ): InitialTransactionPayload {
+        if (filteredTransactionsAndSignatures.isEmpty()) {
+            return InitialTransactionPayload(initialTransaction, transferAdditionalSignatures, emptyList(), emptyList())
+        }
         val groupParameters = groupParametersLookup.currentGroupParameters
         val notary = requireNotNull(groupParameters.notaries.first { it.name == initialTransaction.notaryName }) {
             "Notary from initial transaction \"${initialTransaction.notaryName}\" cannot be found in group parameter notaries."
@@ -202,6 +205,9 @@ class UtxoReceiveFinalityFlowV1(
                 "Missing reference state and ref from the filtered transaction"
             }
         }
+
+        persistenceService.persistFilteredTransactionsAndSignatures(filteredTransactionsAndSignatures)
+
         return InitialTransactionPayload(
             initialTransaction,
             transferAdditionalSignatures,

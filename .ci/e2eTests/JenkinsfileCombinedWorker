@@ -19,11 +19,18 @@ PipelineUtils pipelineUtils = new PipelineUtils(this)
 @Field
 GitUtils gitUtils = new GitUtils(this)
 
+@Field
+String agentLabel = 'docker'
+
+if (env.CHANGE_ID || gitUtils.isReleaseTag()) {
+    agentLabel = 'docker-on-demand'
+}
+
 pipeline {
     agent {
         docker {
             image 'build-zulu-openjdk:17'
-            label 'docker'
+            label "${agentLabel}"
             registryUrl 'https://engineering-docker.software.r3.com/'
             registryCredentialsId 'artifactory-credentials'
             args '-v /tmp:/host_tmp '

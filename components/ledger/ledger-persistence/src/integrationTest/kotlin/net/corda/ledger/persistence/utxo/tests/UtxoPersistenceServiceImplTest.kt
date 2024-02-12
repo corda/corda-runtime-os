@@ -18,6 +18,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters
+import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.data.transaction.filtered.factory.FilteredTransactionFactory
 import net.corda.ledger.common.testkit.cpiPackageSummaryExample
 import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
@@ -278,33 +279,9 @@ class UtxoPersistenceServiceImplTest {
             .mapValues { (_, stateRefs) -> stateRefs.map { stateRef -> stateRef.index } }
         val expectedRetval = stateRefs.associate {
             val indexes = txIdToIndexes[it.transactionId]!!
-            val (wireTransaction, signatures) = persistenceService.findSignedTransaction(it.transactionId.toString(), VERIFIED).first!!
-            val filteredTransaction = filteredTransactionFactory.create(
-                wireTransaction,
-                listOf(
-                    ComponentGroupFilterParameters.AuditProof(
-                        METADATA.ordinal,
-                        TransactionMetadata::class.java,
-                        ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                    ),
-                    ComponentGroupFilterParameters.AuditProof(
-                        NOTARY.ordinal,
-                        Any::class.java,
-                        ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                    ),
-                    ComponentGroupFilterParameters.AuditProof(
-                        UtxoComponentGroup.OUTPUTS_INFO.ordinal,
-                        UtxoOutputInfoComponent::class.java,
-                        ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Index(indexes)
-                    ),
-                    ComponentGroupFilterParameters.AuditProof(
-                        UtxoComponentGroup.OUTPUTS.ordinal,
-                        ContractState::class.java,
-                        ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Index(indexes)
-                    )
-                )
-            )
-            it.transactionId to Pair(filteredTransaction, signatures)
+            val signedTransaction = persistenceService.findSignedTransaction(it.transactionId.toString(), VERIFIED).first!!
+            val filteredTransaction = createFilteredTransaction(signedTransaction, indexes)
+            it.transactionId to Pair(filteredTransaction, signedTransaction.signatures)
         }
 
         val retval = persistenceService.findFilteredTransactionsAndSignatures(stateRefs)
@@ -314,10 +291,9 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `find unconsumed visible transaction states`() {
-        val createdTs = testClock.instant()
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
-        val transaction1 = createSignedTransaction(createdTs)
-        val transaction2 = createSignedTransaction(createdTs)
+        val transaction1 = createSignedTransaction()
+        val transaction2 = createSignedTransaction()
         entityManagerFactory.transaction { em ->
 
             em.createNativeQuery("DELETE FROM {h-schema}utxo_visible_transaction_output").executeUpdate()
@@ -441,7 +417,7 @@ class UtxoPersistenceServiceImplTest {
     fun `persist signed transaction`() {
         val account = "Account"
         val transactionStatus = VERIFIED
-        val signedTransaction = createSignedTransaction(Instant.now())
+        val signedTransaction = createSignedTransaction(signatures = createSignatures(Instant.now()))
         val visibleStatesIndexes = listOf(0)
 
         // Persist transaction
@@ -635,37 +611,14 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `persist and find filtered transactions`() {
-        val signedTransaction = createSignedTransaction(Instant.now())
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(signatures = signatures)
         val account = "Account"
 
-        val filteredTransactionToStore = filteredTransactionFactory.create(
-            signedTransaction.wireTransaction,
-            componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(
-                    0,
-                    TransactionMetadataImpl::class.java,
-                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                ),
-                ComponentGroupFilterParameters.AuditProof(
-                    1,
-                    Any::class.java,
-                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                ),
-                ComponentGroupFilterParameters.AuditProof(
-                    3,
-                    Any::class.java,
-                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                ),
-                ComponentGroupFilterParameters.AuditProof(
-                    8,
-                    Any::class.java,
-                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                ),
-            )
-        )
+        val filteredTransactionToStore = createFilteredTransaction(signedTransaction)
 
-        persistenceService.persistFilteredTransactions(
-            mapOf(filteredTransactionToStore to emptyList()),
+        (persistenceService as UtxoPersistenceServiceImpl).persistFilteredTransactions(
+            mapOf(filteredTransactionToStore to signatures),
             account
         )
 
@@ -813,11 +766,55 @@ class UtxoPersistenceServiceImplTest {
         }
     }
 
+    private fun createFilteredTransaction(
+        signedTransaction: SignedTransactionContainer,
+        indexes: List<Int> = emptyList()
+    ): FilteredTransaction {
+        val (outputInfoGroupParameter, outputGroupParameter) = if (indexes.isEmpty()) {
+            ComponentGroupFilterParameters.AuditProof(
+                UtxoComponentGroup.OUTPUTS_INFO.ordinal,
+                Any::class.java,
+                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
+            ) to ComponentGroupFilterParameters.AuditProof(
+                UtxoComponentGroup.OUTPUTS.ordinal,
+                Any::class.java,
+                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
+            )
+        } else {
+            ComponentGroupFilterParameters.AuditProof(
+                UtxoComponentGroup.OUTPUTS_INFO.ordinal,
+                UtxoOutputInfoComponent::class.java,
+                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Index(indexes)
+            ) to ComponentGroupFilterParameters.AuditProof(
+                UtxoComponentGroup.OUTPUTS.ordinal,
+                ContractState::class.java,
+                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Index(indexes)
+            )
+        }
+        return filteredTransactionFactory.create(
+            signedTransaction.wireTransaction,
+            componentGroupFilterParameters = listOf(
+                ComponentGroupFilterParameters.AuditProof(
+                    METADATA.ordinal,
+                    TransactionMetadata::class.java,
+                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
+                ),
+                ComponentGroupFilterParameters.AuditProof(
+                    NOTARY.ordinal,
+                    Any::class.java,
+                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
+                ),
+                outputInfoGroupParameter,
+                outputGroupParameter,
+            )
+        )
+    }
+
     private fun createSignedTransaction(
-        createdTs: Instant = testClock.instant(),
         seed: String = seedSequence.incrementAndGet().toString(),
         inputStateRefs: List<StateRef> = defaultInputStateRefs,
-        referenceStateRefs: List<StateRef> = defaultReferenceStateRefs
+        referenceStateRefs: List<StateRef> = defaultReferenceStateRefs,
+        signatures: List<DigitalSignatureAndMetadata> = createSignatures()
     ): SignedTransactionContainer {
         val transactionMetadata = utxoTransactionMetadataExample(cpkPackageSeed = seed)
         val timeWindow = Instant.now().plusMillis(Duration.ofDays(1).toMillis())
@@ -855,11 +852,15 @@ class UtxoPersistenceServiceImplTest {
             componentGroupLists,
             getPrivacySalt()
         )
+
+        return SignedTransactionContainer(wireTransaction, signatures)
+    }
+
+    private fun createSignatures(createdTs: Instant = testClock.instant()): List<DigitalSignatureAndMetadata> {
         val publicKey = KeyPairGenerator.getInstance("EC")
             .apply { initialize(ECGenParameterSpec("secp256r1")) }
             .generateKeyPair().public
-        val signatures = listOf(getSignatureWithMetadataExample(publicKey, createdTs))
-        return SignedTransactionContainer(wireTransaction, signatures)
+        return listOf(getSignatureWithMetadataExample(publicKey, createdTs))
     }
 
     private class TestUtxoTransactionReader(
