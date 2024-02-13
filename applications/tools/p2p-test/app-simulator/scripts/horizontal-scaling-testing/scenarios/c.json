@@ -2,6 +2,6 @@
   "name": "Scenario C",
   "workerReplicas": 4,
   "kafkaBrokers": 7,
-  "partitionCount": 10,
+  "partitionCount": 20,
   "replicationFactor": 3
 }

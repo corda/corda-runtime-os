@@ -115,7 +115,10 @@ internal class OutboundMessageHandler(
     override fun onNext(event: Record<String, LinkOutMessage>): CompletableFuture<Unit> {
         val myId = "$id:${index.incrementAndGet()}"
         val started = System.currentTimeMillis()
-        logger.info("QQQ onNext: ${event.key} for $myId", Exception(myId))
+        logger.info("QQQ onNext: ${event.key} for $myId")
+        Exception(myId).stackTrace.forEach {
+            logger.info("QQQ \t ${event.key} $it")
+        }
         return dominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("Can not handle events")

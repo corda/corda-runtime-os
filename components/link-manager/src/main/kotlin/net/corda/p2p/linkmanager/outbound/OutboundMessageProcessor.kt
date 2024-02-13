@@ -143,6 +143,10 @@ internal class OutboundMessageProcessor(
             logger.info(
                 "QQQ Finished looking at $id thread ${Thread.currentThread().id} got ${it.size} in $dur"
             )
+            Exception(id).stackTrace.forEach {
+                logger.info("QQQ \t $id $it")
+            }
+
         }
     }
 
