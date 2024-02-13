@@ -21,7 +21,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
@@ -68,7 +67,6 @@ import net.corda.data.p2p.crypto.ResponderHelloMessage as AvroResponderHelloMess
 
 @Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 internal class StatefulSessionManagerImpl(
-    publisherFactory: PublisherFactory,
     subscriptionFactory: SubscriptionFactory,
     messagingConfig: SmartConfig,
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -77,7 +75,10 @@ internal class StatefulSessionManagerImpl(
     private val stateConvertor: StateConvertor,
     private val clock: Clock,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    private val deadSessionMonitor: DeadSessionMonitor,
     private val schemaRegistry: AvroSchemaRegistry,
+    private val sessionCache: SessionCache,
+    private val sessionEventPublisher: StatefulSessionEventPublisher,
 ) : SessionManager {
     companion object {
         const val LINK_MANAGER_SUBSYSTEM = "link-manager"
@@ -169,6 +170,7 @@ internal class StatefulSessionManagerImpl(
                         SessionAlreadyPending(counterparties),
                     )
                 }
+
                 OutboundSessionStatus.SessionReady -> {
                     state.state.retrieveEstablishedSession(counterparties)?.let { establishedState ->
                         sessionCache.putOutboundSession(
@@ -212,7 +214,10 @@ internal class StatefulSessionManagerImpl(
                     state.state.retrieveEstablishedSession(counterparties)?.let { established ->
                         sessionCache.putOutboundSession(
                             state.key,
-                            SessionManager.SessionDirection.Outbound(state.state.toCounterparties(), established.session),
+                            SessionManager.SessionDirection.Outbound(
+                                state.state.toCounterparties(),
+                                established.session,
+                            ),
                         )
                         state.toResults(
                             established,
@@ -357,8 +362,7 @@ internal class StatefulSessionManagerImpl(
     }
 
     override fun messageAcknowledged(sessionId: String) {
-        // To be implemented in CORE-18730
-        return
+        deadSessionMonitor.ackReceived(sessionId)
     }
 
     override fun inboundSessionEstablished(sessionId: String) {
@@ -376,8 +380,7 @@ internal class StatefulSessionManagerImpl(
     }
 
     override fun dataMessageSent(session: Session) {
-        // Not needed by the Stateful Session Manager
-        return
+        deadSessionMonitor.messageSent(session.sessionId)
     }
 
     override fun deleteOutboundSession(
@@ -402,13 +405,15 @@ internal class StatefulSessionManagerImpl(
         )?.let { serial ->
             calculateOutboundSessionKey(counterParties.ourId, counterParties.counterpartyId, serial)
         }
+
+        deadSessionMonitor.sessionRemoved(sessionId)
+
         if (key == null) {
             logger.warn("Could not delete outbound session '{}' lost by counterparty.", sessionId)
             return
         }
-        stateManager.get(listOf(key)).values.firstOrNull()?.let {
-            sessionCache.invalidateAndRemoveFromSchedular(it.key)
-        }
+
+        sessionCache.deleteByKey(key)
     }
 
     private data class InboundSessionMessageContext<T>(
@@ -452,6 +457,7 @@ internal class StatefulSessionManagerImpl(
                 ),
             )
         }
+
         fun toResultsFirstAndOther(
             firstState: SessionManager.SessionState,
             otherStates: SessionManager.SessionState,
@@ -645,6 +651,7 @@ internal class StatefulSessionManagerImpl(
             updatedState.getSessionCounterparties(),
         ) to updatedState
     }
+
     private fun <T> processStateUpdates(
         resultStates: Collection<OutboundMessageResults<T>>,
     ): Collection<Pair<T, SessionManager.SessionState>> {
@@ -672,6 +679,7 @@ internal class StatefulSessionManagerImpl(
             }
         }
     }
+
     private fun <T> processInboundSessionMessages(messages: List<Pair<T, LinkInMessage?>>): Collection<TraceableResult<T>> {
         val messageContexts =
             messages.mapNotNull {
@@ -1090,17 +1098,6 @@ internal class StatefulSessionManagerImpl(
             metadata.communicationWithMgm,
         )
     }
-
-    private val sessionEventPublisher = StatefulSessionEventPublisher(
-        coordinatorFactory,
-        publisherFactory,
-        messagingConfig,
-    )
-    private val sessionCache = SessionCache(
-        stateManager,
-        clock,
-        sessionEventPublisher,
-    )
 
     private fun sendSessionReEstablishmentMessage(
         source: HoldingIdentity,

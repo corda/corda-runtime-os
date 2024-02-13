@@ -44,11 +44,11 @@ class UtxoBaselinedTransactionBuilderDiffTest : UtxoLedgerTest() {
     }
 
     @Test
-    fun `diff - notary always gets set`() {
+    fun `diff - notary does not get set when original is not null`() {
         val result =
             UtxoBaselinedTransactionBuilder(utxoTransactionBuilder.setNotary(notaryX500Name) as UtxoTransactionBuilderInternal)
                 .diff()
-        assertEquals(notaryX500Name, result.getNotaryName())
+        assertNull(result.getNotaryName())
     }
 
     @Test

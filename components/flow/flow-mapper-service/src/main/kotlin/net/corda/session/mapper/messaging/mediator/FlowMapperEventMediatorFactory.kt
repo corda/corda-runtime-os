@@ -20,6 +20,7 @@ interface FlowMapperEventMediatorFactory {
     fun create(
         flowConfig: SmartConfig,
         messagingConfig: SmartConfig,
+        bootConfig: SmartConfig,
         stateManager: StateManager,
     ): MultiSourceEventMediator<String, FlowMapperState, FlowMapperEvent>
 

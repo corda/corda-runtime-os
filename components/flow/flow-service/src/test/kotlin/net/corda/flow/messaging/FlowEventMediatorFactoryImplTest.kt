@@ -86,6 +86,7 @@ class FlowEventMediatorFactoryImplTest {
             mapOf(ConfigKeys.MESSAGING_CONFIG to config),
             mock(),
             mock(),
+            mock()
         )
         assertNotNull(mediator)
         val clientFinder = mock<MessagingClientFinder>().apply {

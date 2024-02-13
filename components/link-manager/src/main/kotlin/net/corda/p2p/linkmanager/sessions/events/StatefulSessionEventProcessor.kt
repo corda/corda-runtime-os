@@ -65,7 +65,7 @@ internal class StatefulSessionEventProcessor(
                 }
                 is SessionDeleted -> {
                     logger.info("Received a session deletion event for session with key ${type.stateManagerKey}.")
-                    sessionCache.invalidateAndRemoveFromSchedular(type.stateManagerKey)
+                    sessionCache.invalidateAndRemoveFromScheduler(type.stateManagerKey)
                 }
                 null -> {
                     logger.warn("Received an unknown session event. This will be ignored.")
