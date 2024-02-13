@@ -137,7 +137,6 @@ class SendTransactionBuilderDiffFlowV1Test {
     }
 
     @Test
-    @Disabled("No longer relevant as notary always needs to be provided")
     fun `called with old notary and a different new notary sends back a builder without notary`() {
         whenever(originalTransactionalBuilder.getNotaryName()).thenReturn(anotherNotaryX500Name)
         whenever(currentTransactionBuilder.notaryName).thenReturn(notaryX500Name)
