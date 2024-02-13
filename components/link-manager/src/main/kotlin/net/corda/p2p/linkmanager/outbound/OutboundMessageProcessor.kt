@@ -104,7 +104,7 @@ internal class OutboundMessageProcessor(
     }
 
     override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<String, *>> {
-        val id = ":$MY_ID:$index:"
+        val id = ":$MY_ID:${index.incrementAndGet()}:"
         val started = System.currentTimeMillis()
         logger.info("QQQ starting looking at $id thread ${Thread.currentThread().id} with ${events.size}")
         val authenticatedMessages = mutableListOf<TraceableItem<AuthenticatedMessageAndKey, AppMessage>>()
