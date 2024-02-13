@@ -1,3 +1,8 @@
+global:
+  imageRegistry: docker-remotes.software.r3.com
+  imagePullSecrets:
+    - docker-registry-cred
+
 # values for configuring bitnami/postgres sub-chart.
 postgresql:
   # values configuring the permissions of volumes.

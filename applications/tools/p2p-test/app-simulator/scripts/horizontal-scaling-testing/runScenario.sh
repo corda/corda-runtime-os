@@ -82,7 +82,6 @@ count_received() {
 calculate_latency() {
   echo $(kubectl exec -n $1 db-postgresql-0 -- env PGPASSWORD=$2 psql -U postgres -d app_simulator -c "SELECT AVG(delivery_latency_ms)/1000.0 FROM received_messages WHERE sent_timestamp > '$3' AND sent_timestamp < '$4';" -t | xargs)
 }
-
 write_report_file() {
   kubectl exec -n $1 db-postgresql-0 \
      -- env PGPASSWORD=$2 \
@@ -100,7 +99,19 @@ write_report_file() {
          order by time_window asc
   ;" >> "$reportFile"
 }
+slowest_messages() {
+  kubectl exec -n $1 db-postgresql-0 \
+     -- env PGPASSWORD=$2 \
+     psql -U postgres -d app_simulator -A -F", "\
+     -c "select
+          *
+          FROM received_messages
+          WHERE sent_timestamp > '$warm_up_ends'
+          ORDER BY delivery_latency_ms DESC LIMIT 1000
+  ;" >> "$3"
+}
 
+warm_up_ends=''
 run_sender() {
   echo "Running use case with $batchSize batch size and $totalNumberOfMessages messages"
   echo "---" >> "$reportFile"
@@ -170,6 +181,7 @@ run_sender() {
     latency=0
     latency_a=0
     latency_b=0
+    warm_up_ends=$(date -u '+%Y-%m-%d %H:%M:%S')
   fi
 }
 
@@ -184,6 +196,8 @@ interBatchDelay="PT0.3S"
 batchSize=40
 stop="no"
 latency="0.22"
+latency_a="0.22"
+latency_b="0.22"
 until (( $(echo "$latency > 1.0" |bc -l) || ($(echo "$latency_a > 1.0" |bc -l) || $(echo "$latency_b > 1.0" |bc -l)) ));  do
   echo 'Waiting a minute before starting sender'
   sleep 60
@@ -200,8 +214,13 @@ else
   write_report_file $APP_SIMULATOR_DB_NAMESPACE_A $dbPasswordA
   echo "---cluster B---" >> "$reportFile"
   write_report_file $APP_SIMULATOR_DB_NAMESPACE_B $dbPasswordB
+  slowest_one="$SCRIPT_DIR/build/reports/slowest-a-b.txt"
+  echo "Slowest messages B -> A in $slowest_one"
+  slowest_messages $APP_SIMULATOR_DB_NAMESPACE_A $dbPasswordA $slowest_one
+  slowest_two="$SCRIPT_DIR/build/reports/slowest-b-a.txt"
+  echo "Slowest messages A -> B in $slowest_two"
+  slowest_messages $APP_SIMULATOR_DB_NAMESPACE_B $dbPasswordB $slowest_two
 fi
-
 
 echo "Tearing down previous clusters"
 "$SCRIPT_DIR"/tearDown.sh

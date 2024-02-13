@@ -8,5 +8,3 @@ metrics:
     enabled: true
     labels:
       release: observability
-    keepNames: [ ]
-    dropLabels: []
