@@ -108,7 +108,7 @@ slowest_messages() {
           FROM received_messages
           WHERE sent_timestamp > '$warm_up_ends'
           ORDER BY delivery_latency_ms DESC LIMIT 1000
-  ;" >> "$3"
+  ;" > "$3"
 }
 
 warm_up_ends=''

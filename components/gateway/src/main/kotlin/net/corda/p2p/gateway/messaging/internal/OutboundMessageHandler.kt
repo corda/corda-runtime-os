@@ -41,6 +41,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * This is an implementation of an [PubSubProcessor] used to consume messages from a P2P message subscription. The received
@@ -61,6 +62,8 @@ internal class OutboundMessageHandler(
     companion object {
         private val logger = LoggerFactory.getLogger(OutboundMessageHandler::class.java)
         private const val MAX_RETRIES = 1
+        private val id = UUID.randomUUID().toString().replace("-", "")
+        private val index = AtomicLong()
     }
 
     private val gatewayConfigReader = GatewayConfigReader(lifecycleCoordinatorFactory, configurationReaderService)
@@ -110,9 +113,9 @@ internal class OutboundMessageHandler(
     private val retryThreadPool = retryThreadPoolFactory()
 
     override fun onNext(event: Record<String, LinkOutMessage>): CompletableFuture<Unit> {
-        val id = UUID.randomUUID().toString().replace("-", "")
+        val myId = "$id:${index.incrementAndGet()}"
         val started = System.currentTimeMillis()
-        logger.info("QQQ onNext: ${event.key} for $id")
+        logger.info("QQQ onNext: ${event.key} for $myId", Exception(myId))
         return dominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("Can not handle events")
@@ -126,7 +129,7 @@ internal class OutboundMessageHandler(
                 CompletableFuture.completedFuture(Unit)
             }.also {
                 val dur = System.currentTimeMillis() - started
-                logger.info("QQQ created future: ${event.key} for $id in $dur")
+                logger.info("QQQ created future: ${event.key} for $myId in $dur")
             }
         }
     }
@@ -136,6 +139,7 @@ internal class OutboundMessageHandler(
             logger.warn("Received a null message from topic $LINK_OUT_TOPIC. The message was discarded.")
             return CompletableFuture.completedFuture(Unit)
         }
+        val started = System.currentTimeMillis()
         val (uri, sni, trustStore) = try {
             val uri = URI.create(peerMessage.header.address)
             val trustStore = commonComponents.trustStoresMap.getTrustStore(
@@ -204,7 +208,8 @@ internal class OutboundMessageHandler(
             getRequestTimer(peerMessage, response).record(requestLatency)
             handleResponse(PendingRequest(gatewayMessage, destinationInfo, responseFuture), response, error, MAX_RETRIES)
         }, retryThreadPool).thenApply {
-            logger.info("QQQ SENT for $id -> $messageId")
+            val dur = System.currentTimeMillis() - started
+            logger.info("QQQ SENT for $id -> $messageId took $dur")
         }
 
     }
