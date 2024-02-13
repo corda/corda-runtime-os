@@ -90,10 +90,6 @@ internal class VirtualNodeDbFactoryImpl(
         val usingClusterDb = dmlConfig.isNullOrBlank()
         val noUniquenessDb = dbType == UNIQUENESS && dmlConfig == "none"
 
-        println(ddlConfig)
-        println(dmlConfig)
-        println(virtualNodesDdlPoolConfig)
-
         val dbConnections =
             if (usingClusterDb) {
                 mapOf(
@@ -145,20 +141,22 @@ internal class VirtualNodeDbFactoryImpl(
         config: String
     ): DbConnectionImpl {
         with(dbType) {
-            var smartConfig = config.toSmartConfig()
-            if (!config.contains("\"pool\":")) {
+            val smartConfig = config.toSmartConfig()
+            val smartConfigWithPool = if (!config.contains("\"pool\":")) {
                 val virtualNodePoolConfig = smartConfigFactory.create(
                     when (dbPrivilege) {
                         DDL -> virtualNodesDdlPoolConfig
                         DML -> virtualNodesDmlPoolConfig
                     }
                 )
-                smartConfig = createVirtualNodePoolConfig(smartConfig, virtualNodePoolConfig)
+                createVirtualNodePoolConfig(smartConfig, virtualNodePoolConfig)
+            } else {
+                config.toSmartConfig()
             }
             return DbConnectionImpl(
                 getConnectionName(holdingIdentityShortHash),
                 dbPrivilege,
-                smartConfig,
+                smartConfigWithPool,
                 getConnectionDescription(dbPrivilege, holdingIdentityShortHash)
             )
         }
