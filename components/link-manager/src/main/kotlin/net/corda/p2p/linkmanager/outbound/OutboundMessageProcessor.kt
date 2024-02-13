@@ -45,6 +45,7 @@ import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.p2p.linkmanager.TraceableItem
 import net.corda.p2p.linkmanager.metrics.recordOutboundMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
+import net.corda.utilities.Context
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
 
@@ -110,7 +111,7 @@ internal class OutboundMessageProcessor(
         val authenticatedMessages = mutableListOf<TraceableItem<AuthenticatedMessageAndKey, AppMessage>>()
         val unauthenticatedMessages = mutableListOf<TraceableItem<OutboundUnauthenticatedMessage, AppMessage>>()
         for (event in events) {
-            logger.info("QQQ $id got message: ${event.key}")
+            logger.info("QQQ $id got message: ${event.key} context: ${Context.context.get()}")
             when (val message = event.value?.message) {
                 is AuthenticatedMessage -> {
                     authenticatedMessages += TraceableItem(AuthenticatedMessageAndKey(message, event.key), event)
@@ -143,10 +144,6 @@ internal class OutboundMessageProcessor(
             logger.info(
                 "QQQ Finished looking at $id thread ${Thread.currentThread().id} got ${it.size} in $dur"
             )
-            Exception(id).stackTrace.forEach {
-                logger.info("QQQ \t $id $it")
-            }
-
         }
     }
 

@@ -29,8 +29,10 @@ import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toEventLogRecord
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.getDLQTopic
+import net.corda.utilities.Context
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Implementation of an EventLogSubscription.
@@ -57,6 +59,10 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
     private val partitionAssignmentListener: PartitionAssignmentListener?,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : Subscription<K, V> {
+    private companion object {
+        val id = UUID.randomUUID().toString().replace("-", "")
+        val index = AtomicLong(0)
+    }
 
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.clientId}")
 
@@ -231,10 +237,21 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
         try {
             log.debug { "Processing records(keys: ${cordaConsumerRecords.joinToString { it.key.toString() }}, " +
                     "size: ${cordaConsumerRecords.size})" }
+            val myId = "$id:${index.incrementAndGet()}"
+            Context.context.set(myId)
+            log.info("QQQ $myId starting")
             producer.beginTransaction()
-            val outputs = processorMeter.recordCallable { processor.onNext(cordaConsumerRecords.map { it.toEventLogRecord() })
-                .toCordaProducerRecords() }!!
+            log.info("QQQ $myId transaction started")
+            val outputs = processorMeter.recordCallable {
+                log.info("QQQ $myId going to onNext")
+                processor.onNext(cordaConsumerRecords.map { it.toEventLogRecord() })
+                .toCordaProducerRecords().also {
+                        log.info("QQQ $myId finished onNext: ${it.size}")
+                    }
+            }!!
+            log.info("QQQ $myId going to send: ${outputs.size}")
             producer.sendRecords(outputs)
+            log.info("QQQ $myId sent; deadLetterRecords.size: ${deadLetterRecords.size}")
             if(deadLetterRecords.isNotEmpty()) {
                 producer.sendRecords(deadLetterRecords.map {
                     CordaProducerRecord(
@@ -245,8 +262,11 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                 })
                 deadLetterRecords.clear()
             }
+            log.info("QQQ $myId calling sendAllOffsetsToTransaction")
             producer.sendAllOffsetsToTransaction(consumer)
+            log.info("QQQ $myId calling commitTransaction")
             producer.commitTransaction()
+            log.info("QQQ $myId Done")
             log.debug { "Processing records(keys: ${cordaConsumerRecords.joinToString { it.key.toString() }}, " +
                     "size: ${cordaConsumerRecords.size}) complete." }
         } catch (ex: Exception) {
