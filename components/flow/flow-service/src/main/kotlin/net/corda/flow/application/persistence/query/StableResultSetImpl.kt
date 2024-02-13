@@ -20,7 +20,7 @@ data class StableResultSetImpl<R> internal constructor(
     private var results: List<R> = emptyList()
     private var resumePoint: ByteBuffer? = null
     private var firstExecution = true
-    private var offset: Int? = null
+    private var offset: Int = 0
 
     override fun getResults(): List<R> {
         return results
@@ -28,11 +28,13 @@ data class StableResultSetImpl<R> internal constructor(
 
     override fun hasNext(): Boolean {
         // A null resume point means that the query does not have any more data to return
+        println("hasNext resumePoint $resumePoint answer ${resumePoint != null}")
         return resumePoint != null
     }
 
     @Suspendable
     override fun next(): List<R> {
+        println("SRSI next top firstExecution=$firstExecution hasNext=${hasNext()}")
         if (!firstExecution && !hasNext()) {
             throw NoSuchElementException("The result set has no more pages to query")
         }
@@ -40,19 +42,29 @@ data class StableResultSetImpl<R> internal constructor(
         val (serializedResults, nextResumePoint, numberOfRowsFromQuery) =
             resultSetExecutor.execute(serializedParameters, resumePoint, offset)
 
-        check(serializedResults.size <= limit) {"The query returned too many results" }
+        // We've got some serialized results.
+        println("SRSI next got ${serializedResults.size} serailised results; resumePoint $resumePoint nextResumePoint $nextResumePoint offset $offset limit $limit")
+        // Did we get too many?
+        check(serializedResults.size <= limit) { "The query returned too many results" }
 
-        results = serializedResults.map { serializationService.deserialize(it.array(), resultClass) }
+        // Unpack the serialized results
+        results = serializedResults.map {
+            serializationService.deserialize(it.array(), resultClass)
+        }.also {
+            println("SRSI next deserilaised ${it.size} results")
+            check(nextResumePoint == null || nextResumePoint != resumePoint) {
+                "Infinite query detected; resume point has not been updated"
+            }
 
-        check(nextResumePoint == null || nextResumePoint != resumePoint) {
-            "Infinite query detected; resume point has not been updated"
+            // Do the bookkeeping, updating our state. We track both the offset
+            // and the resume point, since we don't know
+            // which the persistence worker is using.
+            offset += numberOfRowsFromQuery ?: 0
+            resumePoint = nextResumePoint
+            firstExecution = false
+            println("SRSI next also offset $offset resumePoint $resumePoint")
+
         }
-
-        offset = (offset ?: 0) + numberOfRowsFromQuery ?: 0
-        resumePoint = nextResumePoint
-
-        firstExecution = false
-
         return results
     }
 }

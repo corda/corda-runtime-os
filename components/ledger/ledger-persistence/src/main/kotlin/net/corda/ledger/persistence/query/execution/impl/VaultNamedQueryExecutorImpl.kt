@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.query.execution.impl
 
+import net.corda.crypto.core.toByteArray
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.persistence.EntityResponse
@@ -288,6 +289,7 @@ class VaultNamedQueryExecutorImpl(
             } else {
                 if (useOffset) {
                     currentOffset += request.limit
+                    currentResumePoint = ResumePoint(Instant.MIN, "", currentOffset)
                 } else {
                     currentResumePoint = rawResults.results.last().resumePoint
                 }
@@ -344,12 +346,14 @@ class VaultNamedQueryExecutorImpl(
             query.resultList as List<Tuple>
         }
 
-        return if (resultList.size > request.limit) {
+        return (if (resultList.size > request.limit) {
             // We need to truncate the list to the number requested, but also flag that there is
             // another page to be returned
             RawQueryResults(resultList.subList(0, request.limit).map { RawQueryData(it) }, hasMore = true)
         } else {
             RawQueryResults(resultList.map { RawQueryData(it) }, hasMore = false)
+        }).also {
+            println("raw requests $it")
         }
     }
 
