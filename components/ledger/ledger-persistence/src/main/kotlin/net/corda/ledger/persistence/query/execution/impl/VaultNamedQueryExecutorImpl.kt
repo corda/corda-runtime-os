@@ -310,30 +310,28 @@ class VaultNamedQueryExecutorImpl(
         @Suppress("UNCHECKED_CAST")
         val resultList = entityManagerFactory.transaction { em ->
 
-            val str ="""
-                    SELECT tc_output.transaction_id,
-                        tc_output.leaf_idx,
-                        tc_output_info.data as output_info_data,
-                        tc_output.data AS output_data,
-                        visible_states.created AS created
-                        FROM $UTXO_VISIBLE_TX_TABLE AS visible_states
-                        JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output_info
-                             ON tc_output_info.transaction_id = visible_states.transaction_id
-                             AND tc_output_info.leaf_idx = visible_states.leaf_idx
-                             AND tc_output_info.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}
-                        JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output
-                             ON tc_output_info.transaction_id = tc_output.transaction_id
-                             AND tc_output_info.leaf_idx = tc_output.leaf_idx
-                             AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
-                        WHERE ($whereJson)
-                        AND visible_states.created <= :$TIMESTAMP_LIMIT_PARAM_NAME
-                        ORDER BY $orderBy
-                """
             val query = em.createNativeQuery(
-                str,
+                """
+                        SELECT tc_output.transaction_id,
+                            tc_output.leaf_idx,
+                            tc_output_info.data as output_info_data,
+                            tc_output.data AS output_data,
+                            visible_states.created AS created
+                            FROM $UTXO_VISIBLE_TX_TABLE AS visible_states
+                            JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output_info
+                                 ON tc_output_info.transaction_id = visible_states.transaction_id
+                                 AND tc_output_info.leaf_idx = visible_states.leaf_idx
+                                 AND tc_output_info.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}
+                            JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output
+                                 ON tc_output_info.transaction_id = tc_output.transaction_id
+                                 AND tc_output_info.leaf_idx = tc_output.leaf_idx
+                                 AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
+                            WHERE ($whereJson)
+                            AND visible_states.created <= :$TIMESTAMP_LIMIT_PARAM_NAME
+                            ORDER BY $orderBy
+                    """,
                 Tuple::class.java
             )
-            log.info("BBB query path 1 is $str") // remove before merge
             request.parameters.forEach { rec ->
                 query.setParameter(rec.key, rec.value?.let { serializationService.deserialize(it.array()) })
             }
@@ -376,31 +374,29 @@ class VaultNamedQueryExecutorImpl(
                     "(visible_states.created = :created AND tc_output.transaction_id = :txId AND tc_output.leaf_idx > :leafIdx))"
             } ?: ""
 
-            val str = """
-                    SELECT tc_output.transaction_id,
-                        tc_output.leaf_idx,
-                        tc_output_info.data as output_info_data,
-                        tc_output.data AS output_data,
-                        visible_states.created AS created
-                        FROM $UTXO_VISIBLE_TX_TABLE AS visible_states
-                        JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output_info
-                             ON tc_output_info.transaction_id = visible_states.transaction_id
-                             AND tc_output_info.leaf_idx = visible_states.leaf_idx
-                             AND tc_output_info.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}
-                        JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output
-                             ON tc_output_info.transaction_id = tc_output.transaction_id
-                             AND tc_output_info.leaf_idx = tc_output.leaf_idx
-                             AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
-                        WHERE ($whereJson)
-                        $resumePointExpr
-                        AND visible_states.created <= :$TIMESTAMP_LIMIT_PARAM_NAME
-                        ORDER BY visible_states.created, tc_output.transaction_id, tc_output.leaf_idx
-                """
             val query = em.createNativeQuery(
-                str,
+                """
+                        SELECT tc_output.transaction_id,
+                            tc_output.leaf_idx,
+                            tc_output_info.data as output_info_data,
+                            tc_output.data AS output_data,
+                            visible_states.created AS created
+                            FROM $UTXO_VISIBLE_TX_TABLE AS visible_states
+                            JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output_info
+                                 ON tc_output_info.transaction_id = visible_states.transaction_id
+                                 AND tc_output_info.leaf_idx = visible_states.leaf_idx
+                                 AND tc_output_info.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}
+                            JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output
+                                 ON tc_output_info.transaction_id = tc_output.transaction_id
+                                 AND tc_output_info.leaf_idx = tc_output.leaf_idx
+                                 AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
+                            WHERE ($whereJson)
+                            $resumePointExpr
+                            AND visible_states.created <= :$TIMESTAMP_LIMIT_PARAM_NAME
+                            ORDER BY visible_states.created, tc_output.transaction_id, tc_output.leaf_idx
+                    """,
                 Tuple::class.java
             )
-            log.info("BBB query path 2 is $str") // remove before merge
 
             if (resumePoint != null) {
                 log.trace { "Query is resuming from $resumePoint" }
