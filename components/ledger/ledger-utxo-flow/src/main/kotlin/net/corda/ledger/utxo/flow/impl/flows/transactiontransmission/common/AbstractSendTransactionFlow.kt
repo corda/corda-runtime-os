@@ -75,7 +75,7 @@ abstract class AbstractSendTransactionFlow<T>(
             )
             flowMessaging.sendAll(
                 UtxoTransactionPayload(
-                    transaction as UtxoSignedTransactionInternal,
+                    transaction,
                     filteredTransactionsAndSignatures.values.toList()
                 ),
                 sessions.toSet()

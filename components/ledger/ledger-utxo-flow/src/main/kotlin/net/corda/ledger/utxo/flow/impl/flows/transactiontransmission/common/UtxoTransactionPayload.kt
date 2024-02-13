@@ -29,4 +29,17 @@ class UtxoTransactionPayload<T> @ConstructorForDeserialization constructor(val m
 
     @Suppress("UNCHECKED_CAST")
     val filteredDependencies get() = map[FILTERED_DEPENDENCIES] as List<UtxoFilteredTransactionAndSignatures>?
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is UtxoTransactionPayload<*>) return false
+
+        if (map != other.map) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return map.hashCode()
+    }
 }
