@@ -1,5 +1,7 @@
 package net.corda.messaging.mediator.factory
 
+import com.typesafe.config.ConfigValue
+import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.constants.ConsumerRoles
@@ -36,6 +38,8 @@ class MessageBusConsumerFactory(
             "$clientId-eventConsumer",
             ConsumerRoles.SAE_EVENT
         )
+
+        messageBusConfig.withValue("bus.kafkaProperties.max.poll.records", ConfigValueFactory.fromAnyRef(8))
 
         val eventConsumer = cordaConsumerBuilder.createConsumer(
             eventConsumerConfig,

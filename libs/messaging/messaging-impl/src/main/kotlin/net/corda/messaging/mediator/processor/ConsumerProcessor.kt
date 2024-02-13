@@ -60,6 +60,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      * @param consumerConfig used to configure a consumer
      */
     fun processTopic(consumerFactory: MediatorConsumerFactory, consumerConfig: MediatorConsumerConfig<K, E>) {
+
         var attempts = 0
         var consumer: MediatorConsumer<K, E>? = null
         while (!mediatorSubscriptionState.stopped()) {

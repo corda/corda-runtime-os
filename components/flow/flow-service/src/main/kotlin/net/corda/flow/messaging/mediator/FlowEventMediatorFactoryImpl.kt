@@ -45,7 +45,6 @@ import net.corda.schema.configuration.BootConfig.PERSISTENCE_WORKER_REST_ENDPOIN
 import net.corda.schema.configuration.BootConfig.TOKEN_SELECTION_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.UNIQUENESS_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.VERIFICATION_WORKER_REST_ENDPOINT
-import net.corda.schema.configuration.BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_SESSION
 import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT
 import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_THREAD_POOL_SIZE
 import org.osgi.service.component.annotations.Activate
@@ -131,7 +130,9 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
             )
         )
 
-        val mediatorReplicas = bootConfig.getIntOrDefault(WORKER_MEDIATOR_REPLICAS_FLOW_SESSION, 1)
+        logger.info("$bootConfig")
+        val mediatorReplicas = 4 //bootConfig.getIntOrDefault(WORKER_MEDIATOR_REPLICAS_FLOW_SESSION, 1)
+
         logger.info("Creating $mediatorReplicas mediator(s) consumer factories for $FLOW_SESSION")
         for(i in 1..mediatorReplicas) {
             mediatorConsumerFactory.add(
