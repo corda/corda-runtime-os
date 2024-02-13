@@ -64,6 +64,7 @@ internal class OutboundMessageHandler(
         private const val MAX_RETRIES = 1
         private val id = UUID.randomUUID().toString().replace("-", "")
         private val index = AtomicLong()
+        private val max = AtomicLong(0)
     }
 
     private val gatewayConfigReader = GatewayConfigReader(lifecycleCoordinatorFactory, configurationReaderService)
@@ -132,7 +133,10 @@ internal class OutboundMessageHandler(
                 CompletableFuture.completedFuture(Unit)
             }.also {
                 val dur = System.currentTimeMillis() - started
-                logger.info("QQQ created future: ${event.key} for $myId in $dur")
+                if (dur > max.get()) {
+                    max.set(dur)
+                    logger.info("QQQ ${event.key} took $dur which is the maximum so far")
+                }
             }
         }
     }
