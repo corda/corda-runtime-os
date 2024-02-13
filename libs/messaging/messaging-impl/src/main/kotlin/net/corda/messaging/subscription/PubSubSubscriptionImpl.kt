@@ -17,9 +17,12 @@ import net.corda.messaging.constants.MetricsConstants
 import net.corda.messaging.subscription.consumer.listener.PubSubConsumerRebalanceListener
 import net.corda.messaging.utils.toRecord
 import net.corda.metrics.CordaMetrics
+import net.corda.utilities.Context
 import net.corda.utilities.debug
 import net.corda.v5.base.util.ByteArrays.toHexString
 import org.slf4j.LoggerFactory
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Corda implementation of a PubSubSubscription.
@@ -40,6 +43,10 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
     private val processor: PubSubProcessor<K, V>,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : Subscription<K, V> {
+    private companion object {
+        val id = UUID.randomUUID().toString().replace("-", "")
+        val index = AtomicLong()
+    }
 
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.clientId}")
 
@@ -128,7 +135,11 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
         var attempts = 0
         while (!threadLooper.loopStopped) {
             try {
+                val myId = "$id:${index.incrementAndGet()}"
+                Context.context.set(myId)
+                log.info("QQQ pollAndProcessRecords $myId: config.pollTimeout: ${config.pollTimeout}")
                 val consumerRecords = consumer.poll(config.pollTimeout)
+                log.info("QQQ consumerRecords: ${consumerRecords.size} $myId")
                 processPubSubRecords(consumerRecords)
                 attempts = 0
             } catch (ex: Exception) {
@@ -153,21 +164,33 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
      * If an exception is thrown when processing a record then this is logged, and we move on to the next record.
      */
     private fun processPubSubRecords(cordaConsumerRecords: List<CordaConsumerRecord<K, V>>) {
+        val myId = Context.context.get()
         val futures = cordaConsumerRecords.mapNotNull {
             try {
-                processorMeter.recordCallable { processor.onNext(it.toRecord()) }
+                log.info("QQQ processPubSubRecords $myId")
+                processorMeter.recordCallable {
+                    log.info("QQQ calling on next $myId with ${it.key}")
+                    processor.onNext(it.toRecord()) .also {
+                        log.info("QQQ called on next $myId")
+                    }
+                }
             } catch (except: Exception) {
                 log.warn("PubSubConsumer from group ${config.group} failed to process records from topic ${config.topic}.", except)
                 null
             }
         }
-        futures.forEach {
+        log.info("QQQ Going to wait for futures  $myId...")
+        futures.forEachIndexed { index, it ->
             try {
+                log.info("QQQ waiting for $index od $myId...")
                 it.get()
+                log.info("QQQ waited for $index od $myId...")
             } catch (except: Exception) {
+                log.info("QQQ got error in $index od $myId...", except)
                 log.warn("PubSubConsumer from group ${config.group} failed to process records from topic ${config.topic}.", except)
             }
         }
+        log.info("QQQ waited $myId...")
     }
 
     private fun logFailedDeserialize(data: ByteArray) {
