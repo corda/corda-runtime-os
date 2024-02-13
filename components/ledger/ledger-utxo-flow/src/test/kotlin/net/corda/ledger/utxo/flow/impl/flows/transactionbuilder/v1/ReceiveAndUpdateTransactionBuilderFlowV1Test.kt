@@ -178,7 +178,9 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     @Test
     fun `receiving new signatories appends them`() {
         whenever(session.receive(TransactionBuilderPayload::class.java)).thenReturn(
-            TransactionBuilderPayload(UtxoTransactionBuilderContainer(signatories = mutableListOf(publicKeyExample, anotherPublicKeyExample)))
+            TransactionBuilderPayload(
+                UtxoTransactionBuilderContainer(signatories = mutableListOf(publicKeyExample, anotherPublicKeyExample))
+            )
         )
 
         val returnedTransactionBuilder = callSendFlow()
@@ -347,7 +349,9 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     fun `receiving outputs appends them (new, old, duplicated)`() {
         originalTransactionalBuilder.addOutputState(state1)
         whenever(session.receive(TransactionBuilderPayload::class.java)).thenReturn(
-            TransactionBuilderPayload(UtxoTransactionBuilderContainer(outputStates = mutableListOf(stateWithEnc1, stateWithEnc1, stateWithEnc2)))
+            TransactionBuilderPayload(
+                UtxoTransactionBuilderContainer(outputStates = mutableListOf(stateWithEnc1, stateWithEnc1, stateWithEnc2))
+            )
         )
 
         val returnedTransactionBuilder = callSendFlow()
@@ -524,7 +528,7 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
 
         Assertions.assertThat(ex).hasStackTraceContaining(
             "Notary name of filtered transaction \"null\" doesn't match with " +
-                    "notary name of initial transaction \"$notaryX500Name\""
+                "notary name of initial transaction \"$notaryX500Name\""
         )
     }
 
@@ -558,7 +562,7 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
 
         Assertions.assertThat(ex).hasStackTraceContaining(
             "Notary from initial transaction \"$anotherNotaryX500Name\" " +
-                    "cannot be found in group parameter notaries."
+                "cannot be found in group parameter notaries."
         )
     }
 
