@@ -37,7 +37,7 @@ data class StableResultSetImpl<R> internal constructor(
             throw NoSuchElementException("The result set has no more pages to query")
         }
 
-        val (serializedResults, nextResumePoint, _) =
+        val (serializedResults, nextResumePoint, numberOfRowsFromQuery) =
             resultSetExecutor.execute(serializedParameters, resumePoint, offset)
 
         check(serializedResults.size <= limit) {"The query returned too many results" }
@@ -48,6 +48,7 @@ data class StableResultSetImpl<R> internal constructor(
             "Infinite query detected; resume point has not been updated"
         }
 
+        offset = (offset ?: 0) + numberOfRowsFromQuery ?: 0
         resumePoint = nextResumePoint
 
         firstExecution = false
