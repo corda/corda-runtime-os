@@ -12,7 +12,6 @@ import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.sandbox.CordaSystemFlow
-import net.corda.utilities.trace
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
@@ -60,10 +59,9 @@ class ReceiveTransactionFlowV1(
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
-
         @Suppress("unchecked_cast")
         val transactionPayload = session.receive(TransactionAndFilteredDependencyPayload::class.java)
-                as TransactionAndFilteredDependencyPayload<UtxoSignedTransactionInternal>
+            as TransactionAndFilteredDependencyPayload<UtxoSignedTransactionInternal>
 
         val receivedTransaction = transactionPayload.transaction
 
@@ -77,7 +75,6 @@ class ReceiveTransactionFlowV1(
         if (transactionDependencies.isNotEmpty()) {
             if (!filteredDependencies.isNullOrEmpty()) {
                 try {
-
                     // If we have filtered dependencies then we need to perform filtered transaction verification
                     require(filteredDependencies.size == transactionDependencies.size) {
                         "The number of filtered transactions received didn't match the number of dependencies."
@@ -87,7 +84,7 @@ class ReceiveTransactionFlowV1(
                     val notary =
                         requireNotNull(groupParameters.notaries.firstOrNull { it.name == receivedTransaction.notaryName }) {
                             "Notary from initial transaction \"${receivedTransaction.notaryName}\" " +
-                                    "cannot be found in group parameter notaries."
+                                "cannot be found in group parameter notaries."
                         }
 
                     // Verify the received filtered transactions
@@ -98,7 +95,6 @@ class ReceiveTransactionFlowV1(
                     // Persist the verified filtered transactions
                     ledgerPersistenceService.persistFilteredTransactionsAndSignatures(filteredDependencies)
                 } catch (e: Exception) {
-
                 }
             }
         } else {

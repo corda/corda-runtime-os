@@ -92,7 +92,6 @@ class SendTransactionFlowV1(
                     )
                 }
             }
-
         }
     }
 }

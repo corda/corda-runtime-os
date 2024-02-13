@@ -61,7 +61,7 @@ class ReceiveAndUpdateTransactionBuilderFlowV1(
         if (newTransactionIds.isEmpty()) {
             log.trace {
                 "There are no new states transferred, therefore there's no need for backchain resolution " +
-                        "or filtered transaction verification."
+                    "or filtered transaction verification."
             }
             return updatedTransactionBuilder
         }
@@ -80,7 +80,7 @@ class ReceiveAndUpdateTransactionBuilderFlowV1(
             val groupParameters = groupParametersLookup.currentGroupParameters
             val notary = requireNotNull(groupParameters.notaries.firstOrNull { it.name == updatedTransactionBuilder.notaryName }) {
                 "Notary from initial transaction \"${updatedTransactionBuilder.notaryName}\" " +
-                        "cannot be found in group parameter notaries."
+                    "cannot be found in group parameter notaries."
             }
 
             // Verify the received filtered transactions
