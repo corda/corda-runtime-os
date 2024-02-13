@@ -44,6 +44,7 @@ import net.corda.utilities.time.Clock
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 @Suppress("LongParameterList")
 internal class InboundMessageProcessor(
@@ -63,11 +64,15 @@ internal class InboundMessageProcessor(
     }
 
     override fun onNext(events: List<EventLogRecord<String, LinkInMessage>>): List<Record<*, *>> {
+        val myId = UUID.randomUUID()
+        val started = System.currentTimeMillis()
+        logger.info("QQQ for $myId got ${events.size}")
         val dataMessages = mutableListOf<SessionIdAndMessage>()
         val sessionMessages = mutableListOf<TraceableItem<LinkInMessage, LinkInMessage>>()
         val recordsForUnauthenticatedMessage = mutableListOf<TraceableItem<List<Record<String, AppMessage>>, LinkInMessage>>()
 
         events.forEach { event ->
+            logger.info("QQQ \t $myId got event: ${event.key}")
             val message = event.value
             when (val payload = message?.payload) {
                 is AuthenticatedDataMessage -> {
@@ -123,6 +128,9 @@ internal class InboundMessageProcessor(
             .flatMap { traceable ->
                 traceable.originalRecord?.let { traceEventProcessing(it, tracingEventName) { traceable.item } }
                 traceable.item
+            }.also {
+                val dur = System.currentTimeMillis() - started
+                logger.info("QQQ for $myId replying with ${it.size} after $dur")
             }
     }
 

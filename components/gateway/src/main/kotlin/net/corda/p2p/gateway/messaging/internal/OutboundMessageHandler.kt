@@ -110,6 +110,9 @@ internal class OutboundMessageHandler(
     private val retryThreadPool = retryThreadPoolFactory()
 
     override fun onNext(event: Record<String, LinkOutMessage>): CompletableFuture<Unit> {
+        val id = UUID.randomUUID().toString().replace("-", "")
+        val started = System.currentTimeMillis()
+        logger.info("QQQ onNext: ${event.key} for $id")
         return dominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("Can not handle events")
@@ -117,15 +120,18 @@ internal class OutboundMessageHandler(
 
             val peerMessage = event.value
             try {
-                sendMessage(peerMessage)
+                sendMessage(peerMessage, event.key)
             } catch (e: IllegalArgumentException) {
                 logger.warn("Can't send message to destination ${peerMessage?.header?.address}. ${e.message}")
                 CompletableFuture.completedFuture(Unit)
+            }.also {
+                val dur = System.currentTimeMillis() - started
+                logger.info("QQQ created future: ${event.key} for $id in $dur")
             }
         }
     }
 
-    private fun sendMessage(peerMessage: LinkOutMessage?): CompletableFuture<Unit> {
+    private fun sendMessage(peerMessage: LinkOutMessage?,id: String = ""): CompletableFuture<Unit> {
         if (peerMessage == null) {
             logger.warn("Received a null message from topic $LINK_OUT_TOPIC. The message was discarded.")
             return CompletableFuture.completedFuture(Unit)
@@ -158,7 +164,8 @@ internal class OutboundMessageHandler(
         }
 
 
-        val messageId = UUID.randomUUID().toString()
+        val messageId = "$id:${UUID.randomUUID()}"
+        logger.info("QQQ Will send for $id -> $messageId")
         val gatewayMessage = GatewayMessage(messageId, peerMessage.payload)
         val expectedX500Name = if (NetworkType.CORDA_4 == peerMessage.header.destinationNetworkType) {
             X500Name(peerMessage.header.destinationIdentity.x500Name)
@@ -196,7 +203,9 @@ internal class OutboundMessageHandler(
             val requestLatency = Duration.ofNanos(System.nanoTime() - startTime)
             getRequestTimer(peerMessage, response).record(requestLatency)
             handleResponse(PendingRequest(gatewayMessage, destinationInfo, responseFuture), response, error, MAX_RETRIES)
-        }, retryThreadPool).thenApply {  }
+        }, retryThreadPool).thenApply {
+            logger.info("QQQ SENT for $id -> $messageId")
+        }
 
     }
 

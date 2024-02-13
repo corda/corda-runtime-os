@@ -146,6 +146,7 @@ internal class InboundMessageHandler(
 
         val (gatewayMessage, p2pMessage) = try {
             val gatewayMessage = avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(request.payload))
+            logger.info("Received  message: ${gatewayMessage.id}")
             gatewayMessage to LinkInMessage(gatewayMessage.payload)
         } catch (e: Throwable) {
             logger.warn("Received invalid message, which could not be deserialized", e)
@@ -169,7 +170,9 @@ internal class InboundMessageHandler(
             )
             when (p2pMessage.payload) {
                 is InboundUnauthenticatedMessage -> {
-                    p2pInPublisher.publish(listOf(Record(LINK_IN_TOPIC, generateKey(), p2pMessage)))
+                    val key = "${gatewayMessage.id}:generateKey()"
+                    logger.info("QQQ For ${gatewayMessage.id} key will be $key")
+                    p2pInPublisher.publish(listOf(Record(LINK_IN_TOPIC, key, p2pMessage)))
                     httpWriter.write(HttpResponseStatus.OK, request.source, avroSchemaRegistry.serialize(response).array())
                     HttpResponseStatus.OK
                 }

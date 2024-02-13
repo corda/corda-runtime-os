@@ -327,7 +327,7 @@ internal class MessageConverter(
             membershipGroupReaderProvider,
             serial
         )?.let { message ->
-            val key = LinkManager.generateKey()
+            val key = "${messageAndKey.message.header.messageId}:${LinkManager.generateKey()}"
             val messageRecord = Record(Schemas.P2P.LINK_OUT_TOPIC, key, message)
             val marker = AppMessageMarker(LinkManagerSentMarker(), clock.instant().toEpochMilli())
             val markerRecord = Record(Schemas.P2P.P2P_OUT_MARKERS, messageAndKey.message.header.messageId, marker)
