@@ -2,8 +2,6 @@ package net.corda.e2etest.utilities.externaldb
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.sql.DriverManager
 
 class ExternalDbUtil {
@@ -17,13 +15,9 @@ class ExternalDbUtil {
     private var jdbcUrlCreateVNode: String
     private var postgresService: String
 
-    private val logger: Logger = LoggerFactory.getLogger(this::class.java)
-
-
     init {
         // Use Corda combined worker cluster DB default details if there are no external DB details
         if (System.getProperty("postgresDb").isNullOrEmpty()) {
-            logger.info("Running with DB connectivity properties defaulted")
             postgresDb = "cordacluster"
             postgresHost = "localhost"
             postgresPort = "5432"
@@ -34,7 +28,6 @@ class ExternalDbUtil {
             jdbcUrlCreateVNode = jdbcUrl
         } else {
             // Get external DB details
-            logger.info("Running with external DB connectivity properties")
             postgresDb = System.getProperty("postgresDb")
             postgresHost = System.getProperty("postgresHost")
             postgresPort = System.getProperty("postgresPort")

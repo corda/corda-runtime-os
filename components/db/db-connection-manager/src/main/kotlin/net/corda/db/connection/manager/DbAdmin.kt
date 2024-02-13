@@ -70,9 +70,9 @@ abstract class DbAdmin {
             "GRANT ALL ON SCHEMA $schemaName"
         }
         val sql = """
-            CREATE SCHEMA IF NOT EXISTS $schemaName;
             CREATE USER $user WITH PASSWORD '$password';
             GRANT $user TO current_user;
+            CREATE SCHEMA IF NOT EXISTS $schemaName AUTHORIZATION ${grantee ?: user};
             GRANT USAGE ON SCHEMA $schemaName to $user;
             $permissions TO $user;
             ALTER ROLE "$user" SET search_path TO $schemaName;
@@ -80,6 +80,13 @@ abstract class DbAdmin {
 
         withDbConnection { connection ->
             connection.createStatement().execute(sql)
+            connection.commit()
+        }
+    }
+
+    fun revokeAccessToUser(user: String) {
+        withDbConnection { connection ->
+            connection.createStatement().execute("REVOKE $user FROM current_user;")
             connection.commit()
         }
     }

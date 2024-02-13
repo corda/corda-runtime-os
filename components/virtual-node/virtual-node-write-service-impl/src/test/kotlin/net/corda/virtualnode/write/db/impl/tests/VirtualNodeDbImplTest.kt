@@ -132,7 +132,7 @@ class VirtualNodeDbImplTest {
 
         target.createSchemasAndUsers()
 
-        verify(dbAdmin).createDbAndUser(schema, ddlUuser, password, DbPrivilege.DDL, null)
+        verify(dbAdmin).createDbAndUser(schema, ddlUuser, password, DbPrivilege.DDL, ddlUuser)
     }
 
     @Test

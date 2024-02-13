@@ -62,11 +62,18 @@ internal class VirtualNodeDbImpl(
                     }
                     // When DML user is created, it is granted with privileges related to DB objects created by DDL user
                     // (therefore DDL user has to be provided as grantee)
-                    val grantee = if (privilege == DML) dbConnections[DDL]!!.getUser() else null
-                    virtualNodesDbAdmin.createDbAndUser(dbSchema, user, password, privilege, grantee)
+                    virtualNodesDbAdmin.createDbAndUser(
+                        dbSchema,
+                        user,
+                        password,
+                        privilege,
+                        dbConnections[DDL]?.getUser()
+                    )
                 }
             }
         }
+        dbConnections[DDL]?.getUser()?.let(virtualNodesDbAdmin::revokeAccessToUser)
+        dbConnections[DML]?.getUser()?.let(virtualNodesDbAdmin::revokeAccessToUser)
     }
 
     /**
