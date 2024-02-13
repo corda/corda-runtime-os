@@ -1,64 +1,64 @@
 package net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.v1
 
-import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.flows.Payload
+import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.ledger.utxo.data.transaction.verifyFilteredTransactionAndSignatures
 import net.corda.ledger.utxo.flow.impl.flows.backchain.InvalidBackchainException
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
-import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
-import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
-import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.ReceiveTransactionFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.common.UtxoTransactionPayload
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
-import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
+import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
-import net.corda.v5.ledger.utxo.VisibilityChecker
-import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.membership.GroupParametersLookup
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
-class ReceiveTransactionFlowV1(
+class ReceiveLedgerTransactionFlowV1(
     private val session: FlowSession
-) : SubFlow<UtxoSignedTransaction> {
+) : SubFlow<UtxoLedgerTransaction> {
 
     private companion object {
-        private val log: Logger = LoggerFactory.getLogger(ReceiveTransactionFlow::class.java)
+        private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
-
-    @CordaInject
-    lateinit var transactionVerificationService: UtxoLedgerTransactionVerificationService
 
     @CordaInject
     lateinit var flowEngine: FlowEngine
 
     @CordaInject
-    lateinit var ledgerPersistenceService: UtxoLedgerPersistenceService
+    lateinit var utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory
 
     @CordaInject
-    lateinit var visibilityChecker: VisibilityChecker
+    lateinit var serializationService: SerializationService
+
+    @CordaInject
+    lateinit var notaryLookup: NotaryLookup
+
+    @CordaInject
+    lateinit var groupParametersLookup: GroupParametersLookup
 
     @CordaInject
     lateinit var notarySignatureVerificationService: NotarySignatureVerificationService
 
     @CordaInject
-    lateinit var groupParametersLookup: GroupParametersLookup
+    lateinit var ledgerPersistenceService: UtxoLedgerPersistenceService
 
     @Suspendable
-    override fun call(): UtxoSignedTransaction {
+    override fun call(): UtxoLedgerTransaction {
         @Suppress("unchecked_cast")
         val transactionPayload = session.receive(UtxoTransactionPayload::class.java)
-            as UtxoTransactionPayload<UtxoSignedTransactionInternal>
+                as UtxoTransactionPayload<WireTransaction>
 
         val receivedTransaction = transactionPayload.transaction
 
@@ -66,7 +66,9 @@ class ReceiveTransactionFlowV1(
             "Didn't receive a transaction from counterparty."
         }
 
-        val transactionDependencies = receivedTransaction.dependencies
+        val wrappedUtxoWireTransaction = WrappedUtxoWireTransaction(receivedTransaction, serializationService)
+
+        val transactionDependencies = wrappedUtxoWireTransaction.dependencies
         val filteredDependencies = transactionPayload.filteredDependencies
 
         if (transactionDependencies.isNotEmpty()) {
@@ -88,8 +90,8 @@ class ReceiveTransactionFlowV1(
 
                 val groupParameters = groupParametersLookup.currentGroupParameters
                 val notary =
-                    requireNotNull(groupParameters.notaries.firstOrNull { it.name == receivedTransaction.notaryName }) {
-                        "Notary from initial transaction \"${receivedTransaction.notaryName}\" " +
+                    requireNotNull(groupParameters.notaries.firstOrNull { it.name == wrappedUtxoWireTransaction.notaryName }) {
+                        "Notary from initial transaction \"${wrappedUtxoWireTransaction.notaryName}\" " +
                                 "cannot be found in group parameter notaries."
                     }
 
@@ -103,24 +105,9 @@ class ReceiveTransactionFlowV1(
             }
         }
 
-        try {
-            receivedTransaction.verifySignatorySignatures()
-            receivedTransaction.verifyAttachedNotarySignature()
-            transactionVerificationService.verify(receivedTransaction.toLedgerTransaction())
-        } catch (e: Exception) {
-            val message = "Failed to verify transaction and signatures of transaction: ${receivedTransaction.id}"
-            log.warn(message, e)
-            session.send(Payload.Failure<List<DigitalSignatureAndMetadata>>(message))
-            throw CordaRuntimeException(message, e)
-        }
-
-        ledgerPersistenceService.persist(
-            receivedTransaction,
-            TransactionStatus.VERIFIED,
-            receivedTransaction.getVisibleStateIndexes(visibilityChecker)
-        )
         session.send(Payload.Success("Successfully received transaction."))
 
-        return receivedTransaction
+        return utxoLedgerTransactionFactory.create(receivedTransaction)
     }
 }
+
