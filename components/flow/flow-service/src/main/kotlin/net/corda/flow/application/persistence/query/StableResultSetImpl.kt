@@ -21,7 +21,6 @@ data class StableResultSetImpl<R> internal constructor(
     private var resumePoint: ByteBuffer? = null
     private var firstExecution = true
     private var offset: Int? = null
-    private var hasNext: Boolean = false
 
     override fun getResults(): List<R> {
         return results
@@ -29,7 +28,7 @@ data class StableResultSetImpl<R> internal constructor(
 
     override fun hasNext(): Boolean {
         // A null resume point means that the query does not have any more data to return
-        return resumePoint != null || hasNext
+        return resumePoint != null
     }
 
     @Suspendable
@@ -38,7 +37,7 @@ data class StableResultSetImpl<R> internal constructor(
             throw NoSuchElementException("The result set has no more pages to query")
         }
 
-        val (serializedResults, nextResumePoint, numberOfRowsFromQuery) =
+        val (serializedResults, nextResumePoint, _) =
             resultSetExecutor.execute(serializedParameters, resumePoint, offset)
 
         check(serializedResults.size <= limit) {"The query returned too many results" }
@@ -49,18 +48,8 @@ data class StableResultSetImpl<R> internal constructor(
             "Infinite query detected; resume point has not been updated"
         }
 
-        check( nextResumePoint == null || numberOfRowsFromQuery == null ){
-            "Invalid query handler - can either have offset or resume point, but both were set."
-        }
-
-
         resumePoint = nextResumePoint
-        if (numberOfRowsFromQuery != null) {
-            hasNext = numberOfRowsFromQuery != 0  // If there are no rows left there are no more pages to fetch
-                    && serializedResults.size == limit  // If the current page is full, it means we might have
-                                                        // more records, so we go and check
-            offset = (offset ?: 0) + numberOfRowsFromQuery
-        }
+
         firstExecution = false
 
         return results

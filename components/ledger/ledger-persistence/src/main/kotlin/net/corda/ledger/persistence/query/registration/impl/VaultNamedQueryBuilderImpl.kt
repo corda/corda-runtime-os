@@ -20,7 +20,7 @@ class VaultNamedQueryBuilderImpl(
     private var transformer: VaultNamedQueryTransformer<*, *>? = null
 
     private val orderByFragments: MutableList<Pair<String, String?>> = mutableListOf()
-    private var unconumedStatesOnly: Boolean = false
+    private var unconsumedStatesOnly: Boolean = false
 
     private companion object {
         const val TIMESTAMP_LIMIT_PARAM_NAME = "Corda_TimestampLimit"
@@ -42,7 +42,7 @@ class VaultNamedQueryBuilderImpl(
     }
 
     override fun selectUnconsumedStatesOnly(): VaultNamedQueryBuilder {
-        unconumedStatesOnly = true
+        unconsumedStatesOnly = true
         return this
     }
 
@@ -100,7 +100,7 @@ class VaultNamedQueryBuilderImpl(
     private fun prepareQuery(): VaultNamedQuery.ParsedQuery {
         val notNullQuery =
             "${requireNotNull(query) { "Vault named query: $name does not have its query statement set" }}${
-                if (unconumedStatesOnly) {
+                if (unconsumedStatesOnly) {
                     " AND (visible_states.consumed IS NULL OR visible_states.consumed >= :${TIMESTAMP_LIMIT_PARAM_NAME})"
                 } else {
                     ""

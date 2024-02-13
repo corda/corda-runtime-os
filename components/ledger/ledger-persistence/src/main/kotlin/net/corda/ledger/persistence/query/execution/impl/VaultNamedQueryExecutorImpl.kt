@@ -250,7 +250,7 @@ class VaultNamedQueryExecutorImpl(
                 with(rawResults) {
                     return ProcessedQueryResults(
                         results.map { it.stateAndRef },
-                        if (hasMore && !useOffset) results.last().resumePoint else null,
+                        if (hasMore) results.last().resumePoint else null,
                         results.size
                     )
                 }
