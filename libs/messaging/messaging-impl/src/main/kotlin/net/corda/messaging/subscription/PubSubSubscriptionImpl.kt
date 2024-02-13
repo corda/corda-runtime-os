@@ -22,6 +22,7 @@ import net.corda.utilities.debug
 import net.corda.v5.base.util.ByteArrays.toHexString
 import org.slf4j.LoggerFactory
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 
 /**
@@ -46,6 +47,8 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
     private companion object {
         val id = UUID.randomUUID().toString().replace("-", "")
         val index = AtomicLong()
+        val max = AtomicLong()
+        val max2 = AtomicInteger()
     }
 
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.clientId}")
@@ -137,10 +140,22 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
             try {
                 val myId = "$id:${index.incrementAndGet()}"
                 Context.context.set(myId)
+                val started = System.currentTimeMillis()
                 log.info("QQQ pollAndProcessRecords $myId: config.pollTimeout: ${config.pollTimeout}")
                 val consumerRecords = consumer.poll(config.pollTimeout)
                 log.info("QQQ consumerRecords: ${consumerRecords.size} $myId")
                 processPubSubRecords(consumerRecords)
+                log.info("QQQ consumerRecords: called processPubSubRecords $myId")
+                val dur = System.currentTimeMillis() - started
+                if (dur > max.get()) {
+                    max.set(dur)
+                    log.info("QQQ got max $dur with $myId")
+                }
+                if (consumerRecords.size> max2.get()) {
+                    max2.set(consumerRecords.size)
+                    log.info("QQQ got max 2 ${max2.get()} with $myId")
+
+                }
                 attempts = 0
             } catch (ex: Exception) {
                 attempts++

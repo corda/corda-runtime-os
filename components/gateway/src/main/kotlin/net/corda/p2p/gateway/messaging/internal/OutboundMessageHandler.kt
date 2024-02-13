@@ -29,6 +29,7 @@ import net.corda.p2p.gateway.messaging.http.SniCalculator
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.LINK_OUT_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.utilities.Context
 import net.corda.utilities.debug
 import net.corda.v5.base.types.MemberX500Name
 import org.bouncycastle.asn1.x500.X500Name
@@ -116,7 +117,7 @@ internal class OutboundMessageHandler(
     override fun onNext(event: Record<String, LinkOutMessage>): CompletableFuture<Unit> {
         val myId = "$id:${index.incrementAndGet()}"
         val started = System.currentTimeMillis()
-        logger.info("QQQ onNext: ${event.key} for $myId")
+        logger.info("QQQ onNext: ${event.key} for $myId with context ${Context.context.get()}")
         return dominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("Can not handle events")
