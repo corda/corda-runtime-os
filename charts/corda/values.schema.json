@@ -1456,6 +1456,7 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "extraArgs": {},
                                 "config": {
                                     "$ref": "#/$defs/persistentStorageRuntimeConnectionSettings"
                                 },
@@ -1493,6 +1494,7 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "extraArgs": {},
                                 "config": {
                                     "$ref": "#/$defs/persistentStorageRuntimeConnectionSettings"
                                 }
@@ -1549,6 +1551,7 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "extraArgs": {},
                                 "stateManager": {
                                     "type": "object",
                                     "required": [
@@ -1568,15 +1571,6 @@
                                     "title": "run flow worker with Quasar's verifyInstrumentation enabled",
                                     "examples": [
                                         false
-                                    ]
-                                },
-                                "extraArgs": {
-                                    "type": "array",
-                                    "default": [],
-                                    "title": "Allows users to pass any extra arguments to the worker",
-                                    "items": {},
-                                    "examples": [
-                                        []
                                     ]
                                 }
                             },
@@ -1633,6 +1627,7 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "extraArgs": {},
                                 "stateManager": {
                                     "type": "object",
                                     "required": [
@@ -1652,15 +1647,6 @@
                                     "title": "run flow mapper worker with Quasar's verifyInstrumentation enabled",
                                     "examples": [
                                         false
-                                    ]
-                                },
-                                "extraArgs": {
-                                    "type": "array",
-                                    "default": [],
-                                    "title": "Allows users to pass any extra arguments to the worker",
-                                    "items": {},
-                                    "examples": [
-                                        []
                                     ]
                                 }
                             },
@@ -1716,6 +1702,7 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "extraArgs": {},
                                 "verifyInstrumentation": {
                                     "type": "boolean",
                                     "default": false,
@@ -1773,7 +1760,8 @@
                                 "logging": {},
                                 "profiling": {},
                                 "resources": {},
-                                "kafka": {}
+                                "kafka": {},
+                                "extraArgs": {}
                             }
                         }
                     ]
@@ -1799,6 +1787,7 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "extraArgs": {},
                                 "stateManager": {
                                     "type": "object",
                                     "required": [
@@ -2064,6 +2053,7 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "extraArgs": {},
                                 "stateManager": {
                                     "type": "object",
                                     "required": [
@@ -2128,6 +2118,7 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "extraArgs": {},
                                 "service": {
                                     "type": "object",
                                     "default": {},
@@ -2259,6 +2250,7 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "extraArgs": {},
                                 "config": {
                                     "$ref": "#/$defs/persistentStorageRuntimeConnectionSettings"
                                 }
@@ -2327,6 +2319,7 @@
                                     }
                                 },
                                 "kafka": {},
+                                "extraArgs": {},
                                 "sharding": {
                                     "type": "object",
                                     "default": {
@@ -2464,6 +2457,7 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "extraArgs": {},
                                 "config": {
                                     "$ref": "#/$defs/persistentStorageRuntimeConnectionSettings"
                                 }
@@ -3066,6 +3060,15 @@
                         },
                         "additionalProperties": false
                     }
+                },
+                "extraArgs": {
+                    "type": "array",
+                    "default": [],
+                    "title": "Allows users to pass any extra arguments to the worker",
+                    "items": {},
+                    "examples": [
+                        []
+                    ]
                 }
             },
             "examples": [{
