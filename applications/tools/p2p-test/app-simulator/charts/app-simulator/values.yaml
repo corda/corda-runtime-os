@@ -62,37 +62,12 @@ db:
 
 # Kafka configuration
 kafka:
-  # -- comma-separated list of Kafka bootstrap servers (required)
-  bootstrapServers: "prereqs-kafka:9092"
-  # TLS configuration for client connections to Kafka
+  bootstrapServers: "b-1.owensorrwjt5w.0r8jv0.c3.kafka.eu-west-2.amazonaws.com:9096,b-4.owensorrwjt5w.0r8jv0.c3.kafka.eu-west-2.amazonaws.com:9096,b-6.owensorrwjt5w.0r8jv0.c3.kafka.eu-west-2.amazonaws.com:9096"
   tls:
-    # -- indicates whether TLS should be used for client connections to Kafka
     enabled: true
-    # if TLS is enabled, the truststore configuration for client connections to Kafka
-    truststore:
-      # if TLS is enabled, details of an existing Kubernetes secret containing the truststore for client connections to Kafka
-      valueFrom:
-        # -- the truststore secret key reference
-        secretKeyRef:
-          # -- the truststore secret name
-          name: "prereqs-kafka-0-tls"
-          # -- the truststore secret key
-          key: "ca.crt"
-      # -- if TLS is enabled, the type of the truststore for client connections to Kafka; one of PEM or JKS
-      type: "PEM"
-      # -- if TLS is enabled, the password for the truststore for client connections to Kafka, if any
-      password: 
-        # -- the truststore password
-        value: ""
-        # -- the truststore password secret configuration; used in preference to value if name is set
-        valueFrom:
-          # -- the truststore password secret key reference
-          secretKeyRef:
-            # -- the truststore password secret name
-            name: ""
-            # -- the truststore password secret key
-            key: ""
-  # SASL configuration for client connection to Kafka
+
+  topicPrefix: "Yiftach-app-sim"
+
   sasl:
     # -- SASL mechanism for client connection to Kafka
     mechanism: "SCRAM-SHA-256"
@@ -101,27 +76,10 @@ kafka:
     # default SASL username configuration for client connection to Kafka
     username: 
       # -- the default SASL username for client connection to Kafka
-      value: "user"
-      # the default SASL username secret configuration for client connection to Kafka; used in preference to value if name is set
-      valueFrom:
-        # the default SASL username secret key reference for client connection to Kafka
-        secretKeyRef:
-          # -- the default SASL username secret name for client connection to Kafka
-          name: ""
-          # -- the default SASL username secret key for client connection to Kafka
-          key: ""
-    # default SASL password configuration for client connection to Kafka
+      value: "msk-admin"
     password: 
       # -- the default SASL password for client connection to Kafka
-      value: ""
-      # the default SASL password secret configuration for client connection to Kafka; used in preference to value if name is set
-      valueFrom:
-        # the default SASL password secret key reference for client connection to Kafka
-        secretKeyRef:
-          # -- the default SASL password secret name for client connection to Kafka
-          name: "prereqs-kafka-jaas"
-          # -- the default SASL password secret key  for client connection to Kafka
-          key: "client-passwords"
+      value: "egy2nwt5javWPD0nrl"
 
 # app simulator configuration
 appSimulators:

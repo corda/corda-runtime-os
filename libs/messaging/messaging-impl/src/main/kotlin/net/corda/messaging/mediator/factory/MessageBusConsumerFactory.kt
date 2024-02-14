@@ -39,8 +39,6 @@ class MessageBusConsumerFactory(
             ConsumerRoles.SAE_EVENT
         )
 
-        messageBusConfig.withValue("bus.kafkaProperties.max.poll.records", ConfigValueFactory.fromAnyRef(8))
-
         val eventConsumer = cordaConsumerBuilder.createConsumer(
             eventConsumerConfig,
             messageBusConfig,

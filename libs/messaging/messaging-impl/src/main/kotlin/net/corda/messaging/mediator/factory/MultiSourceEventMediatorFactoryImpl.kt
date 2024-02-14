@@ -1,6 +1,5 @@
 package net.corda.messaging.mediator.factory
 
-import com.typesafe.config.ConfigValueFactory
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -38,16 +37,11 @@ class MultiSourceEventMediatorFactoryImpl(
     override fun <K : Any, S : Any, E : Any> create(
         eventMediatorConfig: EventMediatorConfig<K, S, E>,
     ): MultiSourceEventMediator<K, S, E> {
-        val modifiedConfig = eventMediatorConfig.copy(
-            messagingConfig = eventMediatorConfig.messagingConfig.withValue(
-                "bus.kafkaProperties.max.poll.records",
-                ConfigValueFactory.fromAnyRef(eventMediatorConfig.threads))
-        )
-        val stateManagerHelper = createStateManagerHelper(modifiedConfig)
-        val mediatorComponentFactory = createMediatorComponentFactory(modifiedConfig, stateManagerHelper)
-        val lifecycleCoordinator = createLifecycleCoordinator(modifiedConfig)
+        val stateManagerHelper = createStateManagerHelper(eventMediatorConfig)
+        val mediatorComponentFactory = createMediatorComponentFactory(eventMediatorConfig, stateManagerHelper)
+        val lifecycleCoordinator = createLifecycleCoordinator(eventMediatorConfig)
         val taskManager = taskManagerFactory.createThreadPoolTaskManager(
-            name = modifiedConfig.name, threadName = modifiedConfig.threadName, threads = modifiedConfig.threads
+            name = eventMediatorConfig.name, threadName = eventMediatorConfig.threadName, threads = eventMediatorConfig.threads
         )
 
         return MultiSourceEventMediatorImpl(eventMediatorConfig, taskManager, mediatorComponentFactory, lifecycleCoordinator)
