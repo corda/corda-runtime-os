@@ -27,7 +27,7 @@ class SendTransactionFlow<T>(
 ) : SubFlow<Unit> {
 
     private companion object {
-        val log = LoggerFactory.getLogger(SendSignedTransactionFlowV1::class.java)
+        val log = LoggerFactory.getLogger(SendTransactionFlow::class.java)
     }
 
     @CordaInject
