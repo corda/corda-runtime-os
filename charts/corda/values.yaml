@@ -964,7 +964,7 @@ workers:
               key: ""
     # flow worker mediator configuration
     mediator:
-      # -- the number of mediator instances       # -- the number of mediator instances the worker must create that read from the flow.session Kafka topic
+      # -- the number of mediator instances the worker must create that read from the flow.session Kafka topic
       flowSession:
         # -- the number of mediator instances the worker must create
         replicaCount: 1
