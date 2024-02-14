@@ -3,12 +3,12 @@ package net.corda.flow.pipeline.handlers.requests
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.pipeline.addTerminationKeyToMeta
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_FAILED
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
-import net.corda.flow.pipeline.addTerminationKeyToMeta
 import net.corda.flow.pipeline.handlers.requests.helper.getRecords
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
@@ -68,7 +68,7 @@ class FlowFailedRequestHandler @Activate constructor(
 
         log.info("Flow [${checkpoint.flowId}] failed")
         checkpoint.markDeleted()
-
+        log.info("CORE-19662 - Flow [${checkpoint.flowId}] marked for deletion")
         context.flowMetrics.flowFailed()
         val metaWithTermination = addTerminationKeyToMeta(context.metadata)
         return context.copy(outputRecords = context.outputRecords + records, metadata = metaWithTermination)

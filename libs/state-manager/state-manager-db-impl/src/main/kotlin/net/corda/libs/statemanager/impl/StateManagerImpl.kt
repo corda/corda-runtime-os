@@ -89,21 +89,29 @@ class StateManagerImpl(
             val successfulKeys = dataSource.connection.transaction { connection ->
                 stateRepository.create(connection, states)
             }
+            logger.info("CORE-19662 - Successfully created states for keys $successfulKeys")
 
-            states.map { it.key }.toSet() - successfulKeys.toSet()
+            val failed = states.map { it.key }.toSet() - successfulKeys.toSet()
+            logger.info("CORE-19662 - Failed to create states for keys $failed")
+            failed
         }
     }
 
     override fun get(keys: Collection<String>): Map<String, State> {
         if (keys.isEmpty()) return emptyMap()
+        logger.info("CORE-19662 - Trying to get states $keys")
 
-        return metricsRecorder.recordProcessingTime(GET) {
+        val result= metricsRecorder.recordProcessingTime(GET) {
             getByKey(keys)
         }
+        logger.info("CORE-19662 - Got states ${result.keys}")
+        return result
     }
 
     override fun update(states: Collection<State>): Map<String, State?> {
         if (states.isEmpty()) return emptyMap()
+
+        logger.info("CORE-19662 - Trying to update states ${states.map { it.key }}")
 
         return metricsRecorder.recordProcessingTime(UPDATE) {
             try {
@@ -114,6 +122,7 @@ class StateManagerImpl(
                 if (failedUpdates.isEmpty()) {
                     emptyMap()
                 } else {
+                    logger.info("CORE-19662 - Failed to update states $failedUpdates")
                     getFailedUpdates(failedUpdates)
                 }
             } catch (e: Exception) {
@@ -125,6 +134,7 @@ class StateManagerImpl(
 
     override fun delete(states: Collection<State>): Map<String, State> {
         if (states.isEmpty()) return emptyMap()
+        logger.info("CORE-19662 - Trying to delete states ${states.map { it.key }}")
 
         return metricsRecorder.recordProcessingTime(DELETE) {
             try {
@@ -135,6 +145,8 @@ class StateManagerImpl(
                 if (failedDeletes.isEmpty()) {
                     emptyMap()
                 } else {
+                    logger.info("CORE-19662 - Failed to update states $failedDeletes")
+
                     getByKey(failedDeletes).also {
                         if (it.isNotEmpty()) {
                             logger.warn(

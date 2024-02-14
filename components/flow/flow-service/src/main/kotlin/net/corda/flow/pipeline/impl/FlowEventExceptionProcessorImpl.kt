@@ -5,6 +5,7 @@ import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.maintenance.CheckpointCleanupHandler
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
+import net.corda.flow.pipeline.addTerminationKeyToMeta
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
@@ -13,7 +14,6 @@ import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.PLATFORM_ERROR
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
-import net.corda.flow.pipeline.addTerminationKeyToMeta
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
@@ -48,6 +48,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
     override fun process(throwable: Throwable, context: FlowEventContext<*>): FlowEventContext<*> {
         log.warn("Unexpected exception while processing flow, the flow will be sent to the DLQ", throwable)
         context.checkpoint.markDeleted()
+        log.info("CORE-19662 - Flow [${context.checkpoint.flowId}] marked for deletion", java.lang.Exception("Stack trace"))
         val metaWithTermination = addTerminationKeyToMeta(context.metadata)
         return context.copy(
             outputRecords = listOf(),

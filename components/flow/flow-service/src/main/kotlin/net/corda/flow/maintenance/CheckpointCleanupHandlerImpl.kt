@@ -16,6 +16,7 @@ import net.corda.schema.configuration.FlowConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.time.Instant
 
 @Component(service = [CheckpointCleanupHandler::class])
@@ -28,6 +29,10 @@ class CheckpointCleanupHandlerImpl @Activate constructor(
     private val flowMessageFactory: FlowMessageFactory
 ) : CheckpointCleanupHandler {
 
+    companion object {
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
     override fun cleanupCheckpoint(
         checkpoint: FlowCheckpoint,
         config: SmartConfig,
@@ -39,6 +44,7 @@ class CheckpointCleanupHandlerImpl @Activate constructor(
                 generateStatus(checkpoint, exception) +
                 cleanupRpcFlowMapperState(checkpoint, config, time)
         checkpoint.markDeleted()
+        log.info("CORE-19662 - Flow [${checkpoint.flowId}] marked for deletion", java.lang.Exception("Stack trace"))
         return records
     }
 
