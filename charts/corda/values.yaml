@@ -962,9 +962,6 @@ workers:
               name: ""
               # -- the flow worker SASL password secret key for client connection to Kafka
               key: ""
-    # -- flow worker extra arguments configuration that allows users to pass arbitrary arguments
-    extraArgs:
-      - "--mediator-replicas-flow-session=1"
 
   # flow mapper worker configuration
   flowMapper:
@@ -1077,10 +1074,6 @@ workers:
               name: ""
               # -- the flow mapper worker SASL password secret key for client connection to Kafka
               key: ""
-    # -- flow mapper worker extra arguments configuration that allows users to pass arbitrary arguments
-    extraArgs:
-      - "--mediator-replicas-flow-session-in=1"
-      - "--mediator-replicas-flow-session-out=1"
 
   # verification worker configuration
   verification:
