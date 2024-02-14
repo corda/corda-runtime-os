@@ -1569,6 +1569,15 @@
                                     "examples": [
                                         false
                                     ]
+                                },
+                                "extraArgs": {
+                                    "type": "array",
+                                    "default": [],
+                                    "title": "Allows users to pass any extra arguments to the worker",
+                                    "items": {},
+                                    "examples": [
+                                        []
+                                    ]
                                 }
                             },
                             "examples": [{
@@ -1643,6 +1652,15 @@
                                     "title": "run flow mapper worker with Quasar's verifyInstrumentation enabled",
                                     "examples": [
                                         false
+                                    ]
+                                },
+                                "extraArgs": {
+                                    "type": "array",
+                                    "default": [],
+                                    "title": "Allows users to pass any extra arguments to the worker",
+                                    "items": {},
+                                    "examples": [
+                                        []
                                     ]
                                 }
                             },
