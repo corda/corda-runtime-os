@@ -1,10 +1,11 @@
 package net.corda.ledger.utxo.flow.impl.flows.transactiontransmission
 
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.common.UtxoTransactionPayload
-import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.v1.SendTransactionFlowV1
+import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.v1.SendLedgerTransactionFlowV1
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.testkit.notaryX500Name
@@ -19,7 +20,7 @@ import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndSignatures
 import net.corda.v5.membership.NotaryInfo
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -29,7 +30,7 @@ import org.mockito.kotlin.spy
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-class SendTransactionFlowV1Test {
+class SendLedgerTransactionFlowTest {
 
     private companion object {
         val TX_ID = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
@@ -37,24 +38,26 @@ class SendTransactionFlowV1Test {
 
     private val flowEngine = mock<FlowEngine>()
     private val flowMessaging = mock<FlowMessaging>()
-    private val persistenceService = mock<UtxoLedgerPersistenceService>()
-    private val notaryLookup = mock<NotaryLookup>()
 
     private val sessionAlice = mock<FlowSession>()
     private val sessionBob = mock<FlowSession>()
-    private val notaryInfo = mock<NotaryInfo>()
-
     private val sessions = listOf(sessionAlice, sessionBob)
 
     private val transaction = mock<UtxoSignedTransactionInternal>()
     private val successMessage = "Successfully received transaction."
 
-    private val dependency = StateRef(mock(), 0)
+    private val notaryInfo = mock<NotaryInfo>()
+    private val persistenceService = mock<UtxoLedgerPersistenceService>()
+    private val notaryLookup = mock<NotaryLookup>()
 
     @BeforeEach
     fun beforeEach() {
         whenever(transaction.id).thenReturn(TX_ID)
         whenever(flowEngine.subFlow(any<TransactionBackchainSenderFlow>())).thenReturn(Unit)
+
+        val mockWireTx = mock<WireTransaction>()
+        whenever(mockWireTx.id).thenReturn(TX_ID)
+        whenever(transaction.wireTransaction).thenReturn(mockWireTx)
 
         // Backchain on by default
         whenever(transaction.notaryName).thenReturn(notaryX500Name)
@@ -66,7 +69,7 @@ class SendTransactionFlowV1Test {
 
     @Test
     fun `notary backchain on - does nothing when receiving payload successfully`() {
-        whenever(transaction.inputStateRefs).thenReturn(listOf(dependency))
+        whenever(transaction.inputStateRefs).thenReturn(listOf(mock()))
 
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
             Payload.Success(successMessage)
@@ -77,13 +80,16 @@ class SendTransactionFlowV1Test {
 
         callSendTransactionFlow(transaction, sessions)
 
-        verify(flowMessaging).sendAll(UtxoTransactionPayload(transaction), sessions.toSet())
+        verify(flowMessaging).sendAll(
+            UtxoTransactionPayload(transaction.wireTransaction),
+            sessions.toSet()
+        )
         verify(sessionAlice).receive(Payload::class.java)
     }
 
     @Test
     fun `notary backchain on - sending transaction with dependencies should call backchain flow`() {
-        whenever(transaction.inputStateRefs).thenReturn(listOf(dependency))
+        whenever(transaction.inputStateRefs).thenReturn(listOf(mock()))
 
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
             Payload.Success(successMessage)
@@ -95,6 +101,7 @@ class SendTransactionFlowV1Test {
         callSendTransactionFlow(transaction, sessions)
 
         verify(flowEngine).subFlow(TransactionBackchainSenderFlow(TX_ID, sessionAlice))
+        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(TX_ID, sessionBob))
     }
 
     @Test
@@ -112,13 +119,14 @@ class SendTransactionFlowV1Test {
     }
 
     @Test
-    fun `notary backchain on - sending unverified transaction should throw exception`() {
-        whenever(transaction.inputStateRefs).thenReturn(listOf(dependency))
+    fun `notary backchain on - exceptions get propagated back from receiver`() {
+        whenever(transaction.inputStateRefs).thenReturn(listOf(mock()))
+
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
             Payload.Failure<List<DigitalSignatureAndMetadata>>("fail")
         )
 
-        Assertions.assertThatThrownBy { callSendTransactionFlow(transaction, sessions) }
+        assertThatThrownBy { callSendTransactionFlow(transaction, sessions) }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessageContaining("fail")
     }
@@ -127,15 +135,18 @@ class SendTransactionFlowV1Test {
     fun `notary backchain off - should fetch filtered transactions and send them`() {
         val filteredTransactionAndSignatures = mock<UtxoFilteredTransactionAndSignatures>()
         val mockTxId = mock<SecureHash>()
+        val dependency = StateRef(mock(), 0)
 
         whenever(transaction.inputStateRefs).thenReturn(listOf(dependency))
         whenever(notaryInfo.isBackchainRequired).thenReturn(false)
 
-        whenever(persistenceService.findFilteredTransactionsAndSignatures(
-            listOf(dependency),
-            notaryInfo.publicKey,
-            notaryInfo.name
-        )).thenReturn(mapOf(mockTxId to filteredTransactionAndSignatures))
+        whenever(
+            persistenceService.findFilteredTransactionsAndSignatures(
+                listOf(dependency),
+                notaryInfo.publicKey,
+                notaryInfo.name
+            )
+        ).thenReturn(mapOf(mockTxId to filteredTransactionAndSignatures))
 
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
             Payload.Success(successMessage)
@@ -149,16 +160,15 @@ class SendTransactionFlowV1Test {
         verify(flowEngine, never()).subFlow(TransactionBackchainSenderFlow(TX_ID, sessionAlice))
         verify(flowMessaging).sendAll(
             UtxoTransactionPayload(
-                transaction,
+                transaction.wireTransaction,
                 listOf(filteredTransactionAndSignatures)
             ),
             sessions.toSet()
         )
     }
 
-
-    fun callSendTransactionFlow(signedTransaction: UtxoSignedTransaction, sessions: List<FlowSession>) {
-        val flow = spy(SendTransactionFlowV1(signedTransaction, sessions))
+    private fun callSendTransactionFlow(signedTransaction: UtxoSignedTransaction, sessions: List<FlowSession>) {
+        val flow = spy(SendLedgerTransactionFlowV1(signedTransaction, sessions))
 
         flow.flowEngine = flowEngine
         flow.flowMessaging = flowMessaging

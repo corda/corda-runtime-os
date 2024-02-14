@@ -13,7 +13,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import java.lang.IllegalArgumentException
 
 @CordaSystemFlow
-class SendTransactionFlow(
+class SendSignedTransactionFlow(
     private val transaction: UtxoSignedTransaction,
     private val sessions: List<FlowSession>
 ) : SubFlow<Unit> {
@@ -24,7 +24,7 @@ class SendTransactionFlow(
     @Suspendable
     override fun call() {
         return versioningService.versionedSubFlow(
-            SendTransactionFlowVersionedFlowFactory(
+            SendSignedTransactionFlowVersionedFlowFactory(
                 transaction
             ),
             sessions
@@ -32,11 +32,11 @@ class SendTransactionFlow(
     }
 }
 
-class SendTransactionFlowVersionedFlowFactory(
+class SendSignedTransactionFlowVersionedFlowFactory(
     private val transaction: UtxoSignedTransaction
 ) : VersionedSendFlowFactory<Unit> {
 
-    override val versionedInstanceOf: Class<SendTransactionFlow> = SendTransactionFlow::class.java
+    override val versionedInstanceOf: Class<SendSignedTransactionFlow> = SendSignedTransactionFlow::class.java
 
     override fun create(version: Int, sessions: List<FlowSession>): SubFlow<Unit> {
         return when {

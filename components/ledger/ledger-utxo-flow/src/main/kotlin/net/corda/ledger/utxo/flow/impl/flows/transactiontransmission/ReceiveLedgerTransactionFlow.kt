@@ -23,13 +23,13 @@ class ReceiveLedgerTransactionFlow(
     @Suspendable
     override fun call(): UtxoLedgerTransaction {
         return versioningService.versionedSubFlow(
-            ReceiveLedgerTransactionFlowFlowVersionedFlowFactory(),
+            ReceiveLedgerTransactionFlowVersionedFlowFactory(),
             session
         )
     }
 }
 
-class ReceiveLedgerTransactionFlowFlowVersionedFlowFactory : VersionedReceiveFlowFactory<UtxoLedgerTransaction> {
+class ReceiveLedgerTransactionFlowVersionedFlowFactory : VersionedReceiveFlowFactory<UtxoLedgerTransaction> {
 
     override val versionedInstanceOf: Class<ReceiveLedgerTransactionFlow> = ReceiveLedgerTransactionFlow::class.java
 

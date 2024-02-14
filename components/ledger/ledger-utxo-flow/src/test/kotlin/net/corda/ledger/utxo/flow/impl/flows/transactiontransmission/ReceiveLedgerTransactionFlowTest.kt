@@ -152,7 +152,7 @@ class ReceiveLedgerTransactionFlowTest : UtxoLedgerTest() {
         callReceiveTransactionFlow(sessionAlice)
 
         verify(mockFlowEngine).subFlow(TransactionBackchainResolutionFlow(setOf(TX_ID_1, TX_ID_2), sessionAlice))
-        verify(sessionAlice).send(Payload.Success("Successfully received transaction."))
+        verify(sessionAlice).send(Payload.Success(Unit))
     }
 
     @Test
@@ -163,7 +163,7 @@ class ReceiveLedgerTransactionFlowTest : UtxoLedgerTest() {
 
         callReceiveTransactionFlow(sessionAlice)
 
-        verify(sessionAlice).send(Payload.Success("Successfully received transaction."))
+        verify(sessionAlice).send(Payload.Success(Unit))
         verify(mockFlowEngine, never()).subFlow(
             TransactionBackchainResolutionFlow(
                 setOf(),
@@ -174,9 +174,11 @@ class ReceiveLedgerTransactionFlowTest : UtxoLedgerTest() {
 
     @Test
     fun `notary backchain off - will verify filtered transactions and will not call backchain resolution`() {
-        val wireTransaction = buildWireTransaction(inputStates = listOf(
-            "Serialized StateRef1".toByteArray()
-        ))
+        val wireTransaction = buildWireTransaction(
+            inputStates = listOf(
+                "Serialized StateRef1".toByteArray()
+            )
+        )
 
         whenever(
             mockSerializationService.deserialize(
@@ -185,16 +187,17 @@ class ReceiveLedgerTransactionFlowTest : UtxoLedgerTest() {
             )
         ).thenReturn(TX_INPUT_DEPENDENCY_STATE_REF_1)
 
-
         // Filtered dependency passes verification
-        whenever(filteredTransaction.verify()).doAnswer {  }
+        whenever(filteredTransaction.verify()).doAnswer { }
         whenever(filteredTransaction.notaryName).thenReturn(notaryX500Name)
-        whenever(mockNotarySignatureVerificationService.verifyNotarySignatures(
-            filteredTransaction,
-            mockNotary.publicKey,
-            listOf(notarySignature),
-            emptyMap()
-        )).thenAnswer {  }
+        whenever(
+            mockNotarySignatureVerificationService.verifyNotarySignatures(
+                filteredTransaction,
+                mockNotary.publicKey,
+                listOf(notarySignature),
+                emptyMap()
+            )
+        ).thenAnswer { }
 
         whenever(mockUtxoLedgerTransactionFactory.create(wireTransaction)).thenReturn(ledgerTransaction)
         whenever(sessionAlice.receive(UtxoTransactionPayload::class.java)).thenReturn(
@@ -207,7 +210,7 @@ class ReceiveLedgerTransactionFlowTest : UtxoLedgerTest() {
 
         callReceiveTransactionFlow(sessionAlice)
 
-        verify(sessionAlice).send(Payload.Success("Successfully received transaction."))
+        verify(sessionAlice).send(Payload.Success(Unit))
         verify(mockFlowEngine, never()).subFlow(
             TransactionBackchainResolutionFlow(
                 setOf(),

@@ -11,7 +11,8 @@ class SendTransactionFlowV1(
     transaction: UtxoSignedTransaction,
     sessions: List<FlowSession>
 ) : AbstractSendTransactionFlow<UtxoSignedTransactionInternal>(
-    transaction as UtxoSignedTransactionInternal, sessions
+    transaction as UtxoSignedTransactionInternal,
+    sessions
 ) {
     override fun getTransactionDependencies(transaction: UtxoSignedTransactionInternal) =
         transaction.inputStateRefs + transaction.referenceStateRefs

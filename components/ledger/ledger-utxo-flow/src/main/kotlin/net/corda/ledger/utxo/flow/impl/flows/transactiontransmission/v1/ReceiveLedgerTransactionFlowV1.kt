@@ -6,8 +6,11 @@ import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.common.AbstractReceiveTransactionFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.common.UtxoTransactionPayload
 import net.corda.sandbox.CordaSystemFlow
+import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 
 @CordaSystemFlow
@@ -15,11 +18,17 @@ class ReceiveLedgerTransactionFlowV1(
     session: FlowSession
 ) : AbstractReceiveTransactionFlow<UtxoLedgerTransaction>(session) {
 
+    @CordaInject
+    lateinit var serializationService: SerializationService
+
+    @CordaInject
+    lateinit var notaryLookup: NotaryLookup
+
     @Suspendable
     override fun call(): UtxoLedgerTransaction {
         @Suppress("unchecked_cast")
         val transactionPayload = session.receive(UtxoTransactionPayload::class.java)
-                as UtxoTransactionPayload<WireTransaction>
+            as UtxoTransactionPayload<WireTransaction>
 
         val receivedTransaction = transactionPayload.transaction
 
@@ -29,8 +38,6 @@ class ReceiveLedgerTransactionFlowV1(
 
         val wrappedUtxoWireTransaction = WrappedUtxoWireTransaction(receivedTransaction, serializationService)
 
-        wrappedUtxoWireTransaction.dependencies
-
         performBackchainResolutionOrFilteredTransactionVerification(
             wrappedUtxoWireTransaction.id,
             wrappedUtxoWireTransaction.notaryName,
@@ -38,7 +45,7 @@ class ReceiveLedgerTransactionFlowV1(
             transactionPayload.filteredDependencies
         )
 
-        session.send(Payload.Success("Successfully received transaction."))
+        session.send(Payload.Success(Unit))
 
         return utxoLedgerTransactionFactory.create(receivedTransaction)
     }

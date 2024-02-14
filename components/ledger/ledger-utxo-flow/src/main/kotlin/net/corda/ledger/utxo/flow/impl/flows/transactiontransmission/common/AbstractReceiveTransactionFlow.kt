@@ -11,10 +11,8 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndSignatures
 import net.corda.v5.membership.GroupParametersLookup
@@ -34,12 +32,6 @@ abstract class AbstractReceiveTransactionFlow<T>(
 
     @CordaInject
     lateinit var utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory
-
-    @CordaInject
-    lateinit var serializationService: SerializationService
-
-    @CordaInject
-    lateinit var notaryLookup: NotaryLookup
 
     @CordaInject
     lateinit var groupParametersLookup: GroupParametersLookup
@@ -77,7 +69,7 @@ abstract class AbstractReceiveTransactionFlow<T>(
                 val notary =
                     requireNotNull(groupParameters.notaries.firstOrNull { it.name == notaryName }) {
                         "Notary from initial transaction \"$notaryName\" " +
-                                "cannot be found in group parameter notaries."
+                            "cannot be found in group parameter notaries."
                     }
 
                 // Verify the received filtered transactions

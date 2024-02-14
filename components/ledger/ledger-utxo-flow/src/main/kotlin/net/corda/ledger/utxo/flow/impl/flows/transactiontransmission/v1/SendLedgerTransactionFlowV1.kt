@@ -9,7 +9,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
 @CordaSystemFlow
-class SendAsLedgerTransactionFlowV1(
+class SendLedgerTransactionFlowV1(
     private val signedTransaction: UtxoSignedTransaction,
     sessions: List<FlowSession>
 ) : AbstractSendTransactionFlow<WireTransaction>(

@@ -63,7 +63,7 @@ class ReceiveTransactionFlowV1(
             TransactionStatus.VERIFIED,
             receivedTransaction.getVisibleStateIndexes(visibilityChecker)
         )
-        session.send(Payload.Success("Successfully received transaction."))
+        session.send(Payload.Success(Unit))
 
         return receivedTransaction
     }

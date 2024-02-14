@@ -161,7 +161,7 @@ class ReceiveTransactionFlowTest {
         callReceiveTransactionFlow(sessionAlice)
 
         verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(transaction.dependencies, sessionAlice))
-        verify(sessionAlice).send(Payload.Success("Successfully received transaction."))
+        verify(sessionAlice).send(Payload.Success(Unit))
     }
 
     @Test
@@ -229,14 +229,16 @@ class ReceiveTransactionFlowTest {
             )
         )
         // Filtered dependency passes verification
-        whenever(filteredTransaction.verify()).doAnswer {  }
+        whenever(filteredTransaction.verify()).doAnswer { }
         whenever(filteredTransaction.notaryName).thenReturn(notaryX500Name)
-        whenever(mockNotarySignatureVerificationService.verifyNotarySignatures(
-            filteredTransaction,
-            mockNotary.publicKey,
-            listOf(notarySignature),
-            emptyMap()
-        )).thenAnswer {  }
+        whenever(
+            mockNotarySignatureVerificationService.verifyNotarySignatures(
+                filteredTransaction,
+                mockNotary.publicKey,
+                listOf(notarySignature),
+                emptyMap()
+            )
+        ).thenAnswer { }
 
         whenever(sessionAlice.receive(UtxoTransactionPayload::class.java)).thenReturn(
             UtxoTransactionPayload(
@@ -248,7 +250,7 @@ class ReceiveTransactionFlowTest {
 
         callReceiveTransactionFlow(sessionAlice)
 
-        verify(sessionAlice).send(Payload.Success("Successfully received transaction."))
+        verify(sessionAlice).send(Payload.Success(Unit))
         verify(flowEngine, never()).subFlow(
             TransactionBackchainResolutionFlow(
                 setOf(),
