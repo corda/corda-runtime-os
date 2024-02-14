@@ -1538,6 +1538,7 @@
                                 "stateManager",
                                 "verifyInstrumentation"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
@@ -1612,6 +1613,7 @@
                                 "stateManager",
                                 "verifyInstrumentation"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
@@ -1685,6 +1687,7 @@
                             "required": [
                                 "verifyInstrumentation"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
