@@ -1,6 +1,5 @@
 package net.corda.ledger.persistence.query.execution.impl
 
-import net.corda.crypto.core.toByteArray
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.persistence.EntityResponse
@@ -224,14 +223,14 @@ class VaultNamedQueryExecutorImpl(
             // Fetch the state and refs for the given transaction IDs
             val rawResults = try {
                 if (useOffset) {
-                    fetchStateAndRefs(
+                    fetchStateAndRefsOrderBy(
                         request,
                         vaultNamedQuery.query.query,
                         vaultNamedQuery.orderBy!!.query,
                         currentOffset
                     )
                 } else {
-                    fetchStateAndRefs(
+                    fetchStateAndRefsTimeOrder(
                         request,
                         vaultNamedQuery.query.query,
                         currentResumePoint
@@ -248,6 +247,7 @@ class VaultNamedQueryExecutorImpl(
 
             // If we have no filter, there's no need to continue the loop
             if (vaultNamedQuery.filter == null) {
+                log.info("VNQEI: stopping duet o no filter, with ${rawResults.results.size} results")
                 with(rawResults) {
                     return ProcessedQueryResults(
                         results.map { it.stateAndRef },
@@ -260,10 +260,12 @@ class VaultNamedQueryExecutorImpl(
             rawResults.results.forEach { result ->
                 ++numberOfRowsFromQuery
                 if (vaultNamedQuery.filter.filter(result.stateAndRef, deserializedParams)) {
+                    log.info("VNQEI: row ${numberOfRowsFromQuery-1} seleted by filter")
                     filteredRawData.add(result)
                 }
 
                 if (filteredRawData.size >= request.limit) {
+                    log.info("VNQEI: now stopping since we have ${filteredRawData.size} rows; limit ${request.limit}")
                     // Page filled. We need to set the resume point based on the final filtered
                     // result (as we may be throwing out additional records returned by the query).
                     // Note that we should never get to the > part of the condition; this is a
@@ -272,11 +274,12 @@ class VaultNamedQueryExecutorImpl(
                     // There are more results if either we didn't get through all the results
                     // returned by the query invocation, or if the query itself indicated there are
                     // more results to return.
-                    val moreResults = (result != rawResults.results.last()) || rawResults.hasMore
-
+                    val reachedEndOfRawResults = result != rawResults.results.last()
+                    val moreResults = reachedEndOfRawResults || rawResults.hasMore
+                    log.info("moreResults $moreResults (reachedEndOfRawResults=$reachedEndOfRawResults rawResults.hasMore=${rawResults.hasMore}")
                     return ProcessedQueryResults(
                         filteredRawData.map { it.stateAndRef },
-                        if (moreResults && !useOffset) filteredRawData.last().resumePoint else null,
+                        if (moreResults) filteredRawData.last().resumePoint else null,
                         numberOfRowsFromQuery
                     )
                 }
@@ -284,15 +287,13 @@ class VaultNamedQueryExecutorImpl(
 
             // If we can't fetch more states we just return the result set as-is
             if (!rawResults.hasMore) {
+                log.info("VNQEI: finished raw results; stopping iteration")
                 currentResumePoint = null
                 break
             } else {
-                if (useOffset) {
-                    currentOffset += request.limit
-                    currentResumePoint = ResumePoint(Instant.MIN, "", currentOffset)
-                } else {
-                    currentResumePoint = rawResults.results.last().resumePoint
-                }
+                currentOffset += if (useOffset) request.limit else 0
+                log.info("VNQEI: showing iteraitons available; current offset is $currentOffset")
+                currentResumePoint = rawResults.results.last().resumePoint
             }
         }
 
@@ -303,7 +304,7 @@ class VaultNamedQueryExecutorImpl(
         )
     }
 
-    private fun fetchStateAndRefs(
+    private fun fetchStateAndRefsOrderBy(
         request: FindWithNamedQuery,
         whereJson: String?,
         orderBy: String?,
@@ -353,7 +354,7 @@ class VaultNamedQueryExecutorImpl(
         } else {
             RawQueryResults(resultList.map { RawQueryData(it) }, hasMore = false)
         }).also {
-            println("raw requests $it")
+            log.info("VNQEI orderBy fetchStateAndRef requests $it last resume point ${it.results.lastOrNull()?.resumePoint}")
         }
     }
 
@@ -364,7 +365,7 @@ class VaultNamedQueryExecutorImpl(
      *
      * Each invocation of this function represents a single distinct query to the database.
      */
-    private fun fetchStateAndRefs(
+    private fun fetchStateAndRefsTimeOrder(
         request: FindWithNamedQuery,
         whereJson: String?,
         resumePoint: ResumePoint?
