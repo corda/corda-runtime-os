@@ -66,7 +66,7 @@ class ReceiveSignedTransactionFlowV1Test : UtxoLedgerTest() {
 
         callReceiveTransactionFlow(sessionAlice)
 
-        verify(sessionAlice.send(Payload.Success(Unit)))
+        verify(sessionAlice).send(Payload.Success(Unit))
     }
 
     @Test
