@@ -7,8 +7,12 @@ import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
+import net.corda.libs.statemanager.api.StateOperationGroup
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.StartEvent
+import net.corda.schema.configuration.StateManagerConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -30,10 +34,14 @@ class TestStateManagerFactoryImpl @Activate constructor(
 
     private val storage = ConcurrentHashMap<String, State>()
 
-    override fun create(config: SmartConfig): StateManager {
+    override fun create(config: SmartConfig, stateType: StateManagerConfig.StateType): StateManager {
         return object : StateManager {
             override val name = LifecycleCoordinatorName("TestStateManager", UUID.randomUUID().toString())
-            private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(name) { _, _ -> }
+            private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(name) { event, coordinator ->
+                when (event) {
+                    is StartEvent -> coordinator.updateStatus(LifecycleStatus.UP)
+                }
+            }
 
             override fun create(states: Collection<State>): Set<String> {
                 return states.mapNotNull {
@@ -130,6 +138,10 @@ class TestStateManagerFactoryImpl @Activate constructor(
                 }.filter {
                     matchesAny(it.value, metadataFilters)
                 }
+            }
+
+            override fun createOperationGroup(): StateOperationGroup {
+                TODO("Not yet implemented")
             }
 
             @Suppress("UNCHECKED_CAST")

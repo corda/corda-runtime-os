@@ -59,8 +59,7 @@ dependencies {
     implementation project(':libs:packaging:packaging')
     implementation 'net.corda:corda-topic-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
-    implementation "org.apache.commons:commons-text:$commonsTextVersion"
+    implementation libs.slf4j.api
 
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     implementation "com.esotericsoftware:kryo:$kryoVersion"

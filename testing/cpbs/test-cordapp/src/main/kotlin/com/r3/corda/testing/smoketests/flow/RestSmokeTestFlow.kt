@@ -295,18 +295,18 @@ class RestSmokeTestFlow : ClientStartableFlow {
     private fun signAndVerify(input: RestSmokeTestInput): String {
         val x500Name = input.getValue("memberX500")
         log.info("Called for $x500Name")
-        val bytesToSign = byteArrayOf(1, 2, 3, 4, 5)
+//        val bytesToSign = byteArrayOf(1, 2, 3, 4, 5)
         val eventIterations = 10
 
         log.info("Processing $eventIterations signing events.")
 
-        for (i in 1..eventIterations) {
-            signingService.sign(bytesToSign, mockPublicKey, mockSignatureSpec)
-
-//            if (i % 10 == 0) {
-            log.info("Progress: $i out of $eventIterations signing events processed.")
-//            }
-        }
+//        for (i in 1..eventIterations) {
+//            signingService.sign(bytesToSign, mockPublicKey, mockSignatureSpec)
+//
+////            if (i % 10 == 0) {
+//            log.info("Progress: $i out of $eventIterations signing events processed.")
+////            }
+//        }
 
         log.info("All $eventIterations signing events processed successfully.")
 

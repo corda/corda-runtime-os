@@ -16,6 +16,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
+import net.corda.schema.configuration.StateManagerConfig
 import net.corda.utilities.trace
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -44,11 +45,6 @@ class FlowExecutorImpl @Activate constructor(
     private val bobX500 = "CN=Bob-5a90563f-73a0-46ce-a7e4-28354b6c686c, OU=Application, O=R3, L=London, C=GB"
     private val groupId = "d1f30558-4627-495c-8ea5-2fb4b9273c74"
 
-    private inner class RpcSmokeTestInput {
-        var command: String? = null
-        var data: Map<String, String>? = null
-    }
-
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         try {
             multiSourceEventMediator?.close()
@@ -70,7 +66,8 @@ class FlowExecutorImpl @Activate constructor(
                 "com.r3.corda.testing.smoketests.flow.RpcSmokeTestFlow",
                 "{\"command\":\"crypto_sign_and_verify\",\"data\":{\"memberX500\":\"CN=Bob-5a90563f-73a0-46ce-a7e4-28354b6c686c, OU=Application, O=R3, L=London, C=GB\"}}"
             )
-            val stateManager = TestStateManagerFactoryImpl(coordinatorFactory).create(SmartConfigImpl.empty())
+            val stateManager = TestStateManagerFactoryImpl(coordinatorFactory)
+                .create(SmartConfigImpl.empty(), StateManagerConfig.StateType.FLOW_CHECKPOINT)
             multiSourceEventMediator = flowEventMediatorFactory.create(configs, loadGenerator, stateManager)
             stateManager.start()
             multiSourceEventMediator?.start()
