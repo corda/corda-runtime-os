@@ -5,10 +5,10 @@
 fullnameOverride: ""
 
 # -- affinity for pod assignment
-affinity: {}
+affinity: { }
 
 # -- topology spread constraints
-topologySpreadConstraints: []
+topologySpreadConstraints: [ ]
 
 # -- override chart name
 nameOverride: ""
@@ -46,13 +46,13 @@ podSecurityContext:
   fsGroup: 1000
 
 # -- extra labels to add to all deployed objects
-commonLabels: {}
+commonLabels: { }
 
 # extra labels to add to all pods created by deployments
-commonPodLabels: {}
+commonPodLabels: { }
 
 # -- image pull secrets
-imagePullSecrets: []
+imagePullSecrets: [ ]
 
 # -- the image policy
 imagePullPolicy: Always
@@ -60,9 +60,9 @@ imagePullPolicy: Always
 # default resource limits and requests configuration for the Corda bootstrap and worker containers
 resources:
   # -- the default CPU/memory resource limits for the Corda bootstrap and worker containers
-  limits: {}
+  limits: { }
   # -- the default CPU/memory resource requests for the Corda bootstrap and worker containers
-  requests: {}
+  requests: { }
 
 # Logging configuration
 logging:
@@ -99,13 +99,13 @@ metrics:
     - "jvm_.*"
     - "process_cpu_usage"
   # -- A list of regular expressions for labels that Corda should drop across all metrics; if empty, all labels are kept
-  dropLabels: []
+  dropLabels: [ ]
   # -- Pod monitor configuration for scraping metrics. Please note that the corresponding CRD must exist in the environment
   podMonitor:
     # -- Enable pod monitor creation to identify endpoints to scrape
     enabled: false
     # -- Labels that can be used so PodMonitor is discovered by Prometheus
-    labels: {}
+    labels: { }
 
 # Distributed tracing configuration
 tracing:
@@ -121,17 +121,17 @@ dumpHostPath: ""
 heapDumpOnOutOfMemoryError: false
 
 # -- node labels for pod assignment, see https://kubernetes.io/docs/user-guide/node-selection/
-nodeSelector: {}
+nodeSelector: { }
 
 # -- service account for pod assignment, see https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
 serviceAccount:
   name: ""
 
 # -- extra annotations (applied to all workers only)
-annotations: {}
+annotations: { }
 
 # tolerations to schedule worker and bootstrap pods on nodes with matching taints
-tolerations: []
+tolerations: [ ]
 
 # Kafka configuration
 kafka:
@@ -604,7 +604,7 @@ workers:
     # -- crypto worker replica count
     replicaCount: 1
     # -- crypto worker extra annotations
-    annotations: {}
+    annotations: { }
     # -- additional Java options for the crypto worker
     javaOptions: "-XX:MaxRAMPercentage=75"
     # crypto worker debug configuration
@@ -625,9 +625,9 @@ workers:
     # resource limits and requests configuration for the crypto worker containers
     resources:
       # -- the CPU/memory resource requests for the crypto worker containers
-      requests: {}
+      requests: { }
       # -- the CPU/memory resource limits for the crypto worker containers
-      limits: {}
+      limits: { }
     # crypto worker configuration for the config service
     config:
       # -- persistent storage type
@@ -755,7 +755,7 @@ workers:
     # -- DB worker replica count
     replicaCount: 1
     # -- DB worker extra annotations
-    annotations: {}
+    annotations: { }
     # -- additional Java options for the DB worker
     javaOptions: "-XX:MaxRAMPercentage=75"
     # DB worker debug configuration
@@ -777,9 +777,9 @@ workers:
     # resource limits and requests configuration for the DB worker containers.
     resources:
       # -- the CPU/memory resource requests for the DB worker containers
-      requests: {}
+      requests: { }
       # -- the CPU/memory resource limits for the DB worker containers
-      limits: {}
+      limits: { }
     # DB worker configuration for the config service
     config:
       # -- persistent storage type
@@ -864,7 +864,7 @@ workers:
     # -- flow worker replica count
     replicaCount: 1
     # -- flow worker extra annotations
-    annotations: {}
+    annotations: { }
     # -- additional Java options for the flow worker
     javaOptions: "-XX:MaxRAMPercentage=75"
     # flow worker debug configuration
@@ -885,9 +885,9 @@ workers:
     # resource limits and requests configuration for the flow worker containers.
     resources:
       # -- the CPU/memory resource requests for the flow worker containers
-      requests: {}
+      requests: { }
       # -- the CPU/memory resource limits for the flow worker containers
-      limits: {}
+      limits: { }
     # -- run flow worker with Quasar's verifyInstrumentation enabled
     verifyInstrumentation: false
     # Flow Worker State Manager configuration
@@ -962,6 +962,8 @@ workers:
               name: ""
               # -- the flow worker SASL password secret key for client connection to Kafka
               key: ""
+    # -- flow worker extra arguments configuration that allows users to pass arbitrary arguments
+    extraArgs: [ ]
 
   # flow mapper worker configuration
   flowMapper:
@@ -1074,6 +1076,8 @@ workers:
               name: ""
               # -- the flow mapper worker SASL password secret key for client connection to Kafka
               key: ""
+    # -- flow mapper worker extra arguments configuration that allows users to pass arbitrary arguments
+    extraArgs: [ ]
 
   # verification worker configuration
   verification:
@@ -1156,7 +1160,7 @@ workers:
     # -- membership worker replica count
     replicaCount: 1
     # -- membership worker extra annotations
-    annotations: {}
+    annotations: { }
     # -- additional Java options for the membership worker
     javaOptions: "-XX:MaxRAMPercentage=75"
     # membership worker debug configuration
@@ -1177,9 +1181,9 @@ workers:
     # resource limits and requests configuration for the membership worker containers
     resources:
       # -- the CPU/memory resource requests for the membership worker containers
-      requests: {}
+      requests: { }
       # -- the CPU/memory resource limits for the membership worker containers
-      limits: {}
+      limits: { }
     # membership worker Kafka configuration
     kafka:
       # if kafka.sasl.enabled, the credentials to connect to Kafka with for the membership worker
@@ -1222,7 +1226,7 @@ workers:
     # -- REST worker replica count
     replicaCount: 1
     # -- REST worker extra annotations
-    annotations: {}
+    annotations: { }
     # -- additional Java options for the rest worker
     javaOptions: "-XX:MaxRAMPercentage=75"
     # REST worker debug configuration
@@ -1243,9 +1247,9 @@ workers:
     # -- resource limits and requests configuration for the REST worker containers.
     resources:
       # -- the CPU/memory resource requests for the REST worker containers
-      requests: {}
+      requests: { }
       # -- the CPU/memory resource limits for the REST worker containers
-      limits: {}
+      limits: { }
     # REST worker service configuration
     service:
       # -- the type for the REST worker service
@@ -1255,17 +1259,17 @@ workers:
       # -- the traffic policy for the REST worker service
       externalTrafficPolicy: ""
       # -- the LoadBalancer source ranges to limit access to the REST worker service
-      loadBalancerSourceRanges: []
+      loadBalancerSourceRanges: [ ]
       # -- the annotations for REST worker service
-      annotations: {}
+      annotations: { }
     # REST worker ingress configuration
     ingress:
       # -- the annotations for the REST worker ingress
-      annotations: {}
+      annotations: { }
       # -- the className for the REST worker ingress
       className: ""
       # -- the hosts for the REST worker ingress
-      hosts: []
+      hosts: [ ]
     # REST worker Kafka configuration
     kafka:
       # if kafka.sasl.enabled, the credentials to connect to Kafka with for the REST worker
@@ -1386,7 +1390,7 @@ workers:
       # Optional parameters to be used during TLS certificate generation.
       generation:
         # -- Alternative names to be included in a certificate when generated.
-        altNames: []
+        altNames: [ ]
       # TLS Certificate configuration
       crt:
         # -- the TLS Certificate secret key
@@ -1413,7 +1417,7 @@ workers:
     # -- P2P link manager worker replica count
     replicaCount: 1
     # -- P2P link manager worker extra annotations
-    annotations: {}
+    annotations: { }
     # -- additional Java options for the P2P link manager worker
     javaOptions: "-XX:MaxRAMPercentage=75"
     # p2p-link-manager worker debug configuration
@@ -1434,9 +1438,9 @@ workers:
     # resource limits and requests configuration for the P2P link manager worker containers.
     resources:
       # -- the CPU/memory resource requests for the P2P link manager worker containers
-      requests: {}
+      requests: { }
       # -- the CPU/memory resource limits for the P2P link manager worker containers
-      limits: {}
+      limits: { }
     stateManager:
       # Runtime configuration settings for the State Manager used to interact with 'p2pSession' states
       p2pSession:
@@ -1521,7 +1525,7 @@ workers:
     # -- P2P gateway worker replica count
     replicaCount: 1
     # -- P2P gateway worker extra annotations
-    annotations: {}
+    annotations: { }
     # -- additional Java options for the P2P gateway worker
     javaOptions: "-XX:MaxRAMPercentage=75"
     # p2p-gateway worker debug configuration
@@ -1542,9 +1546,9 @@ workers:
     # resource limits and requests configuration for the P2P gateway worker containers.
     resources:
       # -- the CPU/memory resource requests for the P2P gateway worker containers
-      requests: {}
+      requests: { }
       # -- the CPU/memory resource limits for the P2P gateway worker containers
-      limits: {}
+      limits: { }
     # P2P gateway worker service configuration
     service:
       # -- The P2P gateway HTTP port
@@ -1552,11 +1556,11 @@ workers:
     # P2P gateway worker ingress configuration
     ingress:
       # -- the annotations for the P2P gateway worker ingress
-      annotations: {}
+      annotations: { }
       # -- the className for the P2P gateway worker ingress
       className: ""
       # -- the hosts for the P2P gateway worker ingress
-      hosts: []
+      hosts: [ ]
     # P2P gateway worker Kafka configuration
     kafka:
       # if kafka.sasl.enabled, the credentials to connect to Kafka with for the P2P gateway worker
@@ -1871,7 +1875,7 @@ workers:
     # -- uniqueness worker replica count
     replicaCount: 1
     # -- uniqueness worker extra annotations
-    annotations: {}
+    annotations: { }
     # -- additional Java options for the uniqueness worker
     javaOptions: "-XX:MaxRAMPercentage=75"
     # uniqueness worker debug configuration
@@ -1892,9 +1896,9 @@ workers:
     # resource limits and requests configuration for the uniqueness worker containers.
     resources:
       # -- the CPU/memory resource requests for the uniqueness worker containers
-      requests: {}
+      requests: { }
       # -- the CPU/memory resource limits for the uniqueness worker containers
-      limits: {}
+      limits: { }
     # uniqueness worker configuration for the config service
     config:
       # -- persistent storage type
