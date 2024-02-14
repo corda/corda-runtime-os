@@ -255,14 +255,14 @@ private fun createVirtualNodePoolConfig(
     val maxPoolSize = virtualNodePoolConfig.getInt(VirtualNodeDatasourceConfig.VNODE_POOL_MAX_SIZE)
     var configWithPool = config.withValue(DatabaseConfig.DB_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(maxPoolSize))
 
-    configWithPool = if (virtualNodePoolConfig.hasPath(VirtualNodeDatasourceConfig.VNODE_POOL_MIN_SIZE)) {
+    if (virtualNodePoolConfig.hasPath(VirtualNodeDatasourceConfig.VNODE_POOL_MIN_SIZE)) {
         val minPoolSize = virtualNodePoolConfig.getInt(VirtualNodeDatasourceConfig.VNODE_POOL_MIN_SIZE)
-        configWithPool.withValue(
+        configWithPool = configWithPool.withValue(
             DatabaseConfig.DB_POOL_MIN_SIZE,
             ConfigValueFactory.fromAnyRef(minPoolSize)
         )
-    } else {
-        configWithPool.withoutPath(DatabaseConfig.DB_POOL_MIN_SIZE)
+    } else if (configWithPool.hasPath(DatabaseConfig.DB_POOL_MIN_SIZE)) {
+        configWithPool = configWithPool.withoutPath(DatabaseConfig.DB_POOL_MIN_SIZE)
     }
 
     val idleTimeout = virtualNodePoolConfig.getInt(VirtualNodeDatasourceConfig.VNODE_POOL_IDLE_TIMEOUT_SECONDS)
