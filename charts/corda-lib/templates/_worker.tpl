@@ -340,8 +340,8 @@ spec:
           - "--serviceEndpoint={{ include "corda.getWorkerEndpoint" (dict "context" $ "worker" $worker) }}"
           {{- end }}
           {{- end }}
-          {{- range $i, $arg := .extraArgs }}
-          - {{ $arg | quote }}
+          {{- range .extraArgs }}
+          - {{ . | quote }}
           {{- end }}
           {{- range $i, $arg := $optionalArgs.additionalWorkerArgs }}
           - {{ $arg | quote }}
