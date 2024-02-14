@@ -3064,7 +3064,7 @@
                 "extraArgs": {
                     "type": "array",
                     "default": [],
-                    "title": "Allows users to pass any extra arguments to the worker",
+                    "title": "Extra command-line arguments for the worker",
                     "items": {
                         "type": "string"
                     },
