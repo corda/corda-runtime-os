@@ -3,7 +3,7 @@ package net.corda.ledger.utxo.flow.impl.flows.transactiontransmission
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.common.SendTransactionFlow
-import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.v1.SendLedgerTransactionFlowV1
+import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.v1.SendWireTransactionFlowV1
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.v5.application.flows.FlowEngine
@@ -17,7 +17,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.lang.IllegalArgumentException
 
-class SendLedgerTransactionFlowV1Test {
+class SendWireTransactionFlowV1Test {
 
     private val mockFlowEngine = mock<FlowEngine>()
 
@@ -56,7 +56,7 @@ class SendLedgerTransactionFlowV1Test {
         signedTransaction: UtxoSignedTransactionInternal,
         sessions: List<FlowSession>
     ) {
-        val flow = SendLedgerTransactionFlowV1(signedTransaction, sessions)
+        val flow = SendWireTransactionFlowV1(signedTransaction, sessions)
 
         flow.flowEngine = mockFlowEngine
         flow.call()

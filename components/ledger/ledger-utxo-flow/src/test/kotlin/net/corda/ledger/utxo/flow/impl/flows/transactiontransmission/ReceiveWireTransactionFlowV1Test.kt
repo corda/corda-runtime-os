@@ -6,7 +6,7 @@ import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.common.TransactionDependencyResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.common.UtxoTransactionPayload
-import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.v1.ReceiveLedgerTransactionFlowV1
+import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.v1.ReceiveWireTransactionFlowV1
 import net.corda.ledger.utxo.flow.impl.transaction.factory.impl.UtxoLedgerTransactionFactoryImpl
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.notaryX500Name
@@ -26,7 +26,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
 
-class ReceiveLedgerTransactionFlowV1Test : UtxoLedgerTest() {
+class ReceiveWireTransactionFlowV1Test : UtxoLedgerTest() {
     private val mockUtxoLedgerTransactionFactory = mock<UtxoLedgerTransactionFactoryImpl>()
     private val mockFlowEngine = mock<FlowEngine>()
     private val mockSerializationService = mock<SerializationService>()
@@ -115,7 +115,7 @@ class ReceiveLedgerTransactionFlowV1Test : UtxoLedgerTest() {
     }
 
     private fun callReceiveTransactionFlow(session: FlowSession) {
-        val flow = ReceiveLedgerTransactionFlowV1(session)
+        val flow = ReceiveWireTransactionFlowV1(session)
         flow.utxoLedgerTransactionFactory = mockUtxoLedgerTransactionFactory
         flow.flowEngine = mockFlowEngine
         flow.serializationService = mockSerializationService

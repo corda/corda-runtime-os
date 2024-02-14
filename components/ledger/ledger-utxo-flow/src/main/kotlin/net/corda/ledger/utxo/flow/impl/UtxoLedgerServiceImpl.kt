@@ -8,9 +8,9 @@ import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityFlow
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoReceiveFinalityFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.ReceiveAndUpdateTransactionBuilderFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.SendTransactionBuilderDiffFlow
-import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.ReceiveLedgerTransactionFlow
+import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.ReceiveWireTransactionFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.ReceiveSignedTransactionFlow
-import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.SendLedgerTransactionFlow
+import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.SendWireTransactionFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.SendSignedTransactionFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
@@ -295,12 +295,12 @@ class UtxoLedgerServiceImpl @Activate constructor(
 
     @Suspendable
     override fun receiveLedgerTransaction(session: FlowSession): UtxoLedgerTransaction {
-        return flowEngine.subFlow(ReceiveLedgerTransactionFlow(session))
+        return flowEngine.subFlow(ReceiveWireTransactionFlow(session))
     }
 
     @Suspendable
     override fun sendAsLedgerTransaction(signedTransaction: UtxoSignedTransaction, sessions: List<FlowSession>) {
-        flowEngine.subFlow(SendLedgerTransactionFlow(signedTransaction, sessions))
+        flowEngine.subFlow(SendWireTransactionFlow(signedTransaction, sessions))
     }
 
     @Suspendable

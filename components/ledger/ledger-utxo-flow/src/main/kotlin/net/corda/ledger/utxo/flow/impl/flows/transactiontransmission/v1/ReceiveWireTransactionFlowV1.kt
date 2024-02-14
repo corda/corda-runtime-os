@@ -16,7 +16,7 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 
 @CordaSystemFlow
-class ReceiveLedgerTransactionFlowV1(
+class ReceiveWireTransactionFlowV1(
     private val session: FlowSession
 ) : SubFlow<UtxoLedgerTransaction> {
 
