@@ -247,7 +247,6 @@ class VaultNamedQueryExecutorImpl(
 
             // If we have no filter, there's no need to continue the loop
             if (vaultNamedQuery.filter == null) {
-                log.info("VNQEI: stopping duet o no filter, with ${rawResults.results.size} results")
                 with(rawResults) {
                     return ProcessedQueryResults(
                         results.map { it.stateAndRef },
@@ -260,12 +259,10 @@ class VaultNamedQueryExecutorImpl(
             rawResults.results.forEach { result ->
                 ++numberOfRowsFromQuery
                 if (vaultNamedQuery.filter.filter(result.stateAndRef, deserializedParams)) {
-                    log.info("VNQEI: row ${numberOfRowsFromQuery-1} seleted by filter")
                     filteredRawData.add(result)
                 }
 
                 if (filteredRawData.size >= request.limit) {
-                    log.info("VNQEI: now stopping since we have ${filteredRawData.size} rows; limit ${request.limit}")
                     // Page filled. We need to set the resume point based on the final filtered
                     // result (as we may be throwing out additional records returned by the query).
                     // Note that we should never get to the > part of the condition; this is a
@@ -276,7 +273,6 @@ class VaultNamedQueryExecutorImpl(
                     // more results to return.
                     val reachedEndOfRawResults = result != rawResults.results.last()
                     val moreResults = reachedEndOfRawResults || rawResults.hasMore
-                    log.info("moreResults $moreResults (reachedEndOfRawResults=$reachedEndOfRawResults rawResults.hasMore=${rawResults.hasMore}")
                     return ProcessedQueryResults(
                         filteredRawData.map { it.stateAndRef },
                         if (moreResults) filteredRawData.last().resumePoint else null,
@@ -287,12 +283,10 @@ class VaultNamedQueryExecutorImpl(
 
             // If we can't fetch more states we just return the result set as-is
             if (!rawResults.hasMore) {
-                log.info("VNQEI: finished raw results; stopping iteration")
                 currentResumePoint = null
                 break
             } else {
                 currentOffset += if (useOffset) request.limit else 0
-                log.info("VNQEI: showing iteraitons available; current offset is $currentOffset")
                 currentResumePoint = rawResults.results.last().resumePoint
             }
         }
@@ -353,8 +347,6 @@ class VaultNamedQueryExecutorImpl(
             RawQueryResults(resultList.subList(0, request.limit).map { RawQueryData(it) }, hasMore = true)
         } else {
             RawQueryResults(resultList.map { RawQueryData(it) }, hasMore = false)
-        }).also {
-            log.info("VNQEI orderBy fetchStateAndRef requests $it last resume point ${it.results.lastOrNull()?.resumePoint}")
         }
     }
 
@@ -381,25 +373,25 @@ class VaultNamedQueryExecutorImpl(
 
             val query = em.createNativeQuery(
                 """
-                        SELECT tc_output.transaction_id,
-                            tc_output.leaf_idx,
-                            tc_output_info.data as output_info_data,
-                            tc_output.data AS output_data,
-                            visible_states.created AS created
-                            FROM $UTXO_VISIBLE_TX_TABLE AS visible_states
-                            JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output_info
-                                 ON tc_output_info.transaction_id = visible_states.transaction_id
-                                 AND tc_output_info.leaf_idx = visible_states.leaf_idx
-                                 AND tc_output_info.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}
-                            JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output
-                                 ON tc_output_info.transaction_id = tc_output.transaction_id
-                                 AND tc_output_info.leaf_idx = tc_output.leaf_idx
-                                 AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
-                            WHERE ($whereJson)
-                            $resumePointExpr
-                            AND visible_states.created <= :$TIMESTAMP_LIMIT_PARAM_NAME
-                            ORDER BY visible_states.created, tc_output.transaction_id, tc_output.leaf_idx
-                    """,
+                    SELECT tc_output.transaction_id,
+                        tc_output.leaf_idx,
+                        tc_output_info.data as output_info_data,
+                        tc_output.data AS output_data,
+                        visible_states.created AS created
+                        FROM $UTXO_VISIBLE_TX_TABLE AS visible_states
+                        JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output_info
+                             ON tc_output_info.transaction_id = visible_states.transaction_id
+                             AND tc_output_info.leaf_idx = visible_states.leaf_idx
+                             AND tc_output_info.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}
+                        JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output
+                             ON tc_output_info.transaction_id = tc_output.transaction_id
+                             AND tc_output_info.leaf_idx = tc_output.leaf_idx
+                             AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
+                        WHERE ($whereJson)
+                        $resumePointExpr
+                        AND visible_states.created <= :$TIMESTAMP_LIMIT_PARAM_NAME
+                        ORDER BY visible_states.created, tc_output.transaction_id, tc_output.leaf_idx
+                """,
                 Tuple::class.java
             )
 

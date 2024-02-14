@@ -28,13 +28,11 @@ data class StableResultSetImpl<R> internal constructor(
 
     override fun hasNext(): Boolean {
         // A null resume point means that the query does not have any more data to return
-        println("hasNext resumePoint $resumePoint answer ${resumePoint != null}")
         return resumePoint != null
     }
 
     @Suspendable
     override fun next(): List<R> {
-        println("SRSI next top firstExecution=$firstExecution hasNext=${hasNext()}")
         if (!firstExecution && !hasNext()) {
             throw NoSuchElementException("The result set has no more pages to query")
         }
@@ -43,7 +41,6 @@ data class StableResultSetImpl<R> internal constructor(
             resultSetExecutor.execute(serializedParameters, resumePoint, offset)
 
         // We've got some serialized results.
-        println("SRSI next got ${serializedResults.size} serailised results; resumePoint $resumePoint nextResumePoint $nextResumePoint offset $offset limit $limit")
         // Did we get too many?
         check(serializedResults.size <= limit) { "The query returned too many results" }
 
@@ -51,7 +48,6 @@ data class StableResultSetImpl<R> internal constructor(
         results = serializedResults.map {
             serializationService.deserialize(it.array(), resultClass)
         }.also {
-            println("SRSI next deserilaised ${it.size} results")
             check(nextResumePoint == null || nextResumePoint != resumePoint) {
                 "Infinite query detected; resume point has not been updated"
             }
@@ -62,7 +58,6 @@ data class StableResultSetImpl<R> internal constructor(
             offset += numberOfRowsFromQuery ?: 0
             resumePoint = nextResumePoint
             firstExecution = false
-            println("SRSI next also offset $offset resumePoint $resumePoint")
 
         }
         return results
