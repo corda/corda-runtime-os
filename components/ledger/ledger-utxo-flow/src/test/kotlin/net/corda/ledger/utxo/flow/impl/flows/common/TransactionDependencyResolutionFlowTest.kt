@@ -97,9 +97,11 @@ class TransactionDependencyResolutionFlowTest : UtxoLedgerTest() {
             setOf(TX_INPUT_DEPENDENCY_STATE_REF_1.transactionId, TX_INPUT_DEPENDENCY_STATE_REF_2.transactionId)
         )
 
-        verify(mockFlowEngine).subFlow(TransactionBackchainResolutionFlow(
-            setOf(TX_INPUT_DEPENDENCY_STATE_REF_1.transactionId, TX_INPUT_DEPENDENCY_STATE_REF_2.transactionId),
-            sessionAlice)
+        verify(mockFlowEngine).subFlow(
+            TransactionBackchainResolutionFlow(
+                setOf(TX_INPUT_DEPENDENCY_STATE_REF_1.transactionId, TX_INPUT_DEPENDENCY_STATE_REF_2.transactionId),
+                sessionAlice
+            )
         )
     }
 

@@ -32,7 +32,7 @@ class SendSignedTransactionFlowV1Test {
 
     @Test
     fun `flow should respond with success payload if sub-flow executes properly`() {
-        whenever(mockFlowEngine.subFlow(any<SendTransactionFlow<UtxoSignedTransactionInternal>>())).thenAnswer {  }
+        whenever(mockFlowEngine.subFlow(any<SendTransactionFlow<UtxoSignedTransactionInternal>>())).thenAnswer { }
 
         callSendSignedTransactionFlow(signedTransaction, listOf(mock()))
     }

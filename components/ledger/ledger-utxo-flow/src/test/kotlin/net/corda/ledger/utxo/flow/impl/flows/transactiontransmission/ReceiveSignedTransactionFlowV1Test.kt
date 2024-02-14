@@ -41,9 +41,9 @@ class ReceiveSignedTransactionFlowV1Test : UtxoLedgerTest() {
         whenever(signedTransaction.notaryName)
             .thenReturn(notaryX500Name)
         whenever(signedTransaction.verifySignatorySignatures())
-            .thenAnswer {  }
+            .thenAnswer { }
         whenever(signedTransaction.verifyAttachedNotarySignature())
-            .thenAnswer {  }
+            .thenAnswer { }
         whenever(signedTransaction.toLedgerTransaction())
             .thenReturn(ledgerTransaction)
         whenever(signedTransaction.outputStateAndRefs)
@@ -52,7 +52,7 @@ class ReceiveSignedTransactionFlowV1Test : UtxoLedgerTest() {
 
     @Test
     fun `flow should respond with success payload if sub-flow executes properly`() {
-        whenever(transactionVerificationService.verify(any())).doAnswer {  }
+        whenever(transactionVerificationService.verify(any())).doAnswer { }
         whenever(persistenceService.persist(any(), any(), any())).doReturn(emptyList())
         whenever(sessionAlice.receive(UtxoTransactionPayload::class.java)).thenReturn(
             UtxoTransactionPayload(

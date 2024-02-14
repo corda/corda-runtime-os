@@ -46,7 +46,7 @@ class ReceiveSignedTransactionFlowV1(
     override fun call(): UtxoSignedTransaction {
         @Suppress("unchecked_cast")
         val transactionPayload = session.receive(UtxoTransactionPayload::class.java)
-                as UtxoTransactionPayload<UtxoSignedTransactionInternal>
+            as UtxoTransactionPayload<UtxoSignedTransactionInternal>
 
         val receivedTransaction = transactionPayload.transaction
 

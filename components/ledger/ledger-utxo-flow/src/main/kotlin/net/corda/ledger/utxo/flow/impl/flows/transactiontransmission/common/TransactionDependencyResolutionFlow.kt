@@ -65,7 +65,7 @@ class TransactionDependencyResolutionFlow(
                 val notary =
                     requireNotNull(groupParameters.notaries.firstOrNull { it.name == notaryName }) {
                         "Notary from initial transaction \"$notaryName\" " +
-                                "cannot be found in group parameter notaries."
+                            "cannot be found in group parameter notaries."
                     }
 
                 // Verify the received filtered transactions

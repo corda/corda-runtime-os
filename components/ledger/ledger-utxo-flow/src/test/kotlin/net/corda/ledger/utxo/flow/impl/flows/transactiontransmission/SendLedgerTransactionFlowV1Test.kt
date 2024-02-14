@@ -34,7 +34,7 @@ class SendLedgerTransactionFlowV1Test {
 
     @Test
     fun `flow should respond with success payload if sub-flow executes properly`() {
-        whenever(mockFlowEngine.subFlow(any<SendTransactionFlow<WireTransaction>>())).thenAnswer {  }
+        whenever(mockFlowEngine.subFlow(any<SendTransactionFlow<WireTransaction>>())).thenAnswer { }
 
         callSendSignedTransactionFlow(signedTransaction, listOf(mock()))
     }
