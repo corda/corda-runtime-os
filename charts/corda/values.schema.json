@@ -3065,7 +3065,9 @@
                     "type": "array",
                     "default": [],
                     "title": "Allows users to pass any extra arguments to the worker",
-                    "items": {},
+                    "items": {
+                        "type": "string"
+                    },
                     "examples": [
                         []
                     ]
