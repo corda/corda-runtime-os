@@ -2,7 +2,7 @@ package net.corda.ledger.utxo.flow.impl.flows.transactiontransmission
 
 import net.corda.flow.application.services.VersioningService
 import net.corda.flow.application.versioning.VersionedSendFlowFactory
-import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.v1.SendTransactionFlowV1
+import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.v1.SendSignedTransactionFlowV1
 import net.corda.libs.platform.PlatformVersion.CORDA_5_2
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.flows.CordaInject
@@ -40,7 +40,7 @@ class SendSignedTransactionFlowVersionedFlowFactory(
 
     override fun create(version: Int, sessions: List<FlowSession>): SubFlow<Unit> {
         return when {
-            version >= CORDA_5_2.value -> SendTransactionFlowV1(
+            version >= CORDA_5_2.value -> SendSignedTransactionFlowV1(
                 transaction,
                 sessions
             )

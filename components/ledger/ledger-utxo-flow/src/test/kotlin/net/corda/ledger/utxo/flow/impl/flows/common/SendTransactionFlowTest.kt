@@ -1,11 +1,11 @@
-package net.corda.ledger.utxo.flow.impl.flows.transactiontransmission
+package net.corda.ledger.utxo.flow.impl.flows.common
 
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
+import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.common.SendTransactionFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.common.UtxoTransactionPayload
-import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.v1.SendLedgerTransactionFlowV1
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.testkit.notaryX500Name
@@ -20,17 +20,16 @@ import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndSignatures
 import net.corda.v5.membership.NotaryInfo
-import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
-import org.mockito.kotlin.spy
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-class SendLedgerTransactionFlowTest {
+class SendTransactionFlowTest {
 
     private companion object {
         val TX_ID = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
@@ -126,7 +125,7 @@ class SendLedgerTransactionFlowTest {
             Payload.Failure<List<DigitalSignatureAndMetadata>>("fail")
         )
 
-        assertThatThrownBy { callSendTransactionFlow(transaction, sessions) }
+        Assertions.assertThatThrownBy { callSendTransactionFlow(transaction, sessions) }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessageContaining("fail")
     }
@@ -167,8 +166,17 @@ class SendLedgerTransactionFlowTest {
         )
     }
 
-    private fun callSendTransactionFlow(signedTransaction: UtxoSignedTransaction, sessions: List<FlowSession>) {
-        val flow = spy(SendLedgerTransactionFlowV1(signedTransaction, sessions))
+    private fun callSendTransactionFlow(
+        signedTransaction: UtxoSignedTransaction,
+        sessions: List<FlowSession>
+    ) {
+        val flow = SendTransactionFlow(
+            (signedTransaction as UtxoSignedTransactionInternal).wireTransaction,
+            signedTransaction.id,
+            signedTransaction.notaryName,
+            signedTransaction.referenceStateRefs + signedTransaction.inputStateRefs,
+            sessions
+        )
 
         flow.flowEngine = flowEngine
         flow.flowMessaging = flowMessaging

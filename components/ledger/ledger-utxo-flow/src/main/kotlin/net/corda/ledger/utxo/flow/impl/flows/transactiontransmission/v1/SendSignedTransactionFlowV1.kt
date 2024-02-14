@@ -11,7 +11,7 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
 @CordaSystemFlow
-class SendLedgerTransactionFlowV1(
+class SendSignedTransactionFlowV1(
     private val signedTransaction: UtxoSignedTransaction,
     private val sessions: List<FlowSession>
 ) : SubFlow<Unit> {
@@ -23,7 +23,7 @@ class SendLedgerTransactionFlowV1(
     override fun call() {
         flowEngine.subFlow(
             SendTransactionFlow(
-                (signedTransaction as UtxoSignedTransactionInternal).wireTransaction,
+                signedTransaction as UtxoSignedTransactionInternal,
                 signedTransaction.id,
                 signedTransaction.notaryName,
                 signedTransaction.inputStateRefs + signedTransaction.referenceStateRefs,

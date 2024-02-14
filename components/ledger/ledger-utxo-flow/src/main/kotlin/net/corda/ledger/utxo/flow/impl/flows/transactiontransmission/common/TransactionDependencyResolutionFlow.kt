@@ -5,33 +5,33 @@ import net.corda.ledger.utxo.data.transaction.verifyFilteredTransactionAndSignat
 import net.corda.ledger.utxo.flow.impl.flows.backchain.InvalidBackchainException
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
-import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndSignatures
 import net.corda.v5.membership.GroupParametersLookup
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-abstract class AbstractReceiveTransactionFlow<T>(
-    protected val session: FlowSession
-) : SubFlow<T> {
+class TransactionDependencyResolutionFlow(
+    private val session: FlowSession,
+    private val transactionId: SecureHash,
+    private val notaryName: MemberX500Name,
+    private val transactionDependencies: Set<SecureHash>,
+    private val filteredDependencies: List<UtxoFilteredTransactionAndSignatures>?
+) : SubFlow<Unit> {
 
-    protected companion object {
-        val log: Logger = LoggerFactory.getLogger(this::class.java)
+    private companion object {
+        val log = LoggerFactory.getLogger(this::class.java)
     }
 
     @CordaInject
     lateinit var flowEngine: FlowEngine
-
-    @CordaInject
-    lateinit var utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory
 
     @CordaInject
     lateinit var groupParametersLookup: GroupParametersLookup
@@ -42,12 +42,8 @@ abstract class AbstractReceiveTransactionFlow<T>(
     @CordaInject
     lateinit var ledgerPersistenceService: UtxoLedgerPersistenceService
 
-    protected fun performTransactionDependencyResolution(
-        transactionId: SecureHash,
-        notaryName: MemberX500Name,
-        transactionDependencies: Set<SecureHash>,
-        filteredDependencies: List<UtxoFilteredTransactionAndSignatures>?
-    ) {
+    @Suspendable
+    override fun call() {
         if (transactionDependencies.isNotEmpty()) {
             if (filteredDependencies.isNullOrEmpty()) {
                 // If we have dependencies but no filtered dependencies then we need to perform backchain resolution
@@ -69,7 +65,7 @@ abstract class AbstractReceiveTransactionFlow<T>(
                 val notary =
                     requireNotNull(groupParameters.notaries.firstOrNull { it.name == notaryName }) {
                         "Notary from initial transaction \"$notaryName\" " +
-                            "cannot be found in group parameter notaries."
+                                "cannot be found in group parameter notaries."
                     }
 
                 // Verify the received filtered transactions

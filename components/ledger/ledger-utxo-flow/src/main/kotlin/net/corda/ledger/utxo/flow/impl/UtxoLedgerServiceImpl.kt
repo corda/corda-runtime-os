@@ -9,7 +9,7 @@ import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoReceiveFinalityFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.ReceiveAndUpdateTransactionBuilderFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.SendTransactionBuilderDiffFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.ReceiveLedgerTransactionFlow
-import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.ReceiveTransactionFlow
+import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.ReceiveSignedTransactionFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.SendLedgerTransactionFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.SendSignedTransactionFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
@@ -285,7 +285,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
 
     @Suspendable
     override fun receiveTransaction(session: FlowSession): UtxoSignedTransaction {
-        return flowEngine.subFlow(ReceiveTransactionFlow(session))
+        return flowEngine.subFlow(ReceiveSignedTransactionFlow(session))
     }
 
     @Suspendable

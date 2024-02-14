@@ -2,7 +2,7 @@ package net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.common
 
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
-import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.v1.SendTransactionFlowV1
+import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.v1.SendSignedTransactionFlowV1
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.utilities.trace
 import net.corda.v5.application.flows.CordaInject
@@ -18,13 +18,16 @@ import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.StateRef
 import org.slf4j.LoggerFactory
 
-abstract class AbstractSendTransactionFlow<T>(
+class SendTransactionFlow<T>(
     private val transaction: T,
+    private val transactionId: SecureHash,
+    private val notaryName: MemberX500Name,
+    private val transactionDependencies: List<StateRef>,
     private val sessions: List<FlowSession>
 ) : SubFlow<Unit> {
 
     private companion object {
-        val log = LoggerFactory.getLogger(SendTransactionFlowV1::class.java)
+        val log = LoggerFactory.getLogger(SendSignedTransactionFlowV1::class.java)
     }
 
     @CordaInject
@@ -41,10 +44,7 @@ abstract class AbstractSendTransactionFlow<T>(
 
     @Suspendable
     override fun call() {
-        val dependencies = getTransactionDependencies(transaction)
-        val dependentTransactionIds = dependencies.map { it.transactionId }.toSet()
-        val transactionId = getTransactionId(transaction)
-        val notaryName = getNotaryName(transaction)
+        val dependentTransactionIds = transactionDependencies.map { it.transactionId }.toSet()
 
         if (dependentTransactionIds.isEmpty()) {
             log.trace {
@@ -68,7 +68,7 @@ abstract class AbstractSendTransactionFlow<T>(
             )
         } else {
             val filteredTransactionsAndSignatures = ledgerPersistenceService.findFilteredTransactionsAndSignatures(
-                dependencies,
+                transactionDependencies,
                 notaryInfo.publicKey,
                 notaryInfo.name
             )
@@ -94,10 +94,4 @@ abstract class AbstractSendTransactionFlow<T>(
             }
         }
     }
-
-    abstract fun getTransactionDependencies(transaction: T): List<StateRef>
-
-    abstract fun getTransactionId(transaction: T): SecureHash
-
-    abstract fun getNotaryName(transaction: T): MemberX500Name
 }
