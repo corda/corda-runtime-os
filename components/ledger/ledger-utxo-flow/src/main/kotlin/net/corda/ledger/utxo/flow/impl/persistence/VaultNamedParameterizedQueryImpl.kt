@@ -69,7 +69,7 @@ class VaultNamedParameterizedQueryImpl<T>(
             parameters,
             limit,
             resultClass
-        ) @Suspendable { serializedParameters, resumePoint ->
+        ) @Suspendable { serializedParameters, resumePoint, offset ->
             recordSuspendable(::ledgerPersistenceFlowTimer) @Suspendable {
                 wrapWithPersistenceException {
                     externalEventExecutor.execute(
@@ -78,7 +78,8 @@ class VaultNamedParameterizedQueryImpl<T>(
                             queryName,
                             serializedParameters.toByteArrays(),
                             limit,
-                            resumePoint?.array()
+                            resumePoint?.array(),
+                            offset
                         )
                     )
                 }
