@@ -40,6 +40,7 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     api project(':libs:lifecycle:lifecycle')
+    api project(":components:virtual-node:virtual-node-info-read-service")
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "net.corda:corda-avro-schema"
