@@ -1080,7 +1080,7 @@ workers:
               name: ""
               # -- the flow mapper worker SASL password secret key for client connection to Kafka
               key: ""
-    # flow mapper worker Mediator configuration
+    # flow mapper worker mediator configuration
     mediator:
       # -- the number of mediator instances the worker must create that read from the flow.session.in Kafka topic
       flowSessionIn:
