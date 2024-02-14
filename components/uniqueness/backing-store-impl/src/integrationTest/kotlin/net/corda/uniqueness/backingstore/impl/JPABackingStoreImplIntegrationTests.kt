@@ -7,6 +7,7 @@ import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.DbUtils
 import net.corda.db.testkit.TestDbInfo
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -30,6 +31,8 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.hibernate.Session
 import org.junit.jupiter.api.Assertions
@@ -89,6 +92,7 @@ class JPABackingStoreImplIntegrationTests {
     private val groupId = UUID.randomUUID().toString()
     private val notaryVNodeIdentity = createTestHoldingIdentity("C=GB, L=London, O=NotaryRep1", groupId)
     private val notaryVNodeIdentityDbName = VirtualNodeDbType.UNIQUENESS.getSchemaName(notaryVNodeIdentity.shortHash)
+    private val notaryVNodeIdentityDbId = UUID.randomUUID()
     private val dbConfig = DbUtils.getEntityManagerConfiguration(notaryVNodeIdentityDbName)
     private val databaseInstaller = DatabaseInstaller(
         EntityManagerFactoryFactoryImpl(),
@@ -131,10 +135,21 @@ class JPABackingStoreImplIntegrationTests {
     private fun createBackingStoreImpl(emFactory: EntityManagerFactory): JPABackingStoreImpl {
         val jpaEntitiesRegistry = JpaEntitiesRegistryImpl()
         val dbConnectionManager = mock<DbConnectionManager>().apply {
-            whenever(getOrCreateEntityManagerFactory(any<String>(), any(), any())) doReturn emFactory
+            whenever(getOrCreateEntityManagerFactory(eq(notaryVNodeIdentityDbId), any(), any())) doReturn emFactory
             whenever(getClusterDataSource()) doReturn dbConfig.dataSource
         }
-        return JPABackingStoreImpl(jpaEntitiesRegistry, dbConnectionManager)
+        val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>().apply {
+            whenever(getByHoldingIdentityShortHash(notaryVNodeIdentity.shortHash)).thenReturn(VirtualNodeInfo(
+                holdingIdentity = notaryVNodeIdentity,
+                cpiIdentifier = CpiIdentifier("", "", SecureHashUtils.randomSecureHash()),
+                vaultDmlConnectionId = UUID.randomUUID(),
+                cryptoDmlConnectionId = UUID.randomUUID(),
+                uniquenessDmlConnectionId = notaryVNodeIdentityDbId,
+                timestamp = Instant.now()
+            )
+            )
+        }
+        return JPABackingStoreImpl(jpaEntitiesRegistry, dbConnectionManager, virtualNodeInfoReadService)
     }
 
     private fun createEntityManagerFactory(persistenceUnitName: String = "uniqueness"): EntityManagerFactory {
