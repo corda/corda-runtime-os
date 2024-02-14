@@ -184,7 +184,8 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
             try {
                 log.info("QQQ processPubSubRecords $myId")
                 processorMeter.recordCallable {
-                    log.info("QQQ calling on next $myId with ${it.key}")
+                    log.info("QQQ calling on next $myId with ${it.key}, timestamp ${it.timestamp}" +
+                            " (now ${System.currentTimeMillis()}), partition: ${it.partition}")
                     processor.onNext(it.toRecord()) .also {
                         log.info("QQQ called on next $myId")
                     }
