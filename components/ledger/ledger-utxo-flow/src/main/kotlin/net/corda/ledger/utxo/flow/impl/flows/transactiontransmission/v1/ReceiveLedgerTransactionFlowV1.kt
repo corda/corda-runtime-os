@@ -38,7 +38,7 @@ class ReceiveLedgerTransactionFlowV1(
 
         val wrappedUtxoWireTransaction = WrappedUtxoWireTransaction(receivedTransaction, serializationService)
 
-        performBackchainResolutionOrFilteredTransactionVerification(
+        performTransactionDependencyResolution(
             wrappedUtxoWireTransaction.id,
             wrappedUtxoWireTransaction.notaryName,
             wrappedUtxoWireTransaction.dependencies,

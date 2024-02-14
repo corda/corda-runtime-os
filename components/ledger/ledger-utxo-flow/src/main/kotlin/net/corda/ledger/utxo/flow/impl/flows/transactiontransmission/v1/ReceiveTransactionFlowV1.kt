@@ -40,7 +40,7 @@ class ReceiveTransactionFlowV1(
             "Didn't receive a transaction from counterparty."
         }
 
-        performBackchainResolutionOrFilteredTransactionVerification(
+        performTransactionDependencyResolution(
             receivedTransaction.id,
             receivedTransaction.notaryName,
             receivedTransaction.dependencies,

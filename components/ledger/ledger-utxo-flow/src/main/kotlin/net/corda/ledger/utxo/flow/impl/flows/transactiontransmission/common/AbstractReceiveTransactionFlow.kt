@@ -42,7 +42,7 @@ abstract class AbstractReceiveTransactionFlow<T>(
     @CordaInject
     lateinit var ledgerPersistenceService: UtxoLedgerPersistenceService
 
-    protected fun performBackchainResolutionOrFilteredTransactionVerification(
+    protected fun performTransactionDependencyResolution(
         transactionId: SecureHash,
         notaryName: MemberX500Name,
         transactionDependencies: Set<SecureHash>,
