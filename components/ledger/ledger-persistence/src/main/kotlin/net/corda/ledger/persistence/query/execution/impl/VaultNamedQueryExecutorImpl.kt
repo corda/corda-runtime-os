@@ -341,12 +341,12 @@ class VaultNamedQueryExecutorImpl(
             query.resultList as List<Tuple>
         }
 
-        return (if (resultList.size > request.limit) {
+        if (resultList.size > request.limit) {
             // We need to truncate the list to the number requested, but also flag that there is
             // another page to be returned
-            RawQueryResults(resultList.subList(0, request.limit).map { RawQueryData(it) }, hasMore = true)
+            return RawQueryResults(resultList.subList(0, request.limit).map { RawQueryData(it) }, hasMore = true)
         } else {
-            RawQueryResults(resultList.map { RawQueryData(it) }, hasMore = false)
+            return RawQueryResults(resultList.map { RawQueryData(it) }, hasMore = false)
         }
     }
 
