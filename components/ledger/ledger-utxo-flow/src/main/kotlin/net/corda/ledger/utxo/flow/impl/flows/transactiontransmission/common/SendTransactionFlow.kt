@@ -2,7 +2,6 @@ package net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.common
 
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
-import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.v1.SendSignedTransactionFlowV1
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.utilities.trace
 import net.corda.v5.application.flows.CordaInject
