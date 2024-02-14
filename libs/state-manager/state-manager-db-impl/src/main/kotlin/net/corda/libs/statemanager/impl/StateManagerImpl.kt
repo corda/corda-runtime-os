@@ -92,7 +92,7 @@ class StateManagerImpl(
             logger.info("CORE-19662 - Successfully created states for keys $successfulKeys")
 
             val failed = states.map { it.key }.toSet() - successfulKeys.toSet()
-            logger.info("CORE-19662 - Failed to create states for keys $failed")
+            logger.warn("CORE-19662 - Failed to create states for keys $failed")
             failed
         }
     }
@@ -122,7 +122,7 @@ class StateManagerImpl(
                 if (failedUpdates.isEmpty()) {
                     emptyMap()
                 } else {
-                    logger.info("CORE-19662 - Failed to update states $failedUpdates")
+                    logger.warn("CORE-19662 - Failed to update states $failedUpdates")
                     getFailedUpdates(failedUpdates)
                 }
             } catch (e: Exception) {
@@ -145,7 +145,7 @@ class StateManagerImpl(
                 if (failedDeletes.isEmpty()) {
                     emptyMap()
                 } else {
-                    logger.info("CORE-19662 - Failed to update states $failedDeletes")
+                    logger.warn("CORE-19662 - Failed to update states $failedDeletes")
 
                     getByKey(failedDeletes).also {
                         if (it.isNotEmpty()) {

@@ -68,7 +68,7 @@ class FlowFailedRequestHandler @Activate constructor(
 
         log.info("Flow [${checkpoint.flowId}] failed")
         checkpoint.markDeleted()
-        log.info("CORE-19662 - Flow [${checkpoint.flowId}] marked for deletion")
+        log.warn("CORE-19662 - Flow [${checkpoint.flowId}] marked for deletion")
         context.flowMetrics.flowFailed()
         val metaWithTermination = addTerminationKeyToMeta(context.metadata)
         return context.copy(outputRecords = context.outputRecords + records, metadata = metaWithTermination)

@@ -44,7 +44,7 @@ class CheckpointCleanupHandlerImpl @Activate constructor(
                 generateStatus(checkpoint, exception) +
                 cleanupRpcFlowMapperState(checkpoint, config, time)
         checkpoint.markDeleted()
-        log.info("CORE-19662 - Flow [${checkpoint.flowId}] marked for deletion", java.lang.Exception("Stack trace"))
+        log.warn("CORE-19662 - Flow [${checkpoint.flowId}] marked for deletion", java.lang.Exception("Stack trace"))
         return records
     }
 
