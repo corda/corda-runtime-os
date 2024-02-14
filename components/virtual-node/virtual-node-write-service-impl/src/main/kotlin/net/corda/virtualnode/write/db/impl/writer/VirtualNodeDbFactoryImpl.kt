@@ -141,18 +141,13 @@ internal class VirtualNodeDbFactoryImpl(
         config: String
     ): DbConnectionImpl {
         with(dbType) {
-            val smartConfig = config.toSmartConfig()
-            val smartConfigWithPool = if (!config.contains("\"pool\":")) {
-                val virtualNodePoolConfig = smartConfigFactory.create(
-                    when (dbPrivilege) {
-                        DDL -> virtualNodesDdlPoolConfig
-                        DML -> virtualNodesDmlPoolConfig
-                    }
-                )
-                createVirtualNodePoolConfig(smartConfig, virtualNodePoolConfig)
-            } else {
-                config.toSmartConfig()
-            }
+            val virtualNodePoolConfig = smartConfigFactory.create(
+                when (dbPrivilege) {
+                    DDL -> virtualNodesDdlPoolConfig
+                    DML -> virtualNodesDmlPoolConfig
+                }
+            )
+            val smartConfigWithPool = createVirtualNodePoolConfig(config.toSmartConfig(), virtualNodePoolConfig)
             return DbConnectionImpl(
                 getConnectionName(holdingIdentityShortHash),
                 dbPrivilege,
@@ -260,10 +255,14 @@ private fun createVirtualNodePoolConfig(
     val maxPoolSize = virtualNodePoolConfig.getInt(VirtualNodeDatasourceConfig.VNODE_POOL_MAX_SIZE)
     var configWithPool = config.withValue(DatabaseConfig.DB_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(maxPoolSize))
 
-    if (virtualNodePoolConfig.hasPath(VirtualNodeDatasourceConfig.VNODE_POOL_MIN_SIZE)) {
+    configWithPool = if (virtualNodePoolConfig.hasPath(VirtualNodeDatasourceConfig.VNODE_POOL_MIN_SIZE)) {
         val minPoolSize = virtualNodePoolConfig.getInt(VirtualNodeDatasourceConfig.VNODE_POOL_MIN_SIZE)
-        configWithPool =
-            configWithPool.withValue(DatabaseConfig.DB_POOL_MIN_SIZE, ConfigValueFactory.fromAnyRef(minPoolSize))
+        configWithPool.withValue(
+            DatabaseConfig.DB_POOL_MIN_SIZE,
+            ConfigValueFactory.fromAnyRef(minPoolSize)
+        )
+    } else {
+        configWithPool.withoutPath(DatabaseConfig.DB_POOL_MIN_SIZE)
     }
 
     val idleTimeout = virtualNodePoolConfig.getInt(VirtualNodeDatasourceConfig.VNODE_POOL_IDLE_TIMEOUT_SECONDS)
