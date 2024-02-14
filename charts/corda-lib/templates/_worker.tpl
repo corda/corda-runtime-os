@@ -340,6 +340,15 @@ spec:
           - "--serviceEndpoint={{ include "corda.getWorkerEndpoint" (dict "context" $ "worker" $worker) }}"
           {{- end }}
           {{- end }}
+          {{- with ((.mediator).flowSession).replicaCount }}
+          - "--mediator-replicas-flow-session={{ . }}"
+          {{- end }}
+          {{- with ((.mediator).flowSessionIn).replicaCount }}
+          - "--mediator-replicas-flow-session-in={{ . }}"
+          {{- end }}
+          {{- with ((.mediator).flowSessionOut).replicaCount }}
+          - "--mediator-replicas-flow-session-out={{ . }}"
+          {{- end }}
           {{- range $i, $arg := $optionalArgs.additionalWorkerArgs }}
           - {{ $arg | quote }}
           {{- end -}}
