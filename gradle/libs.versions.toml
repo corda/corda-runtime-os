@@ -2,7 +2,7 @@
 kotlinVersion = "1.8.21"
 
 bouncycastleVersion = "1.77"
-braveVersion = "6.0.0"
+braveVersion = "6.0.1"
 caffeineVersion = "3.1.8"
 guavaVersion = "33.0.0-jre"
 hikariCpVersion = "5.1.0"
