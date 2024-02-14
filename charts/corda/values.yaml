@@ -1081,6 +1081,7 @@ workers:
     extraArgs:
       - "--mediator-replicas-flow-session-in=1"
       - "--mediator-replicas-flow-session-out=1"
+
   # verification worker configuration
   verification:
     # verification worker image configuration
