@@ -962,12 +962,9 @@ workers:
               name: ""
               # -- the flow worker SASL password secret key for client connection to Kafka
               key: ""
-    # flow worker mediator configuration
-    mediator:
-      # the number of mediator instances the worker must create that read from the flow.session Kafka topic
-      flowSession:
-        # -- the number of mediator instances the worker must create
-        replicaCount: 1
+    # -- flow worker extra arguments configuration that allows users to pass arbitrary arguments
+    extraArgs:
+      - "--mediator-replicas-flow-session=1"
 
   # flow mapper worker configuration
   flowMapper:
@@ -1080,16 +1077,10 @@ workers:
               name: ""
               # -- the flow mapper worker SASL password secret key for client connection to Kafka
               key: ""
-    # flow mapper worker mediator configuration
-    mediator:
-      # the number of mediator instances the worker must create that read from the flow.session.in Kafka topic
-      flowSessionIn:
-        # -- the number of mediator instances the worker must create
-        replicaCount: 1
-      # the number of mediator instances the worker must create that read from the flow.session.out Kafka topic
-      flowSessionOut:
-        # -- the number of mediator instances the worker must create
-        replicaCount: 1
+    # -- flow mapper worker extra arguments configuration that allows users to pass arbitrary arguments
+    extraArgs:
+      - "--mediator-replicas-flow-session-in=1"
+      - "--mediator-replicas-flow-session-out=1"
   # verification worker configuration
   verification:
     # verification worker image configuration
