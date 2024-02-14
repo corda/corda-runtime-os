@@ -86,14 +86,22 @@ class UtxoPersistenceServiceImpl(
         transactionStatus: TransactionStatus
     ): Pair<SignedTransactionContainer?, String?> {
         return entityManagerFactory.transaction { em ->
-            val status = repository.findTransactionStatus(em, id)
-            if (status == transactionStatus.value) {
-                repository.findTransaction(em, id)
-                    ?: throw InconsistentLedgerStateException("Transaction $id in status $status has disappeared from the database")
-            } else {
-                null
-            } to status
+            findSignedTransaction(id, transactionStatus, em)
         }
+    }
+
+    private fun findSignedTransaction(
+        id: String,
+        transactionStatus: TransactionStatus,
+        em: EntityManager,
+    ): Pair<SignedTransactionContainer?, String?> {
+        val status = repository.findTransactionStatus(em, id)
+        return if (status == transactionStatus.value) {
+            repository.findTransaction(em, id)
+                ?: throw InconsistentLedgerStateException("Transaction $id in status $status has disappeared from the database")
+        } else {
+            null
+        } to status
     }
 
     override fun findFilteredTransactionsAndSignatures(
@@ -108,67 +116,68 @@ class UtxoPersistenceServiceImpl(
             .groupBy { it.transactionId }
             .mapValues { (_, _) -> null to emptyList<DigitalSignatureAndMetadata>() }.toMutableMap()
 
-        txIdToIndexesMap.keys.forEach { transactionId ->
+        return entityManagerFactory.transaction { em ->
+            txIdToIndexesMap.keys.forEach { transactionId ->
 
-            require(txIdToFilteredTxAndSignature.containsKey(transactionId)) { "transaction Id $transactionId is not found." }
+                require(txIdToFilteredTxAndSignature.containsKey(transactionId)) { "transaction Id $transactionId is not found." }
 
-            val signedTransactionContainer = findSignedTransaction(transactionId.toString(), TransactionStatus.VERIFIED).first
-            val wireTransaction = signedTransactionContainer?.wireTransaction
-            val signatures = signedTransactionContainer?.signatures ?: emptyList()
-            val indexesOfTxId = requireNotNull(txIdToIndexesMap[transactionId])
+                val signedTransactionContainer = findSignedTransaction(transactionId.toString(), TransactionStatus.VERIFIED, em).first
+                val wireTransaction = signedTransactionContainer?.wireTransaction
+                val signatures = signedTransactionContainer?.signatures ?: emptyList()
+                val indexesOfTxId = requireNotNull(txIdToIndexesMap[transactionId])
 
-            if (wireTransaction != null) {
-                if (wireTransaction.id != transactionId) {
-                    return@forEach
-                }
+                if (wireTransaction != null) {
+                    if (wireTransaction.id != transactionId) {
+                        return@forEach
+                    }
 
-                /** filter wire transaction that is equivalent to:
-                 * var filteredTxBuilder = filteredTransactionBuilder
-                 *   .withTimeWindow()
-                 *   .withOutputStates(indexesOfTxId)
-                 *   .withNotary()
-                 */
-                val filteredTransaction = filteredTransactionFactory.create(
-                    wireTransaction,
-                    listOf(
-                        ComponentGroupFilterParameters.AuditProof(
-                            METADATA.ordinal,
-                            TransactionMetadata::class.java,
-                            ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                        ),
-                        ComponentGroupFilterParameters.AuditProof(
-                            NOTARY.ordinal,
-                            Any::class.java,
-                            ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                        ),
-                        ComponentGroupFilterParameters.AuditProof(
-                            UtxoComponentGroup.OUTPUTS_INFO.ordinal,
-                            UtxoOutputInfoComponent::class.java,
-                            ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Index(indexesOfTxId)
-                        ),
-                        ComponentGroupFilterParameters.AuditProof(
-                            UtxoComponentGroup.OUTPUTS.ordinal,
-                            ContractState::class.java,
-                            ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Index(indexesOfTxId)
+                    /** filter wire transaction that is equivalent to:
+                     * var filteredTxBuilder = filteredTransactionBuilder
+                     *   .withTimeWindow()
+                     *   .withOutputStates(indexesOfTxId)
+                     *   .withNotary()
+                     */
+                    val filteredTransaction = filteredTransactionFactory.create(
+                        wireTransaction,
+                        listOf(
+                            ComponentGroupFilterParameters.AuditProof(
+                                METADATA.ordinal,
+                                TransactionMetadata::class.java,
+                                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
+                            ),
+                            ComponentGroupFilterParameters.AuditProof(
+                                NOTARY.ordinal,
+                                Any::class.java,
+                                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
+                            ),
+                            ComponentGroupFilterParameters.AuditProof(
+                                UtxoComponentGroup.OUTPUTS_INFO.ordinal,
+                                UtxoOutputInfoComponent::class.java,
+                                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Index(indexesOfTxId)
+                            ),
+                            ComponentGroupFilterParameters.AuditProof(
+                                UtxoComponentGroup.OUTPUTS.ordinal,
+                                ContractState::class.java,
+                                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Index(indexesOfTxId)
+                            )
                         )
                     )
-                )
-                txIdToFilteredTxAndSignature[transactionId] = filteredTransaction to signatures
+                    txIdToFilteredTxAndSignature[transactionId] = filteredTransaction to signatures
+                }
             }
+            // filter transaction ids who's filtered tx is null
+            val transactionIdsToFind =
+                txIdToFilteredTxAndSignature.filter { it.value.toList().contains(null) }.keys.map { it.toString() }
+
+            // find from filtered transaction table if there are still unfounded filtered txs
+            val txIdToFilteredTxSignaturePairFromMerkleTable =
+                if (transactionIdsToFind.isNotEmpty()) {
+                    findFilteredTransactions(transactionIdsToFind, em)
+                } else {
+                    emptyMap()
+                }
+            (txIdToFilteredTxAndSignature + txIdToFilteredTxSignaturePairFromMerkleTable).toMap()
         }
-        // filter transaction ids who's filtered tx is null
-        val transactionIdsToFind =
-            txIdToFilteredTxAndSignature.filter { it.value.toList().contains(null) }.keys.map { it.toString() }
-
-        // find from filtered transaction table if there are still unfounded filtered txs
-        val txIdToFilteredTxSignaturePairFromMerkleTable =
-            if (transactionIdsToFind.isNotEmpty()) {
-                findFilteredTransactions(transactionIdsToFind)
-            } else {
-                emptyMap()
-            }
-
-        return (txIdToFilteredTxAndSignature + txIdToFilteredTxSignaturePairFromMerkleTable).toMap()
     }
 
     override fun findTransactionIdsAndStatuses(
@@ -231,11 +240,9 @@ class UtxoPersistenceServiceImpl(
     private fun hash(data: ByteArray) = sandboxDigestService.hash(data, DigestAlgorithmName.SHA2_256).toString()
 
     override fun persistTransaction(transaction: UtxoTransactionReader, utxoTokenMap: Map<StateRef, UtxoToken>): List<CordaPackageSummary> {
-        return persistTransaction(
-            { block -> entityManagerFactory.transaction { em -> block(em) } },
-            transaction,
-            utxoTokenMap
-        )
+        return persistTransaction(transaction, utxoTokenMap) { block ->
+            entityManagerFactory.transaction { em -> block(em) }
+        }
     }
 
     override fun persistTransactionIfDoesNotExist(transaction: UtxoTransactionReader): Pair<String?, List<CordaPackageSummary>> {
@@ -248,16 +255,16 @@ class UtxoPersistenceServiceImpl(
                 return status to emptyList()
             }
 
-            val cpkDetails = persistTransaction({ block -> block(em) }, transaction, emptyMap())
+            val cpkDetails = persistTransaction(transaction, emptyMap()) { block -> block(em) }
 
             return null to cpkDetails
         }
     }
 
-    private fun persistTransaction(
-        optionalTransactionBlock: ((EntityManager) -> Unit) -> Unit,
+    private inline fun persistTransaction(
         transaction: UtxoTransactionReader,
-        utxoTokenMap: Map<StateRef, UtxoToken>
+        utxoTokenMap: Map<StateRef, UtxoToken>,
+        optionalTransactionBlock: ((EntityManager) -> Unit) -> Unit
     ): List<CordaPackageSummary> {
         val nowUtc = utcClock.instant()
         val transactionIdString = transaction.id.toString()
@@ -566,128 +573,134 @@ class UtxoPersistenceServiceImpl(
 
     @VisibleForTesting
     internal fun findFilteredTransactions(
-        ids: List<String>
+        transactionIds: List<String>
     ): Map<SecureHash, Pair<FilteredTransaction?, List<DigitalSignatureAndMetadata>>> {
-        return entityManagerFactory.transaction { em ->
-            repository.findFilteredTransactions(em, ids)
-        }.map { (transactionId, ftxDto) ->
-            // Map through each found transaction
+        return entityManagerFactory.transaction { em -> findFilteredTransactions(transactionIds, em) }
+    }
 
-            val nullOrEmptyField = ftxDto.takeIf {
-                it.topLevelMerkleProofs.isEmpty() || it.componentMerkleProofMap.isEmpty() || it.privacySalt == null ||
-                    it.metadataBytes == null || it.signatures.isEmpty()
-            }
+    private fun findFilteredTransactions(
+        transactionIds: List<String>,
+        em: EntityManager
+    ): Map<SecureHash, Pair<FilteredTransaction?, List<DigitalSignatureAndMetadata>>> {
+        return repository.findFilteredTransactions(em, transactionIds)
+            .map { (transactionId, ftxDto) ->
+                // Map through each found transaction
 
-            // If any of the fields in dto are empty or null, skip to next iteration since we can't create filtered transaction.
-            if (nullOrEmptyField != null) {
-                log.warn(
-                    "The filtered transaction $transactionId is missing data for any of " +
-                        "topLevelMerkleProofs = ${ftxDto.topLevelMerkleProofs}, " +
-                        "componentMerkleProofMap = ${ftxDto.componentMerkleProofMap}, " +
-                        "privacySalt = ${ftxDto.privacySalt}, " +
-                        "metadataBytes = ${ftxDto.metadataBytes}, " +
-                        "signatures = ${ftxDto.signatures}."
+                val nullOrEmptyField = ftxDto.takeIf {
+                    it.topLevelMerkleProofs.isEmpty() || it.componentMerkleProofMap.isEmpty() || it.privacySalt == null ||
+                            it.metadataBytes == null || it.signatures.isEmpty()
+                }
+
+                // If any of the fields in dto are empty or null, skip to next iteration since we can't create filtered transaction.
+                if (nullOrEmptyField != null) {
+                    log.warn(
+                        "The filtered transaction $transactionId is missing data for any of " +
+                                "topLevelMerkleProofs = ${ftxDto.topLevelMerkleProofs}, " +
+                                "componentMerkleProofMap = ${ftxDto.componentMerkleProofMap}, " +
+                                "privacySalt = ${ftxDto.privacySalt}, " +
+                                "metadataBytes = ${ftxDto.metadataBytes}, " +
+                                "signatures = ${ftxDto.signatures}."
+                    )
+                    return@map null
+                }
+
+                // 1. Parse the metadata bytes
+                val filteredTransactionMetadata = parseMetadata(
+                    ftxDto.metadataBytes!!,
+                    jsonValidator,
+                    jsonMarshallingService
                 )
-                return@map null
-            }
 
-            // 1. Parse the metadata bytes
-            val filteredTransactionMetadata = parseMetadata(
-                ftxDto.metadataBytes!!,
-                jsonValidator,
-                jsonMarshallingService
-            )
+                val rootDigestProvider = filteredTransactionMetadata.getRootMerkleTreeDigestProvider(merkleTreeProvider)
 
-            val rootDigestProvider = filteredTransactionMetadata.getRootMerkleTreeDigestProvider(merkleTreeProvider)
+                // 2. Merge the Merkle proofs for each component group
+                val componentDigestProviders = mutableMapOf<Int, MerkleTreeHashDigestProvider>()
 
-            // 2. Merge the Merkle proofs for each component group
-            val componentDigestProviders = mutableMapOf<Int, MerkleTreeHashDigestProvider>()
+                val mergedMerkleProofs = ftxDto.componentMerkleProofMap.mapValues { (componentGroupIndex, merkleProofDtoList) ->
+                    val componentGroupHashDigestProvider = filteredTransactionMetadata.getComponentGroupMerkleTreeDigestProvider(
+                        ftxDto.privacySalt!!,
+                        componentGroupIndex,
+                        merkleTreeProvider,
+                        digestService
+                    )
+                    componentDigestProviders[componentGroupIndex] = componentGroupHashDigestProvider
+                    merkleProofDtoList.map { merkleProofDto ->
+                        // Transform the MerkleProofDto objects to MerkleProof objects
+                        // If the merkle proof is metadata, we need to add the bytes because it's not part of the component table
+                        val merkleProofDtoOverride = if (merkleProofDto.groupIndex == 0) {
+                            merkleProofDto.copy(leavesWithData = mapOf(0 to ftxDto.metadataBytes!!))
+                        } else {
+                            merkleProofDto
+                        }
 
-            val mergedMerkleProofs = ftxDto.componentMerkleProofMap.mapValues { (componentGroupIndex, merkleProofDtoList) ->
-                val componentGroupHashDigestProvider = filteredTransactionMetadata.getComponentGroupMerkleTreeDigestProvider(
-                    ftxDto.privacySalt!!,
-                    componentGroupIndex,
-                    merkleTreeProvider,
-                    digestService
-                )
-                componentDigestProviders[componentGroupIndex] = componentGroupHashDigestProvider
-                merkleProofDtoList.map { merkleProofDto ->
-                    // Transform the MerkleProofDto objects to MerkleProof objects
-                    // If the merkle proof is metadata, we need to add the bytes because it's not part of the component table
-                    val merkleProofDtoOverride = if (merkleProofDto.groupIndex == 0) {
-                        merkleProofDto.copy(leavesWithData = mapOf(0 to ftxDto.metadataBytes!!))
-                    } else {
-                        merkleProofDto
+                        merkleProofDtoOverride.toMerkleProof(
+                            merkleProofFactory,
+                            componentGroupHashDigestProvider
+                        )
+                    }.reduce { accumulator, merkleProof ->
+                        // Then  keep merging the elements into each other
+                        (accumulator as MerkleProofInternal).merge(
+                            merkleProof,
+                            componentGroupHashDigestProvider
+                        )
+                    }
+                }
+
+                // 3. Calculate the root hash of each component group merkle proof
+                val calculatedComponentGroupRootsHashes = mergedMerkleProofs.map { (componentGroupIndex, merkleProof) ->
+                    // We don't store the leaf data for top level proofs, so we need to calculate it from the
+                    // existing component group proofs
+                    // Map through the visible component groups and calculate the root of the given component merkle proof
+                    val componentGroupHashDigestProvider = componentDigestProviders[componentGroupIndex]
+
+                    requireNotNull(componentGroupHashDigestProvider) {
+                        "Could not find hash digest provider for $componentGroupIndex"
                     }
 
-                    merkleProofDtoOverride.toMerkleProof(
-                        merkleProofFactory,
-                        componentGroupHashDigestProvider
+                    componentGroupIndex to merkleProof.calculateRoot(componentGroupHashDigestProvider)
+                }.toMap()
+
+                // 4. Create the top level Merkle proof by merging all the top level merkle proofs together
+                val mergedTopLevelProof = ftxDto.topLevelMerkleProofs.map {
+                    // Transform the MerkleProofDto objects to MerkleProof objects
+                    merkleProofFactory.createAuditMerkleProof(
+                        it.treeSize,
+                        it.visibleLeaves.associateWith { componentGroupIndex ->
+
+                            // Use the already calculated component group root
+                            val componentGroupRootBytes = calculatedComponentGroupRootsHashes[componentGroupIndex]?.bytes
+
+                            // At this point we should have this available
+                            requireNotNull(componentGroupRootBytes) {
+                                "Could not find merkle proof for component group index: $componentGroupIndex"
+                            }
+
+                            componentGroupRootBytes
+                        },
+                        it.hashes,
+                        rootDigestProvider
                     )
                 }.reduce { accumulator, merkleProof ->
                     // Then  keep merging the elements into each other
                     (accumulator as MerkleProofInternal).merge(
                         merkleProof,
-                        componentGroupHashDigestProvider
+                        rootDigestProvider
                     )
                 }
-            }
 
-            // 3. Calculate the root hash of each component group merkle proof
-            val calculatedComponentGroupRootsHashes = mergedMerkleProofs.map { (componentGroupIndex, merkleProof) ->
-                // We don't store the leaf data for top level proofs, so we need to calculate it from the
-                // existing component group proofs
-                // Map through the visible component groups and calculate the root of the given component merkle proof
-                val componentGroupHashDigestProvider = componentDigestProviders[componentGroupIndex]
-
-                requireNotNull(componentGroupHashDigestProvider) {
-                    "Could not find hash digest provider for $componentGroupIndex"
-                }
-
-                componentGroupIndex to merkleProof.calculateRoot(componentGroupHashDigestProvider)
-            }.toMap()
-
-            // 4. Create the top level Merkle proof by merging all the top level merkle proofs together
-            val mergedTopLevelProof = ftxDto.topLevelMerkleProofs.map {
-                // Transform the MerkleProofDto objects to MerkleProof objects
-                merkleProofFactory.createAuditMerkleProof(
-                    it.treeSize,
-                    it.visibleLeaves.associateWith { componentGroupIndex ->
-
-                        // Use the already calculated component group root
-                        val componentGroupRootBytes = calculatedComponentGroupRootsHashes[componentGroupIndex]?.bytes
-
-                        // At this point we should have this available
-                        requireNotNull(componentGroupRootBytes) {
-                            "Could not find merkle proof for component group index: $componentGroupIndex"
-                        }
-
-                        componentGroupRootBytes
-                    },
-                    it.hashes,
-                    rootDigestProvider
+                // 5. Create the filtered transaction object
+                val filteredTransaction = filteredTransactionFactory.create(
+                    parseSecureHash(transactionId),
+                    mergedTopLevelProof,
+                    mergedMerkleProofs.map {
+                        it.key to FilteredComponentGroup(it.key, it.value)
+                    }.toMap(),
+                    ftxDto.privacySalt!!.bytes
                 )
-            }.reduce { accumulator, merkleProof ->
-                // Then  keep merging the elements into each other
-                (accumulator as MerkleProofInternal).merge(
-                    merkleProof,
-                    rootDigestProvider
-                )
-            }
 
-            // 5. Create the filtered transaction object
-            val filteredTransaction = filteredTransactionFactory.create(
-                parseSecureHash(transactionId),
-                mergedTopLevelProof,
-                mergedMerkleProofs.map {
-                    it.key to FilteredComponentGroup(it.key, it.value)
-                }.toMap(),
-                ftxDto.privacySalt!!.bytes
-            )
-
-            // 6. Map the transaction id to the filtered transaction object and signatures
-            filteredTransaction.id to Pair(filteredTransaction, ftxDto.signatures)
-        }.filterNotNull().toMap()
+                // 6. Map the transaction id to the filtered transaction object and signatures
+                filteredTransaction.id to Pair(filteredTransaction, ftxDto.signatures)
+            }.filterNotNull().toMap()
     }
 
     private data class TransactionMerkleProofToPersist(

@@ -6,10 +6,13 @@ import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
     companion object {
         @JvmField
+        val DRAFT = TransactionStatus.DRAFT.value
+
+        @JvmField
         val UNVERIFIED = TransactionStatus.UNVERIFIED.value
 
         @JvmField
-        val DRAFT = TransactionStatus.DRAFT.value
+        val VERIFIED = TransactionStatus.VERIFIED.value
     }
 
     override val findTransactionIdsAndStatuses: String
