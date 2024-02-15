@@ -54,7 +54,7 @@ class SendSignedTransactionFlowV1Test {
         signedTransaction: UtxoSignedTransactionInternal,
         sessions: List<FlowSession>
     ) {
-        val flow = SendSignedTransactionFlowV1(signedTransaction, sessions)
+        val flow = SendSignedTransactionFlowV1(signedTransaction, sessions, forceBackchainResolution = false)
 
         flow.flowEngine = mockFlowEngine
         flow.call()

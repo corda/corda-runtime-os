@@ -290,16 +290,35 @@ class UtxoLedgerServiceImpl @Activate constructor(
 
     @Suspendable
     override fun sendTransaction(signedTransaction: UtxoSignedTransaction, sessions: List<FlowSession>) {
-        flowEngine.subFlow(SendSignedTransactionFlow(signedTransaction, sessions))
+        flowEngine.subFlow(
+            SendSignedTransactionFlow(
+                signedTransaction,
+                sessions,
+                forceBackchainResolution = false
+            )
+        )
     }
 
+    @Suspendable
+    override fun sendTransactionWithBackchain(
+        signedTransaction: UtxoSignedTransaction,
+        sessions: MutableList<FlowSession>
+    ) {
+        flowEngine.subFlow(
+            SendSignedTransactionFlow(
+                signedTransaction,
+                sessions,
+                forceBackchainResolution = true
+            )
+        )
+    }
     @Suspendable
     override fun receiveLedgerTransaction(session: FlowSession): UtxoLedgerTransaction {
         return flowEngine.subFlow(ReceiveWireTransactionFlow(session))
     }
 
     @Suspendable
-    override fun sendAsLedgerTransaction(signedTransaction: UtxoSignedTransaction, sessions: List<FlowSession>) {
+    override fun sendLedgerTransaction(signedTransaction: UtxoSignedTransaction, sessions: List<FlowSession>) {
         flowEngine.subFlow(SendWireTransactionFlow(signedTransaction, sessions))
     }
 
