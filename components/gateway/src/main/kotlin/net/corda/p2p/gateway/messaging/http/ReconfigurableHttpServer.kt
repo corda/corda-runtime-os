@@ -15,6 +15,7 @@ import net.corda.p2p.gateway.messaging.mtls.DynamicCertificateSubjectStore
 import net.corda.p2p.gateway.messaging.toGatewayConfiguration
 import net.corda.schema.configuration.ConfigKeys
 import org.slf4j.LoggerFactory
+import java.net.BindException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
@@ -110,7 +111,16 @@ internal class ReconfigurableHttpServer(
                                 commonComponents.dynamicKeyStore.serverKeyStore,
                                 mutualTlsTrustManager,
                             ).also {
-                                it.start()
+                                try {
+                                    it.start()
+                                } catch (e: BindException) {
+                                    val addressMsg = "Failed to connect on " +
+                                            "'${serverConfiguration.hostAddress}:${serverConfiguration.hostPort}' " +
+                                            "address. Please make sure the required address is not in use " +
+                                            "and could be accessed."
+                                    logger.warn(addressMsg)
+                                    throw BindException(e.message + " " + addressMsg)
+                                }
                             }
                         }
                     }
