@@ -588,18 +588,18 @@ class UtxoPersistenceServiceImpl(
 
                 val nullOrEmptyField = ftxDto.takeIf {
                     it.topLevelMerkleProofs.isEmpty() || it.componentMerkleProofMap.isEmpty() || it.privacySalt == null ||
-                            it.metadataBytes == null || it.signatures.isEmpty()
+                        it.metadataBytes == null || it.signatures.isEmpty()
                 }
 
                 // If any of the fields in dto are empty or null, skip to next iteration since we can't create filtered transaction.
                 if (nullOrEmptyField != null) {
                     log.warn(
                         "The filtered transaction $transactionId is missing data for any of " +
-                                "topLevelMerkleProofs = ${ftxDto.topLevelMerkleProofs}, " +
-                                "componentMerkleProofMap = ${ftxDto.componentMerkleProofMap}, " +
-                                "privacySalt = ${ftxDto.privacySalt}, " +
-                                "metadataBytes = ${ftxDto.metadataBytes}, " +
-                                "signatures = ${ftxDto.signatures}."
+                            "topLevelMerkleProofs = ${ftxDto.topLevelMerkleProofs}, " +
+                            "componentMerkleProofMap = ${ftxDto.componentMerkleProofMap}, " +
+                            "privacySalt = ${ftxDto.privacySalt}, " +
+                            "metadataBytes = ${ftxDto.metadataBytes}, " +
+                            "signatures = ${ftxDto.signatures}."
                     )
                     return@map null
                 }

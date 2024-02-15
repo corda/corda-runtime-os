@@ -107,7 +107,7 @@ import javax.persistence.EntityManagerFactory
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
-@Suppress("FunctionName")
+@Suppress("FunctionName", "MaxLineLength")
 class UtxoPersistenceServiceImplTest {
     @RegisterExtension
     private val lifecycle = EachTestLifecycle()
@@ -1090,7 +1090,8 @@ class UtxoPersistenceServiceImplTest {
         )
         persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
         persistenceService.persistTransaction(transactionReader, emptyMap())
-        val loadedFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl).findFilteredTransactions(listOf(signedTransaction.id.toString()))
+        val loadedFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl)
+            .findFilteredTransactions(listOf(signedTransaction.id.toString()))
         assertThat(loadedFilteredTransactions).hasSize(1)
         assertThat(loadedFilteredTransactions[signedTransaction.id]!!.first).isEqualTo(filteredTransaction)
     }
@@ -1116,7 +1117,8 @@ class UtxoPersistenceServiceImplTest {
             emptyList()
         )
         persistenceService.persistTransaction(transactionReader, emptyMap())
-        val loadedFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl).findFilteredTransactions(listOf(signedTransaction.id.toString()))
+        val loadedFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl)
+            .findFilteredTransactions(listOf(signedTransaction.id.toString()))
         assertThat(loadedFilteredTransactions).isEmpty()
     }
 
