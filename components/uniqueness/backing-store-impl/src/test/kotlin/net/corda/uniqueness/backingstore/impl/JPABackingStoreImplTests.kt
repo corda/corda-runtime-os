@@ -115,9 +115,6 @@ class JPABackingStoreImplTests {
             whenever(byMultipleIds(UniquenessTransactionDetailEntity::class.java)) doReturn txMultiLoad
         }
 
-        val criteriaBuilderMock = mock<CriteriaBuilder>().apply {
-            whenever(createQuery()) doReturn mock {  }
-        }
         entityManager = mock<EntityManager>().apply {
             whenever(transaction) doReturn entityTransaction
             whenever(unwrap(Session::class.java)) doReturn dummySession
@@ -127,7 +124,6 @@ class JPABackingStoreImplTests {
                     UniquenessRejectedTransactionEntity::class.java
                 )
             ) doReturn txnErrorQuery
-            whenever(criteriaBuilder) doReturn criteriaBuilderMock
         }
 
         entityManagerFactory = mock<EntityManagerFactory>().apply {
