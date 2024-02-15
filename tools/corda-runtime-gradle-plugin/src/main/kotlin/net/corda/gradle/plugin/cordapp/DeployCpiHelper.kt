@@ -10,6 +10,7 @@ import net.corda.gradle.plugin.dtos.CpiUploadStatus
 import net.corda.gradle.plugin.dtos.GetCPIsResponseDTO
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
 import net.corda.gradle.plugin.retry
+import net.corda.gradle.plugin.retryAttempts
 import java.io.File
 import java.io.FileOutputStream
 import java.io.PrintStream
