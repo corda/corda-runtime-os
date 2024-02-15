@@ -48,7 +48,7 @@ class FlowCheckpointTaskProcessorTest {
     @Test
     fun `when scheduled task handler generates new records, ID of each retrieved state is present in output events`() {
         val stateManager = mock<StateManager>()
-        whenever(stateManager.findUpdatedBetweenWithMetadataMatchingAny(any(), any())).thenReturn(terminatedStates)
+        whenever(stateManager.findUpdatedBetweenWithMetadataMatchingAll(any(), any())).thenReturn(terminatedStates)
         val scheduledTaskProcessor = FlowCheckpointTerminationTaskProcessor(
             stateManager,
             config,
@@ -57,7 +57,7 @@ class FlowCheckpointTaskProcessorTest {
         val output = scheduledTaskProcessor.onNext(listOf(inputEvent))
         val ids = output.flatMap { (it.value as FlowCheckpointTermination).checkpointStateKeys }
         assertThat(ids).contains("key1", "key4")
-        verify(stateManager).findUpdatedBetweenWithMetadataMatchingAny(
+        verify(stateManager).findUpdatedBetweenWithMetadataMatchingAll(
             IntervalFilter(Instant.EPOCH, clock.instant() - Duration.ofMillis(window)),
             listOf(
                 MetadataFilter(STATE_TYPE, Operation.Equals, Checkpoint::class.java.name),
@@ -69,7 +69,7 @@ class FlowCheckpointTaskProcessorTest {
     @Test
     fun `when batch size is set to one, a record per id is present in output events`() {
         val stateManager = mock<StateManager>()
-        whenever(stateManager.findUpdatedBetweenWithMetadataMatchingAny(any(), any())).thenReturn(terminatedStates)
+        whenever(stateManager.findUpdatedBetweenWithMetadataMatchingAll(any(), any())).thenReturn(terminatedStates)
         val scheduledTaskProcessor = FlowCheckpointTerminationTaskProcessor(
             stateManager,
             config,
@@ -83,7 +83,7 @@ class FlowCheckpointTaskProcessorTest {
     @Test
     fun `when the last updated time is far enough in the past, no records are returned`() {
         val stateManager = mock<StateManager>()
-        whenever(stateManager.findUpdatedBetweenWithMetadataMatchingAny(any(), any())).thenReturn(mapOf())
+        whenever(stateManager.findUpdatedBetweenWithMetadataMatchingAll(any(), any())).thenReturn(mapOf())
         val scheduledTaskProcessor = FlowCheckpointTerminationTaskProcessor(
             stateManager,
             config.withValue(FlowConfig.PROCESSING_FLOW_CHECKPOINT_CLEANUP_TIME, ConfigValueFactory
@@ -93,7 +93,7 @@ class FlowCheckpointTaskProcessorTest {
         )
         val output = scheduledTaskProcessor.onNext(listOf(inputEvent))
         assertThat(output).isEmpty()
-        verify(stateManager).findUpdatedBetweenWithMetadataMatchingAny(
+        verify(stateManager).findUpdatedBetweenWithMetadataMatchingAll(
             IntervalFilter(Instant.EPOCH, clock.instant() - Duration.ofMillis(window * 5)),
             listOf(
                 MetadataFilter(STATE_TYPE, Operation.Equals, Checkpoint::class.java.name),
@@ -117,7 +117,7 @@ class FlowCheckpointTaskProcessorTest {
         )
         val output = scheduledTaskProcessor.onNext(listOf(input))
         assertThat(output).isEmpty()
-        verify(stateManager, never()).findUpdatedBetweenWithMetadataMatchingAny(any(), any())
+        verify(stateManager, never()).findUpdatedBetweenWithMetadataMatchingAll(any(), any())
     }
 
     private fun createStateEntry(
