@@ -72,11 +72,11 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
             ORDER BY signature_idx"""
             .trimIndent()
 
-    override val findSignedTransactionStatus: String
+    override val findTransactionStatus: String
         get() = """
-            SELECT status
+            SELECT status, is_filtered
             FROM {h-schema}utxo_transaction
-            WHERE id = :transactionId AND is_filtered = false"""
+            WHERE id = :transactionId"""
             .trimIndent()
 
     override val markTransactionVisibleStatesConsumed: String

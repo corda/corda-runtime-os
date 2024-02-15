@@ -95,10 +95,17 @@ class UtxoPersistenceServiceImpl(
         transactionStatus: TransactionStatus,
         em: EntityManager,
     ): Pair<SignedTransactionContainer?, String?> {
-        val status = repository.findSignedTransactionStatus(em, id)
+        val (status, isFiltered) = repository.findTransactionStatus(em, id) ?: return null to null
+        // VERIFIED can exist with is_filtered = true when there is only a filtered transaction
+        // UNVERIFIED can exist with is_filtered = true when there is a unverified signed and filtered transaction
+        // DRAFT cannot exist with is_filtered = true
+        // INVALID filtered transaction cannot exist
+        if (status == TransactionStatus.VERIFIED.value && isFiltered) {
+            return null to null
+        }
         return if (status == transactionStatus.value) {
             repository.findTransaction(em, id)
-                ?: throw InconsistentLedgerStateException("Transaction $id in status $status has disappeared from the database")
+                ?: throw InconsistentLedgerStateException("Transaction $id in status $transactionStatus has disappeared from the database")
         } else {
             null
         } to status
@@ -193,7 +200,14 @@ class UtxoPersistenceServiceImpl(
         transactionStatus: TransactionStatus
     ): Pair<SignedLedgerTransactionContainer?, String?> {
         return entityManagerFactory.transaction { em ->
-            val status = repository.findSignedTransactionStatus(em, id)
+            val (status, isFiltered) = repository.findTransactionStatus(em, id) ?: return null to null
+            // VERIFIED can exist with is_filtered = true when there is only a filtered transaction
+            // UNVERIFIED can exist with is_filtered = true when there is a unverified signed and filtered transaction
+            // DRAFT cannot exist with is_filtered = true
+            // INVALID filtered transaction cannot exist
+            if (status == TransactionStatus.VERIFIED.value && isFiltered) {
+                return null to null
+            }
             if (status == transactionStatus.value) {
                 val (transaction, signatures) = repository.findTransaction(em, id)
                     ?.let { WrappedUtxoWireTransaction(it.wireTransaction, serializationService) to it.signatures }
@@ -248,16 +262,17 @@ class UtxoPersistenceServiceImpl(
     override fun persistTransactionIfDoesNotExist(transaction: UtxoTransactionReader): Pair<String?, List<CordaPackageSummary>> {
         entityManagerFactory.transaction { em ->
             val transactionIdString = transaction.id.toString()
-
-            val status = repository.findSignedTransactionStatus(em, transactionIdString)
-
-            if (status != null) {
-                return status to emptyList()
+            val (status, isFiltered) = repository.findTransactionStatus(em, transactionIdString) ?: run {
+                return null to persistTransaction(transaction, emptyMap()) { block -> block(em) }
             }
-
-            val cpkDetails = persistTransaction(transaction, emptyMap()) { block -> block(em) }
-
-            return null to cpkDetails
+            // VERIFIED can exist with is_filtered = true when there is only a filtered transaction
+            // UNVERIFIED can exist with is_filtered = true when there is a unverified signed and filtered transaction
+            // DRAFT cannot exist with is_filtered = true
+            // INVALID filtered transaction cannot exist
+            if (status == TransactionStatus.VERIFIED.value && isFiltered) {
+                return null to emptyList()
+            }
+            return status to emptyList()
         }
     }
 
