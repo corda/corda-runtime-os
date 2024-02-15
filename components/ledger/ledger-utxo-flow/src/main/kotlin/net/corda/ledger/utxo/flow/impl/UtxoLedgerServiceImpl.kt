@@ -312,6 +312,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
             )
         )
     }
+
     @Suspendable
     override fun receiveLedgerTransaction(session: FlowSession): UtxoLedgerTransaction {
         return flowEngine.subFlow(ReceiveWireTransactionFlow(session))
