@@ -47,7 +47,7 @@ class Sender(
         private val random = Random()
         private val objectMapper = ObjectMapper().registerKotlinModule().registerModule(JavaTimeModule())
         private val idGenerator = AtomicLong()
-        private val created = random.nextLong()
+        private val created = "${random.nextInt(1000)}:${random.nextInt(1000)}"
     }
 
     private val writerThreads = mutableListOf<Thread>()
