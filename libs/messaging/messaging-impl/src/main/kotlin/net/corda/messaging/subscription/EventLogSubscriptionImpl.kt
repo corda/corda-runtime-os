@@ -268,7 +268,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
             producer.commitTransaction()
             log.info("QQQ $myId Done")
             outputs.forEach {
-                log.info("QQQ $myId commited ${it.key} at ${System.currentTimeMillis()}")
+                log.info("QQQ $myId commited ${it.key} to ${it.topic} at ${System.currentTimeMillis()}")
             }
             log.debug { "Processing records(keys: ${cordaConsumerRecords.joinToString { it.key.toString() }}, " +
                     "size: ${cordaConsumerRecords.size}) complete." }

@@ -29,6 +29,7 @@ echo "Report in $reportFile"
 
 echo "Running scenario: \"$(echo "$scenario" | jq -r '.name')\""
 export KAFKA_REPLICAS=$(echo "$scenario" | jq -r '.kafkaBrokers')
+export KAFKA_ZOOKEEPER_REPLICAS=$(echo "$scenario" | jq -r '.kafkaZookeeperReplicas')
 export WORKER_REPLICAS=$(echo "$scenario" | jq -r '.workerReplicas')
 export KAFKA_REPLICATION_FACTOR=$(echo "$scenario" | jq -r '.replicationFactor')
 export KAFKA_PARTITION_COUNT=$(echo "$scenario" | jq -r '.partitionCount')
@@ -41,7 +42,7 @@ echo "$WORKER_REPLICAS simulator in RECEIVER mode" >> "$reportFile"
 echo "$WORKER_REPLICAS simulator in DB_SINK mode" >> "$reportFile"
 echo "$WORKER_REPLICAS simulator in SENDER mode" >> "$reportFile"
 echo "1 Zookeeper instance" >> "$reportFile"
-echo "1 PostgreSQL instance" >> "$reportFile"
+echo "$KAFKA_ZOOKEEPER_REPLICAS PostgreSQL instance" >> "$reportFile"
 echo "$KAFKA_PARTITION_COUNT partitions per topic (replication factor = $KAFKA_REPLICATION_FACTOR)" >> "$reportFile"
 
 export CORDA_EKS_FILE="$SCRIPT_DIR/corda-eks-large.yaml"

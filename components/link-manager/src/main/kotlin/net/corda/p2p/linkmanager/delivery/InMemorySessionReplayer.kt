@@ -163,7 +163,9 @@ internal class InMemorySessionReplayer(
             networkType
         ) ?: return
         logger.debug { "Replaying session message ${message.payload.javaClass} for session ${messageReplay.sessionId}." }
-        publisher.publish(listOf(Record(LINK_OUT_TOPIC, LinkManager.generateKey(), message)))
+        val key = "$messageId:${LinkManager.generateKey()}"
+        logger.info("QQQ publishing 2 $key")
+        publisher.publish(listOf(Record(LINK_OUT_TOPIC, key, message)))
         messageReplay.sentSessionMessageCallback(
             messageReplay.sessionCounterparties,
             messageReplay.sessionId

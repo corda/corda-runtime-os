@@ -329,6 +329,7 @@ internal class MessageConverter(
         )?.let { message ->
             val key = "${messageAndKey.message.header.messageId}:${LinkManager.generateKey()}"
             val messageRecord = Record(Schemas.P2P.LINK_OUT_TOPIC, key, message)
+            logger.info("QQQ publishing 1 $key")
             val marker = AppMessageMarker(LinkManagerSentMarker(), clock.instant().toEpochMilli())
             val markerRecord = Record(Schemas.P2P.P2P_OUT_MARKERS, messageAndKey.message.header.messageId, marker)
             sessionManager.dataMessageSent(session)

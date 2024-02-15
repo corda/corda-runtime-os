@@ -2,6 +2,7 @@
   "name": "Scenario C",
   "workerReplicas": 4,
   "kafkaBrokers": 7,
-  "partitionCount": 20,
-  "replicationFactor": 3
+  "partitionCount": 21,
+  "replicationFactor": 1,
+  "kafkaZookeeperReplicas": 1
 }

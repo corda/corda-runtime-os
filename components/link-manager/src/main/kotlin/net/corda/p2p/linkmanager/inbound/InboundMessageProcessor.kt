@@ -147,9 +147,11 @@ internal class InboundMessageProcessor(
                         val partitionsAssigned = inboundAssignmentListener.getCurrentlyAssignedPartitions()
                         if (partitionsAssigned.isNotEmpty()) {
                             recordOutboundSessionMessagesMetric(response.header.sourceIdentity)
+                            val key = "${traceableMessage.originalRecord?.key}-${LinkManager.generateKey()}"
+                            logger.info("QQQ Publishing from processSessionMessages 1 $key")
                             TraceableItem(
                                 listOf(
-                                    Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response),
+                                    Record(Schemas.P2P.LINK_OUT_TOPIC, key, response),
                                     Record(
                                         Schemas.P2P.SESSION_OUT_PARTITIONS,
                                         payload.header.sessionId,
@@ -169,8 +171,10 @@ internal class InboundMessageProcessor(
                     }
                     else -> {
                         recordOutboundSessionMessagesMetric(response.header.sourceIdentity)
+                        val key = "${traceableMessage.originalRecord?.key}-${LinkManager.generateKey()}"
+                        logger.info("QQQ Publishing from processSessionMessages 2 $key")
                         TraceableItem(
-                            listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response)),
+                            listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, key, response)),
                             traceableMessage.originalRecord
                         )
                     }
@@ -367,9 +371,11 @@ internal class InboundMessageProcessor(
             groupPolicyProvider,
             membershipGroupReaderProvider
         ) ?: return null
+        val key = "${message.header.messageId}-${LinkManager.generateKey()}"
+        logger.info("QQQ publishing ack 1 $key")
         return Record(
             Schemas.P2P.LINK_OUT_TOPIC,
-            LinkManager.generateKey(),
+            key,
             ack
         )
     }

@@ -47,7 +47,7 @@ class Sender(
         private val random = Random()
         private val objectMapper = ObjectMapper().registerKotlinModule().registerModule(JavaTimeModule())
         private val idGenerator = AtomicLong()
-        private val created = UUID.randomUUID().toString()
+        private val created = random.nextLong()
     }
 
     private val writerThreads = mutableListOf<Thread>()
@@ -100,7 +100,7 @@ class Sender(
 
                             messagesWithIds.add(
                                 createMessage(
-                                    "${senderHoldingId.x500Name}->${destination.x500Name}:${idGenerator.incrementAndGet()}:$created",
+                                    "${idGenerator.incrementAndGet()}:$created",
                                     senderId,
                                     destination,
                                     senderHoldingId,
