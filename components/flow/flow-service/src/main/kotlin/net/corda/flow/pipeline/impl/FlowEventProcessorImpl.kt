@@ -29,7 +29,6 @@ import net.corda.tracing.traceStateAndEventExecution
 import net.corda.utilities.debug
 import net.corda.utilities.retry.Exponential
 import net.corda.utilities.retry.tryWithBackoff
-import net.corda.utilities.trace
 import net.corda.utilities.withMDC
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.Logger
@@ -100,7 +99,7 @@ class FlowEventProcessorImpl(
         }
 
         val pipeline = try {
-            log.trace { "Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}" }
+            log.info("Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}" )
             flowEventPipelineFactory.create(state, flowEvent, configs, mdcProperties, traceContext, event.timestamp, inputEventHash)
         } catch (t: Throwable) {
             log.warn("Failed to create flow event pipeline", t)

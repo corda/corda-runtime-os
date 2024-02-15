@@ -115,6 +115,8 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         exception: FlowPlatformException,
         context: FlowEventContext<*>
     ): FlowEventContext<*> {
+        log.warn("Flow through FlowPlatformException - ${context.checkpoint.flowId} ", exception)
+
         return withEscalation(context) {
             val checkpoint = context.checkpoint
 
@@ -131,6 +133,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         exception: FlowMarkedForKillException,
         context: FlowEventContext<*>
     ): FlowEventContext<*> {
+        log.warn("Flow is marked for kill - ${context.checkpoint.flowId} ", exception)
         return withEscalation(context) {
             val checkpoint = context.checkpoint
 
@@ -149,6 +152,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         return try {
             handler()
         } catch (t: Throwable) {
+            log.warn("Error occurred - ${context.checkpoint.flowId} ", t)
             // The exception handler failed. Rather than take the whole pipeline down, forcibly DLQ the offending event.
             process(t, context)
         }
