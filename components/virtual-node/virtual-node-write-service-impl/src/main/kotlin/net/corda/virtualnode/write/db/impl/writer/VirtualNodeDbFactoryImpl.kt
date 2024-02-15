@@ -141,17 +141,21 @@ internal class VirtualNodeDbFactoryImpl(
         config: String
     ): DbConnectionImpl {
         with(dbType) {
-            val virtualNodePoolConfig = smartConfigFactory.create(
-                when (dbPrivilege) {
-                    DDL -> virtualNodesDdlPoolConfig
-                    DML -> virtualNodesDmlPoolConfig
-                }
-            )
-            val smartConfigWithPool = createVirtualNodePoolConfig(config.toSmartConfig(), virtualNodePoolConfig)
+            val smartConfig = if (!config.toSmartConfig().hasPath("database.pool")) {
+                val virtualNodePoolConfig = smartConfigFactory.create(
+                    when (dbPrivilege) {
+                        DDL -> virtualNodesDdlPoolConfig
+                        DML -> virtualNodesDmlPoolConfig
+                    }
+                )
+                createVirtualNodePoolConfig(config.toSmartConfig(), virtualNodePoolConfig)
+            } else {
+                config.toSmartConfig()
+            }
             return DbConnectionImpl(
                 getConnectionName(holdingIdentityShortHash),
                 dbPrivilege,
-                smartConfigWithPool,
+                smartConfig,
                 getConnectionDescription(dbPrivilege, holdingIdentityShortHash)
             )
         }
@@ -261,8 +265,6 @@ private fun createVirtualNodePoolConfig(
             DatabaseConfig.DB_POOL_MIN_SIZE,
             ConfigValueFactory.fromAnyRef(minPoolSize)
         )
-    } else if (configWithPool.hasPath(DatabaseConfig.DB_POOL_MIN_SIZE)) {
-        configWithPool = configWithPool.withoutPath(DatabaseConfig.DB_POOL_MIN_SIZE)
     }
 
     val idleTimeout = virtualNodePoolConfig.getInt(VirtualNodeDatasourceConfig.VNODE_POOL_IDLE_TIMEOUT_SECONDS)
