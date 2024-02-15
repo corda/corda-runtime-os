@@ -49,7 +49,8 @@ open class JPABackingStoreImpl @Activate constructor(
     @Reference(service = JpaEntitiesRegistry::class)
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = DbConnectionManager::class)
-    private val dbConnectionManager: DbConnectionManager
+    private val dbConnectionManager: DbConnectionManager,
+    private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl()
 ) : BackingStore {
 
     private companion object {
@@ -58,8 +59,6 @@ open class JPABackingStoreImpl @Activate constructor(
         // TODO: Replace constants with config
         const val MAX_ATTEMPTS = 10
     }
-
-    private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl()
 
     init {
         jpaEntitiesRegistry.register(

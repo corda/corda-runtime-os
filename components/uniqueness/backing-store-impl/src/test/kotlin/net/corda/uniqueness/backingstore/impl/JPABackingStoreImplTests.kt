@@ -5,6 +5,8 @@ import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.schema.CordaDb
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -20,6 +22,8 @@ import net.corda.uniqueness.datamodel.common.UniquenessConstants
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRequest
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.VirtualNodeInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.hibernate.MultiIdentifierLoadAccess
 import org.hibernate.Session
@@ -37,6 +41,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.whenever
 import java.sql.Connection
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.UUID
@@ -44,6 +49,7 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
 import javax.persistence.TypedQuery
+import javax.persistence.criteria.CriteriaBuilder
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JPABackingStoreImplTests {
@@ -109,6 +115,9 @@ class JPABackingStoreImplTests {
             whenever(byMultipleIds(UniquenessTransactionDetailEntity::class.java)) doReturn txMultiLoad
         }
 
+        val criteriaBuilderMock = mock<CriteriaBuilder>().apply {
+            whenever(createQuery()) doReturn mock {  }
+        }
         entityManager = mock<EntityManager>().apply {
             whenever(transaction) doReturn entityTransaction
             whenever(unwrap(Session::class.java)) doReturn dummySession
@@ -118,6 +127,7 @@ class JPABackingStoreImplTests {
                     UniquenessRejectedTransactionEntity::class.java
                 )
             ) doReturn txnErrorQuery
+            whenever(criteriaBuilder) doReturn criteriaBuilderMock
         }
 
         entityManagerFactory = mock<EntityManagerFactory>().apply {
@@ -135,13 +145,24 @@ class JPABackingStoreImplTests {
         dbConnectionManager = mock<DbConnectionManager>().apply {
             whenever(getClusterDataSource()) doReturn dummyDataSource
             whenever(getOrCreateEntityManagerFactory(any<UUID>(), any(), any())) doReturn entityManagerFactory
+            whenever(getClusterEntityManagerFactory()) doReturn entityManagerFactory
         }
 
+        val virtualNodeRepository: VirtualNodeRepository = mock<VirtualNodeRepository>().apply {
+            whenever(find(any(), any())) doReturn VirtualNodeInfo(
+                holdingIdentity = notaryRepIdentity,
+                CpiIdentifier("", "", SecureHashUtils.randomSecureHash()),
+                vaultDmlConnectionId = UUID.randomUUID(),
+                cryptoDmlConnectionId = UUID.randomUUID(),
+                uniquenessDmlConnectionId = UUID.randomUUID(),
+                timestamp = Instant.EPOCH
+            )
+        }
         backingStoreImpl = JPABackingStoreLifecycleImpl(
             lifecycleCoordinatorFactory,
             jpaEntitiesRegistry,
             dbConnectionManager,
-            JPABackingStoreImpl(jpaEntitiesRegistry, dbConnectionManager)
+            JPABackingStoreImpl(jpaEntitiesRegistry, dbConnectionManager, virtualNodeRepository)
         )
     }
 
@@ -211,7 +232,7 @@ class JPABackingStoreImplTests {
         @Test
         fun `Session always closes entity manager after use`() {
             backingStoreImpl.session(notaryRepIdentity) { }
-            Mockito.verify(entityManager, times(1)).close()
+            Mockito.verify(entityManager, times(2)).close()
         }
 
         @Test
@@ -219,7 +240,7 @@ class JPABackingStoreImplTests {
             assertThrows<java.lang.RuntimeException> {
                 backingStoreImpl.session(notaryRepIdentity) { throw java.lang.RuntimeException("test exception") }
             }
-            Mockito.verify(entityManager, times(1)).close()
+            Mockito.verify(entityManager, times(2)).close()
         }
     }
 
@@ -240,7 +261,7 @@ class JPABackingStoreImplTests {
 
             Mockito.verify(entityTransaction, times(1)).begin()
             Mockito.verify(entityTransaction, times(1)).commit()
-            Mockito.verify(entityManager, times(1)).close()
+            Mockito.verify(entityManager, times(2)).close()
         }
 
         @Test
