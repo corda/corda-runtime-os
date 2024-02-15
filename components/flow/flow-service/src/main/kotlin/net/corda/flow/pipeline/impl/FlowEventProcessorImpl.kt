@@ -169,9 +169,7 @@ class FlowEventProcessorImpl(
         //Save outputs to replay in the future. This must be the last step after all processing
         val outputs = result.outputRecords + cleanupEvents
         val hash = result.inputEventHash
-        if (hash != null) {
-            result.checkpoint.saveOutputs(flowEngineReplayService.generateSavedOutputs(hash, outputs))
-        }
+
         return flowEventContextConverter.convert(
             result.copy(outputRecords = outputs)
         )
