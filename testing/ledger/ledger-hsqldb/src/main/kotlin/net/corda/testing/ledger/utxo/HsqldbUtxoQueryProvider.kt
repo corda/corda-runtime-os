@@ -26,6 +26,8 @@ class HsqldbUtxoQueryProvider @Activate constructor(
             USING (VALUES :id, CAST(:privacySalt AS VARBINARY(64)), :accountId, CAST(:createdAt AS TIMESTAMP), :status, CAST(:updatedAt AS TIMESTAMP), :metadataHash, :isFiltered)
                 AS x(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
             ON x.id = ut.id
+            WHEN MATCHED AND (ut.status in ('$UNVERIFIED', '$DRAFT') OR (ut.status = '$VERIFIED' AND ut.is_filtered = true)) 
+            THEN UPDATE SET ut.status = x.status, ut.updated = x.updated, ut.is_filtered = x.is_filtered
             WHEN NOT MATCHED THEN
                 INSERT (id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
                 VALUES (x.id, x.privacy_salt, x.account_id, x.created, x.status, x.updated, x.metadata_hash, x.is_filtered)"""
