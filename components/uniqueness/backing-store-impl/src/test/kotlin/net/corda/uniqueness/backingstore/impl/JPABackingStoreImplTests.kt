@@ -22,7 +22,6 @@ import net.corda.uniqueness.datamodel.common.UniquenessConstants
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRequest
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.hibernate.MultiIdentifierLoadAccess
@@ -49,7 +48,6 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
 import javax.persistence.TypedQuery
-import javax.persistence.criteria.CriteriaBuilder
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JPABackingStoreImplTests {
