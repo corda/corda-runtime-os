@@ -26,7 +26,7 @@ pipeline {
             idleMinutes 15
             podRetention always()
             nodeSelector k8s.nodeSelector
-            label k8s.jenkinsLabel
+            label 'docker-on-demand'
             showRawYaml false
             defaultContainer k8s.defaultContainer.name
         }
