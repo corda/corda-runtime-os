@@ -8,10 +8,10 @@ import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityFlow
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoReceiveFinalityFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.ReceiveAndUpdateTransactionBuilderFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.SendTransactionBuilderDiffFlow
-import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.ReceiveLedgerTransactionFlow
-import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.ReceiveTransactionFlow
-import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.SendAsLedgerTransactionFlow
-import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.SendTransactionFlow
+import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.ReceiveSignedTransactionFlow
+import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.ReceiveWireTransactionFlow
+import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.SendSignedTransactionFlow
+import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.SendWireTransactionFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
 import net.corda.ledger.utxo.flow.impl.persistence.VaultNamedParameterizedQueryImpl
@@ -285,22 +285,22 @@ class UtxoLedgerServiceImpl @Activate constructor(
 
     @Suspendable
     override fun receiveTransaction(session: FlowSession): UtxoSignedTransaction {
-        return flowEngine.subFlow(ReceiveTransactionFlow(session))
+        return flowEngine.subFlow(ReceiveSignedTransactionFlow(session))
     }
 
     @Suspendable
     override fun sendTransaction(signedTransaction: UtxoSignedTransaction, sessions: List<FlowSession>) {
-        flowEngine.subFlow(SendTransactionFlow(signedTransaction, sessions))
+        flowEngine.subFlow(SendSignedTransactionFlow(signedTransaction, sessions))
     }
 
     @Suspendable
     override fun receiveLedgerTransaction(session: FlowSession): UtxoLedgerTransaction {
-        return flowEngine.subFlow(ReceiveLedgerTransactionFlow(session))
+        return flowEngine.subFlow(ReceiveWireTransactionFlow(session))
     }
 
     @Suspendable
     override fun sendAsLedgerTransaction(signedTransaction: UtxoSignedTransaction, sessions: List<FlowSession>) {
-        flowEngine.subFlow(SendAsLedgerTransactionFlow(signedTransaction, sessions))
+        flowEngine.subFlow(SendWireTransactionFlow(signedTransaction, sessions))
     }
 
     @Suspendable
