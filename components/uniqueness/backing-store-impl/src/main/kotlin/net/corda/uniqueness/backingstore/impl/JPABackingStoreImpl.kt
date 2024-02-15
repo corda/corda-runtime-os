@@ -4,8 +4,11 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.bytes
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
+import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
+import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
 import net.corda.metrics.CordaMetrics
 import net.corda.orm.JpaEntitiesRegistry
+import net.corda.orm.utils.use
 import net.corda.uniqueness.backingstore.BackingStore
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.HIBERNATE_JDBC_BATCH_SIZE
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.RESULT_ACCEPTED_REPRESENTATION
@@ -25,7 +28,6 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.hibernate.Session
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -47,9 +49,7 @@ open class JPABackingStoreImpl @Activate constructor(
     @Reference(service = JpaEntitiesRegistry::class)
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = DbConnectionManager::class)
-    private val dbConnectionManager: DbConnectionManager,
-    @Reference(service = VirtualNodeInfoReadService::class)
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
+    private val dbConnectionManager: DbConnectionManager
 ) : BackingStore {
 
     private companion object {
@@ -58,6 +58,8 @@ open class JPABackingStoreImpl @Activate constructor(
         // TODO: Replace constants with config
         const val MAX_ATTEMPTS = 10
     }
+
+    private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl()
 
     init {
         jpaEntitiesRegistry.register(
@@ -70,7 +72,9 @@ open class JPABackingStoreImpl @Activate constructor(
 
         val sessionStartTime = System.nanoTime()
 
-        val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentity.shortHash)
+        val virtualNodeInfo = dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().use {em ->
+            virtualNodeRepository.find(em, holdingIdentity.shortHash)
+        }
         requireNotNull(virtualNodeInfo) {"virtualNodeInfo is null"}
         val uniquenessDmlConnectionId = virtualNodeInfo.uniquenessDmlConnectionId
         requireNotNull(uniquenessDmlConnectionId) {"uniquenessDmlConnectionId is null"}

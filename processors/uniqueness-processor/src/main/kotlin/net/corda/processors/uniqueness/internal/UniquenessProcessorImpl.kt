@@ -17,7 +17,6 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.processors.uniqueness.UniquenessProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.uniqueness.checker.UniquenessCheckerLifecycle
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -38,9 +37,7 @@ class UniquenessProcessorImpl @Activate constructor(
     @Reference(service = JpaEntitiesRegistry::class)
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = UniquenessCheckerLifecycle::class)
-    private val uniquenessChecker: UniquenessCheckerLifecycle,
-    @Reference(service = VirtualNodeInfoReadService::class)
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
+    private val uniquenessChecker: UniquenessCheckerLifecycle
 ) : UniquenessProcessor {
 
     init {
@@ -54,8 +51,7 @@ class UniquenessProcessorImpl @Activate constructor(
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
         ::dbConnectionManager,
-        ::uniquenessChecker,
-        ::virtualNodeInfoReadService
+        ::uniquenessChecker
     )
 
     private val lifecycleCoordinator =
