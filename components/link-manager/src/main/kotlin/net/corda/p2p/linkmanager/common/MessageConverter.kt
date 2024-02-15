@@ -41,6 +41,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.schema.Schemas
+import net.corda.utilities.Context
 import net.corda.utilities.time.Clock
 
 /**
@@ -329,7 +330,7 @@ internal class MessageConverter(
         )?.let { message ->
             val key = "${messageAndKey.message.header.messageId}:${LinkManager.generateKey()}"
             val messageRecord = Record(Schemas.P2P.LINK_OUT_TOPIC, key, message)
-            logger.info("QQQ publishing 1 $key")
+            Context.myLog("publishing 1 $key")
             val marker = AppMessageMarker(LinkManagerSentMarker(), clock.instant().toEpochMilli())
             val markerRecord = Record(Schemas.P2P.P2P_OUT_MARKERS, messageAndKey.message.header.messageId, marker)
             sessionManager.dataMessageSent(session)

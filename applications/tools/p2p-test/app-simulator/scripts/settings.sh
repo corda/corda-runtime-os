@@ -8,7 +8,7 @@ NAMESPACE_PREFIX="${USER//./}"
 CORDA_CHART_VERSION="^5.2.0-beta"
 REPO_TOP_LEVEL_DIR=$(cd "$SCRIPT_DIR"; git rev-parse --show-toplevel)
 CORDA_VERSION="$(cat $REPO_TOP_LEVEL_DIR/gradle.properties | grep cordaProductVersion | awk -F= '{print $2}' | xargs).0"
-DOCKER_IMAGE_VERSION=5.2.0.0-alpha-1708002043182
+DOCKER_IMAGE_VERSION=5.2.0.0-alpha-1708006875196
 if [ -z $DOCKER_IMAGE_VERSION ]; then
   DOCKER_IMAGE_VERSION=$(curl -u $CORDA_ARTIFACTORY_USERNAME:$CORDA_ARTIFACTORY_PASSWORD  https://corda-os-docker-unstable.software.r3.com:/v2/corda-os-p2p-link-manager-worker/tags/list | jq -r -M '.["tags"] | map(select(contains("'$CORDA_VERSION'-beta"))) | sort | reverse | .[0]')
 fi

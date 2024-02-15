@@ -117,7 +117,7 @@ internal class OutboundMessageHandler(
     override fun onNext(event: Record<String, LinkOutMessage>): CompletableFuture<Unit> {
         val myId = "$id:${index.incrementAndGet()}"
         val started = System.currentTimeMillis()
-        logger.info("QQQ onNext: ${event.key} for $myId with context ${Context.context.get()}")
+        Context.myLog("onNext: ${event.key} for $myId with context ${Context.context.get()}")
         return dominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("Can not handle events")
@@ -133,7 +133,7 @@ internal class OutboundMessageHandler(
                 val dur = System.currentTimeMillis() - started
                 if (dur > max.get()) {
                     max.set(dur)
-                    logger.info("QQQ ${event.key} took $dur which is the maximum so far")
+                    Context.myLog("${event.key} took $dur which is the maximum so far")
                 }
             }
         }
@@ -174,7 +174,7 @@ internal class OutboundMessageHandler(
 
 
         val messageId = "$id:${UUID.randomUUID()}"
-        logger.info("QQQ Will send for $id -> $messageId")
+        Context.myLog("Will send for $id -> $messageId")
         val gatewayMessage = GatewayMessage(messageId, peerMessage.payload)
         val expectedX500Name = if (NetworkType.CORDA_4 == peerMessage.header.destinationNetworkType) {
             X500Name(peerMessage.header.destinationIdentity.x500Name)
@@ -214,7 +214,7 @@ internal class OutboundMessageHandler(
             handleResponse(PendingRequest(gatewayMessage, destinationInfo, responseFuture), response, error, MAX_RETRIES)
         }, retryThreadPool).thenApply {
             val dur = System.currentTimeMillis() - started
-            logger.info("QQQ SENT for $id -> $messageId took $dur")
+            Context.myLog("SENT for $id -> $messageId took $dur")
         }
 
     }

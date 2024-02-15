@@ -237,7 +237,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
         try {
             log.debug { "Processing records(keys: ${cordaConsumerRecords.joinToString { it.key.toString() }}, " +
                     "size: ${cordaConsumerRecords.size})" }
-            val myId = "$id:${index.incrementAndGet()}"
+            val myId = "$id:${index.incrementAndGet()}:${config.topic}"
             Context.context.set(myId)
             logMe("$myId starting")
             producer.beginTransaction()
@@ -290,7 +290,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
 
     private fun logMe(txt: String) {
         if ((config.topic == "p2p.out") || (config.topic == "link.in")) {
-            log.info("QQQ $txt")
+            Context.myLog("EventLogSubscriptionImpl(${config.topic})- $txt")
         }
     }
 }

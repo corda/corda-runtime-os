@@ -107,11 +107,11 @@ internal class OutboundMessageProcessor(
     override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<String, *>> {
         val id = ":$MY_ID:${index.incrementAndGet()}:"
         val started = System.currentTimeMillis()
-        logger.info("QQQ starting looking at $id thread ${Thread.currentThread().id} with ${events.size}")
+        Context.myLog("starting looking at $id thread ${Thread.currentThread().id} with ${events.size}")
         val authenticatedMessages = mutableListOf<TraceableItem<AuthenticatedMessageAndKey, AppMessage>>()
         val unauthenticatedMessages = mutableListOf<TraceableItem<OutboundUnauthenticatedMessage, AppMessage>>()
         for (event in events) {
-            logger.info("QQQ $id got message: ${event.key} context: ${Context.context.get()}")
+            Context.myLog("$id got message: ${event.key} context: ${Context.context.get()}")
             when (val message = event.value?.message) {
                 is AuthenticatedMessage -> {
                     authenticatedMessages += TraceableItem(AuthenticatedMessageAndKey(message, event.key), event)
@@ -141,7 +141,7 @@ internal class OutboundMessageProcessor(
         }
         return results.map { it.item }.flatten().also {
             val dur = System.currentTimeMillis() - started
-            logger.info(
+            Context.myLog(
                 "QQQ Finished looking at $id thread ${Thread.currentThread().id} got ${it.size} in $dur"
             )
         }

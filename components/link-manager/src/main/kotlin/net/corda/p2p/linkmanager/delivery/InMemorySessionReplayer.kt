@@ -19,6 +19,7 @@ import net.corda.p2p.linkmanager.grouppolicy.networkType
 import net.corda.p2p.linkmanager.membership.lookup
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.schema.Schemas.P2P.LINK_OUT_TOPIC
+import net.corda.utilities.Context
 import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import org.slf4j.LoggerFactory
@@ -164,7 +165,7 @@ internal class InMemorySessionReplayer(
         ) ?: return
         logger.debug { "Replaying session message ${message.payload.javaClass} for session ${messageReplay.sessionId}." }
         val key = "$messageId:${LinkManager.generateKey()}"
-        logger.info("QQQ publishing 2 $key")
+        Context.myLog("publishing 2 $key")
         publisher.publish(listOf(Record(LINK_OUT_TOPIC, key, message)))
         messageReplay.sentSessionMessageCallback(
             messageReplay.sessionCounterparties,

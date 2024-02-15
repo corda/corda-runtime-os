@@ -39,6 +39,7 @@ import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
 import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl.Companion.LINK_MANAGER_SUBSYSTEM
 import net.corda.schema.Schemas
 import net.corda.tracing.traceEventProcessing
+import net.corda.utilities.Context
 import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.toCorda
@@ -66,13 +67,13 @@ internal class InboundMessageProcessor(
     override fun onNext(events: List<EventLogRecord<String, LinkInMessage>>): List<Record<*, *>> {
         val myId = UUID.randomUUID()
         val started = System.currentTimeMillis()
-        logger.info("QQQ for $myId got ${events.size}")
+        Context.myLog("for $myId got ${events.size}")
         val dataMessages = mutableListOf<SessionIdAndMessage>()
         val sessionMessages = mutableListOf<TraceableItem<LinkInMessage, LinkInMessage>>()
         val recordsForUnauthenticatedMessage = mutableListOf<TraceableItem<List<Record<String, AppMessage>>, LinkInMessage>>()
 
         events.forEach { event ->
-            logger.info("QQQ \t $myId got event: ${event.key}")
+            Context.myLog("\t $myId got event: ${event.key}")
             val message = event.value
             when (val payload = message?.payload) {
                 is AuthenticatedDataMessage -> {
@@ -130,7 +131,7 @@ internal class InboundMessageProcessor(
                 traceable.item
             }.also {
                 val dur = System.currentTimeMillis() - started
-                logger.info("QQQ for $myId replying with ${it.size} after $dur")
+                Context.myLog("for $myId replying with ${it.size} after $dur")
             }
     }
 
@@ -148,7 +149,7 @@ internal class InboundMessageProcessor(
                         if (partitionsAssigned.isNotEmpty()) {
                             recordOutboundSessionMessagesMetric(response.header.sourceIdentity)
                             val key = "${traceableMessage.originalRecord?.key}-${LinkManager.generateKey()}"
-                            logger.info("QQQ Publishing from processSessionMessages 1 $key")
+                            Context.myLog("Publishing from processSessionMessages 1 $key")
                             TraceableItem(
                                 listOf(
                                     Record(Schemas.P2P.LINK_OUT_TOPIC, key, response),
@@ -172,7 +173,7 @@ internal class InboundMessageProcessor(
                     else -> {
                         recordOutboundSessionMessagesMetric(response.header.sourceIdentity)
                         val key = "${traceableMessage.originalRecord?.key}-${LinkManager.generateKey()}"
-                        logger.info("QQQ Publishing from processSessionMessages 2 $key")
+                        Context.myLog("Publishing from processSessionMessages 2 $key")
                         TraceableItem(
                             listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, key, response)),
                             traceableMessage.originalRecord
@@ -372,7 +373,7 @@ internal class InboundMessageProcessor(
             membershipGroupReaderProvider
         ) ?: return null
         val key = "${message.header.messageId}-${LinkManager.generateKey()}"
-        logger.info("QQQ publishing ack 1 $key")
+        Context.myLog("publishing ack 1 $key")
         return Record(
             Schemas.P2P.LINK_OUT_TOPIC,
             key,

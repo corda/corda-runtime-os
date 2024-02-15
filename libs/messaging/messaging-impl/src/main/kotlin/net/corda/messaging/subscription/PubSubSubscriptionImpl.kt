@@ -215,7 +215,7 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
 
     private fun logMe(txt: String) {
         if(config.topic == "link.out") {
-            log.info("QQQ $txt")
+            Context.myLog("PubSubSubscriptionImpl(${config.topic}) $txt")
         }
     }
 }

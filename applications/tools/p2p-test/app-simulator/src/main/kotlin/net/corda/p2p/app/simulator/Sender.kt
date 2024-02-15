@@ -17,6 +17,7 @@ import net.corda.p2p.app.simulator.AppSimulator.Companion.APP_SIMULATOR_SUBSYSTE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PRODUCER_CLIENT_ID
+import net.corda.utilities.Context
 import net.corda.utilities.time.Clock
 import org.slf4j.LoggerFactory
 import java.io.Closeable
@@ -116,7 +117,7 @@ class Sender(
                         stopLock.read {
                             if (!stop) {
                                 val started = System.currentTimeMillis()
-                                logger.info("QQQ Sending ${records.size} messaging for $created")
+                                Context.myLog("QQQ Sending ${records.size} messaging for $created")
                                 val publishedIds = publisher.publish(records).zip(messagesWithIds).filter { (future, messageWithId) ->
                                     try {
                                         future.get()
@@ -127,11 +128,11 @@ class Sender(
                                     }
                                 }.map { it.second.first }
                                 val dur = System.currentTimeMillis() - started
-                                logger.info("QQQ Sent ${records.size} messaging for $created in $dur")
-                                logger.info("Published ${publishedIds.size} messages")
+                                Context.myLog("QQQ Sent ${records.size} messaging for $created in $dur")
+                                Context.myLog("Published ${publishedIds.size} messages")
                                 messagesSent += publishedIds.size
                                 publishedIds.forEach {
-                                    logger.info("QQQ \t Published message ID: ${it.messageId}")
+                                    Context.myLog("QQQ \t Published message ID: ${it.messageId}")
                                 }
 
                                 if (dbConnection?.connection != null) {

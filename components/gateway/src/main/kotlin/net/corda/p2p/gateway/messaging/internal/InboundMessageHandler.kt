@@ -34,6 +34,7 @@ import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
 import net.corda.schema.Schemas.P2P.LINK_IN_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
+import net.corda.utilities.Context
 import org.apache.avro.SystemLimitException
 import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
@@ -172,7 +173,7 @@ internal class InboundMessageHandler(
             when (p2pMessage.payload) {
                 is InboundUnauthenticatedMessage -> {
                     val key = "${gatewayMessage.id}:${generateKey()}"
-                    logger.info("QQQ For ${gatewayMessage.id} key will be $key")
+                    Context.myLog("For ${gatewayMessage.id} key will be $key")
                     p2pInPublisher.publish(listOf(Record(LINK_IN_TOPIC, key, p2pMessage)))
                     httpWriter.write(HttpResponseStatus.OK, request.source, avroSchemaRegistry.serialize(response).array())
                     HttpResponseStatus.OK
@@ -228,7 +229,7 @@ internal class InboundMessageHandler(
             return HttpResponseStatus.OK
         }
         val key = "$id-${Random.nextInt(5000)}"
-        logger.info("QQQ processSessionMessage for session ID: $sessionId message $id, key $key")
+        Context.myLog("processSessionMessage for session ID: $sessionId message $id, key $key")
         val record = Record(LINK_IN_TOPIC, key, p2pMessage)
         if (commonComponents.features.useStatefulSessionManager) {
             p2pInPublisher.publish(listOf(record))
