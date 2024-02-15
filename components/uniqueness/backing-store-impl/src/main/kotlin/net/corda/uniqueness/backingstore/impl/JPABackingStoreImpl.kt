@@ -70,10 +70,9 @@ open class JPABackingStoreImpl @Activate constructor(
 
         val sessionStartTime = System.nanoTime()
 
-        val uniquenessDmlConnectionId =
-            virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentity.shortHash)
-                ?.uniquenessDmlConnectionId
-
+        val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentity.shortHash)
+        requireNotNull(virtualNodeInfo) {"virtualNodeInfo is null"}
+        val uniquenessDmlConnectionId = virtualNodeInfo.uniquenessDmlConnectionId
         requireNotNull(uniquenessDmlConnectionId) {"uniquenessDmlConnectionId is null"}
 
         val entityManagerFactory = dbConnectionManager.getOrCreateEntityManagerFactory(
