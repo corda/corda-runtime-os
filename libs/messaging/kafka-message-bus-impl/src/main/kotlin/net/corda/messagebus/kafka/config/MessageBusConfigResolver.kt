@@ -1,7 +1,6 @@
 package net.corda.messagebus.kafka.config
 
 import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigRenderOptions
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messagebus.api.configuration.AdminConfig
@@ -99,21 +98,9 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
      * @return Resolved user configurable consumer values and kafka properties to be used for the given role type
      */
     fun resolve(messageBusConfig: SmartConfig, consumerConfig: ConsumerConfig): Pair<ResolvedConsumerConfig, Properties> {
-        logger.info("TTT for group ${consumerConfig.group}")
-        logger.info("TTT messageBusConfig: ${messageBusConfig.root().render(ConfigRenderOptions.concise())}")
         val topicPrefix = messageBusConfig.getString(BootConfig.TOPIC_PREFIX)
         val amendedConfig = consumerConfig.addGroupPrefix(topicPrefix)
-        logger.info("TTT amendedConfig: ${amendedConfig.toSmartConfig().root().render(ConfigRenderOptions.concise())}")
-        val kafkaProperties = resolve(
-            messageBusConfig,
-            amendedConfig.role.configPath,
-            amendedConfig.toSmartConfig()
-        ).also {
-            logger.info("TTT for ${amendedConfig.role.configPath} and group ${consumerConfig.group} - kafkaProperties:")
-            it.entries.forEach {
-                logger.info("TTT \t ${consumerConfig.group}; $it ")
-            }
-        }
+        val kafkaProperties = resolve(messageBusConfig, amendedConfig.role.configPath, amendedConfig.toSmartConfig())
 
         return ResolvedConsumerConfig(
             amendedConfig.group,

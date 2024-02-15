@@ -170,7 +170,7 @@ internal class InboundMessageHandler(
             )
             when (p2pMessage.payload) {
                 is InboundUnauthenticatedMessage -> {
-                    val key = "${gatewayMessage.id}:generateKey()"
+                    val key = "${gatewayMessage.id}:${generateKey()}"
                     logger.info("QQQ For ${gatewayMessage.id} key will be $key")
                     p2pInPublisher.publish(listOf(Record(LINK_IN_TOPIC, key, p2pMessage)))
                     httpWriter.write(HttpResponseStatus.OK, request.source, avroSchemaRegistry.serialize(response).array())

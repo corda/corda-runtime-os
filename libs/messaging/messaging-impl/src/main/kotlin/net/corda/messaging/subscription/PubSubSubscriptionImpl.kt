@@ -141,19 +141,19 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
                 val myId = "$id:${index.incrementAndGet()}"
                 Context.context.set(myId)
                 val started = System.currentTimeMillis()
-                log.info("QQQ pollAndProcessRecords $myId: config.pollTimeout: ${config.pollTimeout}")
+                logMe("pollAndProcessRecords $myId: config.pollTimeout: ${config.pollTimeout}")
                 val consumerRecords = consumer.poll(config.pollTimeout)
-                log.info("QQQ consumerRecords: ${consumerRecords.size} $myId")
+                logMe("consumerRecords: ${consumerRecords.size} $myId")
                 processPubSubRecords(consumerRecords)
-                log.info("QQQ consumerRecords: called processPubSubRecords $myId")
+                logMe("consumerRecords: called processPubSubRecords $myId")
                 val dur = System.currentTimeMillis() - started
                 if (dur > max.get()) {
                     max.set(dur)
-                    log.info("QQQ got max $dur with $myId")
+                    logMe("got max $dur with $myId")
                 }
                 if (consumerRecords.size> max2.get()) {
                     max2.set(consumerRecords.size)
-                    log.info("QQQ got max 2 ${max2.get()} with $myId")
+                    logMe("got max 2 ${max2.get()} with $myId")
 
                 }
                 attempts = 0
@@ -182,12 +182,12 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
         val myId = Context.context.get()
         val futures = cordaConsumerRecords.mapNotNull {
             try {
-                log.info("QQQ processPubSubRecords $myId")
+                logMe("processPubSubRecords $myId")
                 processorMeter.recordCallable {
-                    log.info("QQQ calling on next $myId with ${it.key}, timestamp ${it.timestamp}" +
+                    logMe("calling on next $myId with ${it.key}, timestamp ${it.timestamp}" +
                             " (now ${System.currentTimeMillis()}), partition: ${it.partition}, topic: ${it.topic}")
                     processor.onNext(it.toRecord()) .also {
-                        log.info("QQQ called on next $myId")
+                        logMe("called on next $myId")
                     }
                 }
             } catch (except: Exception) {
@@ -195,21 +195,27 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
                 null
             }
         }
-        log.info("QQQ Going to wait for futures  $myId...")
+        logMe("Going to wait for futures  $myId...")
         futures.forEachIndexed { index, it ->
             try {
-                log.info("QQQ waiting for $index od $myId...")
+                logMe("waiting for $index od $myId...")
                 it.get()
-                log.info("QQQ waited for $index od $myId...")
+                logMe("waited for $index od $myId...")
             } catch (except: Exception) {
-                log.info("QQQ got error in $index od $myId...", except)
+                logMe("got error in $index od $myId...", except)
                 log.warn("PubSubConsumer from group ${config.group} failed to process records from topic ${config.topic}.", except)
             }
         }
-        log.info("QQQ waited $myId...")
+        logMe("waited $myId...")
     }
 
     private fun logFailedDeserialize(data: ByteArray) {
         log.error("Failed to deserialize a record on ${config.topic}: (${toHexString(data)}")
+    }
+
+    private fun logMe(txt: String) {
+        if(config.topic == "link.out") {
+            log.info("QQQ $txt")
+        }
     }
 }

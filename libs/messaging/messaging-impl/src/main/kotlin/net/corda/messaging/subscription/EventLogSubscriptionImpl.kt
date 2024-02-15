@@ -239,19 +239,19 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                     "size: ${cordaConsumerRecords.size})" }
             val myId = "$id:${index.incrementAndGet()}"
             Context.context.set(myId)
-            log.info("QQQ $myId starting")
+            logMe("$myId starting")
             producer.beginTransaction()
-            log.info("QQQ $myId transaction started")
+            logMe("$myId transaction started")
             val outputs = processorMeter.recordCallable {
-                log.info("QQQ $myId going to onNext")
+                logMe("$myId going to onNext")
                 processor.onNext(cordaConsumerRecords.map { it.toEventLogRecord() })
                 .toCordaProducerRecords().also {
-                        log.info("QQQ $myId finished onNext: ${it.size}")
+                        logMe("$myId finished onNext: ${it.size}")
                     }
             }!!
-            log.info("QQQ $myId going to send: ${outputs.size}")
+            logMe("$myId going to send: ${outputs.size}")
             producer.sendRecords(outputs)
-            log.info("QQQ $myId sent; deadLetterRecords.size: ${deadLetterRecords.size}")
+            logMe("$myId sent; deadLetterRecords.size: ${deadLetterRecords.size}")
             if(deadLetterRecords.isNotEmpty()) {
                 producer.sendRecords(deadLetterRecords.map {
                     CordaProducerRecord(
@@ -262,13 +262,13 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                 })
                 deadLetterRecords.clear()
             }
-            log.info("QQQ $myId calling sendAllOffsetsToTransaction")
+            logMe("$myId calling sendAllOffsetsToTransaction")
             producer.sendAllOffsetsToTransaction(consumer)
-            log.info("QQQ $myId calling commitTransaction")
+            logMe("$myId calling commitTransaction")
             producer.commitTransaction()
-            log.info("QQQ $myId Done")
+            logMe("$myId Done")
             outputs.forEach {
-                log.info("QQQ $myId commited ${it.key} to ${it.topic} at ${System.currentTimeMillis()}")
+                logMe("$myId commited ${it.key} to ${it.topic} at ${System.currentTimeMillis()}")
             }
             log.debug { "Processing records(keys: ${cordaConsumerRecords.joinToString { it.key.toString() }}, " +
                     "size: ${cordaConsumerRecords.size}) complete." }
@@ -285,6 +285,12 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                     )
                 }
             }
+        }
+    }
+
+    private fun logMe(txt: String) {
+        if (config.topic == "p2p.out") {
+            log.info("QQQ $txt")
         }
     }
 }
