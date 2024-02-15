@@ -63,7 +63,7 @@ class FlowExecutorImpl @Activate constructor(
             val loadGenerator = TestLoadGenerator(
                 "test-cordapp",
                 holdingId,
-                "com.r3.corda.testing.smoketests.flow.RpcSmokeTestFlow",
+                "com.r3.corda.testing.smoketests.flow.RestSmokeTestFlow",
                 "{\"command\":\"crypto_sign_and_verify\",\"data\":{\"memberX500\":\"CN=Bob-5a90563f-73a0-46ce-a7e4-28354b6c686c, OU=Application, O=R3, L=London, C=GB\"}}"
             )
             val stateManager = TestStateManagerFactoryImpl(coordinatorFactory)

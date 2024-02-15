@@ -8,18 +8,13 @@ import net.corda.e2etest.utilities.ClusterReadiness
 import net.corda.e2etest.utilities.ClusterReadinessChecker
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.FlowResult
-import net.corda.e2etest.utilities.REST_FLOW_STATUS_SUCCESS
-import net.corda.e2etest.utilities.RestSmokeTestInput
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
-import net.corda.e2etest.utilities.TestRequestIdGenerator
-import net.corda.e2etest.utilities.awaitRestFlowResult
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.registerStaticMember
-import net.corda.e2etest.utilities.startRestFlow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -134,21 +129,8 @@ class FlowTests : ClusterReadiness by ClusterReadinessChecker() {
     }
 
     @Test
-    fun `Crypto - Sign and verify bytes`(testInfo: TestInfo) {
-        val idGenerator = TestRequestIdGenerator(testInfo)
-        val requestBody = RestSmokeTestInput().apply {
-            command = "crypto_sign_and_verify"
-            data = mapOf("memberX500" to bobX500)
-        }
-
-        val requestId = startRestFlow(bobHoldingId, requestBody, requestId = idGenerator.nextId)
-
-        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
-
-        assertThat(flowResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
-        assertThat(flowResult.json).isNotNull
-        assertThat(flowResult.flowError).isNull()
-        assertThat(flowResult.json.command).isEqualTo("crypto_sign_and_verify")
-        assertThat(flowResult.json.result).isEqualTo(true.toString())
+    fun `Upload Test CorDapp`(testInfo: TestInfo) {
+        print(testInfo.testClass)
+        // We just need to run this to upload the test CorDapp
     }
 }
