@@ -289,7 +289,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
     }
 
     private fun logMe(txt: String) {
-        if (config.topic == "p2p.out") {
+        if ((config.topic == "p2p.out") || (config.topic == "link.in")) {
             log.info("QQQ $txt")
         }
     }

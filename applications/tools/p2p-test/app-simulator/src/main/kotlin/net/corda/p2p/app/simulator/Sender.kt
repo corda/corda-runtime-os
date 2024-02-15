@@ -24,7 +24,6 @@ import java.nio.ByteBuffer
 import java.time.Duration
 import java.time.Instant
 import java.util.Random
-import java.util.UUID
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantReadWriteLock

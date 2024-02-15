@@ -41,6 +41,7 @@ import java.net.SocketAddress
 import java.nio.ByteBuffer
 import java.time.Duration
 import java.util.UUID
+import kotlin.random.Random
 
 /**
  * This class implements a simple message processor for p2p messages received from other Gateways.
@@ -177,7 +178,7 @@ internal class InboundMessageHandler(
                     HttpResponseStatus.OK
                 }
                 else -> {
-                    val statusCode = processSessionMessage(p2pMessage)
+                    val statusCode = processSessionMessage(p2pMessage, gatewayMessage.id)
                     httpWriter.write(statusCode, request.source, avroSchemaRegistry.serialize(response).array())
                     statusCode
                 }
@@ -218,7 +219,7 @@ internal class InboundMessageHandler(
         return HttpResponseStatus.OK
     }
 
-    private fun processSessionMessage(p2pMessage: LinkInMessage): HttpResponseStatus {
+    private fun processSessionMessage(p2pMessage: LinkInMessage, id: String): HttpResponseStatus {
         val sessionId = getSessionId(p2pMessage) ?: return INTERNAL_SERVER_ERROR
         if (p2pMessage.payload is InitiatorHelloMessage) {
             /* we are using the session identifier as key to ensure replayed initiator hello messages will end up on the same partition, and
@@ -226,7 +227,9 @@ internal class InboundMessageHandler(
             p2pInPublisher.publish(listOf(Record(LINK_IN_TOPIC, sessionId, p2pMessage)))
             return HttpResponseStatus.OK
         }
-        val record = Record(LINK_IN_TOPIC, sessionId, p2pMessage)
+        val key = "$id-${Random.nextInt(5000)}"
+        logger.info("QQQ processSessionMessage for session ID: $sessionId message $id, key $key")
+        val record = Record(LINK_IN_TOPIC, key, p2pMessage)
         if (commonComponents.features.useStatefulSessionManager) {
             p2pInPublisher.publish(listOf(record))
             return HttpResponseStatus.OK
