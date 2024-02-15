@@ -20,6 +20,7 @@ data class StableResultSetImpl<R> internal constructor(
     private var results: List<R> = emptyList()
     private var resumePoint: ByteBuffer? = null
     private var firstExecution = true
+    private var offset: Int = 0
 
     override fun getResults(): List<R> {
         return results
@@ -36,21 +37,29 @@ data class StableResultSetImpl<R> internal constructor(
             throw NoSuchElementException("The result set has no more pages to query")
         }
 
-        val (serializedResults, nextResumePoint) =
-            resultSetExecutor.execute(serializedParameters, resumePoint)
+        val (serializedResults, nextResumePoint, numberOfRowsFromQuery) =
+            resultSetExecutor.execute(serializedParameters, resumePoint, offset)
 
-        check(serializedResults.size <= limit) {"The query returned too many results" }
+        // We've got some serialized results.
+        // Did we get too many?
+        check(serializedResults.size <= limit) { "The query returned too many results" }
 
-        results = serializedResults.map { serializationService.deserialize(it.array(), resultClass) }
+        // Unpack the serialized results
+        results = serializedResults.map {
+            serializationService.deserialize(it.array(), resultClass)
+        }.also {
+            check(nextResumePoint == null || nextResumePoint != resumePoint) {
+                "Infinite query detected; resume point has not been updated"
+            }
 
-        check(nextResumePoint == null || nextResumePoint != resumePoint) {
-            "Infinite query detected; resume point has not been updated"
+            // Do the bookkeeping, updating our state. We track both the offset
+            // and the resume point, since we don't know
+            // which the persistence worker is using.
+            offset += numberOfRowsFromQuery ?: 0
+            resumePoint = nextResumePoint
+            firstExecution = false
+
         }
-
-        resumePoint = nextResumePoint
-
-        firstExecution = false
-
         return results
     }
 }

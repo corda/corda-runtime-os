@@ -31,12 +31,13 @@ fun interface StableResultSetExecutor<R> : Serializable {
      * @param serializedParameters The serialized parameters of the [ResultSet].
      * @param resumePoint Opaque data that communicates the resumption point to a query when this is executing in
      *                    the context of getting a subsequent page of data.
+     * @param offset Optional offset for the results.
      *
      * @return A [Results] containing the serialized results and the resumption point to use when executing in the
      *         context of getting a subsequent page of data.
      */
     @Suspendable
-    fun execute(serializedParameters: Map<String, ByteBuffer?>, resumePoint: ByteBuffer?): Results
+    fun execute(serializedParameters: Map<String, ByteBuffer?>, resumePoint: ByteBuffer?, offset: Int?): Results
 
-    data class Results(val serializedResults: List<ByteBuffer>, val resumePoint: ByteBuffer?)
+    data class Results(val serializedResults: List<ByteBuffer>, val resumePoint: ByteBuffer?, val numberOfRowsFromQuery: Int?)
 }

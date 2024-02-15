@@ -36,7 +36,7 @@ class VaultNamedQueryExternalEventFactory(
                     FindWithNamedQuery(
                         parameters.queryName,
                         parameters.queryParameters.toByteBuffers(),
-                        0,
+                        parameters.offset ?: 0,
                         parameters.limit,
                         parameters.resumePoint?.let { ByteBuffer.wrap(it) }
                     )
@@ -50,7 +50,8 @@ class VaultNamedQueryExternalEventFactory(
     override fun resumeWith(checkpoint: FlowCheckpoint, response: EntityResponse): StableResultSetExecutor.Results {
         return StableResultSetExecutor.Results(
             serializedResults = response.results,
-            resumePoint = response.resumePoint
+            resumePoint = response.resumePoint,
+            numberOfRowsFromQuery = response.metadata.items.singleOrNull { it.key == "numberOfRowsFromQuery" }?.value?.toInt()
         )
     }
 }
@@ -60,5 +61,6 @@ data class VaultNamedQueryEventParams(
     val queryName: String,
     val queryParameters: Map<String, ByteArray?>,
     val limit: Int,
-    val resumePoint: ByteArray?
+    val resumePoint: ByteArray?,
+    val offset: Int?
 )

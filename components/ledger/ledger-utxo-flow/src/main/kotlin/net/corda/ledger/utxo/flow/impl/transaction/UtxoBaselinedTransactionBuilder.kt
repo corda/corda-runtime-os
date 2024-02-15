@@ -208,8 +208,7 @@ class UtxoBaselinedTransactionBuilder private constructor(
      */
     fun diff(): UtxoTransactionBuilderContainer =
         UtxoTransactionBuilderContainer(
-            // We can include this as we have a check later to make sure that notary name haven't changed
-            notaryName,
+            if (baselineTransactionBuilder.getNotaryName() == null) notaryName else null,
             if (baselineTransactionBuilder.timeWindow == null) timeWindow else null,
             commands.drop(baselineTransactionBuilder.commands.size),
             signatories - baselineTransactionBuilder.signatories.toSet(),

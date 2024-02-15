@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.v1
 
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderContainer
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.utilities.trace
@@ -29,6 +30,9 @@ class SendTransactionBuilderDiffFlowV1(
     @CordaInject
     lateinit var persistenceService: UtxoLedgerPersistenceService
 
+    @CordaInject
+    lateinit var ledgerStateQueryService: UtxoLedgerStateQueryService
+
     private companion object {
         val log: Logger = LoggerFactory.getLogger(SendTransactionBuilderDiffFlowV1::class.java)
     }
@@ -37,27 +41,46 @@ class SendTransactionBuilderDiffFlowV1(
     override fun call() {
         log.trace { "Starting send transaction builder flow." }
 
-        val notaryName = requireNotNull(transactionBuilder.getNotaryName()) {
-            "Notary name on transaction builder must not be null."
+        val newTransactionIds = transactionBuilder.dependencies
+
+        // If we have no dependencies then we just send the transaction builder
+        if (newTransactionIds.isEmpty()) {
+            log.trace {
+                "There are no new states transferred, therefore no backchain resolution or filtered dependencies required."
+            }
+            session.send(TransactionBuilderPayload(transactionBuilder))
+            return
         }
 
+        val notaryName = transactionBuilder.getNotaryName() ?: run {
+            // Resolve the dependent state and refs
+            val dependentStateAndRefs = ledgerStateQueryService.resolveStateRefs(
+                transactionBuilder.inputStateRefs + transactionBuilder.referenceStateRefs
+            )
+
+            // Make sure they all have the same notary
+            require(dependentStateAndRefs.map { it.state.notaryName }.toSet().size == 1) {
+                "Every dependency needs to have the same notary."
+            }
+
+            // Get the notary from the state ref
+            dependentStateAndRefs.first().state.notaryName
+        }
+
+        // Lookup the notary by name
         val notaryInfo = requireNotNull(notaryLookup.lookup(notaryName)) {
             "Could not find notary service with name: $notaryName"
         }
 
-        val newTransactionIds = transactionBuilder.dependencies
-
-        // If we couldn't find the notary we default to backchain resolution
         if (notaryInfo.isBackchainRequired) {
             log.trace { "Sending proposed transaction builder components to ${session.counterparty}." }
-            session.send(transactionBuilder)
 
-            if (newTransactionIds.isEmpty()) {
-                log.trace { "There are no new states transferred, therefore no backchains need to be resolved." }
-            } else {
-                flowEngine.subFlow(TransactionBackchainSenderFlow(newTransactionIds, session))
-            }
+            // If we need backchain resolution we send the transaction builder and start the backchain sender flow
+            session.send(TransactionBuilderPayload(transactionBuilder))
+            flowEngine.subFlow(TransactionBackchainSenderFlow(newTransactionIds, session))
         } else {
+            // If we don't need backchain resolution we collect the filtered transactions for the given stateRefs
+            // and add them to the payload
             val filteredTransactionsAndSignatures = persistenceService.findFilteredTransactionsAndSignatures(
                 transactionBuilder.inputStateRefs + transactionBuilder.referenceStateRefs,
                 notaryInfo.publicKey,
@@ -69,7 +92,7 @@ class SendTransactionBuilderDiffFlowV1(
             }
 
             log.trace { "Sending proposed transaction builder components with filtered dependencies to ${session.counterparty}." }
-            session.send(transactionBuilder.copy(filteredDependencies = filteredTransactionsAndSignatures))
+            session.send(TransactionBuilderPayload(transactionBuilder, filteredTransactionsAndSignatures))
         }
     }
 }

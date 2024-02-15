@@ -232,6 +232,33 @@
             }
           },
           "additionalProperties": true
+        },
+        "mediatorReplicas" : {
+          "description": "Number of replicas for the mediator",
+          "properties": {
+            "flowSession": {
+              "description": "Number of mediator replicas that consume the flow session messages.",
+              "type": "integer",
+              "default": 1,
+              "minimum": 1,
+              "maximum": 64
+            },
+            "flowMapperSessionIn": {
+              "description": "Number of mediator replicas that consume the flow mapper session in messages.",
+              "type": "integer",
+              "default": 1,
+              "minimum": 1,
+              "maximum": 64
+            },
+            "flowMapperSessionOut": {
+              "description": "Number of mediator replicas that consume the flow mapper session out messages.",
+              "type": "integer",
+              "default": 1,
+              "minimum": 1,
+              "maximum": 64
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false

@@ -11,6 +11,7 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindUnconsume
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.ResolveStateRefsExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.ResolveStateRefsParameters
 import net.corda.metrics.CordaMetrics
+import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.serialization.SerializationService
@@ -27,7 +28,8 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 @Suppress("unused")
 @Component(
     service = [UtxoLedgerStateQueryService::class, UsedByFlow::class],
-    scope = PROTOTYPE
+    scope = PROTOTYPE,
+    property = [CORDA_SYSTEM_SERVICE]
 )
 class UtxoLedgerStateQueryServiceImpl @Activate constructor(
     @Reference(service = CurrentSandboxGroupContext::class)

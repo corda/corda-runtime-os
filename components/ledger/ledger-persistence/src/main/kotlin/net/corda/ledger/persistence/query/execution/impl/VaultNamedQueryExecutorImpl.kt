@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.query.execution.impl
 
+import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindWithNamedQuery
@@ -162,7 +163,18 @@ class VaultNamedQueryExecutorImpl(
             .setResults(collectedResults.map { ByteBuffer.wrap(serializationService.serialize(it).bytes) })
 
         response.resumePoint = resumePoint?.let { ByteBuffer.wrap(serializationService.serialize(it).bytes) }
-        response.metadata = KeyValuePairList(emptyList())
+
+        val useOffset = vaultNamedQuery.orderBy != null
+        response.metadata =
+            KeyValuePairList(
+                if (useOffset) {
+                    listOf(
+                        KeyValuePair("numberOfRowsFromQuery", numberOfRowsReturned.toString())
+                    )
+                } else {
+                    emptyList()
+                }
+            )
 
         return response.build()
     }
@@ -200,6 +212,9 @@ class VaultNamedQueryExecutorImpl(
             serializationService.deserialize<ResumePoint>(request.resumePoint.array())
         }
 
+        val useOffset = vaultNamedQuery.orderBy != null
+        var currentOffset = request.offset
+
         while (filteredRawData.size < request.limit && currentRetry < RESULT_SET_FILL_RETRY_LIMIT) {
             ++currentRetry
 
@@ -207,11 +222,20 @@ class VaultNamedQueryExecutorImpl(
 
             // Fetch the state and refs for the given transaction IDs
             val rawResults = try {
-                fetchStateAndRefs(
-                    request,
-                    vaultNamedQuery.query.query,
-                    currentResumePoint
-                )
+                if (useOffset) {
+                    fetchStateAndRefsOrderBy(
+                        request,
+                        vaultNamedQuery.query.query,
+                        vaultNamedQuery.orderBy!!.query,
+                        currentOffset
+                    )
+                } else {
+                    fetchStateAndRefsTimeOrder(
+                        request,
+                        vaultNamedQuery.query.query,
+                        currentResumePoint
+                    )
+                }
             } catch (e: Exception) {
                 log.warn(
                     "Failed to query \"${request.queryName}\" " +
@@ -247,8 +271,8 @@ class VaultNamedQueryExecutorImpl(
                     // There are more results if either we didn't get through all the results
                     // returned by the query invocation, or if the query itself indicated there are
                     // more results to return.
-                    val moreResults = (result != rawResults.results.last()) || rawResults.hasMore
-
+                    val reachedEndOfRawResults = result != rawResults.results.last()
+                    val moreResults = reachedEndOfRawResults || rawResults.hasMore
                     return ProcessedQueryResults(
                         filteredRawData.map { it.stateAndRef },
                         if (moreResults) filteredRawData.last().resumePoint else null,
@@ -262,6 +286,7 @@ class VaultNamedQueryExecutorImpl(
                 currentResumePoint = null
                 break
             } else {
+                currentOffset += if (useOffset) request.limit else 0
                 currentResumePoint = rawResults.results.last().resumePoint
             }
         }
@@ -273,6 +298,58 @@ class VaultNamedQueryExecutorImpl(
         )
     }
 
+    private fun fetchStateAndRefsOrderBy(
+        request: FindWithNamedQuery,
+        whereJson: String?,
+        orderBy: String?,
+        offset: Int
+    ): RawQueryResults {
+        @Suppress("UNCHECKED_CAST")
+        val resultList = entityManagerFactory.transaction { em ->
+
+            val query = em.createNativeQuery(
+                """
+                        SELECT tc_output.transaction_id,
+                            tc_output.leaf_idx,
+                            tc_output_info.data as output_info_data,
+                            tc_output.data AS output_data,
+                            visible_states.created AS created
+                            FROM $UTXO_VISIBLE_TX_TABLE AS visible_states
+                            JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output_info
+                                 ON tc_output_info.transaction_id = visible_states.transaction_id
+                                 AND tc_output_info.leaf_idx = visible_states.leaf_idx
+                                 AND tc_output_info.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}
+                            JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output
+                                 ON tc_output_info.transaction_id = tc_output.transaction_id
+                                 AND tc_output_info.leaf_idx = tc_output.leaf_idx
+                                 AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
+                            WHERE ($whereJson)
+                            AND visible_states.created <= :$TIMESTAMP_LIMIT_PARAM_NAME
+                            ORDER BY $orderBy
+                    """,
+                Tuple::class.java
+            )
+            request.parameters.forEach { rec ->
+                query.setParameter(rec.key, rec.value?.let { serializationService.deserialize(it.array()) })
+            }
+
+            query.firstResult = offset
+            // Getting one more than requested allows us to identify if there are more results to
+            // return in a subsequent page
+            query.maxResults = request.limit + 1
+
+            query.resultList as List<Tuple>
+        }
+
+        if (resultList.size > request.limit) {
+            // We need to truncate the list to the number requested, but also flag that there is
+            // another page to be returned
+            return RawQueryResults(resultList.subList(0, request.limit).map { RawQueryData(it) }, hasMore = true)
+        } else {
+            return RawQueryResults(resultList.map { RawQueryData(it) }, hasMore = false)
+        }
+    }
+
     /**
      * A function that fetches the contract states that belong to the given transaction IDs.
      * The data stored in the component table will be deserialized into contract states using
@@ -280,7 +357,7 @@ class VaultNamedQueryExecutorImpl(
      *
      * Each invocation of this function represents a single distinct query to the database.
      */
-    private fun fetchStateAndRefs(
+    private fun fetchStateAndRefsTimeOrder(
         request: FindWithNamedQuery,
         whereJson: String?,
         resumePoint: ResumePoint?

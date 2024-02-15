@@ -15,16 +15,34 @@ class VaultNamedQueryBuilderImpl(
     private val name: String
 ) : VaultNamedQueryBuilder {
 
-    private var query: VaultNamedQuery.ParsedQuery? = null
+    private var query: String? = null
     private var filter: VaultNamedQueryFilter<*>? = null
     private var transformer: VaultNamedQueryTransformer<*, *>? = null
 
+    private val orderByFragments: MutableList<Pair<String, String?>> = mutableListOf()
+    private var unconsumedStatesOnly: Boolean = false
+
+    private companion object {
+        const val TIMESTAMP_LIMIT_PARAM_NAME = "Corda_TimestampLimit"
+    }
+
     override fun whereJson(query: String): VaultNamedQueryBuilder {
-        this.query = VaultNamedQuery.ParsedQuery(
-            originalQuery = query,
-            query = vaultNamedQueryParser.parseWhereJson(query),
-            type = VaultNamedQuery.Type.WHERE_JSON
-        )
+        this.query = query
+        return this
+    }
+
+    override fun orderBy(columnExpression: String, flags: String?): VaultNamedQueryBuilder {
+        orderByFragments.add(columnExpression to flags)
+        return this
+    }
+
+    override fun orderBy(columnExpression: String): VaultNamedQueryBuilder {
+        orderByFragments.add(columnExpression to null)
+        return this
+    }
+
+    override fun selectUnconsumedStatesOnly(): VaultNamedQueryBuilder {
+        unconsumedStatesOnly = true
         return this
     }
 
@@ -45,37 +63,68 @@ class VaultNamedQueryBuilderImpl(
     }
 
     override fun collect(collector: VaultNamedQueryCollector<*, *>): VaultNamedQueryBuilderCollected {
-        val notNullQuery = requireNotNull(query) { "Vault named query: $name does not have its query statement set" }
-
         // TODO These casts are necessary because using `Any` in `VaultNamedQuery` will result in a compilation error
         @Suppress("unchecked_cast")
         return VaultNamedQueryBuilderCollectedImpl(
             vaultNamedQueryRegistry,
             VaultNamedQuery(
                 name,
-                notNullQuery,
+                prepareQuery(),
                 filter as? VaultNamedQueryFilter<Any>,
                 transformer as? VaultNamedQueryTransformer<Any, Any>,
-                collector as? VaultNamedQueryCollector<Any, Any>
+                collector as? VaultNamedQueryCollector<Any, Any>,
+                parseOrderBy()
             )
         )
     }
 
     override fun register() {
-        val notNullQuery = requireNotNull(query) { "Vault named query: $name does not have its query statement set" }
+        val parsedQuery = prepareQuery()
 
-        logQueryRegistration(name, notNullQuery)
+        logQueryRegistration(name, parsedQuery)
 
         // TODO These casts are necessary because using `Any` in `VaultNamedQuery` will result in a compilation error
         @Suppress("unchecked_cast")
         vaultNamedQueryRegistry.registerQuery(
             VaultNamedQuery(
                 name,
-                notNullQuery,
+                parsedQuery,
                 filter as? VaultNamedQueryFilter<Any>,
                 transformer as? VaultNamedQueryTransformer<Any, Any>,
-                collector = null
+                collector = null,
+                parseOrderBy()
             )
         )
+    }
+
+    private fun prepareQuery(): VaultNamedQuery.ParsedQuery {
+        val notNullQuery =
+            "${requireNotNull(query) { "Vault named query: $name does not have its query statement set" }}${
+                if (unconsumedStatesOnly) {
+                    " AND (visible_states.consumed IS NULL OR visible_states.consumed >= :${TIMESTAMP_LIMIT_PARAM_NAME})"
+                } else {
+                    ""
+                }
+            }"
+
+        return VaultNamedQuery.ParsedQuery(
+            notNullQuery,
+            vaultNamedQueryParser.parseWhereJson(notNullQuery),
+            VaultNamedQuery.Type.WHERE_JSON
+        )
+    }
+
+    private fun parseOrderBy(): VaultNamedQuery.ParsedQuery? {
+        if (orderByFragments.isEmpty()) {
+            return null
+        }
+        val parsed = mutableListOf<String>()
+        val original = mutableListOf<String>()
+
+        orderByFragments.forEach {
+            parsed.add("${vaultNamedQueryParser.parseSimpleExpression(it.first)}${it.second?.let{value -> " $value"} ?: ""}")
+            original.add("${it.first}${it.second?.let{value -> " $value"} ?: ""}")
+        }
+        return VaultNamedQuery.ParsedQuery(original.joinToString(", "), parsed.joinToString(", "), VaultNamedQuery.Type.ORDER_BY)
     }
 }

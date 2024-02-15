@@ -1,12 +1,9 @@
 package net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.v1
 
-import net.corda.crypto.cipher.suite.SignatureSpecImpl
-import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.core.SecureHashImpl
-import net.corda.crypto.core.fullIdHash
 import net.corda.ledger.common.testkit.anotherPublicKeyExample
+import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.common.testkit.publicKeyExample
-import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionAndSignaturesImpl
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowUntilImpl
@@ -19,11 +16,8 @@ import net.corda.ledger.utxo.testkit.UtxoStateClassExample
 import net.corda.ledger.utxo.testkit.anotherNotaryX500Name
 import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
-import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
@@ -32,14 +26,13 @@ import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndS
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.GroupParametersLookup
 import net.corda.v5.membership.NotaryInfo
-import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -54,8 +47,6 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     private lateinit var originalTransactionalBuilder: UtxoTransactionBuilder
     private val session = mock<FlowSession>()
 
-    private val hash1 = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
-    private val hash2 = SecureHashImpl("SHA", byteArrayOf(2, 2, 2, 2))
     private val command1 = UtxoCommandExample("command 1")
     private val command2 = UtxoCommandExample("command 2")
     private val stateRef1 = StateRef(SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1)), 0)
@@ -66,132 +57,92 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     private val stateWithEnc2 = ContractStateAndEncumbranceTag(state2, null)
 
     private val mockFlowEngine = mock<FlowEngine>()
-    private val notaryLookup = mock<NotaryLookup>()
-    private val groupParamsLookup = mock<GroupParametersLookup>()
-    private val notarySignatureVerificationService = mock<NotarySignatureVerificationService>()
-    private val persistenceService = mock<UtxoLedgerPersistenceService>()
 
-    private val notaryKey = mock<PublicKey> {
-        on { encoded } doReturn byteArrayOf(0x01)
+    private val notaryKey = mock<PublicKey>()
+
+    private val notaryInfo = mock<NotaryInfo> {
+        on { name } doReturn notaryX500Name
+        on { publicKey } doReturn notaryKey
     }
-    private val mockGroupParameters = mock<GroupParameters>()
-    private val mockNotaryInfo = mock<NotaryInfo>()
-    private val utxoFilteredTransaction = mock<UtxoFilteredTransaction>()
-    private val utxoFilteredTransaction2 = mock<UtxoFilteredTransaction>()
-    private val utxoFilteredTransactionInvalid = mock<UtxoFilteredTransaction>()
-    private val utxoFilteredTransactionInvalidNotaryName = mock<UtxoFilteredTransaction>()
 
-    private val notarySignature = DigitalSignatureAndMetadata(
-        DigitalSignatureWithKeyId(notaryKey.fullIdHash(), byteArrayOf(1, 2, 6)),
-        DigitalSignatureMetadata(Instant.now(), SignatureSpecImpl("dummySignatureName"), emptyMap())
-    )
+    private val filteredTransaction = mock<UtxoFilteredTransaction> {
+        on { verify() } doAnswer { }
+        on { notaryName } doReturn notaryX500Name
+    }
+    private val invalidFilteredTransaction = mock<UtxoFilteredTransaction> {
+        on { verify() } doAnswer { throw IllegalArgumentException("Couldn't verify transaction!") }
+    }
 
-    private val storedFilteredTransaction = mutableListOf<UtxoFilteredTransactionAndSignatures>()
+    private val groupParameters = mock<GroupParameters> {
+        on { notaries } doReturn listOf(notaryInfo)
+    }
+
+    private val filteredTransactionAndSignatures = mock<UtxoFilteredTransactionAndSignatures>()
+    private val filteredTransactionAndSignatures2 = mock<UtxoFilteredTransactionAndSignatures>()
+
+    private val notarySignature = getSignatureWithMetadataExample()
+
+    private val mockNotarySignatureVerificationService = mock<NotarySignatureVerificationService>()
+    private val mockGroupParametersLookup = mock<GroupParametersLookup>()
+    private val mockPersistenceService = mock<UtxoLedgerPersistenceService>()
+
+    private val storedFilteredTransactions = mutableListOf<UtxoFilteredTransactionAndSignatures>()
 
     @BeforeEach
     fun beforeEach() {
-        storedFilteredTransaction.clear()
         whenever(mockFlowEngine.subFlow(any<TransactionBackchainResolutionFlow>())).thenReturn(Unit)
         originalTransactionalBuilder = utxoLedgerService.createTransactionBuilder()
 
-        whenever(mockNotaryInfo.publicKey).thenReturn(notaryKey)
-        whenever(mockNotaryInfo.name).thenReturn(notaryX500Name)
-
-        // By default, we want backchain logic
-        whenever(mockNotaryInfo.isBackchainRequired).thenReturn(true)
-
-        whenever(utxoFilteredTransaction.verify()).doAnswer { }
-        whenever(utxoFilteredTransaction.notaryName).thenReturn(notaryX500Name)
-
-        whenever(utxoFilteredTransaction2.verify()).doAnswer { }
-        whenever(utxoFilteredTransaction2.notaryName).thenReturn(notaryX500Name)
-
-        whenever(utxoFilteredTransactionInvalidNotaryName.verify()).doAnswer { }
-        whenever(utxoFilteredTransactionInvalidNotaryName.notaryName).thenReturn(null)
-
-        whenever(utxoFilteredTransactionInvalid.verify()).doAnswer {
-            throw IllegalArgumentException("Could not verify transaction")
+        storedFilteredTransactions.clear()
+        whenever(mockGroupParametersLookup.currentGroupParameters).thenReturn(groupParameters)
+        whenever(mockPersistenceService.persistFilteredTransactionsAndSignatures(any())).thenAnswer {
+            @Suppress("unchecked_cast")
+            storedFilteredTransactions.addAll(it.arguments.first() as List<UtxoFilteredTransactionAndSignatures>)
         }
-        whenever(utxoFilteredTransactionInvalid.notaryName).thenReturn(notaryX500Name)
+    }
 
-        whenever(notaryLookup.lookup(eq(notaryX500Name))).thenReturn(mockNotaryInfo)
-        whenever(groupParamsLookup.currentGroupParameters).thenReturn(mockGroupParameters)
-        whenever(mockGroupParameters.notaries).thenReturn(listOf(mockNotaryInfo))
+    @Test
+    fun `called with empty builder and receiving empty returns an empty builder`() {
+        whenever(session.receive(TransactionBuilderPayload::class.java)).thenReturn(
+            TransactionBuilderPayload(UtxoTransactionBuilderContainer())
+        )
+        val returnedTransactionBuilder = callSendFlow()
 
-        whenever(
-            notarySignatureVerificationService.verifyNotarySignatures(
-                eq(utxoFilteredTransaction),
-                eq(notaryKey),
-                eq(listOf(notarySignature)),
-                eq(emptyMap())
-            )
-        ).thenAnswer { }
+        assertEquals(utxoLedgerService.createTransactionBuilder(), returnedTransactionBuilder)
+        verify(mockFlowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
+    }
 
-        whenever(
-            notarySignatureVerificationService.verifyNotarySignatures(
-                eq(utxoFilteredTransaction2),
-                eq(notaryKey),
-                eq(listOf(notarySignature)),
-                eq(emptyMap())
-            )
-        ).thenAnswer { }
+    @Test
+    fun `called with original notary null and receives new notary returns a builder with the new notary`() {
+        whenever(session.receive(TransactionBuilderPayload::class.java)).thenReturn(
+            TransactionBuilderPayload(UtxoTransactionBuilderContainer(notaryName = notaryX500Name))
+        )
 
-        @Suppress("unchecked_cast")
-        whenever(persistenceService.persistFilteredTransactionsAndSignatures(any())).thenAnswer {
-            storedFilteredTransaction.addAll(it.arguments.first() as List<UtxoFilteredTransactionAndSignatures>)
-        }
+        val returnedTransactionBuilder = callSendFlow()
 
+        assertEquals(notaryX500Name, returnedTransactionBuilder.notaryName)
+        assertEquals(publicKeyExample, returnedTransactionBuilder.notaryKey)
+        verify(mockFlowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
+    }
+
+    @Test
+    fun `called with original notary and receives a different new notary returns with the original notary`() {
         originalTransactionalBuilder.setNotary(notaryX500Name)
-    }
-
-    @Test
-    fun `called with no notary initially but then receiving one should not throw exception`() {
-        // Receive a builder with notary
-        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(notaryName = notaryX500Name)
+        whenever(session.receive(TransactionBuilderPayload::class.java)).thenReturn(
+            TransactionBuilderPayload(UtxoTransactionBuilderContainer(notaryName = anotherNotaryX500Name))
         )
 
-        // No notary initially
-        callSendFlow(builderOverride = utxoLedgerService.createTransactionBuilder())
+        val returnedTransactionBuilder = callSendFlow()
 
+        assertEquals(notaryX500Name, returnedTransactionBuilder.notaryName)
+        assertEquals(publicKeyExample, returnedTransactionBuilder.notaryKey)
         verify(mockFlowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
-    }
-
-    @Test
-    fun `called with no notary initially and then not receiving one should throw exception`() {
-        // null notary received
-        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer()
-        )
-
-        // No notary initially
-        val ex = assertThrows<IllegalArgumentException> {
-            callSendFlow(builderOverride = utxoLedgerService.createTransactionBuilder())
-        }
-
-        verify(mockFlowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
-        assertThat(ex).hasStackTraceContaining(
-            "Notary name was null originally and the received transaction builder didn't provide one either"
-        )
-    }
-
-    @Test
-    fun `notary cannot change on the received builder`() {
-        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(notaryName = anotherNotaryX500Name)
-        )
-        val ex = assertThrows<IllegalArgumentException> {
-            callSendFlow()
-        }
-
-        verify(mockFlowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
-        assertThat(ex).hasStackTraceContaining("Notary name changed in the received transaction builder")
     }
 
     @Test
     fun `called with original time window null and receives new time window returns a builder with the new time window`() {
-        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(timeWindow = utxoTimeWindowExample, notaryName = notaryX500Name)
+        whenever(session.receive(TransactionBuilderPayload::class.java)).thenReturn(
+            TransactionBuilderPayload(UtxoTransactionBuilderContainer(timeWindow = utxoTimeWindowExample))
         )
         val returnedTransactionBuilder = callSendFlow()
 
@@ -202,11 +153,8 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     @Test
     fun `Called with original time window and receives a different new time window returns with the original time window`() {
         originalTransactionalBuilder.setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
-        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(
-                timeWindow = TimeWindowUntilImpl(Instant.MAX),
-                notaryName = notaryX500Name
-            )
+        whenever(session.receive(TransactionBuilderPayload::class.java)).thenReturn(
+            TransactionBuilderPayload(UtxoTransactionBuilderContainer(timeWindow = TimeWindowUntilImpl(Instant.MAX)))
         )
 
         val returnedTransactionBuilder = callSendFlow()
@@ -217,11 +165,8 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     @Test
     fun `receiving commands appends them (new, old, duplicated)`() {
         originalTransactionalBuilder.addCommand(command1)
-        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(
-                commands = mutableListOf(command1, command1, command2),
-                notaryName = notaryX500Name
-            )
+        whenever(session.receive(TransactionBuilderPayload::class.java)).thenReturn(
+            TransactionBuilderPayload(UtxoTransactionBuilderContainer(commands = mutableListOf(command1, command1, command2)))
         )
 
         val returnedTransactionBuilder = callSendFlow()
@@ -232,10 +177,9 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
 
     @Test
     fun `receiving new signatories appends them`() {
-        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(
-                signatories = mutableListOf(publicKeyExample, anotherPublicKeyExample),
-                notaryName = notaryX500Name
+        whenever(session.receive(TransactionBuilderPayload::class.java)).thenReturn(
+            TransactionBuilderPayload(
+                UtxoTransactionBuilderContainer(signatories = mutableListOf(publicKeyExample, anotherPublicKeyExample))
             )
         )
 
@@ -248,11 +192,8 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     @Test
     fun `receiving existing signatories does not append it`() {
         originalTransactionalBuilder.addSignatories(publicKeyExample)
-        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(
-                signatories = mutableListOf(publicKeyExample),
-                notaryName = notaryX500Name
-            )
+        whenever(session.receive(TransactionBuilderPayload::class.java)).thenReturn(
+            TransactionBuilderPayload(UtxoTransactionBuilderContainer(signatories = mutableListOf(publicKeyExample)))
         )
 
         val returnedTransactionBuilder = callSendFlow()
@@ -264,14 +205,15 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     @Test
     fun `receiving duplicated signatories appends once`() {
         originalTransactionalBuilder.addSignatories(publicKeyExample)
-        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(
-                signatories = mutableListOf(
-                    publicKeyExample,
-                    anotherPublicKeyExample,
-                    anotherPublicKeyExample
-                ),
-                notaryName = notaryX500Name
+        whenever(session.receive(TransactionBuilderPayload::class.java)).thenReturn(
+            TransactionBuilderPayload(
+                UtxoTransactionBuilderContainer(
+                    signatories = mutableListOf(
+                        publicKeyExample,
+                        anotherPublicKeyExample,
+                        anotherPublicKeyExample
+                    )
+                )
             )
         )
 
@@ -283,11 +225,8 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
 
     @Test
     fun `receiving new input StateRefs appends them`() {
-        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(
-                inputStateRefs = mutableListOf(stateRef1, stateRef2),
-                notaryName = notaryX500Name
-            )
+        whenever(session.receive(TransactionBuilderPayload::class.java)).thenReturn(
+            TransactionBuilderPayload(UtxoTransactionBuilderContainer(inputStateRefs = mutableListOf(stateRef1, stateRef2)))
         )
 
         val returnedTransactionBuilder = callSendFlow()
@@ -307,11 +246,8 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     @Test
     fun `receiving existing input StateRefs does not append it`() {
         originalTransactionalBuilder.addInputState(stateRef1)
-        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(
-                inputStateRefs = mutableListOf(stateRef1),
-                notaryName = notaryX500Name
-            )
+        whenever(session.receive(TransactionBuilderPayload::class.java)).thenReturn(
+            TransactionBuilderPayload(UtxoTransactionBuilderContainer(inputStateRefs = mutableListOf(stateRef1)))
         )
 
         val returnedTransactionBuilder = callSendFlow()
@@ -330,11 +266,8 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     @Test
     fun `receiving duplicated input StateRefs appends once`() {
         originalTransactionalBuilder.addInputState(stateRef1)
-        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(
-                inputStateRefs = mutableListOf(stateRef1, stateRef2, stateRef2),
-                notaryName = notaryX500Name
-            )
+        whenever(session.receive(TransactionBuilderPayload::class.java)).thenReturn(
+            TransactionBuilderPayload(UtxoTransactionBuilderContainer(inputStateRefs = mutableListOf(stateRef1, stateRef2, stateRef2)))
         )
 
         val returnedTransactionBuilder = callSendFlow()
@@ -353,11 +286,8 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
 
     @Test
     fun `receiving new reference StateRefs appends them`() {
-        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(
-                referenceStateRefs = mutableListOf(stateRef1, stateRef2),
-                notaryName = notaryX500Name
-            )
+        whenever(session.receive(TransactionBuilderPayload::class.java)).thenReturn(
+            TransactionBuilderPayload(UtxoTransactionBuilderContainer(referenceStateRefs = mutableListOf(stateRef1, stateRef2)))
         )
 
         val returnedTransactionBuilder = callSendFlow()
@@ -377,11 +307,8 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     @Test
     fun `receiving existing reference StateRefs does not append it`() {
         originalTransactionalBuilder.addReferenceState(stateRef1)
-        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(
-                referenceStateRefs = mutableListOf(stateRef1),
-                notaryName = notaryX500Name
-            )
+        whenever(session.receive(TransactionBuilderPayload::class.java)).thenReturn(
+            TransactionBuilderPayload(UtxoTransactionBuilderContainer(referenceStateRefs = mutableListOf(stateRef1)))
         )
 
         val returnedTransactionBuilder = callSendFlow()
@@ -400,11 +327,8 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     @Test
     fun `receiving duplicated reference StateRefs appends once`() {
         originalTransactionalBuilder.addReferenceState(stateRef1)
-        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(
-                referenceStateRefs = mutableListOf(stateRef1, stateRef2, stateRef2),
-                notaryName = notaryX500Name
-            )
+        whenever(session.receive(TransactionBuilderPayload::class.java)).thenReturn(
+            TransactionBuilderPayload(UtxoTransactionBuilderContainer(referenceStateRefs = mutableListOf(stateRef1, stateRef2, stateRef2)))
         )
 
         val returnedTransactionBuilder = callSendFlow()
@@ -424,10 +348,9 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     @Test
     fun `receiving outputs appends them (new, old, duplicated)`() {
         originalTransactionalBuilder.addOutputState(state1)
-        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(
-                outputStates = mutableListOf(stateWithEnc1, stateWithEnc1, stateWithEnc2),
-                notaryName = notaryX500Name
+        whenever(session.receive(TransactionBuilderPayload::class.java)).thenReturn(
+            TransactionBuilderPayload(
+                UtxoTransactionBuilderContainer(outputStates = mutableListOf(stateWithEnc1, stateWithEnc1, stateWithEnc2))
             )
         )
 
@@ -441,127 +364,253 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     }
 
     @Test
-    fun `notary backchain off - receive filtered transactions and verify them`() {
-        val transactionBuilderWithOneInputOneRef = UtxoTransactionBuilderContainer().copy(
-            referenceStateRefs = listOf(stateRef1),
-            inputStateRefs = listOf(stateRef2),
-            filteredDependencies = listOf(
-                UtxoFilteredTransactionAndSignaturesImpl(utxoFilteredTransaction, listOf(notarySignature)),
-                UtxoFilteredTransactionAndSignaturesImpl(utxoFilteredTransaction2, listOf(notarySignature))
-            ),
-            notaryName = notaryX500Name
+    fun `called with no dependencies should return the builder without doing any backchain resolution or ftx verification`() {
+        whenever(session.receive(TransactionBuilderPayload::class.java)).thenReturn(
+            TransactionBuilderPayload(UtxoTransactionBuilderContainer(notaryName = notaryX500Name))
         )
 
-        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            transactionBuilderWithOneInputOneRef
-        )
-
-        whenever(mockNotaryInfo.isBackchainRequired).thenReturn(false)
-
-        // This shouldn't encounter any issues
         callSendFlow()
 
-        // Backchain resolution not called
         verify(mockFlowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
-    }
-
-    @Test
-    fun `notary backchain off - received filtered transaction fails to verify`() {
-        val transactionBuilderWithOneInput = UtxoTransactionBuilderContainer().copy(
-            inputStateRefs = listOf(stateRef1),
-            filteredDependencies = listOf(
-                UtxoFilteredTransactionAndSignaturesImpl(utxoFilteredTransactionInvalid, listOf(notarySignature)),
-            ),
-            notaryName = notaryX500Name
-        )
-
-        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            transactionBuilderWithOneInput
-        )
-
-        whenever(mockNotaryInfo.isBackchainRequired).thenReturn(false)
-
-        val ex = assertThrows<IllegalArgumentException> {
-            callSendFlow()
-        }
-
-        assertThat(ex).hasStackTraceContaining("Could not verify transaction")
-    }
-
-    @Test
-    fun `notary backchain off - received filtered transaction notary mismatch`() {
-        val transactionBuilderWithOneInput = UtxoTransactionBuilderContainer().copy(
-            inputStateRefs = listOf(stateRef1),
-            filteredDependencies = listOf(
-                UtxoFilteredTransactionAndSignaturesImpl(utxoFilteredTransactionInvalidNotaryName, listOf(notarySignature)),
-            ),
-            notaryName = notaryX500Name
-        )
-
-        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            transactionBuilderWithOneInput
-        )
-
-        whenever(mockNotaryInfo.isBackchainRequired).thenReturn(false)
-
-        val ex = assertThrows<IllegalArgumentException> {
-            callSendFlow()
-        }
-
-        assertThat(ex).hasStackTraceContaining(
-            "Notary name of filtered transaction \"null\" doesn't match with " +
-                "notary name of initial transaction \"$notaryX500Name"
+        verify(mockNotarySignatureVerificationService, never()).verifyNotarySignatures(
+            any(),
+            any(),
+            any(),
+            any()
         )
     }
 
     @Test
-    fun `notary backchain off - received filtered transaction fails notary signature verification`() {
-        val transactionBuilderWithOneInput = UtxoTransactionBuilderContainer().copy(
-            inputStateRefs = listOf(stateRef1),
-            filteredDependencies = listOf(
-                UtxoFilteredTransactionAndSignaturesImpl(utxoFilteredTransaction, listOf(notarySignature)),
-            ),
-            notaryName = notaryX500Name
-        )
-
-        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            transactionBuilderWithOneInput
-        )
-
-        whenever(mockNotaryInfo.isBackchainRequired).thenReturn(false)
-
-        whenever(
-            notarySignatureVerificationService.verifyNotarySignatures(
-                eq(utxoFilteredTransaction),
-                eq(notaryKey),
-                eq(listOf(notarySignature)),
-                eq(emptyMap())
+    fun `called with dependencies but no filtered dependencies should result in backchain resolution`() {
+        whenever(session.receive(TransactionBuilderPayload::class.java)).thenReturn(
+            TransactionBuilderPayload(
+                UtxoTransactionBuilderContainer(
+                    inputStateRefs = listOf(stateRef1),
+                    notaryName = notaryX500Name
+                )
             )
-        ).thenAnswer {
-            throw IllegalArgumentException("Notary signature verification failed")
-        }
+        )
+
+        callSendFlow()
+
+        verify(mockFlowEngine).subFlow(any<TransactionBackchainResolutionFlow>())
+        verify(mockNotarySignatureVerificationService, never()).verifyNotarySignatures(
+            any(),
+            any(),
+            any(),
+            any()
+        )
+    }
+
+    @Test
+    fun `called with dependencies and filtered dependencies should result in filtered transaction verification`() {
+        whenever(session.receive(TransactionBuilderPayload::class.java)).thenReturn(
+            TransactionBuilderPayload(
+                UtxoTransactionBuilderContainer(
+                    inputStateRefs = listOf(stateRef1),
+                    notaryName = notaryX500Name
+                ),
+                listOf(filteredTransactionAndSignatures)
+            )
+        )
+        whenever(
+            mockNotarySignatureVerificationService.verifyNotarySignatures(
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        ).doAnswer { }
+
+        whenever(filteredTransactionAndSignatures.filteredTransaction).thenReturn(filteredTransaction)
+        whenever(filteredTransactionAndSignatures.signatures).thenReturn(listOf(notarySignature))
+
+        callSendFlow()
+
+        verify(mockFlowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
+        verify(mockNotarySignatureVerificationService).verifyNotarySignatures(
+            any(),
+            any(),
+            any(),
+            any()
+        )
+
+        Assertions.assertThat(storedFilteredTransactions).containsExactly(filteredTransactionAndSignatures)
+    }
+
+    @Test
+    fun `called with a filtered dependency that cannot be verified will cause the flow to fail`() {
+        whenever(session.receive(TransactionBuilderPayload::class.java)).thenReturn(
+            TransactionBuilderPayload(
+                UtxoTransactionBuilderContainer(
+                    inputStateRefs = listOf(stateRef1),
+                    notaryName = notaryX500Name
+                ),
+                listOf(filteredTransactionAndSignatures)
+            )
+        )
+        whenever(
+            mockNotarySignatureVerificationService.verifyNotarySignatures(
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        ).doAnswer { }
+
+        whenever(filteredTransactionAndSignatures.filteredTransaction).thenReturn(invalidFilteredTransaction)
+        whenever(filteredTransactionAndSignatures.signatures).thenReturn(listOf(notarySignature))
 
         val ex = assertThrows<IllegalArgumentException> {
             callSendFlow()
         }
 
-        assertThat(ex).hasStackTraceContaining(
-            "Notary signature verification failed"
+        Assertions.assertThat(ex).hasStackTraceContaining("Couldn't verify transaction!")
+    }
+
+    @Test
+    fun `called with a filtered dependency that has no notary signatures will cause the flow to fail`() {
+        whenever(session.receive(TransactionBuilderPayload::class.java)).thenReturn(
+            TransactionBuilderPayload(
+                UtxoTransactionBuilderContainer(
+                    inputStateRefs = listOf(stateRef1),
+                    notaryName = notaryX500Name
+                ),
+                listOf(filteredTransactionAndSignatures)
+            )
+        )
+        whenever(
+            mockNotarySignatureVerificationService.verifyNotarySignatures(
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        ).doAnswer { }
+
+        whenever(filteredTransactionAndSignatures.filteredTransaction).thenReturn(filteredTransaction)
+        whenever(filteredTransactionAndSignatures.signatures).thenReturn(emptyList())
+
+        val ex = assertThrows<IllegalArgumentException> {
+            callSendFlow()
+        }
+
+        Assertions.assertThat(ex).hasStackTraceContaining("No notary signatures were received")
+    }
+
+    @Test
+    fun `called with a filtered dependency that has a different notary will cause the flow to fail`() {
+        whenever(session.receive(TransactionBuilderPayload::class.java)).thenReturn(
+            TransactionBuilderPayload(
+                UtxoTransactionBuilderContainer(
+                    inputStateRefs = listOf(stateRef1),
+                    notaryName = notaryX500Name
+                ),
+                listOf(filteredTransactionAndSignatures)
+            )
+        )
+        whenever(
+            mockNotarySignatureVerificationService.verifyNotarySignatures(
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        ).doAnswer { }
+
+        whenever(filteredTransactionAndSignatures.filteredTransaction).thenReturn(filteredTransaction)
+        whenever(filteredTransactionAndSignatures.signatures).thenReturn(listOf(notarySignature))
+        whenever(filteredTransaction.notaryName).thenReturn(null)
+
+        val ex = assertThrows<IllegalArgumentException> {
+            callSendFlow()
+        }
+
+        Assertions.assertThat(ex).hasStackTraceContaining(
+            "Notary name of filtered transaction \"null\" doesn't match with " +
+                "notary name of initial transaction \"$notaryX500Name\""
         )
     }
 
-    private fun callSendFlow(builderOverride: UtxoTransactionBuilderInternal? = null): UtxoTransactionBuilderInternal {
+    @Test
+    fun `called with a transaction builder that has a notary which is not part of the group params will cause the flow to fail`() {
+        whenever(session.receive(TransactionBuilderPayload::class.java)).thenReturn(
+            TransactionBuilderPayload(
+                UtxoTransactionBuilderContainer(
+                    inputStateRefs = listOf(stateRef1),
+                    notaryName = anotherNotaryX500Name
+                ),
+                listOf(filteredTransactionAndSignatures)
+            )
+        )
+        whenever(
+            mockNotarySignatureVerificationService.verifyNotarySignatures(
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        ).doAnswer { }
+
+        whenever(filteredTransactionAndSignatures.filteredTransaction).thenReturn(filteredTransaction)
+        whenever(filteredTransactionAndSignatures.signatures).thenReturn(listOf(notarySignature))
+        whenever(filteredTransaction.notaryName).thenReturn(null)
+
+        val ex = assertThrows<IllegalArgumentException> {
+            callSendFlow()
+        }
+
+        Assertions.assertThat(ex).hasStackTraceContaining(
+            "Notary from initial transaction \"$anotherNotaryX500Name\" " +
+                "cannot be found in group parameter notaries."
+        )
+    }
+
+    @Test
+    fun `called with different number of filtered dependencies and dependencies will cause the flow to fail`() {
+        whenever(session.receive(TransactionBuilderPayload::class.java)).thenReturn(
+            TransactionBuilderPayload(
+                UtxoTransactionBuilderContainer(
+                    inputStateRefs = listOf(stateRef1),
+                    notaryName = notaryX500Name
+                ),
+                listOf(filteredTransactionAndSignatures, filteredTransactionAndSignatures2)
+            )
+        )
+        whenever(
+            mockNotarySignatureVerificationService.verifyNotarySignatures(
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        ).doAnswer { }
+
+        whenever(filteredTransactionAndSignatures.filteredTransaction).thenReturn(filteredTransaction)
+        whenever(filteredTransactionAndSignatures.signatures).thenReturn(listOf(notarySignature))
+        whenever(filteredTransaction.notaryName).thenReturn(null)
+
+        val ex = assertThrows<IllegalArgumentException> {
+            callSendFlow()
+        }
+
+        Assertions.assertThat(ex).hasStackTraceContaining(
+            "The number of filtered transactions received didn't match the number of dependencies."
+        )
+    }
+
+    private fun callSendFlow(): UtxoTransactionBuilderInternal {
         val flow = ReceiveAndUpdateTransactionBuilderFlowV1(
             session,
-            builderOverride ?: originalTransactionalBuilder as UtxoTransactionBuilderInternal
-        ).also {
-            it.notaryLookup = notaryLookup
-            it.groupParametersLookup = groupParamsLookup
-            it.notarySignatureVerificationService = notarySignatureVerificationService
-            it.persistenceService = persistenceService
-        }
+            originalTransactionalBuilder as UtxoTransactionBuilderInternal
+        )
 
         flow.flowEngine = mockFlowEngine
+        flow.groupParametersLookup = mockGroupParametersLookup
+        flow.notaryLookup = mockNotaryLookup
+        flow.persistenceService = mockPersistenceService
+        flow.notarySignatureVerificationService = mockNotarySignatureVerificationService
+
         return flow.call() as UtxoTransactionBuilderInternal
     }
 }
