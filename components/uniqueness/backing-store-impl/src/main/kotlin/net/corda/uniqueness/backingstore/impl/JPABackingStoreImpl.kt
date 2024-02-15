@@ -45,13 +45,18 @@ import javax.persistence.RollbackException
  * JPA backing store implementation, which uses a JPA compliant database to persist data.
  */
 @Component(service = [BackingStore::class])
-open class JPABackingStoreImpl @Activate constructor(
-    @Reference(service = JpaEntitiesRegistry::class)
+open class JPABackingStoreImpl(
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
-    @Reference(service = DbConnectionManager::class)
     private val dbConnectionManager: DbConnectionManager,
-    private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl()
-) : BackingStore {
+    private val virtualNodeRepository: VirtualNodeRepository)  : BackingStore {
+
+    @Activate
+    constructor(
+        @Reference(service = JpaEntitiesRegistry::class)
+        jpaEntitiesRegistry: JpaEntitiesRegistry,
+        @Reference(service = DbConnectionManager::class)
+        dbConnectionManager: DbConnectionManager,
+    ) : this(jpaEntitiesRegistry, dbConnectionManager, VirtualNodeRepositoryImpl())
 
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
