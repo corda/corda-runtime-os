@@ -168,7 +168,6 @@ class FlowEventProcessorImpl(
 
         //Save outputs to replay in the future. This must be the last step after all processing
         val outputs = result.outputRecords + cleanupEvents
-        val hash = result.inputEventHash
 
         return flowEventContextConverter.convert(
             result.copy(outputRecords = outputs)
