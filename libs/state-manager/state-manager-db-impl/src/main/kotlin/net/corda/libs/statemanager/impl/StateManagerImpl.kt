@@ -89,29 +89,31 @@ class StateManagerImpl(
             val successfulKeys = dataSource.connection.transaction { connection ->
                 stateRepository.create(connection, states)
             }
-            logger.info("CORE-19662 - Successfully created states for keys $successfulKeys")
+            logger.info("CORE-19662 - Successfully created states for keys $successfulKeys", java.lang.Exception("Stack trace"))
 
             val failed = states.map { it.key }.toSet() - successfulKeys.toSet()
-            logger.warn("CORE-19662 - Failed to create states for keys $failed")
+            if (failed.isNotEmpty()) {
+                logger.warn("CORE-19662 - Failed to create states for keys $failed", java.lang.Exception("Stack trace"))
+            }
             failed
         }
     }
 
     override fun get(keys: Collection<String>): Map<String, State> {
         if (keys.isEmpty()) return emptyMap()
-        logger.info("CORE-19662 - Trying to get states $keys")
+        logger.info("CORE-19662 - Trying to get states $keys", java.lang.Exception("Stack trace"))
 
         val result= metricsRecorder.recordProcessingTime(GET) {
             getByKey(keys)
         }
-        logger.info("CORE-19662 - Got states ${result.keys}")
+        logger.info("CORE-19662 - Got states ${result.keys}", java.lang.Exception("Stack trace"))
         return result
     }
 
     override fun update(states: Collection<State>): Map<String, State?> {
         if (states.isEmpty()) return emptyMap()
 
-        logger.info("CORE-19662 - Trying to update states ${states.map { it.key }}")
+        logger.info("CORE-19662 - Trying to update states ${states.map { it.key }}", java.lang.Exception("Stack trace"))
 
         return metricsRecorder.recordProcessingTime(UPDATE) {
             try {
@@ -122,7 +124,7 @@ class StateManagerImpl(
                 if (failedUpdates.isEmpty()) {
                     emptyMap()
                 } else {
-                    logger.warn("CORE-19662 - Failed to update states $failedUpdates")
+                    logger.warn("CORE-19662 - Failed to update states $failedUpdates", java.lang.Exception("Stack trace"))
                     getFailedUpdates(failedUpdates)
                 }
             } catch (e: Exception) {
@@ -134,7 +136,7 @@ class StateManagerImpl(
 
     override fun delete(states: Collection<State>): Map<String, State> {
         if (states.isEmpty()) return emptyMap()
-        logger.info("CORE-19662 - Trying to delete states ${states.map { it.key }}")
+        logger.info("CORE-19662 - Trying to delete states ${states.map { it.key }}", java.lang.Exception("Stack trace"))
 
         return metricsRecorder.recordProcessingTime(DELETE) {
             try {
@@ -145,7 +147,7 @@ class StateManagerImpl(
                 if (failedDeletes.isEmpty()) {
                     emptyMap()
                 } else {
-                    logger.warn("CORE-19662 - Failed to update states $failedDeletes")
+                    logger.warn("CORE-19662 - Failed to delete states $failedDeletes", java.lang.Exception("Stack trace"))
 
                     getByKey(failedDeletes).also {
                         if (it.isNotEmpty()) {
