@@ -202,7 +202,7 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
                 it.get()
                 logMe("waited for $index od $myId...")
             } catch (except: Exception) {
-                logMe("got error in $index od $myId...", except)
+                logMe("got error in $index od $myId..., :$except" )
                 log.warn("PubSubConsumer from group ${config.group} failed to process records from topic ${config.topic}.", except)
             }
         }
