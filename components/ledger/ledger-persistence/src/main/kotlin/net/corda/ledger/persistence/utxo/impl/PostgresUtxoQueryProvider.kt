@@ -25,7 +25,7 @@ class PostgresUtxoQueryProvider @Activate constructor(
             ON CONFLICT(id) DO
                 UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated
             WHERE utxo_transaction.status in (EXCLUDED.status, '$UNVERIFIED', '$DRAFT')
-                AND utxo_transaction.is_filtered in( EXCLUDED.is_filtered, true)""" // We should only overwrite if it's filtered
+                AND utxo_transaction.is_filtered IN (EXCLUDED.is_filtered, true)""" // We should only overwrite if it's filtered
             .trimIndent()
 
     override val persistTransactionMetadata: String
