@@ -3,7 +3,6 @@ package net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.v1
 import net.corda.ledger.utxo.data.transaction.verifyFilteredTransactionAndSignatures
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderContainer
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.utilities.trace
@@ -49,45 +48,37 @@ class ReceiveAndUpdateTransactionBuilderFlowV1(
         log.trace { "Starting receive and update transaction builder flow" }
 
         log.trace { "Waiting for transaction builder proposal from ${session.counterparty}." }
-        val receivedTransactionBuilder = session.receive(UtxoTransactionBuilderContainer::class.java)
-
-        require(
-            originalTransactionBuilder.notaryName == receivedTransactionBuilder.getNotaryName() ||
-                originalTransactionBuilder.notaryName == null
-        ) {
-            "Notary name changed in the received transaction builder " +
-                "from ${originalTransactionBuilder.notaryName} to ${receivedTransactionBuilder.getNotaryName()}."
-        }
+        val receivedTransactionBuilderPayload = session.receive(TransactionBuilderPayload::class.java)
+        val receivedTransactionBuilder = receivedTransactionBuilderPayload.transactionBuilder
 
         val updatedTransactionBuilder = originalTransactionBuilder.append(receivedTransactionBuilder)
-
         log.trace { "Transaction builder proposals have been applied. Result: $updatedTransactionBuilder" }
-
-        val notaryName = originalTransactionBuilder.notaryName ?: updatedTransactionBuilder.notaryName
-        requireNotNull(notaryName) {
-            "Notary name was null originally and the received transaction builder didn't provide one either."
-        }
-
-        val notaryInfo = requireNotNull(notaryLookup.lookup(notaryName)) {
-            "Could not find notary service with name: $notaryName"
-        }
 
         val newTransactionIds = receivedTransactionBuilder.dependencies
 
-        if (notaryInfo.isBackchainRequired) {
-            if (newTransactionIds.isEmpty()) {
-                log.trace { "There are no new states transferred, therefore no backchains need to be resolved." }
-            } else {
-                flowEngine.subFlow(TransactionBackchainResolutionFlow(newTransactionIds, session))
+        // If we have no dependencies then we just return the updated transaction builder because there's
+        // no need for backchain resolution or filtered transaction verification
+        if (newTransactionIds.isEmpty()) {
+            log.trace {
+                "There are no new states transferred, therefore there's no need for backchain resolution " +
+                    "or filtered transaction verification."
             }
+            return updatedTransactionBuilder
+        }
+
+        val receivedFilteredTransactions = receivedTransactionBuilderPayload.filteredDependencies
+
+        if (receivedFilteredTransactions == null) {
+            // If we have dependencies but no filtered dependencies it means we need backchain resolution
+            flowEngine.subFlow(TransactionBackchainResolutionFlow(newTransactionIds, session))
         } else {
-            val receivedFilteredTransactions = receivedTransactionBuilder.filteredDependencies
+            // If we have dependencies and filtered dependencies it means we need to verify filtered transactions
             require(receivedFilteredTransactions.size == newTransactionIds.size) {
                 "The number of filtered transactions received didn't match the number of dependencies."
             }
 
             val groupParameters = groupParametersLookup.currentGroupParameters
-            val notary = requireNotNull(groupParameters.notaries.first { it.name == updatedTransactionBuilder.notaryName }) {
+            val notary = requireNotNull(groupParameters.notaries.firstOrNull { it.name == updatedTransactionBuilder.notaryName }) {
                 "Notary from initial transaction \"${updatedTransactionBuilder.notaryName}\" " +
                     "cannot be found in group parameter notaries."
             }

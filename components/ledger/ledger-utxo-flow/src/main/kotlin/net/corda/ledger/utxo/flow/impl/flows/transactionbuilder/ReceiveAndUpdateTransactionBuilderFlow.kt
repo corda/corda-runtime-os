@@ -23,9 +23,7 @@ class ReceiveAndUpdateTransactionBuilderFlow(
     @Suspendable
     override fun call(): UtxoTransactionBuilder {
         return versioningService.versionedSubFlow(
-            ReceiveAndUpdateTransactionBuilderFlowVersionedFlowFactory(
-                originalTransactionBuilder
-            ),
+            ReceiveAndUpdateTransactionBuilderFlowVersionedFlowFactory(originalTransactionBuilder),
             session
         )
     }
@@ -39,10 +37,7 @@ class ReceiveAndUpdateTransactionBuilderFlowVersionedFlowFactory(
 
     override fun create(version: Int, session: FlowSession): SubFlow<UtxoTransactionBuilder> {
         return when {
-            version >= 1 -> ReceiveAndUpdateTransactionBuilderFlowV1(
-                session,
-                originalTransactionBuilder
-            )
+            version >= 1 -> ReceiveAndUpdateTransactionBuilderFlowV1(session, originalTransactionBuilder)
             else -> throw IllegalArgumentException()
         }
     }

@@ -21,8 +21,12 @@ class VaultNamedQueryBuilderFactoryImplTest {
 
     private companion object {
         const val DUMMY_QUERY_NAME = "dummy"
+        const val DUMMY_WHERE_CLAUSE_UNCONSUMED =
+            "original AND (visible_states.consumed IS NULL OR visible_states.consumed >= :Corda_TimestampLimit)"
         const val DUMMY_WHERE_CLAUSE = "original"
         const val PARSED_WHERE_CLAUSE = "parsed"
+        const val ORDER_BY_CLAUSE = "order original"
+        const val ORDER_BY_PARSED = "order parsed"
     }
 
     private val storedQueries = mutableListOf<VaultNamedQuery>()
@@ -71,6 +75,73 @@ class VaultNamedQueryBuilderFactoryImplTest {
         assertThat(storedQuery.filter).isNotNull
         assertThat(storedQuery.mapper).isNotNull
         assertThat(storedQuery.collector).isNotNull
+        assertThat(storedQuery.orderBy).isNull()
+    }
+
+    @Test
+    fun `builder will register a query with name, where clause and extra clause for unconsumed only`() {
+        whenever(vaultNamedQueryParser.parseWhereJson(DUMMY_WHERE_CLAUSE_UNCONSUMED)).thenReturn(PARSED_WHERE_CLAUSE)
+
+        VaultNamedQueryBuilderFactoryImpl(mockRegistry, vaultNamedQueryParser)
+            .create(DUMMY_QUERY_NAME)
+            .whereJson(DUMMY_WHERE_CLAUSE)
+            .selectUnconsumedStatesOnly()
+            .register()
+
+        assertThat(storedQueries).hasSize(1)
+
+        val storedQuery = storedQueries.first()
+
+        assertThat(storedQuery).isNotNull
+        assertThat(storedQuery.name).isEqualTo(DUMMY_QUERY_NAME)
+        assertThat(storedQuery.query).isEqualTo(
+            VaultNamedQuery.ParsedQuery(
+                DUMMY_WHERE_CLAUSE_UNCONSUMED,
+                PARSED_WHERE_CLAUSE,
+                VaultNamedQuery.Type.WHERE_JSON
+            )
+        )
+        assertThat(storedQuery.filter).isNull()
+        assertThat(storedQuery.mapper).isNull()
+        assertThat(storedQuery.collector).isNull()
+        assertThat(storedQuery.orderBy).isNull()
+    }
+
+    @Test
+    fun `builder will register a query with name, where clause and order by clause`() {
+        whenever(vaultNamedQueryParser.parseWhereJson(DUMMY_WHERE_CLAUSE)).thenReturn(PARSED_WHERE_CLAUSE)
+        whenever(vaultNamedQueryParser.parseSimpleExpression(ORDER_BY_CLAUSE)).thenReturn(ORDER_BY_PARSED)
+
+        VaultNamedQueryBuilderFactoryImpl(mockRegistry, vaultNamedQueryParser)
+            .create(DUMMY_QUERY_NAME)
+            .whereJson(DUMMY_WHERE_CLAUSE)
+            .orderBy(ORDER_BY_CLAUSE, "DESC")
+            .orderBy(ORDER_BY_CLAUSE)
+            .register()
+
+        assertThat(storedQueries).hasSize(1)
+
+        val storedQuery = storedQueries.first()
+
+        assertThat(storedQuery).isNotNull
+        assertThat(storedQuery.name).isEqualTo(DUMMY_QUERY_NAME)
+        assertThat(storedQuery.query).isEqualTo(
+            VaultNamedQuery.ParsedQuery(
+                DUMMY_WHERE_CLAUSE,
+                PARSED_WHERE_CLAUSE,
+                VaultNamedQuery.Type.WHERE_JSON
+            )
+        )
+        assertThat(storedQuery.filter).isNull()
+        assertThat(storedQuery.mapper).isNull()
+        assertThat(storedQuery.collector).isNull()
+        assertThat(storedQuery.orderBy).isEqualTo(
+            VaultNamedQuery.ParsedQuery(
+                "$ORDER_BY_CLAUSE DESC, $ORDER_BY_CLAUSE",
+                "$ORDER_BY_PARSED DESC, $ORDER_BY_PARSED",
+                VaultNamedQuery.Type.ORDER_BY
+            )
+        )
     }
 
     @Test

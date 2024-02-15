@@ -500,42 +500,32 @@ class UtxoRepositoryImpl(
 
         return ids.associateWith { transactionId ->
 
-            val transactionMerkleProofs = merkleProofs[transactionId]
-            requireNotNull(transactionMerkleProofs) {
-                "Couldn't find any Merkle proofs for transaction with ID: $transactionId."
-            }
+            val transactionMerkleProofs = merkleProofs[transactionId] ?: emptyList()
 
-            val (topLevelMerkleProofs, componentGroupMerkleProofs) = transactionMerkleProofs.partition {
-                it.groupIndex == TOP_LEVEL_MERKLE_PROOF_INDEX
-            }
-
-            require(topLevelMerkleProofs.isNotEmpty()) {
-                "Couldn't find a top level Merkle proof for transaction with ID: $transactionId."
-            }
-            require(componentGroupMerkleProofs.isNotEmpty()) {
-                "Couldn't find any component group Merkle proof for transaction with ID: $transactionId."
-            }
-
-            requireNotNull(privacySaltAndMetadataMap[transactionId]) {
-                "Couldn't find metadata for transaction with ID: $transactionId."
+            val (topLevelMerkleProofs, componentGroupMerkleProofs) = if (transactionMerkleProofs.isNotEmpty()) {
+                val (topLevel, componentGroupLevel) = transactionMerkleProofs.partition {
+                    it.groupIndex == TOP_LEVEL_MERKLE_PROOF_INDEX
+                }
+                topLevel to componentGroupLevel
+            } else {
+                emptyList<MerkleProofDto>() to emptyList()
             }
 
             val transactionPrivacySaltAndMetadata = privacySaltAndMetadataMap[transactionId]
-            requireNotNull(transactionPrivacySaltAndMetadata) {
-                "Couldn't find metadata/privacy salt for transaction with ID: $transactionId"
-            }
+            val transactionSignatures = signaturesMap[transactionId] ?: emptyList()
 
-            val transactionSignatures = signaturesMap[transactionId]
-            requireNotNull(transactionSignatures) {
-                "Couldn't find signatures for transaction with ID: $transactionId"
+            val componentGroupMerkleProofMap = if (componentGroupMerkleProofs.isNotEmpty()) {
+                componentGroupMerkleProofs.groupBy { it.groupIndex }
+            } else {
+                emptyMap()
             }
 
             UtxoFilteredTransactionDto(
                 transactionId = transactionId,
                 topLevelMerkleProofs = topLevelMerkleProofs,
-                componentMerkleProofMap = componentGroupMerkleProofs.groupBy { it.groupIndex },
-                privacySalt = transactionPrivacySaltAndMetadata.first,
-                metadataBytes = transactionPrivacySaltAndMetadata.second,
+                componentMerkleProofMap = componentGroupMerkleProofMap,
+                privacySalt = transactionPrivacySaltAndMetadata?.first,
+                metadataBytes = transactionPrivacySaltAndMetadata?.second,
                 signatures = transactionSignatures
             )
         }

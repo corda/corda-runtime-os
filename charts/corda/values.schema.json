@@ -1456,6 +1456,7 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "extraArgs": {},
                                 "config": {
                                     "$ref": "#/$defs/persistentStorageRuntimeConnectionSettings"
                                 },
@@ -1493,6 +1494,7 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "extraArgs": {},
                                 "config": {
                                     "$ref": "#/$defs/persistentStorageRuntimeConnectionSettings"
                                 }
@@ -1538,6 +1540,7 @@
                                 "stateManager",
                                 "verifyInstrumentation"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
@@ -1548,6 +1551,7 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "extraArgs": {},
                                 "stateManager": {
                                     "type": "object",
                                     "required": [
@@ -1612,6 +1616,7 @@
                                 "stateManager",
                                 "verifyInstrumentation"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
@@ -1622,6 +1627,7 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "extraArgs": {},
                                 "stateManager": {
                                     "type": "object",
                                     "required": [
@@ -1685,6 +1691,7 @@
                             "required": [
                                 "verifyInstrumentation"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
@@ -1695,6 +1702,7 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "extraArgs": {},
                                 "verifyInstrumentation": {
                                     "type": "boolean",
                                     "default": false,
@@ -1752,7 +1760,8 @@
                                 "logging": {},
                                 "profiling": {},
                                 "resources": {},
-                                "kafka": {}
+                                "kafka": {},
+                                "extraArgs": {}
                             }
                         }
                     ]
@@ -1778,6 +1787,7 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "extraArgs": {},
                                 "stateManager": {
                                     "type": "object",
                                     "required": [
@@ -2043,6 +2053,7 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "extraArgs": {},
                                 "stateManager": {
                                     "type": "object",
                                     "required": [
@@ -2107,6 +2118,7 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "extraArgs": {},
                                 "service": {
                                     "type": "object",
                                     "default": {},
@@ -2238,6 +2250,7 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "extraArgs": {},
                                 "config": {
                                     "$ref": "#/$defs/persistentStorageRuntimeConnectionSettings"
                                 }
@@ -2306,6 +2319,7 @@
                                     }
                                 },
                                 "kafka": {},
+                                "extraArgs": {},
                                 "sharding": {
                                     "type": "object",
                                     "default": {
@@ -2443,6 +2457,7 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "extraArgs": {},
                                 "config": {
                                     "$ref": "#/$defs/persistentStorageRuntimeConnectionSettings"
                                 }
@@ -3045,6 +3060,17 @@
                         },
                         "additionalProperties": false
                     }
+                },
+                "extraArgs": {
+                    "type": "array",
+                    "default": [],
+                    "title": "Extra command-line arguments for the worker",
+                    "items": {
+                        "type": "string"
+                    },
+                    "examples": [
+                        []
+                    ]
                 }
             },
             "examples": [{

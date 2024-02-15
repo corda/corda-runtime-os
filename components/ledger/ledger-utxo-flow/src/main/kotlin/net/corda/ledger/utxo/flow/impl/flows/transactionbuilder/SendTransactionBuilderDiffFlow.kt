@@ -34,9 +34,7 @@ class SendTransactionBuilderDiffFlow(
     @Suspendable
     override fun call() {
         return versioningService.versionedSubFlow(
-            SendTransactionBuilderDiffFlowVersionedFlowFactory(
-                transactionBuilder,
-            ),
+            SendTransactionBuilderDiffFlowVersionedFlowFactory(transactionBuilder),
             listOf(session)
         )
     }
@@ -50,10 +48,7 @@ class SendTransactionBuilderDiffFlowVersionedFlowFactory(
 
     override fun create(version: Int, sessions: List<FlowSession>): SubFlow<Unit> {
         return when {
-            version >= 1 -> SendTransactionBuilderDiffFlowV1(
-                transactionBuilder,
-                sessions.single()
-            )
+            version >= 1 -> SendTransactionBuilderDiffFlowV1(transactionBuilder, sessions.single())
             else -> throw IllegalArgumentException()
         }
     }

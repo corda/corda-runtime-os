@@ -80,11 +80,26 @@ class FlowWorker @Activate constructor(
 
         configureTracing("Flow Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
         webServer.start(params.defaultParams.workerServerPort)
+
+        val extraConfigs = mutableListOf(
+            WorkerHelpers.createConfigFromParams(BOOT_WORKER_SERVICE, params.workerEndpoints)
+        )
+
+        if (params.mediatorReplicasFlowSession != null) {
+            extraConfigs.add(
+                WorkerHelpers.createConfigFromParams(
+                    BOOT_WORKER_SERVICE,
+                    mapOf("mediatorReplicas.flowSession" to params.mediatorReplicasFlowSession.toString())
+                )
+            )
+        }
+
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
-            listOf(WorkerHelpers.createConfigFromParams(BOOT_WORKER_SERVICE, params.workerEndpoints)))
+            extraConfigs
+        )
 
         flowProcessor.start(config)
     }
@@ -104,4 +119,8 @@ private class FlowWorkerParams {
 
     @Option(names = ["--serviceEndpoint"], description = ["Internal REST endpoints for Corda workers"], required = true)
     val workerEndpoints: Map<String, String> = emptyMap()
+
+    @Option(names = ["--mediator-replicas-flow-session"], description = ["Sets the number of mediators that consume " +
+            "flow.session messages"])
+    var mediatorReplicasFlowSession: Int? = null
 }

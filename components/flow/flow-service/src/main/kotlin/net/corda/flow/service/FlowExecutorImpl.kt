@@ -72,6 +72,7 @@ class FlowExecutorImpl constructor(
             val messagingConfig = toMessagingConfig(config).withServiceEndpoints(config)
             val updatedConfigs = updateConfigsWithFlowConfig(config, messagingConfig)
             val stateManagerConfig = config.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)
+            val bootConfig = config.getConfig(ConfigKeys.BOOT_CONFIG)
 
             // close the lifecycle registration first to prevent down being signaled
             subscriptionRegistrationHandle?.close()
@@ -79,7 +80,7 @@ class FlowExecutorImpl constructor(
             stateManager?.stop()
 
             stateManager = stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.FLOW_CHECKPOINT)
-            multiSourceEventMediator = flowEventMediatorFactory.create(updatedConfigs, messagingConfig, stateManager!!)
+            multiSourceEventMediator = flowEventMediatorFactory.create(updatedConfigs, messagingConfig, bootConfig, stateManager!!)
             subscriptionRegistrationHandle = coordinator.followStatusChangesByName(
                 setOf(multiSourceEventMediator!!.subscriptionName, stateManager!!.name)
             )

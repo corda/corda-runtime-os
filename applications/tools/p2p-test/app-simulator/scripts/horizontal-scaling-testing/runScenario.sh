@@ -222,7 +222,6 @@ else
   echo "Slowest messages A -> B in $slowest_two"
   slowest_messages $APP_SIMULATOR_DB_NAMESPACE_B $dbPasswordB $slowest_two
 fi
-#WHERE extract(epoch from sent_timestamp) > 1706879000
 
 echo "Tearing down previous clusters"
 "$SCRIPT_DIR"/tearDown.sh
