@@ -27,7 +27,8 @@ class SendWireTransactionFlowV1(
                 signedTransaction.id,
                 signedTransaction.notaryName,
                 signedTransaction.inputStateRefs + signedTransaction.referenceStateRefs,
-                sessions
+                sessions,
+                forceBackchainResolution = false
             )
         )
     }

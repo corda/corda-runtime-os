@@ -15,7 +15,8 @@ import java.lang.IllegalArgumentException
 @CordaSystemFlow
 class SendSignedTransactionFlow(
     private val transaction: UtxoSignedTransaction,
-    private val sessions: List<FlowSession>
+    private val sessions: List<FlowSession>,
+    private val forceBackchainResolution: Boolean
 ) : SubFlow<Unit> {
 
     @CordaInject
@@ -25,7 +26,8 @@ class SendSignedTransactionFlow(
     override fun call() {
         return versioningService.versionedSubFlow(
             SendSignedTransactionFlowVersionedFlowFactory(
-                transaction
+                transaction,
+                forceBackchainResolution
             ),
             sessions
         )
@@ -33,7 +35,8 @@ class SendSignedTransactionFlow(
 }
 
 class SendSignedTransactionFlowVersionedFlowFactory(
-    private val transaction: UtxoSignedTransaction
+    private val transaction: UtxoSignedTransaction,
+    private val forceBackchainResolution: Boolean
 ) : VersionedSendFlowFactory<Unit> {
 
     override val versionedInstanceOf: Class<SendSignedTransactionFlow> = SendSignedTransactionFlow::class.java
@@ -42,7 +45,8 @@ class SendSignedTransactionFlowVersionedFlowFactory(
         return when {
             version >= CORDA_5_2.value -> SendSignedTransactionFlowV1(
                 transaction,
-                sessions
+                sessions,
+                forceBackchainResolution
             )
             else -> throw IllegalArgumentException("Unsupported version: $version for SendTransactionFlow")
         }

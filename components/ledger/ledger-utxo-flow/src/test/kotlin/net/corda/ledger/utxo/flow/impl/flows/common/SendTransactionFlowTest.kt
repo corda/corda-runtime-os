@@ -166,16 +166,54 @@ class SendTransactionFlowTest {
         )
     }
 
+    @Test
+    fun `notary backchain off - should still execute backchain resolution if forced`() {
+        val dependency = StateRef(mock(), 0)
+
+        whenever(transaction.inputStateRefs).thenReturn(listOf(dependency))
+        whenever(notaryInfo.isBackchainRequired).thenReturn(false)
+
+        whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
+            Payload.Success(successMessage)
+        )
+        whenever(sessionBob.receive(Payload::class.java)).thenReturn(
+            Payload.Success(successMessage)
+        )
+
+        callSendTransactionFlow(
+            transaction,
+            sessions,
+            forceBackchainResolution = true
+        )
+
+        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(TX_ID, sessionAlice))
+        verify(flowMessaging).sendAll(
+            UtxoTransactionPayload(
+                transaction.wireTransaction
+            ),
+            sessions.toSet()
+        )
+        verify(flowMessaging).sendAll(
+            UtxoTransactionPayload(
+                transaction.wireTransaction
+            ),
+            sessions.toSet()
+        )
+        verify(persistenceService, never()).findFilteredTransactionsAndSignatures(any(), any(), any())
+    }
+
     private fun callSendTransactionFlow(
         signedTransaction: UtxoSignedTransaction,
-        sessions: List<FlowSession>
+        sessions: List<FlowSession>,
+        forceBackchainResolution: Boolean = false
     ) {
         val flow = SendTransactionFlow(
             (signedTransaction as UtxoSignedTransactionInternal).wireTransaction,
             signedTransaction.id,
             signedTransaction.notaryName,
             signedTransaction.referenceStateRefs + signedTransaction.inputStateRefs,
-            sessions
+            sessions,
+            forceBackchainResolution
         )
 
         flow.flowEngine = flowEngine

@@ -13,7 +13,8 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 @CordaSystemFlow
 class SendSignedTransactionFlowV1(
     private val signedTransaction: UtxoSignedTransaction,
-    private val sessions: List<FlowSession>
+    private val sessions: List<FlowSession>,
+    private val forceBackchainResolution: Boolean
 ) : SubFlow<Unit> {
 
     @CordaInject
@@ -27,7 +28,8 @@ class SendSignedTransactionFlowV1(
                 signedTransaction.id,
                 signedTransaction.notaryName,
                 signedTransaction.inputStateRefs + signedTransaction.referenceStateRefs,
-                sessions
+                sessions,
+                forceBackchainResolution
             )
         )
     }

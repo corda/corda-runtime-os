@@ -14,19 +14,16 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.StateRef
-import org.slf4j.LoggerFactory
 
+@Suppress("LongParameterList")
 class SendTransactionFlow<T>(
     private val transaction: T,
     private val transactionId: SecureHash,
     private val notaryName: MemberX500Name,
     private val transactionDependencies: List<StateRef>,
-    private val sessions: List<FlowSession>
+    private val sessions: List<FlowSession>,
+    private val forceBackchainResolution: Boolean
 ) : SubFlow<Unit> {
-
-    private companion object {
-        val log = LoggerFactory.getLogger(SendTransactionFlow::class.java)
-    }
 
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
@@ -48,7 +45,9 @@ class SendTransactionFlow<T>(
             "Could not find notary with name: $notaryName"
         }
 
-        if (notaryInfo.isBackchainRequired) {
+        val isBackchainResolutionRequired = forceBackchainResolution || notaryInfo.isBackchainRequired
+
+        if (isBackchainResolutionRequired) {
             flowMessaging.sendAll(
                 UtxoTransactionPayload(transaction),
                 sessions.toSet()
@@ -69,7 +68,7 @@ class SendTransactionFlow<T>(
         }
 
         sessions.forEach {
-            if (notaryInfo.isBackchainRequired && dependentTransactionIds.isNotEmpty()) {
+            if (isBackchainResolutionRequired && dependentTransactionIds.isNotEmpty()) {
                 flowEngine.subFlow(TransactionBackchainSenderFlow(transactionId, it))
             }
 
