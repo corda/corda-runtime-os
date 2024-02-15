@@ -1,6 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
-import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
+import net.corda.ledger.common.flow.transaction.TransactionSignatureVerificationServiceInternal
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByVerification
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -8,7 +8,6 @@ import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.KeyUtils
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.common.transaction.TransactionWithMetadata
 import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -28,8 +27,8 @@ import java.security.PublicKey
     scope = PROTOTYPE
 )
 class NotarySignatureVerificationServiceImpl @Activate constructor(
-    @Reference(service = TransactionSignatureService::class)
-    private val transactionSignatureService: TransactionSignatureService
+    @Reference(service = TransactionSignatureVerificationServiceInternal::class)
+    private val transactionSignatureService: TransactionSignatureVerificationServiceInternal
 ) : NotarySignatureVerificationService,
     NotarySignatureVerificationServiceInternal,
     UsedByFlow,
@@ -46,7 +45,7 @@ class NotarySignatureVerificationServiceImpl @Activate constructor(
                 getNotaryPublicKeyByKeyId(it.by, notaryKey, keyIdToNotaryKeys)
             if (publicKey != null) {
                 try {
-                    (transactionSignatureService as TransactionSignatureServiceInternal).verifySignature(transaction, it, publicKey)
+                    transactionSignatureService.verifySignature(transaction, it, publicKey)
                     publicKey
                 } catch (e: Exception) {
                     throw TransactionSignatureException(
@@ -79,7 +78,7 @@ class NotarySignatureVerificationServiceImpl @Activate constructor(
         val keyIdToPublicKey = keyIdToNotaryKeys.getOrPut(keyId.algorithm) {
             // Prepare keyIds for all public keys related to the notary for the relevant algorithm
             getKeyOrLeafKeys(notaryKey).associateBy {
-                (transactionSignatureService as TransactionSignatureServiceInternal).getIdOfPublicKey(
+                transactionSignatureService.getIdOfPublicKey(
                     it,
                     keyId.algorithm
                 )
