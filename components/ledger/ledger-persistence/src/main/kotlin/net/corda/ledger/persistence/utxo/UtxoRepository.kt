@@ -53,7 +53,7 @@ interface UtxoRepository {
     ): List<DigitalSignatureAndMetadata>
 
     /** Retrieves a transaction's status */
-    fun findTransactionStatus(
+    fun findSignedTransactionStatus(
         entityManager: EntityManager,
         id: String,
     ): String?

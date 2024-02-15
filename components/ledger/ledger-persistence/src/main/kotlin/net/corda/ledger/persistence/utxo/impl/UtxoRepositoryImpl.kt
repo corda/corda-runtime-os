@@ -163,8 +163,8 @@ class UtxoRepositoryImpl(
             .map { r -> serializationService.deserialize(r.get(0) as ByteArray) }
     }
 
-    override fun findTransactionStatus(entityManager: EntityManager, id: String): String? {
-        return entityManager.createNativeQuery(queryProvider.findTransactionStatus, Tuple::class.java)
+    override fun findSignedTransactionStatus(entityManager: EntityManager, id: String): String? {
+        return entityManager.createNativeQuery(queryProvider.findSignedTransactionStatus, Tuple::class.java)
             .setParameter("transactionId", id)
             .resultListAsTuples()
             .map { r -> r.get(0) as String }

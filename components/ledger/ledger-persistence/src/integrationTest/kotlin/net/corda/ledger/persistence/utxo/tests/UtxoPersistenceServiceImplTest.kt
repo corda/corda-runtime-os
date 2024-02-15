@@ -1044,7 +1044,7 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
-    fun `find a signed transaction after persisting when a signed transaction when a filtered transaction existed previously`() {
+    fun `find a signed transaction after persisting a signed transaction when a filtered transaction existed previously`() {
         val signatures = createSignatures(Instant.now())
         val signedTransaction = createSignedTransaction(signatures = signatures)
         val filteredTransaction = createFilteredTransaction(signedTransaction)
@@ -1061,7 +1061,24 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
-    fun `find a filtered transaction after persisting when a signed transaction when a filtered transaction existed previously`() {
+    fun `find a signed transaction after persisting a filtered transaction when a signed transaction existed previously`() {
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(signatures = signatures)
+        val filteredTransaction = createFilteredTransaction(signedTransaction)
+        val transactionReader = TestUtxoTransactionReader(
+            signedTransaction,
+            "account",
+            VERIFIED,
+            emptyList()
+        )
+        persistenceService.persistTransaction(transactionReader, emptyMap())
+        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
+        val (loadedSignedTransaction, _) = persistenceService.findSignedTransaction(signedTransaction.id.toString(), VERIFIED)
+        assertThat(loadedSignedTransaction).isEqualTo(signedTransaction)
+    }
+
+    @Test
+    fun `find a filtered transaction after persisting a signed transaction when a filtered transaction existed previously`() {
         val signatures = createSignatures(Instant.now())
         val signedTransaction = createSignedTransaction(signatures = signatures)
         val filteredTransaction = createFilteredTransaction(signedTransaction)
@@ -1076,6 +1093,16 @@ class UtxoPersistenceServiceImplTest {
         val loadedFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl).findFilteredTransactions(listOf(signedTransaction.id.toString()))
         assertThat(loadedFilteredTransactions).hasSize(1)
         assertThat(loadedFilteredTransactions[signedTransaction.id]!!.first).isEqualTo(filteredTransaction)
+    }
+
+    @Test
+    fun `find a signed transaction when a filtered transaction exists`() {
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(signatures = signatures)
+        val filteredTransaction = createFilteredTransaction(signedTransaction)
+        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
+        val (loadedSignedTransaction, _) = persistenceService.findSignedTransaction(signedTransaction.id.toString(), VERIFIED)
+        assertThat(loadedSignedTransaction).isNull()
     }
 
     @Test

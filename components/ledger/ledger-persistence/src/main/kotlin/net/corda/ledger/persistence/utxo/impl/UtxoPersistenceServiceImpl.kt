@@ -95,7 +95,7 @@ class UtxoPersistenceServiceImpl(
         transactionStatus: TransactionStatus,
         em: EntityManager,
     ): Pair<SignedTransactionContainer?, String?> {
-        val status = repository.findTransactionStatus(em, id)
+        val status = repository.findSignedTransactionStatus(em, id)
         return if (status == transactionStatus.value) {
             repository.findTransaction(em, id)
                 ?: throw InconsistentLedgerStateException("Transaction $id in status $status has disappeared from the database")
@@ -193,7 +193,7 @@ class UtxoPersistenceServiceImpl(
         transactionStatus: TransactionStatus
     ): Pair<SignedLedgerTransactionContainer?, String?> {
         return entityManagerFactory.transaction { em ->
-            val status = repository.findTransactionStatus(em, id)
+            val status = repository.findSignedTransactionStatus(em, id)
             if (status == transactionStatus.value) {
                 val (transaction, signatures) = repository.findTransaction(em, id)
                     ?.let { WrappedUtxoWireTransaction(it.wireTransaction, serializationService) to it.signatures }
@@ -249,7 +249,7 @@ class UtxoPersistenceServiceImpl(
         entityManagerFactory.transaction { em ->
             val transactionIdString = transaction.id.toString()
 
-            val status = repository.findTransactionStatus(em, transactionIdString)
+            val status = repository.findSignedTransactionStatus(em, transactionIdString)
 
             if (status != null) {
                 return status to emptyList()

@@ -31,9 +31,9 @@ interface UtxoQueryProvider {
     val findTransactionSignatures: String
 
     /**
-     * @property findTransactionStatus SQL text for [UtxoRepositoryImpl.findTransactionStatus].
+     * @property findSignedTransactionStatus SQL text for [UtxoRepositoryImpl.findSignedTransactionStatus].
      */
-    val findTransactionStatus: String
+    val findSignedTransactionStatus: String
 
     /**
      * @property markTransactionVisibleStatesConsumed SQL text for
