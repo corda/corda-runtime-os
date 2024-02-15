@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory
 /**
  * Uniqueness processor implementation.
  */
-@Suppress("LongParameterList")
 @Component(service = [UniquenessProcessor::class])
 class UniquenessProcessorImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)

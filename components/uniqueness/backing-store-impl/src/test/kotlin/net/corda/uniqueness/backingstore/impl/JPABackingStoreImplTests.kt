@@ -39,7 +39,7 @@ import org.mockito.kotlin.whenever
 import java.sql.Connection
 import java.time.LocalDate
 import java.time.ZoneOffset
-import java.util.*
+import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction

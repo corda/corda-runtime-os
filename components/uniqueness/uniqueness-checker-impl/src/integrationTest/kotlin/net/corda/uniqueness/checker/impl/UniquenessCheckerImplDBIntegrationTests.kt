@@ -50,7 +50,8 @@ import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
-import java.util.*
+import java.util.LinkedList
+import java.util.UUID
 import javax.persistence.EntityManagerFactory
 import kotlin.test.assertEquals
 
