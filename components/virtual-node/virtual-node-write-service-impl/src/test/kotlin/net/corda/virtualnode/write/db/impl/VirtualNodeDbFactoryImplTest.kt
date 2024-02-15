@@ -156,8 +156,19 @@ class VirtualNodeDbFactoryImplTest {
     }
 
     @Test
+    @Suppress("MaxLineLength")
     fun `createVNodeDbs with custom pool config values in external connection strings creates VNode datasource configuration with default pool values`() {
-        val externalConnectionString = "{\"database\":{\"jdbc\":{\"url\":\"\"},\"pass\":\"\",\"pool\":{\"idleTimeoutSeconds\":999,\"keepaliveTimeSeconds\":999,\"maxLifetimeSeconds\":999,\"max_size\":999,\"min_size\":999,\"validationTimeoutSeconds\":999},\"user\":\"\"}}"
+        val externalConnectionString = """
+            {"database":{"jdbc":{"url":""},"pass":"","user":"",
+            "pool":{
+            "idleTimeoutSeconds":999,
+            "keepaliveTimeSeconds":999,
+            "maxLifetimeSeconds":999,
+            "max_size":999,
+            "min_size":999,
+            "validationTimeoutSeconds":999
+            }}}
+        """.trimIndent()
         val request = VirtualNodeConnectionStrings(
             /* vaultDdlConnection = */
             externalConnectionString,
