@@ -135,7 +135,6 @@ class VirtualNodeDbFactoryImplTest {
         )
 
         val vaultDdlConfig = dbs[VirtualNodeDbType.VAULT]?.dbConnections?.get(DbPrivilege.DDL)?.config!!
-        println(vaultDdlConfig)
         verify(vaultDdlConfig, never()).withValue(eq(DatabaseConfig.JDBC_DRIVER), any())
         verify(vaultDdlConfig).withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(JDBC_URL))
         verify(vaultDdlConfig).withValue(DatabaseConfig.DB_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(1))
