@@ -135,11 +135,13 @@ class JPABackingStoreImplTests {
         jpaEntitiesRegistry = mock<JpaEntitiesRegistry>().apply {
             whenever(get(any())) doReturn mock<JpaEntitiesSet>()
         }
-
+        val clusterEntityManagerFactory = mock<EntityManagerFactory>().apply {
+            whenever(createEntityManager()).thenReturn(mock())
+        }
         dbConnectionManager = mock<DbConnectionManager>().apply {
             whenever(getClusterDataSource()) doReturn dummyDataSource
             whenever(getOrCreateEntityManagerFactory(any<UUID>(), any(), any())) doReturn entityManagerFactory
-            whenever(getClusterEntityManagerFactory()) doReturn entityManagerFactory
+            whenever(getClusterEntityManagerFactory()) doReturn clusterEntityManagerFactory
         }
 
         val virtualNodeRepository: VirtualNodeRepository = mock<VirtualNodeRepository>().apply {
@@ -226,7 +228,7 @@ class JPABackingStoreImplTests {
         @Test
         fun `Session always closes entity manager after use`() {
             backingStoreImpl.session(notaryRepIdentity) { }
-            Mockito.verify(entityManager, times(2)).close()
+            Mockito.verify(entityManager, times(1)).close()
         }
 
         @Test
@@ -234,7 +236,7 @@ class JPABackingStoreImplTests {
             assertThrows<java.lang.RuntimeException> {
                 backingStoreImpl.session(notaryRepIdentity) { throw java.lang.RuntimeException("test exception") }
             }
-            Mockito.verify(entityManager, times(2)).close()
+            Mockito.verify(entityManager, times(1)).close()
         }
     }
 
@@ -255,7 +257,7 @@ class JPABackingStoreImplTests {
 
             Mockito.verify(entityTransaction, times(1)).begin()
             Mockito.verify(entityTransaction, times(1)).commit()
-            Mockito.verify(entityManager, times(2)).close()
+            Mockito.verify(entityManager, times(1)).close()
         }
 
         @Test
