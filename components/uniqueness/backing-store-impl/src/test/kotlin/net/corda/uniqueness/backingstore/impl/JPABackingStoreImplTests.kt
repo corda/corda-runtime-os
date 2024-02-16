@@ -205,7 +205,7 @@ class JPABackingStoreImplTests {
             val lifeCycleStatus = LifecycleStatus.UP
             backingStoreImpl.eventHandler(RegistrationStatusChangeEvent(mock(), lifeCycleStatus), lifecycleCoordinator)
 
-            Mockito.verify(jpaEntitiesRegistry, times(1)).register(any(), any())
+            Mockito.verify(jpaEntitiesRegistry, times(2)).register(any(), any())
             Mockito.verify(jpaEntitiesRegistry, times(1)).get(CordaDb.Uniqueness.persistenceUnitName)
             Mockito.verify(lifecycleCoordinator, times(1)).updateStatus(lifeCycleStatus)
         }
