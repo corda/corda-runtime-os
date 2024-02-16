@@ -55,7 +55,7 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
         connection.prepareStatement(queryProvider.updateStates(states.size)).use { stmt ->
             states.forEach { state ->
                 stmt.setString(indices.next(), state.key)
-                stmt.setBytes(indices.next(), state.value)
+                stmt.setBytes(indices.next(), Snappy.compress(state.value))
                 stmt.setString(indices.next(), objectMapper.writeValueAsString(state.metadata))
                 stmt.setInt(indices.next(), state.version)
             }
