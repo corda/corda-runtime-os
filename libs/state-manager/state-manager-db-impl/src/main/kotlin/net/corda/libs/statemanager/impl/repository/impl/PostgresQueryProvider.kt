@@ -13,7 +13,7 @@ class PostgresQueryProvider : AbstractQueryProvider() {
 
     override fun createStates(size: Int): String = """
         WITH data ($KEY_COLUMN, $VALUE_COLUMN, $VERSION_COLUMN, $METADATA_COLUMN, $MODIFIED_TIME_COLUMN) as (
-            VALUES ${List(size) { "(?, ?, ?, CAST(? AS JSONB), CURRENT_TIMESTAMP AT TIME ZONE 'UTC')" }.joinToString(",")}
+            VALUES ${List(size) { "(?, ?, ?, CAST(? AS JSONB), CURRENT_TIMESTAMP AT TIME ZONE '${timeZone.id}')" }.joinToString(",")}
         )
         INSERT INTO $STATE_MANAGER_TABLE
         SELECT * FROM data d
@@ -31,7 +31,7 @@ class PostgresQueryProvider : AbstractQueryProvider() {
                 $VALUE_COLUMN = temp.value, 
                 $VERSION_COLUMN = s.$VERSION_COLUMN + 1, 
                 $METADATA_COLUMN = CAST(temp.metadata as JSONB), 
-                $MODIFIED_TIME_COLUMN = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                $MODIFIED_TIME_COLUMN = CURRENT_TIMESTAMP AT TIME ZONE '${timeZone.id}'
             FROM
             (
                 VALUES ${List(size) { "(?, ?, ?, ?)" }.joinToString(",")}

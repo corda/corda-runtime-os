@@ -6,8 +6,11 @@ import net.corda.libs.statemanager.impl.model.v1.StateColumns.METADATA_COLUMN
 import net.corda.libs.statemanager.impl.model.v1.StateColumns.MODIFIED_TIME_COLUMN
 import net.corda.libs.statemanager.impl.model.v1.StateColumns.VALUE_COLUMN
 import net.corda.libs.statemanager.impl.model.v1.StateColumns.VERSION_COLUMN
+import java.util.TimeZone
 
 abstract class AbstractQueryProvider : QueryProvider {
+    override val timeZone: TimeZone
+        get() = TimeZone.getTimeZone("UTC")
 
     override fun findStatesByKey(size: Int) =
         """
