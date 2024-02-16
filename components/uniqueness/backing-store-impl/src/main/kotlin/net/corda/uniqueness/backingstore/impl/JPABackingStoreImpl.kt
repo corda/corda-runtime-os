@@ -4,6 +4,7 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.bytes
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
+import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
 import net.corda.metrics.CordaMetrics
@@ -69,6 +70,10 @@ open class JPABackingStoreImpl(
         jpaEntitiesRegistry.register(
             CordaDb.Uniqueness.persistenceUnitName,
             JPABackingStoreEntities.classes
+        )
+        jpaEntitiesRegistry.register(
+            CordaDb.CordaCluster.persistenceUnitName,
+            VirtualNodeEntities.classes
         )
     }
 
