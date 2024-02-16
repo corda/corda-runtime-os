@@ -14,6 +14,7 @@ dependencies {
     implementation project(':components:db:db-connection-manager')
     implementation project(':components:uniqueness:uniqueness-checker')
     implementation project(':libs:configuration:configuration-datamodel')
+    implementation project(":libs:virtual-node:virtual-node-datamodel")
     implementation project(':libs:lifecycle:lifecycle')
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'net.corda:corda-base'
