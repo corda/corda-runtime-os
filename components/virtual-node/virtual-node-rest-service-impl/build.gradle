@@ -8,6 +8,7 @@ description "Virtual Node REST Resource Implementation"
 ext.cordaEnableFormatting = true
 
 dependencies {
+
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
@@ -27,6 +28,7 @@ dependencies {
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:membership:membership-common')
+    implementation project(':libs:rest:json-serialization')
     implementation project(':libs:utilities')
     implementation project(':libs:platform-info')
     implementation 'net.corda:corda-avro-schema'

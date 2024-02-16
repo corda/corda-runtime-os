@@ -10,7 +10,7 @@ import net.corda.data.virtualnode.VirtualNodeOperationStatusResponse
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationNotFoundException
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.JsonCreateVirtualNodeRequest
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.rest.asynchronous.v1.AsyncOperationStatus
@@ -40,7 +40,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import net.corda.data.virtualnode.VirtualNodeOperationStatus as AvroVirtualNodeOperationStatus
 
 class VirtualNodeRestResourceImplTest {
@@ -92,7 +92,7 @@ class VirtualNodeRestResourceImplTest {
     fun `create virtual node`() {
         val groupId = "grp1"
         val requestId = "r1"
-        val request = CreateVirtualNodeRequest(
+        val request = JsonCreateVirtualNodeRequest(
             "",
             "checkSum",
             null,
