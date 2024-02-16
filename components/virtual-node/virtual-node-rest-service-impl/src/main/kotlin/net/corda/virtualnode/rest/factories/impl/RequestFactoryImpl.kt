@@ -32,12 +32,12 @@ internal class RequestFactoryImpl(
             this.request = VirtualNodeCreateRequest().apply {
                 this.holdingId = holdingIdentity.toAvro()
                 this.cpiFileChecksum = request.cpiFileChecksum
-                this.vaultDdlConnection = request.vaultDdlConnection
-                this.vaultDmlConnection = request.vaultDmlConnection
-                this.cryptoDdlConnection = request.cryptoDdlConnection
-                this.cryptoDmlConnection = request.cryptoDmlConnection
-                this.uniquenessDdlConnection = request.uniquenessDdlConnection
-                this.uniquenessDmlConnection = request.uniquenessDmlConnection
+                this.vaultDdlConnection = request.vaultDdlConnection?.escapedJson
+                this.vaultDmlConnection = request.vaultDmlConnection?.escapedJson
+                this.cryptoDdlConnection = request.cryptoDdlConnection?.escapedJson
+                this.cryptoDmlConnection = request.cryptoDmlConnection?.escapedJson
+                this.uniquenessDdlConnection = request.uniquenessDdlConnection?.escapedJson
+                this.uniquenessDmlConnection = request.uniquenessDmlConnection?.escapedJson
                 this.updateActor = restContextProvider.principal
             }
         }
