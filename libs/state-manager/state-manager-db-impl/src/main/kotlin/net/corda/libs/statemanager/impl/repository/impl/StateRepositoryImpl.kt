@@ -70,6 +70,28 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
         )
     }
 
+    override fun delete(connection: Connection, states: List<String>): Collection<String> {
+        if (states.isEmpty()) return emptyList()
+        return connection.prepareStatement(queryProvider.deleteStatesByKey).use { statement ->
+            // The actual state order doesn't matter, but we must ensure that the states are iterated over in the same
+            // order when examining the result as when the statements were generated.
+            val statesOrdered = states.toList()
+            statesOrdered.forEach { state ->
+                statement.setString(1, state)
+                statement.addBatch()
+            }
+            // For the delete case, it's safe to return anything other than a row update count of 1 as failed. The state
+            // manager must check any returned failed deletes regardless to verify that the call did not request
+            // removal of a state that never existed.
+            statement.executeBatch().zip(statesOrdered).mapNotNull { (count, state) ->
+                if (count <= 0) {
+                    state
+                } else {
+                    null
+                }
+            }.toList()
+        }
+    }
     override fun delete(connection: Connection, states: Collection<State>): Collection<String> {
         if (states.isEmpty()) return emptySet()
         return connection.prepareStatement(queryProvider.deleteStatesByKey).use { statement ->

@@ -95,6 +95,7 @@ interface StateManager : Lifecycle {
      *      the optimistic locking check.
      */
     fun delete(states: Collection<State>): Map<String, State>
+    fun delete(states: List<String>): Collection<String>
 
     /**
      * Retrieve all states that were updated for the last time between [IntervalFilter.start] (inclusive)
