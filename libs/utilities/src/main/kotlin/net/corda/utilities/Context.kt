@@ -25,7 +25,7 @@ object Context {
                 val file = File("/tmp/logs/log.$index.txt")
                 file.parentFile.mkdirs()
                 file.appendText("${clock.instant()} $str\n")
-                if (lines.incrementAndGet() > 10000) {
+                if (lines.incrementAndGet() > 100000) {
                     lines.set(0)
                     index.incrementAndGet()
                     zip(file)
