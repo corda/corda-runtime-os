@@ -17,7 +17,7 @@ Add the following extension properties
         cordaClusterURL = "https://localhost:8888"
         cordaRestUser = "admin"
         cordaRestPasswd ="admin"
-        composeFilePath = "config/combined-worker-kafka-compose.yml"
+        composeFilePath = "config/combined-worker-compose.yml"
         networkConfigFile = "config/static-network-config.json"
         r3RootCertFile = "config/r3-ca-key.pem"
         skipTestsDuringBuildCpis = "false"
