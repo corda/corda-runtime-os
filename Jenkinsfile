@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@5.2') _
+@Library('corda-shared-build-pipeline-steps@ES-1745/implement-polaris') _
 
 cordaPipelineKubernetesAgent(
     dailyBuildCron: 'H H/6 * * *',
