@@ -30,6 +30,7 @@ import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationNotFoundE
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.JsonCreateVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.UpdateVirtualNodeDbRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
@@ -483,13 +484,13 @@ internal class VirtualNodeRestResourceImpl(
      */
     @Deprecated("Deprecated in favour of `createVirtualNode()`")
     override fun createVirtualNodeDeprecated(request: CreateVirtualNodeRequest): ResponseEntity<AsyncResponse> {
-        val groupId = virtualNodeValidationService.validateAndGetGroupId(request)
+        val groupId = virtualNodeValidationService.validateAndGetGroupIdDeprecated(request)
 
-        val holdingIdentity = requestFactory.createHoldingIdentity(groupId, request)
+        val holdingIdentity = requestFactory.createHoldingIdentityDeprecated(groupId, request)
 
         virtualNodeValidationService.validateVirtualNodeDoesNotExist(holdingIdentity)
 
-        val asyncRequest = requestFactory.createVirtualNodeRequest(holdingIdentity, request)
+        val asyncRequest = requestFactory.createVirtualNodeRequestDeprecated(holdingIdentity, request)
 
         sendAsync(asyncRequest.requestId, asyncRequest)
 
@@ -514,7 +515,7 @@ internal class VirtualNodeRestResourceImpl(
      * @throws ServiceUnavailableException is thrown if the component isn't running.
      * @return [ResponseEntity] containing the request ID for the create virtual node request.
      */
-    override fun createVirtualNode(request: CreateVirtualNodeRequest): ResponseEntity<AsyncResponse> {
+    override fun createVirtualNode(request: JsonCreateVirtualNodeRequest): ResponseEntity<AsyncResponse> {
         val groupId = virtualNodeValidationService.validateAndGetGroupId(request)
 
         val holdingIdentity = requestFactory.createHoldingIdentity(groupId, request)

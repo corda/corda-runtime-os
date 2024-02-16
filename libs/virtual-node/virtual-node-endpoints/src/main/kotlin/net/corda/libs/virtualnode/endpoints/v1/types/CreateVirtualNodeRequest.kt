@@ -11,6 +11,24 @@ import net.corda.rest.JsonObject
 data class CreateVirtualNodeRequest(
     val x500Name: String,
     var cpiFileChecksum: String,
+    val vaultDdlConnection: String?,
+    val vaultDmlConnection: String?,
+    val cryptoDdlConnection: String?,
+    val cryptoDmlConnection: String?,
+    val uniquenessDdlConnection: String?,
+    val uniquenessDmlConnection: String?
+) {
+    init {
+        // Whilst checksum can be expressed with either upper or lower case characters and has the same logical meaning,
+        // all the cache keys using uppercase representation of CPI checksum, therefore early during processing cycle
+        // on REST server, it would make sense to switch to uppercase.
+        cpiFileChecksum = cpiFileChecksum.uppercase()
+    }
+}
+
+data class JsonCreateVirtualNodeRequest(
+    val x500Name: String,
+    var cpiFileChecksum: String,
     val vaultDdlConnection: JsonObject?,
     val vaultDmlConnection: JsonObject?,
     val cryptoDdlConnection: JsonObject?,
@@ -19,9 +37,6 @@ data class CreateVirtualNodeRequest(
     val uniquenessDmlConnection: JsonObject?
 ) {
     init {
-        // Whilst checksum can be expressed with either upper or lower case characters and has the same logical meaning,
-        // all the cache keys using uppercase representation of CPI checksum, therefore early during processing cycle
-        // on REST server, it would make sense to switch to uppercase.
         cpiFileChecksum = cpiFileChecksum.uppercase()
     }
 }

@@ -35,12 +35,12 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     private data class VNodeCreateBody(
         val cpiFileChecksum: String,
         val x500Name: String,
-        val cryptoDdlConnection: String?,
-        val cryptoDmlConnection: String?,
-        val uniquenessDdlConnection: String?,
-        val uniquenessDmlConnection: String?,
-        val vaultDdlConnection: String?,
-        val vaultDmlConnection: String?
+        val cryptoDdlConnection: JsonNode?,
+        val cryptoDmlConnection: JsonNode?,
+        val uniquenessDdlConnection: JsonNode?,
+        val uniquenessDmlConnection: JsonNode?,
+        val vaultDdlConnection: JsonNode?,
+        val vaultDmlConnection: JsonNode?
     )
 
     private data class VNodeChangeConnectionStringsBody(
@@ -50,15 +50,6 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         val uniquenessDmlConnection: JsonNode?,
         val vaultDdlConnection: JsonNode?,
         val vaultDmlConnection: JsonNode?
-    )
-
-    data class ExternalDBConnectionParams(
-        val cryptoDdlConnection: String? = null,
-        val cryptoDmlConnection: String? = null,
-        val uniquenessDdlConnection: String? = null,
-        val uniquenessDmlConnection: String? = null,
-        val vaultDdlConnection: String? = null,
-        val vaultDmlConnection: String? = null
     )
 
     data class JsonExternalDBConnectionParams(
@@ -254,12 +245,12 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     private fun vNodeBody(
         cpiHash: String,
         x500Name: String,
-        cryptoDdlConnection: String?,
-        cryptoDmlConnection: String?,
-        uniquenessDdlConnection: String?,
-        uniquenessDmlConnection: String?,
-        vaultDdlConnection: String?,
-        vaultDmlConnection: String?
+        cryptoDdlConnection: JsonNode?,
+        cryptoDmlConnection: JsonNode?,
+        uniquenessDdlConnection: JsonNode?,
+        uniquenessDmlConnection: JsonNode?,
+        vaultDdlConnection: JsonNode?,
+        vaultDmlConnection: JsonNode?
     ): String {
         val body = VNodeCreateBody(
             cpiHash,
@@ -427,7 +418,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     fun vNodeCreate(
         cpiHash: String,
         x500Name: String,
-        externalDBConnectionParams: ExternalDBConnectionParams? = null
+        externalDBConnectionParams: JsonExternalDBConnectionParams? = null
     ) =
         post(
             "/api/$REST_API_VERSION_PATH/virtualnode",

@@ -5,6 +5,7 @@ import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.ShortHashException
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.JsonCreateVirtualNodeRequest
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.membership.lib.grouppolicy.GroupPolicyParseException
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
@@ -19,7 +20,7 @@ import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.rest.impl.validation.VirtualNodeValidationService
-import java.util.UUID
+import java.util.*
 
 internal class VirtualNodeValidationServiceImpl(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
@@ -34,7 +35,7 @@ internal class VirtualNodeValidationServiceImpl(
         }
     }
 
-    override fun validateAndGetGroupId(request: CreateVirtualNodeRequest): String {
+    override fun validateAndGetGroupIdDeprecated(request: CreateVirtualNodeRequest): String {
         try {
             MemberX500Name.parse(request.x500Name)
         } catch (e: Exception) {
@@ -64,6 +65,64 @@ internal class VirtualNodeValidationServiceImpl(
         }
 
         if (!request.uniquenessDdlConnection.isNullOrBlank() && request.uniquenessDmlConnection.isNullOrBlank()) {
+            throw InvalidInputDataException(
+                "If Uniqueness DDL connection is provided, Uniqueness DML connection needs to be provided as well."
+            )
+        }
+
+        val cpiMeta = cpiInfoReadService.getAll()
+            .firstOrNull { it.fileChecksum.toHexString().substring(0, 12) == cpiFileChecksum }
+            ?: throw InvalidInputDataException(
+                "No CPI metadata found for checksum '$cpiFileChecksum'."
+            )
+
+        val groupPolicyJson = cpiMeta.groupPolicy
+            ?: throw InternalServerException("Group policy is missing from CPI metadata '$cpiFileChecksum'")
+
+        val groupId = try {
+            GroupPolicyParser.groupIdFromJson(groupPolicyJson)
+        } catch (e: GroupPolicyParseException) {
+            throw InternalServerException("Could not find group ID in CPI policy data '$groupPolicyJson'")
+        }
+
+        // generate a group ID when creating a virtual node for an MGM default group.
+        return if (groupId == GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID) {
+            UUID.randomUUID().toString()
+        } else {
+            groupId
+        }
+    }
+
+    override fun validateAndGetGroupId(request: JsonCreateVirtualNodeRequest): String {
+        try {
+            MemberX500Name.parse(request.x500Name)
+        } catch (e: Exception) {
+            throw InvalidInputDataException(
+                "X500 name \"${request.x500Name}\" could not be parsed. Cause: ${e.message}"
+            )
+        }
+
+        val cpiFileChecksum = request.cpiFileChecksum
+
+        if (!validCpi.matches(cpiFileChecksum)) {
+            throw InvalidInputDataException(
+                "CPI file checksum value '$cpiFileChecksum' is invalid, expecting 12 digit hex value"
+            )
+        }
+
+        if (request.vaultDdlConnection.toString().isNotBlank() && request.vaultDmlConnection.toString().isBlank()) {
+            throw InvalidInputDataException(
+                "If Vault DDL connection is provided, Vault DML connection needs to be provided as well."
+            )
+        }
+
+        if (request.cryptoDdlConnection.toString().isNotBlank() && request.cryptoDmlConnection.toString().isBlank()) {
+            throw InvalidInputDataException(
+                "If Crypto DDL connection is provided, Crypto DML connection needs to be provided as well."
+            )
+        }
+
+        if (request.uniquenessDdlConnection.toString().isNotBlank() && request.uniquenessDmlConnection.toString().isBlank()) {
             throw InvalidInputDataException(
                 "If Uniqueness DDL connection is provided, Uniqueness DML connection needs to be provided as well."
             )

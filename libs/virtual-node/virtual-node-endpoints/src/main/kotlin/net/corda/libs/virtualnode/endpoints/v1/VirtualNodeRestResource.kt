@@ -3,6 +3,7 @@ package net.corda.libs.virtualnode.endpoints.v1
 import net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity
+import net.corda.libs.virtualnode.endpoints.v1.types.JsonCreateVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.UpdateVirtualNodeDbRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
@@ -57,7 +58,7 @@ interface VirtualNodeRestResource : RestResource {
     )
     fun createVirtualNode(
         @ClientRequestBodyParameter(description = "Details of the virtual node to be created")
-        request: CreateVirtualNodeRequest
+        request: JsonCreateVirtualNodeRequest
     ): ResponseEntity<AsyncResponse>
 
     /**
