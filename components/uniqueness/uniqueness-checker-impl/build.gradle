@@ -48,6 +48,7 @@ dependencies {
     integrationTestImplementation project(':libs:db:db-orm-impl')
     integrationTestImplementation project(':libs:lifecycle:lifecycle')
     integrationTestImplementation project(':testing:db-testkit')
+    integrationTestImplementation project(":libs:virtual-node:virtual-node-datamodel")
 
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly libs.postgresql.jdbc

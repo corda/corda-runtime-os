@@ -7,6 +7,8 @@ import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.DbUtils
 import net.corda.db.testkit.TestDbInfo
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -30,6 +32,7 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.VirtualNodeInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.hibernate.Session
 import org.junit.jupiter.api.Assertions
@@ -89,6 +92,7 @@ class JPABackingStoreImplIntegrationTests {
     private val groupId = UUID.randomUUID().toString()
     private val notaryVNodeIdentity = createTestHoldingIdentity("C=GB, L=London, O=NotaryRep1", groupId)
     private val notaryVNodeIdentityDbName = VirtualNodeDbType.UNIQUENESS.getSchemaName(notaryVNodeIdentity.shortHash)
+    private val notaryVNodeIdentityDbId = UUID.randomUUID()
     private val dbConfig = DbUtils.getEntityManagerConfiguration(notaryVNodeIdentityDbName)
     private val databaseInstaller = DatabaseInstaller(
         EntityManagerFactoryFactoryImpl(),
@@ -130,11 +134,25 @@ class JPABackingStoreImplIntegrationTests {
 
     private fun createBackingStoreImpl(emFactory: EntityManagerFactory): JPABackingStoreImpl {
         val jpaEntitiesRegistry = JpaEntitiesRegistryImpl()
-        val dbConnectionManager = mock<DbConnectionManager>().apply {
-            whenever(getOrCreateEntityManagerFactory(any<String>(), any(), any())) doReturn emFactory
-            whenever(getClusterDataSource()) doReturn dbConfig.dataSource
+        val clusterEntityManagerFactory = mock<EntityManagerFactory>().apply {
+            whenever(createEntityManager()).thenReturn(mock())
         }
-        return JPABackingStoreImpl(jpaEntitiesRegistry, dbConnectionManager)
+        val dbConnectionManager = mock<DbConnectionManager>().apply {
+            whenever(getOrCreateEntityManagerFactory(eq(notaryVNodeIdentityDbId), any(), any())) doReturn emFactory
+            whenever(getClusterDataSource()) doReturn dbConfig.dataSource
+            whenever(getClusterEntityManagerFactory()) doReturn clusterEntityManagerFactory
+        }
+        val virtualNodeRepository: VirtualNodeRepository = mock<VirtualNodeRepository>().apply {
+            whenever(find(any(), any())) doReturn VirtualNodeInfo(
+                holdingIdentity = notaryVNodeIdentity,
+                CpiIdentifier("", "", SecureHashUtils.randomSecureHash()),
+                vaultDmlConnectionId = UUID.randomUUID(),
+                cryptoDmlConnectionId = UUID.randomUUID(),
+                uniquenessDmlConnectionId = notaryVNodeIdentityDbId,
+                timestamp = Instant.EPOCH
+            )
+        }
+        return JPABackingStoreImpl(jpaEntitiesRegistry, dbConnectionManager, virtualNodeRepository)
     }
 
     private fun createEntityManagerFactory(persistenceUnitName: String = "uniqueness"): EntityManagerFactory {
