@@ -278,6 +278,14 @@ class UniquenessCheckerImplDBIntegrationTests {
                 uniquenessDmlConnectionId = charlieHoldingIdentityDbId,
                 timestamp = Instant.EPOCH
             )
+            whenever(find(any(), eq(noDbHoldingIdentity.shortHash))) doReturn VirtualNodeInfo(
+                holdingIdentity = noDbHoldingIdentity,
+                CpiIdentifier("", "", SecureHashUtils.randomSecureHash()),
+                vaultDmlConnectionId = UUID.randomUUID(),
+                cryptoDmlConnectionId = UUID.randomUUID(),
+                uniquenessDmlConnectionId = noDbHoldingIdentityDbId,
+                timestamp = Instant.EPOCH
+            )
         }
 
         val clusterEntityManagerFactory = mock<EntityManagerFactory>().apply {
