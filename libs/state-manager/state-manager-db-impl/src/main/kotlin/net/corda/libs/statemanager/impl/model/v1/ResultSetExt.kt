@@ -9,6 +9,7 @@ import net.corda.libs.statemanager.impl.model.v1.StateColumns.METADATA_COLUMN
 import net.corda.libs.statemanager.impl.model.v1.StateColumns.MODIFIED_TIME_COLUMN
 import net.corda.libs.statemanager.impl.model.v1.StateColumns.VALUE_COLUMN
 import net.corda.libs.statemanager.impl.model.v1.StateColumns.VERSION_COLUMN
+import org.xerial.snappy.Snappy
 import java.sql.ResultSet
 
 fun ResultSet.resultSetAsStateCollection(objectMapper: ObjectMapper): Collection<State> {
@@ -16,7 +17,7 @@ fun ResultSet.resultSetAsStateCollection(objectMapper: ObjectMapper): Collection
 
     while (next()) {
         val key = getString(KEY_COLUMN)
-        val value = getBytes(VALUE_COLUMN)
+        val value = Snappy.uncompress(getBytes(VALUE_COLUMN))
         val metadata = getString(METADATA_COLUMN)
         val version = getInt(VERSION_COLUMN)
         val modifiedTime = getTimestamp(MODIFIED_TIME_COLUMN).toInstant()
