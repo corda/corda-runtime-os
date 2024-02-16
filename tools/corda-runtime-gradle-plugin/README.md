@@ -109,7 +109,7 @@ NOTE: The above docker compose yaml file:
  - Uses the Kafka-enabled Combined Worker image
  - Properties `bus.busType=KAFKA` and `bootstrap.servers=kafka:29092` are used to configure the Combined Worker to use Kafka
  - Runs Kafka in KRaft mode 
- - To ensure that the Combined Worker starts correctly, corda cli needs to be used to create necessary topics. Corda cli version should be aliged with the Combined Worker version
+ - To ensure that the Combined Worker starts correctly, corda cli needs to be used to create necessary topics. Corda cli version should be aligned with the Combined Worker version
 
 
    b. For Database-only combined worker
