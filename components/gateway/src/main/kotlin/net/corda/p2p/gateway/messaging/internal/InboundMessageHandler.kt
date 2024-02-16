@@ -42,6 +42,7 @@ import java.net.SocketAddress
 import java.nio.ByteBuffer
 import java.time.Duration
 import java.util.UUID
+import kotlin.concurrent.thread
 import kotlin.random.Random
 
 /**
@@ -232,7 +233,17 @@ internal class InboundMessageHandler(
         Context.myLog("processSessionMessage for session ID: $sessionId message $id, key $key")
         val record = Record(LINK_IN_TOPIC, key, p2pMessage)
         if (commonComponents.features.useStatefulSessionManager) {
-            p2pInPublisher.publish(listOf(record))
+            Context.myLog("processSessionMessage publishing key $key")
+            p2pInPublisher.publish(listOf(record)).also {
+                Context.myLog("processSessionMessage published key $key")
+                thread {
+                    Context.myLog("Waiting for future $key...")
+                    it.forEach {
+                        it.join()
+                    }
+                    Context.myLog("Waited for future $key...")
+                }
+            }
             return HttpResponseStatus.OK
         } else {
             val partitions = sessionPartitionMapper.getPartitions(sessionId)

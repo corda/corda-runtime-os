@@ -38,7 +38,8 @@ object Context {
 
     private fun zip(input: File) {
         thread {
-            File(input.parentFile, "${input.name}.zip").outputStream().use { fileOutputStream->
+            val zipFile = File(input.parentFile, "${input.name}.zip")
+            zipFile.outputStream().use { fileOutputStream->
                 ZipOutputStream(fileOutputStream).use { zipOutputStream ->
                     val entry = ZipEntry(input.name)
                     zipOutputStream.putNextEntry(entry)
@@ -47,6 +48,10 @@ object Context {
                 }
             }
             input.delete()
+            val dir = File("/tmp/logs/zips")
+            dir.mkdirs()
+            val mvFile = File(dir, zipFile.name)
+            zipFile.renameTo(mvFile)
         }
 
     }
