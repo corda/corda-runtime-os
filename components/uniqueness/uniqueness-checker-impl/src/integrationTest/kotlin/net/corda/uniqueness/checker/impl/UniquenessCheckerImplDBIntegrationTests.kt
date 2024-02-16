@@ -280,6 +280,10 @@ class UniquenessCheckerImplDBIntegrationTests {
             )
         }
 
+        val clusterEntityManagerFactory = mock<EntityManagerFactory>().apply {
+            whenever(createEntityManager()).thenReturn(mock())
+        }
+
         val backingStore = JPABackingStoreImpl(
             JpaEntitiesRegistryImpl(),
             mock<DbConnectionManager>().apply {
@@ -292,6 +296,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 whenever(getOrCreateEntityManagerFactory(
                     eq(noDbHoldingIdentityDbId), any(), any())) doThrow DBConfigurationException("")
                 whenever(getClusterDataSource()) doReturn clusterDbConfig.dataSource
+                whenever(getClusterEntityManagerFactory()) doReturn clusterEntityManagerFactory
             },
             virtualNodeRepository
         )
