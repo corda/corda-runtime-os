@@ -12,7 +12,7 @@ services:
       - 5432:5432
 
   corda:
-    image: corda-os-docker.software.r3.com/corda-os-combined-worker:5.2.0.0-beta-1707102610189
+    image: corda-os-docker.software.r3.com/corda-os-combined-worker:5.2.0.0-beta-1707901808354
     depends_on:
       - postgresql
     command: [ "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005",

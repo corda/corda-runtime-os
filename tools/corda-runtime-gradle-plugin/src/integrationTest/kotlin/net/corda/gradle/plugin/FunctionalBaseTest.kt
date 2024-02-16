@@ -62,7 +62,7 @@ abstract class FunctionalBaseTest : Javalin() {
                 cordaRestUser = "admin"
                 cordaRestPasswd ="admin"
                 notaryVersion = "5.2.0.0-beta-1706865687074"
-                composeFilePath = "config/combined-worker-compose.yml"
+                composeFilePath = "config/combined-worker-kafka-compose.yml"
                 networkConfigFile = "config/static-network-config.json"
                 r3RootCertFile = "config/r3-ca-key.pem"
                 corDappCpiName = "MyCorDapp"

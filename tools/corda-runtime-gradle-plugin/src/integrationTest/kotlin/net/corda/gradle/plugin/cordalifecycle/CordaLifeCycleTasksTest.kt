@@ -67,7 +67,7 @@ class CordaLifeCycleTasksTest : FunctionalBaseTest() {
         appendCordaRuntimeGradlePluginExtension()
         val currentValue = buildFile.readText()
         val newValue = currentValue.replace(
-            "composeFilePath = \"config/combined-worker-compose.yml\"",
+            "composeFilePath = \"config/combined-worker-kafka-compose.yml\"",
             "composeFilePath = \"config/some-other-compose.yml\""
         )
         buildFile.writeText(newValue)
