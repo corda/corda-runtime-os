@@ -27,8 +27,6 @@ internal class ReconfigurableHttpServer(
     private val listener: RequestListener,
     private val commonComponents: CommonComponents,
     private val dynamicCertificateSubjectStore: DynamicCertificateSubjectStore,
-    // added for unit testing
-    private val overrideHttpServer: HttpServer? = null
 ) : LifecycleWithDominoTile {
 
     private data class ServerKey(
@@ -107,13 +105,13 @@ internal class ReconfigurableHttpServer(
                                             "${serverConfiguration.hostAddress}:${serverConfiguration.hostPort}$urlPath",
                                 )
                             }
-                            (overrideHttpServer ?: HttpServer(
+                            HttpServer(
                                 listener,
                                 newConfiguration.maxRequestSize,
                                 serverConfiguration,
                                 commonComponents.dynamicKeyStore.serverKeyStore,
                                 mutualTlsTrustManager,
-                            )).also {
+                            ).also {
                                 try {
                                     it.start()
                                 } catch (e: BindException) {
