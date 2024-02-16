@@ -707,6 +707,8 @@ object CordaMetrics {
              * Time taken to execute a specific State Manager operation.
              */
             object ExecutionTime : Metric<Timer>("$PREFIX.execution.time", CordaMetrics::timer)
+
+            object FailureCount: Metric<Counter>("$PREFIX.failure.count", Metrics::counter)
         }
     }
 

@@ -13,4 +13,6 @@ interface MetricsRecorder {
     }
 
     fun <T> recordProcessingTime(operationType: OperationType, block: () -> T): T
+
+    fun recordFailureCount(operationType: OperationType, count: Int)
 }
