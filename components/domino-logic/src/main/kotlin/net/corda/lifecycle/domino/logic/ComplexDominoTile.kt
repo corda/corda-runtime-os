@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory
  */
 @Suppress("LongParameterList", "TooManyFunctions")
 class ComplexDominoTile(
-    componentName: String,
+    private val componentName: String,
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val onStart: (() -> Unit)? = null,
     private val onClose: (() -> Unit)? = null,
@@ -228,7 +228,8 @@ class ComplexDominoTile(
                             logger.warn("Config error ${event.configUpdateResult.e}")
                             stopResources()
                             updateState(StoppedDueToBadConfig, event.configUpdateResult.e.message)
-                            logger.warn("Component has been stopped.")
+                            logger.warn("Component $componentName has been stopped. " +
+                                    "Due to: ${event.configUpdateResult.e.message}")
                         }
                         ConfigUpdateResult.NoUpdate -> {
                             logger.info("Config applied with no update.")

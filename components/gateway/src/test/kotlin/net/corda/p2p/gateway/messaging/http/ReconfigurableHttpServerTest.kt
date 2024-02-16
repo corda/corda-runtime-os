@@ -30,6 +30,7 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.net.BindException
 import java.net.InetSocketAddress
 
 class ReconfigurableHttpServerTest {
@@ -259,5 +260,22 @@ class ReconfigurableHttpServerTest {
             )
 
         assertThat(future).isCompletedWithValue(Unit)
+    }
+
+    @Test
+    fun `applyNewConfiguration completes exceptionally when address is already in use`() {
+        val server = mock<HttpServer> {
+            on { start() } doAnswer { throw BindException("Address already in use") }
+        }
+        ReconfigurableHttpServer(
+            lifecycleCoordinatorFactory,
+            configurationReaderService,
+            listener,
+            commonComponents,
+            mock(),
+            server,
+        )
+        val future = configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
+        assertThat(future).isCompletedExceptionally
     }
 }

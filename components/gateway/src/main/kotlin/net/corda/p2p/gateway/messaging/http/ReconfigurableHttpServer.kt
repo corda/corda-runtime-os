@@ -14,6 +14,7 @@ import net.corda.p2p.gateway.messaging.internal.RequestListener
 import net.corda.p2p.gateway.messaging.mtls.DynamicCertificateSubjectStore
 import net.corda.p2p.gateway.messaging.toGatewayConfiguration
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
 import java.net.BindException
 import java.util.concurrent.CompletableFuture
@@ -26,6 +27,8 @@ internal class ReconfigurableHttpServer(
     private val listener: RequestListener,
     private val commonComponents: CommonComponents,
     private val dynamicCertificateSubjectStore: DynamicCertificateSubjectStore,
+    // added for unit testing
+    private val overrideHttpServer: HttpServer? = null
 ) : LifecycleWithDominoTile {
 
     private data class ServerKey(
@@ -104,22 +107,22 @@ internal class ReconfigurableHttpServer(
                                             "${serverConfiguration.hostAddress}:${serverConfiguration.hostPort}$urlPath",
                                 )
                             }
-                            HttpServer(
+                            (overrideHttpServer ?: HttpServer(
                                 listener,
                                 newConfiguration.maxRequestSize,
                                 serverConfiguration,
                                 commonComponents.dynamicKeyStore.serverKeyStore,
                                 mutualTlsTrustManager,
-                            ).also {
+                            )).also {
                                 try {
                                     it.start()
                                 } catch (e: BindException) {
-                                    val addressMsg = "Failed to connect on " +
-                                            "'${serverConfiguration.hostAddress}:${serverConfiguration.hostPort}' " +
-                                            "address. Please make sure the required address is not in use " +
-                                            "and could be accessed."
-                                    logger.warn(addressMsg)
-                                    throw BindException(e.message + " " + addressMsg)
+                                    throw CordaRuntimeException(
+                                        "Failed to connect on " +
+                                                "'${serverConfiguration.hostAddress}:${serverConfiguration.hostPort}' " +
+                                                "address. Please make sure the required address is not in use " +
+                                                "and could be accessed.", e
+                                    )
                                 }
                             }
                         }
