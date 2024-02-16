@@ -103,7 +103,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         val instances = 4
         val pollBatchSize = threads / instances
         val msgCfg = messagingConfig.withValue(
-            "bus.kafkaProperties.max.poll.records",
+            "bus.kafkaProperties.consumer.max.poll.records",
             ConfigValueFactory.fromAnyRef(pollBatchSize)
         )
 

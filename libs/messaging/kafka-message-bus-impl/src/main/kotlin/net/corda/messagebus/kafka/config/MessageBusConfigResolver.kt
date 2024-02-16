@@ -70,7 +70,7 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
         val roleConfig = resolvedConfig.getConfig("roles.$rolePath")
         val properties = roleConfig.toKafkaProperties()
 
-        logger.debug {"Kafka properties for role $rolePath: $properties" }
+        logger.info ("Kafka properties for role $rolePath: $properties" )
 
         return properties
     }
@@ -100,6 +100,7 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
     fun resolve(messageBusConfig: SmartConfig, consumerConfig: ConsumerConfig): Pair<ResolvedConsumerConfig, Properties> {
         val topicPrefix = messageBusConfig.getString(BootConfig.TOPIC_PREFIX)
         val amendedConfig = consumerConfig.addGroupPrefix(topicPrefix)
+   //     logger.info("Filipe - ${messageBusConfig.getConfig("bus.kafkaProperties.max.poll.records")}")
         val kafkaProperties = resolve(messageBusConfig, amendedConfig.role.configPath, amendedConfig.toSmartConfig())
 
         return ResolvedConsumerConfig(

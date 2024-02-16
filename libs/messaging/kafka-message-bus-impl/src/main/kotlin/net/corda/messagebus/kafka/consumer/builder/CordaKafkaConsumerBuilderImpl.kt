@@ -86,6 +86,8 @@ class CordaKafkaConsumerBuilderImpl @Activate constructor(
             if (currentBundle != null) {
                 Thread.currentThread().contextClassLoader = currentBundle.adapt(BundleWiring::class.java).classLoader
             }
+            // Here where the "bus.kafkaProperties.max.poll.records" is used
+            log.info("Kafka properties - $kafkaProperties")
             KafkaConsumer(
                 kafkaProperties,
                 keyDeserializer,
