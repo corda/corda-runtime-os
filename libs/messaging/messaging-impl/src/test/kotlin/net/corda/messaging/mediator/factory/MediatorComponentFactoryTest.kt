@@ -2,7 +2,6 @@ package net.corda.messaging.mediator.factory
 
 
 import net.corda.messaging.api.mediator.MediatorConsumer
-import net.corda.messaging.api.mediator.MediatorInputService
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
@@ -61,7 +60,6 @@ class MediatorComponentFactoryTest {
     private val stateManagerHelper = mock<StateManagerHelper<String>>()
     private val taskManager = mock<TaskManager>()
     private val messageRouter = mock<MessageRouter>()
-    private val mediatorInputService = mock<MediatorInputService>()
     private val mediatorSubscriptionState = MediatorSubscriptionState(AtomicBoolean(false), AtomicBoolean(false))
     private val eventMediatorConfig = mock<EventMediatorConfig<String, String, String>>().apply {
         whenever(name).thenReturn("name")
@@ -92,8 +90,7 @@ class MediatorComponentFactoryTest {
             clientFactories,
             messageRouterFactory,
             groupAllocator,
-            stateManagerHelper,
-            mediatorInputService
+            stateManagerHelper
         )
     }
 
@@ -126,8 +123,7 @@ class MediatorComponentFactoryTest {
             clientFactories,
             messageRouterFactory,
             groupAllocator,
-            stateManagerHelper,
-            mediatorInputService
+            stateManagerHelper
         )
 
         assertThrows<IllegalStateException> {
@@ -162,8 +158,7 @@ class MediatorComponentFactoryTest {
             emptyList(),
             messageRouterFactory,
             groupAllocator,
-            stateManagerHelper,
-            mediatorInputService
+            stateManagerHelper
         )
 
         assertThrows<IllegalStateException> {

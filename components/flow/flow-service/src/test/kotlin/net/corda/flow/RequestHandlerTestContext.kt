@@ -23,7 +23,6 @@ import net.corda.virtualnode.toCorda
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
-import java.util.UUID
 
 class RequestHandlerTestContext<PAYLOAD>(val payload: PAYLOAD) {
     val flowId = "flow id"
@@ -73,6 +72,5 @@ class RequestHandlerTestContext<PAYLOAD>(val payload: PAYLOAD) {
         flowMetrics =  mock(),
         flowTraceContext = mock(),
         metadata = null,
-        inputEventHash = UUID.randomUUID().toString()
     )
 }

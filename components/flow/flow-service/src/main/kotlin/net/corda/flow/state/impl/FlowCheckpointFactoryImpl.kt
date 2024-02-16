@@ -31,7 +31,6 @@ class FlowCheckpointFactoryImpl @Activate constructor(
             pipelineState = newPipelineState
             initialPlatformVersion = platformInfoProvider.localWorkerPlatformVersion
             flowState = null
-            savedOutputs = emptyList()
         }.build()
     }
 }

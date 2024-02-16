@@ -4,7 +4,6 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.state.checkpoint.Checkpoint
-import net.corda.data.flow.state.checkpoint.SavedOutputs
 import net.corda.data.flow.state.external.ExternalEventState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
@@ -54,8 +53,6 @@ interface FlowCheckpoint : NonSerializable {
 
     val suspendCount: Int
 
-    val outputs: List<SavedOutputs>
-
     /**
      * In memory counter used to generate unique and deterministic inputs into ledger PrivacySalts
      * when multiple transactions are created within a single suspension.
@@ -82,8 +79,6 @@ interface FlowCheckpoint : NonSerializable {
     fun <T> readCustomState(clazz: Class<T>): T?
 
     fun writeCustomState(state: Any)
-
-    fun saveOutputs(savedOutputs: SavedOutputs)
 
     fun toAvro(): Checkpoint?
 }

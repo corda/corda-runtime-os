@@ -6,7 +6,6 @@ import co.paralleluniverse.fibers.FiberScheduler
 import com.typesafe.config.ConfigFactory
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.cpiinfo.read.fake.CpiInfoReadServiceFake
-import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
@@ -54,7 +53,6 @@ import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
-import net.corda.messaging.api.mediator.MediatorInputService
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
@@ -69,7 +67,6 @@ import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSIONS_SUPP
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_REQUIRE_CLOSE
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.EncodingUtils.toBase64
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
@@ -291,13 +288,12 @@ class FlowServiceTestContext @Activate constructor(
             sessionId,
             initiatingIdentity,
             initiatedIdentity,
-            SessionCounterpartyInfoRequest(
-                SessionInit.newBuilder()
-                    .setFlowId(flowId)
-                    .setCpiId(cpiId)
-                    .setContextPlatformProperties(emptyKeyValuePairList())
-                    .setContextUserProperties(emptyKeyValuePairList())
-                    .build()
+            SessionCounterpartyInfoRequest(SessionInit.newBuilder()
+                .setFlowId(flowId)
+                .setCpiId(cpiId)
+                .setContextPlatformProperties(emptyKeyValuePairList())
+                .setContextUserProperties(emptyKeyValuePairList())
+                .build()
             ),
             null,
             getContextSessionProps(protocol, requireClose)
@@ -317,8 +313,7 @@ class FlowServiceTestContext @Activate constructor(
         sessionId: String,
         data: ByteArray,
         sequenceNum: Int,
-        sessionInit: SessionInit?,
-        timestamp: Instant
+        sessionInit: SessionInit?
     ): FlowIoRequestSetup {
         return createAndAddSessionEvent(
             flowId,
@@ -327,8 +322,7 @@ class FlowServiceTestContext @Activate constructor(
             null,
             SessionData(ByteBuffer.wrap(data), sessionInit),
             sequenceNum,
-            SESSION_PROPERTIES,
-            timestamp
+            SESSION_PROPERTIES
         )
     }
 
@@ -430,12 +424,12 @@ class FlowServiceTestContext @Activate constructor(
     }
 
     override fun resetFlowFiberCache() {
-        ALL_TEST_VIRTUAL_NODES.forEach {
-            flowFiberCache.remove(
-                VirtualNodeContext(it.toCorda(), setOf(CPK1_CHECKSUM), FLOW, null)
-            )
-        }
+    ALL_TEST_VIRTUAL_NODES.forEach {
+        flowFiberCache.remove(
+            VirtualNodeContext(it.toCorda(), setOf(CPK1_CHECKSUM), FLOW, null)
+        )
     }
+}
 
     fun clearTestRuns() {
         testRuns.clear()
@@ -496,15 +490,14 @@ class FlowServiceTestContext @Activate constructor(
         initiatedIdentity: HoldingIdentity?,
         payload: Any,
         sequenceNum: Int?,
-        contextSessionProps: KeyValuePairList?,
-        instant: Instant = Instant.now()
+        contextSessionProps: KeyValuePairList?
     ): FlowIoRequestSetup {
         val sessionEvent = buildSessionEvent(
             MessageDirection.INBOUND,
             sessionId,
             sequenceNum,
             payload,
-            instant,
+            Instant.now(),
             initiatingIdentity ?: sessionInitiatingIdentity!!,
             initiatedIdentity ?: sessionInitiatedIdentity!!,
             contextSessionProps
@@ -515,22 +508,13 @@ class FlowServiceTestContext @Activate constructor(
     private fun getFlowEventProcessor(): StateAndEventProcessor<String, Checkpoint, FlowEvent> {
         val cfg = ConfigFactory.parseMap(testConfig)
         return eventProcessorFactory.create(
-            mapOf(
-                FLOW_CONFIG to SmartConfigFactory.createWithoutSecurityServices()
-                    .create(cfg)
-            )
+            mapOf(FLOW_CONFIG to SmartConfigFactory.createWithoutSecurityServices()
+                .create(cfg))
         )
     }
 
     private fun createFlowEventRecord(key: String, payload: Any): Record<String, FlowEvent> {
-        val hash = toBase64(serializer.serialize(payload)!!.sha256Bytes())
-        return Record(
-            FLOW_SESSION,
-            key,
-            FlowEvent(key, payload),
-            0,
-            listOf(Pair(MediatorInputService.INPUT_HASH_HEADER, hash))
-        )
+        return Record(FLOW_SESSION, key, FlowEvent(key, payload))
     }
 
     private fun getCpiIdentifier(cpiId: String): CpiIdentifier {
@@ -559,7 +543,7 @@ class FlowServiceTestContext @Activate constructor(
 
         return object : FlowIoRequestSetup {
 
-            override fun suspendsWith(flowIoRequest: FlowIORequest<*>): FlowIoRequestSetup {
+            override fun suspendsWith(flowIoRequest: FlowIORequest<*>) : FlowIoRequestSetup {
                 testRun.ioRequests.add(
                     FlowIORequest.FlowSuspended(
                         ByteBuffer.wrap(byteArrayOf()),
@@ -570,12 +554,12 @@ class FlowServiceTestContext @Activate constructor(
                 return this
             }
 
-            override fun completedSuccessfullyWith(result: String?): FlowIoRequestSetup {
+            override fun completedSuccessfullyWith(result: String?) : FlowIoRequestSetup {
                 testRun.ioRequests.add(FlowIORequest.FlowFinished(result))
                 return this
             }
 
-            override fun completedWithError(exception: Exception): FlowIoRequestSetup {
+            override fun completedWithError(exception: Exception) : FlowIoRequestSetup {
                 testRun.ioRequests.add(FlowIORequest.FlowFailed(exception))
                 return this
             }

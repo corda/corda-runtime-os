@@ -41,5 +41,4 @@ data class FlowEventContext<T>(
     val flowMetrics: FlowMetrics,
     val flowTraceContext: TraceContext,
     val metadata: Metadata?,
-    val inputEventHash: String?,
 )

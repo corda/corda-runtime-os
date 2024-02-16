@@ -2,9 +2,6 @@ package net.corda.messaging.mediator.processor
 
 import net.corda.libs.statemanager.api.State
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
-import net.corda.messaging.api.mediator.MediatorInputService
-import net.corda.messaging.api.mediator.MediatorInputService.Companion.INPUT_HASH_HEADER
-import net.corda.messaging.api.mediator.MediatorInputService.Companion.SYNC_RESPONSE_HEADER
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
@@ -26,16 +23,10 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     private val config: EventMediatorConfig<K, S, E>,
     private val stateManagerHelper: StateManagerHelper<S>,
     private val messageRouter: MessageRouter,
-    private val mediatorInputService: MediatorInputService,
 ) {
 
     /**
      * Process a group of events.
-     *
-     * When the mediator is configured with an idempotence processor, and a duplicate or replayed record is detected, based on a hash of
-     * the record payload, then the asynchronous outputs from the previous invocation  of the processor will be retrieved
-     * from the [MediatorState].In this case, the message processor is not executed again,
-     * and the previously retrieved outputs are returned for resending.
      *
      * Otherwise, the message processor is executed and any synchronous calls are sent and responses are processed immediately.
      *
@@ -122,10 +113,9 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     ): Pair<StateAndEventProcessor.State<S>?, List<MediatorMessage<Any>>> {
         var processorStateUpdated = processorState
         val newAsyncOutputs = mutableListOf<MediatorMessage<Any>>()
-        val consumerInputHash = mediatorInputService.getHash(consumerInputEvent)
         val queue = ArrayDeque(listOf(consumerInputEvent))
         while (queue.isNotEmpty()) {
-            val event = getNextEvent(queue, consumerInputHash)
+            val event = queue.removeFirst()
             val response = config.messageProcessor.onNext(processorStateUpdated, event)
             processorStateUpdated = response.updatedState
             val (syncEvents, asyncEvents) = response.responseEvents.map { convertToMessage(it) }.partition {
@@ -139,14 +129,6 @@ class EventProcessor<K : Any, S : Any, E : Any>(
             }
         }
         return Pair(processorStateUpdated, newAsyncOutputs)
-    }
-
-    private fun getNextEvent(
-        queue: ArrayDeque<Record<K, E>>,
-        consumerInputHash: String
-    ): Record<K, E> {
-        val event = queue.removeFirst()
-        return event.copy(headers = event.headers.plus(Pair(INPUT_HASH_HEADER, consumerInputHash)))
     }
 
     private fun stateChangeAndOperation(
@@ -187,7 +169,6 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                         key,
                         reply.payload,
                         0,
-                        listOf(Pair(SYNC_RESPONSE_HEADER, "true"))
                     ),
                     message.properties
                 )

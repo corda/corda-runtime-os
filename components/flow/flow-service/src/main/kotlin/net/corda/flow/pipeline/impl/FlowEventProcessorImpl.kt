@@ -2,7 +2,6 @@ package net.corda.flow.pipeline.impl
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
-import net.corda.flow.pipeline.FlowEngineReplayService
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.FlowEventPipeline
 import net.corda.flow.pipeline.FlowMDCService
@@ -16,8 +15,6 @@ import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
 import net.corda.flow.pipeline.handlers.FlowPostProcessingHandler
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
-import net.corda.messaging.api.mediator.MediatorInputService.Companion.INPUT_HASH_HEADER
-import net.corda.messaging.api.mediator.MediatorInputService.Companion.SYNC_RESPONSE_HEADER
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
@@ -43,7 +40,6 @@ class FlowEventProcessorImpl(
     private val configs: Map<String, SmartConfig>,
     private val flowMDCService: FlowMDCService,
     private val postProcessingHandlers: List<FlowPostProcessingHandler>,
-    private val flowEngineReplayService: FlowEngineReplayService
 ) : StateAndEventProcessor<String, Checkpoint, FlowEvent> {
 
     private companion object {
@@ -91,17 +87,9 @@ class FlowEventProcessorImpl(
             )
         }
 
-        val inputEventHash = getInputEventHash(event)
-        if (!isSyncResponse(event)) {
-            flowEngineReplayService.getReplayEvents(inputEventHash, state?.value)?.let { replays ->
-                log.debug { "Detected input event that has been processed previously for hash :$inputEventHash" }
-                return StateAndEventProcessor.Response(state, replays)
-            }
-        }
-
         val pipeline = try {
             log.trace { "Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}" }
-            flowEventPipelineFactory.create(state, flowEvent, configs, mdcProperties, traceContext, event.timestamp, inputEventHash)
+            flowEventPipelineFactory.create(state, flowEvent, configs, mdcProperties, traceContext, event.timestamp)
         } catch (t: Throwable) {
             log.warn("Failed to create flow event pipeline", t)
             traceContext.error(CordaRuntimeException(t.message, t))
@@ -168,21 +156,10 @@ class FlowEventProcessorImpl(
 
         //Save outputs to replay in the future. This must be the last step after all processing
         val outputs = result.outputRecords + cleanupEvents
-        val hash = result.inputEventHash
-        if (hash != null) {
-            result.checkpoint.saveOutputs(flowEngineReplayService.generateSavedOutputs(hash, outputs))
-        }
         return flowEventContextConverter.convert(
             result.copy(outputRecords = outputs)
         )
     }
-
-    private fun getInputEventHash(event: Record<String, FlowEvent>) =
-        event.headers.find { it.first == INPUT_HASH_HEADER }?.second ?: throw IllegalStateException("Record with key ${event.key} is " +
-                "missing expected record header '$INPUT_HASH_HEADER'")
-
-    private fun isSyncResponse(event: Record<String, FlowEvent>) =
-        event.headers.find { it.first == SYNC_RESPONSE_HEADER }?.second == "true"
 
     /**
      * Executed within the [tryWithBackoff] function whenever a retry attempt is about to be made.

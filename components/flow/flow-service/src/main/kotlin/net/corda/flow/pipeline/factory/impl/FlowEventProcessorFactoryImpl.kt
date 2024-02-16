@@ -2,7 +2,6 @@ package net.corda.flow.pipeline.factory.impl
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
-import net.corda.flow.pipeline.FlowEngineReplayService
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.FlowMDCService
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
@@ -26,7 +25,6 @@ class FlowEventProcessorFactoryImpl(
     private val flowEventContextConverter: FlowEventContextConverter,
     private val flowMDCService: FlowMDCService,
     postProcessingHandlers: List<FlowPostProcessingHandler>,
-    private val flowEngineReplayService: FlowEngineReplayService
 ) : FlowEventProcessorFactory {
 
     // We cannot use constructor injection with DYNAMIC policy.
@@ -46,15 +44,12 @@ class FlowEventProcessorFactoryImpl(
         flowEventContextConverter: FlowEventContextConverter,
         @Reference(service = FlowMDCService::class)
         flowMDCService: FlowMDCService,
-        @Reference(service = FlowEngineReplayService::class)
-        flowEngineReplayService: FlowEngineReplayService
     ): this(
         flowEventPipelineFactory,
         flowEventExceptionProcessor,
         flowEventContextConverter,
         flowMDCService,
         mutableListOf(),
-        flowEngineReplayService
     )
 
     override fun create(configs: Map<String, SmartConfig>): StateAndEventProcessor<String, Checkpoint, FlowEvent> {
@@ -65,7 +60,6 @@ class FlowEventProcessorFactoryImpl(
             configs,
             flowMDCService,
             postProcessingHandlers,
-            flowEngineReplayService
         )
     }
 }

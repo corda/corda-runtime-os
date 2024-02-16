@@ -3,7 +3,6 @@ package net.corda.messaging.mediator.processor
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.statemanager.api.State
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
-import net.corda.messaging.api.mediator.MediatorInputService
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
@@ -28,7 +27,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.UUID
 
 @Execution(ExecutionMode.SAME_THREAD)
 class EventProcessorTest {
@@ -36,7 +34,6 @@ class EventProcessorTest {
     private lateinit var stateManagerHelper: StateManagerHelper<String>
     private lateinit var client: MessagingClient
     private lateinit var messageRouter: MessageRouter
-    private lateinit var mediatorInputService: MediatorInputService
     private lateinit var stateAndEventProcessor: StateAndEventProcessor<String, String, String>
     private lateinit var eventProcessor: EventProcessor<String, String, String>
 
@@ -51,11 +48,6 @@ class EventProcessorTest {
         client = mock()
         stateAndEventProcessor = mock()
         stateManagerHelper = mock()
-        mediatorInputService = mock<MediatorInputService>().apply {
-            whenever(getHash<String, String>(anyOrNull())).thenAnswer {
-                UUID.randomUUID().toString()
-            }
-        }
         messageRouter = mock()
         whenever(messageRouter.getDestination(any())).thenAnswer {
             val msg = it.arguments[0] as MediatorMessage<String>
@@ -75,7 +67,7 @@ class EventProcessorTest {
             )
         }
 
-        eventProcessor = EventProcessor(eventMediatorConfig, stateManagerHelper, messageRouter, mediatorInputService)
+        eventProcessor = EventProcessor(eventMediatorConfig, stateManagerHelper, messageRouter)
     }
 
     @Test
@@ -102,7 +94,6 @@ class EventProcessorTest {
         verify(stateAndEventProcessor, times(4)).onNext(anyOrNull(), any())
         verify(messageRouter, times(9)).getDestination(any())
         verify(client, times(3)).send(any())
-        verify(mediatorInputService, times(1)).getHash<String, String>(any())
         verify(stateManagerHelper, times(1)).createOrUpdateState(any(), anyOrNull(), anyOrNull())
     }
 

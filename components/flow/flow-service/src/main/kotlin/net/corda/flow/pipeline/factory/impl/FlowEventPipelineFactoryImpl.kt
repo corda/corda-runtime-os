@@ -104,7 +104,6 @@ class FlowEventPipelineFactoryImpl(
         mdcProperties: Map<String, String>,
         traceContext: TraceContext,
         eventRecordTimestamp: Long,
-        inputEventHash: String?
     ): FlowEventPipeline {
         val flowCheckpoint = flowCheckpointFactory.create(
             event.flowId,
@@ -125,7 +124,6 @@ class FlowEventPipelineFactoryImpl(
             flowMetrics = metrics,
             flowTraceContext = traceContext,
             metadata = state?.metadata,
-            inputEventHash = inputEventHash
         )
 
         val flowExecutionPipelineStage = FlowExecutionPipelineStage(

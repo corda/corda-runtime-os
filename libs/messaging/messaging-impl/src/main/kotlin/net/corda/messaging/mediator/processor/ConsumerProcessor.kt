@@ -45,10 +45,6 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     private val eventProcessor: EventProcessor<K, S, E>,
     private val stateManagerHelper: StateManagerHelper<S>
 ) {
-    private companion object {
-        private const val EVENT_PROCESSING_TIMEOUT_MILLIS = 120000L // 120 seconds
-    }
-
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.name}")
 
     private val metrics = EventMediatorMetrics(config.name)
