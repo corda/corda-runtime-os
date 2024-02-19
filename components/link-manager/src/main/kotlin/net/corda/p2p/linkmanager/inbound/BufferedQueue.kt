@@ -6,7 +6,6 @@ import net.corda.p2p.linkmanager.ItemWithSource
 import net.corda.utilities.Either
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors

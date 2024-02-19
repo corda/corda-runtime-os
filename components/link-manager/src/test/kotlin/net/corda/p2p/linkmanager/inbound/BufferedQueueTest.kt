@@ -5,7 +5,6 @@ import net.corda.data.p2p.linkmanager.LinkManagerResponse
 import net.corda.p2p.linkmanager.ItemWithSource
 import net.corda.utilities.Either
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.any
