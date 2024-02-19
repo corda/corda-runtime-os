@@ -145,6 +145,7 @@ class StateManagerImpl(
                 } else {
                     getByKey(failedDeletes).also {
                         if (it.isNotEmpty()) {
+                            metricsRecorder.recordFailureCount(DELETE, it.size)
                             logger.warn(
                                 "Optimistic locking check failed while deleting States" +
                                     " ${failedDeletes.joinToString()}"
