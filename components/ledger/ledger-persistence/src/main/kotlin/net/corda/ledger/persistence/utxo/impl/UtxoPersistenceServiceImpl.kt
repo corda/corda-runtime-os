@@ -488,8 +488,6 @@ class UtxoPersistenceServiceImpl(
 
                 val nowUtc = utcClock.instant()
 
-                val metadata = filteredTransaction.metadata as TransactionMetadataInternal
-
                 // 1. Get the metadata bytes from the 0th component group merkle proof and create the hash
                 val metadataBytes = filteredTransaction.filteredComponentGroups[0]
                     ?.merkleProof
@@ -500,6 +498,8 @@ class UtxoPersistenceServiceImpl(
                 requireNotNull(metadataBytes) {
                     "Could not find metadata in the filtered transaction with id: ${filteredTransaction.id}"
                 }
+
+                val metadata = filteredTransaction.metadata as TransactionMetadataInternal
 
                 val metadataHash = sandboxDigestService.hash(
                     metadataBytes,

@@ -75,6 +75,7 @@ import net.corda.v5.ledger.utxo.observer.UtxoTokenFilterFields
 import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeAll
@@ -653,6 +654,24 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
+    fun `filtered transaction cannot be persisted if no metadata is present`() {
+        val signedTransaction = createSignedTransaction()
+        val account = "Account"
+
+        val filteredTransaction = createFilteredTransaction(signedTransaction)
+        val noMetadataFtx = filteredTransactionFactory.create(
+            filteredTransaction.id,
+            filteredTransaction.topLevelMerkleProof,
+            filteredTransaction.filteredComponentGroups.filter { it.key != 0 },
+            filteredTransaction.privacySalt.bytes
+        )
+
+        assertThatThrownBy { persistenceService.persistFilteredTransactions(mapOf(noMetadataFtx to emptyList()), account) }
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasStackTraceContaining("Could not find metadata in the filtered transaction with id: ${filteredTransaction.id}")
+    }
+
+    @Test
     fun `persist filtered transaction when a verified signed transaction exists for the same id does not overwrite the existing transaction record`() {
         val signatures = createSignatures(Instant.now())
         val signedTransaction = createSignedTransaction(signatures = signatures)
@@ -662,12 +681,12 @@ class UtxoPersistenceServiceImplTest {
             createTransactionEntity(entityFactory, signedTransaction, status = VERIFIED).also { em.persist(it) }
         }
 
-        val createdTimestamp = entityManagerFactory.transaction { em ->
+        val (createdTimestamp, updatedTimestamp) = entityManagerFactory.transaction { em ->
             val transaction = em.find(entityFactory.utxoTransaction, signedTransaction.id.toString())
             assertThat(transaction).isNotNull
             assertThat(transaction.field<Boolean>("isFiltered")).isFalse()
             assertThat(transaction.field<String>("status")).isEqualTo("V")
-            transaction.field<Instant>("created")
+            transaction.field<Instant>("created") to transaction.field<Instant>("updated")
         }
 
         val filteredTransaction = createFilteredTransaction(signedTransaction)
@@ -680,6 +699,7 @@ class UtxoPersistenceServiceImplTest {
             assertThat(transaction.field<Boolean>("isFiltered")).isFalse()
             assertThat(transaction.field<String>("status")).isEqualTo("V")
             assertThat(transaction.field<Instant>("created")).isEqualTo(createdTimestamp)
+            assertThat(transaction.field<Instant>("updated")).isEqualTo(updatedTimestamp)
         }
     }
 
@@ -722,12 +742,12 @@ class UtxoPersistenceServiceImplTest {
             createTransactionEntity(entityFactory, signedTransaction, status = UNVERIFIED).also { em.persist(it) }
         }
 
-        val createdTimestamp = entityManagerFactory.transaction { em ->
+        val (createdTimestamp, updatedTimestamp) = entityManagerFactory.transaction { em ->
             val transaction = em.find(entityFactory.utxoTransaction, signedTransaction.id.toString())
             assertThat(transaction).isNotNull
             assertThat(transaction.field<Boolean>("isFiltered")).isFalse()
             assertThat(transaction.field<String>("status")).isEqualTo("U")
-            transaction.field<Instant>("created")
+            transaction.field<Instant>("created") to transaction.field<Instant>("updated")
         }
 
         val filteredTransaction = createFilteredTransaction(signedTransaction)
@@ -740,6 +760,7 @@ class UtxoPersistenceServiceImplTest {
             assertThat(transaction.field<Boolean>("isFiltered")).isTrue()
             assertThat(transaction.field<String>("status")).isEqualTo("U")
             assertThat(transaction.field<Instant>("created")).isEqualTo(createdTimestamp)
+            assertThat(transaction.field<Instant>("updated")).isEqualTo(updatedTimestamp)
         }
     }
 
@@ -782,12 +803,12 @@ class UtxoPersistenceServiceImplTest {
             createTransactionEntity(entityFactory, signedTransaction, status = DRAFT).also { em.persist(it) }
         }
 
-        val createdTimestamp = entityManagerFactory.transaction { em ->
+        val (createdTimestamp, updatedTimestamp) = entityManagerFactory.transaction { em ->
             val transaction = em.find(entityFactory.utxoTransaction, signedTransaction.id.toString())
             assertThat(transaction).isNotNull
             assertThat(transaction.field<Boolean>("isFiltered")).isFalse()
             assertThat(transaction.field<String>("status")).isEqualTo("D")
-            transaction.field<Instant>("created")
+            transaction.field<Instant>("created") to transaction.field<Instant>("updated")
         }
 
         val filteredTransaction = createFilteredTransaction(signedTransaction)
@@ -800,6 +821,7 @@ class UtxoPersistenceServiceImplTest {
             assertThat(transaction.field<Boolean>("isFiltered")).isTrue()
             assertThat(transaction.field<String>("status")).isEqualTo("D")
             assertThat(transaction.field<Instant>("created")).isEqualTo(createdTimestamp)
+            assertThat(transaction.field<Instant>("updated")).isEqualTo(updatedTimestamp)
         }
     }
 
@@ -843,12 +865,12 @@ class UtxoPersistenceServiceImplTest {
 
         persistenceService.persistFilteredTransactions(mapOf(filteredTransaction1 to signatures), "account")
 
-        val createdTimestamp = entityManagerFactory.transaction { em ->
+        val (createdTimestamp, updatedTimestamp) = entityManagerFactory.transaction { em ->
             val transaction = em.find(entityFactory.utxoTransaction, signedTransaction.id.toString())
             assertThat(transaction).isNotNull
             assertThat(transaction.field<Boolean>("isFiltered")).isTrue()
             assertThat(transaction.field<String>("status")).isEqualTo("V")
-            transaction.field<Instant>("created")
+            transaction.field<Instant>("created") to transaction.field<Instant>("updated")
         }
 
         persistenceService.persistFilteredTransactions(mapOf(filteredTransaction2 to signatures), "account")
@@ -859,6 +881,7 @@ class UtxoPersistenceServiceImplTest {
             assertThat(transaction.field<Boolean>("isFiltered")).isTrue()
             assertThat(transaction.field<String>("status")).isEqualTo("V")
             assertThat(transaction.field<Instant>("created")).isEqualTo(createdTimestamp)
+            assertThat(transaction.field<Instant>("updated")).isEqualTo(updatedTimestamp)
         }
     }
 
@@ -989,12 +1012,12 @@ class UtxoPersistenceServiceImplTest {
 
         persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
 
-        val createdTimestamp = entityManagerFactory.transaction { em ->
+        val (createdTimestamp, updatedTimestamp) = entityManagerFactory.transaction { em ->
             val transaction = em.find(entityFactory.utxoTransaction, signedTransaction.id.toString())
             assertThat(transaction).isNotNull
             assertThat(transaction.field<Boolean>("isFiltered")).isTrue()
             assertThat(transaction.field<String>("status")).isEqualTo("V")
-            transaction.field<Instant>("created")
+            transaction.field<Instant>("created") to transaction.field<Instant>("updated")
         }
 
         persistenceService.persistTransaction(transactionReader, emptyMap())
@@ -1005,6 +1028,7 @@ class UtxoPersistenceServiceImplTest {
             assertThat(transaction.field<Boolean>("isFiltered")).isFalse()
             assertThat(transaction.field<String>("status")).isEqualTo("V")
             assertThat(transaction.field<Instant>("created")).isEqualTo(createdTimestamp)
+            assertThat(transaction.field<Instant>("updated")).isAfter(updatedTimestamp)
         }
     }
 
@@ -1056,12 +1080,12 @@ class UtxoPersistenceServiceImplTest {
 
         persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
 
-        val createdTimestamp = entityManagerFactory.transaction { em ->
+        val (createdTimestamp, updatedTimestamp) = entityManagerFactory.transaction { em ->
             val transaction = em.find(entityFactory.utxoTransaction, signedTransaction.id.toString())
             assertThat(transaction).isNotNull
             assertThat(transaction.field<Boolean>("isFiltered")).isTrue()
             assertThat(transaction.field<String>("status")).isEqualTo("V")
-            transaction.field<Instant>("created")
+            transaction.field<Instant>("created") to transaction.field<Instant>("updated")
         }
 
         persistenceService.persistTransaction(transactionReader, emptyMap())
@@ -1072,6 +1096,7 @@ class UtxoPersistenceServiceImplTest {
             assertThat(transaction.field<Boolean>("isFiltered")).isTrue()
             assertThat(transaction.field<String>("status")).isEqualTo("U")
             assertThat(transaction.field<Instant>("created")).isEqualTo(createdTimestamp)
+            assertThat(transaction.field<Instant>("updated")).isAfter(updatedTimestamp)
         }
     }
 
@@ -1210,6 +1235,7 @@ class UtxoPersistenceServiceImplTest {
             .findFilteredTransactionsAndSignatures(listOf(StateRef(signedTransaction.id, 0), StateRef(signedTransaction.id, 1)))
         assertThat(foundFilteredTransactions).containsOnlyKeys(signedTransaction.id)
         assertThat(foundFilteredTransactions[signedTransaction.id]?.first).isEqualTo(filteredTransaction)
+        assertThat(foundFilteredTransactions[signedTransaction.id]?.second).isEqualTo(signatures)
     }
 
     @Test
@@ -1281,6 +1307,7 @@ class UtxoPersistenceServiceImplTest {
         assertThat(filteredOutputStates).hasSize(1)
         assertThat(filteredOutputStates?.get(0)?.first).isEqualTo(1)
         assertThat(filteredOutputStates?.get(0)?.second).isEqualTo(outputStates[1].toBytes())
+        assertThat(foundFilteredTransactions[signedTransaction.id]?.second).isEqualTo(signatures)
     }
 
     @Test
@@ -1306,6 +1333,7 @@ class UtxoPersistenceServiceImplTest {
             .findFilteredTransactionsAndSignatures(listOf(StateRef(signedTransaction.id, 0), StateRef(signedTransaction.id, 1)))
         assertThat(foundFilteredTransactions).containsOnlyKeys(signedTransaction.id)
         assertThat(foundFilteredTransactions[signedTransaction.id]?.first).isEqualTo(filteredTransaction)
+        assertThat(foundFilteredTransactions[signedTransaction.id]?.second).isEqualTo(signatures)
     }
 
     @Test
@@ -1339,6 +1367,7 @@ class UtxoPersistenceServiceImplTest {
         assertThat(filteredOutputStates?.get(0)?.second).isEqualTo(outputStates[0].toBytes())
         assertThat(filteredOutputStates?.get(1)?.first).isEqualTo(1)
         assertThat(filteredOutputStates?.get(1)?.second).isEqualTo(outputStates[1].toBytes())
+        assertThat(foundFilteredTransactions[signedTransaction.id]?.second).isEqualTo(signatures)
     }
 
     @Test
@@ -1372,6 +1401,7 @@ class UtxoPersistenceServiceImplTest {
         assertThat(filteredOutputStates?.get(0)?.second).isEqualTo(outputStates[0].toBytes())
         assertThat(filteredOutputStates?.get(1)?.first).isEqualTo(1)
         assertThat(filteredOutputStates?.get(1)?.second).isEqualTo(outputStates[1].toBytes())
+        assertThat(foundFilteredTransactions[signedTransaction.id]?.second).isEqualTo(signatures)
     }
 
     @Suppress("LongParameterList")
