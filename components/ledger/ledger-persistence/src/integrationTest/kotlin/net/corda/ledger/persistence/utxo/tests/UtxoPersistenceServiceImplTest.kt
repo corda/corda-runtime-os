@@ -797,8 +797,8 @@ class UtxoPersistenceServiceImplTest {
         entityManagerFactory.transaction { em ->
             val transaction = em.find(entityFactory.utxoTransaction, signedTransaction.id.toString())
             assertThat(transaction).isNotNull
-            assertThat(transaction.field<String>("status")).isEqualTo("D")
             assertThat(transaction.field<Boolean>("isFiltered")).isTrue()
+            assertThat(transaction.field<String>("status")).isEqualTo("D")
             assertThat(transaction.field<Instant>("created")).isEqualTo(createdTimestamp)
         }
     }
