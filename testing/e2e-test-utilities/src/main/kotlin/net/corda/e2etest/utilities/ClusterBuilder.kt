@@ -424,6 +424,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         val vaultDmlConnection: String?
     )
 
+    @Suppress("LongParameterList")
     private fun deprecatedVNodeBody(
         cpiHash: String,
         x500Name: String,
