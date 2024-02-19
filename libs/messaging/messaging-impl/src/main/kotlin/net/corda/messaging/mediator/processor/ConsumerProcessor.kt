@@ -123,6 +123,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                     try {
                         future.getOrThrow(config.processorTimeout)
                     } catch (e: TimeoutException) {
+                        metrics.consumerProcessorFailureCounter.increment(group.keys.size.toDouble())
                         group.mapValues { (key, input) ->
                             val oldState = input.state
                             val state = stateManagerHelper.failStateProcessing(
