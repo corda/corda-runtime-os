@@ -231,8 +231,6 @@ class UtxoRepositoryImpl(
         timestamp: Instant,
         metadataHash: String
     ) {
-        val rs =  entityManager.createNativeQuery("select * from utxo_transaction where id = :id").setParameter("id", id).resultList
-        println(rs)
         entityManager.createNativeQuery(queryProvider.persistFilteredTransaction)
             .setParameter("id", id)
             .setParameter("privacySalt", privacySalt)
