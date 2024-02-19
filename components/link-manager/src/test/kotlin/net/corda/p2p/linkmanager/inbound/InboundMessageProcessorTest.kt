@@ -278,19 +278,21 @@ class InboundMessageProcessorTest {
                 )
             )
 
-            assertSoftly {
+            assertSoftly { softly ->
                 assertThat(replies).hasSize(1)
                 val reply = replies.firstOrNull()
                 val record = reply?.item?.records?.firstOrNull()
                 val value = record?.value as? AppMessage
-                assertThat(record?.topic).isEqualTo(P2P_IN_TOPIC)
-                assertThat(record?.key).isEqualTo("key")
-                assertThat(value?.message).isEqualTo(authenticatedMsg)
+                softly.assertThat(record?.topic).isEqualTo(P2P_IN_TOPIC)
+                softly.assertThat(record?.key).isEqualTo("key")
+                softly.assertThat(value?.message).isEqualTo(authenticatedMsg)
                 val payload = reply?.item?.httpReply?.payload as? AuthenticatedDataMessage
                 val messageAck = MessageAck.fromByteBuffer(payload?.payload)
                 val ack = messageAck.ack as? AuthenticatedMessageAck
-                assertThat(ack?.messageId).isEqualTo(MESSAGE_ID)
-                verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
+                softly.assertThat(ack?.messageId).isEqualTo(MESSAGE_ID)
+                softly.assertThatCode {
+                    verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
+                }.doesNotThrowAnyException()
             }
         }
 
@@ -704,18 +706,22 @@ class InboundMessageProcessorTest {
                 )
             )
 
-            assertSoftly {
-                assertThat(replies).hasSize(1)
+            assertSoftly { softly ->
+                softly.assertThat(replies).hasSize(1)
                 val record = replies.firstOrNull()?.item?.records?.firstOrNull()
-                assertThat(record?.topic).isEqualTo(P2P_IN_TOPIC)
-                assertThat(record?.key).isEqualTo("key")
+                softly.assertThat(record?.topic).isEqualTo(P2P_IN_TOPIC)
+                softly.assertThat(record?.key).isEqualTo("key")
                 val value = record?.value as? AppMessage
-                assertThat(value?.message).isEqualTo(authenticatedMsg)
+                softly.assertThat(value?.message).isEqualTo(authenticatedMsg)
                 val payload = replies.firstOrNull()?.item?.httpReply?.payload as? AuthenticatedEncryptedDataMessage
-                assertThat(payload?.header).isEqualTo(commonHeader)
-                assertThat(payload?.encryptedPayload).isEqualTo(messageAndPayload.toByteBuffer())
-                verify(sessionManager).inboundSessionEstablished(anyOrNull())
-                verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
+                softly.assertThat(payload?.header).isEqualTo(commonHeader)
+                softly.assertThat(payload?.encryptedPayload).isEqualTo(messageAndPayload.toByteBuffer())
+                softly.assertThatCode {
+                    verify(sessionManager).inboundSessionEstablished(anyOrNull())
+                }.doesNotThrowAnyException()
+                softly.assertThatCode {
+                    verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
+                }.doesNotThrowAnyException()
             }
         }
 

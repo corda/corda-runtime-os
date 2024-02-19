@@ -7,6 +7,7 @@ import net.corda.utilities.Either
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentLinkedDeque
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicReference
@@ -25,7 +26,7 @@ internal class BufferedQueue(
         override val message: LinkInMessage,
         val future: CompletableFuture<LinkManagerResponse>,
     ) : InboundMessage
-    private val queue = ConcurrentLinkedDeque<Request>()
+    private val queue = ConcurrentLinkedQueue<Request>()
     private val lock = ReentrantLock()
     private val hasItems = lock.newCondition()
     private val running = AtomicReference<Handler>()
@@ -48,7 +49,7 @@ internal class BufferedQueue(
             request,
             complete,
         )
-        queue.addLast(queueElement)
+        queue.offer(queueElement)
         lock.withLock {
             hasItems.signalAll()
         }
@@ -58,7 +59,7 @@ internal class BufferedQueue(
     override fun run() {
         while (running.get() != null) {
             val items = generateSequence {
-                queue.pollFirst()
+                queue.poll()
             }.toList()
             if (running.get() == null) {
                 return
@@ -89,7 +90,7 @@ internal class BufferedQueue(
 
     private fun emptyQueue() {
         generateSequence {
-            queue.pollFirst()
+            queue.poll()
         }.forEach {
             it.future.completeExceptionally(
                 CordaRuntimeException("Queue stopped processing events"),

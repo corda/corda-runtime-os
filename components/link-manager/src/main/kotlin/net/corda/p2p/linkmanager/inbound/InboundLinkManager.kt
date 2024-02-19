@@ -98,6 +98,8 @@ internal class InboundLinkManager(
             publisher.dominoTile.coordinatorName,
             LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
             LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+            busSubscriptionDominoTile.coordinatorName,
+            httpSubscriptionDominoTile.coordinatorName,
         ),
         managedChildren = setOf(
             commonComponents.inboundAssignmentListener.dominoTile.toNamedLifecycle(),

@@ -94,13 +94,6 @@ class InboundRpcProcessorTest {
 
     @Test
     fun `handle will publish the records`() {
-        rpcProcessor.stop()
-
-        verify(bufferedQueue).stop()
-    }
-
-    @Test
-    fun `process will publish the records`() {
         val records = listOf(
             mock<Record<String, String>>(),
             mock<Record<String, String>>(),

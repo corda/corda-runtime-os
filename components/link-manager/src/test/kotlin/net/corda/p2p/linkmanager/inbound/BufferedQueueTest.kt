@@ -5,6 +5,7 @@ import net.corda.data.p2p.linkmanager.LinkManagerResponse
 import net.corda.p2p.linkmanager.ItemWithSource
 import net.corda.utilities.Either
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.any
@@ -89,7 +90,7 @@ class BufferedQueueTest {
     }
 
     @Test
-    fun `future will be completed exceptionally if handle was successful`() {
+    fun `future will be completed exceptionally if handle was not successful`() {
         val message = mock<LinkInMessage>()
         whenever(handler.handle(any<Collection<InboundMessage>>())).doAnswer {
             queue.stop()

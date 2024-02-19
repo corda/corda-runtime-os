@@ -208,7 +208,7 @@ internal class InboundMessageProcessor(
 
     private fun <T: InboundMessage> processDataMessages(
         sessionIdAndMessages: List<SessionIdAndMessage<T>>
-    ): List<ItemWithSource<T,InboundResponse>> {
+    ): List<ItemWithSource<T, InboundResponse>> {
         return sessionManager.getSessionsById(sessionIdAndMessages) { it.sessionId }.mapNotNull { (sessionIdAndMessage, sessionDirection) ->
             when (sessionDirection) {
                 is SessionManager.SessionDirection.Inbound ->
