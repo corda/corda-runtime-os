@@ -6,6 +6,7 @@ import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.impl.model.v1.resultSetAsStateCollection
 import net.corda.libs.statemanager.impl.repository.StateRepository
+import org.xerial.snappy.Snappy
 import java.sql.Connection
 import java.sql.Timestamp
 
@@ -22,7 +23,7 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
             val indices = generateSequence(1) { it + 1 }.iterator()
             states.forEach { state ->
                 statement.setString(indices.next(), state.key)
-                statement.setBytes(indices.next(), state.value)
+                statement.setBytes(indices.next(), Snappy.compress(state.value))
                 statement.setInt(indices.next(), state.version)
                 statement.setString(indices.next(), objectMapper.writeValueAsString(state.metadata))
             }
@@ -54,7 +55,7 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
         connection.prepareStatement(queryProvider.updateStates(states.size)).use { stmt ->
             states.forEach { state ->
                 stmt.setString(indices.next(), state.key)
-                stmt.setBytes(indices.next(), state.value)
+                stmt.setBytes(indices.next(), Snappy.compress(state.value))
                 stmt.setString(indices.next(), objectMapper.writeValueAsString(state.metadata))
                 stmt.setInt(indices.next(), state.version)
             }

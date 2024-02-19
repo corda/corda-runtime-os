@@ -24,6 +24,8 @@ dependencies {
     implementation libs.jackson.databind
     implementation libs.jackson.module.kotlin
 
+    implementation "org.xerial.snappy:snappy-java:1.1.10.5"
+
     testImplementation project(':testing:test-utilities')
     integrationTestImplementation project(':libs:db:db-admin')
     integrationTestImplementation project(':testing:db-testkit')
