@@ -99,7 +99,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         messageProcessor: StateAndEventProcessor<String, Checkpoint, FlowEvent>,
         stateManager: StateManager,
     ): EventMediatorConfig<String, Checkpoint, FlowEvent> {
-        val threads = 16
+        val threads = 32
         val instances = 4
         val pollBatchSize = threads / instances
         val msgCfg = messagingConfig.withValue(
