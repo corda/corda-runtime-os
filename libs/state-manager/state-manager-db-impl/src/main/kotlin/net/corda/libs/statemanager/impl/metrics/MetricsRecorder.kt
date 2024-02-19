@@ -8,8 +8,7 @@ interface MetricsRecorder {
     enum class OperationType {
         GET, // Retrieve by key
         FIND, // Retrieve using filters
-        CREATE, UPDATE, DELETE,
-        DELETE_NO_LOCKING
+        CREATE, UPDATE, DELETE
     }
 
     fun <T> recordProcessingTime(operationType: OperationType, block: () -> T): T
