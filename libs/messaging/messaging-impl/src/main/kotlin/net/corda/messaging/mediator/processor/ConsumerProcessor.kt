@@ -156,11 +156,9 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             metrics.commitTimer.recordCallable {
                 consumer.syncCommitOffsets()
             }
-            val deleteFailures = stateManager.delete(statesToDelete)
-            if (deleteFailures.isNotEmpty()) {
-                //Delete occurs after committing offsets bus to satisfy replay requirements in the Flow Engine. Ignore Failures.
-                log.warn("Failed to delete the following keys in the mediator [$deleteFailures]. Ignoring these failures.")
-            }
+            //Delete occurs after committing offsets bus to satisfy replay requirements in the Flow Engine. Ignore Failures, these are
+            // logged in SM and recorded by a metric
+            stateManager.delete(statesToDelete)
         }
         metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
     }
