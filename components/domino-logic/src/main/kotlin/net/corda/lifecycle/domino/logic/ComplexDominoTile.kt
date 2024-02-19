@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory
  */
 @Suppress("LongParameterList", "TooManyFunctions")
 class ComplexDominoTile(
-    componentName: String,
+    private val componentName: String,
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val onStart: (() -> Unit)? = null,
     private val onClose: (() -> Unit)? = null,
@@ -145,7 +145,7 @@ class ComplexDominoTile(
         coordinator.postEvent(NewConfig(config))
     }
 
-    private fun updateState(newState: DominoTileState) {
+    private fun updateState(newState: DominoTileState, reason: String? = null) {
         val oldState = currentInternalState.getAndSet(newState)
         if (newState != oldState) {
             val status = when (newState) {
@@ -155,7 +155,13 @@ class ComplexDominoTile(
                 Created -> null
             }
             withLifecycleWriteLock {
-                status?.let { coordinator.updateStatus(it) }
+                status?.let {
+                    if (reason != null) {
+                        coordinator.updateStatus(it, reason)
+                    } else {
+                        coordinator.updateStatus(it)
+                    }
+                }
             }
             logger.info("State updated from $oldState to $newState")
         }
@@ -221,7 +227,9 @@ class ComplexDominoTile(
                         is ConfigUpdateResult.Error -> {
                             logger.warn("Config error ${event.configUpdateResult.e}")
                             stopResources()
-                            updateState(StoppedDueToBadConfig)
+                            updateState(StoppedDueToBadConfig, event.configUpdateResult.e.message)
+                            logger.warn("Component $componentName has been stopped. " +
+                                    "Due to: ${event.configUpdateResult.e.message}")
                         }
                         ConfigUpdateResult.NoUpdate -> {
                             logger.info("Config applied with no update.")
