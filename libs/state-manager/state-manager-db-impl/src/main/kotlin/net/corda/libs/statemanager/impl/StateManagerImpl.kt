@@ -131,35 +131,6 @@ class StateManagerImpl(
         }
     }
 
-    override fun delete(states: List<String>): Collection<String> {
-        if (states.isEmpty()) return emptyList()
-
-        return metricsRecorder.recordProcessingTime(MetricsRecorder.OperationType.DELETE_NO_LOCKING) {
-            try {
-                val failedDeletes = dataSource.connection.transaction { connection ->
-                    stateRepository.delete(connection, states)
-                }
-
-                if (failedDeletes.isEmpty()) {
-                    emptyList()
-                } else {
-                    logger.warn(
-                        "Failed to delete States without optimistic locking" +
-                                " ${failedDeletes.joinToString()}"
-                    )
-                    failedDeletes
-                }
-            } catch (e: Exception) {
-                logger.warn("Failed to delete batch of states without locking - ${states.joinToString()}", e)
-                throw e
-            }
-        }.also {
-            if (it.isNotEmpty()) {
-                metricsRecorder.recordFailureCount(DELETE, it.size)
-            }
-        }
-    }
-
     override fun delete(states: Collection<State>): Map<String, State> {
         if (states.isEmpty()) return emptyMap()
 
