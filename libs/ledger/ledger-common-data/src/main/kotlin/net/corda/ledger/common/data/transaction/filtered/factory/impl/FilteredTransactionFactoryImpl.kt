@@ -97,7 +97,7 @@ class FilteredTransactionFactoryImpl @Activate constructor(
         parameters: ComponentGroupFilterParameters
     ): FilteredComponentGroup {
         val componentGroupIndex = parameters.componentGroupIndex
-        val componentGroup = wireTransaction.getComponentGroupList(componentGroupIndex)
+        val componentGroupFromWire = wireTransaction.getComponentGroupList(componentGroupIndex)
 
         val componentGroupMerkleTreeDigestProvider = wireTransaction.metadata.getComponentGroupMerkleTreeDigestProvider(
             wireTransaction.privacySalt,
@@ -114,7 +114,7 @@ class FilteredTransactionFactoryImpl @Activate constructor(
             is AuditProof<*> -> {
                 val skipFiltering = componentGroupIndex == 0
 
-                val filteredComponents = componentGroup
+                val filteredComponentsFromWireComponentGroup = componentGroupFromWire
                     .mapIndexed { index, component -> index to component }
                     .filter { (index, component) ->
                         if (skipFiltering) {
@@ -136,8 +136,8 @@ class FilteredTransactionFactoryImpl @Activate constructor(
                         }
                     }
                 wireTransaction.componentMerkleTrees[componentGroupIndex]!!.let { merkleTree ->
-                    if (filteredComponents.isEmpty()) {
-                        if (componentGroup.isEmpty()) {
+                    if (filteredComponentsFromWireComponentGroup.isEmpty()) {
+                        if (componentGroupFromWire.isEmpty()) {
                             // If the unfiltered component group is empty, we return the proof of the marker.
                             merkleTree.createAuditProof(listOf(0))
                         } else {
@@ -145,7 +145,7 @@ class FilteredTransactionFactoryImpl @Activate constructor(
                             componentGroupMerkleTreeSizeProofProvider.getSizeProof(merkleTree.leaves)
                         }
                     } else {
-                        merkleTree.createAuditProof(filteredComponents.map { it.first })
+                        merkleTree.createAuditProof(filteredComponentsFromWireComponentGroup.map { it.first })
                     }
                 }
             }
