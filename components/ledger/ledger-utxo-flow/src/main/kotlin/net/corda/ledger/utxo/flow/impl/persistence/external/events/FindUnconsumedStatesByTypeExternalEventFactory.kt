@@ -9,6 +9,7 @@ import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -50,6 +51,7 @@ class FindUnconsumedStatesByTypeExternalEventFactory(
     }
 }
 
+@CordaSerializable
 data class FindUnconsumedStatesByTypeParameters(
     val stateClass: Class<*>
 )

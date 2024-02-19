@@ -5,7 +5,7 @@ import net.corda.data.flow.state.checkpoint.FlowStackItemSession
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.ALICE_X500_NAME
-import net.corda.flow.application.serialization.SerializationServiceInternal
+import net.corda.flow.application.serialization.FlowSerializationService
 import net.corda.flow.application.services.impl.FlowMessagingImpl
 import net.corda.flow.application.sessions.FlowSessionInternal
 import net.corda.flow.application.sessions.SessionInfo
@@ -69,7 +69,7 @@ class FlowMessagingImplTest {
     private val mockFlowFiberService = MockFlowFiberService()
     private val flowStackService = mockFlowFiberService.flowStack
     private val flowSession = mock<FlowSession>()
-    private val serializationService = mock<SerializationServiceInternal>()
+    private val serializationService = mock<FlowSerializationService>()
 
     private val flowSessionFactory = mock<FlowSessionFactory>().apply {
         whenever(createInitiatingFlowSession(any(), any(), anyOrNull(), eq(ALICE_X500_NAME), any())).thenReturn(flowSession)

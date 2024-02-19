@@ -23,7 +23,7 @@ class ConfigTests : ClusterReadiness by ClusterReadinessChecker() {
     @BeforeEach
     fun setupEach() {
         // check cluster is ready
-        assertIsReady(Duration.ofMinutes(1), Duration.ofMillis(100))
+        assertIsReady(Duration.ofMinutes(2), Duration.ofMillis(100))
     }
 
     @Test

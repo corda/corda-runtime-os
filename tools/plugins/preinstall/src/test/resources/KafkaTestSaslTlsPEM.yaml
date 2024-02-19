@@ -1,3 +1,10 @@
+bootstrap: { }
+config:
+  storageId: "default"
+databases: []
+stateManager: { }
+workers: { }
+
 kafka:
   bootstrapServers: "localhost:9093"
   topicPrefix: ""

@@ -7,13 +7,24 @@ import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.impl.model.v1.resultSetAsStateCollection
 import net.corda.libs.statemanager.impl.repository.StateRepository
 import java.sql.Connection
+import java.sql.PreparedStatement
 import java.sql.Timestamp
+import java.time.Instant
+import java.util.Calendar
+import java.util.TimeZone
 
 class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepository {
 
     private companion object {
-        private const val CREATE_RESULT_COLUMN_INDEX = 1
         private val objectMapper = ObjectMapper()
+        private const val CREATE_RESULT_COLUMN_INDEX = 1
+    }
+
+    /**
+     * Always use same [TimeZone] as the default one used by the [queryProvider] instance.
+     */
+    private fun PreparedStatement.setTimestamp(parameterIndex: Int, instant: Instant) {
+        setTimestamp(parameterIndex, Timestamp.from(instant), Calendar.getInstance(queryProvider.timeZone))
     }
 
     override fun create(connection: Connection, states: Collection<State>): Collection<String> {
@@ -96,8 +107,8 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
 
     override fun updatedBetween(connection: Connection, interval: IntervalFilter): Collection<State> =
         connection.prepareStatement(queryProvider.findStatesUpdatedBetween).use {
-            it.setTimestamp(1, Timestamp.from(interval.start))
-            it.setTimestamp(2, Timestamp.from(interval.finish))
+            it.setTimestamp(1, interval.start)
+            it.setTimestamp(2, interval.finish)
             it.executeQuery().resultSetAsStateCollection(objectMapper)
         }
 
@@ -116,8 +127,8 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
         interval: IntervalFilter,
         filters: Collection<MetadataFilter>
     ) = connection.prepareStatement(queryProvider.findStatesUpdatedBetweenWithMetadataMatchingAll(filters)).use {
-        it.setTimestamp(1, Timestamp.from(interval.start))
-        it.setTimestamp(2, Timestamp.from(interval.finish))
+        it.setTimestamp(1, interval.start)
+        it.setTimestamp(2, interval.finish)
         it.executeQuery().resultSetAsStateCollection(objectMapper)
     }
 
@@ -126,8 +137,8 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
         interval: IntervalFilter,
         filters: Collection<MetadataFilter>
     ) = connection.prepareStatement(queryProvider.findStatesUpdatedBetweenWithMetadataMatchingAny(filters)).use {
-        it.setTimestamp(1, Timestamp.from(interval.start))
-        it.setTimestamp(2, Timestamp.from(interval.finish))
+        it.setTimestamp(1, interval.start)
+        it.setTimestamp(2, interval.finish)
         it.executeQuery().resultSetAsStateCollection(objectMapper)
     }
 }

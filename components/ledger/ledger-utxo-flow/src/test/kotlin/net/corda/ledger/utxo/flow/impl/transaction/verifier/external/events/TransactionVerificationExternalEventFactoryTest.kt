@@ -22,7 +22,7 @@ class TransactionVerificationExternalEventFactoryTest {
     @Test
     fun `creates a record containing an VerifyContractsRequest`() {
         val checkpoint = mock<FlowCheckpoint>()
-        val transaction = ByteBuffer.wrap(byteArrayOf(1))
+        val transaction = byteArrayOf(1)
         val cpkMetadata = listOf(
             CordaPackageSummaryImpl(
                 "cpk1",
@@ -57,7 +57,7 @@ class TransactionVerificationExternalEventFactoryTest {
             TransactionVerificationRequest(
                 testClock.instant(),
                 ALICE_X500_HOLDING_IDENTITY,
-                transaction,
+                ByteBuffer.wrap(transaction),
                 cpkMetadata.map(CordaPackageSummary::toAvro),
                 externalEventContext
             ),

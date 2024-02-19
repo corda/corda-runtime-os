@@ -6,11 +6,11 @@ import com.r3.corda.notary.plugin.common.NotaryExceptionInvalidSignature
 import com.r3.corda.notary.plugin.common.NotaryExceptionReferenceStateUnknown
 import com.r3.corda.notary.plugin.common.NotaryExceptionTransactionVerificationFailure
 import com.r3.corda.notary.plugin.contractverifying.api.ContractVerifyingNotarizationPayload
-import com.r3.corda.notary.plugin.contractverifying.api.FilteredTransactionAndSignatures
 import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
+import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionAndSignaturesImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnknownImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorUnhandledExceptionImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
@@ -126,7 +126,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
     private val signedTransaction = mock<UtxoSignedTransaction>()
     private val filteredTransaction = mock<UtxoFilteredTransaction>()
 
-    private val filteredTxAndSignature = FilteredTransactionAndSignatures(
+    private val filteredTxAndSignature = UtxoFilteredTransactionAndSignaturesImpl(
         filteredTransaction,
         listOf(notarySignatureAlice)
     )
@@ -246,7 +246,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
             listOf(listOf(notarySignatureAlice))
         )
         whenever(filteredTransaction.notaryKey).thenReturn(invalidVnodeKey)
-        val filteredTransactionSignatures = FilteredTransactionAndSignatures(
+        val filteredTransactionSignatures = UtxoFilteredTransactionAndSignaturesImpl(
             filteredTransaction,
             listOf(notarySignatureAlice)
         )
@@ -334,7 +334,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
     @Test
     fun `Contract verifying notary plugin server should respond with error if time window not present on filtered tx`() {
         whenever(filteredTransaction.timeWindow).thenReturn(null)
-        val filteredTransactionsAndSignatures = FilteredTransactionAndSignatures(
+        val filteredTransactionsAndSignatures = UtxoFilteredTransactionAndSignaturesImpl(
             filteredTransaction,
             listOf(notarySignatureAlice)
         )
@@ -357,7 +357,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
     @Test
     fun `Contract verifying notary plugin server should respond with error if notary name not present on filtered tx`() {
         whenever(filteredTransaction.notaryName).thenReturn(null)
-        val filteredTransactionsAndSignatures = FilteredTransactionAndSignatures(
+        val filteredTransactionsAndSignatures = UtxoFilteredTransactionAndSignaturesImpl(
             filteredTransaction,
             listOf(notarySignatureAlice)
         )
@@ -380,7 +380,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
     @Test
     fun `Contract verifying notary plugin server should respond with error if notary key not present on filtered tx`() {
         whenever(filteredTransaction.notaryKey).thenReturn(null)
-        val filteredTransactionsAndSignatures = FilteredTransactionAndSignatures(
+        val filteredTransactionsAndSignatures = UtxoFilteredTransactionAndSignaturesImpl(
             filteredTransaction,
             listOf(notarySignatureAlice)
         )
@@ -405,7 +405,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
         @Suppress("unchecked_cast")
         val mockOutputStateProof = mock<UtxoFilteredData.SizeOnly<StateRef>>() as UtxoFilteredData<StateAndRef<*>>
         whenever(filteredTransaction.outputStateAndRefs).thenReturn(mockOutputStateProof)
-        val filteredTransactionsAndSignatures = FilteredTransactionAndSignatures(
+        val filteredTransactionsAndSignatures = UtxoFilteredTransactionAndSignaturesImpl(
             filteredTransaction,
             listOf(notarySignatureAlice)
         )
@@ -428,7 +428,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
     @Test
     fun `Contract verifying notary plugin server should respond with error if Merkle proof verification of dependencies fails`() {
         whenever(filteredTransaction.verify()).thenThrow(IllegalArgumentException("DUMMY ERROR"))
-        val filteredTransactionsAndSignatures = FilteredTransactionAndSignatures(
+        val filteredTransactionsAndSignatures = UtxoFilteredTransactionAndSignaturesImpl(
             filteredTransaction,
             listOf(notarySignatureAlice)
         )
@@ -472,7 +472,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
     @Test
     fun `Contract verifying notary plugin server should respond with error if notary identity invalid`() {
         whenever(filteredTransaction.notaryName).thenReturn(MemberX500Name.parse("C=GB,L=London,O=Bob"))
-        val filteredTransactionsAndSignatures = FilteredTransactionAndSignatures(
+        val filteredTransactionsAndSignatures = UtxoFilteredTransactionAndSignaturesImpl(
             filteredTransaction,
             listOf(notarySignatureAlice)
         )
@@ -500,7 +500,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
 
         whenever(filteredTransaction.outputStateAndRefs).thenReturn(mockOutputStateRefUtxoFilteredData)
 
-        val filteredTransactionsAndSignatures = FilteredTransactionAndSignatures(
+        val filteredTransactionsAndSignatures = UtxoFilteredTransactionAndSignaturesImpl(
             filteredTransaction,
             listOf(notarySignatureAlice)
         )
@@ -531,7 +531,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
 
         whenever(filteredTransaction.outputStateAndRefs).thenReturn(mockOutputStateRefUtxoFilteredData)
 
-        val filteredTransactionsAndSignatures = FilteredTransactionAndSignatures(
+        val filteredTransactionsAndSignatures = UtxoFilteredTransactionAndSignaturesImpl(
             filteredTransaction,
             listOf(notarySignatureAlice)
         )
@@ -563,7 +563,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
 
         whenever(filteredTransaction.outputStateAndRefs).thenReturn(mockOutputStateRefUtxoFilteredData)
 
-        val filteredTransactionsAndSignatures = FilteredTransactionAndSignatures(
+        val filteredTransactionsAndSignatures = UtxoFilteredTransactionAndSignaturesImpl(
             filteredTransaction,
             listOf(notarySignatureAlice)
         )

@@ -3,7 +3,7 @@ package net.corda.flow.application.services.impl
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowStackItemSession
 import net.corda.flow.application.serialization.DeserializedWrongAMQPObjectException
-import net.corda.flow.application.serialization.SerializationServiceInternal
+import net.corda.flow.application.serialization.FlowSerializationService
 import net.corda.flow.application.sessions.FlowSessionInternal
 import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
@@ -36,8 +36,8 @@ class FlowMessagingImpl @Activate constructor(
     private val flowFiberService: FlowFiberService,
     @Reference(service = FlowSessionFactory::class)
     private val flowSessionFactory: FlowSessionFactory,
-    @Reference(service = SerializationServiceInternal::class)
-    private val serializationService: SerializationServiceInternal
+    @Reference(service = FlowSerializationService::class)
+    private val serializationService: FlowSerializationService
 ) : FlowMessaging, UsedByFlow, SingletonSerializeAsToken {
 
     private val fiber: FlowFiber get() = flowFiberService.getExecutingFiber()

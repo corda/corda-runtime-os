@@ -29,42 +29,16 @@ databases:
     port: 5432
     type: "postgresql"
     host: "prereqs-postgres"
-    username:
-      value: "corda"
-      valueFrom:
-        secretKeyRef:
-          name: ""
-          key: ""
-    password:
-      valueFrom:
-        secretKeyRef:
-          name: "prereqs-postgres"
-          key: "postgres-password"
 
 bootstrap:
   restApiAdmin:
     password:
       value: "admin"
-  # Disable pre-install check as we are not specifying resources
-  preinstallCheck:
-    enabled: false
   db:
-    cluster:
-      password:
-        valueFrom:
-          secretKeyRef:
-            name: "prereqs-postgres"
-            key: "postgres-password"
-      username:
-        value: "postgres"
     databases:
       - id: "default"
         username:
           value: "postgres"
-          valueFrom:
-            secretKeyRef:
-              name: ""
-              key: ""
         password:
           valueFrom:
             secretKeyRef:
@@ -72,17 +46,6 @@ bootstrap:
               key: "postgres-password"
   kafka:
     replicas: 1
-
-db:
-  cluster:
-    host: "prereqs-postgres"
-    username:
-      value: "corda"
-    password:
-      valueFrom:
-        secretKeyRef:
-          name: "prereqs-postgres"
-          key: "corda-password"
 
 kafka:
   bootstrapServers: "prereqs-kafka:9092"

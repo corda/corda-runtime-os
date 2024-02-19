@@ -4,7 +4,7 @@ import net.corda.flow.application.GroupParametersLookupInternal
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
-import net.corda.ledger.utxo.data.transaction.FilteredTransactionAndSignatures
+import net.corda.ledger.utxo.data.transaction.verifyFilteredTransactionAndSignatures
 import net.corda.ledger.utxo.flow.impl.flows.backchain.InvalidBackchainException
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
@@ -30,6 +30,7 @@ import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData.Audit
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndSignatures
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -164,40 +165,36 @@ class UtxoReceiveFinalityFlowV1(
             requireNotNull(filteredTransactionsAndSignatures) {
                 "filtered transaction and signatures cannot be found."
             }
-            verifyDependencies(filteredTransactionsAndSignatures, initialTransaction, transferAdditionalSignatures)
+            verifyDependenciesAndPersist(filteredTransactionsAndSignatures, initialTransaction, transferAdditionalSignatures)
         }
     }
 
     @Suspendable
-    private fun verifyDependencies(
-        filteredTransactionsAndSignatures: List<FilteredTransactionAndSignatures>,
+    private fun verifyDependenciesAndPersist(
+        filteredTransactionsAndSignatures: List<UtxoFilteredTransactionAndSignatures>,
         initialTransaction: UtxoSignedTransactionInternal,
         transferAdditionalSignatures: Boolean
     ): InitialTransactionPayload {
+        if (filteredTransactionsAndSignatures.isEmpty()) {
+            return InitialTransactionPayload(initialTransaction, transferAdditionalSignatures, emptyList(), emptyList())
+        }
         val groupParameters = groupParametersLookup.currentGroupParameters
         val notary = requireNotNull(groupParameters.notaries.first { it.name == initialTransaction.notaryName }) {
             "Notary from initial transaction \"${initialTransaction.notaryName}\" cannot be found in group parameter notaries."
         }
 
-        val dependentStateAndRefs =
-            filteredTransactionsAndSignatures.flatMap { (filteredTransaction, signatures) ->
-                require(signatures.isNotEmpty()) { "No notary signatures were received" }
-                filteredTransaction.verify()
+        val dependentStateAndRefs = filteredTransactionsAndSignatures.flatMap { filteredTransactionAndSignatures ->
 
-                require(notary.name == filteredTransaction.notaryName) {
-                    "Notary name of filtered transaction \"${filteredTransaction.notaryName}\" doesn't match with " +
-                        "notary name of initial transaction \"${notary.name}\""
-                }
+            filteredTransactionAndSignatures.verifyFilteredTransactionAndSignatures(
+                notary,
+                notarySignatureVerificationService
+            )
 
-                notarySignatureVerificationService.verifyNotarySignatures(
-                    filteredTransaction,
-                    notary.publicKey,
-                    signatures,
-                    mutableMapOf()
-                )
+            (filteredTransactionAndSignatures.filteredTransaction.outputStateAndRefs as Audit<StateAndRef<*>>).values.values
+        }.associateBy { stateRef ->
+            stateRef.ref
+        }
 
-                (filteredTransaction.outputStateAndRefs as Audit<StateAndRef<*>>).values.values
-            }.associateBy { stateRef -> stateRef.ref }
         val inputStateAndRefs = initialTransaction.inputStateRefs.map { stateRef ->
             requireNotNull(dependentStateAndRefs[stateRef]) {
                 "Missing input state and ref from the filtered transaction"
@@ -208,6 +205,9 @@ class UtxoReceiveFinalityFlowV1(
                 "Missing reference state and ref from the filtered transaction"
             }
         }
+
+        persistenceService.persistFilteredTransactionsAndSignatures(filteredTransactionsAndSignatures)
+
         return InitialTransactionPayload(
             initialTransaction,
             transferAdditionalSignatures,

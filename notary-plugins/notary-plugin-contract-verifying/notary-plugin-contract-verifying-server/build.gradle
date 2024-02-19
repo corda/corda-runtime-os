@@ -4,6 +4,10 @@ plugins {
     id 'net.corda.plugins.cordapp-cpk2'
 }
 
+ext {
+    releasable = true
+}
+
 description 'Corda Contract Verifying Notary Plugin Server'
 
 group 'com.r3.corda.notary.plugin.contractverifying'
@@ -32,6 +36,7 @@ dependencies {
 
     testImplementation project(":libs:crypto:crypto-core")
     testImplementation project(":libs:uniqueness:common")
+    testImplementation project(":libs:ledger:ledger-utxo-data")
     testImplementation project(":testing:crypto-testkit")
     testImplementation project(':testing:ledger:ledger-common-testkit')
 }

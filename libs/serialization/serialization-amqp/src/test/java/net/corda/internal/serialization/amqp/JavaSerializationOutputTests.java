@@ -189,7 +189,7 @@ public class JavaSerializationOutputTests {
         SerializerFactory factory1 = testDefaultFactory();
         SerializerFactory factory2 = testDefaultFactory();
         SerializationOutput ser = new SerializationOutput(factory1);
-        SerializedBytes<Object> bytes = ser.serialize(obj, TestSerializationContext.testSerializationContext);
+        SerializedBytes<Object> bytes = ser.serialize(obj, TestSerializationContext.testSerializationContext.withEncoding(null));
 
         DecoderImpl decoder = new DecoderImpl();
 
@@ -216,10 +216,13 @@ public class JavaSerializationOutputTests {
         // Now repeat with a re-used factory
         SerializationOutput ser2 = new SerializationOutput(factory1);
         DeserializationInput des2 = new DeserializationInput(factory1);
-        Object desObj2 = des2.deserialize(unwrapSerializedBytes(ser2.serialize(obj, TestSerializationContext.testSerializationContext)),
+        SerializedBytes<Object> compressedBytes = ser2.serialize(obj, TestSerializationContext.testSerializationContext);
+        Object desObj2 = des2.deserialize(unwrapSerializedBytes(compressedBytes),
                 Object.class, TestSerializationContext.testSerializationContext);
 
         assertTrue(Objects.deepEquals(obj, desObj2));
+        // Expect the compressed form to be better than 80% than the uncompressed
+        assertTrue(unwrapSerializedBytes(bytes).getSize() * 0.8 > unwrapSerializedBytes(compressedBytes).getSize() * 1.0);
         // TODO: check schema is as expected
         return desObj2;
     }

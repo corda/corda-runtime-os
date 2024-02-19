@@ -13,11 +13,13 @@ import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.common.data.transaction.TransactionStatus.DRAFT
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters
+import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.data.transaction.filtered.factory.FilteredTransactionFactory
 import net.corda.ledger.common.testkit.cpiPackageSummaryExample
 import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
@@ -75,6 +77,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
@@ -98,12 +101,13 @@ import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.Random
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 import javax.persistence.EntityManagerFactory
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
-@Suppress("FunctionName")
+@Suppress("FunctionName", "MaxLineLength")
 class UtxoPersistenceServiceImplTest {
     @RegisterExtension
     private val lifecycle = EachTestLifecycle()
@@ -278,33 +282,9 @@ class UtxoPersistenceServiceImplTest {
             .mapValues { (_, stateRefs) -> stateRefs.map { stateRef -> stateRef.index } }
         val expectedRetval = stateRefs.associate {
             val indexes = txIdToIndexes[it.transactionId]!!
-            val (wireTransaction, signatures) = persistenceService.findSignedTransaction(it.transactionId.toString(), VERIFIED).first!!
-            val filteredTransaction = filteredTransactionFactory.create(
-                wireTransaction,
-                listOf(
-                    ComponentGroupFilterParameters.AuditProof(
-                        METADATA.ordinal,
-                        TransactionMetadata::class.java,
-                        ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                    ),
-                    ComponentGroupFilterParameters.AuditProof(
-                        NOTARY.ordinal,
-                        Any::class.java,
-                        ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                    ),
-                    ComponentGroupFilterParameters.AuditProof(
-                        UtxoComponentGroup.OUTPUTS_INFO.ordinal,
-                        UtxoOutputInfoComponent::class.java,
-                        ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Index(indexes)
-                    ),
-                    ComponentGroupFilterParameters.AuditProof(
-                        UtxoComponentGroup.OUTPUTS.ordinal,
-                        ContractState::class.java,
-                        ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Index(indexes)
-                    )
-                )
-            )
-            it.transactionId to Pair(filteredTransaction, signatures)
+            val signedTransaction = persistenceService.findSignedTransaction(it.transactionId.toString(), VERIFIED).first!!
+            val filteredTransaction = createFilteredTransaction(signedTransaction, indexes)
+            it.transactionId to Pair(filteredTransaction, signedTransaction.signatures)
         }
 
         val retval = persistenceService.findFilteredTransactionsAndSignatures(stateRefs)
@@ -314,10 +294,9 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `find unconsumed visible transaction states`() {
-        val createdTs = testClock.instant()
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
-        val transaction1 = createSignedTransaction(createdTs)
-        val transaction2 = createSignedTransaction(createdTs)
+        val transaction1 = createSignedTransaction()
+        val transaction2 = createSignedTransaction()
         entityManagerFactory.transaction { em ->
 
             em.createNativeQuery("DELETE FROM {h-schema}utxo_visible_transaction_output").executeUpdate()
@@ -441,7 +420,7 @@ class UtxoPersistenceServiceImplTest {
     fun `persist signed transaction`() {
         val account = "Account"
         val transactionStatus = VERIFIED
-        val signedTransaction = createSignedTransaction(Instant.now())
+        val signedTransaction = createSignedTransaction(signatures = createSignatures(Instant.now()))
         val visibleStatesIndexes = listOf(0)
 
         // Persist transaction
@@ -479,7 +458,7 @@ class UtxoPersistenceServiceImplTest {
             assertThat(dbTransaction).isNotNull
             val txPrivacySalt = dbTransaction.field<ByteArray>("privacySalt")
             val txAccountId = dbTransaction.field<String>("accountId")
-            val txCreatedTs = dbTransaction.field<Instant?>("created")
+            val txCreatedTs = dbTransaction.field<Instant>("created")
 
             assertThat(txPrivacySalt).isEqualTo(signedTransaction.wireTransaction.privacySalt.bytes)
             assertThat(txAccountId).isEqualTo(account)
@@ -635,37 +614,14 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `persist and find filtered transactions`() {
-        val signedTransaction = createSignedTransaction(Instant.now())
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(signatures = signatures)
         val account = "Account"
 
-        val filteredTransactionToStore = filteredTransactionFactory.create(
-            signedTransaction.wireTransaction,
-            componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(
-                    0,
-                    TransactionMetadataImpl::class.java,
-                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                ),
-                ComponentGroupFilterParameters.AuditProof(
-                    1,
-                    Any::class.java,
-                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                ),
-                ComponentGroupFilterParameters.AuditProof(
-                    3,
-                    Any::class.java,
-                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                ),
-                ComponentGroupFilterParameters.AuditProof(
-                    8,
-                    Any::class.java,
-                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
-                ),
-            )
-        )
+        val filteredTransactionToStore = createFilteredTransaction(signedTransaction)
 
         persistenceService.persistFilteredTransactions(
-            mapOf(filteredTransactionToStore to emptyList()),
+            mapOf(filteredTransactionToStore to signatures),
             account
         )
 
@@ -694,6 +650,477 @@ class UtxoPersistenceServiceImplTest {
         )
 
         storedFilteredTransaction.verify()
+    }
+
+    @Test
+    fun `persist filtered transaction when a verified signed transaction exists for the same id does not overwrite the existing transaction record`() {
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(signatures = signatures)
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+
+        entityManagerFactory.transaction { em ->
+            createTransactionEntity(entityFactory, signedTransaction, status = VERIFIED).also { em.persist(it) }
+        }
+
+        val createdTimestamp = entityManagerFactory.transaction { em ->
+            val transaction = em.find(entityFactory.utxoTransaction, signedTransaction.id.toString())
+            assertThat(transaction).isNotNull
+            assertThat(transaction.field<Boolean>("isFiltered")).isFalse()
+            assertThat(transaction.field<String>("status")).isEqualTo("V")
+            transaction.field<Instant>("created")
+        }
+
+        val filteredTransaction = createFilteredTransaction(signedTransaction)
+
+        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
+
+        entityManagerFactory.transaction { em ->
+            val transaction = em.find(entityFactory.utxoTransaction, signedTransaction.id.toString())
+            assertThat(transaction).isNotNull
+            assertThat(transaction.field<Boolean>("isFiltered")).isFalse()
+            assertThat(transaction.field<String>("status")).isEqualTo("V")
+            assertThat(transaction.field<Instant>("created")).isEqualTo(createdTimestamp)
+        }
+    }
+
+    @Test
+    fun `persist filtered transaction when a verified signed transaction exists for the same id still persists to the proof tables`() {
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(signatures = signatures)
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+
+        entityManagerFactory.transaction { em ->
+            createTransactionEntity(entityFactory, signedTransaction, status = VERIFIED).also { em.persist(it) }
+        }
+
+        entityManagerFactory.transaction { em ->
+            val proofs = em.createNamedQuery("UtxoMerkleProofEntity.findByTransactionId", entityFactory.merkleProof)
+                .setParameter("transactionId", signedTransaction.id.toString())
+                .resultList
+            assertThat(proofs).isEmpty()
+        }
+
+        val filteredTransaction = createFilteredTransaction(signedTransaction)
+
+        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
+
+        entityManagerFactory.transaction { em ->
+            val proofs = em.createNamedQuery("UtxoMerkleProofEntity.findByTransactionId", entityFactory.merkleProof)
+                .setParameter("transactionId", signedTransaction.id.toString())
+                .resultList
+            assertThat(proofs).hasSize(5)
+        }
+    }
+
+    @Disabled("Waiting to determine the behaviour we want")
+    @Test
+    fun `persist filtered transaction when an unverified signed transaction exists for the same id overwrites the existing transaction record`() {
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(signatures = signatures)
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+
+        entityManagerFactory.transaction { em ->
+            createTransactionEntity(entityFactory, signedTransaction, status = UNVERIFIED).also { em.persist(it) }
+        }
+
+        val createdTimestamp = entityManagerFactory.transaction { em ->
+            val transaction = em.find(entityFactory.utxoTransaction, signedTransaction.id.toString())
+            assertThat(transaction).isNotNull
+            assertThat(transaction.field<Boolean>("isFiltered")).isFalse()
+            assertThat(transaction.field<String>("status")).isEqualTo("U")
+            transaction.field<Instant>("created")
+        }
+
+        val filteredTransaction = createFilteredTransaction(signedTransaction)
+
+        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
+
+        entityManagerFactory.transaction { em ->
+            val transaction = em.find(entityFactory.utxoTransaction, signedTransaction.id.toString())
+            assertThat(transaction).isNotNull
+            assertThat(transaction.field<Boolean>("isFiltered")).isFalse()
+            assertThat(transaction.field<String>("status")).isEqualTo("V")
+            assertThat(transaction.field<Instant>("created")).isEqualTo(createdTimestamp)
+        }
+    }
+
+    @Test
+    fun `persist filtered transaction when an unverified signed transaction exists for the same id still persists to the proof tables`() {
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(signatures = signatures)
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+
+        entityManagerFactory.transaction { em ->
+            createTransactionEntity(entityFactory, signedTransaction, status = UNVERIFIED).also { em.persist(it) }
+        }
+
+        entityManagerFactory.transaction { em ->
+            val proofs = em.createNamedQuery("UtxoMerkleProofEntity.findByTransactionId", entityFactory.merkleProof)
+                .setParameter("transactionId", signedTransaction.id.toString())
+                .resultList
+            assertThat(proofs).isEmpty()
+        }
+
+        val filteredTransaction = createFilteredTransaction(signedTransaction)
+
+        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
+
+        entityManagerFactory.transaction { em ->
+            val proofs = em.createNamedQuery("UtxoMerkleProofEntity.findByTransactionId", entityFactory.merkleProof)
+                .setParameter("transactionId", signedTransaction.id.toString())
+                .resultList
+            assertThat(proofs).hasSize(5)
+        }
+    }
+
+    @Disabled("Waiting to determine the behaviour we want")
+    @Test
+    fun `persist filtered transaction when a draft signed transaction exists for the same id overwrites the existing transaction record`() {
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(signatures = signatures)
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+
+        entityManagerFactory.transaction { em ->
+            createTransactionEntity(entityFactory, signedTransaction, status = DRAFT).also { em.persist(it) }
+        }
+
+        val createdTimestamp = entityManagerFactory.transaction { em ->
+            val transaction = em.find(entityFactory.utxoTransaction, signedTransaction.id.toString())
+            assertThat(transaction).isNotNull
+            assertThat(transaction.field<Boolean>("isFiltered")).isFalse()
+            assertThat(transaction.field<String>("status")).isEqualTo("D")
+            transaction.field<Instant>("created")
+        }
+
+        val filteredTransaction = createFilteredTransaction(signedTransaction)
+
+        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
+
+        entityManagerFactory.transaction { em ->
+            val transaction = em.find(entityFactory.utxoTransaction, signedTransaction.id.toString())
+            assertThat(transaction).isNotNull
+            assertThat(transaction.field<Boolean>("isFiltered")).isFalse()
+            assertThat(transaction.field<String>("status")).isEqualTo("V")
+            assertThat(transaction.field<Instant>("created")).isEqualTo(createdTimestamp)
+        }
+    }
+
+    @Test
+    fun `persist filtered transaction when a draft signed transaction exists for the same id still persists to the proof tables`() {
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(signatures = signatures)
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+
+        entityManagerFactory.transaction { em ->
+            createTransactionEntity(entityFactory, signedTransaction, status = DRAFT).also { em.persist(it) }
+        }
+
+        entityManagerFactory.transaction { em ->
+            val proofs = em.createNamedQuery("UtxoMerkleProofEntity.findByTransactionId", entityFactory.merkleProof)
+                .setParameter("transactionId", signedTransaction.id.toString())
+                .resultList
+            assertThat(proofs).isEmpty()
+        }
+
+        val filteredTransaction = createFilteredTransaction(signedTransaction)
+
+        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
+
+        entityManagerFactory.transaction { em ->
+            val proofs = em.createNamedQuery("UtxoMerkleProofEntity.findByTransactionId", entityFactory.merkleProof)
+                .setParameter("transactionId", signedTransaction.id.toString())
+                .resultList
+            assertThat(proofs).hasSize(5)
+        }
+    }
+
+    @Test
+    fun `persist filtered transaction when a filtered transaction exists for the same id does not overwrite the existing transaction record`() {
+        val outputStates = listOf(TestContractState1(), TestContractState2())
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(outputStates = outputStates, signatures = signatures)
+        val filteredTransaction1 = createFilteredTransaction(signedTransaction, indexes = listOf(0))
+        val filteredTransaction2 = createFilteredTransaction(signedTransaction, indexes = listOf(1))
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+
+        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction1 to signatures), "account")
+
+        val createdTimestamp = entityManagerFactory.transaction { em ->
+            val transaction = em.find(entityFactory.utxoTransaction, signedTransaction.id.toString())
+            assertThat(transaction).isNotNull
+            assertThat(transaction.field<Boolean>("isFiltered")).isTrue()
+            assertThat(transaction.field<String>("status")).isEqualTo("V")
+            transaction.field<Instant>("created")
+        }
+
+        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction2 to signatures), "account")
+
+        entityManagerFactory.transaction { em ->
+            val transaction = em.find(entityFactory.utxoTransaction, signedTransaction.id.toString())
+            assertThat(transaction).isNotNull
+            assertThat(transaction.field<Boolean>("isFiltered")).isTrue()
+            assertThat(transaction.field<String>("status")).isEqualTo("V")
+            assertThat(transaction.field<Instant>("created")).isEqualTo(createdTimestamp)
+        }
+    }
+
+    @Test
+    fun `persist filtered transaction when a filtered transaction exists for the same id updates the proof tables`() {
+        val outputStates = listOf(TestContractState1(), TestContractState1(), TestContractState2())
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(outputStates = outputStates, signatures = signatures)
+        val filteredTransaction1 = createFilteredTransaction(signedTransaction, indexes = listOf(0))
+        val filteredTransaction2 = createFilteredTransaction(signedTransaction, indexes = listOf(1))
+        val filteredTransaction3 = createFilteredTransaction(signedTransaction, indexes = listOf(2))
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+
+        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction1 to signatures), "account")
+
+        val merkleProofIds1 = entityManagerFactory.transaction { em ->
+            val proofs = em.createNamedQuery("UtxoMerkleProofEntity.findByTransactionId", entityFactory.merkleProof)
+                .setParameter("transactionId", signedTransaction.id.toString())
+                .resultList
+            proofs.map { it.field<String>("merkleProofId") }
+        }
+
+        assertThat(merkleProofIds1).hasSize(5)
+
+        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction2 to signatures), "account")
+
+        val merkleProofIds2 = entityManagerFactory.transaction { em ->
+            val proofs = em.createNamedQuery("UtxoMerkleProofEntity.findByTransactionId", entityFactory.merkleProof)
+                .setParameter("transactionId", signedTransaction.id.toString())
+                .resultList
+            proofs.map { it.field<String>("merkleProofId") }
+        }
+
+        // Only the output and output info groups change, so only 2 new rows are inserted into the database
+        assertThat(merkleProofIds2).hasSize(7)
+        assertThat(merkleProofIds2).containsAll(merkleProofIds1)
+        assertThat(merkleProofIds2 - merkleProofIds1).hasSize(2)
+
+        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction3 to signatures), "account")
+
+        val merkleProofIds3 = entityManagerFactory.transaction { em ->
+            val proofs = em.createNamedQuery("UtxoMerkleProofEntity.findByTransactionId", entityFactory.merkleProof)
+                .setParameter("transactionId", signedTransaction.id.toString())
+                .resultList
+            proofs.map { it.field<String>("merkleProofId") }
+        }
+
+        // Only the output and output info groups change, so only 2 new rows are inserted into the database
+        assertThat(merkleProofIds3).hasSize(9)
+        assertThat(merkleProofIds3).containsAll(merkleProofIds1)
+        assertThat(merkleProofIds3).containsAll(merkleProofIds2)
+        assertThat(merkleProofIds3 - merkleProofIds1 - merkleProofIds2).hasSize(2)
+
+        val loadedFilteredTransactions =
+            (persistenceService as UtxoPersistenceServiceImpl).findFilteredTransactions(listOf(signedTransaction.id.toString()))
+
+        assertThat(loadedFilteredTransactions).hasSize(1)
+        assertThat(loadedFilteredTransactions[signedTransaction.id]).isNotNull
+
+        val loadedFilteredTransaction = loadedFilteredTransactions[signedTransaction.id]!!.first!!
+        assertThat(loadedFilteredTransaction.filteredComponentGroups).hasSize(4)
+        assertThat(loadedFilteredTransaction.filteredComponentGroups.keys).containsOnly(0, 1, 3, 8)
+        assertThat(loadedFilteredTransaction.getComponentGroupContent(8)?.get(0)?.second).isEqualTo(outputStates[0].toBytes())
+        assertThat(loadedFilteredTransaction.getComponentGroupContent(8)?.get(1)?.second).isEqualTo(outputStates[1].toBytes())
+        assertThat(loadedFilteredTransaction.getComponentGroupContent(8)?.get(2)?.second).isEqualTo(outputStates[2].toBytes())
+
+        loadedFilteredTransaction.verify()
+    }
+
+    @Test
+    fun `persist filtered transaction when the exact same filtered transaction exists does not update proof tables`() {
+        val outputStates = listOf(TestContractState1(), TestContractState2())
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(outputStates = outputStates, signatures = signatures)
+        val filteredTransaction = createFilteredTransaction(signedTransaction, indexes = listOf(0, 1))
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+
+        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
+
+        val merkleProofIds1 = entityManagerFactory.transaction { em ->
+            val proofs = em.createNamedQuery("UtxoMerkleProofEntity.findByTransactionId", entityFactory.merkleProof)
+                .setParameter("transactionId", signedTransaction.id.toString())
+                .resultList
+            proofs.map { it.field<String>("merkleProofId") }
+        }
+
+        assertThat(merkleProofIds1).hasSize(5)
+
+        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
+
+        val merkleProofIds2 = entityManagerFactory.transaction { em ->
+            val proofs = em.createNamedQuery("UtxoMerkleProofEntity.findByTransactionId", entityFactory.merkleProof)
+                .setParameter("transactionId", signedTransaction.id.toString())
+                .resultList
+            proofs.map { it.field<String>("merkleProofId") }
+        }
+
+        assertThat(merkleProofIds2).hasSize(5)
+        assertThat(merkleProofIds2).containsOnlyOnceElementsOf(merkleProofIds1)
+
+        val loadedFilteredTransactions =
+            (persistenceService as UtxoPersistenceServiceImpl).findFilteredTransactions(listOf(signedTransaction.id.toString()))
+
+        assertThat(loadedFilteredTransactions).hasSize(1)
+        assertThat(loadedFilteredTransactions[signedTransaction.id]).isNotNull
+
+        val loadedFilteredTransaction = loadedFilteredTransactions[signedTransaction.id]!!.first!!
+        assertThat(loadedFilteredTransaction.filteredComponentGroups).hasSize(4)
+        assertThat(loadedFilteredTransaction.filteredComponentGroups.keys).containsOnly(0, 1, 3, 8)
+        assertThat(loadedFilteredTransaction.getComponentGroupContent(8)?.get(0)?.second).isEqualTo(outputStates[0].toBytes())
+        assertThat(loadedFilteredTransaction.getComponentGroupContent(8)?.get(1)?.second).isEqualTo(outputStates[1].toBytes())
+
+        loadedFilteredTransaction.verify()
+    }
+
+    @Test
+    fun `persist signed transaction when a filtered transaction exists for the same id overwrites the existing transaction record`() {
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(signatures = signatures)
+        val filteredTransaction = createFilteredTransaction(signedTransaction)
+        val transactionReader = TestUtxoTransactionReader(
+            signedTransaction,
+            "account",
+            VERIFIED,
+            emptyList()
+        )
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+
+        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
+
+        val createdTimestamp = entityManagerFactory.transaction { em ->
+            val transaction = em.find(entityFactory.utxoTransaction, signedTransaction.id.toString())
+            assertThat(transaction).isNotNull
+            assertThat(transaction.field<Boolean>("isFiltered")).isTrue()
+            assertThat(transaction.field<String>("status")).isEqualTo("V")
+            transaction.field<Instant>("created")
+        }
+
+        persistenceService.persistTransaction(transactionReader, emptyMap())
+
+        entityManagerFactory.transaction { em ->
+            val transaction = em.find(entityFactory.utxoTransaction, signedTransaction.id.toString())
+            assertThat(transaction).isNotNull
+            assertThat(transaction.field<Boolean>("isFiltered")).isFalse()
+            assertThat(transaction.field<String>("status")).isEqualTo("V")
+            assertThat(transaction.field<Instant>("created")).isEqualTo(createdTimestamp)
+        }
+    }
+
+    @Test
+    fun `persist signed transaction when a filtered transaction exists for the same id leaves the existing proof table data`() {
+        val outputStates = listOf(TestContractState1(), TestContractState2())
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(outputStates = outputStates, signatures = signatures)
+        val filteredTransaction = createFilteredTransaction(signedTransaction, indexes = listOf(0, 1))
+        val transactionReader = TestUtxoTransactionReader(
+            signedTransaction,
+            "account",
+            VERIFIED,
+            emptyList()
+        )
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+
+        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
+
+        entityManagerFactory.transaction { em ->
+            val proofs = em.createNamedQuery("UtxoMerkleProofEntity.findByTransactionId", entityFactory.merkleProof)
+                .setParameter("transactionId", signedTransaction.id.toString())
+                .resultList
+            assertThat(proofs).hasSize(5)
+        }
+
+        persistenceService.persistTransaction(transactionReader, emptyMap())
+
+        entityManagerFactory.transaction { em ->
+            val proofs = em.createNamedQuery("UtxoMerkleProofEntity.findByTransactionId", entityFactory.merkleProof)
+                .setParameter("transactionId", signedTransaction.id.toString())
+                .resultList
+            assertThat(proofs).hasSize(5)
+        }
+    }
+
+    @Test
+    fun `find a signed transaction after persisting a signed transaction when a filtered transaction existed previously`() {
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(signatures = signatures)
+        val filteredTransaction = createFilteredTransaction(signedTransaction)
+        val transactionReader = TestUtxoTransactionReader(
+            signedTransaction,
+            "account",
+            VERIFIED,
+            emptyList()
+        )
+        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
+        persistenceService.persistTransaction(transactionReader, emptyMap())
+        val (loadedSignedTransaction, _) = persistenceService.findSignedTransaction(signedTransaction.id.toString(), VERIFIED)
+        assertThat(loadedSignedTransaction).isEqualTo(signedTransaction)
+    }
+
+    @Test
+    fun `find a signed transaction after persisting a filtered transaction when a signed transaction existed previously`() {
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(signatures = signatures)
+        val filteredTransaction = createFilteredTransaction(signedTransaction)
+        val transactionReader = TestUtxoTransactionReader(
+            signedTransaction,
+            "account",
+            VERIFIED,
+            emptyList()
+        )
+        persistenceService.persistTransaction(transactionReader, emptyMap())
+        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
+        val (loadedSignedTransaction, _) = persistenceService.findSignedTransaction(signedTransaction.id.toString(), VERIFIED)
+        assertThat(loadedSignedTransaction).isEqualTo(signedTransaction)
+    }
+
+    @Test
+    fun `find a filtered transaction after persisting a signed transaction when a filtered transaction existed previously`() {
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(signatures = signatures)
+        val filteredTransaction = createFilteredTransaction(signedTransaction)
+        val transactionReader = TestUtxoTransactionReader(
+            signedTransaction,
+            "account",
+            VERIFIED,
+            emptyList()
+        )
+        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
+        persistenceService.persistTransaction(transactionReader, emptyMap())
+        val loadedFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl)
+            .findFilteredTransactions(listOf(signedTransaction.id.toString()))
+        assertThat(loadedFilteredTransactions).hasSize(1)
+        assertThat(loadedFilteredTransactions[signedTransaction.id]!!.first).isEqualTo(filteredTransaction)
+    }
+
+    @Test
+    fun `find a signed transaction when only a filtered transaction exists`() {
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(signatures = signatures)
+        val filteredTransaction = createFilteredTransaction(signedTransaction)
+        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
+        assertThat(persistenceService.findSignedTransaction(signedTransaction.id.toString(), VERIFIED).first).isNull()
+        assertThat(persistenceService.findSignedTransaction(signedTransaction.id.toString(), UNVERIFIED).first).isNull()
+        assertThat(persistenceService.findSignedTransaction(signedTransaction.id.toString(), DRAFT).first).isNull()
+    }
+
+    @Test
+    fun `find a filtered transaction when only a signed transaction exists`() {
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(signatures = signatures)
+        val transactionReader = TestUtxoTransactionReader(
+            signedTransaction,
+            "account",
+            VERIFIED,
+            emptyList()
+        )
+        persistenceService.persistTransaction(transactionReader, emptyMap())
+        val loadedFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl)
+            .findFilteredTransactions(listOf(signedTransaction.id.toString()))
+        assertThat(loadedFilteredTransactions).isEmpty()
     }
 
     @Suppress("LongParameterList")
@@ -813,11 +1240,56 @@ class UtxoPersistenceServiceImplTest {
         }
     }
 
+    private fun createFilteredTransaction(
+        signedTransaction: SignedTransactionContainer,
+        indexes: List<Int> = emptyList()
+    ): FilteredTransaction {
+        val (outputInfoGroupParameter, outputGroupParameter) = if (indexes.isEmpty()) {
+            ComponentGroupFilterParameters.AuditProof(
+                UtxoComponentGroup.OUTPUTS_INFO.ordinal,
+                Any::class.java,
+                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
+            ) to ComponentGroupFilterParameters.AuditProof(
+                UtxoComponentGroup.OUTPUTS.ordinal,
+                Any::class.java,
+                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
+            )
+        } else {
+            ComponentGroupFilterParameters.AuditProof(
+                UtxoComponentGroup.OUTPUTS_INFO.ordinal,
+                UtxoOutputInfoComponent::class.java,
+                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Index(indexes)
+            ) to ComponentGroupFilterParameters.AuditProof(
+                UtxoComponentGroup.OUTPUTS.ordinal,
+                ContractState::class.java,
+                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Index(indexes)
+            )
+        }
+        return filteredTransactionFactory.create(
+            signedTransaction.wireTransaction,
+            componentGroupFilterParameters = listOf(
+                ComponentGroupFilterParameters.AuditProof(
+                    METADATA.ordinal,
+                    TransactionMetadata::class.java,
+                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
+                ),
+                ComponentGroupFilterParameters.AuditProof(
+                    NOTARY.ordinal,
+                    Any::class.java,
+                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content { true }
+                ),
+                outputInfoGroupParameter,
+                outputGroupParameter,
+            )
+        )
+    }
+
     private fun createSignedTransaction(
-        createdTs: Instant = testClock.instant(),
         seed: String = seedSequence.incrementAndGet().toString(),
         inputStateRefs: List<StateRef> = defaultInputStateRefs,
-        referenceStateRefs: List<StateRef> = defaultReferenceStateRefs
+        referenceStateRefs: List<StateRef> = defaultReferenceStateRefs,
+        outputStates: List<ContractState> = defaultVisibleTransactionOutputs,
+        signatures: List<DigitalSignatureAndMetadata> = createSignatures()
     ): SignedTransactionContainer {
         val transactionMetadata = utxoTransactionMetadataExample(cpkPackageSeed = seed)
         val timeWindow = Instant.now().plusMillis(Duration.ofDays(1).toMillis())
@@ -825,29 +1297,21 @@ class UtxoPersistenceServiceImplTest {
             listOf(jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetadata)).toByteArray()),
             listOf(notaryExampleName.toBytes(), notaryExampleKey.toBytes(), timeWindow.toBytes()),
             listOf("group2_component1".toByteArray()),
-            listOf(
+            outputStates.map {
                 UtxoOutputInfoComponent(
                     null,
                     null,
                     notaryExampleName,
                     notaryExampleKey,
-                    TestContractState1::class.java.name,
-                    "contract tag"
-                ).toBytes(),
-                UtxoOutputInfoComponent(
-                    null,
-                    null,
-                    notaryExampleName,
-                    notaryExampleKey,
-                    TestContractState2::class.java.name,
+                    it::class.java.name,
                     "contract tag"
                 ).toBytes()
-            ),
+            },
             listOf("group4_component1".toByteArray()),
             listOf("group5_component1".toByteArray()),
             inputStateRefs.map { it.toBytes() },
             referenceStateRefs.map { it.toBytes() },
-            defaultVisibleTransactionOutputs.map { it.toBytes() },
+            outputStates.map { it.toBytes() },
             listOf("group9_component1".toByteArray())
 
         )
@@ -855,11 +1319,15 @@ class UtxoPersistenceServiceImplTest {
             componentGroupLists,
             getPrivacySalt()
         )
+
+        return SignedTransactionContainer(wireTransaction, signatures)
+    }
+
+    private fun createSignatures(createdTs: Instant = testClock.instant()): List<DigitalSignatureAndMetadata> {
         val publicKey = KeyPairGenerator.getInstance("EC")
             .apply { initialize(ECGenParameterSpec("secp256r1")) }
             .generateKeyPair().public
-        val signatures = listOf(getSignatureWithMetadataExample(publicKey, createdTs))
-        return SignedTransactionContainer(wireTransaction, signatures)
+        return listOf(getSignatureWithMetadataExample(publicKey, createdTs))
     }
 
     private class TestUtxoTransactionReader(
@@ -943,13 +1411,13 @@ class UtxoPersistenceServiceImplTest {
         }
     }
 
-    class TestContractState1 : ContractState {
+    data class TestContractState1(val value: UUID = UUID.randomUUID()) : ContractState {
         override fun getParticipants(): List<PublicKey> {
             return emptyList()
         }
     }
 
-    class TestContractState2 : ContractState {
+    data class TestContractState2(val value: UUID = UUID.randomUUID()) : ContractState {
         override fun getParticipants(): List<PublicKey> {
             return emptyList()
         }

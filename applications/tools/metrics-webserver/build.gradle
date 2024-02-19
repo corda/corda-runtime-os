@@ -1,0 +1,40 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'org.jetbrains.kotlin.kapt'
+    id 'application'
+}
+
+description 'Simple web server which loads and serves metrics to be consumed by Prometheus'
+
+group 'net.corda.metrics.reader'
+version "$cordaProductVersion"
+
+
+dependencies {
+    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
+
+    implementation libs.javalin
+    constraints {
+        implementation(libs.bundles.jetty) {
+            because 'Javalin uses an older version of Jetty which is exposed to CVE-2023-26048 and CVE-2023-26049. ' +
+                    'This might be resolved in the future versions of Javalin.'
+        }
+    }
+    implementation libs.slf4j.simple
+
+    api "info.picocli:picocli:$picocliVersion"
+}
+
+tasks.named('jar', Jar) {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+
+    from (sourceSets.main.output)
+    from { configurations.runtimeClasspath.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+        manifest {
+        attributes["Main-Class"] = "net.corda.metrics.reader.MetricsReaderAppKt"
+        attributes["Multi-Release"] = true
+    }
+}

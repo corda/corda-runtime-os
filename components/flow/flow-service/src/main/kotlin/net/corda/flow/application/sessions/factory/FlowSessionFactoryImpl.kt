@@ -1,6 +1,6 @@
 package net.corda.flow.application.sessions.factory
 
-import net.corda.flow.application.serialization.SerializationServiceInternal
+import net.corda.flow.application.serialization.FlowSerializationService
 import net.corda.flow.application.sessions.impl.FlowSessionImpl
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.state.impl.FlatSerializableContext
@@ -19,8 +19,8 @@ import java.time.Duration
 class FlowSessionFactoryImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService,
-    @Reference(service = SerializationServiceInternal::class)
-    private val serializationService: SerializationServiceInternal
+    @Reference(service = FlowSerializationService::class)
+    private val serializationService: FlowSerializationService
 ) : FlowSessionFactory {
 
     override fun createInitiatedFlowSession(

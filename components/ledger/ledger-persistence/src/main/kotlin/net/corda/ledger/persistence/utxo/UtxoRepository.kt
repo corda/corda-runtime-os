@@ -56,7 +56,7 @@ interface UtxoRepository {
     fun findTransactionStatus(
         entityManager: EntityManager,
         id: String,
-    ): String?
+    ): Pair<String, Boolean>?
 
     /** Marks visible states of transactions consumed */
     fun markTransactionVisibleStatesConsumed(

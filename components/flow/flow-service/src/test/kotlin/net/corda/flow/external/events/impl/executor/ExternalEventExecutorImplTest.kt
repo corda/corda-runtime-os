@@ -1,26 +1,43 @@
 package net.corda.flow.external.events.impl.executor
 
 import net.corda.data.flow.event.external.ExternalEventResponse
+import net.corda.flow.application.serialization.FlowSerializationService
 import net.corda.flow.application.services.MockFlowFiberService
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.internal.serialization.SerializedBytesImpl
+import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito.mock
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.util.UUID
 import kotlin.test.assertNotEquals
 
 class ExternalEventExecutorImplTest {
     private lateinit var mockFlowFiberService: MockFlowFiberService
+    private lateinit var serializationService: FlowSerializationService
     private lateinit var externalEventExecutorImpl: ExternalEventExecutorImpl
 
     private val capturedArguments = mutableListOf<FlowIORequest.ExternalEvent>()
-    private val mockFactoryClass = mock<ExternalEventFactory<Any,Any,Any>>()::class.java
-    private val mockParams = mutableMapOf("test" to "parameters")
+    private val mockFactoryClass = mock<ExternalEventFactory<Any, Any, Any>>()::class.java
+
+
+    @CordaSerializable
+    data class Mock(val map: Map<String, String>)
+
+    private val mockParams = Mock(mutableMapOf("test" to "parameters"))
+    private val mockHash1 = mock<SecureHash>().apply {
+        whenever(toHexString()).thenReturn("123")
+    }
+    private val mockHash2 = mock<SecureHash>().apply {
+        whenever(toHexString()).thenReturn("456")
+    }
 
     companion object {
         const val testFlowId: String = "static_flow_id"
@@ -38,6 +55,11 @@ class ExternalEventExecutorImplTest {
         mockFlowFiberService = MockFlowFiberService()
         whenever(mockFlowFiberService.flowCheckpoint.flowId).thenReturn(flowId)
         whenever(mockFlowFiberService.flowCheckpoint.suspendCount).thenReturn(suspendCount)
+        serializationService = mock<FlowSerializationService>().apply {
+            whenever(serialize<Any>(anyOrNull())).doAnswer { inv ->
+                SerializedBytesImpl(inv.getArgument<Any>(0).toString().toByteArray())
+            }
+        }
 
         // Capture arguments (ArgumentCaptor doesn't play nice with suspending functions)
         doAnswer { invocation ->
@@ -46,7 +68,7 @@ class ExternalEventExecutorImplTest {
             return@doAnswer mock<ExternalEventResponse>()
         }.`when`(mockFlowFiberService.flowFiber).suspend<ExternalEventResponse>(any())
 
-        externalEventExecutorImpl = ExternalEventExecutorImpl(mockFlowFiberService)
+        externalEventExecutorImpl = ExternalEventExecutorImpl(mockFlowFiberService, serializationService)
     }
 
     @Test
@@ -58,7 +80,7 @@ class ExternalEventExecutorImplTest {
 
         val expectedRequest = FlowIORequest.ExternalEvent(
             // This is hardcoded, but should be deterministic!
-            "26ec4282-eebc-358d-9ac3-6e32ca1b103b",
+            "static_flow_id-Rv/Hk3fgtersGknFrgpJSsMr9kqPU9+RROLZiRTxyqo=-1",
             mockFactoryClass, mockParams, contextProperties
         )
 
@@ -80,12 +102,11 @@ class ExternalEventExecutorImplTest {
     @Test
     fun `Suspending with different parameters produces a different requestID`() {
         externalEventExecutorImpl.execute(mockFactoryClass, mockParams)
-        externalEventExecutorImpl.execute(mockFactoryClass, mockParams + mapOf("additional" to "data"))
+        externalEventExecutorImpl.execute(mockFactoryClass, Mock(mapOf("additional" to "data")))
 
         assertEquals(2, capturedArguments.size)
         assertNotEquals(capturedArguments[0].requestId, capturedArguments[1].requestId)
     }
-
 
     @Test
     fun `Suspending with a different flowId produces a different requestID`() {

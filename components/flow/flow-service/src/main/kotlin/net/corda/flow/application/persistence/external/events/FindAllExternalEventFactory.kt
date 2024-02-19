@@ -8,6 +8,8 @@ import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.persistence.query.OffsetResultSetExecutor
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.utilities.toByteArrays
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Component
 
@@ -32,10 +34,11 @@ class FindAllExternalEventFactory: ExternalEventFactory<FindAllParameters, Entit
 
     override fun resumeWith(checkpoint: FlowCheckpoint, response: EntityResponse): OffsetResultSetExecutor.Results {
         return OffsetResultSetExecutor.Results(
-            serializedResults = response.results,
+            serializedResults = response.results.toByteArrays(),
             numberOfRowsFromQuery = response.metadata.items.single { it.key == "numberOfRowsFromQuery" }.value.toInt()
         )
     }
 }
 
+@CordaSerializable
 data class FindAllParameters(val entityClass: Class<*>, val offset: Int, val limit: Int)

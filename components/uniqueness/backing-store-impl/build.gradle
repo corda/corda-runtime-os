@@ -50,6 +50,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":components:uniqueness:backing-store")
     implementation project(":components:db:db-connection-manager")
+    implementation project(":libs:virtual-node:virtual-node-datamodel")
     implementation project(":libs:metrics")
     implementation project(":libs:uniqueness:common")
     implementation project(":libs:utilities")

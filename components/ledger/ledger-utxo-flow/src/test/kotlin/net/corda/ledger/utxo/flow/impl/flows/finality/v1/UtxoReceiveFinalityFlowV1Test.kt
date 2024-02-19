@@ -11,8 +11,8 @@ import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.testkit.publicKeyExample
-import net.corda.ledger.utxo.data.transaction.FilteredTransactionAndSignatures
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
+import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionAndSignaturesImpl
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
@@ -146,7 +146,7 @@ class UtxoReceiveFinalityFlowV1Test {
         whenever(it.notaryName).thenReturn(notaryX500Name)
     }
 
-    private val filteredTxAndSig = FilteredTransactionAndSignatures(filteredTransaction, listOf(signatureNotary))
+    private val filteredTxAndSig = UtxoFilteredTransactionAndSignaturesImpl(filteredTransaction, listOf(signatureNotary))
     private val filteredTxPayload = listOf(filteredTxAndSig)
     private val finalityPayload = FinalityPayload(signedTransaction, true)
     private val verifyingFinalityPayload = FinalityPayload(signedTransaction, true, filteredTxPayload)
@@ -640,7 +640,7 @@ class UtxoReceiveFinalityFlowV1Test {
             whenever(it.notaryKey).thenReturn(publicKeyAnotherNotary)
             whenever(it.notaryName).thenReturn(notaryX500Name)
         }
-        val filteredTxAndSig = FilteredTransactionAndSignatures(filteredTransaction, listOf(signatureAnotherNotary))
+        val filteredTxAndSig = UtxoFilteredTransactionAndSignaturesImpl(filteredTransaction, listOf(signatureAnotherNotary))
         val filteredTxPayload = listOf(filteredTxAndSig)
         val finalityPayload = FinalityPayload(signedTransaction, true, filteredTxPayload)
 
@@ -697,7 +697,7 @@ class UtxoReceiveFinalityFlowV1Test {
             whenever(it.notaryKey).thenReturn(publicKeyNotary)
             whenever(it.notaryName).thenReturn(notaryX500Name)
         }
-        val filteredTxAndSig = FilteredTransactionAndSignatures(filteredTransaction, listOf(signatureNotary))
+        val filteredTxAndSig = UtxoFilteredTransactionAndSignaturesImpl(filteredTransaction, listOf(signatureNotary))
         val filteredTxPayload = listOf(filteredTxAndSig)
         val finalityPayload = FinalityPayload(signedTransaction, true, filteredTxPayload)
 

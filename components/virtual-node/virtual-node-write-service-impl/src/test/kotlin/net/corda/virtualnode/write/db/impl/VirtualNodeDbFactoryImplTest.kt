@@ -15,6 +15,7 @@ import net.corda.schema.configuration.DatabaseConfig
 import net.corda.schema.configuration.VirtualNodeDatasourceConfig
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeConnectionStrings
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbFactoryImpl
+import org.assertj.core.api.AssertionsForClassTypes.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -151,6 +152,100 @@ class VirtualNodeDbFactoryImplTest {
 
         val uniquenessDdlConfig = dbs[VirtualNodeDbType.UNIQUENESS]?.dbConnections?.get(DbPrivilege.DDL)?.config
         assertNull(uniquenessDdlConfig)
+    }
+
+    @Test
+    @Suppress("MaxLineLength")
+    fun `createVNodeDbs with custom pool config values in external connection strings creates VNode datasource configuration with custom pool values`() {
+        val externalConnectionString = """
+            {"database":{"jdbc":{"url":""},"pass":"","user":"",
+            "pool":{
+            "idleTimeoutSeconds":999,
+            "keepaliveTimeSeconds":999,
+            "maxLifetimeSeconds":999,
+            "max_size":999,
+            "min_size":999,
+            "validationTimeoutSeconds":999
+            }}}
+        """.trimIndent()
+        val request = VirtualNodeConnectionStrings(
+            /* vaultDdlConnection = */
+            externalConnectionString,
+            /* vaultDmlConnection = */
+            externalConnectionString,
+            /* cryptoDdlConnection = */
+            externalConnectionString,
+            /* cryptoDmlConnection = */
+            externalConnectionString,
+            /* uniquenessDdlConnection = */
+            externalConnectionString,
+            /* uniquenessDmlConnection = */
+            externalConnectionString,
+        )
+
+        val dbs = impl.createVNodeDbs(
+            ShortHash.of("1234123412341234"),
+            request,
+        )
+
+        val vaultDdlConfig = dbs[VirtualNodeDbType.VAULT]?.dbConnections?.get(DbPrivilege.DDL)?.config!!
+        assertThat(vaultDdlConfig.getValue(DatabaseConfig.DB_POOL_IDLE_TIMEOUT_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(999))
+        assertThat(vaultDdlConfig.getValue(DatabaseConfig.DB_POOL_KEEPALIVE_TIME_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(999))
+        assertThat(vaultDdlConfig.getValue(DatabaseConfig.DB_POOL_MAX_LIFETIME_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(999))
+        assertThat(vaultDdlConfig.getValue(DatabaseConfig.DB_POOL_MAX_SIZE)).isEqualTo(ConfigValueFactory.fromAnyRef(999))
+        assertThat(vaultDdlConfig.getValue(DatabaseConfig.DB_POOL_MIN_SIZE)).isEqualTo(ConfigValueFactory.fromAnyRef(999))
+        assertThat(vaultDdlConfig.getValue(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(999))
+
+        val vaultDmlConfig = dbs[VirtualNodeDbType.VAULT]?.dbConnections?.get(DbPrivilege.DML)?.config!!
+        assertThat(vaultDmlConfig.getValue(DatabaseConfig.DB_POOL_IDLE_TIMEOUT_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(999))
+        assertThat(vaultDmlConfig.getValue(DatabaseConfig.DB_POOL_KEEPALIVE_TIME_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(999))
+        assertThat(vaultDmlConfig.getValue(DatabaseConfig.DB_POOL_MAX_LIFETIME_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(999))
+        assertThat(vaultDmlConfig.getValue(DatabaseConfig.DB_POOL_MAX_SIZE)).isEqualTo(ConfigValueFactory.fromAnyRef(999))
+        assertThat(vaultDmlConfig.getValue(DatabaseConfig.DB_POOL_MIN_SIZE)).isEqualTo(ConfigValueFactory.fromAnyRef(999))
+        assertThat(vaultDmlConfig.getValue(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(999))
+    }
+
+    @Test
+    @Suppress("MaxLineLength")
+    fun `createVNodeDbs with no pool config values in external connection strings creates VNode datasource configuration with default pool values`() {
+        val externalConnectionString = """
+            {"database":{"jdbc":{"url":""},"pass":"","user":""}}
+        """.trimIndent()
+        val request = VirtualNodeConnectionStrings(
+            /* vaultDdlConnection = */
+            externalConnectionString,
+            /* vaultDmlConnection = */
+            externalConnectionString,
+            /* cryptoDdlConnection = */
+            externalConnectionString,
+            /* cryptoDmlConnection = */
+            externalConnectionString,
+            /* uniquenessDdlConnection = */
+            externalConnectionString,
+            /* uniquenessDmlConnection = */
+            externalConnectionString,
+        )
+
+        val dbs = impl.createVNodeDbs(
+            ShortHash.of("1234123412341234"),
+            request,
+        )
+
+        val vaultDdlConfig = dbs[VirtualNodeDbType.VAULT]?.dbConnections?.get(DbPrivilege.DDL)?.config!!
+        assertThat(vaultDdlConfig.getValue(DatabaseConfig.DB_POOL_IDLE_TIMEOUT_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(120))
+        assertThat(vaultDdlConfig.getValue(DatabaseConfig.DB_POOL_KEEPALIVE_TIME_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(0))
+        assertThat(vaultDdlConfig.getValue(DatabaseConfig.DB_POOL_MAX_LIFETIME_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(1800))
+        assertThat(vaultDdlConfig.getValue(DatabaseConfig.DB_POOL_MAX_SIZE)).isEqualTo(ConfigValueFactory.fromAnyRef(1))
+        assertFalse(vaultDdlConfig.hasPath(DatabaseConfig.DB_POOL_MIN_SIZE))
+        assertThat(vaultDdlConfig.getValue(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(5))
+
+        val vaultDmlConfig = dbs[VirtualNodeDbType.VAULT]?.dbConnections?.get(DbPrivilege.DML)?.config!!
+        assertThat(vaultDmlConfig.getValue(DatabaseConfig.DB_POOL_IDLE_TIMEOUT_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(120))
+        assertThat(vaultDmlConfig.getValue(DatabaseConfig.DB_POOL_KEEPALIVE_TIME_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(0))
+        assertThat(vaultDmlConfig.getValue(DatabaseConfig.DB_POOL_MAX_LIFETIME_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(1800))
+        assertThat(vaultDmlConfig.getValue(DatabaseConfig.DB_POOL_MAX_SIZE)).isEqualTo(ConfigValueFactory.fromAnyRef(10))
+        assertThat(vaultDmlConfig.getValue(DatabaseConfig.DB_POOL_MIN_SIZE)).isEqualTo(ConfigValueFactory.fromAnyRef(0))
+        assertThat(vaultDmlConfig.getValue(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(5))
     }
 
     @Test

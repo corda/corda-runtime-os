@@ -56,9 +56,9 @@ internal class VirtualNodeSchemaHandler(
                         ) ?: throw VirtualNodeDbException("Unable to fetch virtual node info")
 
                         val cpkChangeLogs = getCpkChangeLogs(em, virtualNodeSchemaRequest.cpiChecksum)
-                        val connectionVNodeVault =
-                            dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).connection
-                        buildCpkSqlWithStringWriter(cpkChangeLogs, connectionVNodeVault)
+                        dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).use {
+                            buildCpkSqlWithStringWriter(cpkChangeLogs, it.connection)
+                        }
                     }
                 } else {
                     throw IllegalArgumentException("Illegal argument combination for VirtualNodeSchemaRequest")

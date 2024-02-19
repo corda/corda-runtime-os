@@ -4,6 +4,7 @@ import net.corda.crypto.core.bytes
 import net.corda.data.crypto.SecureHash
 import net.corda.data.ledger.persistence.FindFilteredTransactionsAndSignatures
 import net.corda.flow.external.events.factory.ExternalEventFactory
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.ledger.utxo.StateRef
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -31,6 +32,7 @@ class FindFilteredTransactionsAndSignaturesExternalEventFactory :
     }
 }
 
+@CordaSerializable
 data class FindFilteredTransactionsAndSignaturesParameters(
     val stateRefs: List<StateRef>
 )
