@@ -1,9 +1,11 @@
 package net.corda.libs.statemanager.impl.repository.impl
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.libs.statemanager.api.CompressionType
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
+import net.corda.libs.statemanager.impl.compression.CompressionService
 import net.corda.libs.statemanager.impl.model.v1.resultSetAsStateCollection
 import net.corda.libs.statemanager.impl.repository.StateRepository
 import java.sql.Connection
@@ -13,7 +15,11 @@ import java.time.Instant
 import java.util.Calendar
 import java.util.TimeZone
 
-class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepository {
+class StateRepositoryImpl(
+    private val queryProvider: QueryProvider,
+    private val compressionService: CompressionService,
+    private val compressionType: CompressionType
+) : StateRepository {
 
     private companion object {
         private val objectMapper = ObjectMapper()
@@ -33,7 +39,7 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
             val indices = generateSequence(1) { it + 1 }.iterator()
             states.forEach { state ->
                 statement.setString(indices.next(), state.key)
-                statement.setBytes(indices.next(), state.value)
+                statement.setBytes(indices.next(), compressionService.writeBytes(state.value, compressionType))
                 statement.setInt(indices.next(), state.version)
                 statement.setString(indices.next(), objectMapper.writeValueAsString(state.metadata))
             }
@@ -54,7 +60,7 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
                 it.setString(index + 1, key)
             }
 
-            it.executeQuery().resultSetAsStateCollection(objectMapper)
+            it.executeQuery().resultSetAsStateCollection(objectMapper, compressionService)
         }
     }
 
@@ -65,7 +71,7 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
         connection.prepareStatement(queryProvider.updateStates(states.size)).use { stmt ->
             states.forEach { state ->
                 stmt.setString(indices.next(), state.key)
-                stmt.setBytes(indices.next(), state.value)
+                stmt.setBytes(indices.next(), compressionService.writeBytes(state.value, compressionType))
                 stmt.setString(indices.next(), objectMapper.writeValueAsString(state.metadata))
                 stmt.setInt(indices.next(), state.version)
             }
@@ -109,17 +115,17 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
         connection.prepareStatement(queryProvider.findStatesUpdatedBetween).use {
             it.setTimestamp(1, interval.start)
             it.setTimestamp(2, interval.finish)
-            it.executeQuery().resultSetAsStateCollection(objectMapper)
+            it.executeQuery().resultSetAsStateCollection(objectMapper, compressionService)
         }
 
     override fun filterByAll(connection: Connection, filters: Collection<MetadataFilter>) =
         connection.prepareStatement(queryProvider.findStatesByMetadataMatchingAll(filters)).use {
-            it.executeQuery().resultSetAsStateCollection(objectMapper)
+            it.executeQuery().resultSetAsStateCollection(objectMapper, compressionService)
         }
 
     override fun filterByAny(connection: Connection, filters: Collection<MetadataFilter>) =
         connection.prepareStatement(queryProvider.findStatesByMetadataMatchingAny(filters)).use {
-            it.executeQuery().resultSetAsStateCollection(objectMapper)
+            it.executeQuery().resultSetAsStateCollection(objectMapper, compressionService)
         }
 
     override fun filterByUpdatedBetweenWithMetadataMatchingAll(
@@ -129,7 +135,7 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
     ) = connection.prepareStatement(queryProvider.findStatesUpdatedBetweenWithMetadataMatchingAll(filters)).use {
         it.setTimestamp(1, interval.start)
         it.setTimestamp(2, interval.finish)
-        it.executeQuery().resultSetAsStateCollection(objectMapper)
+        it.executeQuery().resultSetAsStateCollection(objectMapper, compressionService)
     }
 
     override fun filterByUpdatedBetweenWithMetadataMatchingAny(
@@ -139,6 +145,6 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
     ) = connection.prepareStatement(queryProvider.findStatesUpdatedBetweenWithMetadataMatchingAny(filters)).use {
         it.setTimestamp(1, interval.start)
         it.setTimestamp(2, interval.finish)
-        it.executeQuery().resultSetAsStateCollection(objectMapper)
+        it.executeQuery().resultSetAsStateCollection(objectMapper, compressionService)
     }
 }

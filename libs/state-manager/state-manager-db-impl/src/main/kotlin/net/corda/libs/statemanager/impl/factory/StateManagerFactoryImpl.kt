@@ -4,9 +4,11 @@ import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DataSourceFactoryImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.getIntOrDefault
+import net.corda.libs.statemanager.api.CompressionType
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.libs.statemanager.impl.StateManagerImpl
+import net.corda.libs.statemanager.impl.compression.CompressionService
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorderImpl
 import net.corda.libs.statemanager.impl.repository.impl.PostgresQueryProvider
 import net.corda.libs.statemanager.impl.repository.impl.QueryProvider
@@ -25,6 +27,8 @@ import kotlin.concurrent.withLock
 class StateManagerFactoryImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = CompressionService::class)
+    private val compressionService: CompressionService,
 ) : StateManagerFactory {
     private val lock = ReentrantLock()
     private var dataSource: CloseableDataSource? = null
@@ -38,7 +42,7 @@ class StateManagerFactoryImpl @Activate constructor(
         return PostgresQueryProvider()
     }
 
-    override fun create(config: SmartConfig, stateType: StateManagerConfig.StateType): StateManager {
+    override fun create(config: SmartConfig, stateType: StateManagerConfig.StateType, compressionType: CompressionType): StateManager {
         lock.withLock {
             if (dataSource == null) {
                 logger.info("Initializing Shared State Manager DataSource")
@@ -86,7 +90,7 @@ class StateManagerFactoryImpl @Activate constructor(
         return StateManagerImpl(
             lifecycleCoordinatorFactory,
             dataSource!!,
-            StateRepositoryImpl(queryProvider()),
+            StateRepositoryImpl(queryProvider(), compressionService, compressionType),
             MetricsRecorderImpl()
         )
     }
