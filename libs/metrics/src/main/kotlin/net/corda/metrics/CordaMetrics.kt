@@ -642,6 +642,17 @@ object CordaMetrics {
             object ConsumerBatchSize : Metric<DistributionSummary>("consumer.batch.size", Metrics::summary)
 
             /**
+             * The number of states marked as failed to process by the [ConsumerProcessor]
+             */
+            object ConsumerProcessorFailureCount: Metric<Counter>("consumer.processor.failure.count", Metrics::counter)
+
+            /**
+             * The number of states marked as failed to process by the [EventProcessor]
+             */
+            object EventProcessorFailureCount: Metric<Counter>("event.processor.failure.count", Metrics::counter)
+
+
+            /**
              * The time taken to commit a processed batch of messages back to the bus.
              */
             object MessageCommitTime : Metric<Timer>("messaging.commit.time", CordaMetrics::timer)
@@ -707,6 +718,11 @@ object CordaMetrics {
              * Time taken to execute a specific State Manager operation.
              */
             object ExecutionTime : Metric<Timer>("$PREFIX.execution.time", CordaMetrics::timer)
+
+            /**
+             * Record the number of failed creates/updates/deletes that occur in the state manager.
+             */
+            object FailureCount: Metric<Counter>("$PREFIX.failure.count", Metrics::counter)
         }
     }
 

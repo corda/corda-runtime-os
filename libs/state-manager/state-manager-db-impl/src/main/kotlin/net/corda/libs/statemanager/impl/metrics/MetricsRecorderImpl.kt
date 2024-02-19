@@ -12,4 +12,11 @@ class MetricsRecorderImpl : MetricsRecorder {
                 block()
             }!!
     }
+
+    override fun recordFailureCount(operationType: MetricsRecorder.OperationType, count: Int) {
+        CordaMetrics.Metric.StateManger.FailureCount.builder()
+            .withTag(CordaMetrics.Tag.OperationName, operationType.toString())
+            .build()
+            .increment(count.toDouble())
+    }
 }

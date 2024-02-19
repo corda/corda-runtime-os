@@ -20,4 +20,12 @@ class EventMediatorMetrics(
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.EVENT_MEDIATOR_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, mediatorName)
         .build()
+
+    val consumerProcessorFailureCounter = CordaMetrics.Metric.Messaging.ConsumerProcessorFailureCount.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, mediatorName)
+        .build()
+
+    val eventProcessorFailureCounter = CordaMetrics.Metric.Messaging.EventProcessorFailureCount.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, mediatorName)
+        .build()
 }
