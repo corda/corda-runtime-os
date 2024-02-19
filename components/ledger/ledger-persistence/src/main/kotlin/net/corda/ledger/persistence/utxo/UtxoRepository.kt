@@ -74,8 +74,29 @@ interface UtxoRepository {
         account: String,
         timestamp: Instant,
         status: TransactionStatus,
+        metadataHash: String
+    )
+
+    /** Persists unverified transaction (operation is idempotent) */
+    @Suppress("LongParameterList")
+    fun persistUnverifiedTransaction(
+        entityManager: EntityManager,
+        id: String,
+        privacySalt: ByteArray,
+        account: String,
+        timestamp: Instant,
         metadataHash: String,
-        isFiltered: Boolean
+    )
+
+    /** Persists unverified transaction (operation is idempotent) */
+    @Suppress("LongParameterList")
+    fun persistFilteredTransaction(
+        entityManager: EntityManager,
+        id: String,
+        privacySalt: ByteArray,
+        account: String,
+        timestamp: Instant,
+        metadataHash: String,
     )
 
     /** Persists transaction metadata (operation is idempotent) */
