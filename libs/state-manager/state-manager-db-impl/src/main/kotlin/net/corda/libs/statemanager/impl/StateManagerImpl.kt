@@ -58,12 +58,12 @@ class StateManagerImpl(
         var warning = ""
         if (failedByOptimisticLocking.isNotEmpty()) {
             warning += "Optimistic locking prevented updates to the following States: " +
-                    failedByOptimisticLocking.keys.joinToString(postfix = ". ")
+                failedByOptimisticLocking.keys.joinToString(postfix = ". ")
         }
 
         if (failedByNotExisting.isNotEmpty()) {
             warning += "Failed to update the following States because they did not exist or were already deleted: " +
-                    failedByNotExisting.joinToString(postfix = ".")
+                failedByNotExisting.joinToString(postfix = ".")
         }
 
         logger.warn(warning)
@@ -81,7 +81,7 @@ class StateManagerImpl(
         if (duplicateStatesKeys.isNotEmpty()) {
             throw IllegalArgumentException(
                 "Creating multiple states with the same key is not supported," +
-                        " duplicated keys found: $duplicateStatesKeys"
+                    " duplicated keys found: $duplicateStatesKeys"
             )
         }
 
@@ -147,7 +147,7 @@ class StateManagerImpl(
                         if (it.isNotEmpty()) {
                             logger.warn(
                                 "Optimistic locking check failed while deleting States" +
-                                        " ${failedDeletes.joinToString()}"
+                                    " ${failedDeletes.joinToString()}"
                             )
                         }
                     }

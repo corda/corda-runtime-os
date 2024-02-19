@@ -36,9 +36,7 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
         }
     }
 
-    override fun get(connection: Connection, keys: Collection<String>): Collection<
-
-            State> {
+    override fun get(connection: Connection, keys: Collection<String>): Collection<State> {
         if (keys.isEmpty()) return emptySet()
         return connection.prepareStatement(queryProvider.findStatesByKey(keys.size)).use {
             keys.forEachIndexed { index, key ->
