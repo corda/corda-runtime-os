@@ -1255,12 +1255,13 @@ class UtxoPersistenceServiceImplTest {
     @Test
     fun `find a filtered transaction when an unverified transaction and filtered transaction exist for the same id returns the filtered transaction`() {
         val signatures = createSignatures(Instant.now())
-        val signedTransaction = createSignedTransaction(signatures = signatures)
-        val filteredTransaction = createFilteredTransaction(signedTransaction)
+        val outputStates = defaultVisibleTransactionOutputs
+        val signedTransaction = createSignedTransaction(outputStates = outputStates, signatures = signatures)
+        val filteredTransaction = createFilteredTransaction(signedTransaction, indexes = listOf(1))
         val transactionReader = TestUtxoTransactionReader(
             signedTransaction,
             "account",
-            VERIFIED,
+            UNVERIFIED,
             emptyList()
         )
         persistenceService.persistTransaction(transactionReader, emptyMap())
@@ -1269,6 +1270,17 @@ class UtxoPersistenceServiceImplTest {
             .findFilteredTransactions(listOf(signedTransaction.id.toString()))
         assertThat(loadedFilteredTransactions).hasSize(1)
         assertThat(loadedFilteredTransactions[signedTransaction.id]?.first).isEqualTo(filteredTransaction)
+
+        val foundFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl)
+            .findFilteredTransactionsAndSignatures(listOf(StateRef(signedTransaction.id, 0), StateRef(signedTransaction.id, 1)))
+        assertThat(foundFilteredTransactions).containsOnlyKeys(signedTransaction.id)
+        val foundFilteredTransaction = foundFilteredTransactions[signedTransaction.id]?.first
+        val filteredOutputStates = foundFilteredTransaction?.getComponentGroupContent(8)
+        // Check that it only sees what is in the filtered transaction and not the unverified transaction
+        assertThat(foundFilteredTransaction).isEqualTo(filteredTransaction)
+        assertThat(filteredOutputStates).hasSize(1)
+        assertThat(filteredOutputStates?.get(0)?.first).isEqualTo(1)
+        assertThat(filteredOutputStates?.get(0)?.second).isEqualTo(outputStates[1].toBytes())
     }
 
     @Test
@@ -1319,9 +1331,9 @@ class UtxoPersistenceServiceImplTest {
         val foundFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl)
             .findFilteredTransactionsAndSignatures(listOf(StateRef(signedTransaction.id, 0), StateRef(signedTransaction.id, 1)))
         assertThat(foundFilteredTransactions).containsOnlyKeys(signedTransaction.id)
-        val foundSignedTransaction = foundFilteredTransactions[signedTransaction.id]?.first
-        val filteredOutputStates = foundSignedTransaction?.getComponentGroupContent(8)
-        assertThat(foundSignedTransaction).isNotEqualTo(filteredTransaction)
+        val foundFilteredTransaction = foundFilteredTransactions[signedTransaction.id]?.first
+        val filteredOutputStates = foundFilteredTransaction?.getComponentGroupContent(8)
+        assertThat(foundFilteredTransaction).isNotEqualTo(filteredTransaction)
         assertThat(filteredOutputStates).hasSize(2)
         assertThat(filteredOutputStates?.get(0)?.first).isEqualTo(0)
         assertThat(filteredOutputStates?.get(0)?.second).isEqualTo(outputStates[0].toBytes())
@@ -1352,9 +1364,9 @@ class UtxoPersistenceServiceImplTest {
         val foundFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl)
             .findFilteredTransactionsAndSignatures(listOf(StateRef(signedTransaction.id, 0), StateRef(signedTransaction.id, 1)))
         assertThat(foundFilteredTransactions).containsOnlyKeys(signedTransaction.id)
-        val foundSignedTransaction = foundFilteredTransactions[signedTransaction.id]?.first
-        val filteredOutputStates = foundSignedTransaction?.getComponentGroupContent(8)
-        assertThat(foundSignedTransaction).isNotEqualTo(filteredTransaction)
+        val foundFilteredTransaction = foundFilteredTransactions[signedTransaction.id]?.first
+        val filteredOutputStates = foundFilteredTransaction?.getComponentGroupContent(8)
+        assertThat(foundFilteredTransaction).isNotEqualTo(filteredTransaction)
         assertThat(filteredOutputStates).hasSize(2)
         assertThat(filteredOutputStates?.get(0)?.first).isEqualTo(0)
         assertThat(filteredOutputStates?.get(0)?.second).isEqualTo(outputStates[0].toBytes())
