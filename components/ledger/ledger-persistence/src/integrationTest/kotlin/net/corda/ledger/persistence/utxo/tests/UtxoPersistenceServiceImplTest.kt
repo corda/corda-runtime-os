@@ -918,7 +918,7 @@ class UtxoPersistenceServiceImplTest {
         assertThat(loadedFilteredTransactions).hasSize(1)
         assertThat(loadedFilteredTransactions[signedTransaction.id]).isNotNull
 
-        val loadedFilteredTransaction = loadedFilteredTransactions[signedTransaction.id]!!.first!!
+        val loadedFilteredTransaction = loadedFilteredTransactions[signedTransaction.id]?.first!!
         assertThat(loadedFilteredTransaction.filteredComponentGroups).hasSize(4)
         assertThat(loadedFilteredTransaction.filteredComponentGroups.keys).containsOnly(0, 1, 3, 8)
         assertThat(loadedFilteredTransaction.getComponentGroupContent(8)?.get(0)?.second).isEqualTo(outputStates[0].toBytes())
@@ -965,7 +965,7 @@ class UtxoPersistenceServiceImplTest {
         assertThat(loadedFilteredTransactions).hasSize(1)
         assertThat(loadedFilteredTransactions[signedTransaction.id]).isNotNull
 
-        val loadedFilteredTransaction = loadedFilteredTransactions[signedTransaction.id]!!.first!!
+        val loadedFilteredTransaction = loadedFilteredTransactions[signedTransaction.id]?.first!!
         assertThat(loadedFilteredTransaction.filteredComponentGroups).hasSize(4)
         assertThat(loadedFilteredTransaction.filteredComponentGroups.keys).containsOnly(0, 1, 3, 8)
         assertThat(loadedFilteredTransaction.getComponentGroupContent(8)?.get(0)?.second).isEqualTo(outputStates[0].toBytes())
@@ -1109,7 +1109,7 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
-    fun `find a signed transaction after persisting a signed transaction when a filtered transaction existed previously`() {
+    fun `find a signed transaction after persisting a verified signed transaction when a filtered transaction existed previously returns the signed transaction`() {
         val signatures = createSignatures(Instant.now())
         val signedTransaction = createSignedTransaction(signatures = signatures)
         val filteredTransaction = createFilteredTransaction(signedTransaction)
@@ -1126,7 +1126,7 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
-    fun `find a signed transaction after persisting a filtered transaction when a signed transaction existed previously`() {
+    fun `find a signed transaction after persisting a filtered transaction when a verified signed transaction existed previously returns the signed transaction`() {
         val signatures = createSignatures(Instant.now())
         val signedTransaction = createSignedTransaction(signatures = signatures)
         val filteredTransaction = createFilteredTransaction(signedTransaction)
@@ -1143,26 +1143,7 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
-    fun `find a filtered transaction after persisting a signed transaction when a filtered transaction existed previously`() {
-        val signatures = createSignatures(Instant.now())
-        val signedTransaction = createSignedTransaction(signatures = signatures)
-        val filteredTransaction = createFilteredTransaction(signedTransaction)
-        val transactionReader = TestUtxoTransactionReader(
-            signedTransaction,
-            "account",
-            VERIFIED,
-            emptyList()
-        )
-        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
-        persistenceService.persistTransaction(transactionReader, emptyMap())
-        val loadedFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl)
-            .findFilteredTransactions(listOf(signedTransaction.id.toString()))
-        assertThat(loadedFilteredTransactions).hasSize(1)
-        assertThat(loadedFilteredTransactions[signedTransaction.id]!!.first).isEqualTo(filteredTransaction)
-    }
-
-    @Test
-    fun `find a signed transaction when only a filtered transaction exists`() {
+    fun `find a signed transaction when only a filtered transaction exists returns nothing`() {
         val signatures = createSignatures(Instant.now())
         val signedTransaction = createSignedTransaction(signatures = signatures)
         val filteredTransaction = createFilteredTransaction(signedTransaction)
@@ -1171,22 +1152,6 @@ class UtxoPersistenceServiceImplTest {
         assertThat(persistenceService.findSignedTransaction(signedTransaction.id.toString(), UNVERIFIED).first).isNull()
         assertThat(persistenceService.findSignedTransaction(signedTransaction.id.toString(), DRAFT).first).isNull()
         assertThat(persistenceService.findSignedTransaction(signedTransaction.id.toString(), INVALID).first).isNull()
-    }
-
-    @Test
-    fun `find a filtered transaction when only a verified signed transaction exists`() {
-        val signatures = createSignatures(Instant.now())
-        val signedTransaction = createSignedTransaction(signatures = signatures)
-        val transactionReader = TestUtxoTransactionReader(
-            signedTransaction,
-            "account",
-            VERIFIED,
-            emptyList()
-        )
-        persistenceService.persistTransaction(transactionReader, emptyMap())
-        val loadedFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl)
-            .findFilteredTransactions(listOf(signedTransaction.id.toString()))
-        assertThat(loadedFilteredTransactions).isEmpty()
     }
 
     @Test
@@ -1226,7 +1191,69 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
-    fun `find a filtered transaction when an unverified transaction and filtered transaction exist for the same id`() {
+    fun `find a filtered transaction when only a verified signed transaction exists filters the verified transaction`() {
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(signatures = signatures)
+        val filteredTransaction = createFilteredTransaction(signedTransaction)
+        val transactionReader = TestUtxoTransactionReader(
+            signedTransaction,
+            "account",
+            VERIFIED,
+            emptyList()
+        )
+        persistenceService.persistTransaction(transactionReader, emptyMap())
+        val loadedFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl)
+            .findFilteredTransactions(listOf(signedTransaction.id.toString()))
+        assertThat(loadedFilteredTransactions).isEmpty()
+
+        val foundFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl)
+            .findFilteredTransactionsAndSignatures(listOf(StateRef(signedTransaction.id, 0), StateRef(signedTransaction.id, 1)))
+        assertThat(foundFilteredTransactions).containsOnlyKeys(signedTransaction.id)
+        assertThat(foundFilteredTransactions[signedTransaction.id]?.first).isEqualTo(filteredTransaction)
+    }
+
+    @Test
+    fun `find a filtered transaction when only an unverified transaction exists returns nothing`() {
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(signatures = signatures)
+        val transactionReader = TestUtxoTransactionReader(
+            signedTransaction,
+            "account",
+            UNVERIFIED,
+            emptyList()
+        )
+        persistenceService.persistTransaction(transactionReader, emptyMap())
+        val loadedFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl)
+            .findFilteredTransactions(listOf(signedTransaction.id.toString()))
+        assertThat(loadedFilteredTransactions).isEmpty()
+
+        val foundFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl)
+            .findFilteredTransactionsAndSignatures(listOf(StateRef(signedTransaction.id, 0), StateRef(signedTransaction.id, 1)))
+        assertThat(foundFilteredTransactions[signedTransaction.id]).isEqualTo(null to emptyList<DigitalSignatureAndMetadata>())
+    }
+
+    @Test
+    fun `find a filtered transaction when only a draft signed transaction exists returns nothing`() {
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(signatures = signatures)
+        val transactionReader = TestUtxoTransactionReader(
+            signedTransaction,
+            "account",
+            DRAFT,
+            emptyList()
+        )
+        persistenceService.persistTransaction(transactionReader, emptyMap())
+        val loadedFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl)
+            .findFilteredTransactions(listOf(signedTransaction.id.toString()))
+        assertThat(loadedFilteredTransactions).isEmpty()
+
+        val foundFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl)
+            .findFilteredTransactionsAndSignatures(listOf(StateRef(signedTransaction.id, 0), StateRef(signedTransaction.id, 1)))
+        assertThat(foundFilteredTransactions[signedTransaction.id]).isEqualTo(null to emptyList<DigitalSignatureAndMetadata>())
+    }
+
+    @Test
+    fun `find a filtered transaction when an unverified transaction and filtered transaction exist for the same id returns the filtered transaction`() {
         val signatures = createSignatures(Instant.now())
         val signedTransaction = createSignedTransaction(signatures = signatures)
         val filteredTransaction = createFilteredTransaction(signedTransaction)
@@ -1241,7 +1268,65 @@ class UtxoPersistenceServiceImplTest {
         val loadedFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl)
             .findFilteredTransactions(listOf(signedTransaction.id.toString()))
         assertThat(loadedFilteredTransactions).hasSize(1)
-        assertThat(loadedFilteredTransactions[signedTransaction.id]!!.first).isEqualTo(filteredTransaction)
+        assertThat(loadedFilteredTransactions[signedTransaction.id]?.first).isEqualTo(filteredTransaction)
+    }
+
+    @Test
+    fun `find a filtered transaction after persisting a verified signed transaction when a filtered transaction existed previously filters the signed transaction`() {
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(signatures = signatures)
+        val filteredTransaction = createFilteredTransaction(signedTransaction)
+        val transactionReader = TestUtxoTransactionReader(
+            signedTransaction,
+            "account",
+            VERIFIED,
+            emptyList()
+        )
+        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
+        persistenceService.persistTransaction(transactionReader, emptyMap())
+        // Returns the filtered transaction here, which bypasses the signed transaction filtering
+        val loadedFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl)
+            .findFilteredTransactions(listOf(signedTransaction.id.toString()))
+        assertThat(loadedFilteredTransactions).hasSize(1)
+        assertThat(loadedFilteredTransactions[signedTransaction.id]?.first).isEqualTo(filteredTransaction)
+        // Calling [findFilteredTransactionsAndSignatures] does hit the signed transaction filtering
+        val foundFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl)
+            .findFilteredTransactionsAndSignatures(listOf(StateRef(signedTransaction.id, 0), StateRef(signedTransaction.id, 1)))
+        assertThat(foundFilteredTransactions).containsOnlyKeys(signedTransaction.id)
+        assertThat(foundFilteredTransactions[signedTransaction.id]?.first).isEqualTo(filteredTransaction)
+    }
+
+    @Test
+    fun `find a filtered transaction after persisting a verified signed transaction when a filtered transaction with filtered leaves existed previously filters the signed transaction`() {
+        val signatures = createSignatures(Instant.now())
+        val outputStates = defaultVisibleTransactionOutputs
+        val signedTransaction = createSignedTransaction(outputStates = outputStates, signatures = signatures)
+        val filteredTransaction = createFilteredTransaction(signedTransaction, indexes = listOf(1))
+        val transactionReader = TestUtxoTransactionReader(
+            signedTransaction,
+            "account",
+            VERIFIED,
+            emptyList()
+        )
+        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
+        persistenceService.persistTransaction(transactionReader, emptyMap())
+        // Returns the filtered transaction here, which bypasses the signed transaction filtering
+        val loadedFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl)
+            .findFilteredTransactions(listOf(signedTransaction.id.toString()))
+        assertThat(loadedFilteredTransactions).hasSize(1)
+        assertThat(loadedFilteredTransactions[signedTransaction.id]?.first).isEqualTo(filteredTransaction)
+        // Calling [findFilteredTransactionsAndSignatures] does hit the signed transaction filtering
+        val foundFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl)
+            .findFilteredTransactionsAndSignatures(listOf(StateRef(signedTransaction.id, 0), StateRef(signedTransaction.id, 1)))
+        assertThat(foundFilteredTransactions).containsOnlyKeys(signedTransaction.id)
+        val foundSignedTransaction = foundFilteredTransactions[signedTransaction.id]?.first
+        val filteredOutputStates = foundSignedTransaction?.getComponentGroupContent(8)
+        assertThat(foundSignedTransaction).isNotEqualTo(filteredTransaction)
+        assertThat(filteredOutputStates).hasSize(2)
+        assertThat(filteredOutputStates?.get(0)?.first).isEqualTo(0)
+        assertThat(filteredOutputStates?.get(0)?.second).isEqualTo(outputStates[0].toBytes())
+        assertThat(filteredOutputStates?.get(1)?.first).isEqualTo(1)
+        assertThat(filteredOutputStates?.get(1)?.second).isEqualTo(outputStates[1].toBytes())
     }
 
     @Suppress("LongParameterList")
