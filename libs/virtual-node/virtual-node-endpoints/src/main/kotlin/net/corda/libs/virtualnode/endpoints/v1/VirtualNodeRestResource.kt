@@ -38,7 +38,7 @@ interface VirtualNodeRestResource : RestResource {
         title = "Create virtual node",
         description = "This method creates a new virtual node.",
         responseDescription = "The details of the created virtual node.",
-        maxVersion = RestApiVersion.C5_2
+        maxVersion = RestApiVersion.C5_1
     )
     fun createVirtualNodeDeprecated(
         @ClientRequestBodyParameter(description = "Details of the virtual node to be created")
@@ -54,7 +54,7 @@ interface VirtualNodeRestResource : RestResource {
         title = "Create virtual node",
         description = "This method creates a new virtual node.",
         responseDescription = "The details of the created virtual node.",
-        minVersion = RestApiVersion.C5_3
+        minVersion = RestApiVersion.C5_2
     )
     fun createVirtualNode(
         @ClientRequestBodyParameter(description = "Details of the virtual node to be created")
