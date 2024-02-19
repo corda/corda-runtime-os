@@ -1329,6 +1329,39 @@ class UtxoPersistenceServiceImplTest {
         assertThat(filteredOutputStates?.get(1)?.second).isEqualTo(outputStates[1].toBytes())
     }
 
+    @Test
+    fun `find a filtered transaction after persisting a filtered transaction when a verified signed transaction exists filters the signed transaction`() {
+        val signatures = createSignatures(Instant.now())
+        val outputStates = defaultVisibleTransactionOutputs
+        val signedTransaction = createSignedTransaction(outputStates = outputStates, signatures = signatures)
+        val filteredTransaction = createFilteredTransaction(signedTransaction, indexes = listOf(1))
+        val transactionReader = TestUtxoTransactionReader(
+            signedTransaction,
+            "account",
+            VERIFIED,
+            emptyList()
+        )
+        persistenceService.persistTransaction(transactionReader, emptyMap())
+        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
+        // Returns the filtered transaction here, which bypasses the signed transaction filtering
+        val loadedFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl)
+            .findFilteredTransactions(listOf(signedTransaction.id.toString()))
+        assertThat(loadedFilteredTransactions).hasSize(1)
+        assertThat(loadedFilteredTransactions[signedTransaction.id]?.first).isEqualTo(filteredTransaction)
+        // Calling [findFilteredTransactionsAndSignatures] does hit the signed transaction filtering
+        val foundFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl)
+            .findFilteredTransactionsAndSignatures(listOf(StateRef(signedTransaction.id, 0), StateRef(signedTransaction.id, 1)))
+        assertThat(foundFilteredTransactions).containsOnlyKeys(signedTransaction.id)
+        val foundSignedTransaction = foundFilteredTransactions[signedTransaction.id]?.first
+        val filteredOutputStates = foundSignedTransaction?.getComponentGroupContent(8)
+        assertThat(foundSignedTransaction).isNotEqualTo(filteredTransaction)
+        assertThat(filteredOutputStates).hasSize(2)
+        assertThat(filteredOutputStates?.get(0)?.first).isEqualTo(0)
+        assertThat(filteredOutputStates?.get(0)?.second).isEqualTo(outputStates[0].toBytes())
+        assertThat(filteredOutputStates?.get(1)?.first).isEqualTo(1)
+        assertThat(filteredOutputStates?.get(1)?.second).isEqualTo(outputStates[1].toBytes())
+    }
+
     @Suppress("LongParameterList")
     private fun createUtxoTokenMap(
         transactionReader: TestUtxoTransactionReader,
