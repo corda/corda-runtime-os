@@ -309,12 +309,15 @@ object UniquenessAssertions {
      * Gets the error from a result and casts it to a specific uniqueness check error type.
      */
     private inline fun <reified T> getErrorOfType(result: UniquenessCheckResultFailure): T {
-        return assertInstanceOf(T::class.java, result.error) { result.error.toString() }
+        assertInstanceOf(T::class.java, result.error)
+        return result.error as T
     }
 
 
     private inline fun <reified T> getResultOfType(response: UniquenessCheckResponseAvro): T {
-        return assertInstanceOf(T::class.java, response.result) { response.result.toString() }
+        assertInstanceOf(T::class.java, response.result)
+        @Suppress("UNCHECKED_CAST")
+        return response.result as T
     }
 
     private fun assertValidTimestamp(timestamp: Instant, clock: AutoTickTestClock? = null) {
