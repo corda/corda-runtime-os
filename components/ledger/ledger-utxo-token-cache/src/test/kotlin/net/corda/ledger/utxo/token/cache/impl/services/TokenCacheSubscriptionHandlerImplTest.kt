@@ -19,6 +19,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.StateManagerConfig
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -36,7 +37,7 @@ class TokenCacheSubscriptionHandlerImplTest {
     private val toStateManagerConfig: (Map<String, SmartConfig>) -> SmartConfig = { _ -> MINIMUM_SMART_CONFIG }
     private val stateManager = mock<StateManager>()
     private val stateManagerFactory = mock<StateManagerFactory>().apply {
-        whenever(create(any(), eq(StateManagerConfig.StateType.TOKEN_POOL_CACHE))).thenReturn(stateManager)
+        whenever(create(any(), eq(StateManagerConfig.StateType.TOKEN_POOL_CACHE), anyOrNull())).thenReturn(stateManager)
     }
     private val tokenSelectionSyncRPCProcessor = mock<TokenSelectionSyncRPCProcessor>()
     private val tokenCacheEventProcessorFactory = mock<TokenCacheEventProcessorFactory>().apply {
@@ -77,7 +78,7 @@ class TokenCacheSubscriptionHandlerImplTest {
         val stateManagerName = LifecycleCoordinatorName("stateManager")
         val stateManager = mock<StateManager>().apply { whenever(name).thenReturn(stateManagerName) }
 
-        whenever(stateManagerFactory.create(any(), eq(StateManagerConfig.StateType.TOKEN_POOL_CACHE)))
+        whenever(stateManagerFactory.create(any(), eq(StateManagerConfig.StateType.TOKEN_POOL_CACHE), anyOrNull()))
             .thenReturn(stateManager)
 
         context.run {
@@ -102,7 +103,7 @@ class TokenCacheSubscriptionHandlerImplTest {
         val stateManager1 = mock<StateManager>().apply { whenever(name).thenReturn(stateManagerName) }
         val stateManager2 = mock<StateManager>().apply { whenever(name).thenReturn(stateManagerName) }
 
-        whenever(stateManagerFactory.create(any(), eq(StateManagerConfig.StateType.TOKEN_POOL_CACHE)))
+        whenever(stateManagerFactory.create(any(), eq(StateManagerConfig.StateType.TOKEN_POOL_CACHE), anyOrNull()))
             .thenReturn(stateManager1, stateManager2)
 
         context.run {
