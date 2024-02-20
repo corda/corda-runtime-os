@@ -5,7 +5,7 @@
 NAMESPACE_PREFIX="${USER//./}"
 
 # Chart and Docker Image versions to deploy
-CORDA_CHART_VERSION="^5.2.0-beta"
+CORDA_CHART_VERSION="^5.3.0-beta"
 REPO_TOP_LEVEL_DIR=$(cd "$SCRIPT_DIR"; git rev-parse --show-toplevel)
 CORDA_VERSION="$(cat $REPO_TOP_LEVEL_DIR/gradle.properties | grep cordaProductVersion | awk -F= '{print $2}' | xargs).0"
 if [ -z $DOCKER_IMAGE_VERSION ]; then
