@@ -3,7 +3,9 @@ package net.corda.flow.maintenance
 import net.corda.data.flow.FlowTimeout
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.scheduler.ScheduledTaskTrigger
+import net.corda.flow.state.impl.CheckpointMetadataKeys.STATE_META_SESSION_EXPIRY_KEY
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.STATE_TYPE
@@ -18,6 +20,7 @@ import net.corda.schema.configuration.FlowConfig.SESSION_TIMEOUT_WINDOW
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.time.Instant
+import kotlin.time.Duration.Companion.days
 
 /**
  * Automatically scheduled by Corda for cleaning up timed out flows.
@@ -50,31 +53,35 @@ class FlowTimeoutTaskProcessor(
                 "there are no flaws in the Corda Application"
     }
 
+    init {
+        println(config.getLong(PROCESSING_MAX_IDLE_TIME))
+    }
+
     override val keyClass = String::class.java
     override val valueClass = ScheduledTaskTrigger::class.java
-    private val maxIdleTimeMilliseconds = config.getLong(PROCESSING_MAX_IDLE_TIME)
+    private val maxIdleTimeMilliseconds = 1.days.inWholeMilliseconds
 
-    private fun idleTimeOutExpired() = emptyList<Record<String, FlowTimeout>>()
-//        // Flows that have not been updated in at least [maxIdleTimeMilliseconds]
-//        stateManager.findUpdatedBetweenWithMetadataMatchingAll(
-//            IntervalFilter(
-//                Instant.EPOCH,
-//                now().minusMillis(maxIdleTimeMilliseconds)
-//            ),
-//            listOf(
-//                MetadataFilter(STATE_TYPE, Operation.Equals, Checkpoint::class.java.name),
-//            )
-//        ).map { kvp ->
-//            Record(
-//                FLOW_TIMEOUT_TOPIC,
-//                kvp.key,
-//                FlowTimeout().apply {
-//                    timeoutDateTime = now()
-//                    checkpointStateKey = kvp.value.key
-//                    reason = MAX_IDLE_TIME_ERROR_MESSAGE
-//                }
-//            )
-//        }
+    private fun idleTimeOutExpired() =
+        // Flows that have not been updated in at least [maxIdleTimeMilliseconds]
+        stateManager.findUpdatedBetweenWithMetadataMatchingAll(
+            IntervalFilter(
+                Instant.EPOCH,
+                now().minusMillis(maxIdleTimeMilliseconds)
+            ),
+            listOf(
+                MetadataFilter(STATE_TYPE, Operation.Equals, Checkpoint::class.java.name),
+            )
+        ).map { kvp ->
+            Record(
+                FLOW_TIMEOUT_TOPIC,
+                kvp.key,
+                FlowTimeout().apply {
+                    timeoutDateTime = now()
+                    checkpointStateKey = kvp.value.key
+                    reason = MAX_IDLE_TIME_ERROR_MESSAGE
+                }
+            )
+        }
 
     private fun sessionExpiredOrFailureSignaledByMessagingLayer() =
         // Flows timed out by the messaging layer + sessions timed out
@@ -82,8 +89,8 @@ class FlowTimeoutTaskProcessor(
             listOf(
                 // Failure or time out signaled by the messaging layer
                 MetadataFilter(PROCESSING_FAILURE, Operation.Equals, true),
-//                // Session expired
-//                MetadataFilter(STATE_META_SESSION_EXPIRY_KEY, Operation.LesserThan, now().epochSecond),
+                // Session expired
+                MetadataFilter(STATE_META_SESSION_EXPIRY_KEY, Operation.LesserThan, now().epochSecond),
             )
         ).filter {
             it.value.metadata.containsKeyWithValue(STATE_TYPE, Checkpoint::class.java.name)
