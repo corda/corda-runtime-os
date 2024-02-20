@@ -484,13 +484,13 @@ internal class VirtualNodeRestResourceImpl(
      */
     @Deprecated("Deprecated in favour of `createVirtualNode()`")
     override fun createVirtualNodeDeprecated(request: CreateVirtualNodeRequest): ResponseEntity<AsyncResponse> {
-        val groupId = virtualNodeValidationService.validateAndGetGroupIdDeprecated(request)
+        val groupId = virtualNodeValidationService.validateAndGetGroupId(request)
 
-        val holdingIdentity = requestFactory.createHoldingIdentityDeprecated(groupId, request)
+        val holdingIdentity = requestFactory.createHoldingIdentity(groupId, request)
 
         virtualNodeValidationService.validateVirtualNodeDoesNotExist(holdingIdentity)
 
-        val asyncRequest = requestFactory.createVirtualNodeRequestDeprecated(holdingIdentity, request)
+        val asyncRequest = requestFactory.createVirtualNodeRequest(holdingIdentity, request)
 
         sendAsync(asyncRequest.requestId, asyncRequest)
 
@@ -509,7 +509,7 @@ internal class VirtualNodeRestResourceImpl(
     /**
      * Publishes a virtual node create request onto the message bus.
      *
-     * @property CreateVirtualNodeRequest contains the data we want to use to construct our virtual node
+     * @property JsonCreateVirtualNodeRequest contains the data we want to use to construct our virtual node as a JSON object
      * @throws InvalidInputDataException if the request in invalid.
      * @throws InternalServerException if the requested CPI has invalid metadata.
      * @throws ServiceUnavailableException is thrown if the component isn't running.

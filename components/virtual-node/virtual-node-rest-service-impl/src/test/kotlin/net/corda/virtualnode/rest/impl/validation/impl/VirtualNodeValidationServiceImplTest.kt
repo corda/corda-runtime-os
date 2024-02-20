@@ -25,7 +25,7 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 
 class VirtualNodeValidationServiceImplTest {
     private val now = Instant.now()

@@ -8,7 +8,7 @@ import net.corda.virtualnode.VirtualNodeInfo
 
 internal interface VirtualNodeValidationService {
     fun validateVirtualNodeDoesNotExist(holdingIdentity: HoldingIdentity)
-    fun validateAndGetGroupIdDeprecated(request: CreateVirtualNodeRequest): String
+    fun validateAndGetGroupId(request: CreateVirtualNodeRequest): String
     fun validateAndGetGroupId(request: JsonCreateVirtualNodeRequest): String
     fun validateAndGetVirtualNode(virtualNodeShortId: String): VirtualNodeInfo
     fun validateAndGetCpiByChecksum(cpiFileChecksum: String): CpiMetadata

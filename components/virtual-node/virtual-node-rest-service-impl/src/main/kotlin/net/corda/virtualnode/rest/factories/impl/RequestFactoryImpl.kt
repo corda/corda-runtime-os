@@ -18,7 +18,7 @@ internal class RequestFactoryImpl(
     private val restContextProvider: RestContextProvider,
     private val clock: Clock
 ) : RequestFactory {
-    override fun createHoldingIdentityDeprecated(groupId: String, request: CreateVirtualNodeRequest): HoldingIdentity {
+    override fun createHoldingIdentity(groupId: String, request: CreateVirtualNodeRequest): HoldingIdentity {
         return HoldingIdentity(MemberX500Name.parse(request.x500Name), groupId)
     }
 
@@ -26,7 +26,7 @@ internal class RequestFactoryImpl(
         return HoldingIdentity(MemberX500Name.parse(request.x500Name), groupId)
     }
 
-    override fun createVirtualNodeRequestDeprecated(
+    override fun createVirtualNodeRequest(
         holdingIdentity: HoldingIdentity,
         request: CreateVirtualNodeRequest
     ): VirtualNodeAsynchronousRequest {

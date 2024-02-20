@@ -20,7 +20,7 @@ import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.rest.impl.validation.VirtualNodeValidationService
-import java.util.*
+import java.util.UUID
 
 internal class VirtualNodeValidationServiceImpl(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
@@ -35,7 +35,7 @@ internal class VirtualNodeValidationServiceImpl(
         }
     }
 
-    override fun validateAndGetGroupIdDeprecated(request: CreateVirtualNodeRequest): String {
+    override fun validateAndGetGroupId(request: CreateVirtualNodeRequest): String {
         try {
             MemberX500Name.parse(request.x500Name)
         } catch (e: Exception) {
