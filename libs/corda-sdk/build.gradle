@@ -1,4 +1,5 @@
 plugins {
+    id 'org.jetbrains.kotlin.jvm'
     id 'corda.common-publishing'
     id 'corda.common-library'
 }
@@ -7,10 +8,12 @@ description 'Corda SDK'
 
 ext {
     cordaEnableFormatting = true
-    releasable = true
+    releasable = false
 }
 
 dependencies {
-
+    implementation libs.jackson.module.kotlin
+    implementation libs.kotlin.stdlib
+    testImplementation libs.bundles.test
 }
 
