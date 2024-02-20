@@ -41,6 +41,7 @@ import net.corda.membership.client.CouldNotFindEntityException
 import net.corda.membership.client.Entity
 import net.corda.membership.client.MGMResourceClient
 import net.corda.membership.client.MemberNotAnMgmException
+import net.corda.membership.client.ServiceNotReadyException
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARIES_KEY
@@ -69,6 +70,7 @@ import net.corda.schema.Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.utilities.Either
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.debug
 import net.corda.utilities.seconds
@@ -130,7 +132,7 @@ class MGMResourceClientImpl @Activate constructor(
             {
                 logger.error("Failed to deserialize key value pair list.")
             },
-            KeyValuePairList::class.java
+            KeyValuePairList::class.java,
         )
     }
 
@@ -152,20 +154,20 @@ class MGMResourceClientImpl @Activate constructor(
             holdingIdentityShortHash: ShortHash,
             ownerX500Name: MemberX500Name,
             ttl: Instant?,
-            remarks: String?
+            remarks: String?,
         ): PreAuthToken
 
         fun getPreAuthTokens(
             holdingIdentityShortHash: ShortHash,
             ownerX500Name: MemberX500Name?,
             preAuthTokenId: UUID?,
-            viewInactive: Boolean
+            viewInactive: Boolean,
         ): Collection<PreAuthToken>
 
         fun revokePreAuthToken(holdingIdentityShortHash: ShortHash, preAuthTokenId: UUID, remarks: String? = null): PreAuthToken
         fun addApprovalRule(
             holdingIdentityShortHash: ShortHash,
-            ruleParams: ApprovalRuleParams
+            ruleParams: ApprovalRuleParams,
         ): ApprovalRuleDetails
 
         fun getApprovalRules(holdingIdentityShortHash: ShortHash, ruleType: ApprovalRuleType): Collection<ApprovalRuleDetails>
@@ -194,19 +196,19 @@ class MGMResourceClientImpl @Activate constructor(
             holdingIdentityShortHash: ShortHash,
             memberX500Name: MemberX500Name,
             serialNumber: Long?,
-            reason: String?
+            reason: String?,
         )
 
         fun activateMember(
             holdingIdentityShortHash: ShortHash,
             memberX500Name: MemberX500Name,
             serialNumber: Long?,
-            reason: String?
+            reason: String?,
         )
 
         fun updateGroupParameters(
             holdingIdentityShortHash: ShortHash,
-            newGroupParameters: Map<String, String>
+            newGroupParameters: Map<String, String>,
         ): InternalGroupParameters
     }
 
@@ -245,7 +247,7 @@ class MGMResourceClientImpl @Activate constructor(
     )
 
     override fun mutualTlsListClientCertificate(
-        holdingIdentityShortHash: ShortHash
+        holdingIdentityShortHash: ShortHash,
     ) = impl.mutualTlsListClientCertificate(
         holdingIdentityShortHash,
     )
@@ -254,14 +256,14 @@ class MGMResourceClientImpl @Activate constructor(
         holdingIdentityShortHash: ShortHash,
         ownerX500Name: MemberX500Name,
         ttl: Instant?,
-        remarks: String?
+        remarks: String?,
     ) = impl.generatePreAuthToken(holdingIdentityShortHash, ownerX500Name, ttl, remarks)
 
     override fun getPreAuthTokens(
         holdingIdentityShortHash: ShortHash,
         ownerX500Name: MemberX500Name?,
         preAuthTokenId: UUID?,
-        viewInactive: Boolean
+        viewInactive: Boolean,
     ) = impl.getPreAuthTokens(holdingIdentityShortHash, ownerX500Name, preAuthTokenId, viewInactive)
 
     override fun revokePreAuthToken(holdingIdentityShortHash: ShortHash, preAuthTokenId: UUID, remarks: String?) =
@@ -269,7 +271,7 @@ class MGMResourceClientImpl @Activate constructor(
 
     override fun addApprovalRule(
         holdingIdentityShortHash: ShortHash,
-        ruleParams: ApprovalRuleParams
+        ruleParams: ApprovalRuleParams,
     ) = impl.addApprovalRule(holdingIdentityShortHash, ruleParams)
 
     override fun getApprovalRules(holdingIdentityShortHash: ShortHash, ruleType: ApprovalRuleType) =
@@ -281,14 +283,14 @@ class MGMResourceClientImpl @Activate constructor(
     override fun viewRegistrationRequests(
         holdingIdentityShortHash: ShortHash,
         requestSubjectX500Name: MemberX500Name?,
-        viewHistoric: Boolean
+        viewHistoric: Boolean,
     ) = impl.viewRegistrationRequests(holdingIdentityShortHash, requestSubjectX500Name, viewHistoric)
 
     override fun reviewRegistrationRequest(
         holdingIdentityShortHash: ShortHash,
         requestId: UUID,
         approve: Boolean,
-        reason: String?
+        reason: String?,
     ) = impl.reviewRegistrationRequest(holdingIdentityShortHash, requestId, approve, reason)
 
     override fun forceDeclineRegistrationRequest(holdingIdentityShortHash: ShortHash, requestId: UUID) =
@@ -298,19 +300,19 @@ class MGMResourceClientImpl @Activate constructor(
         holdingIdentityShortHash: ShortHash,
         memberX500Name: MemberX500Name,
         serialNumber: Long?,
-        reason: String?
+        reason: String?,
     ) = impl.suspendMember(holdingIdentityShortHash, memberX500Name, serialNumber, reason)
 
     override fun activateMember(
         holdingIdentityShortHash: ShortHash,
         memberX500Name: MemberX500Name,
         serialNumber: Long?,
-        reason: String?
+        reason: String?,
     ) = impl.activateMember(holdingIdentityShortHash, memberX500Name, serialNumber, reason)
 
     override fun updateGroupParameters(
         holdingIdentityShortHash: ShortHash,
-        newGroupParameters: Map<String, String>
+        newGroupParameters: Map<String, String>,
     ) = impl.updateGroupParameters(holdingIdentityShortHash, newGroupParameters)
 
     private fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -324,7 +326,7 @@ class MGMResourceClientImpl @Activate constructor(
                             LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
                             LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
                             LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
-                        )
+                        ),
                     )
                 }
             }
@@ -334,7 +336,7 @@ class MGMResourceClientImpl @Activate constructor(
                         FOLLOW_CHANGES_RESOURCE_NAME,
                         WAIT_FOR_CONFIG_RESOURCE_NAME,
                         PUBLISHER_RESOURCE_NAME,
-                    )
+                    ),
                 )
                 deactivate("Handling the stop event for component.")
             }
@@ -344,7 +346,7 @@ class MGMResourceClientImpl @Activate constructor(
                         coordinator.createManagedResource(WAIT_FOR_CONFIG_RESOURCE_NAME) {
                             configurationReadService.registerComponentForUpdates(
                                 coordinator,
-                                setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG)
+                                setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG),
                             )
                         }
                     }
@@ -352,7 +354,7 @@ class MGMResourceClientImpl @Activate constructor(
                         coordinator.closeManagedResources(
                             setOf(
                                 WAIT_FOR_CONFIG_RESOURCE_NAME,
-                            )
+                            ),
                         )
                         deactivate("Service dependencies have changed status causing this component to deactivate.")
                     }
@@ -367,17 +369,17 @@ class MGMResourceClientImpl @Activate constructor(
                             clientName = CLIENT_ID,
                             requestTopic = Schemas.Membership.MEMBERSHIP_RPC_TOPIC,
                             requestType = MembershipRpcRequest::class.java,
-                            responseType = MembershipRpcResponse::class.java
+                            responseType = MembershipRpcResponse::class.java,
                         ),
-                        event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
+                        event.config.getConfig(ConfigKeys.MESSAGING_CONFIG),
                     ).also {
                         it.start()
-                    }
+                    },
                 )
                 coordinator.createManagedResource(PUBLISHER_RESOURCE_NAME) {
                     publisherFactory.createPublisher(
                         messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG),
-                        publisherConfig = PublisherConfig(CLIENT_ID)
+                        publisherConfig = PublisherConfig(CLIENT_ID),
                     ).also {
                         it.start()
                     }
@@ -400,7 +402,7 @@ class MGMResourceClientImpl @Activate constructor(
 
         override fun addApprovalRule(
             holdingIdentityShortHash: ShortHash,
-            ruleParams: ApprovalRuleParams
+            ruleParams: ApprovalRuleParams,
         ) = throw IllegalStateException(ERROR_MSG)
 
         override fun getApprovalRules(holdingIdentityShortHash: ShortHash, ruleType: ApprovalRuleType) =
@@ -412,38 +414,38 @@ class MGMResourceClientImpl @Activate constructor(
         override fun viewRegistrationRequests(
             holdingIdentityShortHash: ShortHash,
             requestSubjectX500Name: MemberX500Name?,
-            viewHistoric: Boolean
+            viewHistoric: Boolean,
         ) = throw IllegalStateException(ERROR_MSG)
 
         override fun reviewRegistrationRequest(
             holdingIdentityShortHash: ShortHash,
             requestId: UUID,
             approve: Boolean,
-            reason: String?
+            reason: String?,
         ) = throw IllegalStateException(ERROR_MSG)
 
         override fun forceDeclineRegistrationRequest(
             holdingIdentityShortHash: ShortHash,
-            requestId: UUID
+            requestId: UUID,
         ) = throw IllegalStateException(ERROR_MSG)
 
         override fun suspendMember(
             holdingIdentityShortHash: ShortHash,
             memberX500Name: MemberX500Name,
             serialNumber: Long?,
-            reason: String?
+            reason: String?,
         ) = throw IllegalStateException(ERROR_MSG)
 
         override fun activateMember(
             holdingIdentityShortHash: ShortHash,
             memberX500Name: MemberX500Name,
             serialNumber: Long?,
-            reason: String?
+            reason: String?,
         ) = throw IllegalStateException(ERROR_MSG)
 
         override fun updateGroupParameters(
             holdingIdentityShortHash: ShortHash,
-            newGroupParameters: Map<String, String>
+            newGroupParameters: Map<String, String>,
         ) = throw IllegalStateException(ERROR_MSG)
 
         override fun mutualTlsAllowClientCertificate(
@@ -464,14 +466,14 @@ class MGMResourceClientImpl @Activate constructor(
             holdingIdentityShortHash: ShortHash,
             ownerX500Name: MemberX500Name,
             ttl: Instant?,
-            remarks: String?
+            remarks: String?,
         ) = throw IllegalStateException(ERROR_MSG)
 
         override fun getPreAuthTokens(
             holdingIdentityShortHash: ShortHash,
             ownerX500Name: MemberX500Name?,
             preAuthTokenId: UUID?,
-            viewInactive: Boolean
+            viewInactive: Boolean,
         ) = throw IllegalStateException(ERROR_MSG)
 
         override fun revokePreAuthToken(holdingIdentityShortHash: ShortHash, preAuthTokenId: UUID, remarks: String?) =
@@ -481,7 +483,7 @@ class MGMResourceClientImpl @Activate constructor(
     }
 
     private inner class ActiveImpl(
-        val rpcSender: RPCSender<MembershipRpcRequest, MembershipRpcResponse>
+        val rpcSender: RPCSender<MembershipRpcRequest, MembershipRpcResponse>,
     ) : InnerMGMResourceClient {
         @Suppress("ThrowsCount")
         fun mgmHoldingIdentity(holdingIdentityShortHash: ShortHash): HoldingIdentity {
@@ -506,9 +508,9 @@ class MGMResourceClientImpl @Activate constructor(
             val request = MembershipRpcRequest(
                 MembershipRpcRequestContext(
                     UUID.randomUUID().toString(),
-                    clock.instant()
+                    clock.instant(),
                 ),
-                MGMGroupPolicyRequest(holdingIdentityShortHash.toString())
+                MGMGroupPolicyRequest(holdingIdentityShortHash.toString()),
             )
 
             return generateGroupPolicyResponse(request.sendRequest())
@@ -546,7 +548,7 @@ class MGMResourceClientImpl @Activate constructor(
             holdingIdentityShortHash: ShortHash,
             ownerX500Name: MemberX500Name,
             ttl: Instant?,
-            remarks: String?
+            remarks: String?,
         ): PreAuthToken {
             val mgmHoldingIdentity = mgmHoldingIdentity(holdingIdentityShortHash)
             val tokenId = UUID.randomUUID()
@@ -559,14 +561,14 @@ class MGMResourceClientImpl @Activate constructor(
             holdingIdentityShortHash: ShortHash,
             ownerX500Name: MemberX500Name?,
             preAuthTokenId: UUID?,
-            viewInactive: Boolean
+            viewInactive: Boolean,
         ): Collection<PreAuthToken> {
             val mgmHoldingIdentity = mgmHoldingIdentity(holdingIdentityShortHash)
             return membershipQueryClient.queryPreAuthTokens(
                 mgmHoldingIdentity,
                 ownerX500Name,
                 preAuthTokenId,
-                viewInactive
+                viewInactive,
             ).getOrThrow()
         }
 
@@ -577,33 +579,33 @@ class MGMResourceClientImpl @Activate constructor(
 
         override fun addApprovalRule(
             holdingIdentityShortHash: ShortHash,
-            ruleParams: ApprovalRuleParams
+            ruleParams: ApprovalRuleParams,
         ): ApprovalRuleDetails =
             membershipPersistenceClient.addApprovalRule(
                 mgmHoldingIdentity(holdingIdentityShortHash),
-                ruleParams
+                ruleParams,
             ).getOrThrow()
 
         override fun getApprovalRules(
             holdingIdentityShortHash: ShortHash,
-            ruleType: ApprovalRuleType
+            ruleType: ApprovalRuleType,
         ): Collection<ApprovalRuleDetails> =
             membershipQueryClient.getApprovalRules(
                 mgmHoldingIdentity(holdingIdentityShortHash),
-                ruleType
+                ruleType,
             ).getOrThrow()
 
         override fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String, ruleType: ApprovalRuleType) =
             membershipPersistenceClient.deleteApprovalRule(
                 mgmHoldingIdentity(holdingIdentityShortHash),
                 ruleId,
-                ruleType
+                ruleType,
             ).getOrThrow()
 
         override fun viewRegistrationRequests(
             holdingIdentityShortHash: ShortHash,
             requestSubjectX500Name: MemberX500Name?,
-            viewHistoric: Boolean
+            viewHistoric: Boolean,
         ): Collection<RegistrationRequestDetails> {
             val statuses = if (viewHistoric) {
                 listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL, RegistrationStatus.APPROVED, RegistrationStatus.DECLINED)
@@ -621,13 +623,13 @@ class MGMResourceClientImpl @Activate constructor(
             holdingIdentityShortHash: ShortHash,
             requestId: UUID,
             approve: Boolean,
-            reason: String?
+            reason: String?,
         ) {
             val mgm = mgmHoldingIdentity(holdingIdentityShortHash)
             val requestStatus =
                 membershipQueryClient.queryRegistrationRequest(mgm, requestId.toString()).getOrThrow()
                     ?: throw IllegalArgumentException(
-                        "No request with registration request ID '$requestId' was found."
+                        "No request with registration request ID '$requestId' was found.",
                     )
             require(requestStatus.registrationStatus == RegistrationStatus.PENDING_MANUAL_APPROVAL) {
                 "Registration request must be in ${RegistrationStatus.PENDING_MANUAL_APPROVAL} status to perform this action."
@@ -639,10 +641,10 @@ class MGMResourceClientImpl @Activate constructor(
                 publishRegistrationCommand(
                     DeclineRegistration(
                         reason ?: "",
-                        DECLINED_REASON_FOR_USER_GENERAL_MANUAL_DECLINED
+                        DECLINED_REASON_FOR_USER_GENERAL_MANUAL_DECLINED,
                     ),
                     memberName,
-                    mgm.groupId
+                    mgm.groupId,
                 )
             }
         }
@@ -650,7 +652,8 @@ class MGMResourceClientImpl @Activate constructor(
         override fun forceDeclineRegistrationRequest(holdingIdentityShortHash: ShortHash, requestId: UUID) {
             val mgm = mgmHoldingIdentity(holdingIdentityShortHash)
             val requestStatus = membershipQueryClient.queryRegistrationRequest(
-                mgm, requestId.toString()
+                mgm,
+                requestId.toString(),
             ).getOrThrow()
                 ?: throw IllegalArgumentException("No request with registration request ID '$requestId' was found.")
 
@@ -664,7 +667,7 @@ class MGMResourceClientImpl @Activate constructor(
             publishRegistrationCommand(
                 DeclineRegistration(FORCE_DECLINE_MESSAGE, DECLINED_REASON_FOR_USER_GENERAL_MANUAL_DECLINED),
                 findMemberName(requestStatus.memberProvidedContext),
-                mgm.groupId
+                mgm.groupId,
             )
         }
 
@@ -672,14 +675,14 @@ class MGMResourceClientImpl @Activate constructor(
             holdingIdentityShortHash: ShortHash,
             memberX500Name: MemberX500Name,
             serialNumber: Long?,
-            reason: String?
+            reason: String?,
         ) {
             val (mgm, memberShortHash) = validateSuspensionActivationRequest(holdingIdentityShortHash, memberX500Name)
             val (updatedMemberInfo, updatedGroupParameters) = membershipPersistenceClient.suspendMember(
                 mgm,
                 memberX500Name,
                 serialNumber,
-                reason
+                reason,
             ).getOrThrow()
             publishSuspensionActivationRecords(
                 updatedMemberInfo,
@@ -687,7 +690,7 @@ class MGMResourceClientImpl @Activate constructor(
                 memberX500Name,
                 memberShortHash,
                 mgm,
-                holdingIdentityShortHash.value
+                holdingIdentityShortHash.value,
             )
         }
 
@@ -695,14 +698,14 @@ class MGMResourceClientImpl @Activate constructor(
             holdingIdentityShortHash: ShortHash,
             memberX500Name: MemberX500Name,
             serialNumber: Long?,
-            reason: String?
+            reason: String?,
         ) {
             val (mgm, memberShortHash) = validateSuspensionActivationRequest(holdingIdentityShortHash, memberX500Name)
             val (updatedMemberInfo, updatedGroupParameters) = membershipPersistenceClient.activateMember(
                 mgm,
                 memberX500Name,
                 serialNumber,
-                reason
+                reason,
             ).getOrThrow()
             publishSuspensionActivationRecords(
                 updatedMemberInfo,
@@ -710,13 +713,13 @@ class MGMResourceClientImpl @Activate constructor(
                 memberX500Name,
                 memberShortHash,
                 mgm,
-                holdingIdentityShortHash.value
+                holdingIdentityShortHash.value,
             )
         }
 
         override fun updateGroupParameters(
             holdingIdentityShortHash: ShortHash,
-            newGroupParameters: Map<String, String>
+            newGroupParameters: Map<String, String>,
         ): InternalGroupParameters {
             val mgm = mgmHoldingIdentity(holdingIdentityShortHash)
 
@@ -727,7 +730,7 @@ class MGMResourceClientImpl @Activate constructor(
                 if (newGroupParameters == changeableParameters) {
                     logger.info(
                         "Nothing to persist - submitted group parameters are identical to the existing group " +
-                            "parameters."
+                            "parameters.",
                     )
                     return current
                 }
@@ -735,7 +738,7 @@ class MGMResourceClientImpl @Activate constructor(
 
             val updatedParameters = membershipPersistenceClient.updateGroupParameters(
                 mgm,
-                newGroupParameters
+                newGroupParameters,
             ).getOrThrow()
 
             createDistributionRequest(mgm, updatedParameters.epoch)
@@ -753,7 +756,7 @@ class MGMResourceClientImpl @Activate constructor(
                 DistributeGroupParameters(
                     mgm.toAvro(),
                     epoch,
-                )
+                ),
             )
             coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)?.apply {
                 publish(
@@ -761,16 +764,16 @@ class MGMResourceClientImpl @Activate constructor(
                         Record(
                             topic = MEMBERSHIP_ACTIONS_TOPIC,
                             key = "${mgm.x500Name}-${mgm.groupId}",
-                            value = distributionRequest
-                        )
-                    )
+                            value = distributionRequest,
+                        ),
+                    ),
                 ).forEach { it.join() }
             }
         }
 
         private fun validateSuspensionActivationRequest(
             holdingIdentityShortHash: ShortHash,
-            memberX500Name: MemberX500Name
+            memberX500Name: MemberX500Name,
         ): Pair<HoldingIdentity, String> {
             val mgm = mgmHoldingIdentity(holdingIdentityShortHash)
             val memberShortHash = membershipGroupReaderProvider.getGroupReader(mgm)
@@ -800,8 +803,8 @@ class MGMResourceClientImpl @Activate constructor(
                     Record(
                         GROUP_PARAMETERS_TOPIC,
                         mgmHoldingIdentity.shortHash.toString(),
-                        it.toPersistentGroupParameters(mgmHoldingIdentity, keyEncodingService)
-                    )
+                        it.toPersistentGroupParameters(mgmHoldingIdentity, keyEncodingService),
+                    ),
                 )
             } ?: emptyList()
             val distributionRequest = MembershipActionsRequest(
@@ -809,8 +812,8 @@ class MGMResourceClientImpl @Activate constructor(
                     mgmHoldingIdentity.toAvro(),
                     HoldingIdentity(memberX500Name, mgmHoldingIdentity.groupId).toAvro(),
                     groupParameters?.epoch,
-                    serialNumber
-                )
+                    serialNumber,
+                ),
             )
             try {
                 publisher?.publish(
@@ -819,9 +822,9 @@ class MGMResourceClientImpl @Activate constructor(
                         Record(
                             topic = MEMBERSHIP_ACTIONS_TOPIC,
                             key = "$memberX500Name-${mgmHoldingIdentity.groupId}",
-                            value = distributionRequest
-                        )
-                    ) + recordForGroupParameters
+                            value = distributionRequest,
+                        ),
+                    ) + recordForGroupParameters,
                 )
             } catch (e: CordaMessageAPIIntermittentException) {
                 // As long as the database update was successful, ignore any failures while publishing to Kafka.
@@ -834,9 +837,9 @@ class MGMResourceClientImpl @Activate constructor(
                     Record(
                         REGISTRATION_COMMAND_TOPIC,
                         "$memberName-$groupId",
-                        RegistrationCommand(command)
-                    )
-                )
+                        RegistrationCommand(command),
+                    ),
+                ),
             )?.forEach {
                 it.join()
             }
@@ -849,28 +852,40 @@ class MGMResourceClientImpl @Activate constructor(
             response.groupPolicy.toString()
 
         private inline fun <reified RESPONSE> MembershipRpcRequest.sendRequest(): RESPONSE {
-            try {
-                logger.debug { "Sending request: $this" }
-                val response = rpcSender.sendRequest(this).getOrThrow(TIMEOUT)
-                require(response != null && response.responseContext != null && response.response != null) {
-                    "Response cannot be null."
-                }
-                require(this.requestContext.requestId == response.responseContext.requestId) {
-                    "Request ID must match in the request and response."
-                }
-                require(this.requestContext.requestTimestamp == response.responseContext.requestTimestamp) {
-                    "Request timestamp must match in the request and response."
-                }
-                require(response.response is RESPONSE) {
-                    "Expected ${RESPONSE::class.java} as response type, but received ${response.response.javaClass}."
-                }
-
-                return response.response as RESPONSE
+            logger.debug { "Sending request: $this" }
+            val response = try {
+                rpcSender.sendRequest(this).getOrThrow(TIMEOUT)
             } catch (e: Exception) {
-                throw CordaRuntimeException(
-                    "Failed to send request and receive response for MGM RPC operation. " + e.message,
-                    e
+                throw ServiceNotReadyException(e)
+            }
+            return when (val validated = validate<RESPONSE>(response)) {
+                is Either.Left -> throw CordaRuntimeException(
+                    "Failed to send request and receive response for MGM RPC operation. ${validated.a}",
                 )
+                is Either.Right -> validated.b
+            }
+        }
+
+        private inline fun <reified RESPONSE> MembershipRpcRequest.validate(
+            rpcResponse: MembershipRpcResponse?,
+        ): Either<String, RESPONSE> {
+            return if (rpcResponse?.responseContext == null || rpcResponse.response == null) {
+                Either.Left("Response cannot be null.")
+            } else if (this.requestContext.requestId != rpcResponse.responseContext.requestId) {
+                Either.Left("Request ID must match in the request and response.")
+            } else if (this.requestContext.requestTimestamp != rpcResponse.responseContext.requestTimestamp) {
+                Either.Left("Request timestamp must match in the request and response.")
+            } else {
+                val response = rpcResponse.response as? RESPONSE
+                if (response == null) {
+                    Either.Left(
+                        "Expected ${RESPONSE::class.java} as response type, but received ${rpcResponse.response.javaClass}.",
+                    )
+                } else {
+                    Either.Right(
+                        response,
+                    )
+                }
             }
         }
     }
