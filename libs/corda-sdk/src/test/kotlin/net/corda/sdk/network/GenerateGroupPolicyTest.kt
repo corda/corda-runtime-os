@@ -70,6 +70,40 @@ class GenerateGroupPolicyTest {
         val returnValueAsString = om.writeValueAsString(returnValue)
         val memberList = memberList(returnValueAsString)
         assertNotNull(memberList.find { it["name"].asText() == "C=GB, L=London, O=Terry" })
+        memberList.find { it["name"].asText() == "C=GB, L=London, O=Terry" }.apply {
+            assertEquals("ACTIVE", this?.get("memberStatus")?.asText())
+            assertEquals("https://terry.corda5.r3.com:10000", this?.get("endpointUrl-1")?.asText())
+            assertEquals("1", this?.get("endpointProtocol-1")?.asText())
+        }
+    }
+
+    @Test
+    fun `member list from string populates`() {
+        val ggp = GenerateGroupPolicy()
+        val members = ggp.createMembersListFromListOfX500Strings(listOf("C=GB, L=London, O=Terry"))
+        val parsedMembers = om.readTree(om.writeValueAsString(members))
+        parsedMembers.find { it["name"].asText() == "C=GB, L=London, O=Terry" }.apply {
+            assertEquals("ACTIVE", this?.get("memberStatus")?.asText())
+            assertEquals("https://member.corda5.r3.com:10000", this?.get("endpointUrl-1")?.asText())
+            assertEquals("1", this?.get("endpointProtocol-1")?.asText())
+        }
+    }
+
+    @Test
+    fun `can generate a policy with a list of member name strings`() {
+        val myList = listOf(
+            "C=GB, L=London, O=Dave",
+            "C=GB, L=London, O=Edith",
+            "C=GB, L=London, O=Fred"
+        )
+        val ggp = GenerateGroupPolicy()
+        val createdMembersBlock = ggp.createMembersListFromListOfX500Strings(myList)
+        val rawPolicyOutput = ggp.generateStaticGroupPolicy(createdMembersBlock)
+        val returnValueAsString = om.writeValueAsString(rawPolicyOutput)
+        val memberList = memberList(returnValueAsString)
+        assertNotNull(memberList.find { it["name"].asText() == "C=GB, L=London, O=Dave" })
+        assertNotNull(memberList.find { it["name"].asText() == "C=GB, L=London, O=Edith" })
+        assertNotNull(memberList.find { it["name"].asText() == "C=GB, L=London, O=Fred" })
     }
 
     /**

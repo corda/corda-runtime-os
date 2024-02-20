@@ -3,6 +3,28 @@ package net.corda.sdk.network
 import java.util.*
 
 class GenerateGroupPolicy {
+    companion object {
+        private const val MEMBER_STATUS_ACTIVE = "ACTIVE"
+    }
+
+    fun createMembersListFromListOfX500Strings(
+        names: List<String>,
+        endpointUrl: String = "https://member.corda5.r3.com:10000",
+        endpointProtocol: Int = 1
+    ): List<Map<String, Any>> {
+        val members = mutableListOf<Map<String, Any>>()
+        names.forEach { name ->
+            members.add(
+                mapOf(
+                    "name" to name,
+                    "memberStatus" to MEMBER_STATUS_ACTIVE,
+                    "endpointUrl-1" to endpointUrl,
+                    "endpointProtocol-1" to endpointProtocol,
+                ),
+            )
+        }
+        return members
+    }
     fun generateStaticGroupPolicy(members: List<Map<String, Any>>?): Map<String, Any> {
         return mapOf(
             "fileFormatVersion" to 1,

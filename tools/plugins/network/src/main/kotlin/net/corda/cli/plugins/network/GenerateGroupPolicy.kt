@@ -167,18 +167,7 @@ class GenerateGroupPolicy(private val output: Output = ConsoleOutput()) : Runnab
         if (endpoint == null && endpointProtocol == null && names == null) {
             return null
         }
-        val members = mutableListOf<Map<String, Any>>()
-        names?.forEach { name ->
-            members.add(
-                mapOf(
-                    "name" to name,
-                    "memberStatus" to MEMBER_STATUS_ACTIVE,
-                    "endpointUrl-1" to endpoint!!,
-                    "endpointProtocol-1" to endpointProtocol!!,
-                ),
-            )
-        }
-        return members
+        return names?.let { GenerateGroupPolicy().createMembersListFromListOfX500Strings(it, endpoint!!, endpointProtocol!!) } ?: listOf()
     }
 
     /**
