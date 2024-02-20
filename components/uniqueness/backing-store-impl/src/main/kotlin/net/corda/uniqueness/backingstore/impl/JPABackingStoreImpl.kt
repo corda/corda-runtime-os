@@ -4,6 +4,7 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.bytes
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
+import net.corda.messaging.api.exception.CordaHTTPServerErrorException
 import net.corda.metrics.CordaMetrics
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.uniqueness.backingstore.BackingStore
@@ -70,8 +71,8 @@ open class JPABackingStoreImpl @Activate constructor(
 
         val sessionStartTime = System.nanoTime()
 
-        val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentity.shortHash)
-        requireNotNull(virtualNodeInfo) {"virtualNodeInfo is null"}
+        val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentity.shortHash) ?:
+            throw CordaHTTPServerErrorException(500, "Virtual node ${holdingIdentity.shortHash} not found")
         val uniquenessDmlConnectionId = virtualNodeInfo.uniquenessDmlConnectionId
         requireNotNull(uniquenessDmlConnectionId) {"uniquenessDmlConnectionId is null"}
 

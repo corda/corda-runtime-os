@@ -54,6 +54,7 @@ dependencies {
     implementation project(":libs:metrics")
     implementation project(":libs:uniqueness:common")
     implementation project(":libs:utilities")
+    implementation project(":libs:messaging:messaging")
 
     testImplementation "org.hibernate:hibernate-core:$hibernateVersion"
     testImplementation project(":testing:crypto-testkit")
