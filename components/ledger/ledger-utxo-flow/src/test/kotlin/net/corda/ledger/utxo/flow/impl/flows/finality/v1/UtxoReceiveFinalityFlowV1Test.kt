@@ -847,16 +847,12 @@ class UtxoReceiveFinalityFlowV1Test {
         whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
 
-        val listOfFtxAndSigs = listOf(filteredTxAndSig, filteredTxAndSig2)
-        listOfFtxAndSigs.forEach {
-            whenever(it.verifyFilteredTransactionAndSignatures(notaryInfo, notarySignatureVerificationService))
-                .thenThrow(CordaRuntimeException("verifying filtered transactions and signatures failed!"))
-        }
+        whenever(filteredTransaction.verify()).thenThrow(CordaRuntimeException("verifying filtered transactions verification failed!"))
 
         assertThatThrownBy { callReceiveFinalityFlow() }
 
         // assert persisting filtered transactions and signatures never happened since they are invalid.
-        verify(persistenceService, never()).persistFilteredTransactionsAndSignatures(listOfFtxAndSigs)
+        verify(persistenceService, never()).persistFilteredTransactionsAndSignatures(listOf(filteredTxAndSig, filteredTxAndSig2))
     }
 
     private fun callReceiveFinalityFlow(validator: UtxoTransactionValidator = UtxoTransactionValidator { }) {
