@@ -696,11 +696,13 @@ internal class StatefulSessionManagerImpl(
             val result =
                 when (val lastMessage = contexts.last().inboundSessionMessage) {
                     is InboundSessionMessage.InitiatorHelloMessage -> {
+                        logger.info("Processing InitiatorHello for ${lastMessage.initiatorHelloMessage.header.sessionId}.")
                         processInitiatorHello(state, lastMessage)?.let { (message, stateUpdate) ->
                             Result(message, CreateAction(stateUpdate), null)
                         }
                     }
                     is InboundSessionMessage.InitiatorHandshakeMessage -> {
+                        logger.info("Processing InitiatorHandshake for ${lastMessage.initiatorHandshakeMessage.header.sessionId}.")
                         processInitiatorHandshake(state, lastMessage)?.let { (message, stateUpdate, session) ->
                             Result(message, UpdateAction(stateUpdate), session)
                         }
@@ -731,11 +733,13 @@ internal class StatefulSessionManagerImpl(
             val result =
                 when (val lastMessage = contexts.last().outboundSessionMessage) {
                     is OutboundSessionMessage.ResponderHelloMessage -> {
+                        logger.info("Processing ResponderHello for ${lastMessage.responderHelloMessage.header.sessionId}.")
                         processResponderHello(state, lastMessage)?.let { (message, stateUpdate) ->
                             Result(message, UpdateAction(stateUpdate), null)
                         }
                     }
                     is OutboundSessionMessage.ResponderHandshakeMessage -> {
+                        logger.info("Processing ResponderHandshake for ${lastMessage.responderHandshakeMessage.header.sessionId}.")
                         processResponderHandshake(state, lastMessage)?.let { (message, stateUpdate, session) ->
                             Result(message, UpdateAction(stateUpdate), session)
                         }
