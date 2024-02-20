@@ -4,7 +4,8 @@ import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.data.virtualnode.VirtualNodeDbConnectionUpdateRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
-import net.corda.libs.virtualnode.endpoints.v1.types.JsonCreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest.DeprecatedCreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest.JsonCreateVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.UpdateVirtualNodeDbRequest
 import net.corda.rest.security.RestContextProvider
 import net.corda.utilities.time.Clock
@@ -22,10 +23,6 @@ internal class RequestFactoryImpl(
         return HoldingIdentity(MemberX500Name.parse(request.x500Name), groupId)
     }
 
-    override fun createHoldingIdentity(groupId: String, request: JsonCreateVirtualNodeRequest): HoldingIdentity {
-        return HoldingIdentity(MemberX500Name.parse(request.x500Name), groupId)
-    }
-
     override fun createVirtualNodeRequest(
         holdingIdentity: HoldingIdentity,
         request: CreateVirtualNodeRequest
@@ -36,34 +33,26 @@ internal class RequestFactoryImpl(
             this.request = VirtualNodeCreateRequest().apply {
                 this.holdingId = holdingIdentity.toAvro()
                 this.cpiFileChecksum = request.cpiFileChecksum
-                this.vaultDdlConnection = request.vaultDdlConnection
-                this.vaultDmlConnection = request.vaultDmlConnection
-                this.cryptoDdlConnection = request.cryptoDdlConnection
-                this.cryptoDmlConnection = request.cryptoDmlConnection
-                this.uniquenessDdlConnection = request.uniquenessDdlConnection
-                this.uniquenessDmlConnection = request.uniquenessDmlConnection
                 this.updateActor = restContextProvider.principal
-            }
-        }
-    }
+                when (request) {
+                    is DeprecatedCreateVirtualNodeRequest -> {
+                        this.vaultDdlConnection = request.vaultDdlConnection
+                        this.vaultDmlConnection = request.vaultDmlConnection
+                        this.cryptoDdlConnection = request.cryptoDdlConnection
+                        this.cryptoDmlConnection = request.cryptoDmlConnection
+                        this.uniquenessDdlConnection = request.uniquenessDdlConnection
+                        this.uniquenessDmlConnection = request.uniquenessDmlConnection
+                    }
 
-    override fun createVirtualNodeRequest(
-        holdingIdentity: HoldingIdentity,
-        request: JsonCreateVirtualNodeRequest
-    ): VirtualNodeAsynchronousRequest {
-        return VirtualNodeAsynchronousRequest().apply {
-            this.requestId = holdingIdentity.shortHash.toString()
-            this.timestamp = clock.instant()
-            this.request = VirtualNodeCreateRequest().apply {
-                this.holdingId = holdingIdentity.toAvro()
-                this.cpiFileChecksum = request.cpiFileChecksum
-                this.vaultDdlConnection = request.vaultDdlConnection?.escapedJson
-                this.vaultDmlConnection = request.vaultDmlConnection?.escapedJson
-                this.cryptoDdlConnection = request.cryptoDdlConnection?.escapedJson
-                this.cryptoDmlConnection = request.cryptoDmlConnection?.escapedJson
-                this.uniquenessDdlConnection = request.uniquenessDdlConnection?.escapedJson
-                this.uniquenessDmlConnection = request.uniquenessDmlConnection?.escapedJson
-                this.updateActor = restContextProvider.principal
+                    is JsonCreateVirtualNodeRequest -> {
+                        this.vaultDdlConnection = request.vaultDdlConnection?.escapedJson
+                        this.vaultDmlConnection = request.vaultDmlConnection?.escapedJson
+                        this.cryptoDdlConnection = request.cryptoDdlConnection?.escapedJson
+                        this.cryptoDmlConnection = request.cryptoDmlConnection?.escapedJson
+                        this.uniquenessDdlConnection = request.uniquenessDdlConnection?.escapedJson
+                        this.uniquenessDmlConnection = request.uniquenessDmlConnection?.escapedJson
+                    }
+                }
             }
         }
     }

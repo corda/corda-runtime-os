@@ -29,8 +29,8 @@ import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationBadReques
 import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationNotFoundException
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
-import net.corda.libs.virtualnode.endpoints.v1.types.JsonCreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest.DeprecatedCreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest.JsonCreateVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.UpdateVirtualNodeDbRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
@@ -476,14 +476,14 @@ internal class VirtualNodeRestResourceImpl(
     /**
      * Publishes a virtual node create request onto the message bus.
      *
-     * @property CreateVirtualNodeRequest contains the data we want to use to construct our virtual node
+     * @property DeprecatedCreateVirtualNodeRequest contains the data we want to use to construct our virtual node
      * @throws InvalidInputDataException if the request in invalid.
      * @throws InternalServerException if the requested CPI has invalid metadata.
      * @throws ServiceUnavailableException is thrown if the component isn't running.
      * @return [ResponseEntity] containing the request ID for the create virtual node request.
      */
     @Deprecated("Deprecated in favour of `createVirtualNode()`")
-    override fun createVirtualNodeDeprecated(request: CreateVirtualNodeRequest): ResponseEntity<AsyncResponse> {
+    override fun createVirtualNodeDeprecated(request: DeprecatedCreateVirtualNodeRequest): ResponseEntity<AsyncResponse> {
         val groupId = virtualNodeValidationService.validateAndGetGroupId(request)
 
         val holdingIdentity = requestFactory.createHoldingIdentity(groupId, request)
@@ -509,7 +509,7 @@ internal class VirtualNodeRestResourceImpl(
     /**
      * Publishes a virtual node create request onto the message bus.
      *
-     * @property JsonCreateVirtualNodeRequest contains the data we want to use to construct our virtual node as a JSON object
+     * @property JsonCreateVirtualNodeRequest contains the data we want to use to construct our virtual node
      * @throws InvalidInputDataException if the request in invalid.
      * @throws InternalServerException if the requested CPI has invalid metadata.
      * @throws ServiceUnavailableException is thrown if the component isn't running.

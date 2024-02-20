@@ -8,35 +8,40 @@ import net.corda.rest.JsonObject
  * @param x500Name The X500 name for the new virtual node.
  * @param cpiFileChecksum The checksum of the CPI file.
  */
-data class CreateVirtualNodeRequest(
-    val x500Name: String,
-    var cpiFileChecksum: String,
-    val vaultDdlConnection: String?,
-    val vaultDmlConnection: String?,
-    val cryptoDdlConnection: String?,
-    val cryptoDmlConnection: String?,
-    val uniquenessDdlConnection: String?,
-    val uniquenessDmlConnection: String?
-) {
-    init {
-        // Whilst checksum can be expressed with either upper or lower case characters and has the same logical meaning,
-        // all the cache keys using uppercase representation of CPI checksum, therefore early during processing cycle
-        // on REST server, it would make sense to switch to uppercase.
-        cpiFileChecksum = cpiFileChecksum.uppercase()
-    }
-}
+sealed class CreateVirtualNodeRequest {
+    abstract val cpiFileChecksum: String
+    abstract val x500Name: String
 
-data class JsonCreateVirtualNodeRequest(
-    val x500Name: String,
-    var cpiFileChecksum: String,
-    val vaultDdlConnection: JsonObject?,
-    val vaultDmlConnection: JsonObject?,
-    val cryptoDdlConnection: JsonObject?,
-    val cryptoDmlConnection: JsonObject?,
-    val uniquenessDdlConnection: JsonObject?,
-    val uniquenessDmlConnection: JsonObject?
-) {
-    init {
-        cpiFileChecksum = cpiFileChecksum.uppercase()
+    data class DeprecatedCreateVirtualNodeRequest(
+        override val x500Name: String,
+        override var cpiFileChecksum: String,
+        val vaultDdlConnection: String?,
+        val vaultDmlConnection: String?,
+        val cryptoDdlConnection: String?,
+        val cryptoDmlConnection: String?,
+        val uniquenessDdlConnection: String?,
+        val uniquenessDmlConnection: String?
+    ) : CreateVirtualNodeRequest() {
+        init {
+            // Whilst checksum can be expressed with either upper or lower case characters and has the same logical meaning,
+            // all the cache keys using uppercase representation of CPI checksum, therefore early during processing cycle
+            // on REST server, it would make sense to switch to uppercase.
+            cpiFileChecksum = cpiFileChecksum.uppercase()
+        }
+    }
+
+    data class JsonCreateVirtualNodeRequest(
+        override val x500Name: String,
+        override var cpiFileChecksum: String,
+        val vaultDdlConnection: JsonObject?,
+        val vaultDmlConnection: JsonObject?,
+        val cryptoDdlConnection: JsonObject?,
+        val cryptoDmlConnection: JsonObject?,
+        val uniquenessDdlConnection: JsonObject?,
+        val uniquenessDmlConnection: JsonObject?
+    ) : CreateVirtualNodeRequest() {
+        init {
+            cpiFileChecksum = cpiFileChecksum.uppercase()
+        }
     }
 }
