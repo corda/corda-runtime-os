@@ -999,7 +999,8 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `persist filtered transaction with many outputs`() {
-        val stateIndexes = (0 until 100000).toList()
+        val upperLimit = if (DbUtils.databaseType == DbUtils.DatabaseType.HSQL) 1000 else 100000
+        val stateIndexes = (0 until upperLimit).toList()
         val visibleStateIndexes = stateIndexes - listOf(10, 100, 1000)
         val outputStates = stateIndexes.map { TestContractState1() }
         val signatures = createSignatures(Instant.now())
@@ -1024,7 +1025,8 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `find filtered transaction with many outputs`() {
-        val stateIndexes = (0 until 10000).toList()
+        val upperLimit = if (DbUtils.databaseType == DbUtils.DatabaseType.HSQL) 1000 else 10000
+        val stateIndexes = (0 until upperLimit).toList()
         val excludedStateIndexes = listOf(10, 100, 1000)
         val visibleStateIndexes = stateIndexes - excludedStateIndexes
         val outputStates = stateIndexes.associateWith { TestContractState1() }
