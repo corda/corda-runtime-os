@@ -8,7 +8,7 @@ import java.time.Instant
  * @param tenantId Either a holding identity ID, the value 'master' for master wrapping key or one of the values
 *          'p2p', 'rest', 'crypto' for corresponding cluster-level tenant.
  * @param status Overall status of the key rotation. Either In Progress or Done.
- * @param rotationInitiatedTimestamp Timestamp of then the key rotation request was received.
+ * @param rotationInitiatedTimestamp Timestamp of when the key rotation request was received.
  * @param lastUpdatedTimestamp The last updated timestamp.
  * @param rotatedKeyStatus Number of keys needs rotating grouped by tenantId or wrapping key.
  */
