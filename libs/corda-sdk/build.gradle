@@ -1,0 +1,16 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+description 'Corda SDK'
+
+
+ext {
+    cordaEnableFormatting = true
+    releasable = true
+}
+
+dependencies {
+
+}
+
