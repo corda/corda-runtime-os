@@ -160,14 +160,14 @@ class HsqldbUtxoQueryProvider @Activate constructor(
             MERGE INTO utxo_transaction_merkle_proof AS utmp
             USING (VALUES${
                 List(batchSize) {
-                    "(?, ?, ?, ?, ?)"
+                    "(?, ?, ?, ?, ?, ?)"
                 }.joinToString(",")
             })
-                AS x(merkle_proof_id, transaction_id, group_idx, tree_size, hashes)
+                AS x(merkle_proof_id, transaction_id, group_idx, tree_size, leaf_indexes, hashes)
             ON utmp.merkle_proof_id = x.merkle_proof_id
             WHEN NOT MATCHED THEN
-                INSERT (merkle_proof_id, transaction_id, group_idx, tree_size, hashes)
-                VALUES (x.merkle_proof_id, x.transaction_id, x.group_idx, x.tree_size, x.hashes)
+                INSERT (merkle_proof_id, transaction_id, group_idx, tree_size, leaf_indexes, hashes)
+                VALUES (x.merkle_proof_id, x.transaction_id, x.group_idx, x.tree_size, x.leaf_indexes, x.hashes)
             """.trimIndent()
         }
 
