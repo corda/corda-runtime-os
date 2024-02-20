@@ -336,7 +336,9 @@ class VaultNamedQueryExecutorImpl(
             query.firstResult = offset
             // Getting one more than requested allows us to identify if there are more results to
             // return in a subsequent page
-            query.maxResults = request.limit + 1
+            // CORE-15061 By default the limit will be `Int.MAX_VALUE` and adding +1 to that value
+            // will cause integer to overflow, that's why we need this extra `minOf` here.
+            query.maxResults = minOf(Int.MAX_VALUE-1, request.limit) + 1
 
             query.resultList as List<Tuple>
         }
