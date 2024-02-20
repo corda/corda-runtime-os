@@ -586,6 +586,7 @@ class FlowTests : ClusterReadiness by ClusterReadinessChecker() {
         issueStatesAndValidateResult(3) { issuanceResult ->
             // 1. Make sure the states were issued
             assertThat(issuanceResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
+                .withFailMessage { issuanceResult.toString() }
 
             val flowResultMap = issuanceResult.mapFlowJsonResult()
 
@@ -621,6 +622,7 @@ class FlowTests : ClusterReadiness by ClusterReadinessChecker() {
         issueStatesAndValidateResult(1) { issuanceResult ->
             // 2. Make sure the states were issued
             assertThat(issuanceResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
+                .withFailMessage { issuanceResult.toString() }
             val flowResultMap = issuanceResult.mapFlowJsonResult()
 
             @Suppress("unchecked_cast")
@@ -668,6 +670,7 @@ class FlowTests : ClusterReadiness by ClusterReadinessChecker() {
         issueStatesAndValidateResult(1) { issuanceResult ->
             // 2. Make sure the states were issued
             assertThat(issuanceResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
+                .withFailMessage { issuanceResult.toString() }
             val flowResultMap = issuanceResult.mapFlowJsonResult()
 
             @Suppress("unchecked_cast")
@@ -718,6 +721,7 @@ class FlowTests : ClusterReadiness by ClusterReadinessChecker() {
         issueStatesAndValidateResult(1) { issuanceResult ->
             // 2. Make sure the states were issued
             assertThat(issuanceResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
+                .withFailMessage { issuanceResult.toString() }
             val flowResultMap = issuanceResult.mapFlowJsonResult()
 
             @Suppress("unchecked_cast")
@@ -760,6 +764,7 @@ class FlowTests : ClusterReadiness by ClusterReadinessChecker() {
         issueStatesAndValidateResult(1) { issuanceResult ->
             // 2. Make sure the states were issued
             assertThat(issuanceResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
+                .withFailMessage { issuanceResult.toString() }
             val flowResultMap = issuanceResult.mapFlowJsonResult()
 
             @Suppress("unchecked_cast")
@@ -826,6 +831,7 @@ class FlowTests : ClusterReadiness by ClusterReadinessChecker() {
         issueStatesAndValidateResult(2) { issuanceResult ->
             // 2. Make sure the states were issued
             assertThat(issuanceResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
+                .withFailMessage { issuanceResult.toString() }
             val flowResultMap = issuanceResult.mapFlowJsonResult()
 
             @Suppress("unchecked_cast")
