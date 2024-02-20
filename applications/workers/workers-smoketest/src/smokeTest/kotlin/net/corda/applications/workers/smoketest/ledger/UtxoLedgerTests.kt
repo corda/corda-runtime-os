@@ -163,8 +163,8 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
         var currentTransactionId = checkNotNull(utxoFlowResult.flowResult)
         var message = input
         var prevInput = ""
-        val mode: EvolveMode = EvolveMode.ADD
-        for (stage in 1 until 20) {
+        val mode: EvolveMode = EvolveMode.ADD_AND_REMOVE
+        for (stage in 1 until 1000) {
             val start = Instant.now()
             val evolvedMessage = "evolved input $stage"
             val addList: List<String> = when (mode) {
