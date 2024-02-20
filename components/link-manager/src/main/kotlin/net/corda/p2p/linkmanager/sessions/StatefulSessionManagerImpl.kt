@@ -736,8 +736,10 @@ internal class StatefulSessionManagerImpl(
                 }
         return messageContexts.flatMap { (sessionId, contexts) ->
             val state = states[sessionId]
+            val lastContext = contexts.last()
+            val otherContexts = contexts.dropLast(1)
             val result =
-                when (val lastMessage = contexts.last().outboundSessionMessage) {
+                when (val lastMessage = lastContext.outboundSessionMessage) {
                     is OutboundSessionMessage.ResponderHelloMessage -> {
                         processResponderHello(state, lastMessage)?.let { (message, stateUpdate) ->
                             Result(message, UpdateAction(stateUpdate), null)
@@ -749,7 +751,10 @@ internal class StatefulSessionManagerImpl(
                         }
                     }
                 }
-            contexts.map { TraceableResult(it.trace, result) }
+            otherContexts.map {
+                TraceableResult(it.trace, null)
+            } +
+                    TraceableResult(lastContext.trace, result)
         }
     }
 
