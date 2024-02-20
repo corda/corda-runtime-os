@@ -19,7 +19,7 @@ dependencies {
     // Concluded this is the one acceptable dependency in addition to kotlin.
     implementation 'org.slf4j:slf4j-api'
     implementation libs.bouncycastle.pkix
-    implementation "org.xerial.snappy:snappy-java:$snappyJavaVersion"
+    implementation libs.snappy.java
 
     implementation project(":libs:configuration:configuration-core")
 

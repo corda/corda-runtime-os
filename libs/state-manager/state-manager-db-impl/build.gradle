@@ -23,7 +23,7 @@ dependencies {
     implementation project(":libs:configuration:configuration-core")
     implementation libs.jackson.databind
     implementation libs.jackson.module.kotlin
-    implementation "org.xerial.snappy:snappy-java:$snappyJavaVersion"
+    implementation libs.snappy.java
 
     testImplementation project(':testing:test-utilities')
     integrationTestImplementation project(':libs:db:db-admin')
