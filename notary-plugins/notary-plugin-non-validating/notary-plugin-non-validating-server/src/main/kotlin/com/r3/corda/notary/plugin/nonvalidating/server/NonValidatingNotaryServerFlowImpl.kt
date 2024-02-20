@@ -3,8 +3,6 @@ package com.r3.corda.notary.plugin.nonvalidating.server
 import com.r3.corda.notary.plugin.common.NotaryTransactionDetails
 import com.r3.corda.notary.plugin.common.NotarizationResponse
 import com.r3.corda.notary.plugin.common.NotaryExceptionGeneral
-import com.r3.corda.notary.plugin.common.NotaryExceptionInputStateConflict
-import com.r3.corda.notary.plugin.common.NotaryExceptionReferenceStateConflict
 import com.r3.corda.notary.plugin.common.toNotarizationResponse
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarizationPayload
 import net.corda.v5.application.flows.CordaInject
@@ -119,8 +117,6 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             val genericMessage = "Error while processing request from client. "
             val additionalMessage =
                 when (e) {
-                    is NotaryExceptionInputStateConflict -> "Cause: ${e.message}"
-                    is NotaryExceptionReferenceStateConflict -> "Cause: ${e.message}"
                     is InvalidBackchainFlagException -> "Cause: ${e.message}"
                     else -> "Please contact notary operator for further details."
                 }
