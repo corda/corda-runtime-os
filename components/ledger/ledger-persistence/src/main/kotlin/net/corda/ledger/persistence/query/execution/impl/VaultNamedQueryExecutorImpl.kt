@@ -338,7 +338,7 @@ class VaultNamedQueryExecutorImpl(
             // return in a subsequent page
             // CORE-15061 By default the limit will be `Int.MAX_VALUE` and adding +1 to that value
             // will cause integer to overflow, that's why we need this extra `minOf` here.
-            query.maxResults = minOf(Int.MAX_VALUE-1, request.limit) + 1
+            query.maxResults = minOf(Int.MAX_VALUE - 1, request.limit) + 1
 
             query.resultList as List<Tuple>
         }
@@ -413,7 +413,7 @@ class VaultNamedQueryExecutorImpl(
             // return in a subsequent page
             // CORE-15061 By default the limit will be `Int.MAX_VALUE` and adding +1 to that value
             // will cause integer to overflow, that's why we need this extra `minOf` here.
-            query.maxResults = minOf(Int.MAX_VALUE-1, request.limit) + 1
+            query.maxResults = minOf(Int.MAX_VALUE - 1, request.limit) + 1
 
             query.resultList as List<Tuple>
         }
