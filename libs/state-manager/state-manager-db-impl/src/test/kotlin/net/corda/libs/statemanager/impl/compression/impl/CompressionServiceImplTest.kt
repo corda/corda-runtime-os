@@ -3,6 +3,7 @@ package net.corda.libs.statemanager.impl.compression.impl
 import net.corda.libs.statemanager.api.CompressionType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
@@ -19,23 +20,23 @@ class CompressionServiceImplTest {
     @Test
     fun `write bytes with SNAPPY compression`() {
         val compressed = compressionService.writeBytes(someBytes, CompressionType.SNAPPY)
-        assertNotEquals(compressed, someBytes)
+        assertNotEquals(compressed.size, someBytes.size)
         assertThat(CompressionType.fromHeader(compressed.copyOfRange(0, CompressionType.HEADER_SIZE))).isEqualTo(CompressionType.SNAPPY)
     }
 
     @Test
     fun `read bytes with no compression`() {
-        assertEquals(someBytes, compressionService.readBytes(someBytes))
+        assertContentEquals(someBytes, compressionService.readBytes(someBytes))
     }
 
     @Test
     fun `read short bytes with no compression`() {
-        assertEquals(shortBytes, compressionService.readBytes(shortBytes))
+        assertContentEquals(shortBytes, compressionService.readBytes(shortBytes))
     }
 
     @Test
     fun `read bytes with SNAPPY compression`() {
         val compressed = compressionService.writeBytes(someBytes, CompressionType.SNAPPY)
-        assertEquals(someBytes, compressionService.readBytes(compressed))
+        assertContentEquals(someBytes, compressionService.readBytes(compressed))
     }
 }
