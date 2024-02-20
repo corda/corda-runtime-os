@@ -3,7 +3,7 @@ package net.corda.libs.statemanager.api
 import java.nio.charset.StandardCharsets
 
 enum class CompressionType(val header: String) {
-    //Header string length must not exceed 8 ASCII characters
+    // Header string length must not exceed 8 ASCII characters
     SNAPPY("snappy"),
     NONE("none");
 
