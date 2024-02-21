@@ -463,20 +463,25 @@ internal class StatefulSessionManagerImpl(
             otherStates: SessionManager.SessionState,
             action: StateManagerAction,
         ): Collection<OutboundMessageResults<T>> {
-            return listOf(
-                OutboundMessageResults(
-                    key = this.key,
-                    messages = listOf(first),
-                    action = action,
-                    sessionState = firstState,
-                ),
-                OutboundMessageResults(
-                    key = this.key,
-                    messages = others,
-                    action = null,
-                    sessionState = otherStates,
-                ),
+            val firstResult = OutboundMessageResults(
+                key = this.key,
+                messages = listOf(first),
+                action = action,
+                sessionState = firstState,
             )
+            return if (others.isEmpty()) {
+                listOf(firstResult)
+            } else {
+                listOf(
+                    firstResult,
+                    OutboundMessageResults(
+                        key = this.key,
+                        messages = others,
+                        action = null,
+                        sessionState = otherStates,
+                    ),
+                )
+            }
         }
     }
 
