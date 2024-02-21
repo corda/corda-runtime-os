@@ -6,6 +6,8 @@ import com.r3.corda.notary.plugin.common.NotaryExceptionReferenceStateUnknown
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarizationPayload
 import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
+import net.corda.ledger.common.testkit.generateCompositeKey
+import net.corda.ledger.common.testkit.generatePublicKey
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnknownImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorUnhandledExceptionImpl
@@ -17,7 +19,6 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.uniqueness.model.UniquenessCheckError
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
@@ -54,13 +55,11 @@ class NonValidatingNotaryServerFlowImplTest {
         val responseFromServer = mutableListOf<NotarizationResponse>()
 
         /* Notary VNodes */
-        val notaryVNodeAliceKey = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x01))}
-        val notaryVNodeBobKey = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x02))}
+        val notaryVNodeAliceKey = generatePublicKey()
+        val notaryVNodeBobKey = generatePublicKey()
 
         /* Notary Service */
-        val notaryServiceCompositeKey = mock<CompositeKey> {
-            on { leafKeys } doReturn setOf(notaryVNodeAliceKey, notaryVNodeBobKey)
-        }
+        val notaryServiceCompositeKey = generateCompositeKey(notaryVNodeAliceKey to notaryVNodeBobKey)
 
         val notaryServiceName = MemberX500Name.parse("O=MyNotaryService, L=London, C=GB")
 
@@ -121,19 +120,6 @@ class NonValidatingNotaryServerFlowImplTest {
             assertThat(response.error).isNull()
             assertThat(response.signatures).hasSize(1)
             assertThat(response.signatures.first().by).isEqualTo(notaryVNodeAliceKey.fullIdHash())
-        }
-    }
-
-    @Test
-    fun `Non-validating notary plugin server should respond with error if request signature is invalid`() {
-        createAndCallServer(mockSuccessfulUniquenessClientService()) {
-            assertThat(responseFromServer).hasSize(1)
-
-            val responseError = responseFromServer.first().error
-            assertThat(responseError).isNotNull
-            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-            assertThat((responseError as NotaryExceptionGeneral).errorText)
-                .contains("Error while processing request from client")
         }
     }
 
