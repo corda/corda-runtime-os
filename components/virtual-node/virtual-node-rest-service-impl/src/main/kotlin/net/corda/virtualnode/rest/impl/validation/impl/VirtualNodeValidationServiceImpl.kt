@@ -21,7 +21,7 @@ import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.rest.impl.validation.VirtualNodeValidationService
-import java.util.*
+import java.util.UUID
 
 internal class VirtualNodeValidationServiceImpl(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
