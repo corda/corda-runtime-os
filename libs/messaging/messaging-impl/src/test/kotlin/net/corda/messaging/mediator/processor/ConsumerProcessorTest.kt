@@ -25,9 +25,11 @@ import net.corda.messaging.mediator.MediatorSubscriptionState
 import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.taskmanager.TaskManager
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
 import org.mockito.kotlin.any
@@ -168,6 +170,55 @@ class ConsumerProcessorTest {
 
         verify(consumer, times(0)).resetEventOffsetPosition()
         verify(consumer, times(1)).close()
+    }
+
+    @Test
+    fun `Exception when committing to the bus results in no delete operations`() {
+        var counter = 0
+        whenever(taskManager.executeShortRunningTask<Unit>(any())).thenAnswer {
+            counter++
+            val output = mapOf(
+                "foo-$counter" to EventProcessingOutput(
+                    listOf(getAsyncMediatorMessage("payload")),
+                    StateChangeAndOperation.Noop
+                )
+            )
+            val future = CompletableFuture<Map<String, EventProcessingOutput>>()
+            future.complete(output)
+            future
+        }
+        whenever(messageRouter.getDestination(any())).thenReturn(
+            RoutingDestination(
+                client, "endpoint",
+                RoutingDestination.Type.ASYNCHRONOUS
+            )
+        )
+        whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(
+            getGroups(2, 4),
+            listOf()
+        )
+        whenever(stateManagerHelper.createOrUpdateState(any(), any(), any())).thenReturn(mock())
+        whenever(stateManager.get(any())).thenReturn(mapOf())
+        whenever(consumer.syncCommitOffsets()).doThrow(CordaRuntimeException("Oops"))
+
+        assertThrows<CordaRuntimeException> { consumerProcessor.processTopic(getConsumerFactory(), getConsumerConfig()) }
+
+        verify(consumer, times(1)).poll(any())
+        verify(consumerFactory, times(1)).create<String, String>(any())
+        verify(consumer, times(1)).subscribe()
+        verify(groupAllocator, times(2)).allocateGroups<String, String, String>(any(), any())
+        verify(taskManager, times(2)).executeShortRunningTask<Unit>(any())
+
+        verify(stateManager, times(2)).get(any())
+        verify(stateManager, times(1)).create(any())
+        verify(stateManager, times(1)).update(any())
+
+        verify(messageRouter, times(2)).getDestination(any())
+        verify(client, times(2)).send(any())
+
+        verify(consumer, times(1)).syncCommitOffsets()
+        verify(consumer, times(1)).close()
+        verify(stateManager, times(0)).delete(any())
     }
 
     @Test

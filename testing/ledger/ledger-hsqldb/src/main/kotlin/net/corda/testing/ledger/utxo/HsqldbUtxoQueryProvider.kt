@@ -23,11 +23,37 @@ class HsqldbUtxoQueryProvider @Activate constructor(
     override val persistTransaction: String
         get() = """
             MERGE INTO {h-schema}utxo_transaction AS ut
-            USING (VALUES :id, CAST(:privacySalt AS VARBINARY(64)), :accountId, CAST(:createdAt AS TIMESTAMP), :status, CAST(:updatedAt AS TIMESTAMP), :metadataHash, :isFiltered)
+            USING (VALUES :id, CAST(:privacySalt AS VARBINARY(64)), :accountId, CAST(:createdAt AS TIMESTAMP), :status, CAST(:updatedAt AS TIMESTAMP), :metadataHash, FALSE)
                 AS x(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
             ON x.id = ut.id
-            WHEN MATCHED AND (ut.status in ('$UNVERIFIED', '$DRAFT') OR (ut.status = '$VERIFIED' AND ut.is_filtered = true)) 
-            THEN UPDATE SET ut.status = x.status, ut.updated = x.updated, ut.is_filtered = x.is_filtered
+            WHEN MATCHED AND ((ut.status = '$UNVERIFIED' or ut.status = '$DRAFT') OR (ut.status = '$VERIFIED' AND ut.is_filtered = TRUE)) 
+            THEN UPDATE SET ut.status = x.status, ut.updated = x.updated, ut.is_filtered = FALSE
+            WHEN NOT MATCHED THEN
+                INSERT (id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
+                VALUES (x.id, x.privacy_salt, x.account_id, x.created, x.status, x.updated, x.metadata_hash, x.is_filtered)"""
+            .trimIndent()
+
+    override val persistUnverifiedTransaction: String
+        get() = """
+            MERGE INTO {h-schema}utxo_transaction AS ut
+            USING (VALUES :id, CAST(:privacySalt AS VARBINARY(64)), :accountId, CAST(:createdAt AS TIMESTAMP), '$UNVERIFIED', CAST(:updatedAt AS TIMESTAMP), :metadataHash, FALSE)
+                AS x(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
+            ON x.id = ut.id
+            WHEN MATCHED AND ((ut.status = '$UNVERIFIED' or ut.status = '$DRAFT') OR (ut.status = '$VERIFIED' AND ut.is_filtered = TRUE))
+            THEN UPDATE SET ut.status = x.status, ut.updated = x.updated
+            WHEN NOT MATCHED THEN
+                INSERT (id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
+                VALUES (x.id, x.privacy_salt, x.account_id, x.created, x.status, x.updated, x.metadata_hash, x.is_filtered)"""
+            .trimIndent()
+
+    override val persistFilteredTransaction: String
+        get() = """
+            MERGE INTO {h-schema}utxo_transaction AS ut
+            USING (VALUES :id, CAST(:privacySalt AS VARBINARY(64)), :accountId, CAST(:createdAt AS TIMESTAMP), '$VERIFIED', CAST(:updatedAt AS TIMESTAMP), :metadataHash, TRUE)
+                AS x(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
+            ON x.id = ut.id
+            WHEN MATCHED AND ((ut.status = '$UNVERIFIED' OR ut.status = '$DRAFT') AND ut.is_filtered = FALSE)
+            THEN UPDATE ut.is_filtered = TRUE
             WHEN NOT MATCHED THEN
                 INSERT (id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
                 VALUES (x.id, x.privacy_salt, x.account_id, x.created, x.status, x.updated, x.metadata_hash, x.is_filtered)"""

@@ -404,7 +404,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
                 flowDidNotResume()
                 flowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
                 scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY_MAPPER)
-                notNullStateRecord()
+                nullStateRecord()
                 flowStatus(state = FlowStates.FAILED, errorType = FLOW_FAILED, errorMessage = "message")
             }
         }

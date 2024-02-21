@@ -91,6 +91,10 @@ class StateManagerImpl(
             }
 
             states.map { it.key }.toSet() - successfulKeys.toSet()
+        }.also {
+            if (it.isNotEmpty()) {
+                metricsRecorder.recordFailureCount(CREATE, it.size)
+            }
         }
     }
 
@@ -120,6 +124,10 @@ class StateManagerImpl(
                 logger.warn("Failed to updated batch of states - ${states.joinToString { it.key }}", e)
                 throw e
             }
+        }.also {
+            if (it.isNotEmpty()) {
+                metricsRecorder.recordFailureCount(UPDATE, it.size)
+            }
         }
     }
 
@@ -137,6 +145,7 @@ class StateManagerImpl(
                 } else {
                     getByKey(failedDeletes).also {
                         if (it.isNotEmpty()) {
+                            metricsRecorder.recordFailureCount(DELETE, it.size)
                             logger.warn(
                                 "Optimistic locking check failed while deleting States" +
                                     " ${failedDeletes.joinToString()}"

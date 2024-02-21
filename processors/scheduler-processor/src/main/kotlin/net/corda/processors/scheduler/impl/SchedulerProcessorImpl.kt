@@ -72,10 +72,6 @@ class SchedulerProcessorImpl @Activate constructor(
             60, ScheduledTask.SCHEDULED_TASK_TOPIC_FLOW_PROCESSOR
         ),
         Schedule(
-            ScheduledTask.SCHEDULED_TASK_NAME_FLOW_CHECKPOINT_TERMINATION,
-            60, ScheduledTask.SCHEDULED_TASK_TOPIC_FLOW_PROCESSOR
-        ),
-        Schedule(
             ScheduledTask.SCHEDULED_TASK_NAME_MAPPER_CLEANUP,
             60, ScheduledTask.SCHEDULED_TASK_TOPIC_MAPPER_PROCESSOR
         ),
