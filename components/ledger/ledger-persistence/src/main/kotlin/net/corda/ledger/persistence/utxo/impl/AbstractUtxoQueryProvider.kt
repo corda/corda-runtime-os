@@ -175,6 +175,7 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
                 utmp.transaction_id,
                 utmp.group_idx,
                 utmp.tree_size,
+                utmp.leaf_indexes,
                 utmp.hashes,
                 utt.privacy_salt,
                 utc.leaf_idx,

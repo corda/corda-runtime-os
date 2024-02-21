@@ -28,6 +28,9 @@ data class UtxoMerkleProofEntity(
     @get:Column(name = "tree_size", nullable = false, updatable = false)
     var treeSize: Int,
 
+    @get:Column(name = "leaf_indexes", nullable = false)
+    var leafIndexes: String,
+
     @get:Column(name = "hashes", nullable = false)
     var hashes: String
 ) {
@@ -41,6 +44,7 @@ data class UtxoMerkleProofEntity(
         if (transactionId != other.transactionId) return false
         if (groupIndex != other.groupIndex) return false
         if (treeSize != other.treeSize) return false
+        if (leafIndexes != other.leafIndexes) return false
         if (hashes != other.hashes) return false
 
         return true
@@ -51,6 +55,7 @@ data class UtxoMerkleProofEntity(
         result = 31 * result + transactionId.hashCode()
         result = 31 * result + groupIndex
         result = 31 * result + treeSize
+        result = 31 * result + leafIndexes.hashCode()
         result = 31 * result + hashes.hashCode()
         return result
     }

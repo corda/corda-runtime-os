@@ -460,6 +460,7 @@ class UtxoRepositoryImpl(
                 statement.setString(parameterIndex.next(), merkleProof.transactionId)
                 statement.setInt(parameterIndex.next(), merkleProof.groupIndex)
                 statement.setInt(parameterIndex.next(), merkleProof.treeSize)
+                statement.setString(parameterIndex.next(), merkleProof.leafIndexes.joinToString(","))
                 statement.setString(parameterIndex.next(), merkleProof.leafHashes.joinToString(","))
             }
         }
@@ -489,7 +490,7 @@ class UtxoRepositoryImpl(
                 // We'll have multiple rows for the same Merkle proof if it revealed more than one leaf
                 // We group the rows by the Merkle proof ID to see which are the ones that belong together
                 tuple.get(0) as String // Merkle Proof ID
-            }.map { (merkleProofId, rows) ->
+            }.map { (_, rows) ->
                 // We can retrieve most of the properties from the first row because they will be the same for each row
                 val firstRow = rows.first()
 
@@ -500,16 +501,16 @@ class UtxoRepositoryImpl(
 
                     // We store the hashes as a comma separated string, so we need to split it and parse into SecureHash
                     // we filter out the blank ones just in case
-                    (firstRow.get(4) as String).split(",")
+                    (firstRow.get(5) as String).split(",")
                         .filter { it.isNotBlank() }.map { parseSecureHash(it) },
 
-                    firstRow.get(5) as ByteArray, // Privacy salt
+                    firstRow.get(6) as ByteArray, // Privacy salt
 
                     // Each leaf will have its own row, so we need to go through each row that belongs to the Merkle proof
                     rows.mapNotNull {
                         // Map the leaf index to the data we fetched from the component table
-                        val leafIndex = it.get(6) as? Int
-                        val leafData = it.get(7) as? ByteArray
+                        val leafIndex = it.get(7) as? Int
+                        val leafData = it.get(8) as? ByteArray
 
                         if (leafIndex != null && leafData != null) {
                             leafIndex to leafData
@@ -517,8 +518,9 @@ class UtxoRepositoryImpl(
                             null
                         }
                     }.toMap(),
-                    // Extract the visible leaf indices from the merkle proof ID
-                    merkleProofId.substringAfterLast(";").split(",").map { it.toInt() }
+                    // We store the leaf indexes as a comma separated string, so we need to split it
+                    (firstRow.get(4) as String).split(",").map { it.toInt() },
+
                 )
             }.groupBy {
                 // Group by transaction ID

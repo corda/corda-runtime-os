@@ -543,7 +543,7 @@ class UtxoPersistenceServiceImpl(
                     nowUtc
                 )
 
-                val topLevelTransactionMerkleProof = UtxoRepository.TransactionMerkleProof(
+                val topLevelTransactionMerkleProof = createTransactionMerkleProof(
                     filteredTransaction.id.toString(),
                     TOP_LEVEL_MERKLE_PROOF_GROUP_INDEX,
                     filteredTransaction.topLevelMerkleProof.treeSize,
@@ -552,7 +552,7 @@ class UtxoPersistenceServiceImpl(
                 )
 
                 val componentGroupTransactionMerkleProofs = filteredTransaction.filteredComponentGroups.map { (groupIndex, groupData) ->
-                    val proof = UtxoRepository.TransactionMerkleProof(
+                    val proof = createTransactionMerkleProof(
                         filteredTransaction.id.toString(),
                         groupIndex,
                         groupData.merkleProof.treeSize,
@@ -724,6 +724,26 @@ class UtxoPersistenceServiceImpl(
                 // 6. Map the transaction id to the filtered transaction object and signatures
                 filteredTransaction.id to Pair(filteredTransaction, ftxDto.signatures)
             }.filterNotNull().toMap()
+    }
+
+    fun createTransactionMerkleProof(
+        transactionId: String,
+        groupIndex: Int,
+        treeSize: Int,
+        leafIndexes: List<Int>,
+        leafHashes: List<String>
+    ): UtxoRepository.TransactionMerkleProof {
+        return UtxoRepository.TransactionMerkleProof(
+            digestService.hash(
+                "$transactionId;$groupIndex;${leafIndexes.joinToString(separator = ",")}".toByteArray(Charsets.UTF_8),
+                DigestAlgorithmName.SHA2_256
+            ).toString(),
+            transactionId,
+            groupIndex,
+            treeSize,
+            leafIndexes,
+            leafHashes
+        )
     }
 
     private data class TransactionMerkleProofToPersist(
