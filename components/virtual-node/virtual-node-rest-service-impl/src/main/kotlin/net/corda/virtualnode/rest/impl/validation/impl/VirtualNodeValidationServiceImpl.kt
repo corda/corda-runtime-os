@@ -21,7 +21,7 @@ import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.rest.impl.validation.VirtualNodeValidationService
-import java.util.UUID
+import java.util.*
 
 internal class VirtualNodeValidationServiceImpl(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
@@ -117,7 +117,7 @@ internal class VirtualNodeValidationServiceImpl(
 
     @Suppress("ThrowsCount")
     private fun doValidateAndGetGroupId(request: CreateVirtualNodeRequest): String {
-        when (request) {
+        return when (request) {
             is DeprecatedCreateVirtualNodeRequest, is JsonCreateVirtualNodeRequest -> {
                 try {
                     MemberX500Name.parse(request.x500Name)
@@ -153,7 +153,7 @@ internal class VirtualNodeValidationServiceImpl(
                 }
 
                 // generate a group ID when creating a virtual node for an MGM default group.
-                return if (groupId == GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID) {
+                if (groupId == GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID) {
                     UUID.randomUUID().toString()
                 } else {
                     groupId
