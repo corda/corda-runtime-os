@@ -58,6 +58,7 @@ import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -851,10 +852,13 @@ class MGMResourceClientImpl @Activate constructor(
         private fun generateGroupPolicyResponse(response: MGMGroupPolicyResponse): String =
             response.groupPolicy.toString()
 
+        @Suppress("ThrowsCount")
         private inline fun <reified RESPONSE> MembershipRpcRequest.sendRequest(): RESPONSE {
             logger.debug { "Sending request: $this" }
             val response = try {
                 rpcSender.sendRequest(this).getOrThrow(TIMEOUT)
+            } catch (e: CordaRPCAPIPartitionException) {
+                throw e
             } catch (e: Exception) {
                 throw ServiceNotReadyException(e)
             }
