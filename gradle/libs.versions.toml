@@ -1,6 +1,7 @@
 [versions]
 kotlinVersion = "1.8.21"
 
+apacheCommonsCodecVersion="1.16.1"
 bouncycastleVersion = "1.77"
 braveVersion = "6.0.1"
 caffeineVersion = "3.1.8"
@@ -55,6 +56,7 @@ dokkaVersion = "1.9.10"
 testLoggerVersion = "4.0.0"
 
 [libraries]
+apache-commons-codec = { group = "commons-codec", name = "commons-codec", version.ref = "apacheCommonsCodecVersion" }
 assertj-core = { group = "org.assertj", name = "assertj-core", version.ref = "assertjVersion" }
 bouncycastle-pkix = { group = "org.bouncycastle", name = "bcpkix-jdk18on", version.ref = "bouncycastleVersion" }
 bouncycastle-prov = { group = "org.bouncycastle", name = "bcprov-jdk18on", version.ref = "bouncycastleVersion" }
