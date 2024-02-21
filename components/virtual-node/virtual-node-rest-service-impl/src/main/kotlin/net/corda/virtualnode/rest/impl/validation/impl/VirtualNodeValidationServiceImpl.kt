@@ -21,7 +21,7 @@ import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.rest.impl.validation.VirtualNodeValidationService
-import java.util.UUID
+import java.util.*
 
 internal class VirtualNodeValidationServiceImpl(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
@@ -94,19 +94,19 @@ internal class VirtualNodeValidationServiceImpl(
                 }
             }
             is JsonCreateVirtualNodeRequest -> {
-                if (request.vaultDdlConnection.toString().isNotBlank() && request.vaultDmlConnection.toString().isBlank()) {
+                if (request.vaultDdlConnection != null && request.vaultDmlConnection == null) {
                     throw InvalidInputDataException(
                         "If Vault DDL connection is provided, Vault DML connection needs to be provided as well."
                     )
                 }
 
-                if (request.cryptoDdlConnection.toString().isNotBlank() && request.cryptoDmlConnection.toString().isBlank()) {
+                if (request.cryptoDdlConnection != null && request.cryptoDmlConnection == null) {
                     throw InvalidInputDataException(
                         "If Crypto DDL connection is provided, Crypto DML connection needs to be provided as well."
                     )
                 }
 
-                if (request.uniquenessDdlConnection.toString().isNotBlank() && request.uniquenessDmlConnection.toString().isBlank()) {
+                if (request.uniquenessDdlConnection != null && request.uniquenessDmlConnection == null) {
                     throw InvalidInputDataException(
                         "If Uniqueness DDL connection is provided, Uniqueness DML connection needs to be provided as well."
                     )
