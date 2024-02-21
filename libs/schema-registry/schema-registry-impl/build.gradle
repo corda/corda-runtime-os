@@ -21,6 +21,7 @@ dependencies {
             because "CVE-2023-42503, current version of Avro uses an outdated version"
         }
     }
+    //needed by commons-compress
     implementation libs.apache.commons.codec
 
     implementation "net.corda:corda-avro-schema"
