@@ -30,6 +30,8 @@ snakeyamlVersion = "2.2"
 swaggeruiVersion = "5.10.3"
 # Note: We cannot go to the higher versions as they transitively depend on SLF4J 2.X
 swaggerVersion = "2.2.16"
+#Snappy used for compression
+snappyJavaVersion="1.1.10.5"
 typeSafeConfigVersion = "1.4.3"
 okHttpVersion = { strictly = "4.9.2" }
 okioVersion = { strictly = "3.4.0" }
@@ -115,6 +117,7 @@ okio = { group = "com.squareup.okio", name = "okio", version.ref = "okioVersion"
 okHttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okHttpVersion" }
 swagger-core = { group = "io.swagger.core.v3", name = "swagger-core", version.ref = "swaggerVersion" }
 swagger-ui = { group = "org.webjars", name = "swagger-ui", version.ref = "swaggeruiVersion" }
+snappy-java = { group = "org.xerial.snappy", name = "snappy-java", version.ref = "snappyJavaVersion" }
 zipkin-core = { group = "io.zipkin.zipkin2", name = "zipkin", version.ref = "zipkinCoreVersion" }
 zipkin-sender-urlconnection = { group = "io.zipkin.reporter2", name = "zipkin-sender-urlconnection", version.ref = "zipkinReporterVersion" }
 zipkin-reporter-brave = { group = "io.zipkin.reporter2", name = "zipkin-reporter-brave", version.ref = "zipkinReporterVersion" }

@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager.integration.stub
 
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.statemanager.api.CompressionType
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
@@ -11,7 +12,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.schema.configuration.StateManagerConfig
 
 class StateManagerFactoryStub : StateManagerFactory {
-    override fun create(config: SmartConfig, stateType: StateManagerConfig.StateType): StateManager {
+    override fun create(config: SmartConfig, stateType: StateManagerConfig.StateType, compressionType: CompressionType): StateManager {
         return object : StateManager {
             override val name = LifecycleCoordinatorName.forComponent<StateManager>()
             override fun create(states: Collection<State>): Set<String> = throw UnsupportedOperationException()

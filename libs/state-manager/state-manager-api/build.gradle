@@ -15,4 +15,6 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    testImplementation libs.assertj.core
 }

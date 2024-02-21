@@ -38,6 +38,7 @@ import org.mockito.Mockito.never
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -117,7 +118,7 @@ class KeyRotationRestResourceTest {
         }
 
         stateManagerFactory = mock<StateManagerFactory> {
-            on { create(any(), eq(StateManagerConfig.StateType.KEY_ROTATION)) } doReturn stateManager
+            on { create(any(), eq(StateManagerConfig.StateType.KEY_ROTATION), anyOrNull()) } doReturn stateManager
         }
 
         stateManagerPublicationCount = 0
@@ -204,7 +205,7 @@ class KeyRotationRestResourceTest {
     fun `initialize creates the publisher and state manager`() {
         createKeyRotationRestResource()
         verify(publisherFactory, times(1)).createPublisher(any(), any())
-        verify(stateManagerFactory, times(1)).create(any(), eq(StateManagerConfig.StateType.KEY_ROTATION))
+        verify(stateManagerFactory, times(1)).create(any(), eq(StateManagerConfig.StateType.KEY_ROTATION), anyOrNull())
     }
 
     @Test

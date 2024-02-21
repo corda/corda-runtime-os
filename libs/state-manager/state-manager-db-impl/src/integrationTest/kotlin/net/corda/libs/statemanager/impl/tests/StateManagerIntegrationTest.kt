@@ -6,6 +6,7 @@ import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.core.utils.transaction
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
+import net.corda.libs.statemanager.api.CompressionType
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.MetadataFilter
@@ -14,6 +15,7 @@ import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.metadata
 import net.corda.libs.statemanager.impl.StateManagerImpl
+import net.corda.libs.statemanager.impl.compression.CompressionService
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorder
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorderImpl
 import net.corda.libs.statemanager.impl.model.v1.resultSetAsStateCollection
@@ -39,7 +41,11 @@ import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.parallel.ResourceLock
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.TimeZone
 import java.util.UUID
@@ -75,10 +81,15 @@ class StateManagerIntegrationTest {
         }
     }
 
+    private val compressionService = mock<CompressionService>().also { service ->
+        whenever(service.writeBytes(any(), anyOrNull())).doAnswer { it.getArgument(0) }
+        whenever(service.readBytes(any())).doAnswer { it.getArgument(0) }
+    }
+
     private val stateManager: StateManager = StateManagerImpl(
         lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>(),
         dataSource = dataSource,
-        stateRepository = StateRepositoryImpl(queryProvider),
+        stateRepository = StateRepositoryImpl(queryProvider, compressionService, CompressionType.NONE),
         metricsRecorder = MetricsRecorderImpl()
     )
 
@@ -128,7 +139,7 @@ class StateManagerIntegrationTest {
                 .prepareStatement(queryProvider.findStatesByKey(1))
                 .use {
                     it.setString(1, key)
-                    it.executeQuery().resultSetAsStateCollection(objectMapper)
+                    it.executeQuery().resultSetAsStateCollection(objectMapper, compressionService)
                 }.elementAt(0)
 
             assertSoftly {
@@ -148,7 +159,7 @@ class StateManagerIntegrationTest {
                 .use {
                     it.setString(1, startEntityKey)
                     it.setString(2, finishEntityKey)
-                    it.executeQuery().resultSetAsStateCollection(objectMapper)
+                    it.executeQuery().resultSetAsStateCollection(objectMapper, compressionService)
                 }.sortedBy {
                     it.modifiedTime
                 }
