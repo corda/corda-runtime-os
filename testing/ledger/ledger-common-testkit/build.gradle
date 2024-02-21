@@ -12,6 +12,7 @@ dependencies {
     implementation project(':libs:crypto:cipher-suite')
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:ledger:ledger-common-data')
+    implementation project(':libs:crypto:crypto-impl')
     api project(':components:ledger:ledger-common-flow-api')
     api project(':libs:application:application-impl')
     api project(':libs:platform-info')
