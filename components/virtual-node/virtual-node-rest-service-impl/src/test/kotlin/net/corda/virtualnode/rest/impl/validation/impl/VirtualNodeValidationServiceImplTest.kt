@@ -6,7 +6,7 @@ import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
-import net.corda.libs.virtualnode.endpoints.v1.types.JsonCreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest.JsonCreateVirtualNodeRequest
 import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.InvalidInputDataException
