@@ -82,8 +82,6 @@ interface OutputAssertions {
 
     fun nullStateRecord()
 
-    fun notNullStateRecord()
-
     fun markedForDlq()
 
     fun entityRequestSent(expectedRequestPayload: Any)

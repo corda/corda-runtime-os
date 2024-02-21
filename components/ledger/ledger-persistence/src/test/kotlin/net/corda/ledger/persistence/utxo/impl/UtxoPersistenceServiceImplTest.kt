@@ -55,7 +55,7 @@ class UtxoPersistenceServiceImplTest {
             persistedJsonStrings[txId] = customRepresentation
         }
 
-        on { persistTransaction(any(), any(), any(), any(), any(), any(), any(), any()) } doAnswer {}
+        on { persistTransaction(any(), any(), any(), any(), any(), any(), any()) } doAnswer {}
         on { persistTransactionComponents(any(), any(), any(), any()) } doAnswer {}
     }
     private val mockDigestService = mock<DigestService> {

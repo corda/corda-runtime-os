@@ -2,12 +2,14 @@ package net.corda.gradle.plugin.cordalifecycle
 
 import kong.unirest.Unirest
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
+import net.corda.gradle.plugin.retryAttempts
 import java.io.File
 import java.net.Authenticator
 import java.net.PasswordAuthentication
 import java.net.URL
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 
 class EnvironmentSetupHelper {
 
@@ -33,7 +35,9 @@ class EnvironmentSetupHelper {
         }
         if (!File(targetFilePath).exists()) {
             File(targetFilePath).parentFile.mkdirs()
-            url.openStream().use { Files.copy(it, Paths.get(targetFilePath)) }
+            retryAttempts(attempts = 10) {
+                url.openStream().use { Files.copy(it, Paths.get(targetFilePath), StandardCopyOption.REPLACE_EXISTING) }
+            }
         }
     }
 

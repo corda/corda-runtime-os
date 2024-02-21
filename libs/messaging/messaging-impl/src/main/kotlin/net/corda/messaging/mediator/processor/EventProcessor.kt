@@ -13,6 +13,7 @@ import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.StateManagerHelper
+import net.corda.messaging.mediator.metrics.EventMediatorMetrics
 import net.corda.tracing.addTraceContextToRecord
 
 /**
@@ -28,6 +29,8 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     private val messageRouter: MessageRouter,
     private val mediatorInputService: MediatorInputService,
 ) {
+
+    private val metrics = EventMediatorMetrics(config.name)
 
     /**
      * Process a group of events.
@@ -81,6 +84,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
             // If an intermittent error occurs here, the RPC client has failed to deliver a message to another part
             // of the system despite the retry loop implemented there. The exception may contain any state that has been output
             // from the processing of consumer input.
+            metrics.eventProcessorFailureCounter.increment()
             asyncOutputs.clear()
             stateManagerHelper.failStateProcessing(
                 key.toString(),

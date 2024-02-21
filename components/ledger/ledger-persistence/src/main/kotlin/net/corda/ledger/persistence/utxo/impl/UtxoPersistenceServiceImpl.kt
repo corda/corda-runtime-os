@@ -317,17 +317,27 @@ class UtxoPersistenceServiceImpl(
                 requireNotNull(metadata.getCpiMetadata()) { "Metadata without CPI metadata" }.fileChecksum
             )
 
-            // Insert the Transaction
-            repository.persistTransaction(
-                em,
-                transactionIdString,
-                transaction.privacySalt.bytes,
-                transaction.account,
-                nowUtc,
-                transaction.status,
-                metadataHash,
-                isFiltered = false
-            )
+            if (transaction.status != TransactionStatus.UNVERIFIED) {
+                // Insert the Transaction
+                repository.persistTransaction(
+                    em,
+                    transactionIdString,
+                    transaction.privacySalt.bytes,
+                    transaction.account,
+                    nowUtc,
+                    transaction.status,
+                    metadataHash,
+                )
+            } else {
+                repository.persistUnverifiedTransaction(
+                    em,
+                    transactionIdString,
+                    transaction.privacySalt.bytes,
+                    transaction.account,
+                    nowUtc,
+                    metadataHash
+                )
+            }
 
             repository.persistTransactionComponents(
                 em,
@@ -478,8 +488,6 @@ class UtxoPersistenceServiceImpl(
 
                 val nowUtc = utcClock.instant()
 
-                val metadata = filteredTransaction.metadata as TransactionMetadataInternal
-
                 // 1. Get the metadata bytes from the 0th component group merkle proof and create the hash
                 val metadataBytes = filteredTransaction.filteredComponentGroups[0]
                     ?.merkleProof
@@ -490,6 +498,8 @@ class UtxoPersistenceServiceImpl(
                 requireNotNull(metadataBytes) {
                     "Could not find metadata in the filtered transaction with id: ${filteredTransaction.id}"
                 }
+
+                val metadata = filteredTransaction.metadata as TransactionMetadataInternal
 
                 val metadataHash = sandboxDigestService.hash(
                     metadataBytes,
@@ -510,15 +520,13 @@ class UtxoPersistenceServiceImpl(
                 )
 
                 // 3. Persist the transaction itself to the utxo_transaction table
-                repository.persistTransaction(
+                repository.persistFilteredTransaction(
                     em,
                     filteredTransaction.id.toString(),
                     filteredTransaction.privacySalt.bytes,
                     account,
                     nowUtc,
-                    TransactionStatus.VERIFIED,
                     metadataHash,
-                    isFiltered = true
                 )
 
                 // 4. Persist the signatures

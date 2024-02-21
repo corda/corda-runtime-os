@@ -45,9 +45,6 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     private val eventProcessor: EventProcessor<K, S, E>,
     private val stateManagerHelper: StateManagerHelper<S>
 ) {
-    private companion object {
-        private const val EVENT_PROCESSING_TIMEOUT_MILLIS = 120000L // 120 seconds
-    }
 
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.name}")
 
@@ -108,6 +105,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val startTimestamp = System.nanoTime()
         val polledRecords = messages.map { it.toRecord() }.groupBy { it.key }
         if (messages.isNotEmpty()) {
+            val statesToDelete = mutableListOf<State>()
             val states = stateManager.get(polledRecords.keys.map { it.toString() })
             val inputs = generateInputs(states.values, polledRecords)
             var groups = groupAllocator.allocateGroups(inputs, config)
@@ -125,6 +123,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                     try {
                         future.getOrThrow(config.processorTimeout)
                     } catch (e: TimeoutException) {
+                        metrics.consumerProcessorFailureCounter.increment(group.keys.size.toDouble())
                         group.mapValues { (key, input) ->
                             val oldState = input.state
                             val state = stateManagerHelper.failStateProcessing(
@@ -147,7 +146,8 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 }
 
                 // Persist state changes, send async outputs and setup to reprocess states that fail to persist
-                val failedStates = processOutputs(outputs)
+                val (failedStates, deleteStates) = processOutputs(outputs)
+                statesToDelete.addAll(deleteStates)
                 val failedRecords = polledRecords.filter { (key, _) ->
                     key.toString() in failedStates
                 }
@@ -156,6 +156,9 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             metrics.commitTimer.recordCallable {
                 consumer.syncCommitOffsets()
             }
+            //Delete occurs after committing offsets bus to satisfy replay requirements in the Flow Engine. Ignore Failures, these are
+            // logged in SM and recorded by a metric
+            stateManager.delete(statesToDelete)
         }
         metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
     }
@@ -188,7 +191,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      * Will send any asynchronous outputs back to the bus for states which saved successfully.
      * @return a map of all the states that failed to save by their keys.
      */
-    private fun processOutputs(outputs: Map<String, EventProcessingOutput>): Map<String, State> {
+    private fun processOutputs(outputs: Map<String, EventProcessingOutput>): Pair<Map<String, State>, List<State>> {
         val statesToCreate = mutableListOf<State>()
         val statesToUpdate = mutableListOf<State>()
         val statesToDelete = mutableListOf<State>()
@@ -202,16 +205,15 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         }
         val failedToCreateKeys = stateManager.create(statesToCreate)
         val failedToCreate = stateManager.get(failedToCreateKeys)
-        val failedToDelete = stateManager.delete(statesToDelete)
         val failedToUpdate = stateManager.update(statesToUpdate)
         val failedToUpdateOptimisticLockFailure = failedToUpdate.mapNotNull { (key, value) ->
             value?.let { key to it }
         }.toMap()
-        val failedKeys = failedToCreate.keys + failedToDelete.keys + failedToUpdate.keys
+        val failedKeys = failedToCreate.keys + failedToUpdate.keys
         val outputsToSend = (outputs - failedKeys).values.flatMap { it.asyncOutputs }
         sendAsynchronousEvents(outputsToSend)
 
-        return failedToCreate + failedToDelete + failedToUpdateOptimisticLockFailure
+        return Pair(failedToCreate + failedToUpdateOptimisticLockFailure, statesToDelete)
     }
 
     /**

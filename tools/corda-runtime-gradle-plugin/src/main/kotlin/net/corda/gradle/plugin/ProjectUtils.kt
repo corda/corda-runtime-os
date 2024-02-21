@@ -71,6 +71,33 @@ fun <R> retry(
 }
 
 /**
+ * Automatically retries the [block] until the operation is successful or max [attempts] are reached.
+ * @param attempts a positive number of attempts to retry the operation if fails. Default value is 10 attempts.
+ * @param cooldown time to wait between retries. Default value is 1 second.
+ * @param block the block of code to execute
+ * @throws Exception if the operation fails after all retries
+ */
+fun <R> retryAttempts(
+    attempts: Int = 10,
+    cooldown: Duration = Duration.ofMillis(1000),
+    block: () -> R
+): R {
+    require(attempts > 0) { "Number of attempts should be positive" }
+    var firstException: Exception? = null
+
+    for (attempt in (1..attempts)) {
+        try {
+            return block()
+        } catch (e: Exception) {
+            if (firstException == null) {
+                firstException = e
+            }
+            rpcWait(cooldown.toMillis())
+        }
+    }; throw firstException!!
+}
+
+/**
  * Gets a list of the virtual nodes which have already been created.
  * @Param the [ProjectContext]
  * @return a list of the virtual nodes which have already been created.

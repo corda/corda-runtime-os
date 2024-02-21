@@ -191,7 +191,6 @@ class UtxoRepositoryImpl(
         timestamp: Instant,
         status: TransactionStatus,
         metadataHash: String,
-        isFiltered: Boolean
     ) {
         entityManager.createNativeQuery(queryProvider.persistTransaction)
             .setParameter("id", id)
@@ -201,7 +200,44 @@ class UtxoRepositoryImpl(
             .setParameter("status", status.value)
             .setParameter("updatedAt", timestamp)
             .setParameter("metadataHash", metadataHash)
-            .setParameter("isFiltered", isFiltered)
+            .executeUpdate()
+            .logResult("transaction [$id]")
+    }
+
+    override fun persistUnverifiedTransaction(
+        entityManager: EntityManager,
+        id: String,
+        privacySalt: ByteArray,
+        account: String,
+        timestamp: Instant,
+        metadataHash: String,
+    ) {
+        entityManager.createNativeQuery(queryProvider.persistUnverifiedTransaction)
+            .setParameter("id", id)
+            .setParameter("privacySalt", privacySalt)
+            .setParameter("accountId", account)
+            .setParameter("createdAt", timestamp)
+            .setParameter("updatedAt", timestamp)
+            .setParameter("metadataHash", metadataHash)
+            .executeUpdate()
+            .logResult("transaction [$id]")
+    }
+
+    override fun persistFilteredTransaction(
+        entityManager: EntityManager,
+        id: String,
+        privacySalt: ByteArray,
+        account: String,
+        timestamp: Instant,
+        metadataHash: String
+    ) {
+        entityManager.createNativeQuery(queryProvider.persistFilteredTransaction)
+            .setParameter("id", id)
+            .setParameter("privacySalt", privacySalt)
+            .setParameter("accountId", account)
+            .setParameter("createdAt", timestamp)
+            .setParameter("updatedAt", timestamp)
+            .setParameter("metadataHash", metadataHash)
             .executeUpdate()
             .logResult("transaction [$id]")
     }
