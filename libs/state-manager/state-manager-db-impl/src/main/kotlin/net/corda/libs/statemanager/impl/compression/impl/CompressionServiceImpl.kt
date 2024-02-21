@@ -26,7 +26,7 @@ class CompressionServiceImpl : CompressionService {
 
     override fun readBytes(bytes: ByteArray): ByteArray {
         if (bytes.size < HEADER_SIZE) {
-            log.debug { "Read ByteArray from state manager whose size was less than 4" }
+            log.debug { "Read ByteArray from state manager whose size was less than $HEADER_SIZE" }
             return bytes
         }
 

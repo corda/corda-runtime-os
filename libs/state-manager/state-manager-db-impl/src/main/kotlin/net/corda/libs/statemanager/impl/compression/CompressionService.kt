@@ -6,7 +6,7 @@ interface CompressionService {
 
     /**
      * Prepare [bytes] to be written to the underlying storage. If [compressionType] is set to something other than [CompressionType.NONE]
-     * then the compression alogrithm chosen is applied to [bytes].
+     * then the compression algorithm chosen is applied to [bytes].
      * The [compressionType] used is prefixed to the bytes returned.
      * This allows the service to read the bytes from the storage and decompress using the appropriate algorithm.
      * @param bytes to be prepared to be written to the storage
