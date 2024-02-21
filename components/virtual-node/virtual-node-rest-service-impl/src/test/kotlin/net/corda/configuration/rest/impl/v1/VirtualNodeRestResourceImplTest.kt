@@ -10,7 +10,7 @@ import net.corda.data.virtualnode.VirtualNodeOperationStatusResponse
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationNotFoundException
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest.JsonCreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.JsonCreateVirtualNodeRequest
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.rest.asynchronous.v1.AsyncOperationStatus

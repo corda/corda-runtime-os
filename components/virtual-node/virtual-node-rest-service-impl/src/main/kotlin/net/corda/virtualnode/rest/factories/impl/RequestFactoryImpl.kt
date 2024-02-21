@@ -3,9 +3,9 @@ package net.corda.virtualnode.rest.factories.impl
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.data.virtualnode.VirtualNodeDbConnectionUpdateRequest
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest.DeprecatedCreateVirtualNodeRequest
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest.JsonCreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.CreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.JsonCreateVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.UpdateVirtualNodeDbRequest
 import net.corda.rest.security.RestContextProvider
 import net.corda.utilities.time.Clock
@@ -19,13 +19,13 @@ internal class RequestFactoryImpl(
     private val restContextProvider: RestContextProvider,
     private val clock: Clock
 ) : RequestFactory {
-    override fun createHoldingIdentity(groupId: String, request: CreateVirtualNodeRequest): HoldingIdentity {
+    override fun createHoldingIdentity(groupId: String, request: CreateVirtualNodeRequestType): HoldingIdentity {
         return HoldingIdentity(MemberX500Name.parse(request.x500Name), groupId)
     }
 
     override fun createVirtualNodeRequest(
         holdingIdentity: HoldingIdentity,
-        request: CreateVirtualNodeRequest
+        request: CreateVirtualNodeRequestType
     ): VirtualNodeAsynchronousRequest {
         return VirtualNodeAsynchronousRequest().apply {
             this.requestId = holdingIdentity.shortHash.toString()
@@ -35,7 +35,7 @@ internal class RequestFactoryImpl(
                 this.cpiFileChecksum = request.cpiFileChecksum
                 this.updateActor = restContextProvider.principal
                 when (request) {
-                    is DeprecatedCreateVirtualNodeRequest -> {
+                    is CreateVirtualNodeRequest -> {
                         this.vaultDdlConnection = request.vaultDdlConnection
                         this.vaultDmlConnection = request.vaultDmlConnection
                         this.cryptoDdlConnection = request.cryptoDdlConnection

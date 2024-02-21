@@ -8,11 +8,11 @@ import net.corda.rest.JsonObject
  * @param x500Name The X500 name for the new virtual node.
  * @param cpiFileChecksum The checksum of the CPI file.
  */
-sealed class CreateVirtualNodeRequest {
+sealed class CreateVirtualNodeRequestType {
     abstract val cpiFileChecksum: String
     abstract val x500Name: String
 
-    data class DeprecatedCreateVirtualNodeRequest(
+    data class CreateVirtualNodeRequest(
         override val x500Name: String,
         override var cpiFileChecksum: String,
         val vaultDdlConnection: String?,
@@ -21,7 +21,7 @@ sealed class CreateVirtualNodeRequest {
         val cryptoDmlConnection: String?,
         val uniquenessDdlConnection: String?,
         val uniquenessDmlConnection: String?
-    ) : CreateVirtualNodeRequest() {
+    ) : CreateVirtualNodeRequestType() {
         init {
             // Whilst checksum can be expressed with either upper or lower case characters and has the same logical meaning,
             // all the cache keys using uppercase representation of CPI checksum, therefore early during processing cycle
@@ -39,7 +39,7 @@ sealed class CreateVirtualNodeRequest {
         val cryptoDmlConnection: JsonObject?,
         val uniquenessDdlConnection: JsonObject?,
         val uniquenessDmlConnection: JsonObject?
-    ) : CreateVirtualNodeRequest() {
+    ) : CreateVirtualNodeRequestType() {
         init {
             cpiFileChecksum = cpiFileChecksum.uppercase()
         }

@@ -2,7 +2,7 @@ package net.corda.virtualnode.rest.factories.impl
 
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest.JsonCreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.JsonCreateVirtualNodeRequest
 import net.corda.rest.json.serialization.JsonObjectAsString
 import net.corda.rest.security.RestContextProvider
 import net.corda.utilities.time.Clock

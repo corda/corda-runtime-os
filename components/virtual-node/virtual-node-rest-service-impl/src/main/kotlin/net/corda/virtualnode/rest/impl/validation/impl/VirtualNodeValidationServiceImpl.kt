@@ -4,9 +4,9 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.ShortHashException
 import net.corda.libs.packaging.core.CpiMetadata
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest.DeprecatedCreateVirtualNodeRequest
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest.JsonCreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.CreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.JsonCreateVirtualNodeRequest
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.membership.lib.grouppolicy.GroupPolicyParseException
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
@@ -36,7 +36,7 @@ internal class VirtualNodeValidationServiceImpl(
         }
     }
 
-    override fun validateAndGetGroupId(request: CreateVirtualNodeRequest): String {
+    override fun validateAndGetGroupId(request: CreateVirtualNodeRequestType): String {
         return doValidateAndGetGroupId(request)
     }
 
@@ -72,9 +72,9 @@ internal class VirtualNodeValidationServiceImpl(
     }
 
     @Suppress("ThrowsCount")
-    private fun validateConnectionParams(request: CreateVirtualNodeRequest) {
+    private fun validateConnectionParams(request: CreateVirtualNodeRequestType) {
         when (request) {
-            is DeprecatedCreateVirtualNodeRequest -> {
+            is CreateVirtualNodeRequest -> {
                 if (!request.vaultDdlConnection.isNullOrBlank() && request.vaultDmlConnection.isNullOrBlank()) {
                     throw InvalidInputDataException(
                         "If Vault DDL connection is provided, Vault DML connection needs to be provided as well."
@@ -116,9 +116,9 @@ internal class VirtualNodeValidationServiceImpl(
     }
 
     @Suppress("ThrowsCount")
-    private fun doValidateAndGetGroupId(request: CreateVirtualNodeRequest): String {
+    private fun doValidateAndGetGroupId(request: CreateVirtualNodeRequestType): String {
         return when (request) {
-            is DeprecatedCreateVirtualNodeRequest, is JsonCreateVirtualNodeRequest -> {
+            is CreateVirtualNodeRequest, is JsonCreateVirtualNodeRequest -> {
                 try {
                     MemberX500Name.parse(request.x500Name)
                 } catch (e: Exception) {

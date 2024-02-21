@@ -19,7 +19,7 @@ import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest.JsonCreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.JsonCreateVirtualNodeRequest
 import net.corda.membership.rest.v1.CertificatesRestResource
 import net.corda.membership.rest.v1.HsmRestResource
 import net.corda.membership.rest.v1.KeysRestResource
@@ -52,7 +52,7 @@ import java.net.URI
 import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
-import java.util.Date
+import java.util.*
 
 @Suppress("TooManyFunctions")
 abstract class BaseOnboard : Runnable, RestCommand() {
