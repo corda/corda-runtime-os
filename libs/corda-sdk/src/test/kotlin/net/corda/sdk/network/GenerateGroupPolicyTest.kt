@@ -12,35 +12,11 @@ import kotlin.test.assertTrue
 class GenerateGroupPolicyTest {
 
     private val om = jacksonObjectMapper()
-    private val defaultMembers by lazy {
-        listOf(
-            mapOf(
-                "name" to "C=GB, L=London, O=Alice",
-                "memberStatus" to "ACTIVE",
-                "endpointUrl-1" to "https://alice.corda5.r3.com:10000",
-                "endpointProtocol-1" to 1,
-            ),
-            mapOf(
-                "name" to "C=GB, L=London, O=Bob",
-                "memberStatus" to "ACTIVE",
-                "endpointUrl-1" to "https://bob.corda5.r3.com:10000",
-                "endpointProtocol-1" to 1,
-            ),
-            mapOf(
-                "name" to "C=GB, L=London, O=Charlie",
-                "memberStatus" to "SUSPENDED",
-                "endpointUrl-1" to "https://charlie.corda5.r3.com:10000",
-                "endpointProtocol-1" to 1,
-                "endpointUrl-2" to "https://charlie-dr.corda5.r3.com:10001",
-                "endpointProtocol-2" to 1,
-            ),
-        )
-    }
 
     @Test
     fun generatedOutputIsValidJson() {
         val ggp = GenerateGroupPolicy()
-        val returnValue = ggp.generateStaticGroupPolicy(defaultMembers)
+        val returnValue = ggp.generateStaticGroupPolicy(GenerateGroupPolicy.defaultMembers)
         val returnValueAsString = om.writeValueAsString(returnValue)
         assertNotEquals(0, returnValueAsString.length)
         assertTrue(isValidJson(returnValueAsString))
@@ -55,6 +31,22 @@ class GenerateGroupPolicyTest {
         val returnValueAsString = om.writeValueAsString(returnValue)
         val memberList = memberList(returnValueAsString)
         assertTrue(memberList.isNull)
+    }
+
+    @Test
+    fun `when default members are passed, default values are used`() {
+        val ggp = GenerateGroupPolicy()
+        val returnValue = ggp.generateStaticGroupPolicy(GenerateGroupPolicy.defaultMembers)
+        val returnValueAsString = om.writeValueAsString(returnValue)
+        val memberList = memberList(returnValueAsString)
+        memberList.find { it["name"].asText() == "C=GB, L=London, O=Alice" }.apply {
+            assertEquals("ACTIVE", this?.get("memberStatus")?.asText())
+            assertEquals("https://alice.corda5.r3.com:10000", this?.get("endpointUrl-1")?.asText())
+            assertEquals("1", this?.get("endpointProtocol-1")?.asText())
+        }
+
+        assertNotNull(memberList.find { it["name"].asText() == "C=GB, L=London, O=Bob" })
+        assertNotNull(memberList.find { it["name"].asText() == "C=GB, L=London, O=Charlie" })
     }
 
     @Test

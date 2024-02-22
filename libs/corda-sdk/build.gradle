@@ -12,8 +12,12 @@ ext {
 }
 
 dependencies {
+    implementation project(':components:membership:membership-rest')
     implementation libs.jackson.module.kotlin
     implementation libs.kotlin.stdlib
+    implementation project(':libs:membership:membership-common')
+    implementation project(':libs:rest:rest-client')
     testImplementation libs.bundles.test
+    testImplementation project(':testing:test-utilities')
 }
 

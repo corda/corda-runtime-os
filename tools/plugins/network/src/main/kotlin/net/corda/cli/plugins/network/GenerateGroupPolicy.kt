@@ -67,33 +67,8 @@ class GenerateGroupPolicy(private val output: Output = ConsoleOutput()) : Runnab
         return GenerateGroupPolicy().generateStaticGroupPolicy(members)
     }
 
-    private val defaultMembers by lazy {
-        listOf(
-            mapOf(
-                "name" to "C=GB, L=London, O=Alice",
-                "memberStatus" to "ACTIVE",
-                "endpointUrl-1" to "https://alice.corda5.r3.com:10000",
-                "endpointProtocol-1" to 1,
-            ),
-            mapOf(
-                "name" to "C=GB, L=London, O=Bob",
-                "memberStatus" to "ACTIVE",
-                "endpointUrl-1" to "https://bob.corda5.r3.com:10000",
-                "endpointProtocol-1" to 1,
-            ),
-            mapOf(
-                "name" to "C=GB, L=London, O=Charlie",
-                "memberStatus" to "SUSPENDED",
-                "endpointUrl-1" to "https://charlie.corda5.r3.com:10000",
-                "endpointProtocol-1" to 1,
-                "endpointUrl-2" to "https://charlie-dr.corda5.r3.com:10001",
-                "endpointProtocol-2" to 1,
-            ),
-        )
-    }
-
     private val members by lazy {
-        memberListFromInput() ?: defaultMembers
+        memberListFromInput() ?: GenerateGroupPolicy.defaultMembers
     }
 
     /**

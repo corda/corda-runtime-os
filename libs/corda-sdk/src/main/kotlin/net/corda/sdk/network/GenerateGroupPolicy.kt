@@ -5,6 +5,31 @@ import java.util.*
 class GenerateGroupPolicy {
     companion object {
         private const val MEMBER_STATUS_ACTIVE = "ACTIVE"
+
+        val defaultMembers by lazy {
+            listOf(
+                mapOf(
+                    "name" to "C=GB, L=London, O=Alice",
+                    "memberStatus" to "ACTIVE",
+                    "endpointUrl-1" to "https://alice.corda5.r3.com:10000",
+                    "endpointProtocol-1" to 1,
+                ),
+                mapOf(
+                    "name" to "C=GB, L=London, O=Bob",
+                    "memberStatus" to "ACTIVE",
+                    "endpointUrl-1" to "https://bob.corda5.r3.com:10000",
+                    "endpointProtocol-1" to 1,
+                ),
+                mapOf(
+                    "name" to "C=GB, L=London, O=Charlie",
+                    "memberStatus" to "SUSPENDED",
+                    "endpointUrl-1" to "https://charlie.corda5.r3.com:10000",
+                    "endpointProtocol-1" to 1,
+                    "endpointUrl-2" to "https://charlie-dr.corda5.r3.com:10001",
+                    "endpointProtocol-2" to 1,
+                ),
+            )
+        }
     }
 
     fun createMembersListFromListOfX500Strings(

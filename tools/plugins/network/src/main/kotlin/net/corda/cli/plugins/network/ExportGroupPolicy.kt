@@ -1,10 +1,10 @@
 package net.corda.cli.plugins.network
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
-import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
 import net.corda.membership.rest.v1.MGMRestResource
+import net.corda.sdk.network.ExportGroupPolicyFromMgm
+import net.corda.sdk.rest.RestClientUtils.createRestClient
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
@@ -33,23 +33,18 @@ class ExportGroupPolicy : Runnable, RestCommand() {
     }
 
     private fun exportGroupPolicy() {
-        val objectMapper = ObjectMapper()
-        val groupPolicyResponse = createRestClient(MGMRestResource::class).use { client ->
-            checkInvariant(
-                maxAttempts = MAX_ATTEMPTS,
-                waitInterval = WAIT_INTERVAL,
-                errorMessage = "Failed to export group policy after $MAX_ATTEMPTS attempts.",
-            ) {
-                try {
-                    val resource = client.start().proxy
-                    resource.generateGroupPolicy(holdingIdentityShortHash!!)
-                } catch (e: Exception) {
-                    null
-                }
-            }
-        }
-
+        require(holdingIdentityShortHash != null) { "A holding Id must be specified for the MGM." }
+        val restClient = createRestClient(
+            MGMRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+        val groupPolicyResponse = ExportGroupPolicyFromMgm().exportPolicy(restClient, holdingIdentityShortHash!!)
         saveLocation.parentFile.mkdirs()
+        val objectMapper = ObjectMapper()
         objectMapper.writerWithDefaultPrettyPrinter()
             .writeValue(
                 saveLocation,
