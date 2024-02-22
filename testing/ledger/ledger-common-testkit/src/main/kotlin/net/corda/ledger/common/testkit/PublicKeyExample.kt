@@ -14,3 +14,6 @@ val publicKeyExample: PublicKey = keyPairExample.public
 
 val anotherPublicKeyExample: PublicKey = kpg
     .generateKeyPair().public
+
+fun generatePublicKey(): PublicKey = KeyPairGenerator.getInstance("EC")
+    .also { it.initialize(ECGenParameterSpec("secp256r1")) }.genKeyPair().public
