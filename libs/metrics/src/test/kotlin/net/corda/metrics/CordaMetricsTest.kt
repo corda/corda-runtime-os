@@ -29,6 +29,7 @@ class CordaMetricsTest {
             meterSourceName,
             registry,
             ("corda_p2p_session_(inbound|outbound)|" +
+                    "corda_p2p_message_outbound_total|" +
                     "corda_membership_memberlist_cache_size|" +
                     "corda_flow_execution_time_seconds_(count|sum|max)|" +
                     "corda_http_server_request_time_seconds_(count|sum|max|bucket)").toRegex(),
@@ -159,6 +160,13 @@ class CordaMetricsTest {
             .hasSize(1)
         assertThat(meter.takeSnapshot().histogramCounts())
             .isNotEmpty()
+    }
+
+    @Test
+    fun `all metrics allowed for counter`() {
+        CordaMetrics.Metric.OutboundMessageCount.builder().build()
+        assertThat(CordaMetrics.registry.meters)
+            .hasSize(1)
     }
 
     @Test
