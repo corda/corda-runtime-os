@@ -3893,7 +3893,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/JsonCreateVirtualNodeRequest"
+                "$ref" : "#/components/schemas/CreateVirtualNodeRequest"
               }
             }
           },
@@ -4865,6 +4865,53 @@
         },
         "description" : "\n                Details of the user to be created with the following parameters:\n                enabled: If true, the user account is enabled; false, the account is disabled\n                fullName: The full name for the new user\n                initialPassword: The initial password for the new user; \n                    the value can be null for Single Sign On (SSO) users\n                loginName: The login name for the new user\n                parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n                passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire"
       },
+      "CreateVirtualNodeRequest" : {
+        "required" : [ "cpiFileChecksum", "x500Name" ],
+        "type" : "object",
+        "properties" : {
+          "cpiFileChecksum" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "cryptoDdlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "cryptoDmlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "uniquenessDdlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "uniquenessDmlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "vaultDdlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "vaultDmlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "x500Name" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "description" : "Details of the virtual node to be created"
+      },
       "FlowResultResponse" : {
         "required" : [ "flowStatus", "holdingIdentityShortHash", "timestamp" ],
         "type" : "object",
@@ -5168,137 +5215,6 @@
             "example" : "string"
           }
         }
-      },
-      "JsonCreateVirtualNodeRequest" : {
-        "required" : [ "cpiFileChecksum", "x500Name" ],
-        "type" : "object",
-        "properties" : {
-          "cpiFileChecksum" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "cryptoDdlConnection" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
-            "nullable" : true,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "anyOf" : [ {
-              "type" : "string"
-            }, {
-              "type" : "number"
-            }, {
-              "type" : "integer",
-              "format" : "int32"
-            }, {
-              "type" : "boolean"
-            }, {
-              "type" : "array"
-            }, {
-              "type" : "object"
-            } ]
-          },
-          "cryptoDmlConnection" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
-            "nullable" : true,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "anyOf" : [ {
-              "type" : "string"
-            }, {
-              "type" : "number"
-            }, {
-              "type" : "integer",
-              "format" : "int32"
-            }, {
-              "type" : "boolean"
-            }, {
-              "type" : "array"
-            }, {
-              "type" : "object"
-            } ]
-          },
-          "uniquenessDdlConnection" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
-            "nullable" : true,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "anyOf" : [ {
-              "type" : "string"
-            }, {
-              "type" : "number"
-            }, {
-              "type" : "integer",
-              "format" : "int32"
-            }, {
-              "type" : "boolean"
-            }, {
-              "type" : "array"
-            }, {
-              "type" : "object"
-            } ]
-          },
-          "uniquenessDmlConnection" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
-            "nullable" : true,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "anyOf" : [ {
-              "type" : "string"
-            }, {
-              "type" : "number"
-            }, {
-              "type" : "integer",
-              "format" : "int32"
-            }, {
-              "type" : "boolean"
-            }, {
-              "type" : "array"
-            }, {
-              "type" : "object"
-            } ]
-          },
-          "vaultDdlConnection" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
-            "nullable" : true,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "anyOf" : [ {
-              "type" : "string"
-            }, {
-              "type" : "number"
-            }, {
-              "type" : "integer",
-              "format" : "int32"
-            }, {
-              "type" : "boolean"
-            }, {
-              "type" : "array"
-            }, {
-              "type" : "object"
-            } ]
-          },
-          "vaultDmlConnection" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
-            "nullable" : true,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "anyOf" : [ {
-              "type" : "string"
-            }, {
-              "type" : "number"
-            }, {
-              "type" : "integer",
-              "format" : "int32"
-            }, {
-              "type" : "boolean"
-            }, {
-              "type" : "array"
-            }, {
-              "type" : "object"
-            } ]
-          },
-          "x500Name" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "description" : "Details of the virtual node to be created"
       },
       "KeyMetaData" : {
         "required" : [ "alias", "created", "hsmCategory", "keyId", "scheme" ],
