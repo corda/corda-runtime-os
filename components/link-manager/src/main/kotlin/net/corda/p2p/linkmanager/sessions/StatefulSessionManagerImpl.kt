@@ -640,6 +640,7 @@ internal class StatefulSessionManagerImpl(
                 sessionManagerImpl.revocationCheckerClient::checkRevocation,
             )?.message ?: return null
         val previousHeader = previousSessionMessage.header
+        val outboundMetadata = metadata.toOutbound()
         val linkOutMessage = membershipGroupReaderProvider.lookup(
             previousHeader.sourceIdentity.toCorda(),
             previousHeader.destinationIdentity.toCorda(),
@@ -651,8 +652,15 @@ internal class StatefulSessionManagerImpl(
                 it,
                 previousHeader.destinationNetworkType
             )
-        } ?: return null
-        val outboundMetadata = metadata.toOutbound()
+        } ?: return null.also {
+            logger.warn(
+                "Attempted to resend a session negotiation message (type " +
+                        "'${previousSessionMessage.payload::class.java.simpleName}') for session with ID " +
+                        "'${outboundMetadata.sessionId}' between '${outboundMetadata.commonData.source}' and peer " +
+                        "'${outboundMetadata.commonData.destination}' with status '$statusFilter', " +
+                        "but could not construct LinkOutMessage. The message was not resent."
+            )
+        }
         val updatedMetadata = outboundMetadata.copy(
             commonData = outboundMetadata.commonData.copy(
                 lastSendTimestamp = clock.instant(),
