@@ -18,7 +18,7 @@ dependencies {
     
     implementation "org.apache.avro:avro:$avroVersion"
     constraints {
-        implementation("org.apache.commons:commons-compress:$commonsCompressVersion") {
+        implementation(libs.apache.commons.compress) {
             because "CVE-2023-42503, current version of Avro uses an outdated version"
         }
     }
@@ -42,4 +42,11 @@ dependencies {
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(":libs:web:web-impl")
+}
+
+configurations.all {
+    resolutionStrategy {
+        // CVE-2023-42503, current version of Avro uses an outdated version
+        force libs.apache.commons.compress
+    }
 }
