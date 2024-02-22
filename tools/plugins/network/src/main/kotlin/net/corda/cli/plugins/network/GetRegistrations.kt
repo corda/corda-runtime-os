@@ -1,17 +1,15 @@
 package net.corda.cli.plugins.network
 
-import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.cli.plugins.network.output.ConsoleOutput
 import net.corda.cli.plugins.network.output.Output
 import net.corda.cli.plugins.network.utils.HoldingIdentityUtils.getHoldingIdentity
-import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
 import net.corda.cli.plugins.network.utils.PrintUtils.printJsonOutput
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.membership.rest.v1.MemberRegistrationRestResource
 import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
-import net.corda.rest.exception.ResourceNotFoundException
-import net.corda.rest.exception.ServiceUnavailableException
+import net.corda.sdk.network.RegistrationsLookup
+import net.corda.sdk.rest.RestClientUtils.createRestClient
 import picocli.CommandLine
 
 @CommandLine.Command(
@@ -59,32 +57,19 @@ class GetRegistrations(private val output: Output = ConsoleOutput()) :
     var requestId: String? = null
 
     private fun getRegistrations(): List<RestRegistrationRequestStatus> {
-        return createRestClient(MemberRegistrationRestResource::class).use { client ->
-            checkInvariant(
-                maxAttempts = MAX_ATTEMPTS,
-                waitInterval = WAIT_INTERVAL,
-                errorMessage = "Could not find the specified registration " +
-                    "request(s) for member '$holdingIdentityShortHash'.",
-            ) {
-                try {
-                    val registrationProxy = client.start().proxy
-                    val holdingIdentity = getHoldingIdentity(holdingIdentityShortHash, name, group)
-                    if (requestId != null) {
-                        listOf(
-                            registrationProxy.checkSpecificRegistrationProgress(
-                                holdingIdentity,
-                                requestId!!,
-                            ),
-                        )
-                    } else {
-                        registrationProxy.checkRegistrationProgress(holdingIdentity)
-                    }
-                } catch (e: ResourceNotFoundException) {
-                    null
-                } catch (e: ServiceUnavailableException) {
-                    null
-                }
-            }
+        val holdingIdentity = getHoldingIdentity(holdingIdentityShortHash, name, group)
+        val restClient = createRestClient(
+            MemberRegistrationRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+        return if (requestId != null) {
+            listOf(RegistrationsLookup().checkRegistration(restClient, holdingIdentity, requestId!!))
+        } else {
+            RegistrationsLookup().checkRegistrations(restClient, holdingIdentity)
         }
     }
 
