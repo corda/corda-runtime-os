@@ -1,6 +1,5 @@
 package net.corda.cli.plugins.network
 
-import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.cli.plugins.network.output.ConsoleOutput
 import net.corda.cli.plugins.network.output.Output
@@ -9,6 +8,8 @@ import net.corda.cli.plugins.network.utils.PrintUtils.printJsonOutput
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.types.RestGroupParameters
+import net.corda.sdk.network.GroupParametersLookup
+import net.corda.sdk.rest.RestClientUtils.createRestClient
 import picocli.CommandLine
 
 @CommandLine.Command(
@@ -44,11 +45,15 @@ class GroupParametersLookup(private val output: Output = ConsoleOutput()) : Rest
 
     private fun performGroupParametersLookup(): RestGroupParameters {
         val holdingIdentity = getHoldingIdentity(holdingIdentityShortHash, name, group)
-        val result: RestGroupParameters = createRestClient(MemberLookupRestResource::class).use { client ->
-            val groupParametersProxy = client.start().proxy
-            groupParametersProxy.viewGroupParameters(holdingIdentity)
-        }
-        return result
+        val restClient = createRestClient(
+            MemberLookupRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+        return GroupParametersLookup().lookupGroupParameters(restClient, holdingIdentity)
     }
 
     override fun run() {
