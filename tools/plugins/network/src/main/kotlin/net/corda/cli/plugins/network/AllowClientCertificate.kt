@@ -1,9 +1,10 @@
 package net.corda.cli.plugins.network
 
-import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.membership.rest.v1.MGMRestResource
+import net.corda.sdk.network.ClientCertificates
+import net.corda.sdk.rest.RestClientUtils
 import picocli.CommandLine.Command
 import picocli.CommandLine.Parameters
 
@@ -41,20 +42,21 @@ class AllowClientCertificate : Runnable, RestCommand() {
             return
         }
 
-        createRestClient(MGMRestResource::class).use { it ->
+        val restClient = RestClientUtils.createRestClient(
+            MGMRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+        val clientCertificates = ClientCertificates()
 
-            val proxy = it.start().proxy
-            println("Allowing certificates...")
-
-            subjects.forEach { subject ->
-                println("\t Allowing $subject")
-                proxy.mutualTlsAllowClientCertificate(mgmShortHash, subject)
-            }
-            println("Success!")
-
-            proxy.mutualTlsListClientCertificate(mgmShortHash).forEach { subject ->
-                println("Certificate with subject $subject is allowed")
-            }
+        println("Allowing certificates...")
+        clientCertificates.allowMutualTlsForSubjects(restClient, mgmShortHash, subjects)
+        println("Success!")
+        clientCertificates.listMutualTlsClientCertificates(restClient, mgmShortHash).forEach { subject ->
+            println("Certificate with subject $subject is allowed")
         }
     }
 }
