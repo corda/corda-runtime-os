@@ -7,7 +7,7 @@ import net.corda.p2p.crypto.protocol.api.Session
 internal interface PendingSessionMessageQueues : LifecycleWithDominoTile {
     fun queueMessage(message: AuthenticatedMessageAndKey, counterparties: SessionManager.SessionCounterparties)
     fun sessionNegotiatedCallback(
-        sessionManager: SessionManager,
+        messageSent: MessageSent,
         counterparties: SessionManager.SessionCounterparties,
         session: Session,
     )

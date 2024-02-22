@@ -10,7 +10,6 @@ import net.corda.data.p2p.LinkOutHeader
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.MessageAck
 import net.corda.data.p2p.NetworkType
-import net.corda.data.p2p.SessionPartitions
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
@@ -40,7 +39,6 @@ import net.corda.schema.Schemas.P2P.LINK_IN_TOPIC
 import net.corda.schema.Schemas.P2P.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_MARKERS
-import net.corda.schema.Schemas.P2P.SESSION_OUT_PARTITIONS
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.MockTimeFacilitiesProvider
 import net.corda.utilities.Either
@@ -75,9 +73,6 @@ class InboundMessageProcessorTest {
     private val membersAndGroups = mockMembersAndGroups(
         myIdentity, remoteIdentity
     )
-    private val assignedListener = mock<InboundAssignmentListener> {
-        on { getCurrentlyAssignedPartitions() } doReturn setOf(1)
-    }
     private val mockTimeFacilitiesProvider = MockTimeFacilitiesProvider()
     private val commonHeader = CommonHeader(
         MessageType.DATA,
@@ -97,7 +92,6 @@ class InboundMessageProcessorTest {
         sessionManager,
         membersAndGroups.second,
         membersAndGroups.first,
-        assignedListener,
         mockTimeFacilitiesProvider.clock,
         networkMessagingValidator
     )
@@ -981,36 +975,7 @@ class InboundMessageProcessorTest {
         }
 
         @Test
-        fun `InitiatorHelloMessage responses from sessionManager without partitions will produce no records`() {
-            val hello = mock<ResponderHelloMessage> {
-                on { header } doReturn commonHeader
-            }
-            val message = LinkInMessage(hello)
-            val header = LinkOutHeader(myIdentity.toAvro(), remoteIdentity.toAvro(), NetworkType.CORDA_5, "https://example.com")
-            val response = LinkOutMessage(header, hello)
-            val captor = argumentCaptor<List<TraceableItem<LinkInMessage, LinkInMessage>>>()
-            whenever(sessionManager.processSessionMessages(captor.capture(), any())).doAnswer {
-                captor.firstValue.map { it to response }
-            }
-            whenever(assignedListener.getCurrentlyAssignedPartitions()).thenReturn(emptySet())
-
-            val records = processor.onNext(
-                listOf(
-                    EventLogRecord(LINK_IN_TOPIC, "key", message, 0, 0),
-                )
-            )
-
-            assertThat(records).isEmpty()
-            assertThat(loggingInterceptor.warnings)
-                .hasSize(1)
-                .contains(
-                    "No partitions from topic link.in are currently assigned to the inbound message processor. " +
-                            "Not going to reply to session initiation for session Session."
-                )
-        }
-
-        @Test
-        fun `InitiatorHelloMessage responses from sessionManager with partitions will produce records to the correct topics`() {
+        fun `InitiatorHelloMessage responses from sessionManager will produce records to the correct topics`() {
             val hello = mock<InitiatorHelloMessage> {
                 on { header } doReturn commonHeader
             }
@@ -1024,7 +989,6 @@ class InboundMessageProcessorTest {
             whenever(sessionManager.processSessionMessages(captor.capture(), any())).doAnswer {
                 captor.firstValue.map { it to response }
             }
-            whenever(assignedListener.getCurrentlyAssignedPartitions()).thenReturn(setOf(4, 5, 8))
 
             val records = processor.onNext(
                 listOf(
@@ -1032,13 +996,9 @@ class InboundMessageProcessorTest {
                 )
             )
 
-            assertThat(records).hasSize(2).anySatisfy {
+            assertThat(records).hasSize(1).anySatisfy {
                 assertThat(it.topic).isEqualTo(LINK_OUT_TOPIC)
                 assertThat(it.value).isSameAs(response)
-            }.anySatisfy {
-                assertThat(it.topic).isEqualTo(SESSION_OUT_PARTITIONS)
-                assertThat(it.key).isSameAs(SESSION_ID)
-                assertThat(it.value).isEqualTo(SessionPartitions(listOf(4, 5, 8)))
             }
         }
     }

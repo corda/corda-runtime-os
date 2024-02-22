@@ -39,7 +39,7 @@ import java.nio.ByteBuffer
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.sessions.SessionManager
+import net.corda.p2p.linkmanager.sessions.MessageSent
 import net.corda.schema.Schemas
 import net.corda.utilities.time.Clock
 
@@ -315,7 +315,7 @@ internal class MessageConverter(
         }
     }
     fun recordsForSessionEstablished(
-        sessionManager: SessionManager,
+        messageSent: MessageSent,
         session: Session,
         serial: Long,
         messageAndKey: AuthenticatedMessageAndKey,
@@ -331,7 +331,7 @@ internal class MessageConverter(
             val messageRecord = Record(Schemas.P2P.LINK_OUT_TOPIC, key, message)
             val marker = AppMessageMarker(LinkManagerSentMarker(), clock.instant().toEpochMilli())
             val markerRecord = Record(Schemas.P2P.P2P_OUT_MARKERS, messageAndKey.message.header.messageId, marker)
-            sessionManager.dataMessageSent(session)
+            messageSent.dataMessageSent(session)
             listOf(
                 messageRecord,
                 markerRecord,

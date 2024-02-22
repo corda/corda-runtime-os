@@ -32,7 +32,6 @@ import net.corda.messaging.api.publisher.HttpRpcClient
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpWriter
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
-import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
 import net.corda.schema.Schemas.P2P.LINK_IN_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
@@ -80,12 +79,6 @@ class InboundMessageHandlerTest {
         }
         whenever(mock.dominoTile).doReturn(mockDominoTile)
     }
-    private val sessionPartitionMapper = mockConstruction(SessionPartitionMapperImpl::class.java) { mock, _ ->
-        val mockDominoTile = mock<ComplexDominoTile> {
-            whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-        }
-        whenever(mock.dominoTile).doReturn(mockDominoTile)
-    }
     private val p2pInPublisher = mockConstruction(PublisherWithDominoLogic::class.java) { mock, _ ->
         val mockDominoTile = mock<ComplexDominoTile> {
             whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
@@ -109,7 +102,6 @@ class InboundMessageHandlerTest {
     }
     private val features = mock<Features> {
         on { enableP2PGatewayToLinkManagerOverHttp } doReturn false
-        on { useStatefulSessionManager } doReturn false
     }
     private val commonComponents = mock<CommonComponents> {
         on { features } doReturn features
@@ -129,15 +121,12 @@ class InboundMessageHandlerTest {
     @AfterEach
     fun cleanUp() {
         server.close()
-        sessionPartitionMapper.close()
         p2pInPublisher.close()
         dominoTile.close()
     }
 
     @Test
     fun `onMessage will respond with error if handler is not running`() {
-        val sessionId = "aaa"
-        whenever(sessionPartitionMapper.constructed().first().getPartitions(sessionId)).doReturn(listOf(1, 2, 3))
         handler.onRequest(
             writer,
             HttpRequest(
@@ -180,7 +169,6 @@ class InboundMessageHandlerTest {
     fun `onMessage will respond with OK with valid message`() {
         setRunning()
         val sessionId = "aaa"
-        whenever(sessionPartitionMapper.constructed().first().getPartitions(sessionId)).doReturn(listOf(1, 2, 3))
         val p2pMessage = authenticatedP2PDataMessage(sessionId)
         val gatewayMessage = GatewayMessage(requestId, p2pMessage)
         `when`(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
@@ -255,35 +243,6 @@ class InboundMessageHandlerTest {
     }
 
     @Test
-    fun `onMessage authenticated message will publish a message to the correct partition`() {
-        val published = argumentCaptor<List<Pair<Int, Record<*, *>>>>()
-        val sessionId = "aaa"
-        whenever(sessionPartitionMapper.constructed().first().getPartitions(sessionId)).doReturn(listOf(7, 10, 20))
-        whenever(p2pInPublisher.constructed().first().publishToPartition(published.capture())).doReturn(mock())
-        setRunning()
-        val p2pMessage = authenticatedP2PDataMessage(sessionId)
-        val gatewayMessage = GatewayMessage("msg-id", p2pMessage)
-        val linkInMessage = LinkInMessage(p2pMessage)
-        `when`(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
-        handler.onRequest(
-            writer,
-            HttpRequest(
-                source = InetSocketAddress("www.r3.com", 1231),
-                payload = serialisedMessage,
-                destination = InetSocketAddress("www.r3.com", 344),
-            )
-
-        )
-
-        assertThat(published.firstValue).hasSize(1)
-            .anyMatch { (partition, record) ->
-                (record.topic == LINK_IN_TOPIC) &&
-                    (record.value == linkInMessage) &&
-                    ((partition == 7) || (partition == 10) || (partition == 20))
-            }
-    }
-
-    @Test
     fun `onMessage session initiator hello message is published when no session exists yet`() {
         val published = argumentCaptor<List<Record<*, *>>>()
         val sessionId = "aaa"
@@ -307,31 +266,6 @@ class InboundMessageHandlerTest {
             .anyMatch { record ->
                 (record.topic == LINK_IN_TOPIC) && (record.value == linkInMessage) && (record.key == sessionId)
             }
-    }
-
-    @Test
-    fun `onMessage authenticated message with no partition will reply with an error`() {
-        whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(null)
-        setRunning()
-        val msgId = "msg-id"
-        val gatewayMessage = GatewayMessage(msgId, authenticatedP2PDataMessage(""))
-        `when`(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
-        handler.onRequest(
-            writer,
-            HttpRequest(
-                source = InetSocketAddress("www.r3.com", 1231),
-                payload = serialisedMessage,
-                destination = InetSocketAddress("www.r3.com", 344),
-            )
-
-        )
-
-        verify(writer)
-            .write(
-                HttpResponseStatus.GONE,
-                InetSocketAddress("www.r3.com", 1231),
-                serialisedResponse
-            )
     }
 
     @Test
@@ -372,6 +306,8 @@ class InboundMessageHandlerTest {
     @Test
     fun `onMessage use the correct session ID from AuthenticatedDataMessage payload`() {
         val sessionId = "id"
+        val published = argumentCaptor<List<Record<*, *>>>()
+        whenever(p2pInPublisher.constructed().first().publish(published.capture())).doReturn(mock())
         setRunning()
         val payload = AuthenticatedDataMessage.newBuilder()
             .apply {
@@ -381,7 +317,6 @@ class InboundMessageHandlerTest {
             }.build()
         val gatewayMessage = GatewayMessage("msg-id", payload)
         `when`(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
-        whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(null)
 
         handler.onRequest(
             writer,
@@ -392,12 +327,18 @@ class InboundMessageHandlerTest {
             )
         )
 
-        verify(sessionPartitionMapper.constructed().first()).getPartitions(sessionId)
+        assertThat(published.firstValue).hasSize(1)
+            .anyMatch {
+                (it.topic == LINK_IN_TOPIC) &&
+                        (it.key == sessionId)
+            }
     }
 
     @Test
     fun `onMessage use the correct session ID from AuthenticatedEncryptedDataMessage payload`() {
         val sessionId = "id"
+        val published = argumentCaptor<List<Record<*, *>>>()
+        whenever(p2pInPublisher.constructed().first().publish(published.capture())).doReturn(mock())
         setRunning()
         val payload = AuthenticatedEncryptedDataMessage.newBuilder()
             .apply {
@@ -407,7 +348,6 @@ class InboundMessageHandlerTest {
             }.build()
         val gatewayMessage = GatewayMessage("msg-id", payload)
         `when`(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
-        whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(null)
 
         handler.onRequest(
             writer,
@@ -418,11 +358,17 @@ class InboundMessageHandlerTest {
             )
         )
 
-        verify(sessionPartitionMapper.constructed().first()).getPartitions(sessionId)
+        assertThat(published.firstValue)
+            .hasSize(1)
+            .anyMatch {
+                it.key == sessionId
+            }
     }
 
     @Test
     fun `onMessage use the correct session ID from InitiatorHandshakeMessage payload`() {
+        val published = argumentCaptor<List<Record<*, *>>>()
+        whenever(p2pInPublisher.constructed().first().publish(published.capture())).doReturn(mock())
         val sessionId = "id"
         setRunning()
         val payload = InitiatorHandshakeMessage.newBuilder()
@@ -433,7 +379,6 @@ class InboundMessageHandlerTest {
             }.build()
         val gatewayMessage = GatewayMessage("msg-id", payload)
         `when`(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
-        whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(null)
 
         handler.onRequest(
             writer,
@@ -444,11 +389,17 @@ class InboundMessageHandlerTest {
             )
         )
 
-        verify(sessionPartitionMapper.constructed().first()).getPartitions(sessionId)
+        assertThat(published.firstValue)
+            .hasSize(1)
+            .anyMatch {
+                it.key == sessionId
+            }
     }
 
     @Test
     fun `onMessage use the correct session ID from ResponderHelloMessage payload`() {
+        val published = argumentCaptor<List<Record<*, *>>>()
+        whenever(p2pInPublisher.constructed().first().publish(published.capture())).doReturn(mock())
         val sessionId = "id"
         setRunning()
         val payload = ResponderHelloMessage.newBuilder()
@@ -458,7 +409,6 @@ class InboundMessageHandlerTest {
             }.build()
         val gatewayMessage = GatewayMessage("msg-id", payload)
         `when`(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
-        whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(null)
 
         handler.onRequest(
             writer,
@@ -469,11 +419,17 @@ class InboundMessageHandlerTest {
             )
         )
 
-        verify(sessionPartitionMapper.constructed().first()).getPartitions(sessionId)
+        assertThat(published.firstValue)
+            .hasSize(1)
+            .anyMatch {
+                it.key == sessionId
+            }
     }
 
     @Test
     fun `onMessage use the correct session ID from ResponderHandshakeMessage payload`() {
+        val published = argumentCaptor<List<Record<*, *>>>()
+        whenever(p2pInPublisher.constructed().first().publish(published.capture())).doReturn(mock())
         val sessionId = "id"
         setRunning()
         val payload = ResponderHandshakeMessage.newBuilder()
@@ -484,7 +440,6 @@ class InboundMessageHandlerTest {
             }.build()
         val gatewayMessage = GatewayMessage("msg-id", payload)
         `when`(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
-        whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(null)
 
         handler.onRequest(
             writer,
@@ -495,13 +450,16 @@ class InboundMessageHandlerTest {
             )
         )
 
-        verify(sessionPartitionMapper.constructed().first()).getPartitions(sessionId)
+        assertThat(published.firstValue)
+            .hasSize(1)
+            .anyMatch {
+                it.key == sessionId
+            }
     }
 
     private fun setRunning() {
         whenever(dominoTile.constructed().first().isRunning).doReturn(true)
         whenever(server.constructed().first().isRunning).doReturn(true)
-        whenever(sessionPartitionMapper.constructed().first().isRunning).doReturn(true)
         whenever(p2pInPublisher.constructed().first().isRunning).doReturn(true)
         handler.start()
     }
@@ -525,28 +483,6 @@ class InboundMessageHandlerTest {
         )
         payload = ByteBuffer.wrap(content.toByteArray())
     }.build()
-
-    @Test
-    fun `onMessage authenticated message with empty partition will reply with an error`() {
-        whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(emptyList())
-        setRunning()
-        handler.onRequest(
-            writer,
-            HttpRequest(
-                source = InetSocketAddress("www.r3.com", 1231),
-                payload = serialisedMessage,
-                destination = InetSocketAddress("www.r3.com", 344),
-            )
-
-        )
-
-        verify(writer)
-            .write(
-                HttpResponseStatus.GONE,
-                InetSocketAddress("www.r3.com", 1231),
-                serialisedResponse
-            )
-    }
 
     @Test
     fun `when enableP2PGatewayToLinkManagerOverHttp is false, avoid sending message to HTTP client`() {
@@ -723,9 +659,7 @@ class InboundMessageHandlerTest {
     }
 
     @Test
-    fun `when useStatefulSessionManager is true, custom partitioning for inbound session messages is turned off`() {
-        whenever(features.useStatefulSessionManager).doReturn(true)
-        whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(mock())
+    fun `custom partitioning for inbound session messages is turned off`() {
         setRunning()
         val msgId = "msg-id"
         val gatewayMessage = GatewayMessage(msgId, authenticatedP2PDataMessage(""))
@@ -743,7 +677,5 @@ class InboundMessageHandlerTest {
 
         verify(p2pInPublisher.constructed().first())
             .publish(any())
-        verify(sessionPartitionMapper.constructed().first(), never())
-            .getPartitions(any())
     }
 }

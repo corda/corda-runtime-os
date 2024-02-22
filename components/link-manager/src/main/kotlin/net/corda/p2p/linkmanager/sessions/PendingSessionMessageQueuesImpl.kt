@@ -54,7 +54,7 @@ internal class PendingSessionMessageQueuesImpl(
      * Publish all the queued [FlowMessage]s to the P2P_OUT_TOPIC.
      */
     override fun sessionNegotiatedCallback(
-        sessionManager: SessionManager,
+        messageSent: MessageSent,
         counterparties: SessionManager.SessionCounterparties,
         session: Session,
     ) {
@@ -71,7 +71,7 @@ internal class PendingSessionMessageQueuesImpl(
                         "to newly established session ${session.sessionId} with ${counterparties.counterpartyId}"
                 }
                 records.addAll(messageConverter.recordsForSessionEstablished(
-                    sessionManager , session, counterparties.serial, message
+                    messageSent , session, counterparties.serial, message
                 ))
             }
             publisher.publish(records)

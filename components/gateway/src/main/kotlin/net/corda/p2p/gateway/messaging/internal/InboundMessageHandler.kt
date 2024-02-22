@@ -30,7 +30,6 @@ import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpWriter
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
 import net.corda.p2p.gateway.messaging.mtls.DynamicCertificateSubjectStore
-import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
 import net.corda.schema.Schemas.P2P.LINK_IN_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
@@ -82,11 +81,6 @@ internal class InboundMessageHandler(
         PublisherConfig("inbound-message-handler", false),
         messagingConfiguration
     )
-    private val sessionPartitionMapper = SessionPartitionMapperImpl(
-        lifecycleCoordinatorFactory,
-        subscriptionFactory,
-        messagingConfiguration
-    )
 
     private val dynamicCertificateSubjectStore = DynamicCertificateSubjectStore(
         lifecycleCoordinatorFactory,
@@ -111,13 +105,11 @@ internal class InboundMessageHandler(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         dependentChildren = listOf(
-            sessionPartitionMapper.dominoTile.coordinatorName,
             p2pInPublisher.dominoTile.coordinatorName,
             server.dominoTile.coordinatorName,
             dynamicCertificateSubjectStore.dominoTile.coordinatorName,
         ),
         managedChildren = listOf(
-            sessionPartitionMapper.dominoTile.toNamedLifecycle(),
             p2pInPublisher.dominoTile.toNamedLifecycle(),
             server.dominoTile.toNamedLifecycle(),
             dynamicCertificateSubjectStore.dominoTile.toNamedLifecycle(),
@@ -224,24 +216,8 @@ internal class InboundMessageHandler(
             return HttpResponseStatus.OK
         }
         val record = Record(LINK_IN_TOPIC, sessionId, p2pMessage)
-        if (commonComponents.features.useStatefulSessionManager) {
-            p2pInPublisher.publish(listOf(record))
-            return HttpResponseStatus.OK
-        } else {
-            val partitions = sessionPartitionMapper.getPartitions(sessionId)
-            return if (partitions == null) {
-                logger.warn("No mapping for session ($sessionId), discarding the message and returning an error.")
-                HttpResponseStatus.GONE
-            } else if (partitions.isEmpty()) {
-                logger.warn("No partitions exist for session ($sessionId), discarding the message and returning an error.")
-                HttpResponseStatus.GONE
-            } else {
-                // this is simplistic (stateless) load balancing amongst the partitions owned by the LM that "hosts" the session.
-                val selectedPartition = partitions.random()
-                p2pInPublisher.publishToPartition(listOf(selectedPartition to record))
-                HttpResponseStatus.OK
-            }
-        }
+        p2pInPublisher.publish(listOf(record))
+        return HttpResponseStatus.OK
     }
 
     private fun getSessionId(message: LinkInMessage): String? {
