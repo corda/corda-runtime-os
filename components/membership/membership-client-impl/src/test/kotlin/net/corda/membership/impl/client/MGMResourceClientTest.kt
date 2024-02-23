@@ -46,6 +46,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.client.CouldNotFindEntityException
 import net.corda.membership.client.MemberNotAnMgmException
+import net.corda.membership.client.ServiceNotReadyException
 import net.corda.membership.lib.ContextDeserializationException
 import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
@@ -68,6 +69,7 @@ import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
@@ -88,6 +90,7 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -110,6 +113,7 @@ import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeoutException
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -482,6 +486,34 @@ class MGMResourceClientTest {
             mgmResourceClient.generateGroupPolicy(shortHash)
         }
         assertTrue { ex.message!!.contains("timestamp") }
+        mgmResourceClient.stop()
+    }
+
+    @Test
+    fun `should fail when the sender get an error`() {
+        mgmResourceClient.start()
+        changeConfig()
+        val future = CompletableFuture.failedFuture<MembershipRpcResponse>(TimeoutException())
+        whenever(rpcSender.sendRequest(rpcRequest.capture())).doReturn(future)
+
+        assertThatThrownBy {
+            mgmResourceClient.generateGroupPolicy(shortHash)
+        }.isInstanceOf(ServiceNotReadyException::class.java)
+
+        mgmResourceClient.stop()
+    }
+
+    @Test
+    fun `should fail with CordaRPCAPIPartitionException when sender sends it`() {
+        mgmResourceClient.start()
+        changeConfig()
+        val future = CompletableFuture.failedFuture<MembershipRpcResponse>(mock<CordaRPCAPIPartitionException>())
+        whenever(rpcSender.sendRequest(rpcRequest.capture())).doReturn(future)
+
+        assertThatThrownBy {
+            mgmResourceClient.generateGroupPolicy(shortHash)
+        }.isInstanceOf(CordaRPCAPIPartitionException::class.java)
+
         mgmResourceClient.stop()
     }
 
