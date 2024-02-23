@@ -31,7 +31,7 @@ spec:
             - "-lsenderX500Names={{ .Values.appSimulators.sender.senderX500Names }}"
             - "-lsenderGroupId={{ .Values.appSimulators.sender.senderGroupId }}"
             - "-lbatchSize={{ .Values.appSimulators.sender.batchSize }}"
-            - "-ltotalNumberOfMessages={{ .Values.appSimulators.sender.timeFrame}}"
+            - "-ltimeFrame={{ .Values.appSimulators.sender.timeFrame}}"
             - "-linterBatchDelay={{ .Values.appSimulators.sender.interBatchDelay }}"
             - "-lmessageSizeBytes={{ .Values.appSimulators.sender.messageSizeBytes }}"
             {{- if .Values.appSimulators.sender.expireMessages.enabled }}

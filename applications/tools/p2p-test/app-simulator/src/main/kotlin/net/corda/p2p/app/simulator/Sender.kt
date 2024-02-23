@@ -139,6 +139,7 @@ class Sender(
                         }
 
                         Thread.sleep(loadGenParams.interBatchDelay.toMillis())
+                        Thread.sleep(400000)
                     }
                     logger.info("Client $client sent $messagesSent messages.")
                 }
