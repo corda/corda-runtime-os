@@ -2,6 +2,7 @@
 
 package net.corda.crypto.impl
 
+import io.micrometer.core.instrument.Timer
 import net.corda.crypto.cipher.suite.AlgorithmParameterSpecEncodingService
 import net.corda.crypto.cipher.suite.CustomSignatureSpec
 import net.corda.crypto.cipher.suite.ParameterizedSignatureSpec
@@ -86,7 +87,7 @@ fun CryptoSignatureSpec.toSignatureSpec(serializer: AlgorithmParameterSpecEncodi
     }.also {
         CordaMetrics.Metric.Crypto.SignatureSpecTimer.builder()
             .withTag(CordaMetrics.Tag.OperationName, TO_SIGNATURE_SPEC_OPERATION_NAME)
-            .build()
+            .build<Timer>()
             .record(Duration.ofNanos(System.nanoTime() - startTime))
     }
 }

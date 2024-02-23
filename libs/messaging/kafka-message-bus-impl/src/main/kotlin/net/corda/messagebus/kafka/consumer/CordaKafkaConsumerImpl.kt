@@ -1,5 +1,7 @@
 package net.corda.messagebus.kafka.consumer
 
+import io.micrometer.core.instrument.DistributionSummary
+import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.binder.MeterBinder
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
@@ -132,7 +134,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     private fun <T : Any> recordConsumerPollTime(poll: () -> T): T {
         return CordaMetrics.Metric.Messaging.ConsumerPollTime.builder()
             .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-            .build()
+            .build<Timer>()
             .recordCallable {
                 poll.invoke()
             }!!
@@ -142,7 +144,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         CordaMetrics.Metric.Messaging.ConsumerBatchSize.builder()
             .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
             .withTag(CordaMetrics.Tag.Partition, "$partition")
-            .build()
+            .build<DistributionSummary>()
             .record(records.size.toDouble())
     }
 

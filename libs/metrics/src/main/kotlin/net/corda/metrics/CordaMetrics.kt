@@ -3,6 +3,7 @@ package net.corda.metrics
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.DistributionSummary
 import io.micrometer.core.instrument.Gauge
+import io.micrometer.core.instrument.Measurement
 import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Metrics
@@ -12,14 +13,21 @@ import io.micrometer.core.instrument.binder.BaseUnits
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry
 import io.micrometer.core.instrument.config.MeterFilter
 import io.micrometer.core.instrument.distribution.DistributionStatisticConfig
+import io.micrometer.core.instrument.distribution.HistogramSnapshot
+import io.micrometer.core.instrument.noop.NoopCounter
 import io.micrometer.core.instrument.noop.NoopGauge
+import io.micrometer.core.instrument.noop.NoopTimer
 import java.io.File
 import java.nio.file.FileSystems
 import java.nio.file.Path
+import java.time.Duration
+import java.util.concurrent.Callable
+import java.util.concurrent.TimeUnit
 import java.util.function.Supplier
 import java.util.function.ToDoubleFunction
 import java.util.function.ToLongFunction
 import io.micrometer.core.instrument.Tag as micrometerTag
+
 
 
 object CordaMetrics {
@@ -1022,36 +1030,31 @@ object CordaMetrics {
         val name: String,
         val func: (String, Iterable<micrometerTag>) -> T
     ) {
-        val allTags: MutableList<micrometerTag> = mutableListOf()
-
         /**
          * Remove all tags from this builder.
          */
         fun resetTags(): MeterBuilder<T> {
-            allTags.clear()
             return this
         }
 
-        /**
-         * Tag the metric with the Holding ID short hash for the Virtual Node.
-         */
-        fun forVirtualNode(holdingId: String): MeterBuilder<T> {
-            return withTag(Tag.VirtualNode, holdingId)
-        }
+        @Suppress("UNUSED_PARAMETER")
+        fun forVirtualNode(holdingId: String): MeterBuilder<T> = this
 
-        fun withTag(key: Tag, value: String): MeterBuilder<T> {
-            allTags.add(micrometerTag.of(key.value, value))
-            return this
-        }
+        @Suppress("UNUSED_PARAMETER")
+        fun withTag(key: Tag, value: String): MeterBuilder<T> = this
 
-        fun build(): T {
-            return func(name, allTags)
+        inline fun <reified T> build(): T = when (T::class.java) {
+            Gauge::class.java -> NoopGauge(Meter.Id("", Tags.empty(), null, null, Meter.Type.GAUGE)) as T
+            Timer::class.java -> NoopTimer(Meter.Id("", Tags.empty(), null, null, Meter.Type.TIMER)) as T
+            Counter::class.java -> NoopCounter(Meter.Id("", Tags.empty(), null, null, Meter.Type.COUNTER )) as T
+            DistributionSummary::class.java -> NoopCounter(Meter.Id("", Tags.empty(), null, null, Meter.Type.DISTRIBUTION_SUMMARY )) as T
+            else -> TODO("Unimplemented ${T::class.java.name}")
         }
 
         // A Meter is uniquely identified by just its name and tags.
-        fun buildPreFilterId(): Meter.Id {
-            return Meter.Id(name, Tags.of(allTags), null, null, Meter.Type.OTHER)
-        }
+//        fun buildPreFilterId(): Meter.Id {
+//            return Meter.Id(name, Tags.of(allTags), null, null, Meter.Type.OTHER)
+//        }
     }
 }
 

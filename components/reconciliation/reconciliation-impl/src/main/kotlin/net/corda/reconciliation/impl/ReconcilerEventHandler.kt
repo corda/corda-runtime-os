@@ -1,5 +1,7 @@
 package net.corda.reconciliation.impl
 
+import io.micrometer.core.instrument.Counter
+import io.micrometer.core.instrument.Timer
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
@@ -98,13 +100,13 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
             CordaMetrics.Metric.Db.ReconciliationRunTime.builder()
                 .withTag(CordaMetrics.Tag.OperationName, name)
                 .withTag(CordaMetrics.Tag.OperationStatus, reconciliationOutcome)
-                .build()
+                .build<Timer>()
                 .record(reconciliationTime)
 
             CordaMetrics.Metric.Db.ReconciliationRecordsCount.builder()
                 .withTag(CordaMetrics.Tag.OperationName, name)
                 .withTag(CordaMetrics.Tag.OperationStatus, reconciliationOutcome)
-                .build()
+                .build<Counter>()
                 .record(reconciledCount.toDouble())
         }
     }

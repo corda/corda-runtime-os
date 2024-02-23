@@ -25,6 +25,8 @@ import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider
 import org.bouncycastle.util.encoders.Base64
 import org.bouncycastle.util.io.pem.PemObject
+import io.micrometer.core.instrument.Timer
+
 
 private val PEM_BEGIN = "-----BEGIN "
 private val PEM_HEADER_TERMINATOR = "-----"
@@ -160,7 +162,7 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
     private fun recordPublicKeyOperationDuration(operationName: String, duration: Duration) {
         val b = CordaMetrics.Metric.Crypto.CipherSchemeTimer.builder()
         b.withTag(CordaMetrics.Tag.OperationName, operationName)
-        val built = b.build()
+        val built: Timer = b.build()
         built.record(duration)
     }
 
