@@ -2,9 +2,7 @@
 
 package net.corda.cli.plugins.network
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.node.ObjectNode
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
@@ -15,8 +13,6 @@ import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
-import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
-import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.JsonCreateVirtualNodeRequest
@@ -33,6 +29,8 @@ import net.corda.rest.HttpFileUpload
 import net.corda.rest.JsonObject
 import net.corda.rest.client.exceptions.MissingRequestedResourceException
 import net.corda.rest.client.exceptions.RequestErrorException
+import net.corda.sdk.config.ClusterConfig
+import net.corda.sdk.rest.RestClientUtils
 import net.corda.virtualnode.OperationalStatus
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
@@ -425,50 +423,37 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         }
     }
 
-    data class ConcreteJsonObject(override val escapedJson: String) : JsonObject
-
     protected fun configureGateway() {
-        val tlsType = if (mtls) {
-            "MUTUAL"
-        } else {
-            "ONE_WAY"
-        }
-        val currentConfig = createRestClient(ConfigRestResource::class).use { client ->
-            client.start().proxy.get("corda.p2p.gateway")
-        }
+        val restClient = RestClientUtils.createRestClient(
+            ConfigRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+        val clusterConfig = ClusterConfig()
+        var currentConfig = clusterConfig.getCurrentConfig(restClient, "corda.p2p.gateway")
         val rawConfig = currentConfig.configWithDefaults
         val rawConfigJson = json.readTree(rawConfig)
         val sslConfig = rawConfigJson["sslConfig"]
         val currentMode = sslConfig["revocationCheck"]?.get("mode")?.asText()
         val currentTlsType = sslConfig["tlsType"]?.asText()
-        if ((currentMode != "OFF") || (currentTlsType != tlsType)) {
-            val newConfig = createNewConfigNode(tlsType)
-            val schemaVersion = ConfigSchemaVersion(major = 1, minor = 0)
-            createRestClient(ConfigRestResource::class).use { client ->
-                client.start().proxy.updateConfig(
-                    UpdateConfigParameters(
-                        section = "corda.p2p.gateway",
-                        version = currentConfig.version,
-                        config = ConcreteJsonObject(json.writeValueAsString(newConfig)),
-                        schemaVersion = schemaVersion,
-                    ),
-                )
-            }
-        }
-    }
 
-    private fun createNewConfigNode(tlsType: String): JsonNode {
-        val newConfig = json.createObjectNode()
-        newConfig.set<ObjectNode>(
-            "sslConfig",
-            json.createObjectNode()
-                .put("tlsType", tlsType)
-                .set<ObjectNode>(
-                    "revocationCheck",
-                    json.createObjectNode().put("mode", "OFF"),
-                ),
-        )
-        return newConfig
+        if (currentMode != "OFF") {
+            clusterConfig.configureCrl(restClient, "OFF", currentConfig)
+            // Update currentConfig ahead of next check
+            currentConfig = clusterConfig.getCurrentConfig(restClient, "corda.p2p.gateway")
+        }
+
+        val tlsType = if (mtls) {
+            "MUTUAL"
+        } else {
+            "ONE_WAY"
+        }
+        if (currentTlsType != tlsType) {
+            clusterConfig.configureTlsType(restClient, tlsType, currentConfig)
+        }
     }
 
     private val keyStoreFile by lazy {
