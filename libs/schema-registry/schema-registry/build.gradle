@@ -11,12 +11,21 @@ dependencies {
 
     api "org.apache.avro:avro:$avroVersion"
     constraints {
-        implementation("org.apache.commons:commons-compress:$commonsCompressVersion") {
+        implementation(libs.apache.commons.compress) {
             because "CVE-2023-42503, current version of Avro uses an outdated version"
         }
     }
-    
+    //needed by commons-compress
+    implementation libs.apache.commons.codec
+
     api "net.corda:corda-avro-schema"
+}
+
+configurations.all {
+    resolutionStrategy {
+        // CVE-2023-42503, current version of Avro uses an outdated version
+        force libs.apache.commons.compress
+    }
 }
 
 description 'Schema Registry Library API'

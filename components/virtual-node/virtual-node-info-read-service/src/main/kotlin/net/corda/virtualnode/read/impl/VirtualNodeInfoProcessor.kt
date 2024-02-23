@@ -95,9 +95,16 @@ class VirtualNodeInfoProcessor(private val onStatusUpCallback: () -> Unit, priva
     ) {
         log.trace { "Virtual Node Info Processor received onNext" }
         val key = VirtualNodeInfoMap.Key(newRecord.key, newRecord.key.toCorda().shortHash)
-        if (newRecord.value != null) {
+        val virtualNodeInfo = newRecord.value
+        if (virtualNodeInfo != null) {
             try {
-                virtualNodeInfoMap.put(key, newRecord.value!!)
+                // TODO Logging added for CORE-19600
+                val cpiIdentifier = virtualNodeInfo.cpiIdentifier
+                log.info(
+                    "Updating virtual node info for [${key.holdingIdentity.x500Name}]: " +
+                        "CPI=[${cpiIdentifier.name}, ${cpiIdentifier.version}]"
+                )
+                virtualNodeInfoMap.put(key, virtualNodeInfo)
             } catch (exception: IllegalArgumentException) {
                 // We only expect this code path if someone has posted to Kafka,
                 // a VirtualNodeInfo with a different HoldingIdentity to the key.

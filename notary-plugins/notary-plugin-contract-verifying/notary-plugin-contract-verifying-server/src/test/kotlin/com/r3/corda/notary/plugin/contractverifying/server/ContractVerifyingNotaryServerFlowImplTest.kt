@@ -4,14 +4,18 @@ import com.r3.corda.notary.plugin.common.NotarizationResponse
 import com.r3.corda.notary.plugin.common.NotaryExceptionGeneral
 import com.r3.corda.notary.plugin.common.NotaryExceptionInvalidSignature
 import com.r3.corda.notary.plugin.common.NotaryExceptionReferenceStateUnknown
+import com.r3.corda.notary.plugin.common.NotaryExceptionTimeWindowOutOfBounds
 import com.r3.corda.notary.plugin.common.NotaryExceptionTransactionVerificationFailure
 import com.r3.corda.notary.plugin.contractverifying.api.ContractVerifyingNotarizationPayload
 import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
+import net.corda.ledger.common.testkit.generateCompositeKey
+import net.corda.ledger.common.testkit.generatePublicKey
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionAndSignaturesImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnknownImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorTimeWindowOutOfBoundsImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorUnhandledExceptionImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
@@ -21,7 +25,6 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.uniqueness.model.UniquenessCheckError
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
@@ -36,6 +39,7 @@ import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
+import net.corda.v5.membership.NotaryInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -47,7 +51,9 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.reset
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
+import java.time.Clock
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 @TestInstance(PER_CLASS)
 class ContractVerifyingNotaryServerFlowImplTest {
@@ -95,21 +101,19 @@ class ContractVerifyingNotaryServerFlowImplTest {
     }
 
     // Notary vnodes
-    private val notaryVNodeAliceKey = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x01)) }
-    private val notaryVNodeBobKey = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x02)) }
-    private val invalidVnodeKey = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x03)) }
+    private val notaryVNodeAliceKey = generatePublicKey()
+    private val notaryVNodeBobKey = generatePublicKey()
+    private val invalidVnodeKey = generatePublicKey()
 
     // Signatory vnodes
-    private val signatoryVnodeCharlieKey = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x04)) }
+    private val signatoryVnodeCharlieKey = generatePublicKey()
 
     private val notarySignatureAlice = getSignatureWithMetadataExample(notaryVNodeAliceKey)
     private val notarySignatureBob = getSignatureWithMetadataExample(notaryVNodeBobKey)
 
     private val signatorySignatureCharlie = getSignatureWithMetadataExample(signatoryVnodeCharlieKey)
 
-    private val notaryServiceCompositeKey = mock<CompositeKey>().also {
-        whenever(it.leafKeys).thenReturn(setOf(notaryVNodeAliceKey, notaryVNodeBobKey))
-    }
+    private val notaryServiceCompositeKey = generateCompositeKey(notaryVNodeAliceKey to notaryVNodeBobKey)
 
     // Member names
     private val notaryServiceName = MemberX500Name.parse("O=MyNotaryService, L=London, C=GB")
@@ -118,10 +122,9 @@ class ContractVerifyingNotaryServerFlowImplTest {
 
     private val memberProvidedContext = mock<MemberContext>()
     private val mockMemberLookup = mock<MemberLookup>()
-    private val notaryInfoAlice = mock<MemberInfo>().also {
-        whenever(it.name).thenReturn(notaryAliceName)
-        whenever(it.memberProvidedContext).thenReturn(memberProvidedContext)
-    }
+    private val notaryMemberInfo = mock<MemberInfo>()
+
+    private val notaryInfo = mock<NotaryInfo>()
 
     private val signedTransaction = mock<UtxoSignedTransaction>()
     private val filteredTransaction = mock<UtxoFilteredTransaction>()
@@ -130,9 +133,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
         filteredTransaction,
         listOf(notarySignatureAlice)
     )
-    private val filteredTxsAndSignatures = listOf(
-        filteredTxAndSignature
-    )
+    private val filteredTxsAndSignatures = listOf(filteredTxAndSignature)
 
     private val transactionMetadata = mock<TransactionMetadata>()
     private val mockTimeWindow = mock<TimeWindow>().also {
@@ -206,12 +207,16 @@ class ContractVerifyingNotaryServerFlowImplTest {
         whenever(mockNotarySignatureVerificationService.verifyNotarySignatures(any(), any(), any(), any())).doAnswer {  }
 
         // Get current notary and parse its data
-        whenever(mockMemberLookup.myInfo()).thenReturn(notaryInfoAlice)
-        whenever(notaryInfoAlice.memberProvidedContext).thenReturn(memberProvidedContext)
+        whenever(mockMemberLookup.myInfo()).thenReturn(notaryMemberInfo)
+        whenever(notaryMemberInfo.name).thenReturn(notaryAliceName)
+        whenever(notaryMemberInfo.memberProvidedContext).thenReturn(memberProvidedContext)
         whenever(memberProvidedContext.parse(NOTARY_SERVICE_NAME, MemberX500Name::class.java)).thenReturn(
             notaryServiceName
         )
         whenever(memberProvidedContext.parse(NOTARY_SERVICE_BACKCHAIN_REQUIRED, Boolean::class.java)).thenReturn(false)
+
+        whenever(notaryInfo.name).thenReturn(notaryAliceName)
+        whenever(notaryInfo.publicKey).thenReturn(notaryVNodeAliceKey)
 
         // Session
         whenever(session.receive(ContractVerifyingNotarizationPayload::class.java))
@@ -332,71 +337,23 @@ class ContractVerifyingNotaryServerFlowImplTest {
     }
 
     @Test
-    fun `Contract verifying notary plugin server should respond with error if time window not present on filtered tx`() {
-        whenever(filteredTransaction.timeWindow).thenReturn(null)
-        val filteredTransactionsAndSignatures = UtxoFilteredTransactionAndSignaturesImpl(
-            filteredTransaction,
-            listOf(notarySignatureAlice)
+    fun `Contract verifying notary plugin server should respond with error if time window is not valid`() {
+        callServer(
+            mockErrorUniquenessClientService(
+                UniquenessCheckErrorTimeWindowOutOfBoundsImpl(
+                    Clock.systemUTC().instant(),
+                    Instant.now().plus(10, ChronoUnit.DAYS),
+                    Instant.now().plus(5, ChronoUnit.DAYS)
+                )
+            )
         )
-
-        whenever(session.receive(ContractVerifyingNotarizationPayload::class.java)).thenReturn(
-            ContractVerifyingNotarizationPayload(signedTransaction, listOf(filteredTransactionsAndSignatures))
-        )
-
-        callServer(mockSuccessfulUniquenessClientService())
         assertThat(responseFromServer).hasSize(1)
 
         val responseError = responseFromServer.first().error
         assertThat(responseError).isNotNull
-        assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-        assertThat((responseError as NotaryExceptionGeneral).errorText).contains(
-            "Error during notarization."
-        )
-    }
-
-    @Test
-    fun `Contract verifying notary plugin server should respond with error if notary name not present on filtered tx`() {
-        whenever(filteredTransaction.notaryName).thenReturn(null)
-        val filteredTransactionsAndSignatures = UtxoFilteredTransactionAndSignaturesImpl(
-            filteredTransaction,
-            listOf(notarySignatureAlice)
-        )
-
-        whenever(session.receive(ContractVerifyingNotarizationPayload::class.java)).thenReturn(
-            ContractVerifyingNotarizationPayload(signedTransaction, listOf(filteredTransactionsAndSignatures))
-        )
-
-        callServer(mockSuccessfulUniquenessClientService())
-        assertThat(responseFromServer).hasSize(1)
-
-        val responseError = responseFromServer.first().error
-        assertThat(responseError).isNotNull
-        assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-        assertThat((responseError as NotaryExceptionGeneral).errorText).contains(
-            "Error during notarization."
-        )
-    }
-
-    @Test
-    fun `Contract verifying notary plugin server should respond with error if notary key not present on filtered tx`() {
-        whenever(filteredTransaction.notaryKey).thenReturn(null)
-        val filteredTransactionsAndSignatures = UtxoFilteredTransactionAndSignaturesImpl(
-            filteredTransaction,
-            listOf(notarySignatureAlice)
-        )
-
-        whenever(session.receive(ContractVerifyingNotarizationPayload::class.java)).thenReturn(
-            ContractVerifyingNotarizationPayload(signedTransaction, listOf(filteredTransactionsAndSignatures))
-        )
-
-        callServer(mockSuccessfulUniquenessClientService())
-        assertThat(responseFromServer).hasSize(1)
-
-        val responseError = responseFromServer.first().error
-        assertThat(responseError).isNotNull
-        assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-        assertThat((responseError as NotaryExceptionGeneral).errorText).contains(
-            "Error during notarization."
+        assertThat(responseError).isInstanceOf(NotaryExceptionTimeWindowOutOfBounds::class.java)
+        assertThat((responseError as NotaryExceptionTimeWindowOutOfBounds).notaryErrorMessage).contains(
+            "Time Window Out of Bounds."
         )
     }
 
@@ -471,14 +428,9 @@ class ContractVerifyingNotaryServerFlowImplTest {
 
     @Test
     fun `Contract verifying notary plugin server should respond with error if notary identity invalid`() {
-        whenever(filteredTransaction.notaryName).thenReturn(MemberX500Name.parse("C=GB,L=London,O=Bob"))
-        val filteredTransactionsAndSignatures = UtxoFilteredTransactionAndSignaturesImpl(
-            filteredTransaction,
-            listOf(notarySignatureAlice)
-        )
-
+        whenever(signedTransaction.notaryName).thenReturn(MemberX500Name.parse("C=GB,L=London,O=Bob"))
         whenever(session.receive(ContractVerifyingNotarizationPayload::class.java)).thenReturn(
-            ContractVerifyingNotarizationPayload(signedTransaction, listOf(filteredTransactionsAndSignatures))
+            ContractVerifyingNotarizationPayload(signedTransaction, listOf(filteredTxAndSignature))
         )
 
         callServer(mockSuccessfulUniquenessClientService())
@@ -488,7 +440,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
         assertThat(responseError).isNotNull
         assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
         assertThat((responseError as NotaryExceptionGeneral).errorText)
-            .contains("Error during notarization.")
+            .contains("does not match the notary service represented by this notary virtual node")
     }
 
     @Test

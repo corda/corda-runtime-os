@@ -741,7 +741,8 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     fun configureNetworkParticipant(
         holdingIdentityShortHash: String,
         sessionKeyId: String,
-        sessionCertAlias: String? = null
+        sessionCertAlias: String?,
+        tlsCertAlias: String,
     ): SimpleResponse {
         val sessionKeysSection = if (sessionCertAlias == null) {
             """
@@ -762,7 +763,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         val body =
             """
                 {
-                    "p2pTlsCertificateChainAlias": "$CERT_ALIAS_P2P",
+                    "p2pTlsCertificateChainAlias": "$tlsCertAlias",
                     "useClusterLevelTlsCertificateAndKey": true,
                     $sessionKeysSection
                 }
