@@ -88,7 +88,8 @@ class Sender(
 
                     var currentIndex = 0
 
-                    while (moreMessagesToSend(messagesSent, loadGenParams)) {
+                    val start = Instant.now()
+                    while (moreMessagesToSend(messagesSent, start, loadGenParams)) {
                         logger.debug("Continue to send messages starting from $currentIndex index")
                         val messagesWithIds = mutableListOf<Pair<MessageMetaData, AppMessage>>()
                         while (messagesWithIds.size < loadGenParams.batchSize) {
@@ -174,13 +175,18 @@ class Sender(
         }
     }
 
-    private fun moreMessagesToSend(messagesSent: Int, loadGenerationParams: LoadGenerationParams): Boolean {
+    private fun moreMessagesToSend(messagesSent: Int, startTime: Instant, loadGenerationParams: LoadGenerationParams): Boolean {
         if (stop) {
+            logger.info("We exited")
             return false
         }
+        logger.info("Start time is: $startTime")
+        logger.info("Deadline is: ${startTime.plusMillis(Duration.ofMinutes(loadGenerationParams.timeFrame!!.toLong()).toMillis())}")
         return when (loadGenerationParams.loadGenerationType) {
             LoadGenerationType.ONE_OFF -> (messagesSent < loadGenerationParams.totalNumberOfMessages!!)
             LoadGenerationType.CONTINUOUS -> true
+            LoadGenerationType.TIME_BASED ->
+                (Instant.now() < startTime.plusMillis(Duration.ofMinutes(loadGenerationParams.timeFrame.toLong()).toMillis()))
         }
     }
 

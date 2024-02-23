@@ -14,6 +14,7 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.p2p.app.simulator.AppSimulator.Companion.DEFAULT_NUMBER_OF_PARTITIONS
 import net.corda.p2p.app.simulator.AppSimulator.Companion.DEFAULT_REPLICATION_FACTOR
+import net.corda.p2p.app.simulator.AppSimulator.Companion.DEFAULT_TIME_FRAME
 import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getDbParameter
 import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getEnumOrNull
 import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getIntOrNull
@@ -64,6 +65,7 @@ class AppSimulator @Activate constructor(
         const val PARALLEL_CLIENTS_KEY = "parallelClients"
         const val DEFAULT_PARALLEL_CLIENTS = 1
         const val DEFAULT_TOTAL_NUMBER_OF_MESSAGES = 1
+        const val DEFAULT_TIME_FRAME = 1
         const val DEFAULT_BATCH_SIZE = 50
         const val DEFAULT_REPLICATION_FACTOR = 1
         const val DEFAULT_NUMBER_OF_PARTITIONS = 10
@@ -243,6 +245,7 @@ class CliParameters {
 enum class LoadGenerationType {
     ONE_OFF,
     CONTINUOUS,
+    TIME_BASED,
 }
 
 enum class SimulationMode {
@@ -322,6 +325,7 @@ data class LoadGenerationParams(
     val senders: Collection<HoldingIdentity>,
     val loadGenerationType: LoadGenerationType,
     val totalNumberOfMessages: Int?,
+    val timeFrame: Int?,
     val batchSize: Int,
     val interBatchDelay: Duration,
     val messageSizeBytes: Int,
@@ -329,8 +333,9 @@ data class LoadGenerationParams(
 ) {
     init {
         when (loadGenerationType) {
-            LoadGenerationType.ONE_OFF -> require(totalNumberOfMessages != null)
-            LoadGenerationType.CONTINUOUS -> require(totalNumberOfMessages == null)
+            LoadGenerationType.ONE_OFF -> require(totalNumberOfMessages != null && timeFrame == null)
+            LoadGenerationType.CONTINUOUS -> require(totalNumberOfMessages == null && timeFrame == null)
+            LoadGenerationType.TIME_BASED -> require(totalNumberOfMessages == null && timeFrame != null)
         }
     }
 
@@ -355,6 +360,18 @@ data class LoadGenerationParams(
                 )
 
                 LoadGenerationType.CONTINUOUS -> null
+
+                LoadGenerationType.TIME_BASED -> null
+            }
+            val timeFrame = when (loadGenerationType) {
+                LoadGenerationType.ONE_OFF -> null
+                LoadGenerationType.CONTINUOUS -> null
+                LoadGenerationType.TIME_BASED -> getLoadGenIntParameter(
+                    "timeFrame",
+                    DEFAULT_TIME_FRAME,
+                    commonConfig.configFromFile,
+                    commonConfig.parameters,
+                )
             }
             val batchSize =
                 getLoadGenIntParameter("batchSize", AppSimulator.DEFAULT_BATCH_SIZE, commonConfig.configFromFile, commonConfig.parameters)
@@ -378,6 +395,7 @@ data class LoadGenerationParams(
                 senderHoldingIdentities,
                 loadGenerationType,
                 totalNumberOfMessages,
+                timeFrame,
                 batchSize,
                 interBatchDelay,
                 messageSizeBytes,
