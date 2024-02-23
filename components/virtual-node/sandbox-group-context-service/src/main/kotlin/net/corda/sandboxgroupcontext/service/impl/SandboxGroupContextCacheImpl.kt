@@ -158,14 +158,16 @@ internal class SandboxGroupContextCacheImpl private constructor(
         // Close the wrapped [CloseableSandboxGroupContext] for every [SandboxGroupContextWrapper]
         // that has already been garbage-collected.
         val start = System.nanoTime()
-        logger.info("purgeExpiryQuery ${Thread.currentThread().id} starting toBeClosed=${toBeClosed.size}")
+
+        if (logger.isTraceEnabled)
+            logger.trace("purgeExpiryQuery ${Thread.currentThread().id} starting toBeClosed=${toBeClosed.size}")
         var count = 0
         var closes = 0
         var errors = 0
         while (true) {
             count++
-
-            logger.info("purgeExpiryQuery  ${Thread.currentThread().id} loop iteration $count queue size is ${toBeClosed.size}")
+            if (logger.isTraceEnabled)
+                logger.trace("purgeExpiryQuery  ${Thread.currentThread().id} loop iteration $count queue size is ${toBeClosed.size}")
             val head = expiryQueue.poll() as? ToBeClosed ?: break
             val vnc = head.cacheKey
 
@@ -174,7 +176,8 @@ internal class SandboxGroupContextCacheImpl private constructor(
             }
 
             try {
-                logger.info("Closing {} sandbox for {}", vnc.sandboxGroupType, vnc.holdingIdentity.x500Name)
+                if (logger.isTraceEnabled)
+                    logger.trace("Closing {} sandbox for {}", vnc.sandboxGroupType, vnc.holdingIdentity.x500Name)
 
                 head.sandboxGroupContextToClose.close()
                 head.completion.complete(true)
@@ -188,8 +191,9 @@ internal class SandboxGroupContextCacheImpl private constructor(
                 errors++
             }
         }
-        logger.info("purgeExpiryQuery ${Thread.currentThread().id} finished after iterations=$count closed=$closes errors=$errors in ${(System.nanoTime()-start)/1.0e6}ms")
-
+        if (logger.isTraceEnabled)
+            logger.trace("purgeExpiryQuery ${Thread.currentThread().id} finished after "+
+                "iterations=$count closed=$closes errors=$errors in ${(System.nanoTime()-start)/1.0e6}ms")
     }
 
     private val caches: ConcurrentMap<SandboxGroupType, Cache<VirtualNodeContext, SandboxGroupContextWrapper>> =
