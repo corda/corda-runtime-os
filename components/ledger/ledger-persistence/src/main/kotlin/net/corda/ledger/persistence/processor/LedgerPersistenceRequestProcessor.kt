@@ -25,6 +25,11 @@ import java.time.Duration
 
 /**
  * Handles incoming requests, typically from the flow worker, and sends responses.
+ * Handling persistence requests involves user-supplied hibernate code, so we run the requests within
+ * sandboxes to protect the system from the user code.
+ *
+ * Takes care of maintaining the managed diagnostic context with the external event ID and request ID
+ * so that flow operations can be traced. Tracks the time taken to handle the request.
  */
 @Suppress("LongParameterList")
 class LedgerPersistenceRequestProcessor(
