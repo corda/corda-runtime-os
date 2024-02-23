@@ -3,7 +3,6 @@
 package net.corda.cli.plugins.network
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
 import net.corda.cli.plugins.packaging.signing.SigningOptions
@@ -26,21 +25,20 @@ import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
 import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.rest.v1.types.response.RegistrationStatus
 import net.corda.rest.HttpFileUpload
-import net.corda.rest.JsonObject
 import net.corda.rest.client.exceptions.MissingRequestedResourceException
 import net.corda.rest.client.exceptions.RequestErrorException
 import net.corda.sdk.config.ClusterConfig
-import net.corda.sdk.rest.RestClientUtils
+import net.corda.sdk.network.ClientCertificates
+import net.corda.sdk.network.Keys
+import net.corda.sdk.rest.RestClientUtils.createRestClient
 import net.corda.virtualnode.OperationalStatus
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
 import org.bouncycastle.crypto.util.PrivateKeyFactory
-import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder
 import org.bouncycastle.operator.DefaultSignatureAlgorithmIdentifierFinder
 import org.bouncycastle.operator.bc.BcRSAContentSignerBuilder
-import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
 import java.io.File
@@ -235,30 +233,23 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     }
 
     protected fun assignSoftHsmAndGenerateKey(category: String): String {
-        createRestClient(HsmRestResource::class).use { client ->
-            checkInvariant(
-                maxAttempts = MAX_ATTEMPTS,
-                waitInterval = WAIT_INTERVAL,
-                errorMessage = "Assign Soft HSM operation for $category: failed after the maximum number of attempts ($MAX_ATTEMPTS).",
-            ) {
-                try {
-                    client.start().proxy.assignSoftHsm(holdingId, category)
-                } catch (e: MissingRequestedResourceException) {
-                    // This exception can be thrown while the assigning Hsm Key is being processed, so we catch it and re-try.
-                    null
-                }
-            }
-        }
-
-        val response = createRestClient(KeysRestResource::class).use { keyClient ->
-            keyClient.start().proxy.generateKeyPair(
-                holdingId,
-                "$holdingId-$category",
-                category,
-                "CORDA.ECDSA.SECP256R1",
-            )
-        }
-        return response.id
+        val hsmRestClient = createRestClient(
+            HsmRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+        val keyRestClient = createRestClient(
+            KeysRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+        return Keys().assignSoftHsmAndGenerateKey(hsmRestClient, keyRestClient, holdingId, category)
     }
 
     protected val sessionKeyId by lazy {
@@ -291,62 +282,34 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     }
 
     protected fun createTlsKeyIdNeeded() {
-        val hasKeys = createRestClient(KeysRestResource::class).use { client ->
-            client.start().proxy.listKeys(
-                tenantId = "p2p",
-                skip = 0,
-                take = 20,
-                orderBy = "NONE",
-                category = "TLS",
-                schemeCodeName = null,
-                alias = P2P_TLS_KEY_ALIAS,
-                masterKeyAlias = null,
-                createdAfter = null,
-                createdBefore = null,
-                ids = null,
-            ).isNotEmpty()
-        }
+        val keyRestClient = createRestClient(
+            KeysRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+        val keys = Keys()
+        val hasKeys = keys.hasTlsKey(keyRestClient)
 
         if (hasKeys) return
 
-        val tlsKeyId = createRestClient(KeysRestResource::class).use { client ->
-            client.start().proxy.generateKeyPair(
-                tenantId = "p2p",
-                alias = P2P_TLS_KEY_ALIAS,
-                hsmCategory = "TLS",
-                scheme = "CORDA.ECDSA.SECP256R1",
-            ).id
-        }
+        val tlsKeyId = keys.generateTlsKey(keyRestClient)
 
-        val csr = createRestClient(CertificatesRestResource::class).use { client ->
-            client.start().proxy.generateCsr(
-                tenantId = "p2p",
-                keyId = tlsKeyId,
-                x500Name = certificateSubject,
-                subjectAlternativeNames = p2pHosts,
-                contextMap = null,
-            )
-        }
+        val certificateRestClient = createRestClient(
+            CertificatesRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+        val clientCertificates = ClientCertificates()
 
-        val csrCertRequest = csr.reader().use { reader ->
-            PEMParser(reader).use { parser ->
-                parser.readObject()
-            }
-        } as? PKCS10CertificationRequest ?: throw OnboardException("CSR is not a valid CSR: $csr")
-
-        createRestClient(CertificatesRestResource::class).use { client ->
-            val certificate = ca.signCsr(csrCertRequest).toPem().byteInputStream()
-            client.start().proxy.importCertificateChain(
-                usage = "p2p-tls",
-                alias = P2P_TLS_CERTIFICATE_ALIAS,
-                certificates = listOf(
-                    HttpFileUpload(
-                        certificate,
-                        "certificate.pem",
-                    ),
-                ),
-            )
-        }
+        val csrCertRequest = clientCertificates.generateP2pCsr(certificateRestClient, tlsKeyId, certificateSubject, p2pHosts)
+        val certificate = ca.signCsr(csrCertRequest).toPem().byteInputStream()
+        clientCertificates.uploadTlsCertificate(certificateRestClient, certificate)
     }
 
     protected fun setupNetwork() {
@@ -424,7 +387,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     }
 
     protected fun configureGateway() {
-        val restClient = RestClientUtils.createRestClient(
+        val restClient = createRestClient(
             ConfigRestResource::class,
             insecure = insecure,
             minimumServerProtocolVersion = minimumServerProtocolVersion,
