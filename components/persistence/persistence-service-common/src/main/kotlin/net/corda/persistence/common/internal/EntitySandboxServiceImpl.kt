@@ -101,8 +101,8 @@ class EntitySandboxServiceImpl @Activate constructor(
         // Instruct all CustomMetadataConsumers to accept their metadata.
         sandboxService.acceptCustomMetadata(ctx)
 
-        if (logger.isDebugEnabled) {
-            logger.debug(
+        if (logger.isInfoEnabled) {
+            logger.info(
                 "Initialising DB Sandbox for {}/{}[{}]",
                 virtualNode.holdingIdentity,
                 virtualNode.cpiIdentifier.name,
@@ -111,8 +111,8 @@ class EntitySandboxServiceImpl @Activate constructor(
         }
 
         return AutoCloseable {
-            if (logger.isDebugEnabled) {
-                logger.debug(
+            if (logger.isInfoEnabled) {
+                logger.info(
                     "Closing DB Sandbox for {}/{}[{}]",
                     virtualNode.holdingIdentity,
                     virtualNode.cpiIdentifier.name,
