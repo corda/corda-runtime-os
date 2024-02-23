@@ -20,7 +20,7 @@ kafkaClientVersion = "3.6.1_1"
 kubernetesClientVersion = "6.10.0"
 log4jVersion = "2.22.1"
 mssqlDriverVersion = "11.2.3.jre17"
-postgresDriverVersion = "42.7.1"
+postgresDriverVersion = "42.7.2"
 # SLF4J cannot be ugraded to 2.x due to CorDapps requiring the 1.7 <= x < 2.0
 slf4jVersion = { strictly = "1.7.36" }
 # The CLI plugins use SLF4J version 2 because PF4j requires it

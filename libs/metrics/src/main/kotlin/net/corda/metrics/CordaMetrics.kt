@@ -976,7 +976,6 @@ object CordaMetrics {
                 .meterFilter(MeterFilter.denyUnless {
                     val name = registry.config().namingConvention().name(it.name, it.type, it.baseUnit)
                     when (it.type) {
-                        Meter.Type.COUNTER -> (name + "_total").matches(keepNames)
                         Meter.Type.TIMER ->
                             (name + "_count").matches(keepNames)
                                 || (name + "_sum").matches(keepNames)
