@@ -1,6 +1,7 @@
 package net.corda.testing.statemanager
 
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.statemanager.api.CompressionType
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.Operation
@@ -26,7 +27,7 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
 
     private val storage = ConcurrentHashMap<String, State>()
 
-    override fun create(config: SmartConfig, stateType: StateManagerConfig.StateType): StateManager {
+    override fun create(config: SmartConfig, stateType: StateManagerConfig.StateType, compressionType: CompressionType): StateManager {
         return object : StateManager {
             override val name = LifecycleCoordinatorName("TestStateManager", UUID.randomUUID().toString())
 

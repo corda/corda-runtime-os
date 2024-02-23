@@ -109,8 +109,8 @@ class PostgresUtxoQueryProvider @Activate constructor(
     override val persistMerkleProofs: (batchSize: Int) -> String
         get() = { batchSize ->
             """
-            INSERT INTO utxo_transaction_merkle_proof(merkle_proof_id, transaction_id, group_idx, tree_size, hashes)
-            VALUES ${List(batchSize) { "(?, ?, ?, ?, ?)" }.joinToString(",")}
+            INSERT INTO utxo_transaction_merkle_proof(merkle_proof_id, transaction_id, group_idx, tree_size, leaf_indexes, hashes)
+            VALUES ${List(batchSize) { "(?, ?, ?, ?, ?, ?)" }.joinToString(",")}
             ON CONFLICT DO NOTHING
             """.trimIndent()
         }

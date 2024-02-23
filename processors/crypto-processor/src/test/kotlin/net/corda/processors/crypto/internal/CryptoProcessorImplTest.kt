@@ -198,7 +198,7 @@ class CryptoProcessorImplTest {
         val mockDbConnectionManager = mockDbConnectionManager()
         val stateManager: StateManager = mock()
         val stateManagerFactory: StateManagerFactory = mock {
-            on { create(any(), any()) } doReturn stateManager
+            on { create(any(), any(), anyOrNull()) } doReturn stateManager
         }
 
         // Keep track of any publishers created
