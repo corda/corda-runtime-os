@@ -49,7 +49,7 @@ mockitoVersion = "5.10.0"
 mockitoKotlinVersion = "5.2.1"
 
 # Plugins
-gradleDataVersion = "1.12.1"
+gradleDataVersion = "1.12.2"
 gradleEnterpriseVersion = "3.16.1"
 detektVersion = "1.23.5"
 dependencyCheckVersion = "0.51.0"
