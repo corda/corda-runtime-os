@@ -25,13 +25,13 @@ spec:
           args:
             - "--mode=SENDER"
             - "--clients={{ .Values.appSimulators.sender.parallelClientsPerReplica }}"
-            - "-lloadGenerationType=ONE_OFF"
+            - "-lloadGenerationType=TIME_BASED"
             - "-lpeerX500Names={{ .Values.appSimulators.sender.peerX500Names }}"
             - "-lpeerGroupId={{ .Values.appSimulators.sender.peerGroupId }}"
             - "-lsenderX500Names={{ .Values.appSimulators.sender.senderX500Names }}"
             - "-lsenderGroupId={{ .Values.appSimulators.sender.senderGroupId }}"
             - "-lbatchSize={{ .Values.appSimulators.sender.batchSize }}"
-            - "-ltotalNumberOfMessages={{ .Values.appSimulators.sender.totalNumberOfMessages}}"
+            - "-ltotalNumberOfMessages={{ .Values.appSimulators.sender.timeFrame}}"
             - "-linterBatchDelay={{ .Values.appSimulators.sender.interBatchDelay }}"
             - "-lmessageSizeBytes={{ .Values.appSimulators.sender.messageSizeBytes }}"
             {{- if .Values.appSimulators.sender.expireMessages.enabled }}
