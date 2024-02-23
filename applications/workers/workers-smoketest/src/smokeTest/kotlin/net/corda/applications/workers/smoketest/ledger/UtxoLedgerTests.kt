@@ -29,11 +29,13 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
-import java.time.Duration
+import java.text.DateFormat
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import java.util.UUID
+import java.util.*
 
+val dateFormat: DateFormat =DateFormat.getDateTimeInstance(DateFormat.FULL, DateFormat.FULL)
+fun isonow() = dateFormat.format(Date())
 
 enum class EvolveMode {
     NO_EXTRAS, ADD, ADD_AND_REMOVE,
@@ -203,7 +205,7 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
             message = evolvedMessage
             val end = Instant.now()
             val duration = ChronoUnit.MILLIS.between(start, end)
-            println("TTTTTT completed stage $stage in ${duration}ms")
+            println("${isonow()} completed stage $stage in ${duration}ms")
             timings += duration
             println(timings)
         }
