@@ -53,13 +53,13 @@ class TransactionBackchainSenderFlowV1(
                             ?: run {
                                 log.warn(
                                     "Transaction $id does not exist locally when requested during backchain resolution. A filtered " +
-                                            "transaction might exist for the same id or the transaction has been deleted locally. " +
-                                            "Sending a backchain containing a filtered transaction suggests incorrect mixing of states " +
-                                            "and transactions in enhanced privacy and non-enhanced privacy mode."
+                                        "transaction might exist for the same id or the transaction has been deleted locally. " +
+                                        "Sending a backchain containing a filtered transaction suggests incorrect mixing of states " +
+                                        "and transactions in enhanced privacy and non-enhanced privacy mode."
                                 )
                                 throw CordaRuntimeException(
                                     "Transaction $id does not exist locally when requested during backchain resolution. A filtered " +
-                                            "transaction might exist for the same id or the transaction has been deleted locally."
+                                        "transaction might exist for the same id or the transaction has been deleted locally."
                                 )
                             }
                     }
