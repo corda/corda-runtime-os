@@ -65,7 +65,7 @@ echo "Deploying receiver in $RUN_MODE mode"
 "$SCRIPT_DIR"/runReceiver.sh "$RUN_MODE"
 if [ "$RUN_MODE" == "ONE_WAY" ]
 then
-  dbPassword=$(kubectl get secret --namespace $APP_SIMULATOR_DB_NAMESPACE-db db-postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
+  dbPassword=$(kubectl get secret --namespace $APP_SIMULATOR_DB_NAMESPACE db-postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
 else
   dbPasswordA=$(kubectl get secret --namespace $APP_SIMULATOR_DB_NAMESPACE_A db-postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
   dbPasswordB=$(kubectl get secret --namespace $APP_SIMULATOR_DB_NAMESPACE_B db-postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
