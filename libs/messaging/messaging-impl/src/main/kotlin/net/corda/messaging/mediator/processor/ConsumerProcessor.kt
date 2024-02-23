@@ -166,7 +166,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             stateManager.delete(statesToDelete)
         }
         val rt = System.nanoTime() - startTimestamp
-        if (rt > 100*1000)
+        if (rt > 1e9)
             log.info("mediator ${Thread.currentThread().id} overall ${rt/1e6}ms")
         metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
     }
