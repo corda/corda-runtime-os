@@ -180,7 +180,14 @@ class Sender(
             logger.info("We exited")
             return false
         }
+        if (loadGenerationParams.loadGenerationType == LoadGenerationType.ONE_OFF) {
+            logger.info("we use one-off")
+        } else if (loadGenerationParams.loadGenerationType == LoadGenerationType.TIME_BASED) {
+            logger.info("we use time based")
+        }
         logger.info("Start time is: $startTime")
+        logger.info("message num is ${loadGenerationParams.totalNumberOfMessages}")
+        logger.info("timeframe is ${loadGenerationParams.timeFrame}")
         logger.info("Deadline is: ${startTime.plusMillis(Duration.ofMinutes(loadGenerationParams.timeFrame!!.toLong()).toMillis())}")
         return when (loadGenerationParams.loadGenerationType) {
             LoadGenerationType.ONE_OFF -> (messagesSent < loadGenerationParams.totalNumberOfMessages!!)
