@@ -21,7 +21,6 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
-import net.corda.tracing.TraceContext
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -102,7 +101,6 @@ class FlowEventPipelineFactoryImpl(
         event: FlowEvent,
         configs: Map<String, SmartConfig>,
         mdcProperties: Map<String, String>,
-        traceContext: TraceContext,
         eventRecordTimestamp: Long,
         inputEventHash: String?
     ): FlowEventPipeline {
@@ -123,7 +121,6 @@ class FlowEventPipelineFactoryImpl(
             outputRecords = emptyList(),
             mdcProperties = mdcProperties,
             flowMetrics = metrics,
-            flowTraceContext = traceContext,
             metadata = state?.metadata,
             inputEventHash = inputEventHash
         )

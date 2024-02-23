@@ -52,9 +52,16 @@ interface TracingService : AutoCloseable {
         operationName: String,
         headers: List<Pair<String, String>>): TraceContext
 
+    fun <R> nextSpan(
+        operationName: String,
+        headers: Map<String, Any>,
+        processingBlock: () -> R): R
+
     fun nextSpan(
         operationName: String,
         headers: Map<String, Any>): TraceContext
+
+    fun <R> joinSpan(operationName: String, record: Record<*, *>, processingBlock: TraceContext.() -> R): R
 
     fun getOrCreateBatchPublishTracing(clientId: String): BatchPublishTracing
 

@@ -5,7 +5,6 @@ import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.FlowEventPipeline
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor.State
-import net.corda.tracing.TraceContext
 
 /**
  * [FlowEventPipelineFactory] creates [FlowEventPipeline]s as part of flow event processing.
@@ -32,7 +31,6 @@ interface FlowEventPipelineFactory {
         event: FlowEvent,
         configs: Map<String, SmartConfig>,
         mdcProperties: Map<String, String>,
-        traceContext: TraceContext,
         eventRecordTimestamp: Long,
         inputEventHash: String?
     ): FlowEventPipeline

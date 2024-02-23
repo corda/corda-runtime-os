@@ -6,7 +6,6 @@ import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.messaging.api.records.Record
-import net.corda.tracing.TraceContext
 
 /**
  * [FlowEventContext] contains information about a received [FlowEvent] and state that should be modified when passed through a
@@ -39,7 +38,6 @@ data class FlowEventContext<T>(
     val sendToDlq: Boolean = false,
     val mdcProperties: Map<String, String>,
     val flowMetrics: FlowMetrics,
-    val flowTraceContext: TraceContext,
     val metadata: Metadata?,
     val inputEventHash: String?,
 )

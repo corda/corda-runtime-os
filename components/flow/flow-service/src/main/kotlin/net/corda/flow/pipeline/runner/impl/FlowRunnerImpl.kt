@@ -26,9 +26,12 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_REQUIRE_CLOSE
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_TIMEOUT_MS
+import net.corda.tracing.TraceTag
+import net.corda.tracing.trace
 import net.corda.v5.application.flows.FlowContextPropertyKeys
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -55,29 +58,43 @@ class FlowRunnerImpl @Activate constructor(
         flowContinuation: FlowContinuation
     ): FiberFuture {
         if (context.checkpoint.initialPlatformVersion != platformInfoProvider.localWorkerPlatformVersion) {
-            throw FlowFatalException("Platform has been modified from version " +
+            throw FlowFatalException(
+                "Platform has been modified from version " +
                     "${context.checkpoint.initialPlatformVersion} to version " +
-                    "${platformInfoProvider.localWorkerPlatformVersion}.  The flow must be restarted.")
+                    "${platformInfoProvider.localWorkerPlatformVersion}.  The flow must be restarted."
+            )
         }
 
         val waitingFor = context.checkpoint.waitingFor?.value
-        return when (val receivedEvent = context.inputEvent.payload) {
-            is StartFlow -> {
-                if (waitingFor is WaitingForStartFlow) {
-                    startFlow(context, receivedEvent)
-                } else {
-                    resumeFlow(context, flowContinuation)
+        val receivedEvent = context.inputEvent.payload
+        return trace("RunFlow ${receivedEvent::class.java.name}") {
+            traceTag(TraceTag.FLOW_ID, context.inputEvent.flowId)
+            // TODO restore this
+            //  traceTag(TraceTag.FLOW_VNODE, checkpoint.holdingIdentity.shortHash.toString())
+            when (receivedEvent) {
+                is StartFlow -> {
+                    traceTag(TraceTag.FLOW_CLASS, receivedEvent.startContext.flowClassName)
+                    traceTag(TraceTag.FLOW_INITIATOR, receivedEvent.startContext.initiatedBy.toCorda().shortHash.toString())
+                    traceTag(TraceTag.FLOW_REQUEST_ID, receivedEvent.startContext.requestId)
+
+                    if (waitingFor is WaitingForStartFlow) {
+                        startFlow(context, receivedEvent)
+                    } else {
+                        resumeFlow(context, flowContinuation)
+                    }
                 }
-            }
-            is SessionEvent -> {
-                val sessionInit = getInitPayload(receivedEvent)
-                if (sessionInit != null && waitingFor is WaitingForStartFlow) {
-                    startInitiatedFlow(context, sessionInit, receivedEvent)
-                } else {
-                    resumeFlow(context, flowContinuation)
+
+                is SessionEvent -> {
+                    val sessionInit = getInitPayload(receivedEvent)
+                    if (sessionInit != null && waitingFor is WaitingForStartFlow) {
+                        startInitiatedFlow(context, sessionInit, receivedEvent)
+                    } else {
+                        resumeFlow(context, flowContinuation)
+                    }
                 }
+
+                else -> resumeFlow(context, flowContinuation)
             }
-            else -> resumeFlow(context, flowContinuation)
         }
     }
 

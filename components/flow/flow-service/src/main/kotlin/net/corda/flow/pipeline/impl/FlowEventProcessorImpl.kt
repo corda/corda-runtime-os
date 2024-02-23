@@ -24,7 +24,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.FlowConfig
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
-import net.corda.tracing.TraceContext
+import net.corda.tracing.joinExecution
 import net.corda.tracing.traceStateAndEventExecution
 import net.corda.utilities.debug
 import net.corda.utilities.retry.Exponential
@@ -68,10 +68,19 @@ class FlowEventProcessorImpl(
     ): StateAndEventProcessor.Response<Checkpoint> {
         val flowEvent = event.value
         val mdcProperties = flowMDCService.getMDCLogging(state?.value, flowEvent, event.key)
+        val sync = event.headers.any { it.first == SYNC_RESPONSE_HEADER }
         val eventType = event.value?.payload?.javaClass?.simpleName ?: "Unknown"
         return withMDC(mdcProperties) {
-            traceStateAndEventExecution(event, "Flow Event - $eventType") {
-                createAndExecutePipeline(event, state, mdcProperties, this)
+            when (sync) {
+                true ->
+                    joinExecution(event, "Flow Event - $eventType" ) {
+                        createAndExecutePipeline(event, state, mdcProperties)
+                    }
+                false -> {
+                    traceStateAndEventExecution(event, "Flow Event - $eventType") {
+                        createAndExecutePipeline(event, state, mdcProperties)
+                    }
+                }
             }
         }
     }
@@ -79,8 +88,7 @@ class FlowEventProcessorImpl(
     private fun createAndExecutePipeline(
         event: Record<String, FlowEvent>,
         state: State<Checkpoint>?,
-        mdcProperties: Map<String, String>,
-        traceContext: TraceContext
+        mdcProperties: Map<String, String>
     ): StateAndEventProcessor.Response<Checkpoint> {
         val flowEvent = event.value
         if (flowEvent == null) {
@@ -101,10 +109,10 @@ class FlowEventProcessorImpl(
 
         val pipeline = try {
             log.trace { "Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}" }
-            flowEventPipelineFactory.create(state, flowEvent, configs, mdcProperties, traceContext, event.timestamp, inputEventHash)
+            flowEventPipelineFactory.create(state, flowEvent, configs, mdcProperties,  event.timestamp, inputEventHash)
         } catch (t: Throwable) {
             log.warn("Failed to create flow event pipeline", t)
-            traceContext.error(CordaRuntimeException(t.message, t))
+            //traceContext.error(CordaRuntimeException(t.message, t))
             // Without a pipeline there's a limit to what can be processed.
             return StateAndEventProcessor.Response(
                 updatedState = null,

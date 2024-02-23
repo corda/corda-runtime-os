@@ -8,6 +8,7 @@ import net.corda.tracing.TraceContext
 import net.corda.tracing.TracingService
 import java.util.concurrent.ExecutorService
 
+@Suppress("TooManyFunctions")
 class NoopTracingService : TracingService {
 
     class NoopTraceContext : TraceContext {
@@ -110,6 +111,16 @@ class NoopTracingService : TracingService {
 
     override fun nextSpan(operationName: String, headers: Map<String, Any>): TraceContext {
         return NoopTraceContext()
+    }
+
+    override fun <R> joinSpan(operationName: String, record: Record<*, *>, processingBlock: TraceContext.() -> R): R {
+        return processingBlock(NoopTraceContext())
+    }
+
+    override fun <R> nextSpan(
+        operationName: String, headers:  Map<String, Any>, processingBlock: () -> R
+    ): R {
+        return processingBlock()
     }
 
     override fun getOrCreateBatchPublishTracing(clientId: String): BatchPublishTracing {

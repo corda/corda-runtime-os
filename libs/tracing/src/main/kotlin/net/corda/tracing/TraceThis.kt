@@ -168,6 +168,18 @@ fun <K : Any, S : Any, V : Any> traceStateAndEventExecution(
     }
 }
 
+
+fun <K : Any, S : Any, V : Any> joinExecution(
+    event: Record<K, V>,
+    operationName: String,
+    processingBlock: TraceContext.() -> StateAndEventProcessor.Response<S>
+): StateAndEventProcessor.Response<S> {
+    return TracingState.currentTraceService.joinSpan(operationName, event) {
+        val result = processingBlock(this)
+        result.copy(responseEvents = addTraceContextToRecords(result.responseEvents))
+    }
+}
+
 /**
  * Close tracing system, flushing buffers before shutdown.
  *
@@ -183,3 +195,5 @@ fun shutdownTracing() {
 fun configureJavalinForTracing(config: Any) {
     TracingState.currentTraceService.configureJavalin(config)
 }
+
+

@@ -32,6 +32,11 @@ class BraveRecordTracing(private val tracing: Tracing) {
         return nextSpan(record.headers)
     }
 
+    fun joinSpan(headers: List<Pair<String, String>>): Span {
+        val extracted = recordExtractor.extract(headers)
+        return tracer.joinSpan(extracted.context())
+    }
+
     fun nextSpan(headers: List<Pair<String, String>>): Span {
         val extracted = recordExtractor.extract(headers)
         return nextSpan(extracted)

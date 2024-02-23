@@ -8,11 +8,9 @@ import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.handlers.events.FlowEventHandler
-import net.corda.tracing.TraceTag
 import net.corda.utilities.trace
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 
 /**
@@ -48,17 +46,6 @@ internal class FlowEventPipelineImpl(
         // start flow event it won't exist until we have run the preProcess() for the start flow
         // event handler
         context.flowMetrics.flowEventReceived(context.inputEventPayload::class.java.name)
-
-        val checkpoint = context.checkpoint
-
-        context.flowTraceContext.apply {
-            val flowStartContext = checkpoint.flowStartContext
-            traceTag(TraceTag.FLOW_ID, checkpoint.flowId)
-            traceTag(TraceTag.FLOW_CLASS, flowStartContext.flowClassName)
-            traceTag(TraceTag.FLOW_REQUEST_ID, flowStartContext.requestId)
-            traceTag(TraceTag.FLOW_VNODE, checkpoint.holdingIdentity.shortHash.toString())
-            traceTag(TraceTag.FLOW_INITIATOR, flowStartContext.initiatedBy.toCorda().shortHash.toString())
-        }
 
         return this
     }
