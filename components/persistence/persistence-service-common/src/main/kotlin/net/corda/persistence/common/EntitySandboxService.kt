@@ -10,6 +10,11 @@ interface EntitySandboxService {
     /**
      * Get (or create) the entity (db) sandbox for the given holding identity
      *
+     * Corda allows its flow authors to use plain Java objects (POJOs) for data entities such as ledger input,
+     * output and reference states.
+     * That means we need to instantiate user classes in Corda workers, and we use sandboxing to protect the
+     * Corda cluster from user level code.
+     *
      * @throws [CordaRuntimeException] if not found
      */
     fun get(holdingIdentity: HoldingIdentity, cpkFileHashes: Set<SecureHash>): SandboxGroupContext
