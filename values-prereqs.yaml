@@ -66,3 +66,7 @@ kafka:
         secretKeyRef:
           name: "prereqs-kafka"
           key: "ca.crt"
+
+
+tracing:
+  endpoint: "http://tempo.tempo.svc.cluster.local:9411"
