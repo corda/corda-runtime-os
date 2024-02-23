@@ -194,7 +194,7 @@ class Sender(
             LoadGenerationType.ONE_OFF -> (messagesSent < loadGenerationParams.totalNumberOfMessages!!)
             LoadGenerationType.CONTINUOUS -> true
             LoadGenerationType.TIME_BASED ->
-                (Instant.now() < startTime.plusMillis(Duration.ofMinutes(loadGenerationParams.timeFrame.toLong()).toMillis()))
+                (Instant.now().isBefore(startTime.plusMillis(Duration.ofMinutes(loadGenerationParams.timeFrame.toLong()).toMillis())))
         }
     }
 
