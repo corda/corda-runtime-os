@@ -1,4 +1,4 @@
-{{- if and (.Values.appSimulators.sender.enabled) (eq .Values.appSimulators.sender.loadGenerationType "ONE_OFF") }}
+{{- if and (.Values.appSimulators.sender.enabled) (eq .Values.appSimulators.sender.loadGenerationType "TIME_BASED") }}
 {{- $_ := set . "type" "sender" }}
 apiVersion: batch/v1
 kind: Job
