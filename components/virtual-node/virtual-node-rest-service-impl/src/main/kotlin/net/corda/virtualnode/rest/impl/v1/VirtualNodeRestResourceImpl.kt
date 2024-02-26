@@ -275,7 +275,7 @@ internal class VirtualNodeRestResourceImpl(
     ): ResponseEntity<AsyncResponse> {
         "Deprecated, please use next version where forceUpgrade is passed as a query parameter.".let { msg ->
             logger.warn(msg)
-            return ResponseEntity.okButDeprecated(doUpgradeVirtualNode(virtualNodeShortId, targetCpiFileChecksum, false), msg)
+            return ResponseEntity.acceptedButDeprecated(doUpgradeVirtualNode(virtualNodeShortId, targetCpiFileChecksum, false), msg)
         }
     }
 
@@ -502,7 +502,7 @@ internal class VirtualNodeRestResourceImpl(
 
         "Deprecated, please use next version where non-escaped JSON strings can be passed in the body parameter.".let { msg ->
             logger.warn(msg)
-            return ResponseEntity.okButDeprecated(AsyncResponse(asyncRequest.requestId), msg)
+            return ResponseEntity.acceptedButDeprecated(AsyncResponse(asyncRequest.requestId), msg)
         }
     }
 
