@@ -125,8 +125,11 @@ class AppSimulator @Activate constructor(
         sender.start()
         resources.add(sender)
         // If it's one-off we wait until all messages have been sent.
+        // If it's time-based we wait until the time frame ahs expired.
         // Otherwise, we let the threads run until the process is stopped by the user.
-        if (loadGenerationParams.loadGenerationType == LoadGenerationType.ONE_OFF) {
+        if (loadGenerationParams.loadGenerationType == LoadGenerationType.ONE_OFF ||
+            loadGenerationParams.loadGenerationType == LoadGenerationType.TIME_BASED
+        ) {
             sender.waitUntilComplete()
             shutdownOSGiFramework()
         }
