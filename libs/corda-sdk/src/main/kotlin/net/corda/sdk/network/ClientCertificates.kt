@@ -83,15 +83,24 @@ class ClientCertificates {
         restClient: RestClient<CertificatesRestResource>,
         certificate: ByteArrayInputStream
     ) {
+        uploadCertificate(restClient, certificate, "p2p-tls", P2P_TLS_CERTIFICATE_ALIAS)
+    }
+
+    fun uploadCertificate(
+        restClient: RestClient<CertificatesRestResource>,
+        certificate: ByteArrayInputStream,
+        usage: String,
+        alias: String
+    ) {
         restClient.use { client ->
             checkInvariant(
-                errorMessage = "Failed upload TLS certificate after $MAX_ATTEMPTS attempts."
+                errorMessage = "Failed upload certificate after $MAX_ATTEMPTS attempts."
             ) {
                 try {
                     val resource = client.start().proxy
                     resource.importCertificateChain(
-                        usage = "p2p-tls",
-                        alias = P2P_TLS_CERTIFICATE_ALIAS,
+                        usage = usage,
+                        alias = alias,
                         certificates = listOf(
                             HttpFileUpload(
                                 certificate,

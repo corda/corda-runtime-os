@@ -24,12 +24,12 @@ import net.corda.membership.rest.v1.types.request.HostedIdentitySessionKeyAndCer
 import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
 import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.rest.v1.types.response.RegistrationStatus
-import net.corda.rest.HttpFileUpload
 import net.corda.rest.client.exceptions.MissingRequestedResourceException
 import net.corda.rest.client.exceptions.RequestErrorException
 import net.corda.sdk.config.ClusterConfig
 import net.corda.sdk.network.ClientCertificates
 import net.corda.sdk.network.Keys
+import net.corda.sdk.packaging.CpiUploader
 import net.corda.sdk.rest.RestClientUtils.createRestClient
 import net.corda.virtualnode.OperationalStatus
 import org.bouncycastle.asn1.x500.X500Name
@@ -42,7 +42,6 @@ import org.bouncycastle.operator.bc.BcRSAContentSignerBuilder
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
 import java.io.File
-import java.io.InputStream
 import java.math.BigInteger
 import java.net.URI
 import java.security.KeyPairGenerator
@@ -137,40 +136,29 @@ abstract class BaseOnboard : Runnable, RestCommand() {
 
     internal class OnboardException(message: String) : Exception(message)
 
-    protected fun uploadCpi(cpi: InputStream, name: String): String {
-        return createRestClient(CpiUploadRestResource::class).use { client ->
-            cpi.use { jarInputStream ->
-                val uploadId = client.start().proxy.cpi(
-                    HttpFileUpload(
-                        content = jarInputStream,
-                        fileName = "$name.cpi",
-                    ),
-                ).id
-                checkCpiStatus(uploadId)
-            }
-        }
+    protected fun uploadCpi(cpi: File, cpiName: String): String {
+        val restClient = createRestClient(
+            CpiUploadRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+        val uploadId = CpiUploader().uploadCPI(restClient, cpi, cpiName).id
+        return checkCpiStatus(uploadId)
     }
 
     private fun checkCpiStatus(id: String): String {
-        return createRestClient(CpiUploadRestResource::class).use { client ->
-            checkInvariant(
-                maxAttempts = MAX_ATTEMPTS,
-                waitInterval = WAIT_INTERVAL,
-                errorMessage = "CPI request $id is not ready yet!",
-            ) {
-                try {
-                    val status = client.start().proxy.status(id)
-                    if (status.status == "OK") {
-                        status.cpiFileChecksum
-                    } else {
-                        null
-                    }
-                } catch (e: RequestErrorException) {
-                    // This exception can be thrown while the CPI upload is being processed, so we catch it and re-try.
-                    null
-                }
-            }
-        }
+        val restClient = createRestClient(
+            CpiUploadRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+        return CpiUploader().cpiChecksum(restClient = restClient, uploadRequestId = id)
     }
 
     protected abstract val cpiFileChecksum: String
@@ -436,6 +424,15 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     }
 
     protected fun uploadSigningCertificates() {
+        val restClient = createRestClient(
+            CertificatesRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+
         val keyStore = KeyStore.getInstance(
             keyStoreFile,
             SIGNING_KEY_STORE_PASSWORD.toCharArray(),
@@ -444,35 +441,23 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             ?.toPem()
             ?.byteInputStream()
             ?.use { certificate ->
-                createRestClient(CertificatesRestResource::class).use { client ->
-                    client.start().proxy.importCertificateChain(
-                        usage = "code-signer",
-                        alias = GRADLE_PLUGIN_DEFAULT_KEY_ALIAS,
-                        certificates = listOf(
-                            HttpFileUpload(
-                                certificate,
-                                "certificate.pem",
-                            ),
-                        ),
-                    )
-                }
+                ClientCertificates().uploadCertificate(
+                    restClient = restClient,
+                    certificate = certificate,
+                    usage = "code-signer",
+                    alias = GRADLE_PLUGIN_DEFAULT_KEY_ALIAS
+                )
             }
         keyStore.getCertificate(SIGNING_KEY_ALIAS)
             ?.toPem()
             ?.byteInputStream()
             ?.use { certificate ->
-                createRestClient(CertificatesRestResource::class).use { client ->
-                    client.start().proxy.importCertificateChain(
-                        usage = "code-signer",
-                        alias = "signingkey1-2022",
-                        certificates = listOf(
-                            HttpFileUpload(
-                                certificate,
-                                "certificate.pem",
-                            ),
-                        ),
-                    )
-                }
+                ClientCertificates().uploadCertificate(
+                    restClient = restClient,
+                    certificate = certificate,
+                    usage = "code-signer",
+                    alias = "signingkey1-2022"
+                )
             }
     }
 }

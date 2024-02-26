@@ -133,7 +133,7 @@ class OnboardMember : Runnable, BaseOnboard() {
             println("CPI file saved as ${cpiFile.absolutePath}")
         }
         uploadSigningCertificates()
-        return uploadCpi(cpiFile.inputStream(), cpiFile.name)
+        return uploadCpi(cpiFile, cpiFile.name)
     }
 
     private fun createCpi(cpbFile: File, cpiFile: File): Int {

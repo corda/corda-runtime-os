@@ -19,6 +19,7 @@ dependencies {
     implementation project(':libs:membership:membership-common')
     implementation project(':libs:rest:json-serialization')
     implementation project(':libs:rest:rest-client')
+    implementation project(':libs:virtual-node:cpi-upload-endpoints')
 
     testImplementation libs.bundles.test
     testImplementation project(':testing:test-utilities')

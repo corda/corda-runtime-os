@@ -1,12 +1,13 @@
 package net.corda.cli.plugins.network
 
-import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.membership.rest.v1.MGMRestResource
 import net.corda.sdk.network.ExportGroupPolicyFromMgm
+import net.corda.sdk.network.RegistrationContext
+import net.corda.sdk.packaging.CpiUploader
 import net.corda.sdk.rest.RestClientUtils
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import picocli.CommandLine.Command
@@ -92,34 +93,13 @@ class OnboardMgm : Runnable, BaseOnboard() {
     }
 
     override val registrationContext by lazy {
-        val tlsType = if (mtls) {
-            "Mutual"
-        } else {
-            "OneWay"
-        }
-
-        val endpoints = mutableMapOf<String, String>()
-
-        p2pGatewayUrls.mapIndexed { index, url ->
-            endpoints["corda.endpoints.$index.connectionURL"] = url
-            endpoints["corda.endpoints.$index.protocolVersion"] = "1"
-        }
-
-        mapOf(
-            "corda.session.keys.0.id" to sessionKeyId,
-            "corda.ecdh.key.id" to ecdhKeyId,
-            "corda.group.protocol.registration"
-                to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
-            "corda.group.protocol.synchronisation"
-                to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
-            "corda.group.protocol.p2p.mode" to "Authenticated_Encryption",
-            "corda.group.key.session.policy" to "Distinct",
-            "corda.group.tls.type" to tlsType,
-            "corda.group.pki.session" to "NoPKI",
-            "corda.group.pki.tls" to "Standard",
-            "corda.group.tls.version" to "1.3",
-            "corda.group.trustroot.tls.0" to tlsTrustRoot,
-        ) + endpoints
+        RegistrationContext().getMgm(
+            mtls = mtls,
+            p2pGatewayUrls = p2pGatewayUrls,
+            sessionKeyId = sessionKeyId,
+            ecdhKeyId = ecdhKeyId,
+            tlsTrustRoot = tlsTrustRoot
+        )
     }
 
     private val cpi by lazy {
@@ -161,18 +141,24 @@ class OnboardMgm : Runnable, BaseOnboard() {
                 return@lazy existingHash
             }
 
-            uploadCpi(cpi.inputStream(), cpiName)
+            uploadCpi(cpi, "$cpiName.cpi")
         }
     }
 
     private fun getExistingCpiHash(hash: String? = null): String? {
-        return createRestClient(CpiUploadRestResource::class).use { client ->
-            val response = client.start().proxy.getAllCpis()
-            response.cpis
-                .filter { it.cpiFileChecksum == hash || (hash == null && it.groupPolicy?.contains("CREATE_ID") ?: false) }
-                .map { it.cpiFileChecksum }
-                .firstOrNull()
-        }
+        val restClient = RestClientUtils.createRestClient(
+            CpiUploadRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+        val response = CpiUploader().getAllCpis(restClient = restClient)
+        return response.cpis
+            .filter { it.cpiFileChecksum == hash || (hash == null && it.groupPolicy?.contains("CREATE_ID") ?: false) }
+            .map { it.cpiFileChecksum }
+            .firstOrNull()
     }
 
     override fun run() {
