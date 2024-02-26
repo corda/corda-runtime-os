@@ -465,7 +465,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         externalDBConnectionParams: ExternalDBConnectionParams? = null
     ) =
         post(
-            "/api/$REST_API_VERSION_PATH/virtualnode",
+            "/api/${RestApiVersion.C5_2}/virtualnode",
             deprecatedVNodeBody(
                 cpiHash,
                 x500Name,
