@@ -28,13 +28,17 @@ class DurableFlowStatusProcessor(
     private val stateManager: StateManager,
     private val serializer: CordaAvroSerializer<Any>
 ) : DurableProcessor<FlowKey, FlowStatus> {
+
+    companion object {
+        private val TERMINATED_STATES = setOf(FlowStates.COMPLETED, FlowStates.KILLED, FlowStates.FAILED)
+    }
+
     override val keyClass: Class<FlowKey> get() = FlowKey::class.java
     override val valueClass: Class<FlowStatus> get() = FlowStatus::class.java
     override fun onNext(events: List<Record<FlowKey, FlowStatus>>): List<Record<*, *>> {
         val flowKeys = events.map { it.key.hash() }
-        val existingStates = stateManager.get(flowKeys)
+        val existingStates = stateManager.get(flowKeys).filterNot { hasTerminatedStatus(it.value) }
         val existingKeys = existingStates.keys.toSet()
-
         val (updatedStates, newStates) = events.mapNotNull { record ->
             val key = record.key.hash()
             val value = record.value ?: return@mapNotNull null
@@ -50,6 +54,17 @@ class DurableFlowStatusProcessor(
         stateManager.update(updatedStates.topOfStack())
 
         return emptyList()
+    }
+
+    private fun getStatus(state: State) : String? {
+        val flowStatus = state.metadata[FLOW_STATUS_METADATA_KEY]
+        return if (flowStatus != null) flowStatus as String else null
+    }
+
+    private fun hasTerminatedStatus(state: State): Boolean {
+        val status = getStatus(state)
+        val terminatedStatus = status != null && TERMINATED_STATES.contains(FlowStates.valueOf(status))
+        return terminatedStatus || status == null
     }
 
     private fun Metadata?.withHoldingIdentityAndStatus(holdingIdentity: HoldingIdentity, flowStatus: FlowStates): Metadata {
