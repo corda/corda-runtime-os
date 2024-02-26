@@ -56,7 +56,7 @@ interface UtxoRepository {
     fun findTransactionStatus(
         entityManager: EntityManager,
         id: String,
-    ): String?
+    ): Pair<String, Boolean>?
 
     /** Marks visible states of transactions consumed */
     fun markTransactionVisibleStatesConsumed(
@@ -74,8 +74,29 @@ interface UtxoRepository {
         account: String,
         timestamp: Instant,
         status: TransactionStatus,
+        metadataHash: String
+    )
+
+    /** Persists unverified transaction (operation is idempotent) */
+    @Suppress("LongParameterList")
+    fun persistUnverifiedTransaction(
+        entityManager: EntityManager,
+        id: String,
+        privacySalt: ByteArray,
+        account: String,
+        timestamp: Instant,
         metadataHash: String,
-        isFiltered: Boolean
+    )
+
+    /** Persists unverified transaction (operation is idempotent) */
+    @Suppress("LongParameterList")
+    fun persistFilteredTransaction(
+        entityManager: EntityManager,
+        id: String,
+        privacySalt: ByteArray,
+        account: String,
+        timestamp: Instant,
+        metadataHash: String,
     )
 
     /** Persists transaction metadata (operation is idempotent) */
@@ -193,14 +214,13 @@ interface UtxoRepository {
     data class TransactionSignature(val index: Int, val signatureBytes: ByteArray, val publicKeyHash: SecureHash)
 
     data class TransactionMerkleProof(
+        val merkleProofId: String,
         val transactionId: String,
         val groupIndex: Int,
         val treeSize: Int,
         val leafIndexes: List<Int>,
         val leafHashes: List<String>
-    ) {
-        val merkleProofId: String = "$transactionId;$groupIndex;${leafIndexes.joinToString(separator = ",")}"
-    }
+    )
 
     data class TransactionMerkleProofLeaf(val merkleProofId: String, val leafIndex: Int)
 }

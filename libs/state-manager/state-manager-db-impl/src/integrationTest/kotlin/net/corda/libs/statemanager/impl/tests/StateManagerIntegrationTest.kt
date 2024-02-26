@@ -6,6 +6,7 @@ import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.core.utils.transaction
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
+import net.corda.libs.statemanager.api.CompressionType
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.MetadataFilter
@@ -14,6 +15,7 @@ import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.metadata
 import net.corda.libs.statemanager.impl.StateManagerImpl
+import net.corda.libs.statemanager.impl.compression.CompressionService
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorder
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorderImpl
 import net.corda.libs.statemanager.impl.model.v1.resultSetAsStateCollection
@@ -25,6 +27,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.metrics.CordaMetrics
 import net.corda.test.util.metrics.CORDA_METRICS_LOCK
 import net.corda.test.util.metrics.EachTestCordaMetrics
+import net.corda.utilities.minutes
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.AfterAll
@@ -38,10 +41,16 @@ import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.parallel.ResourceLock
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.time.Instant
+import java.util.TimeZone
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
+import kotlin.math.abs
 
 // TODO-[CORE-16663]: make database provider pluggable
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -72,10 +81,15 @@ class StateManagerIntegrationTest {
         }
     }
 
+    private val compressionService = mock<CompressionService>().also { service ->
+        whenever(service.writeBytes(any(), anyOrNull())).doAnswer { it.getArgument(0) }
+        whenever(service.readBytes(any())).doAnswer { it.getArgument(0) }
+    }
+
     private val stateManager: StateManager = StateManagerImpl(
         lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>(),
         dataSource = dataSource,
-        stateRepository = StateRepositoryImpl(queryProvider),
+        stateRepository = StateRepositoryImpl(queryProvider, compressionService, CompressionType.NONE),
         metricsRecorder = MetricsRecorderImpl()
     )
 
@@ -125,7 +139,7 @@ class StateManagerIntegrationTest {
                 .prepareStatement(queryProvider.findStatesByKey(1))
                 .use {
                     it.setString(1, key)
-                    it.executeQuery().resultSetAsStateCollection(objectMapper)
+                    it.executeQuery().resultSetAsStateCollection(objectMapper, compressionService)
                 }.elementAt(0)
 
             assertSoftly {
@@ -145,7 +159,7 @@ class StateManagerIntegrationTest {
                 .use {
                     it.setString(1, startEntityKey)
                     it.setString(2, finishEntityKey)
-                    it.executeQuery().resultSetAsStateCollection(objectMapper)
+                    it.executeQuery().resultSetAsStateCollection(objectMapper, compressionService)
                 }.sortedBy {
                     it.modifiedTime
                 }
@@ -1008,6 +1022,76 @@ class StateManagerIntegrationTest {
         ).isEmpty()
 
         verifyHistogramSnapshotValues(MetricsRecorder.OperationType.FIND, 4)
+    }
+
+    private fun withTimeZone(timeZone: TimeZone, block: () -> Unit) {
+        val defaultTimeZone = TimeZone.getDefault()
+        try {
+            TimeZone.setDefault(timeZone)
+            return block()
+        } finally {
+            TimeZone.setDefault(defaultTimeZone)
+        }
+    }
+
+    @Test
+    @DisplayName(value = "can filter states by last updated time independently of the default time zone")
+    fun canFilterStatesByLastUpdatedTimeIndependentlyOfTheDefaultTimeZone() {
+        val count = 10
+        val keyIndexRange = 1..count
+        persistStateEntities(
+            keyIndexRange,
+            { _, _ -> State.VERSION_INITIAL_VALUE },
+            { i, _ -> "state_$i" },
+            { _, _ -> """{ "boolean": true }""" }
+        )
+
+        // Calculate the TimeZone that is "furthest" away in time
+        val defaultOffset = TimeZone.getDefault().rawOffset / (1000 * 60 * 60)
+        val furthestTimeZone = TimeZone.getTimeZone(
+            TimeZone.getAvailableIDs().maxByOrNull { id ->
+                val zone = TimeZone.getTimeZone(id)
+                val zoneOffset = zone.rawOffset / (1000 * 60 * 60)
+                abs(zoneOffset - defaultOffset)
+            }
+        )
+
+        withTimeZone(furthestTimeZone) {
+            assertThat(
+                stateManager.updatedBetween(
+                    IntervalFilter(
+                        Instant.now().minusSeconds(30.minutes.toSeconds()),
+                        Instant.now().plusSeconds(30.minutes.toSeconds()),
+                    )
+                )
+            ).hasSize(count)
+        }
+
+        withTimeZone(furthestTimeZone) {
+            assertThat(
+                stateManager.findUpdatedBetweenWithMetadataMatchingAll(
+                    IntervalFilter(
+                        Instant.now().minusSeconds(30.minutes.toSeconds()),
+                        Instant.now().plusSeconds(30.minutes.toSeconds()),
+                    ),
+                    listOf(MetadataFilter("boolean", Operation.Equals, true))
+                )
+            ).hasSize(count)
+        }
+
+        withTimeZone(furthestTimeZone) {
+            assertThat(
+                stateManager.findUpdatedBetweenWithMetadataMatchingAny(
+                    IntervalFilter(
+                        Instant.now().minusSeconds(30.minutes.toSeconds()),
+                        Instant.now().plusSeconds(30.minutes.toSeconds()),
+                    ),
+                    listOf(MetadataFilter("boolean", Operation.Equals, true))
+                )
+            ).hasSize(count)
+        }
+
+        verifyHistogramSnapshotValues(MetricsRecorder.OperationType.FIND, 3)
     }
 
     @AfterEach

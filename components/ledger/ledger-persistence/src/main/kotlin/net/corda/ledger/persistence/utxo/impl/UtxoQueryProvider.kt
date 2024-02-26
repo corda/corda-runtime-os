@@ -57,6 +57,16 @@ interface UtxoQueryProvider {
     val persistTransaction: String
 
     /**
+     * @property persistUnverifiedTransaction SQL text for [UtxoRepositoryImpl.persistUnverifiedTransaction].
+     */
+    val persistUnverifiedTransaction: String
+
+    /**
+     * @property persistFilteredTransaction SQL text for [UtxoRepositoryImpl.persistFilteredTransaction].
+     */
+    val persistFilteredTransaction: String
+
+    /**
      * @property persistTransactionMetadata SQL text for [UtxoRepositoryImpl.persistTransactionMetadata].
      */
     val persistTransactionMetadata: String

@@ -16,20 +16,25 @@ import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.forwarding.gateway.TlsCertificatesPublisher
 import net.corda.p2p.linkmanager.forwarding.gateway.TrustStoresPublisher
 import net.corda.p2p.linkmanager.forwarding.gateway.mtls.ClientCertificatePublisher
+import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
+import net.corda.p2p.linkmanager.sessions.DeadSessionMonitor
+import net.corda.p2p.linkmanager.sessions.DeadSessionMonitorConfigurationHandler
 import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueuesImpl
+import net.corda.p2p.linkmanager.sessions.SessionCache
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.linkmanager.sessions.StateConvertor
 import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl
+import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 import net.corda.schema.Schemas
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.flags.Features
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import java.util.concurrent.Executors
 
 @Suppress("LongParameterList")
 internal class CommonComponents(
@@ -55,9 +60,10 @@ internal class CommonComponents(
     private companion object {
         const val LISTENER_NAME = "link.manager.group.policy.listener"
     }
+
     internal val inboundAssignmentListener = InboundAssignmentListener(
         lifecycleCoordinatorFactory,
-        Schemas.P2P.LINK_IN_TOPIC
+        Schemas.P2P.LINK_IN_TOPIC,
     )
 
     internal val messageConverter = MessageConverter(
@@ -73,9 +79,28 @@ internal class CommonComponents(
         messageConverter,
     )
 
+    private val sessionEventPublisher = StatefulSessionEventPublisher(
+        lifecycleCoordinatorFactory,
+        publisherFactory,
+        messagingConfiguration,
+    )
+
+    private val sessionCache = SessionCache(
+        stateManager,
+        clock,
+        sessionEventPublisher,
+    )
+
+    private val deadSessionMonitor = DeadSessionMonitor(
+        Executors.newSingleThreadScheduledExecutor { runnable -> Thread(runnable, "Dead Session Monitor") },
+        sessionCache,
+    )
+
+    private val deadSessionMonitorConfigHandler =
+        DeadSessionMonitorConfigurationHandler(deadSessionMonitor, configurationReaderService)
+
     internal val sessionManager = if (features.useStatefulSessionManager) {
         StatefulSessionManagerImpl(
-            publisherFactory,
             subscriptionFactory,
             messagingConfiguration,
             lifecycleCoordinatorFactory,
@@ -92,7 +117,7 @@ internal class CommonComponents(
                 inboundAssignmentListener,
                 linkManagerHostingMap,
                 clock = clock,
-                trackSessionHealthAndReplaySessionMessages = false
+                trackSessionHealthAndReplaySessionMessages = false,
             ),
             StateConvertor(
                 schemaRegistry,
@@ -100,7 +125,10 @@ internal class CommonComponents(
             ),
             clock,
             membershipGroupReaderProvider,
+            deadSessionMonitor,
             schemaRegistry,
+            sessionCache,
+            sessionEventPublisher,
         )
     } else {
         SessionManagerImpl(
@@ -180,6 +208,7 @@ internal class CommonComponents(
             trustStoresPublisher.dominoTile.toNamedLifecycle(),
             tlsCertificatesPublisher.dominoTile.toNamedLifecycle(),
             mtlsClientCertificatePublisher.dominoTile.toNamedLifecycle(),
-        ) + externalManagedDependencies
+        ) + externalManagedDependencies,
+        configurationChangeHandler = deadSessionMonitorConfigHandler,
     )
 }

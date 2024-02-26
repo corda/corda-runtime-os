@@ -30,6 +30,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.inOrder
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -60,12 +61,13 @@ class FlowExecutorImplTest {
     @BeforeEach
     fun setup() {
         whenever(flowEventProcessorFactory.create(any())).thenReturn(flowEventProcessor)
-        whenever(stateManagerFactory.create(any(), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT))).thenReturn(stateManager)
+        whenever(stateManagerFactory.create(any(), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT), anyOrNull())).thenReturn(stateManager)
         whenever(
             flowEventMediatorFactory.create(
                 any(),
                 any(),
                 any(),
+                any()
             )
         ).thenReturn(multiSourceEventMediator)
 
@@ -158,9 +160,10 @@ class FlowExecutorImplTest {
                 any(),
                 any(),
                 any(),
+                any()
             )
         ).thenReturn(multiSourceEventMediator2)
-        whenever(stateManagerFactory.create(any(), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT))).thenReturn(stateManager2)
+        whenever(stateManagerFactory.create(any(), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT), anyOrNull())).thenReturn(stateManager2)
         whenever(flowExecutorCoordinator.followStatusChangesByName(any())).thenReturn(subscriptionRegistrationHandle2)
 
         flowExecutor.onConfigChange(config)

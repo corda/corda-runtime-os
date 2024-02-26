@@ -23,7 +23,9 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
+import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl.Companion.LINK_MANAGER_SUBSYSTEM
+import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 import net.corda.p2p.linkmanager.state.SessionState
 import net.corda.schema.Schemas
 import net.corda.schema.registry.AvroSchemaRegistry
@@ -32,8 +34,10 @@ import net.corda.utilities.time.Clock
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
@@ -46,8 +50,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
-import org.junit.jupiter.api.AfterEach
-import org.mockito.Mockito
 
 class StatefulSessionManagerImplTest {
     private val coordinator = mock<LifecycleCoordinator>()
@@ -55,6 +57,7 @@ class StatefulSessionManagerImplTest {
         on { createCoordinator(any(), any()) } doReturn coordinator
     }
     private val stateManager = mock<StateManager>()
+    private val deadSessionMonitor = mock<DeadSessionMonitor>()
     private val sessionManagerImplDominoTile = mock<ComplexDominoTile> {
         on { coordinatorName } doReturn mock()
     }
@@ -72,6 +75,7 @@ class StatefulSessionManagerImplTest {
     private val clock = mock<Clock> {
         on { instant() } doReturn now
     }
+
     private val publisherWithDominoLogic = Mockito.mockConstruction(PublisherWithDominoLogic::class.java) { mock, _ ->
         val mockDominoTile = mock<ComplexDominoTile> {
             whenever(it.toNamedLifecycle()).thenReturn(mock())
@@ -83,13 +87,26 @@ class StatefulSessionManagerImplTest {
         on { serialize(serialized.capture()) } doReturn ByteBuffer.wrap(byteArrayOf(0))
         on {
             deserialize(
-                any(), eq(ReEstablishSessionMessage::class.java), eq(null)
+                any(),
+                eq(ReEstablishSessionMessage::class.java),
+                eq(null),
             )
         } doReturn ReEstablishSessionMessage("test")
     }
 
-    private val manager = StatefulSessionManagerImpl(
+    private val sessionEventPublisher = StatefulSessionEventPublisher(
+        coordinatorFactory,
         mock(),
+        mock(),
+    )
+
+    private val sessionCache = SessionCache(
+        stateManager,
+        clock,
+        sessionEventPublisher,
+    )
+
+    private val manager = StatefulSessionManagerImpl(
         mock(),
         mock(),
         coordinatorFactory,
@@ -98,7 +115,10 @@ class StatefulSessionManagerImplTest {
         stateConvertor,
         clock,
         membershipGroupReaderProvider,
+        deadSessionMonitor,
         schemaRegistry,
+        sessionCache,
+        sessionEventPublisher,
     )
 
     private data class Wrapper<T>(
@@ -109,6 +129,7 @@ class StatefulSessionManagerImplTest {
     fun cleanUp() {
         publisherWithDominoLogic.close()
     }
+
     private fun mockState(id: String): State {
         val state = mock<State> {
             on { value } doReturn id.toByteArray()
@@ -134,6 +155,24 @@ class StatefulSessionManagerImplTest {
         }
         whenever(stateConvertor.toCordaSessionState(same(state), any())).doReturn(sessionState)
         return state
+    }
+
+    @Nested
+    inner class DeadSessionMonitorTests {
+        @Test
+        fun `Given a data message is send then the monitor should record the session ID used`() {
+            val sessionId = "s1"
+            val session = mock<Session>().apply { whenever(this.sessionId).thenReturn(sessionId) }
+            manager.dataMessageSent(session)
+            verify(deadSessionMonitor).messageSent(sessionId)
+        }
+
+        @Test
+        fun `Given a data message is acknowledged then the monitor should record the session ID used`() {
+            val sessionId = "s1"
+            manager.messageAcknowledged(sessionId)
+            verify(deadSessionMonitor).ackReceived(sessionId)
+        }
     }
 
     @Nested
@@ -240,7 +279,7 @@ class StatefulSessionManagerImplTest {
             )
 
             manager.getSessionsById(
-                setOf(Wrapper(testSessionId))
+                setOf(Wrapper(testSessionId)),
             ) { it.value }
 
             val publishedRecord = published.firstValue.single()
@@ -381,9 +420,8 @@ class StatefulSessionManagerImplTest {
 
             manager.deleteOutboundSession(
                 SessionManager.Counterparties(source, destination),
-                message
+                message,
             )
-
             verify(stateManager).get(listOf(knownStateKey))
         }
     }

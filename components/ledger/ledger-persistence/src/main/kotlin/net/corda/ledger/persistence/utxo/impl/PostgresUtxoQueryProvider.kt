@@ -18,13 +18,37 @@ class PostgresUtxoQueryProvider @Activate constructor(
         LoggerFactory.getLogger(this::class.java).debug { "Activated for ${databaseTypeProvider.databaseType}" }
     }
 
+    // the additional logic will allow repeated filtered transaction inserts to keep updating the table
     override val persistTransaction: String
         get() = """
             INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
-                VALUES (:id, :privacySalt, :accountId, :createdAt, :status, :updatedAt, :metadataHash, :isFiltered)
+                VALUES (:id, :privacySalt, :accountId, :createdAt, :status, :updatedAt, :metadataHash, FALSE)
             ON CONFLICT(id) DO
-                UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated
-            WHERE utxo_transaction.status in ('$UNVERIFIED', '$DRAFT')"""
+            UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated, is_filtered = FALSE
+            WHERE utxo_transaction.status in ('$UNVERIFIED', '$DRAFT')
+                OR (utxo_transaction.status = '$VERIFIED' AND utxo_transaction.is_filtered = TRUE)
+            """
+            .trimIndent()
+
+    override val persistUnverifiedTransaction: String
+        get() = """
+            INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
+                VALUES (:id, :privacySalt, :accountId, :createdAt, '$UNVERIFIED', :updatedAt, :metadataHash, FALSE)
+            ON CONFLICT(id) DO
+            UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated
+            WHERE utxo_transaction.status in ('$UNVERIFIED', '$DRAFT')
+                OR (utxo_transaction.status = '$VERIFIED' AND utxo_transaction.is_filtered = TRUE)
+            """
+            .trimIndent()
+
+    override val persistFilteredTransaction: String
+        get() = """
+            INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
+                VALUES (:id, :privacySalt, :accountId, :createdAt, '$VERIFIED', :updatedAt, :metadataHash, TRUE)
+            ON CONFLICT(id) DO
+            UPDATE SET is_filtered = TRUE
+            WHERE utxo_transaction.status in ('$UNVERIFIED', '$DRAFT') AND utxo_transaction.is_filtered = FALSE
+            """
             .trimIndent()
 
     override val persistTransactionMetadata: String
@@ -85,8 +109,8 @@ class PostgresUtxoQueryProvider @Activate constructor(
     override val persistMerkleProofs: (batchSize: Int) -> String
         get() = { batchSize ->
             """
-            INSERT INTO utxo_transaction_merkle_proof(merkle_proof_id, transaction_id, group_idx, tree_size, hashes)
-            VALUES ${List(batchSize) { "(?, ?, ?, ?, ?)" }.joinToString(",")}
+            INSERT INTO utxo_transaction_merkle_proof(merkle_proof_id, transaction_id, group_idx, tree_size, leaf_indexes, hashes)
+            VALUES ${List(batchSize) { "(?, ?, ?, ?, ?, ?)" }.joinToString(",")}
             ON CONFLICT DO NOTHING
             """.trimIndent()
         }

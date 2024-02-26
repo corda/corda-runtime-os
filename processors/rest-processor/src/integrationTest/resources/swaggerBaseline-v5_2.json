@@ -5281,10 +5281,10 @@
         }
       },
       "KeyRotationStatusResponse" : {
-        "required" : [ "createdTimestamp", "lastUpdatedTimestamp", "rotatedKeyStatus", "status", "tenantId" ],
+        "required" : [ "rotationInitiatedTimestamp", "lastUpdatedTimestamp", "rotatedKeyStatus", "status", "tenantId" ],
         "type" : "object",
         "properties" : {
-          "createdTimestamp" : {
+          "rotationInitiatedTimestamp" : {
             "type" : "string",
             "format" : "datetime",
             "nullable" : false,

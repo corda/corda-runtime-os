@@ -1,6 +1,5 @@
 package net.corda.flow.maintenance
 
-import net.corda.data.flow.FlowCheckpointTermination
 import net.corda.data.flow.FlowTimeout
 import net.corda.data.scheduler.ScheduledTaskTrigger
 import net.corda.libs.configuration.SmartConfig
@@ -38,12 +37,10 @@ class FlowMaintenanceImplTests {
     }
 
     private val stateManagerFactory = mock<StateManagerFactory> {
-        on { create(any(), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT)) } doReturn (stateManager)
+        on { create(any(), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT), anyOrNull()) } doReturn (stateManager)
     }
     private val timeoutSubscription = mock<Subscription<String, FlowTimeout>>()
     private val scheduledTaskSubscription = mock<Subscription<String, ScheduledTaskTrigger>>()
-    private val checkpointDeletionTaskSubscription = mock<Subscription<String, ScheduledTaskTrigger>>()
-    private val checkpointDeletionExecutorSubscription = mock<Subscription<String, FlowCheckpointTermination>>()
 
     private val lifecycleCoordinator = mock<LifecycleCoordinator> {
         val captor = argumentCaptor<() -> Resource>()
@@ -60,12 +57,6 @@ class FlowMaintenanceImplTests {
         on {
             createDurableSubscription(any(), any<TimeoutEventCleanupProcessor>(), any(), anyOrNull())
         } doReturn (timeoutSubscription)
-        on {
-            createDurableSubscription(any(), any<FlowCheckpointTerminationTaskProcessor>(), any(), anyOrNull())
-        } doReturn (checkpointDeletionTaskSubscription)
-        on {
-            createDurableSubscription(any(), any<FlowCheckpointTerminationCleanupProcessor>(), any(), anyOrNull())
-        } doReturn (checkpointDeletionExecutorSubscription)
     }
 
     private val messagingConfig = mock<SmartConfig>().apply {
@@ -105,7 +96,7 @@ class FlowMaintenanceImplTests {
     fun `when config provided create subscription and start it`() {
         flowMaintenance.onConfigChange(config)
 
-        verify(lifecycleCoordinator, times(4)).createManagedResource(any(), any<() -> Resource>())
+        verify(lifecycleCoordinator, times(2)).createManagedResource(any(), any<() -> Resource>())
         verify(subscriptionFactory, times(1)).createDurableSubscription(
             argThat { it ->
                 it.eventTopic == Schemas.ScheduledTask.SCHEDULED_TASK_TOPIC_FLOW_PROCESSOR
@@ -122,7 +113,7 @@ class FlowMaintenanceImplTests {
             eq(messagingConfig),
             isNull()
         )
-        verify(stateManagerFactory).create(eq(stateManagerConfig), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT))
+        verify(stateManagerFactory).create(eq(stateManagerConfig), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT), anyOrNull())
         verify(stateManager).start()
         verify(scheduledTaskSubscription).start()
         verify(timeoutSubscription).start()
@@ -135,7 +126,7 @@ class FlowMaintenanceImplTests {
         flowMaintenance.onConfigChange(mapOf(ConfigKeys.MESSAGING_CONFIG to messagingConfig))
 
         verify(stateManagerFactory, Times(1))
-            .create(eq(stateManagerConfig), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT))
+            .create(eq(stateManagerConfig), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT), anyOrNull())
     }
 
     @Test
@@ -144,7 +135,7 @@ class FlowMaintenanceImplTests {
         flowMaintenance.onConfigChange(mapOf(ConfigKeys.STATE_MANAGER_CONFIG to mock<SmartConfig>()))
 
         verify(stateManagerFactory, Times(1))
-            .create(eq(stateManagerConfig), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT))
+            .create(eq(stateManagerConfig), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT), anyOrNull())
     }
 
     @Test
@@ -154,7 +145,7 @@ class FlowMaintenanceImplTests {
         val newStateManager = mock<StateManager> {
             on { name } doReturn (LifecycleCoordinatorName("StateManager", "2"))
         }
-        whenever(stateManagerFactory.create(eq(newConfig), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT)))
+        whenever(stateManagerFactory.create(eq(newConfig), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT), anyOrNull()))
             .thenReturn(newStateManager)
 
         flowMaintenance.onConfigChange(
@@ -165,10 +156,10 @@ class FlowMaintenanceImplTests {
             )
         )
 
-        verify(stateManagerFactory).create(eq(newConfig), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT))
+        verify(stateManagerFactory).create(eq(newConfig), eq(StateManagerConfig.StateType.FLOW_CHECKPOINT), anyOrNull())
         verify(stateManager).stop()
         verify(lifecycleCoordinator).followStatusChangesByName(setOf(newStateManager.name))
-        verify(lifecycleCoordinator, times(8)).createManagedResource(any(), any<() -> Resource>())
+        verify(lifecycleCoordinator, times(4)).createManagedResource(any(), any<() -> Resource>())
     }
 
     @Test

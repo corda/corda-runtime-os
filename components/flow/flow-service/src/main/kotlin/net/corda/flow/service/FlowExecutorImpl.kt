@@ -6,6 +6,7 @@ import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.messaging.mediator.FlowEventMediatorFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.libs.statemanager.api.CompressionType
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -72,14 +73,16 @@ class FlowExecutorImpl constructor(
             val messagingConfig = toMessagingConfig(config).withServiceEndpoints(config)
             val updatedConfigs = updateConfigsWithFlowConfig(config, messagingConfig)
             val stateManagerConfig = config.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)
+            val bootConfig = config.getConfig(ConfigKeys.BOOT_CONFIG)
 
             // close the lifecycle registration first to prevent down being signaled
             subscriptionRegistrationHandle?.close()
             multiSourceEventMediator?.close()
             stateManager?.stop()
 
-            stateManager = stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.FLOW_CHECKPOINT)
-            multiSourceEventMediator = flowEventMediatorFactory.create(updatedConfigs, messagingConfig, stateManager!!)
+            stateManager =
+                stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.FLOW_CHECKPOINT, CompressionType.SNAPPY)
+            multiSourceEventMediator = flowEventMediatorFactory.create(updatedConfigs, messagingConfig, bootConfig, stateManager!!)
             subscriptionRegistrationHandle = coordinator.followStatusChangesByName(
                 setOf(multiSourceEventMediator!!.subscriptionName, stateManager!!.name)
             )
@@ -137,7 +140,7 @@ class FlowExecutorImpl constructor(
         }
     }
 
-    private fun SmartConfig.withServiceEndpoints(config: Map<String, SmartConfig>) : SmartConfig {
+    private fun SmartConfig.withServiceEndpoints(config: Map<String, SmartConfig>): SmartConfig {
         val bootConfig = config.getConfig(BOOT_CONFIG)
 
         return listOf(

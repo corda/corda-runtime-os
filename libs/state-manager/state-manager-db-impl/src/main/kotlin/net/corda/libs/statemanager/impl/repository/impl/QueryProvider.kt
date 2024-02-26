@@ -1,6 +1,7 @@
 package net.corda.libs.statemanager.impl.repository.impl
 
 import net.corda.libs.statemanager.api.MetadataFilter
+import java.util.TimeZone
 
 /**
  * Provider for SQL queries executed by [StateRepositoryImpl].
@@ -9,6 +10,8 @@ import net.corda.libs.statemanager.api.MetadataFilter
  * the relevant implementation instead.
  */
 interface QueryProvider {
+
+    val timeZone: TimeZone
 
     fun createStates(size: Int): String
 

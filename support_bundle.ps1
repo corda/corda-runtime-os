@@ -67,13 +67,20 @@ foreach ($restSvcName in (kubectl get svc --namespace $namespace -l app.kubernet
     $password = (kubectl get secret --namespace $namespace "$instance-rest-api-admin" -o go-template='{{ .data.password | base64decode }}')
 
     $job = Start-Job -ScriptBlock {kubectl port-forward --namespace $args[0] $args[1] 9443:443} -ArgumentList $namespace, "svc/${restSvcName}"
-    while( !( Test-Connection -ComputerName 'localhost' -TcpPort '9443' -Quiet ) ) {
-      Start-Sleep -Seconds 0.1
+    $remainingAttempts = 10
+    while ($remainingAttempts -gt 0) {
+      if (Test-Connection -ComputerName 'localhost' -TcpPort '9443' -Quiet) {
+        break
+      }
+      Start-Sleep -Seconds 1
+      $remainingAttempts--
     }
 
-    $sections = "crypto", "externalMessaging", "flow", "ledger.utxo", "membership", "messaging", "p2p.gateway", "p2p.linkManager", "rbac", "reconciliation", "rest", "sandbox", "secrets", "security", "stateManager", "vnode.datasource"
-    foreach ($section in $sections) {
-      Invoke-RestMethod -Uri "https://localhost:9443/api/v1/config/corda.$section" -Method Get -SkipCertificateCheck -Headers @{Authorization = "Basic " + [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("${username}:${password}"))} -OutFile (Join-Path $configDir "corda.$section.json")
+    if ($remainingAttempts -gt 0) {
+      $sections = "crypto", "externalMessaging", "flow", "ledger.utxo", "membership", "messaging", "p2p.gateway", "p2p.linkManager", "rbac", "reconciliation", "rest", "sandbox", "secrets", "security", "stateManager", "vnode.datasource"
+      foreach ($section in $sections) {
+        Invoke-RestMethod -Uri "https://localhost:9443/api/v1/config/corda.$section" -Method Get -SkipCertificateCheck -Headers @{ Authorization = "Basic " + [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("${username}:${password}")) } -OutFile (Join-Path $configDir "corda.$section.json")
+      }
     }
 
     Stop-Job $job

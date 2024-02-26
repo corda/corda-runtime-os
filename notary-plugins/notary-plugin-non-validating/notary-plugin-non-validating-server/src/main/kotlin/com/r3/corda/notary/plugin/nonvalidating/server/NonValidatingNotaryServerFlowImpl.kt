@@ -114,11 +114,16 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             session.send(uniquenessResult.toNotarizationResponse(txDetails.id, signature))
         } catch (e: Exception) {
             logger.warn("Error while processing request from client. Cause: $e ${e.stackTraceToString()}")
+            val genericMessage = "Error while processing request from client. "
+            val additionalMessage =
+                when (e) {
+                    is InvalidBackchainFlagException -> "Cause: ${e.message}"
+                    else -> "Please contact notary operator for further details."
+                }
             session.send(
                 NotarizationResponse(
                     emptyList(),
-                    NotaryExceptionGeneral("Error while processing request from client. " +
-                            "Cause: ${e.message}")
+                    NotaryExceptionGeneral(genericMessage + additionalMessage)
                 )
             )
         }
@@ -142,9 +147,8 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
                     " by this notary virtual node (${currentNotaryServiceName})"
         }
 
-        require(currentNotaryBackchainRequired) {
-            "Non-validating notary can't switch backchain verification off."
-        }
+        if (!currentNotaryBackchainRequired) throw InvalidBackchainFlagException()
+
     }
 
     /**

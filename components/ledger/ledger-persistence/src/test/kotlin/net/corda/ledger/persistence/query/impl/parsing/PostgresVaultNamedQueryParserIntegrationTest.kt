@@ -100,12 +100,31 @@ class PostgresVaultNamedQueryParserIntegrationTest {
                 )
             )
         }
+
+        @JvmStatic
+        fun simpleInputsToOutputs() =
+            Stream.of(
+                Arguments.of(
+                    "visible_states.created",
+                    "visible_states.created"
+                ),
+                Arguments.of(
+                    "visible_states.custom_representation -> 'com.r3.example_state' ->> 'field1'",
+                    "visible_states.custom_representation -> 'com.r3.example_state' ->> 'field1'"
+                )
+            )
     }
 
     @ParameterizedTest
     @MethodSource("inputsToOutputs")
     fun `queries are parsed from a postgres query and output back into a postgres query`(input: String, output: String) {
         assertThat(vaultNamedQueryParser.parseWhereJson(input)).isEqualTo(output)
+    }
+
+    @ParameterizedTest
+    @MethodSource("simpleInputsToOutputs")
+    fun `simple expressions are parsed from a postgres query and output back into a postgres query`(input: String, output: String) {
+        assertThat(vaultNamedQueryParser.parseSimpleExpression(input)).isEqualTo(output)
     }
 
     @Test

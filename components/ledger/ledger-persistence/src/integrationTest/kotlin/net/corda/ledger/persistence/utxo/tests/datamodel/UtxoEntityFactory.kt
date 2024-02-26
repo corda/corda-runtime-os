@@ -13,6 +13,7 @@ class UtxoEntityFactory(private val entityManagerFactory: EntityManagerFactory) 
     val utxoVisibleTransactionOutput: Class<*> get() = classFor("UtxoVisibleTransactionOutputEntity")
     val utxoTransactionSignature: Class<*> get() = classFor("UtxoTransactionSignatureEntity")
     val utxoTransactionSource: Class<*> get() = classFor("UtxoTransactionSourceEntity")
+    val merkleProof: Class<*> get() = classFor("UtxoMerkleProofEntity")
 
     @Suppress("LongParameterList")
     fun createUtxoTransactionEntity(

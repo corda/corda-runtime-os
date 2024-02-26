@@ -585,7 +585,8 @@ class FlowTests : ClusterReadiness by ClusterReadinessChecker() {
     fun `Notary - Non-validating plugin executes successfully when using issuance transaction`() {
         issueStatesAndValidateResult(3) { issuanceResult ->
             // 1. Make sure the states were issued
-            assertThat(issuanceResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
+            assertThat(issuanceResult.flowStatus).withFailMessage { issuanceResult.toString() }
+                .isEqualTo(REST_FLOW_STATUS_SUCCESS)
 
             val flowResultMap = issuanceResult.mapFlowJsonResult()
 
@@ -620,7 +621,8 @@ class FlowTests : ClusterReadiness by ClusterReadinessChecker() {
         val issuedStates = mutableListOf<String>()
         issueStatesAndValidateResult(1) { issuanceResult ->
             // 2. Make sure the states were issued
-            assertThat(issuanceResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
+            assertThat(issuanceResult.flowStatus).withFailMessage { issuanceResult.toString() }
+                .isEqualTo(REST_FLOW_STATUS_SUCCESS)
             val flowResultMap = issuanceResult.mapFlowJsonResult()
 
             @Suppress("unchecked_cast")
@@ -667,7 +669,8 @@ class FlowTests : ClusterReadiness by ClusterReadinessChecker() {
         val issuedStates = mutableListOf<String>()
         issueStatesAndValidateResult(1) { issuanceResult ->
             // 2. Make sure the states were issued
-            assertThat(issuanceResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
+            assertThat(issuanceResult.flowStatus).withFailMessage { issuanceResult.toString() }
+                .isEqualTo(REST_FLOW_STATUS_SUCCESS)
             val flowResultMap = issuanceResult.mapFlowJsonResult()
 
             @Suppress("unchecked_cast")
@@ -717,7 +720,8 @@ class FlowTests : ClusterReadiness by ClusterReadinessChecker() {
         val issuedStates = mutableListOf<String>()
         issueStatesAndValidateResult(1) { issuanceResult ->
             // 2. Make sure the states were issued
-            assertThat(issuanceResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
+            assertThat(issuanceResult.flowStatus).withFailMessage { issuanceResult.toString() }
+                .isEqualTo(REST_FLOW_STATUS_SUCCESS)
             val flowResultMap = issuanceResult.mapFlowJsonResult()
 
             @Suppress("unchecked_cast")
@@ -759,7 +763,8 @@ class FlowTests : ClusterReadiness by ClusterReadinessChecker() {
         val issuedStates = mutableListOf<String>()
         issueStatesAndValidateResult(1) { issuanceResult ->
             // 2. Make sure the states were issued
-            assertThat(issuanceResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
+            assertThat(issuanceResult.flowStatus).withFailMessage { issuanceResult.toString() }
+                .isEqualTo(REST_FLOW_STATUS_SUCCESS)
             val flowResultMap = issuanceResult.mapFlowJsonResult()
 
             @Suppress("unchecked_cast")
@@ -825,7 +830,8 @@ class FlowTests : ClusterReadiness by ClusterReadinessChecker() {
         val issuedStates = mutableListOf<String>()
         issueStatesAndValidateResult(2) { issuanceResult ->
             // 2. Make sure the states were issued
-            assertThat(issuanceResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
+            assertThat(issuanceResult.flowStatus).withFailMessage { issuanceResult.toString() }
+                .isEqualTo(REST_FLOW_STATUS_SUCCESS)
             val flowResultMap = issuanceResult.mapFlowJsonResult()
 
             @Suppress("unchecked_cast")

@@ -13,6 +13,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.tracing.addTraceContextToMediatorMessage
+import net.corda.messaging.mediator.metrics.EventMediatorMetrics
 import net.corda.tracing.addTraceContextToRecord
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
@@ -35,7 +36,23 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     private val executor: Executor,
 ) {
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.name}")
+    private val metrics = EventMediatorMetrics(config.name)
 
+    /**
+     * Process a group of events.
+     *
+     * When the mediator is configured with an idempotence processor, and a duplicate or replayed record is detected, based on a hash of
+     * the record payload, then the asynchronous outputs from the previous invocation  of the processor will be retrieved
+     * from the [MediatorState].In this case, the message processor is not executed again,
+     * and the previously retrieved outputs are returned for resending.
+     *
+     * Otherwise, the message processor is executed and any synchronous calls are sent and responses are processed immediately.
+     *
+     * Finally, any asynchronous outputs are returned, as well as the [State] object to update.
+     *
+     * @param inputs Group of records of various keys along with their respective states
+     * @return The asynchronous outputs and state updates grouped by record key
+     */
     fun processEvents(
         key: K,
         inputRecords: List<Record<K, E>>,

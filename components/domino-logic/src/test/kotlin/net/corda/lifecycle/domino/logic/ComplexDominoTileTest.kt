@@ -390,8 +390,10 @@ class ComplexDominoTileTest {
             val tile = tile()
             tile.start()
 
+            val expMsg = "Bad config"
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config))
-            outerConfigUpdateResult!!.completeExceptionally(RuntimeException("Bad config"))
+            outerConfigUpdateResult!!.completeExceptionally(RuntimeException(expMsg))
+            verify(coordinator).updateStatus(LifecycleStatus.DOWN, expMsg)
 
             assertThat(tile.isRunning).isFalse
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config))

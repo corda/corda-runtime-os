@@ -40,6 +40,7 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     api project(':libs:lifecycle:lifecycle')
+    api project(":components:virtual-node:virtual-node-info-read-service")
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "net.corda:corda-avro-schema"
@@ -53,6 +54,7 @@ dependencies {
     implementation project(":libs:metrics")
     implementation project(":libs:uniqueness:common")
     implementation project(":libs:utilities")
+    implementation project(":libs:virtual-node:virtual-node-common")
 
     testImplementation "org.hibernate:hibernate-core:$hibernateVersion"
     testImplementation project(":testing:crypto-testkit")

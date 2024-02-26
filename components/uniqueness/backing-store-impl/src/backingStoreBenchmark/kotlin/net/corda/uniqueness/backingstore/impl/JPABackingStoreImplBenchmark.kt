@@ -22,6 +22,7 @@ import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
@@ -123,11 +124,12 @@ class JPABackingStoreImplBenchmark {
             )) doReturn holdingIdentityDb
             whenever(getClusterDataSource()) doReturn clusterDbConfig.dataSource
         }
+        val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
         backingStore = JPABackingStoreLifecycleImpl(
             mock(),
             jpaEntitiesRegistry,
             dbConnectionManager,
-            JPABackingStoreImpl(jpaEntitiesRegistry, dbConnectionManager)
+            JPABackingStoreImpl(jpaEntitiesRegistry, dbConnectionManager, virtualNodeInfoReadService)
         ).apply {
             eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
         }

@@ -113,9 +113,9 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             }
             metrics.commitTimer.recordCallable {
                 consumer.syncCommitOffsets()
+                metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
             }
         }
-        metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
     }
 
     private class EventData<K: Any, E: Any>(

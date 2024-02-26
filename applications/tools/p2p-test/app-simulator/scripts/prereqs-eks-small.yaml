@@ -1,3 +1,8 @@
+global:
+  imageRegistry: docker-remotes.software.r3.com
+  imagePullSecrets:
+    - docker-registry-cred
+
 kafka:
   resources:
     requests:

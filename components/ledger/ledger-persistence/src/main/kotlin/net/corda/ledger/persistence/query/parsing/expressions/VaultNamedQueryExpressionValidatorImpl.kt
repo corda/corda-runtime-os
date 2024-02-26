@@ -19,6 +19,11 @@ class VaultNamedQueryExpressionValidatorImpl : VaultNamedQueryExpressionValidato
         }
     }
 
+    override fun validateSimpleExpression(original: String, expression: List<Token>): List<Token> {
+        Validator(original).validate(expression)
+        return expression
+    }
+
     private class Validator(private val query: String) {
         @Suppress("ThrowsCount")
         fun validate(expression: Iterable<Token>) {

@@ -29,6 +29,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -96,7 +97,7 @@ class FlowStatusLookupServiceImplTest {
     @BeforeEach
     fun setup() {
         whenever(lifecycleCoordinator.followStatusChangesByName(any())).thenReturn(lifecycleEventRegistration)
-        whenever(stateManagerFactory.create(any(), any())).thenReturn(stateManager)
+        whenever(stateManagerFactory.create(any(), any(), anyOrNull())).thenReturn(stateManager)
 
         val resourceCaptor = argumentCaptor<() -> Subscription<Any, Any>>()
         whenever(lifecycleCoordinator.createManagedResource(any(), resourceCaptor.capture())).thenAnswer {

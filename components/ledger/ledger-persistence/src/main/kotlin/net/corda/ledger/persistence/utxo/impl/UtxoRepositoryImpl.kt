@@ -163,11 +163,11 @@ class UtxoRepositoryImpl(
             .map { r -> serializationService.deserialize(r.get(0) as ByteArray) }
     }
 
-    override fun findTransactionStatus(entityManager: EntityManager, id: String): String? {
+    override fun findTransactionStatus(entityManager: EntityManager, id: String): Pair<String, Boolean>? {
         return entityManager.createNativeQuery(queryProvider.findTransactionStatus, Tuple::class.java)
             .setParameter("transactionId", id)
             .resultListAsTuples()
-            .map { r -> r.get(0) as String }
+            .map { r -> r.get(0) as String to r.get(1) as Boolean }
             .singleOrNull()
     }
 
@@ -191,7 +191,6 @@ class UtxoRepositoryImpl(
         timestamp: Instant,
         status: TransactionStatus,
         metadataHash: String,
-        isFiltered: Boolean
     ) {
         entityManager.createNativeQuery(queryProvider.persistTransaction)
             .setParameter("id", id)
@@ -201,7 +200,44 @@ class UtxoRepositoryImpl(
             .setParameter("status", status.value)
             .setParameter("updatedAt", timestamp)
             .setParameter("metadataHash", metadataHash)
-            .setParameter("isFiltered", isFiltered)
+            .executeUpdate()
+            .logResult("transaction [$id]")
+    }
+
+    override fun persistUnverifiedTransaction(
+        entityManager: EntityManager,
+        id: String,
+        privacySalt: ByteArray,
+        account: String,
+        timestamp: Instant,
+        metadataHash: String,
+    ) {
+        entityManager.createNativeQuery(queryProvider.persistUnverifiedTransaction)
+            .setParameter("id", id)
+            .setParameter("privacySalt", privacySalt)
+            .setParameter("accountId", account)
+            .setParameter("createdAt", timestamp)
+            .setParameter("updatedAt", timestamp)
+            .setParameter("metadataHash", metadataHash)
+            .executeUpdate()
+            .logResult("transaction [$id]")
+    }
+
+    override fun persistFilteredTransaction(
+        entityManager: EntityManager,
+        id: String,
+        privacySalt: ByteArray,
+        account: String,
+        timestamp: Instant,
+        metadataHash: String
+    ) {
+        entityManager.createNativeQuery(queryProvider.persistFilteredTransaction)
+            .setParameter("id", id)
+            .setParameter("privacySalt", privacySalt)
+            .setParameter("accountId", account)
+            .setParameter("createdAt", timestamp)
+            .setParameter("updatedAt", timestamp)
+            .setParameter("metadataHash", metadataHash)
             .executeUpdate()
             .logResult("transaction [$id]")
     }
@@ -424,6 +460,7 @@ class UtxoRepositoryImpl(
                 statement.setString(parameterIndex.next(), merkleProof.transactionId)
                 statement.setInt(parameterIndex.next(), merkleProof.groupIndex)
                 statement.setInt(parameterIndex.next(), merkleProof.treeSize)
+                statement.setString(parameterIndex.next(), merkleProof.leafIndexes.joinToString(","))
                 statement.setString(parameterIndex.next(), merkleProof.leafHashes.joinToString(","))
             }
         }
@@ -453,7 +490,7 @@ class UtxoRepositoryImpl(
                 // We'll have multiple rows for the same Merkle proof if it revealed more than one leaf
                 // We group the rows by the Merkle proof ID to see which are the ones that belong together
                 tuple.get(0) as String // Merkle Proof ID
-            }.map { (merkleProofId, rows) ->
+            }.map { (_, rows) ->
                 // We can retrieve most of the properties from the first row because they will be the same for each row
                 val firstRow = rows.first()
 
@@ -464,16 +501,16 @@ class UtxoRepositoryImpl(
 
                     // We store the hashes as a comma separated string, so we need to split it and parse into SecureHash
                     // we filter out the blank ones just in case
-                    (firstRow.get(4) as String).split(",")
+                    (firstRow.get(5) as String).split(",")
                         .filter { it.isNotBlank() }.map { parseSecureHash(it) },
 
-                    firstRow.get(5) as ByteArray, // Privacy salt
+                    firstRow.get(6) as ByteArray, // Privacy salt
 
                     // Each leaf will have its own row, so we need to go through each row that belongs to the Merkle proof
                     rows.mapNotNull {
                         // Map the leaf index to the data we fetched from the component table
-                        val leafIndex = it.get(6) as? Int
-                        val leafData = it.get(7) as? ByteArray
+                        val leafIndex = it.get(7) as? Int
+                        val leafData = it.get(8) as? ByteArray
 
                         if (leafIndex != null && leafData != null) {
                             leafIndex to leafData
@@ -481,8 +518,9 @@ class UtxoRepositoryImpl(
                             null
                         }
                     }.toMap(),
-                    // Extract the visible leaf indices from the merkle proof ID
-                    merkleProofId.substringAfterLast(";").split(",").map { it.toInt() }
+                    // We store the leaf indexes as a comma separated string, so we need to split it
+                    (firstRow.get(4) as String).split(",").map { it.toInt() },
+
                 )
             }.groupBy {
                 // Group by transaction ID
@@ -500,42 +538,32 @@ class UtxoRepositoryImpl(
 
         return ids.associateWith { transactionId ->
 
-            val transactionMerkleProofs = merkleProofs[transactionId]
-            requireNotNull(transactionMerkleProofs) {
-                "Couldn't find any Merkle proofs for transaction with ID: $transactionId."
-            }
+            val transactionMerkleProofs = merkleProofs[transactionId] ?: emptyList()
 
-            val (topLevelMerkleProofs, componentGroupMerkleProofs) = transactionMerkleProofs.partition {
-                it.groupIndex == TOP_LEVEL_MERKLE_PROOF_INDEX
-            }
-
-            require(topLevelMerkleProofs.isNotEmpty()) {
-                "Couldn't find a top level Merkle proof for transaction with ID: $transactionId."
-            }
-            require(componentGroupMerkleProofs.isNotEmpty()) {
-                "Couldn't find any component group Merkle proof for transaction with ID: $transactionId."
-            }
-
-            requireNotNull(privacySaltAndMetadataMap[transactionId]) {
-                "Couldn't find metadata for transaction with ID: $transactionId."
+            val (topLevelMerkleProofs, componentGroupMerkleProofs) = if (transactionMerkleProofs.isNotEmpty()) {
+                val (topLevel, componentGroupLevel) = transactionMerkleProofs.partition {
+                    it.groupIndex == TOP_LEVEL_MERKLE_PROOF_INDEX
+                }
+                topLevel to componentGroupLevel
+            } else {
+                emptyList<MerkleProofDto>() to emptyList()
             }
 
             val transactionPrivacySaltAndMetadata = privacySaltAndMetadataMap[transactionId]
-            requireNotNull(transactionPrivacySaltAndMetadata) {
-                "Couldn't find metadata/privacy salt for transaction with ID: $transactionId"
-            }
+            val transactionSignatures = signaturesMap[transactionId] ?: emptyList()
 
-            val transactionSignatures = signaturesMap[transactionId]
-            requireNotNull(transactionSignatures) {
-                "Couldn't find signatures for transaction with ID: $transactionId"
+            val componentGroupMerkleProofMap = if (componentGroupMerkleProofs.isNotEmpty()) {
+                componentGroupMerkleProofs.groupBy { it.groupIndex }
+            } else {
+                emptyMap()
             }
 
             UtxoFilteredTransactionDto(
                 transactionId = transactionId,
                 topLevelMerkleProofs = topLevelMerkleProofs,
-                componentMerkleProofMap = componentGroupMerkleProofs.groupBy { it.groupIndex },
-                privacySalt = transactionPrivacySaltAndMetadata.first,
-                metadataBytes = transactionPrivacySaltAndMetadata.second,
+                componentMerkleProofMap = componentGroupMerkleProofMap,
+                privacySalt = transactionPrivacySaltAndMetadata?.first,
+                metadataBytes = transactionPrivacySaltAndMetadata?.second,
                 signatures = transactionSignatures
             )
         }
