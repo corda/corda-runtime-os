@@ -63,8 +63,7 @@ class DurableFlowStatusProcessor(
 
     private fun hasTerminatedStatus(state: State): Boolean {
         val status = getStatus(state)
-        val terminatedStatus = status != null && TERMINATED_STATES.contains(FlowStates.valueOf(status))
-        return terminatedStatus || status == null
+        return status != null && TERMINATED_STATES.contains(FlowStates.valueOf(status))
     }
 
     private fun Metadata?.withHoldingIdentityAndStatus(holdingIdentity: HoldingIdentity, flowStatus: FlowStates): Metadata {
