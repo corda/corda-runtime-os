@@ -1,6 +1,5 @@
 package net.corda.cli.plugins.network
 
-import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.network.utils.HoldingIdentityUtils
 import net.corda.cli.plugins.network.utils.inferCpiName
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
@@ -8,6 +7,9 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.rest.v1.MGMRestResource
 import net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
+import net.corda.sdk.network.MgmGeneratePreAuth
+import net.corda.sdk.packaging.CpiUploader
+import net.corda.sdk.rest.RestClientUtils
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -205,10 +207,16 @@ class OnboardMemberTest {
 
     private fun OnboardMgm.getExistingCpiHash(): String {
         val cpiName = inferCpiName(File(cpbLocation), File(defaulGroupPolicyLocation))
-        return createRestClient(CpiUploadRestResource::class).use { client ->
-            val response = client.start().proxy.getAllCpis()
-            response.cpis.first { it.id.cpiName == cpiName }.cpiFileChecksum
-        }
+        val restClient = RestClientUtils.createRestClient(
+            CpiUploadRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+        val cpisFromCluster = CpiUploader().getAllCpis(restClient = restClient).cpis
+        return cpisFromCluster.first { it.id.cpiName == cpiName }.cpiFileChecksum
     }
 
     private fun OnboardMgm.createPreAuthToken(member: String): String {
@@ -217,12 +225,19 @@ class OnboardMemberTest {
             mgmName,
             null,
         )
-        return createRestClient(MGMRestResource::class).use { client ->
-            client.start().proxy.generatePreAuthToken(
-                holdingIdentity,
-                PreAuthTokenRequest(member),
-            ).id
-        }
+        val restClient = RestClientUtils.createRestClient(
+            MGMRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+        return MgmGeneratePreAuth().generatePreAuthToken(
+            restClient = restClient,
+            holdingIdentityShortHash = holdingIdentity,
+            request = PreAuthTokenRequest(member)
+        ).id
     }
 
     private fun OutputStub.lookup(memberName: MemberX500Name) {
